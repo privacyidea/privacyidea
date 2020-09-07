@@ -74,6 +74,7 @@ from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_ob
 from privacyidea.lib.event import event, EventConfiguration
 from privacyidea.lib import _
 import logging
+import traceback
 
 log = logging.getLogger(__name__)
 
@@ -112,7 +113,12 @@ def before_request():
         # overwrite the split realm if we have a realm parameter. Default back to default_realm
         realm = getParam(request.all_data, "realm", default=realm) or realm or get_default_realm()
         # Prefill the request.User. This is used by some pre-event handlers
-        request.User = User(loginname, realm)
+        try:
+            request.User = User(loginname, realm)
+        except Exception as e:
+            request.User = None
+            log.warning(u"Problem resolving user {0!s} in realm {1!s}: {2!s}.".format(loginname, realm, e))
+            log.debug(u"{0!s}".format(traceback.format_exc()))
 
 
 @jwtauth.route('', methods=['POST'])

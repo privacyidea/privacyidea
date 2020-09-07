@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+2020-09-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+           Add exception
 2017-04-26 Friedrich Weber <friedrich.weber@netknights.it>
            Make it possible to check for correct LDAPS/STARTTLS settings
 2017-01-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -658,6 +660,7 @@ class Ldap3Mock(object):
         self._calls = CallList()
         self._server_mock = None
         self.directory = []
+        self.exception = None
         self.reset()
 
     def reset(self):
@@ -673,6 +676,9 @@ class Ldap3Mock(object):
                     self.directory = directory
             except OSError as e:
                 raise
+
+    def set_exception(self, exc=True):
+        self.exception = exc
 
     def _load_data(self, directory):
         try:
@@ -717,6 +723,9 @@ class Ldap3Mock(object):
         and object
             response
         """
+        # Raise an exception, if we are told to do so
+        if self.exception:
+            raise Exception("LDAP request failed")
         # check the password
         correct_password = False
         # Anonymous bind
