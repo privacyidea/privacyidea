@@ -2215,13 +2215,9 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                 if reply_dict["type"] != token_obj.token.tokentype:
                     reply_dict["type"] = "undetermined"
                 # reset the failcounter of valid token
-                try:
-                    token_obj.reset()
-                except Exception as _e:
-                    # In some cases (Registration Token) the token does not
-                    # exist anymore. So this would bail an exception!
-                    log.debug("registration token does not exist anymore and "
-                              "cannot be reset.")
+                token_obj.reset()
+                # Run the token post method. e.g. registration token deletes itself.
+                token_obj.post_success()
         if len(valid_token_list) == 1:
             # If only one token was found, we add the serial number,
             # the token type and the OTP length
@@ -2284,6 +2280,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                         # This was the last successful challenge, so
                         # reset the fail counter of the challenge response token
                         tokenobject.reset()
+                        tokenobject.post_success()
 
                     # clean up all challenges from this and other tokens. I.e.
                     # all challenges with this very transaction_id!
