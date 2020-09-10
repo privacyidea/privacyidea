@@ -520,17 +520,18 @@ def parsePSKCdata(xml_data,
                 enc_data = key.data.secret.encryptedvalue.ciphervalue.text
                 enc_data = enc_data.strip()
 
-                key = binascii.unhexlify(preshared_key_hex)
+                preshared_key = binascii.unhexlify(preshared_key_hex)
 
                 # TODO Check mac
                 #  calculate MAC
-                #       - mac key
-                #       - secret
                 #  check if own mac fits mac from xml
                 #  IF true THEN pass ELSE throw Exception
-                mac_key = xml.keycontainer # TODO Get macvalue
+                encrypted_mac_key = xml.keycontainer.find(
+                    "mackey").text.strip()  # TODO Is it save to assume that this exists?
+                mac_key = aes_decrypt_b64(preshared_key, encrypted_mac_key)
+                mac_value = key.data.secret.valuemac.text.strip()
 
-                secret = aes_decrypt_b64(key, enc_data)
+                secret = aes_decrypt_b64(preshared_key, enc_data)
                 if token["type"].lower() in ["hotp", "totp"]:
                     token["otpkey"] = hexlify_and_unicode(secret)
                 elif token["type"].lower() in ["pw"]:
