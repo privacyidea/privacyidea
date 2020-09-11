@@ -106,7 +106,8 @@ manager = Manager(app)
 admin_manager = Manager(usage='Create new administrators or modify existing '
                               'ones.')
 backup_manager = Manager(usage='Create database backup and restore')
-realm_manager = Manager(usage='Create new realms, set the default realm')
+realm_manager = Manager(usage='Create new realms, delete existing realms '
+                              'or set the default realm')
 resolver_manager = Manager(usage='Create new resolver')
 policy_manager = Manager(usage='Manage policies')
 event_manager = Manager(usage='Manage events')
@@ -955,16 +956,25 @@ realm_manager.add_command('list', Command(list_realms))
 
 
 @realm_manager.command
-def create(name, resolver):
+def create(name, resolvers):
     """
     Create a new realm.
-    This will create a new realm with the given resolver.
-    *restriction*: The new realm will only contain one resolver!
-
-    :return:
+    This will create a new realm with the given resolver
+    or a comma-separated list of resolvers. An existing realm
+    with the same name will be replaced.
     """
     from privacyidea.lib.realm import set_realm
-    set_realm(name, [resolver])
+    resolvers = resolvers.split(",")
+    set_realm(name, resolvers)
+
+
+@realm_manager.command
+def delete(realm):
+    """
+    Delete the given realm
+    """
+    from privacyidea.lib.realm import delete_realm
+    delete_realm(realm)
 
 
 @realm_manager.command
