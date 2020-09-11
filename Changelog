@@ -1,4 +1,4 @@
-Version 3.4dev6, 2020-08-26
+Version 3.4, 2020-09-08
 
   Features:
    * Add ScriptSMSProvider, that can send SMS through external
@@ -65,6 +65,9 @@ Version 3.4dev6, 2020-08-26
    * Clean up the code for /validate/samlcheck
    * Fix censoring of Oracle connect strings (#2304)
    * Treat unsupported WebAuthn attestation as None attestation (#2342)
+   * Fix admin/scope in import/export of policies with pi-manage (#2359)
+   * Fix url_decode (#2360)
+   * Fix token settings for Yubikey in UI enrollment (#2365, #2366)
 
 
 Version 3.3.3, 2020-05-19

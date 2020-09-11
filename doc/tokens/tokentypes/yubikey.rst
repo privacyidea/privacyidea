@@ -39,8 +39,8 @@ Using the yubikey personalization GUI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Third and last you can use the privacyIDEA Web UI to enroll a
-Yubikey AES mode token, if you have
-initialized the yubikey with the external *ykpersonalize* tool.
+Yubikey AES mode token, if you have initialized the yubikey with an external
+YubiKey personalization tool [#ykpers]_.
 
 .. figure:: images/yk-personalization-gui.png
    :width: 500
@@ -49,16 +49,24 @@ initialized the yubikey with the external *ykpersonalize* tool.
 
 When using the yubikey personalization GUI you need to copy the value of
 "Secret Key (16 bytes Hex)". This is the secret OTP key, which you need to
-copy and paste in the field "OTP Key" in the privacyIDEA Web UI.
+copy and paste in the field *OTP Key* in the privacyIDEA Web UI.
 
 .. figure:: images/enroll_yubikey.png
    :width: 500
 
    *Enroll a Yubikey AES mode token*
 
-In the field "Test Yubikey" push the Yubikey button. This will grab the
-yubikey's public identifier and also determine the length of the *otp value*.
-The field *OTP value* is automatically filled.
+In the field "Test Yubikey" push the Yubikey button. This will determine the
+length of the *otp value* and the field *OTP length* is automatically filled.
+
+.. note::
+    The length of the unique passcode for each OTP is 32 characters at the end
+    of the OTP value. The remaining characters at the beginning of the OTP value
+    form the Public ID of the device. They remain constant for each
+    OTP [#ykotp]_.
+
+    privacyIDEA takes care of separating these parts but it needs to know the
+    complete length of the OTP value to work correctly.
 
 Redirect api url to privacyideas /ttype/yubikey
 ...............................................
@@ -76,3 +84,7 @@ lines in /etc/apache2/site-enabled/privacyidea.conf:
 If you use nginx there is a similar line provided as a comment
 to the nginx configuration as well.
 
+.. rubric:: Footnotes
+
+.. [#ykpers] https://www.yubico.com/products/services-software/download/yubikey-personalization-tools/
+.. [#ykotp] https://developers.yubico.com/OTP/OTPs_Explained.html

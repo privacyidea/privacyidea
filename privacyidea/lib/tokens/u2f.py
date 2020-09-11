@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
+import re
 from OpenSSL import crypto
 import binascii
 from hashlib import sha256
@@ -49,7 +51,10 @@ def url_decode(url):
     :return: the decoded string
     :rtype: bytes
     """
-    pad_len = -len(url) % 4
+    # remove all non base64 characters (newline, CR) from the string before
+    # calculating the padding length
+    pad_len = -len(re.sub('[^A-Za-z0-9-_+/]+', '', to_unicode(url))) % 4
+
     padding = pad_len * "="
     res = base64.urlsafe_b64decode(to_bytes(url) + to_bytes(padding))
     return res

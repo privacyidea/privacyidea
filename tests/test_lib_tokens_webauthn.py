@@ -144,6 +144,11 @@ CRED_ID = 'ilNaaY5fYJoR1sg5IB7FL2Zoa-qBd_5Q95ZcyxNkmjkoDhiLCLgEKoKfCUElLt6_6Dmj_
 PUB_KEY = 'a401020326215820319ea01f1125ce6232947365800ae5d9ddc874247c55d1516bad3ca3ca32075c'\
           '22582059f1f07f3b2f86c0a51e0cfa13dc57e7c77a110e796f8a0b27741fe58663cb3a'
 
+URL_DECODE_TEST_STRING = 'MEQCIBxR_Zn2XNp8yp4gVaFWU7xdpdAjkBXpXPphKPrgc_4uAiBAB0oVN-8ryLRfo-koEF5NLn1J\r\n'\
+                         'Cj8yyeCsp1U7mhR32A'
+URL_DECODE_EXPECTED_RESULT = b'0D\x02 \x1cQ\xfd\x99\xf6\\\xda|\xca\x9e U\xa1VS\xbc]\xa5\xd0#\x90\x15\xe9\\\xfaa(\xfa'\
+                             b'\xe0s\xfe.\x02 @\x07J\x157\xef+\xc8\xb4_\xa3\xe9(\x10^M.}I\n?2\xc9\xe0\xac\xa7U;\x9a'\
+                             b'\x14w\xd8'
 NONE_ATTESTATION_REGISTRATION_RESPONSE_TMPL = {
     'clientData': b'eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiZkszN3hLZGhXSmhVNmQyVEFH'
                   b'VllESEttZHNwb3JsanNSb1daMDlaaVRYTSIsIm9yaWdpbiI6Imh0dHBzOi8vd2ViYXV0aG4uaW8i'
@@ -450,9 +455,14 @@ class WebAuthnTestCase(unittest.TestCase):
         with self.assertRaises(AuthenticationRejectedException):
             webauthn_assertion_response.verify()
 
+
     def test_06_duplicate_authentication_fail_assertion(self):
         webauthn_assertion_response = self.getAssertionResponse()
         webauthn_assertion_response.webauthn_user.sign_count = ASSERTION_RESPONSE_SIGN_COUNT
 
         with self.assertRaises(AuthenticationRejectedException):
             webauthn_assertion_response.verify()
+
+    def test_07_webauthn_b64_decode(self):
+        self.assertEqual(webauthn_b64_decode(URL_DECODE_TEST_STRING), URL_DECODE_EXPECTED_RESULT)
+

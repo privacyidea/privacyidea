@@ -294,6 +294,19 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         } else {
             $scope.form.genkey = true;
         }
+        if ($scope.form.type === "yubikey") {
+            // save the original otp length
+            $scope.old_otplen = $scope.form.otplen;
+            // set the default otp length for yubikeys in AES mode to 44
+            // (12 characters (6 bytes) UID and 32 characters (16 bytes) OTP)
+            $scope.form.otplen = 44;
+        } else {
+            // restore old otp length if available
+            if (typeof $scope.old_otplen != "undefined") {
+                $scope.form.otplen = $scope.old_otplen;
+                delete $scope.old_otplen;
+            }
+        }
 
         $scope.preset_indexedsecret();
 
@@ -420,6 +433,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 $scope.form.type = tkey;
                 // Set the 2step enrollment value
                 $scope.setTwostepEnrollmentDefault();
+                // Initialize token specific settings
+                $scope.changeTokenType();
                 break;
             }
         }
@@ -522,12 +537,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     };
 
     $scope.yubikeyGetLen = function () {
-        if ($scope.tempData.yubikeyTest.length >= 32) {
-            $scope.form.otplen = $scope.tempData.yubikeyTest.length;
-            if ($scope.tempData.yubikeyTest.length > 32) {
-                $scope.tempData.yubikeyUid = true;
-                $scope.tempData.yubikeyUidLen = $scope.tempData.yubikeyTest.length - 32;
-            }
+        let yktestdatalen = $scope.tempData.yubikeyTest.trim().length;
+        if (yktestdatalen >= 32) {
+            $scope.form.otplen = yktestdatalen;
         }
     };
 
