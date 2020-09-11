@@ -455,7 +455,6 @@ class WebAuthnTestCase(unittest.TestCase):
         with self.assertRaises(AuthenticationRejectedException):
             webauthn_assertion_response.verify()
 
-
     def test_06_duplicate_authentication_fail_assertion(self):
         webauthn_assertion_response = self.getAssertionResponse()
         webauthn_assertion_response.webauthn_user.sign_count = ASSERTION_RESPONSE_SIGN_COUNT
@@ -465,4 +464,3 @@ class WebAuthnTestCase(unittest.TestCase):
 
     def test_07_webauthn_b64_decode(self):
         self.assertEqual(webauthn_b64_decode(URL_DECODE_TEST_STRING), URL_DECODE_EXPECTED_RESULT)
-
