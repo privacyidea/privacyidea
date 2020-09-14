@@ -62,7 +62,9 @@ def _create_pin_reset_challenge(token_obj, message, challenge_data=None):
                                       "serial": token_obj.token.serial,
                                       "type": token_obj.token.tokentype}]
     reply_dict["message"] = message
+    reply_dict["messages"] = [message]
     reply_dict["transaction_id"] = db_challenge.transaction_id
+    # TODO: This line is deprecated: Add the information for the old administrative triggerchallenge
     reply_dict["transaction_ids"] = [db_challenge.transaction_id]
 
     return reply_dict

@@ -3027,6 +3027,45 @@ class MultiChallege(MyApiTestCase):
         delete_policy("via_validate")
         delete_policy("hotp_chalresp")
 
+    def test_02_challenge_text_header(self):
+        # Test PIN change after authentication with a single shot authentication
+        # Create policy change pin on first use
+        set_policy("first_use", scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_FIRST_USE)
+        set_policy("via_validate", scope=SCOPE.AUTH, action=ACTION.CHANGE_PIN_VIA_VALIDATE)
+        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE))
+        challenge_header = "Choose one: <ul>"
+        set_policy("challenge_header", scope=SCOPE.AUTH,
+                   action="{0!s}={1!s}".format(ACTION.CHALLENGETEXT_HEADER, challenge_header))
+
+        with self.app.test_request_context('/token/init', method='POST',
+                                           data={"user": "cornelius", "pin": "test",
+                                                 "serial": self.serial, "otpkey": self.otpkey},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertTrue(result.get("value"))
+
+        # 1st authentication creates a PIN change challenge via challenge response
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "test{0!s}".format(self.valid_otp_values[1])}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertFalse(result.get("value"))
+            details = res.json['detail']
+            transaction_id = details.get("transaction_id")
+            # check that the challenge header is contained in the message
+            self.assertEqual("{0!s}<li>Please enter a new PIN</li>\n".format(challenge_header),
+                             details.get("message"))
+
+        remove_token(self.serial)
+        delete_policy("first_use")
+        delete_policy("via_validate")
+        delete_policy("hotp_chalresp")
+        delete_policy("challenge_header")
+
 
 class AChallengeResponse(MyApiTestCase):
 
