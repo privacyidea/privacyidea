@@ -411,6 +411,8 @@ angular.module("privacyideaApp")
             $scope.admin_dashboard = data.result.value.admin_dashboard;
             if ($scope.admin_dashboard) {
                 $scope.startRoute = "/dashboard";
+            } else {
+                $scope.startRoute = "/token";
             }
             $scope.hide_welcome = data.result.value.hide_welcome;
             $scope.hide_buttons = data.result.value.hide_buttons;
