@@ -472,9 +472,9 @@ class LocalCAConnector(BaseCAConnector):
                 with open(self.template_file, 'r') as content_file:
                     file_content = content_file.read()
                     content = yaml.safe_load(file_content)
-            except FileNotFoundError:
-                log.warning("Template file {0!s} for {1!s} not found.".format(
-                    self.template_file, self.name))
+            except (FileNotFoundError, PermissionError):
+                log.warning("Template file {0!s} for {1!s} not found or "
+                            "not permitted.".format(self.template_file, self.name))
         return content
 
     def publish_cert(self):
