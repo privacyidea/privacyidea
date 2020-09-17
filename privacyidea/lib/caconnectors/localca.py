@@ -476,7 +476,7 @@ class LocalCAConnector(BaseCAConnector):
             except EnvironmentError:
                 log.warning("Template file {0!s} for {1!s} not found or "
                             "not permitted.".format(self.template_file, self.name))
-                log.debug('{0!s}'.format(traceback.format_exc()))
+                log.debug(u'{0!s}'.format(traceback.format_exc()))
         return content
 
     def publish_cert(self):
