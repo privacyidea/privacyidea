@@ -324,6 +324,10 @@ class LocalCATestCase(MyTestCase):
         self.assertTrue(ddiff.days > 740, ddiff.days)
         self.assertTrue(ddiff.days < 760, ddiff.days)
 
+        # in case of a nonexistent template file, no exception is raised
+        # but an empty value is returned
+        cacon.template_file = "nonexistent"
+        self.assertEquals(cacon.get_templates(), {})
 
 class CreateLocalCATestCase(MyTestCase):
     """
