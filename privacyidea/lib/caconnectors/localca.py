@@ -40,6 +40,7 @@ import logging
 import os
 from six import string_types
 from six.moves import input
+import traceback
 
 log = logging.getLogger(__name__)
 
@@ -472,9 +473,10 @@ class LocalCAConnector(BaseCAConnector):
                 with open(self.template_file, 'r') as content_file:
                     file_content = content_file.read()
                     content = yaml.safe_load(file_content)
-            except (FileNotFoundError, PermissionError):
+            except EnvironmentError:
                 log.warning("Template file {0!s} for {1!s} not found or "
                             "not permitted.".format(self.template_file, self.name))
+                log.debug('{0!s}'.format(traceback.format_exc()))
         return content
 
     def publish_cert(self):
