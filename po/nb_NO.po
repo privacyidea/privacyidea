@@ -1,9 +1,15 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
+"PO-Revision-Date: 2020-09-19 04:36+0000\n"
+"Last-Translator: Allan Nordhøy <epost@anotheragency.no>\n"
+"Language-Team: Norwegian Bokmål <https://hosted.weblate.org/projects/"
+"privacyidea/privacyidea-server/nb_NO/>\n"
 "Language: nb_NO\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.3-dev\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -16,15 +22,15 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:21
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:23
 msgid "#"
-msgstr ""
+msgstr "#"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:94
 msgid "(none)"
-msgstr ""
+msgstr "(ingen)"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:8
 msgid "45% Complete"
-msgstr ""
+msgstr "45% fullført"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:139
 msgid ""
@@ -34,7 +40,7 @@ msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:109
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
-msgstr ""
+msgstr "<b>Denne programvaren kommer uten noen form for garanti!</b>"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:57
 msgid ""
@@ -151,15 +157,15 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.token.yubikey.html:20
 #: privacyidea/static/components/config/views/config.token.yubikey.html:43
 msgid "API Key"
-msgstr ""
+msgstr "API-nøkkel"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:16
 msgid "API client ID"
-msgstr ""
+msgstr "Klient-ID for API"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
-msgstr ""
+msgstr "Om privacyIDEA-nettklienten"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:106
 msgid ""
@@ -177,7 +183,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.list.html:19
 #: privacyidea/static/components/dashboard/views/dashboard.html:66
 msgid "Action"
-msgstr ""
+msgstr "Handling"
 
 #: privacyidea/static/components/config/views/config.events.list.html:9
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:6
@@ -186,7 +192,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:23
 #: privacyidea/static/components/user/views/user.details.html:83
 msgid "Active"
-msgstr ""
+msgstr "Aktive"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:128
 msgid "Active Events"
@@ -194,7 +200,7 @@ msgstr ""
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:92
 msgid "Active Policies"
-msgstr ""
+msgstr "Aktive praksiser"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:74
 msgid "Add a condition"
@@ -202,15 +208,15 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.add.html:3
 msgid "Add a new user"
-msgstr ""
+msgstr "Legg til en ny bruker"
 
 #: privacyidea/static/components/config/views/config.token.question.html:56
 msgid "Add new question"
-msgstr ""
+msgstr "Legg til et nytt spørsmål"
 
 #: privacyidea/static/components/user/views/user.html:40
 msgid "Add user"
-msgstr ""
+msgstr "Legg til bruker"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:260
 msgid "Additional conditions"
@@ -218,7 +224,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:156
 msgid "Admin"
-msgstr ""
+msgstr "Administrator"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:140
 msgid "Admin-Realm"
@@ -226,11 +232,11 @@ msgstr ""
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:59
 msgid "Administration"
-msgstr ""
+msgstr "Administrasjon"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:65
 msgid "Administrator"
-msgstr ""
+msgstr "Administrator"
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:8
 msgid "All CA Connectors"
@@ -246,15 +252,15 @@ msgstr ""
 
 #: privacyidea/static/components/machine/views/machine.html:8
 msgid "All Machines"
-msgstr ""
+msgstr "Alle maskiner"
 
 #: privacyidea/static/components/config/views/config.periodictasks.html:8
 msgid "All Periodic Tasks"
-msgstr ""
+msgstr "Alle periodiske oppgaver"
 
 #: privacyidea/static/components/config/views/config.policies.html:8
 msgid "All Policies"
-msgstr ""
+msgstr "Alle praksiser"
 
 #: privacyidea/static/components/config/views/config.realms.html:7
 msgid "All Realms"
@@ -266,15 +272,15 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.smsgateway.html:7
 msgid "All SMS Gateways"
-msgstr ""
+msgstr "Alle SMS-portnere"
 
 #: privacyidea/static/components/token/views/token.html:11
 msgid "All tokens"
-msgstr ""
+msgstr "Alle symboler"
 
 #: privacyidea/static/components/user/views/user.html:19
 msgid "All users"
-msgstr ""
+msgstr "Alle brukere"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:163
 msgid "An Attribute or the DN to identify the machine"
@@ -293,11 +299,11 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:522
 #: privacyidea/static/components/token/views/token.details.html:608
 msgid "Application"
-msgstr ""
+msgstr "Program"
 
 #: privacyidea/static/components/components/views/component.clienttype.html:7
 msgid "Application Type"
-msgstr ""
+msgstr "Programtype"
 
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
@@ -309,44 +315,44 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.html:44
 #: privacyidea/static/components/user/views/user.details.html:134
 msgid "Assign Token"
-msgstr ""
+msgstr "Tildel symbol"
 
 #: privacyidea/static/components/token/views/token.details.html:480
 #: privacyidea/static/components/token/views/token.details.html:493
 msgid "Assign User"
-msgstr ""
+msgstr "Tildel bruker"
 
 #: privacyidea/static/components/user/views/user.details.html:129
 msgid "Assign a new token {{ newToken.serial }}"
-msgstr ""
+msgstr "Tildel et nytt symbol {{ newToken.serial }}"
 
 #: privacyidea/static/components/token/views/token.assign.html:1
 msgid "Assign a new token {{ newTokenObject.serial }}"
-msgstr ""
+msgstr "Tildel et nytt symbol {{ newTokenObject.serial }}"
 
 #: privacyidea/static/components/token/views/token.enroll.html:37
 msgid "Assign token to user"
-msgstr ""
+msgstr "Tildel symbol for bruker"
 
 #: privacyidea/static/components/token/views/token.details.html:430
 msgid "Assigned User"
-msgstr ""
+msgstr "Tildelt bruker"
 
 #: privacyidea/static/components/token/views/token.getserial.html:33
 msgid "Assignment State"
-msgstr ""
+msgstr "Tildelelsestilstand"
 
 #: privacyidea/static/components/token/views/token.details.html:636
 msgid "Attach Machine"
-msgstr ""
+msgstr "Tildel maskin"
 
 #: privacyidea/static/components/machine/views/machine.details.html:154
 msgid "Attach Token"
-msgstr ""
+msgstr "Tildel symbol"
 
 #: privacyidea/static/components/token/views/token.details.html:600
 msgid "Attach to a new Machine"
-msgstr ""
+msgstr "Tildel til en ny maskin"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:271
 msgid "Attribute mapping"
@@ -563,7 +569,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.list.html:23
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:51
 msgid "Client"
-msgstr ""
+msgstr "Klient"
 
 #: privacyidea/static/components/components/views/component.html:20
 msgid "Client Application Type"
@@ -576,24 +582,24 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.token.yubikey.html:19
 #: privacyidea/static/components/config/views/config.token.yubikey.html:38
 msgid "Client ID"
-msgstr ""
+msgstr "Klient-ID"
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:44
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:44
 msgid "Client Part"
-msgstr ""
+msgstr "Klientsti"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:36
 msgid "Clients"
-msgstr ""
+msgstr "Klienter"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:48
 msgid "Close"
-msgstr ""
+msgstr "Lukk"
 
 #: privacyidea/static/templates/menu.html:136
 msgid "Community"
-msgstr ""
+msgstr "Gemenskap"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:8
 msgid "Comparator"
@@ -601,7 +607,7 @@ msgstr ""
 
 #: privacyidea/static/templates/menu.html:94
 msgid "Components"
-msgstr ""
+msgstr "Komponenter"
 
 #: privacyidea/static/components/config/views/config.events.details.html:109
 #: privacyidea/static/components/config/views/config.events.details.html:97
@@ -616,7 +622,7 @@ msgstr ""
 
 #: privacyidea/static/templates/menu.html:78
 msgid "Config"
-msgstr ""
+msgstr "Oppsett"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:196
 msgid "Connection Parameters"
