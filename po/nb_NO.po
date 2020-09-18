@@ -1,9 +1,10 @@
+# Allan Nordhøy <epost@anotheragency.no>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"Last-Translator: Allan Nordhøy <epost@anotheragency.no>\n"
 "Language-Team: Norwegian Bokmål <https://hosted.weblate.org/projects/"
 "privacyidea/privacyidea-webui/nb_NO/>\n"
 "Language: nb_NO\n"
