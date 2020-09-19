@@ -78,6 +78,11 @@ If you have no programming skills you can still get involved
 directly with the software by providing translations into
 different languages.
 
+You can do it easily without technical skills in your browser at 
+weblate.org https://hosted.weblate.org/engage/privacyidea/.
+
+Or use your own system:
+
 http://privacyidea.readthedocs.io/en/latest/faq/translation.html
 
 ## Test coverage
