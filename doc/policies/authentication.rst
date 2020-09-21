@@ -188,7 +188,7 @@ type: string
 This is the text that is sent via Email to be used with Email Token. This
 text should contain the OTP tag.
 
-The text can contain the following additional tags, that will be filled:
+The text can contain the following tags, that will be filled:
 
   * {otp} or *<otp>* the One-Time-Password
   * {serial} or *<serial>* the serial number of the token.
