@@ -531,19 +531,22 @@ def parsePSKCdata(xml_data,
                 else:
                     token["otpkey"] = to_unicode(secret)
 
-                encrypted_mac_key = xml.keycontainer.find(
-                    "mackey").text  # TODO Is it save to assume that this exists?
+                encrypted_mac_key = xml.keycontainer.find("mackey").text
                 mac_key = aes_decrypt_b64(preshared_key, encrypted_mac_key)
 
                 if token["type"].lower() in ["hotp", "totp"]:
                     secret = binascii.hexlify(secret)
 
+                # FIXME Decoding the MAC_KEY like this results in the same valus as in RFC 6030, but:
+                #   1. the mac-value doesnt fit
+                #   2. this is not compatible with export_pskc
+                # mac_key = b'1122334455667788990011223344556677889900' # The mac-key from RFC 6030
+                mac_key = binascii.hexlify(mac_key)
+
                 hm = hmac.new(key=mac_key, msg=secret, digestmod=hashlib.sha1)
                 mac_value_calculated = b64encode_and_unicode(hm.digest())
 
                 mac_value_xml = key.data.find('valuemac').text.strip()
-
-                print('\nParse token {}\nPwd: {}'.format(serial, preshared_key))
 
                 print('\nParse token {}\nPwd: {}'.format(serial, binascii.hexlify(preshared_key)))
                 print('Mac-Key: {}\nSecret: {}'.format(mac_key, secret))
