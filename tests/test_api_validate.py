@@ -20,7 +20,7 @@ from privacyidea.lib.event import set_event
 from privacyidea.lib.event import delete_event
 from privacyidea.lib.error import ERROR
 from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
-from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
+from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm, get_realms
 from privacyidea.lib.radiusserver import add_radius
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
@@ -4088,6 +4088,169 @@ class AChallengeResponse(MyApiTestCase):
         self.assertEqual(len(set(found_questions)), 5)
         remove_token(serial)
         delete_policy("questpol")
+
+    def test_16_4eyes_multichallenge_with_pin(self):
+        # We require 1 token in realm1 and 2 tokens in realm2
+        required_tokens = {"realm1": {"selected": True,
+                                      "count": 1},
+                           "realm3": {"selected": True,
+                                      "count": 2}}
+        serial = "4eyes001"
+        # We want more than one realm
+        self.setUp_user_realm3()
+        tok = init_token({"type": "4eyes", "4eyes": required_tokens, "pin": "pin", "serial": serial},
+                         user=User("root", self.realm3))
+        self.assertTrue(tok.get_tokeninfo("4eyes"), "realm1:1,realm3:2")
+
+        # Now we enroll some tokens for the 3 admins.
+        # user: cornelius@realm1
+        tok = init_token({"type": "hotp", "otpkey": self.otpkey, "pin": "adminpin1", "serial": "admintok1"},
+                         user=User("cornelius", self.realm1))
+        self.assertTrue(tok.get_tokeninfo("tokenkind"), "software")
+        # user: cornelius@realm3
+        tok = init_token({"type": "hotp", "otpkey": self.otpkey, "pin": "adminpin2", "serial": "admintok2"},
+                         user=User("cornelius", self.realm3))
+        self.assertTrue(tok.get_tokeninfo("tokenkind"), "software")
+        # user: privacyidea@realm3
+        tok = init_token({"type": "hotp", "otpkey": self.otpkey, "pin": "adminpin3", "serial": "admintok3"},
+                         user=User("privacyidea", self.realm3))
+        self.assertTrue(tok.get_tokeninfo("tokenkind"), "software")
+
+        # Start the authentication with the PIN of the 4eyes token
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "root", "realm": self.realm3, "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+            transaction_id = detail.get("transaction_id")
+            self.assertTrue(transaction_id)
+
+        # Authenticate with the first admin token
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "root@realm3",
+                                                 "pass": "adminpin1" + self.valid_otp_values[1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertFalse(result.get("value"))
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            self.assertEqual("Please authenticate with another token from either realm: realm3.",
+                             detail.get("message"))
+
+        # Authenticate with the second admin token
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "root@realm3",
+                                                 "pass": "adminpin2" + self.valid_otp_values[1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertFalse(result.get("value"))
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            self.assertEqual("Please authenticate with another token from either realm: realm3.",
+                             detail.get("message"))
+
+        # If we would use the 2nd token *again*, then the authentication fails
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "root@realm3",
+                                                 "pass": "adminpin2" + self.valid_otp_values[2],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertFalse(result.get("value"))
+            detail = res.json.get("detail")
+            self.assertNotIn("transaction_id", detail)
+            self.assertEqual("Response did not match the challenge.", detail.get("message"))
+
+        # Authenticate with the third admin token
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "root@realm3",
+                                                 "pass": "adminpin3" + self.valid_otp_values[1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertTrue(result.get("value"))
+            detail = res.json.get("detail")
+
+        remove_token(serial)
+        remove_token("admintok1")
+        remove_token("admintok2")
+        remove_token("admintok3")
+
+    def test_17_4eyes_multichallenge(self):
+        # We require 1 token in realm1 and 2 tokens in realm2
+        required_tokens = {"realm1": {"selected": True,
+                                      "count": 1},
+                           "realm3": {"selected": True,
+                                      "count": 2}}
+        serial = "4eyes001"
+        # We want more than one realm
+        self.setUp_user_realm3()
+        # Init 4eyes token without PIN
+        tok = init_token({"type": "4eyes", "4eyes": required_tokens, "serial": serial},
+                         user=User("root", self.realm3))
+        self.assertTrue(tok.get_tokeninfo("4eyes"), "realm1:1,realm3:2")
+
+        # Now we enroll some tokens for the 3 admins.
+        # user: cornelius@realm1
+        tok = init_token({"type": "hotp", "otpkey": self.otpkey, "pin": "adminpin1", "serial": "admintok1"},
+                         user=User("cornelius", self.realm1))
+        self.assertTrue(tok.get_tokeninfo("tokenkind"), "software")
+        # user: cornelius@realm3
+        tok = init_token({"type": "hotp", "otpkey": self.otpkey, "pin": "adminpin2", "serial": "admintok2"},
+                         user=User("cornelius", self.realm3))
+        self.assertTrue(tok.get_tokeninfo("tokenkind"), "software")
+        # user: privacyidea@realm3
+        tok = init_token({"type": "hotp", "otpkey": self.otpkey, "pin": "adminpin3", "serial": "admintok3"},
+                         user=User("privacyidea", self.realm3))
+        self.assertTrue(tok.get_tokeninfo("tokenkind"), "software")
+
+        # Start the authentication with one of the tokens!
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "root@realm3",
+                                                 "pass": "adminpin2" + self.valid_otp_values[1]}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+            transaction_id = detail.get("transaction_id")
+            self.assertTrue(transaction_id)
+
+        # Authenticate with the 2nd admin token
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "root@realm3",
+                                                 "pass": "adminpin1" + self.valid_otp_values[1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertFalse(result.get("value"))
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            self.assertTrue(transaction_id)
+
+        # Authenticate with the second admin token
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "root@realm3",
+                                                 "pass": "adminpin3" + self.valid_otp_values[1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertTrue(result.get("value"))
+
+        remove_token(serial)
+        remove_token("admintok1")
+        remove_token("admintok2")
+        remove_token("admintok3")
 
 
 class TriggeredPoliciesTestCase(MyApiTestCase):

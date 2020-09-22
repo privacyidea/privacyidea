@@ -72,6 +72,17 @@ In case of a failed authentication the response looks like this::
      "versionnumber": "2.6dev0"
    }
 
+Using Challenge Response mode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Starting with version 3.5 it is also possible to use the 4eyes token in
+multi challenge-response mode.
+This way in the first authentication response the users will either enter the
+OTP PIN of the 4eyes token or (if the 4eyes token has not PIN) enter the first
+token (OTP PIN + OTP value) of one of the users.
+After this a challenge is sent back, that further tokens need to be entered.
+Every one of the required tokens in put in separately.
+
 .. note:: The 4Eyes Token verifies that unique tokens from each realm are
    used. I.e. if you require 2 tokens from a realm, you can not use the same
    token twice.
