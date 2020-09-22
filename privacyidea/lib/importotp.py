@@ -438,7 +438,7 @@ def derive_key(xml, password):
         raise ImportException("The XML KeyContainer specifies a derived "
                               "encryption key, but no password given!")
 
-    keymeth= xml.keycontainer.encryptionkey.derivedkey.keyderivationmethod
+    keymeth = xml.keycontainer.encryptionkey.derivedkey.keyderivationmethod
     derivation_algo = keymeth["algorithm"].split("#")[-1]
     if derivation_algo.lower() != "pbkdf2":
         raise ImportException("We only support PBKDF2 as Key derivation "
@@ -522,22 +522,35 @@ def parsePSKCdata(xml_data,
 
                 preshared_key = binascii.unhexlify(preshared_key_hex)
 
-                # TODO Check mac
-                #  calculate MAC
-                #  check if own mac fits mac from xml
-                #  IF true THEN pass ELSE throw Exception
-                encrypted_mac_key = xml.keycontainer.find(
-                    "mackey").text.strip()  # TODO Is it save to assume that this exists?
-                mac_key = aes_decrypt_b64(preshared_key, encrypted_mac_key)
-                mac_value = key.data.secret.valuemac.text.strip()
-
                 secret = aes_decrypt_b64(preshared_key, enc_data)
+
                 if token["type"].lower() in ["hotp", "totp"]:
                     token["otpkey"] = hexlify_and_unicode(secret)
                 elif token["type"].lower() in ["pw"]:
                     token["otpkey"] = to_unicode(secret)
                 else:
                     token["otpkey"] = to_unicode(secret)
+
+                encrypted_mac_key = xml.keycontainer.find(
+                    "mackey").text  # TODO Is it save to assume that this exists?
+                mac_key = aes_decrypt_b64(preshared_key, encrypted_mac_key)
+
+                if token["type"].lower() in ["hotp", "totp"]:
+                    secret = binascii.hexlify(secret)
+
+                hm = hmac.new(key=mac_key, msg=secret, digestmod=hashlib.sha1)
+                mac_value_calculated = b64encode_and_unicode(hm.digest())
+
+                mac_value_xml = key.data.find('valuemac').text.strip()
+
+                print('\nParse token {}\nPwd: {}'.format(serial, preshared_key))
+                print('Mac-Key: {}\nSecret: {}'.format(mac_key, secret))
+                print('XML Mac-Val: {}\nCalc Mac-Val: {}'.format(mac_value_xml, mac_value_calculated))
+                print('Are they equal? {}'.format(mac_value_xml == mac_value_calculated))
+
+                if mac_value_xml != mac_value_calculated:
+                    raise ImportException('XML could not be validated, mismatch of MAC.')
+
         except Exception as exx:
             log.error("Failed to import tokendata: {0!s}".format(exx))
             log.debug(traceback.format_exc())

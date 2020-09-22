@@ -615,7 +615,7 @@ class ImportOTPTestCase(MyTestCase):
         tlist = [t1, t2, t3, t4]
         # export the tokens
         psk, token_num, soup = export_pskc(tlist)
-        # Only 2 tokens exported, the spass token does not get exported!
+        # Only 3 tokens exported, the spass token does not get exported!
         self.assertEqual(token_num, 3)
         self.assertEqual(len(psk), 32)
         export = "{0!s}".format(soup)
