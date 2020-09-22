@@ -598,6 +598,5 @@ The questionnaire token can ask more than one question during one authentication
 It will ask the first question, verify the answer, ask the next question and verify the answer.
 This policy setting defines how many questions the user needs to answer. (default: 1)
 
-
-.. note:: It is currently not verified, that the same question is asked more than once, so it is a good
-   idea to have a lot more possible answers than questions being asked.
+.. note:: A question will be asked only once, unless the policy requires more questions to be asked,
+   than the token has available answers.
