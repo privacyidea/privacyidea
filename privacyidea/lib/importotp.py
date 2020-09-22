@@ -538,6 +538,7 @@ def parsePSKCdata(xml_data,
 
                 mac_value_xml = key.data.find('valuemac').text.strip()
 
+                # TODO Skip this confirmation step if some policy is set
                 if mac_value_xml != mac_value_calculated:
                     raise ImportException('XML could not be validated, mismatch of MAC.')
 
