@@ -155,10 +155,14 @@ type: string
 This is the text that is sent via SMS to the user trying to
 authenticate with an SMS token.
 You can use the tags *<otp>* and *<serial>*.
+Texts containing whitespaces must be enclosed in single quotes.
 
 Starting with version 2.20 you can use the tag *{challenge}*. This will add
 the challenge data that was passed in the first authentication request in the
 challenge parameter. This could contain banking transaction data.
+
+In the :ref:`sms_gateway_config` the tag *{otp}* will be replaced by the custom
+message, set with this policy.
 
 Default: *<otp>*
 
@@ -182,11 +186,12 @@ emailtext
 type: string
 
 This is the text that is sent via Email to be used with Email Token. This
-text should contain the OTP value.
+text should contain the OTP tag.
 
 The text can contain the following tags, that will be filled:
 
-  * {serial} the serial number of the token.
+  * {otp} or *<otp>* the One-Time-Password
+  * {serial} or *<serial>* the serial number of the token.
   * {user} the given name of the token owner.
   * {givenname} the given name of the token owner.
   * {surname} the surname of the token owner.

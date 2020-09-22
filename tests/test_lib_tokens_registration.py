@@ -51,8 +51,8 @@ class RegistrationTokenTestCase(MyTestCase):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         self.assertNotEqual(db_token, None)
 
-        # check if the token is deleted after inc_success
-        token.inc_count_auth_success()
+        # check if the token is deleted after post_success
+        token.post_success()
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         self.assertEqual(db_token, None)
 

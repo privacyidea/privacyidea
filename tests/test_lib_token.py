@@ -1527,6 +1527,22 @@ class TokenTestCase(MyTestCase):
                           {"serial": "invalid/chars",
                            "genkey": 1})
 
+    def test_57_registration_token_no_auth_counter(self):
+        # Test, that a registration token is deleted even if no_auth_counter is used.
+        from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
+        set_privacyidea_config("no_auth_counter", 1)
+        tok = init_token({"type": "registration"})
+        serial = tok.token.serial
+        detail = tok.get_init_detail()
+        reg_password = detail.get("registrationcode")
+        r, rdetail = check_token_list([tok], reg_password)
+        self.assertTrue(r)
+        self.assertEqual(rdetail["message"], "matching 1 tokens")
+        delete_privacyidea_config("no_auth_counter")
+        # Check that the token is deleted
+        toks = get_tokens(serial=serial)
+        self.assertEqual(len(toks), 0)
+
 
 class TokenOutOfBandTestCase(MyTestCase):
 

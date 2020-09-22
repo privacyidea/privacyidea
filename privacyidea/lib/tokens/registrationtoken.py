@@ -169,13 +169,11 @@ class RegistrationTokenClass(PasswordTokenClass):
 
     @log_with(log, log_entry=False)
     @check_token_locked
-    def inc_count_auth_success(self):
+    def post_success(self):
         """
-        Increase the counter, that counts successful authentications
-        In case of successful authentication the token does needs to be deleted.
+        Delete the registration token after successful authentication
         """
         self.delete_token()
-        return 1
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):

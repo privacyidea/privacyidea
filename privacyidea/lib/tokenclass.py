@@ -1055,6 +1055,13 @@ class TokenClass(object):
         return succcess_counter
 
     @check_token_locked
+    def post_success(self):
+        """
+        Run anything after a token was used for successful authentication
+        """
+        return
+
+    @check_token_locked
     def inc_count_auth(self):
         """
         Increase the counter, that counts authentications - successful and

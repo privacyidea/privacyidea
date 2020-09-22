@@ -118,7 +118,7 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
             var authentications = data.result.value.auditdata;
             angular.forEach(authentications, function(authlog) {
                 if (authlog.success) {
-                    $scope.authentications.succes += 1;
+                    $scope.authentications.success += 1;
                 } else {
                     $scope.authentications.fail += 1;
                 }
