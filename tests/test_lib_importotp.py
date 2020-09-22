@@ -12,8 +12,7 @@ from privacyidea.lib.importotp import (parseOATHcsv, parseYubicoCSV,
 from privacyidea.lib.token import remove_token
 from privacyidea.lib.token import init_token
 from privacyidea.lib.importotp import export_pskc
-from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
-import binascii
+from privacyidea.lib.utils import hexlify_and_unicode
 
 
 XML_PSKC_PASSWORD_PREFIX = """<?xml version="1.0" encoding="UTF-8"?>
