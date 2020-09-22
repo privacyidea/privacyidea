@@ -540,13 +540,14 @@ def parsePSKCdata(xml_data,
 
                 # TODO Skip this confirmation step if some policy is set
                 if mac_value_xml != mac_value_calculated:
-                    raise ImportException('XML could not be validated, mismatch of MAC.')
+                    raise ImportException('XML could not be validated, MAC-Value does not match encoded data.')
 
         except Exception as exx:
             log.error("Failed to import tokendata: {0!s}".format(exx))
             log.debug(traceback.format_exc())
             raise ImportException("Failed to import tokendata. Wrong "
                                   "encryption key? %s" % exx)
+
         if token["type"] in ["hotp", "totp"] and key.data.counter:
             token["counter"] = key.data.counter.text.strip()
         if token["type"] == "totp":
