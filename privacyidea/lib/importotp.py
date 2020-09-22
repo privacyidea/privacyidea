@@ -47,7 +47,6 @@ It is used for importing SafeNet (former Aladdin)
 XML files, that hold the OTP secrets for eToken PASS.
 '''
 import hmac, hashlib
-
 import defusedxml.ElementTree as etree
 import re
 import binascii
@@ -55,7 +54,6 @@ import base64
 import html
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-
 from privacyidea.lib.utils import (modhex_decode, modhex_encode,
                                    hexlify_and_unicode, to_unicode, to_utf8,
                                    b64encode_and_unicode)
@@ -534,24 +532,11 @@ def parsePSKCdata(xml_data,
                 encrypted_mac_key = xml.keycontainer.find("mackey").text
                 mac_key = aes_decrypt_b64(preshared_key, encrypted_mac_key)
 
-                if token["type"].lower() in ["hotp", "totp"]:
-                    secret = binascii.hexlify(secret)
-
-                # FIXME Decoding the MAC_KEY like this results in the same valus as in RFC 6030, but:
-                #   1. the mac-value doesnt fit
-                #   2. this is not compatible with export_pskc
-                # mac_key = b'1122334455667788990011223344556677889900' # The mac-key from RFC 6030
-                mac_key = binascii.hexlify(mac_key)
-
-                hm = hmac.new(key=mac_key, msg=secret, digestmod=hashlib.sha1)
+                enc_data_bin = base64.b64decode(enc_data)
+                hm = hmac.new(key=mac_key, msg=enc_data_bin, digestmod=hashlib.sha1)
                 mac_value_calculated = b64encode_and_unicode(hm.digest())
 
                 mac_value_xml = key.data.find('valuemac').text.strip()
-
-                print('\nParse token {}\nPwd: {}'.format(serial, binascii.hexlify(preshared_key)))
-                print('Mac-Key: {}\nSecret: {}'.format(mac_key, secret))
-                print('XML Mac-Val: {}\nCalc Mac-Val: {}'.format(mac_value_xml, mac_value_calculated))
-                print('Are they equal? {}'.format(mac_value_xml == mac_value_calculated))
 
                 if mac_value_xml != mac_value_calculated:
                     raise ImportException('XML could not be validated, mismatch of MAC.')
