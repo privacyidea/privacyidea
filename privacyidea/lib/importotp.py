@@ -544,6 +544,12 @@ def parsePSKCdata(xml_data,
                 mac_value_xml = key.data.find('valuemac').text.strip()
 
                 print('\nParse token {}\nPwd: {}'.format(serial, preshared_key))
+
+                # 3132333435363738393031323334353637383930
+                # 12345678901234567890123456789012
+                # 1122334455667788990011223344556677889900
+
+                print('\nParse token {}\nPwd: {}'.format(serial, binascii.hexlify(preshared_key)))
                 print('Mac-Key: {}\nSecret: {}'.format(mac_key, secret))
                 print('XML Mac-Val: {}\nCalc Mac-Val: {}'.format(mac_value_xml, mac_value_calculated))
                 print('Are they equal? {}'.format(mac_value_xml == mac_value_calculated))
