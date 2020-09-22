@@ -330,11 +330,13 @@
             <td>
                 <input type="text" ng-model="otp1"
                        class="form-control"
+                       autocomplete="new-password"
                        placeholder="{{ 'Enter first OTP value' | translate }}">
             </td>
             <td>
                 <input type="text" ng-model="otp2"
                        class="form-control"
+                       autocomplete="new-password"
                        placeholder="{{ 'Enter second OTP value' | translate }}">
             </td>
             <td>
@@ -351,12 +353,12 @@
         <tr ng-hide="token.locked || !checkRight('setpin')">
             <td>
                 <input type="password" ng-model="pin1"
-                       class="form-control" autocomplete="off"
+                       class="form-control" autocomplete="new-password"
                        placeholder="{{ 'Enter PIN for token'|translate }}">
             </td>
             <td>
                 <input type="password" ng-model="pin2"
-                       class="form-control" autocomplete="off"
+                       class="form-control" autocomplete="new-password"
                        placeholder="{{ 'Enter PIN again'|translate }}">
             </td>
             <td>
@@ -396,12 +398,13 @@
                        name="testPassword"
                        ng-show="showPassword"
                        class="form-control"
+                       autocomplete="new-password"
                        placeholder="{{ testTokenPlaceholder }}">
                 <input type="password" ng-model="testPassword"
                        ng-hide="showPassword"
                        name="testPassword"
                        class="form-control"
-                       autocomplete="off"
+                       autocomplete="new-password"
                        placeholder="{{ testTokenPlaceholder }}">
             </td>
             <td>
