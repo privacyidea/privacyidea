@@ -719,8 +719,8 @@ def export_pskc(tokenobj_list, psk=None):
                                  <xenc:CipherValue>{encrypted_otpkey}</xenc:CipherValue>
                              </xenc:CipherData>
                          </EncryptedValue>
+                         <ValueMAC>{value_mac}</ValueMAC>
                      </Secret>
-                     <ValueMAC>{value_mac}</ValueMAC>
                     <Time>
                         <PlainValue>0</PlainValue>
                     </Time>
