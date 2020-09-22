@@ -690,7 +690,8 @@ def export_pskc(tokenobj_list, psk=None):
                 encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
             else:
                 encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
-            hm = hmac.new(key=mackey, msg=otpkey, digestmod=hashlib.sha1)
+
+            hm = hmac.new(key=mackey, msg=base64.b64decode(encrypted_otpkey), digestmod=hashlib.sha1)
             mac_value = b64encode_and_unicode(hm.digest())
         except TypeError:
             # Some keys might be odd string length
