@@ -12,6 +12,7 @@
 <div ng-if="field.type=='password'" class="form-group">
     <label class="control-label" for="{{ field.label }}">{{ field.label }}</label>
     <input ng-show="{{ editUser }}"
+           autocomplete="new-password"
            type="{{ field.type }}" name="{{ field.name }}"
            id="{{ field.name }}" ng-model="User[field.name]"
            class="form-control" ng-required="{{ field.required }}"/>
@@ -23,7 +24,7 @@
 <div ng-if="field.type=='email'" class="form-group">
     <label for="{{ field.label }}">{{field.label}}</label>
     <input ng-show="{{ editUser }}"
-            type="{{ field.type }}" name="{{ field.name }}"
+           type="{{ field.type }}" name="{{ field.name }}"
            id="{{ field.name }}" ng-model="User[field.name]"
            class="form-control" ng-required="{{ field.required }}"/>
     <div ng-hide="{{ editUser }}" name="{{ field.name }}">

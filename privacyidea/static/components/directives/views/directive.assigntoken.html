@@ -26,10 +26,12 @@ This is the directive for assigning tokens to users.
         -->
     <label for="otppin" translate>PIN</label>
     <input name="otppin" ng-model="newTokenObject.pin"
+            autocomplete="new-password"
             type=password class="form-control"
             equals="{{pin2}}"
             placeholder="{{ 'Type a password'|translate }}">
     <input name="otppin2" ng-model="pin2"
+            autocomplete="new-password"
             type=password class="form-control"
             equals="{{newTokenObject.pin}}"
             placeholder="{{ 'Repeat password'|translate }}">
