@@ -48,7 +48,7 @@ DEFAULT_NUM_ANSWERS = 5
 
 
 class QUESTACTION(object):
-    NUM_QUESTIONS = "numbers"
+    NUM_QUESTIONS = "number"
 
 
 class QuestionnaireTokenClass(TokenClass):
@@ -207,7 +207,6 @@ class QuestionnaireTokenClass(TokenClass):
         :return: tuple of (bool, message, transactionid, attributes)
         :rtype: tuple
 
-        The return tuple builds up like this:
         The return tuple builds up like this:
         ``bool`` if submit was successful;
         ``message`` which is displayed in the JSON response;

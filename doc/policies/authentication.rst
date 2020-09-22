@@ -589,8 +589,8 @@ supported by the token.
     :ref:`policy_webauthn_enroll_user_verification_requirement`.
 
 
-question_numbers
-~~~~~~~~~~~~~~~~
+question_number
+~~~~~~~~~~~~~~~
 
 type: integer
 

@@ -4003,7 +4003,7 @@ class AChallengeResponse(MyApiTestCase):
                          user=User("cornelius", self.realm1))
 
         # We want two questions during authentication
-        set_policy(name="questpol", scope=SCOPE.AUTH, action="question_numbers=2")
+        set_policy(name="questpol", scope=SCOPE.AUTH, action="question_number=2")
 
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": "cornelius", "pass": "quest"}):
