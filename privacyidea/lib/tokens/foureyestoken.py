@@ -4,7 +4,7 @@
 #  contact:  http://www.privacyidea.org
 #
 #  2020-09-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Use Multi-Challenge to ask for serveral tokens one after
+#             Use Multi-Challenge to ask for several tokens one after
 #             the other.
 #  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokenkind
@@ -215,7 +215,7 @@ class FourEyesTokenClass(TokenClass):
     @staticmethod
     def _dict_diff(required, used):
         """
-        Substract the "used" dict from the "required" dict
+        Subtract the "used" dict from the "required" dict
         :return: diff dict
         """
         result = {}
