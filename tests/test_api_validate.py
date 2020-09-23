@@ -4031,6 +4031,64 @@ class AChallengeResponse(MyApiTestCase):
 
         remove_token(serial)
 
+    def test_15_questionnaire_multichallenge(self):
+        questionnaire = {"Question1": "Answer1",
+                         "Question2": "Answer2",
+                         "Question3": "Answer3",
+                         "Q4": "A4",
+                         "Q5": "A5"}
+        serial = "quest001"
+        found_questions = []
+        tok = init_token({"type": "question", "questions": questionnaire, "pin": "quest", "serial": serial},
+                         user=User("cornelius", self.realm1))
+
+        # We want two questions during authentication
+        set_policy(name="questpol", scope=SCOPE.AUTH, action="question_number=6")
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": "quest"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            self.assertFalse(result.get("value"))
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            question = detail.get("message")
+            found_questions.append(question)
+
+        # Run 5 responses that require more
+        for i in range(0, 5):
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "cornelius", "pass": questionnaire.get(question),
+                                                     "transaction_id": transaction_id}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+                result = res.json['result']
+                self.assertFalse(result.get("value"))
+                detail = res.json.get("detail")
+                transaction_id = detail.get("transaction_id")
+                question = detail.get("message")
+                found_questions.append(question)
+
+        self.assertEqual(len(set(found_questions)), 5)
+
+        # Now we run the last resonse. It can be any of the 5 originial questions again.
+
+        # Sixth and last response will be successful
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": questionnaire.get(question),
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json['result']
+            # Successful authentication!
+            self.assertTrue(result.get("value"))
+
+        # But we still have 5 distinct questions
+        self.assertEqual(len(set(found_questions)), 5)
+        remove_token(serial)
+        delete_policy("questpol")
+
 
 class TriggeredPoliciesTestCase(MyApiTestCase):
 

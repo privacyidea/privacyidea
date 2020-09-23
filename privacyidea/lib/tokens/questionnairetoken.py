@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2020-09-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add possibility of multiple questions and answers
 #  http://www.privacyidea.org
 #  2015-12-16 Initial writeup.
 #             Cornelius Kölbel <cornelius@privacyidea.org>
@@ -34,14 +36,19 @@ from privacyidea.models import Challenge
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
 import random
 import json
+import datetime
 
 log = logging.getLogger(__name__)
 optional = True
 required = False
 DEFAULT_NUM_ANSWERS = 5
+
+
+class QUESTACTION(object):
+    NUM_QUESTIONS = "number"
 
 
 class QuestionnaireTokenClass(TokenClass):
@@ -95,6 +102,14 @@ class QuestionnaireTokenClass(TokenClass):
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {
+                   SCOPE.AUTH: {
+                       QUESTACTION.NUM_QUESTIONS: {
+                           'type': 'int',
+                           'desc': _("The user has to answer this number of questions during authentication."),
+                           'group': GROUP.TOKEN,
+                           'value': list(range(1, 31))
+                       }
+                   },
                    SCOPE.ENROLL: {
                        ACTION.MAXTOKENUSER: {
                            'type': 'int',
@@ -198,18 +213,25 @@ class QuestionnaireTokenClass(TokenClass):
         additional ``attributes``, which are displayed in the JSON response.
         """
         options = options or {}
+        questions = {}
+        attributes = {}
 
-        # Get a random question
-        questions = []
-        tinfo = self.get_tokeninfo()
-        for question, answer in tinfo.items():
-            if question.endswith(".type") and answer == "password":
-                # This is "Question1?.type" of type "password"
-                # So this is actually a question and we add the question to
-                # the list
-                questions.append(question[:-5])
-        message = random.choice(questions)
-        attributes = None
+        # Get an integer list of the already used questions
+        used_questions = [int(x) for x in options.get("data", "").split(",") if options.get("data")]
+        # Fill the questions of the token
+        for tinfo in self.token.info_list:
+            if tinfo.Type == "password":
+                # Append a tuple of the DB Id and the actual question
+                questions[tinfo.id] = tinfo.Key
+        # if all questions are used up, make a new round
+        if len(questions) == len(used_questions):
+            log.info(u"User has only {0!s} questions in his token. Reusing questions now.".format(len(questions)))
+            used_questions = []
+        # Reduce the allowed questions
+        remaining_questions = {k: v for (k, v) in questions.items() if k not in used_questions}
+        message_id = random.choice(list(remaining_questions))
+        message = remaining_questions[message_id]
+        used_questions = (options.get("data", "") + ",{0!s}".format(message_id)).strip(",")
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
         tokentype = self.get_tokentype().lower()
@@ -220,10 +242,14 @@ class QuestionnaireTokenClass(TokenClass):
         # Create the challenge in the database
         db_challenge = Challenge(self.token.serial,
                                  transaction_id=transactionid,
+                                 data=used_questions,
+                                 session=options.get("session"),
                                  challenge=message,
                                  validitytime=validity)
         db_challenge.save()
-        self.challenge_janitor()
+        expiry_date = datetime.datetime.now() + \
+                      datetime.timedelta(seconds=validity)
+        attributes['valid_until'] = "{0!s}".format(expiry_date)
         return True, message, db_challenge.transaction_id, attributes
 
     def check_answer(self, given_answer, challenge_object):
@@ -267,7 +293,7 @@ class QuestionnaireTokenClass(TokenClass):
         :rtype: int
         """
         options = options or {}
-        otp_counter = -1
+        r_success = -1
 
         # fetch the transaction_id
         transaction_id = options.get('transaction_id')
@@ -282,18 +308,43 @@ class QuestionnaireTokenClass(TokenClass):
             for challengeobject in challengeobject_list:
                 if challengeobject.is_valid():
                     # challenge is still valid
-                    otp_counter = self.check_answer(passw, challengeobject)
-                    if otp_counter >= 0:
-                        # We found the matching challenge, so lets return the
-                        #  successful result and delete the challenge object.
-                        challengeobject.delete()
+                    if self.check_answer(passw, challengeobject) > 0:
+                        r_success = 1
+                        # Set valid OTP to true. We must not delete the challenge now,
+                        # Since we need it for further mutlichallenges
+                        challengeobject.set_otp_status(True)
+                        log.debug("The presented answer was correct.")
                         break
                     else:
                         # increase the received_count
                         challengeobject.set_otp_status()
 
         self.challenge_janitor()
-        return otp_counter
+        return r_success
+
+    @log_with(log)
+    def has_further_challenge(self, options=None):
+        """
+        Check if there are still more questions to be asked.
+
+        :param options: Options dict
+        :return: True, if further challenge is required.
+        """
+        transaction_id = options.get('transaction_id')
+        challengeobject_list = get_challenges(serial=self.token.serial,
+                                              transaction_id=transaction_id)
+        question_number = int(get_action_values_from_options(SCOPE.AUTH,
+                                                             "{0!s}_{1!s}".format(self.get_class_type(),
+                                                                                  QUESTACTION.NUM_QUESTIONS),
+                                                             options) or 1)
+        if len(challengeobject_list) == 1:
+            session = int(challengeobject_list[0].session or "0") + 1
+            options["session"] = u"{0!s}".format(session)
+            # write the used questions to the data field
+            options["data"] = challengeobject_list[0].data or ""
+            if session < question_number:
+                return True
+        return False
 
     @staticmethod
     def get_setting_type(key):
