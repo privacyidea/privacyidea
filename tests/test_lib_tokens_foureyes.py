@@ -65,10 +65,11 @@ class FourEyesTokenTestCase(MyTestCase):
         r = check_serial_pass("eye1", "pin1password1 pin2password2")
         self.assertEqual(r[0], True)
 
+        # This triggers the challenge for the next token
         r = check_serial_pass("eye1", "pin1password1")
         self.assertEqual(r[0], False)
-        self.assertEqual(r[1].get("foureyes"), "Only found 1 tokens in realm "
-                                               "realm1")
+        self.assertTrue("transaction_id" in r[1])
+        self.assertEqual(r[1].get("message"), 'Please authenticate with another token from either realm: realm1.')
 
         # check false separator
         r = check_serial_pass("eye1", "pin1password1:pin2password2")

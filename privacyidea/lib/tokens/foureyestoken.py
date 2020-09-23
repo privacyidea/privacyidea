@@ -504,6 +504,6 @@ class FourEyesTokenClass(TokenClass):
             used_tokens = {}
             remaining_realms = self._get_remaining_realms({})
             r_success = self._authenticate_remaining_realms(passw, remaining_realms, used_tokens, options)
-            return r_success
+            return r_success >= 0
 
         return False
