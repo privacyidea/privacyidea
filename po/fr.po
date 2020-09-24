@@ -1,9 +1,10 @@
+# Nathan <bonnemainsnathan@gmail.com>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2023-07-06 06:53+0000\n"
-"Last-Translator: Thierry Gaulupeau <thierry.gaulupeau@chu-nimes.fr>\n"
+"PO-Revision-Date: 2024-03-27 09:25+0000\n"
+"Last-Translator: Nathan <bonnemainsnathan@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
 "Language: fr\n"
@@ -11,7 +12,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.0-dev\n"
+"X-Generator: Weblate 5.5-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -1140,8 +1141,8 @@ msgstr "Êtes-vous sûr de vouloir supprimer le jeton {{ tokenSerial }} ?"
 #: privacyidea/static/components/user/views/dialog.ask_user_delete.html:15
 msgid "Do you really want to delete the user in the user store?"
 msgstr ""
-"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des "
-"utilisateurs ?"
+"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des utilisateurs "
+"?"
 
 #: privacyidea/static/components/config/views/config.events.details.html:17
 #: privacyidea/static/components/config/views/config.events.list.html:81
@@ -3920,8 +3921,8 @@ msgstr ""
 #: privacyidea/static/app.js:87
 msgid "The resource name must consist of letters, numbers and '_', '-', '.'"
 msgstr ""
-"Le nom de la ressource ne doit comporter que des lettres, des chiffres et "
-"« _ », « - », « . »"
+"Le nom de la ressource ne doit comporter que des lettres, des chiffres et « "
+"_ », « - », « . »"
 
 #: privacyidea/static/app.js:93
 msgid ""
