@@ -25,6 +25,7 @@ from flask import current_app
 from six import text_type
 from PyKCS11 import PyKCS11Error
 import string
+import passlib.hash
 
 class SecurityModuleTestCase(MyTestCase):
     """
@@ -319,13 +320,19 @@ class RandomTestCase(MyTestCase):
 
     def test_06_hash_pepper(self):
         h = hash_with_pepper("superPassword")
-        self.assertTrue("$pbkdf2"in h, h)
+        self.assertTrue("$argon2" in h, h)
 
         r = verify_with_pepper(h, "superPassword")
         self.assertEqual(r, True)
 
         r = verify_with_pepper(h, "super Password")
         self.assertEqual(r, False)
+
+    def test_06_test_old_passwords(self):
+        phash = passlib.hash.pbkdf2_sha512.hash(current_app.config.get("PI_PEPPER", "") + "test")
+        self.assertTrue(phash.startswith("$pbkdf2"))
+        r = verify_with_pepper(phash, "test")
+        self.assertTrue(r)
 
     def test_07_generate_password(self):
         # test given default characters

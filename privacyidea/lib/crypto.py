@@ -74,12 +74,14 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
 import passlib.hash
-hash_admin_pw = passlib.hash.pbkdf2_sha512.hash
+from passlib.hash import argon2
+
 
 if not PY2:
     long = int
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
+ROUNDS = 9
 
 log = logging.getLogger(__name__)
 
@@ -175,7 +177,7 @@ def hash_with_pepper(password):
     :rtype: str
     """
     key = get_app_config_value("PI_PEPPER", "missing")
-    pw_dig = hash_admin_pw(key + password)
+    pw_dig = argon2.using(rounds=ROUNDS).hash(key + password)
     return pw_dig
 
 
@@ -193,7 +195,13 @@ def verify_with_pepper(passwordhash, password):
     # get the password pepper
     password = password or ""
     key = get_app_config_value("PI_PEPPER", "missing")
-    success = passlib.hash.pbkdf2_sha512.verify(key + password, passwordhash)
+
+    success = False
+    if passwordhash.startswith("$argon2"):
+        success = argon2.verify(key + password, passwordhash)
+    elif passwordhash.startswith("$pbkdf2"):
+        success = passlib.hash.pbkdf2_sha512.verify(key + password, passwordhash)
+
     return success
 
 
