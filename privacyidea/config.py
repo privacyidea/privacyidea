@@ -1,5 +1,7 @@
 import os
 import logging
+import random
+import string
 basedir = os.path.abspath(os.path.dirname(__file__))
 basedir = "/".join(basedir.split("/")[:-1]) + "/"
 
@@ -24,6 +26,14 @@ HUb6rdpz/AsBSMV3+kZiDqv/NA5dgR8dXAK2or8JSK/ghw8c3qgt+yLW+1g9FDao
 WQIDAQAB
 -----END PUBLIC KEY-----
 """
+
+
+def random_password(size):
+    passwd = [random.choice(string.ascii_lowercase +
+                            string.ascii_uppercase + string.digits) for _x in range(size)]
+    # return shuffled password
+    random.shuffle(passwd)
+    return "".join(passwd)
 
 
 class Config(object):
@@ -106,7 +116,7 @@ class ProductionConfig(Config):
         'sqlite:///' + os.path.join(basedir, 'data.sqlite')
     #SQLALCHEMY_DATABASE_URI = "mysql://pi2:pi2@localhost/pi2"
     # This is used to encrypt the auth_token
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 't0p s3cr3t'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or random_password(24)
     # This is used to encrypt the admin passwords
     PI_PEPPER = "Never know..."
     # This is used to encrypt the token data and token passwords
