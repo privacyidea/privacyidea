@@ -9,7 +9,11 @@ PI.cfg
 
 {% for k, v in context.appconfig.items() %}
 {% if k.startswith("PI_"): %}
+{% if k == "PI_PEPPER": %}
+{{k}}: **redacted**
+{% else %}
 {{k}}: **{{v}}**
+{% endif %}
 {% endif %}
 {% if k == "SUPERUSER_REALM" %}
 SUPERUSER_REALM: **{{v}}**
