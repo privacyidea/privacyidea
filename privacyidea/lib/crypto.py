@@ -164,6 +164,27 @@ def hash(val, seed, algo=None):
     return hexlify_and_unicode(m.digest())
 
 
+@log_with(log, log_entry=False, log_exit=False)
+def hash2(password):
+    """
+    Hash values with argon2
+    :param val:
+    :return:
+    """
+    pw_dig = argon2.using(rounds=ROUNDS).hash(password)
+    return pw_dig
+
+
+@log_with(log, log_entry=False, log_exit=False)
+def verify_hash2(password, hvalue):
+    """
+    Verify the hashed value
+    :param val:
+    :return:
+    """
+    return argon2.verify(password, hvalue)
+
+
 def hash_with_pepper(password):
     """
     Hash function to hash with salt and pepper. The pepper is read from
@@ -177,8 +198,7 @@ def hash_with_pepper(password):
     :rtype: str
     """
     key = get_app_config_value("PI_PEPPER", "missing")
-    pw_dig = argon2.using(rounds=ROUNDS).hash(key + password)
-    return pw_dig
+    return hash2(key + password)
 
 
 def verify_with_pepper(passwordhash, password):

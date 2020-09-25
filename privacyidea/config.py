@@ -29,7 +29,7 @@ WQIDAQAB
 
 
 def random_password(size):
-    passwd = [random.choice(string.ascii_lowercase +
+    passwd = [random.choice(string.ascii_lowercase + \
                             string.ascii_uppercase + string.digits) for _x in range(size)]
     # return shuffled password
     random.shuffle(passwd)
