@@ -186,7 +186,7 @@ class LocalCATestCase(MyTestCase):
             try:
                 os.remove("{0!s}/{1!s}".format(WORKINGDIR, f))
             except OSError:
-                print("File {1!s} could not be deleted.".format(f))
+                print("File {0!s} could not be deleted.".format(f))
 
         # restore backup of index.txt and serial
         shutil.copyfile("{0!s}/serial.orig".format(WORKINGDIR),
