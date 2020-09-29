@@ -1,3 +1,9 @@
+Version 3.4.1, 2020-10-xx
+
+  Fixes:
+   * Move from PBKDF2 to Argon2 for password hashes. Might want to
+     reset local admin passwords to use new hashing algo (#2412)
+
 Version 3.4, 2020-09-08
 
   Features:

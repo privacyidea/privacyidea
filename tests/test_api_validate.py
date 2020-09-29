@@ -24,6 +24,7 @@ from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.radiusserver import add_radius
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
+from passlib.hash import argon2
 
 from testfixtures import Replace, test_datetime
 import datetime
@@ -2693,8 +2694,13 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(result.get("value"))
 
         # Check that there is an entry with this OTP value in the auth_cache
-        r = AuthCache.query.filter(AuthCache.authentication == _hash_password(OTPs[1])).first()
-        self.assertTrue(bool(r))
+        cached_auths = AuthCache.query.filter(AuthCache.username == "cornelius", AuthCache.realm == self.realm1).all()
+        found = False
+        for cached_auth in cached_auths:
+            if argon2.verify(OTPs[1], cached_auth.authentication):
+                found = True
+                break
+        self.assertTrue(found)
 
         # Authenticate again with the same OTP
         with self.app.test_request_context('/validate/check',
