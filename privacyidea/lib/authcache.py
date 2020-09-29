@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-#
+#  2020-09-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Use Argon2
 #  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             initial writeup
 #
@@ -21,15 +22,16 @@
 #
 from ..models import AuthCache, db
 from sqlalchemy import and_
-from privacyidea.lib.crypto import hash
+from passlib.hash import argon2
 import datetime
 import logging
 
+ROUNDS = 9
 log = logging.getLogger(__name__)
 
 
 def _hash_password(password):
-    return hash(password, seed="")
+    return argon2.using(rounds=ROUNDS).hash(password)
 
 
 def add_to_cache(username, realm, resolver, password):
@@ -51,11 +53,23 @@ def update_cache_last_auth(cache_id):
 
 
 def delete_from_cache(username, realm, resolver, password):
-    r = db.session.query(AuthCache).filter(AuthCache.username == username,
-                                       AuthCache.realm == realm,
-                                       AuthCache.resolver == resolver,
-                                       AuthCache.authentication ==
-                                       _hash_password(password)).delete()
+    cached_auths = db.session.query(AuthCache).filter(AuthCache.username == username,
+                                                      AuthCache.realm == realm,
+                                                      AuthCache.resolver == resolver).all()
+    r = 0
+    for cached_auth in cached_auths:
+        delete_entry = False
+        # if the password does match, we deleted it.
+        try:
+            if argon2.verify(password, cached_auth.authentication):
+                delete_entry = True
+        except ValueError:
+            log.debug("Old authcache entry for user {0!s}@{1!s}.".format(username, realm))
+            # Also delete old entries
+            delete_entry = True
+        if delete_entry:
+            r += 1
+            cached_auth.delete()
     db.session.commit()
     return r
 
@@ -75,9 +89,7 @@ def cleanup(minutes):
     return r
 
 
-def verify_in_cache(username, realm, resolver, password,
-                    first_auth = None,
-                    last_auth = None):
+def verify_in_cache(username, realm, resolver, password, first_auth=None, last_auth=None):
     """
     Verify if the given credentials are cached and if the time is correct.
     
@@ -92,11 +104,10 @@ def verify_in_cache(username, realm, resolver, password,
     :return: 
     """
     conditions = []
+    result = False
     conditions.append(AuthCache.username == username)
     conditions.append(AuthCache.realm == realm)
     conditions.append(AuthCache.resolver == resolver)
-    auth_hash = _hash_password(password)
-    conditions.append(AuthCache.authentication == auth_hash)
 
     if first_auth:
         conditions.append(AuthCache.first_auth > first_auth)
@@ -104,16 +115,21 @@ def verify_in_cache(username, realm, resolver, password,
         conditions.append(AuthCache.last_auth > last_auth)
 
     filter_condition = and_(*conditions)
-    r = AuthCache.query.filter(filter_condition).first()
-    result = bool(r)
+    cached_auths = AuthCache.query.filter(filter_condition).all()
 
-    if result:
-        # Update the last_auth
-        update_cache_last_auth(r.id)
+    for cached_auth in cached_auths:
+        try:
+            result = argon2.verify(password, cached_auth.authentication)
+        except ValueError:
+            log.debug("Old authcache entry for user {0!s}@{1!s}.".format(username, realm))
+            result = False
+        if result:
+            # Update the last_auth
+            update_cache_last_auth(cached_auth.id)
+            break
 
-    else:
+    if not result:
         # Delete older entries
         delete_from_cache(username, realm, resolver, password)
 
     return result
-

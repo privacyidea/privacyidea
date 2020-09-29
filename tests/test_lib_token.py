@@ -1543,6 +1543,19 @@ class TokenTestCase(MyTestCase):
         toks = get_tokens(serial=serial)
         self.assertEqual(len(toks), 0)
 
+    def test_58_check_old_pin(self):
+        serial = "pins"
+        tokenobject = init_token({"serial": serial,
+                                  "otpkey": "1234567890123456"})
+        # now set the old pin
+        from privacyidea.lib.crypto import hash
+        tokenobject.token.pin_hash = hash("1234", b"1234567890")
+        tokenobject.token.pin_seed = binascii.hexlify(b"1234567890")
+        tokenobject.token.save()
+        r = tokenobject.token.check_pin("1234")
+        self.assertTrue(r)
+        remove_token(serial)
+
 
 class TokenOutOfBandTestCase(MyTestCase):
 

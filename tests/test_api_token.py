@@ -1105,8 +1105,7 @@ class APITokenTestCase(MyApiTestCase):
         # check the user
         self.assertEqual(token.token.first_owner.user_id, "1000")
         # check if the TO001 has a pin
-        self.assertTrue(len(token.token.pin_hash) == 64,
-                        len(token.token.pin_hash))
+        self.assertTrue(token.token.pin_hash.startswith("$argon2"))
 
     def test_13_lost_token(self):
         self._create_temp_token("LOST001")

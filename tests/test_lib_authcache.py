@@ -9,6 +9,7 @@ from privacyidea.lib.authcache import (add_to_cache, delete_from_cache,
                                        update_cache_last_auth, verify_in_cache,
                                        _hash_password,
                                        cleanup)
+from passlib.hash import argon2
 from privacyidea.models import AuthCache
 import datetime
 
@@ -31,7 +32,7 @@ class AuthCacheTestCase(MyTestCase):
 
         auth = AuthCache.query.filter(AuthCache.id == r).first()
         self.assertEqual(auth.username, self.username)
-        self.assertEqual(auth.authentication, _hash_password(self.password))
+        self.assertTrue(argon2.verify(self.password, auth.authentication))
 
         self.assertTrue(auth.first_auth > teststart)
         self.assertEqual(auth.last_auth, auth.first_auth)
@@ -113,3 +114,16 @@ class AuthCacheTestCase(MyTestCase):
         r = cleanup(10)
         self.assertEqual(1, r)
 
+    def test_05_old_hashes(self):
+        from privacyidea.lib.crypto import hash
+        # Test that old hashes do not break the code
+        r = cleanup(100000000)
+        # Add an entry with an old password hash
+        AuthCache("grandpa", self.realm, self.resolver, hash("old password", seed=""),
+                  first_auth=datetime.datetime.utcnow() - datetime.timedelta(
+                      minutes=10),
+                  last_auth=datetime.datetime.utcnow() - datetime.timedelta(
+                      minutes=2)).save()
+
+        r = verify_in_cache("grandpa", self.realm, self.resolver, "old password")
+        self.assertFalse(r)

@@ -6,7 +6,7 @@ import stat
 import sys
 
 #VERSION = "2.1dev4"
-VERSION = "3.4"
+VERSION = "3.4.1dev2"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -49,6 +49,7 @@ install_requires = ["beautifulsoup4[lxml]>=4.3.2",
                     "netaddr>=0.7.12",
                     "oauth2client>=2.0.1",
                     "passlib[bcrypt]>=1.7.0",
+                    "argon2_cffi>=20.1.0",
                     "Pillow>=6.2.1",
                     "pydash>=4.7.4",
                     "PyJWT>=1.3.0",

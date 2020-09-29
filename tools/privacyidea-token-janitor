@@ -315,18 +315,18 @@ def export_token_data(token_list):
                       u"{0!s}".format(token_obj.token.tokentype)]
         try:
             user = token_obj.user
+            if user:
+                token_data.append(u"{0!s}".format(user.info.get("username", "")))
+                token_data.append(u"{0!s}".format(user.info.get("givenname", "")))
+                token_data.append(u"{0!s}".format(user.info.get("surname", "")))
+                token_data.append(u"{0!s}".format(user.uid))
+                token_data.append(u"{0!s}".format(user.resolver))
+                token_data.append(u"{0!s}".format(user.realm))
         except Exception:
             sys.stderr.write("Failed to determine user for token {0!s}.\n".format(
                 token_obj.token.serial
             ))
             token_data.append("**failed to resolve user**")
-        if user:
-            token_data.append(u"{0!s}".format(user.info.get("username", "")))
-            token_data.append(u"{0!s}".format(user.info.get("givenname", "")))
-            token_data.append(u"{0!s}".format(user.info.get("surname", "")))
-            token_data.append(u"{0!s}".format(user.uid))
-            token_data.append(u"{0!s}".format(user.resolver))
-            token_data.append(u"{0!s}".format(user.realm))
         tokens.append(token_data)
     return tokens
 
