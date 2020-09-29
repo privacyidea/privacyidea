@@ -1,8 +1,19 @@
 Version 3.4.1, 2020-10-xx
 
   Fixes:
+   * Fix the deletion of the registration token (#2356)
+   * Add "messages" to JSON response in case of multi challenge
+     pin change (2346)
    * Move from PBKDF2 to Argon2 for password hashes. Might want to
      reset local admin passwords to use new hashing algo (#2412)
+   * Hide dashboard for normal users (#2384)
+   * Fix problem with missing templates in CA conncetor (#2374)
+   * Fix missing successful authentications in dashboard (#2394)
+   * Improve error handling in token janitor in case of
+     problematic user (#2405)
+   * remove PI_PEPPER and pyCrypto (#2409)
+   * only check for existing JWT algorithms (#2407)
+   * Use Argon2 for PINs and local admins (#2413)
 
 Version 3.4, 2020-09-08
 
