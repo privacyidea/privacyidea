@@ -1197,13 +1197,15 @@ def mock_fail(req, action):
     raise Exception("This is an Exception in an external check function")
 
 
-def is_remote_user_allowed(req):
+def is_remote_user_allowed(req, write_to_audit_log=True):
     """
     Checks if the REMOTE_USER server variable is allowed to be used.
 
     .. note:: This is not used as a decorator!
 
     :param req: The flask request, containing the remote user and the client IP
+    :param write_to_audit_log: whether the policy name should be added to the audit log entry
+    :type write_to_audit_log: bool
     :return: a bool value
     """
     res = False
@@ -1213,7 +1215,8 @@ def is_remote_user_allowed(req):
         ruser_active = Match.generic(g, scope=SCOPE.WEBUI,
                                      action=ACTION.REMOTE_USER,
                                      user=loginname,
-                                     realm=realm).action_values(unique=False)
+                                     realm=realm).action_values(unique=False,
+                                                                write_to_audit_log=write_to_audit_log)
         # there should be only one action value here
         if ruser_active:
             if list(ruser_active)[0] == REMOTE_USER.ACTIVE:

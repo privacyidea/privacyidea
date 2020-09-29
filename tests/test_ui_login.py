@@ -6,7 +6,7 @@ This file tests the web UI Login
 implementation is contained webui/login.py
 """
 from .base import MyTestCase
-from privacyidea.lib.policy import set_policy, SCOPE, ACTION
+from privacyidea.lib.policy import set_policy, SCOPE, ACTION, PolicyClass, delete_all_policies
 from privacyidea.lib.utils import to_unicode
 import re
 
@@ -64,3 +64,23 @@ class LoginUITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(b"Go for it!" in res.data)
 
+    def test_06_remote_user(self):
+        delete_all_policies()
+        # test login when no policies are set
+        self.assertEqual(len(PolicyClass().policies), 0, PolicyClass().policies)
+        with self.app.test_request_context('/',
+                                           method='GET',
+                                           environ_base={'REMOTE_USER': 'foo'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(b"<input type=hidden id=REMOTE_USER value=\"\">" in res.data)
+
+        # test login with remote_user policy set
+        set_policy("remote_user", scope=SCOPE.WEBUI,
+                   action="{0!s}=allowed".format(ACTION.REMOTE_USER))
+        with self.app.test_request_context('/',
+                                           method='GET',
+                                           environ_base={'REMOTE_USER': 'foo'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(b"<input type=hidden id=REMOTE_USER value=\"foo\">" in res.data)
