@@ -74,11 +74,23 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
+import passlib.hash
+from passlib.hash import argon2
+try:
+    # For Python 3.6 and above
+    from secrets import compare_digest
+except ImportError:
+    # For Python 2.7 and above
+    from hmac import compare_digest
+
+
+def safe_compare(a, b):
+    return compare_digest(to_bytes(a), to_bytes(b))
+
 
 if not PY2:
     long = int
 
-# Number of hash rounds for the argon2 algorithm
 ROUNDS = 9
 
 # The CryptContext makes it easier to work with multiple password hash algorithms:
@@ -110,7 +122,7 @@ class SecretObj(object):
     def compare(self, key):
         bhOtpKey = binascii.unhexlify(key)
         enc_otp_key = to_bytes(encrypt(bhOtpKey, self.iv))
-        return enc_otp_key == self.val
+        return safe_compare(enc_otp_key, self.val)
 
     def hmac_digest(self, data_input, hash_algo):
         self._setupKey_()
@@ -676,7 +688,7 @@ def _slow_rsa_verify_raw(key, sig, msg):
     else:  # pragma: no cover
         raise TypeError('No public key')
 
-    # compute m**d (mod n)
+    # compute m**d (mod n) and compare the two integers
     return msg == pow(sig, pn.e, pn.n)
 
 

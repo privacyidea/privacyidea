@@ -59,6 +59,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import Match
+from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance,
                                                      get_smsgateway)
@@ -378,7 +379,7 @@ class SmsTokenClass(HotpTokenClass):
         options = options or {}
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
         if ret < 0 and is_true(get_from_config("sms.concurrent_challenges")):
-            if options.get("data") == anOtpVal:
+            if safe_compare(options.get("data"), anOtpVal):
                 # We authenticate from the saved challenge
                 ret = 1
         if ret >= 0 and self._get_auto_sms(options):
