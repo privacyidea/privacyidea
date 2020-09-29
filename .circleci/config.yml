@@ -1,43 +1,22 @@
-version: 2
 jobs:
   build:
-    docker:
-      # this is a debian based image but this shouldn't be a problem.
-      - image: circleci/python:2.7-stretch
-
-    working_directory: ~/repo
-
+    executor: python/default
     steps:
       - checkout
       - run: git submodule sync
       - run: git submodule update --init
-        # install some required packages for building ubuntu packages
-      - run: sudo -u root apt-get install build-essential python-setuptools python-all devscripts lsb-release
-
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "requirements.txt" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
-
-      # Setup the Virtualenv for building/installing privacyidea
-      # We won't use requirements.txt here since we build using setup.py
+      - python/install-packages:
+          pip-dependency-file: tests/requirements.txt
+          pkg-manager: pip
       - run:
-          name: install dependencies
           command: |
-            virtualenv venv
-            . venv/bin/activate
-            pip install sphinx mock sphinxcontrib-httpdomain
+            python -b -m pytest --cov=privacyidea tests/
+          name: Test
+orbs:
+  python: circleci/python@1.1.0
 
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
-
-      # run builds (currently no tests in CircleCI)
-      - run:
-          name: run setup.py build
-          command: |
-            . venv/bin/activate
-            python setup.py build
+version: 2.1
+workflows:
+  main:
+    jobs:
+      - build

@@ -572,7 +572,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
                 self.assertIn('token', result.get("value"), result)
                 # role should be 'admin'
                 self.assertEqual('admin', result['value']['role'], result)
-            mock_log.assert_called_with("Local admin 'testadmin' successfully logged in.")
+            mock_log.assert_any_call("Local admin 'testadmin' successfully logged in.")
 
         # If a user logs in, with the same name as the admin, this event is logged in warning
         with mock.patch("logging.Logger.warning") as mock_log:
