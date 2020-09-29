@@ -592,3 +592,16 @@ supported by the token.
 
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_enroll_user_verification_requirement`.
+
+
+question_number
+~~~~~~~~~~~~~~~
+
+type: integer
+
+The questionnaire token can ask more than one question during one authentication process.
+It will ask the first question, verify the answer, ask the next question and verify the answer.
+This policy setting defines how many questions the user needs to answer. (default: 1)
+
+.. note:: A question will be asked only once, unless the policy requires more questions to be asked,
+   than the token has available answers.
