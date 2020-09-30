@@ -440,7 +440,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :param user: The user, whose token should be displayed
     :type user: User object
     :param serial: a pattern for matching the serial
-    :param active:
+    :param active: Returns active (True) or inactive (False) tokens
     :param resolver: A resolver name, which may contain "*" for filtering.
     :type resolver: basestring
     :param userid: A userid, which may contain "*" for filtering.

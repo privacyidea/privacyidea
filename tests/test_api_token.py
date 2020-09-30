@@ -261,6 +261,51 @@ class APITokenTestCase(MyApiTestCase):
             tokenlist = result.get("value").get("tokens")
             self.assertTrue(len(tokenlist) == 1, len(tokenlist))
 
+        # prepare active tests
+        init_token({"serial": "totp1", "genkey": 1}, tokenkind="totp")
+        enable_token("totp1", enable=False)
+        # get active tokens
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           query_string=urlencode({
+                                               "active": True}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            tokenlist = result.get("value").get("tokens")
+            # NO token assigned, yet
+            self.assertTrue(len(tokenlist) == 1, "{0!s}".format(tokenlist))
+
+        # get inactive tokens
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           query_string=urlencode({
+                                               "active": False}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            tokenlist = result.get("value").get("tokens")
+            self.assertTrue(len(tokenlist) == 1, len(tokenlist))
+            token0 = tokenlist[0]
+            self.assertTrue(token0.get("serial") == "totp1", token0)
+
+        # get all tokens
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            tokenlist = result.get("value").get("tokens")
+            self.assertTrue(len(tokenlist) == 2, len(tokenlist))
+
+        remove_token(serial="totp1")
+
         # get tokens with a specific tokeninfo
         with self.app.test_request_context('/token/',
                                            method='GET',
