@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2020-09-04 06:51+0200\n"
-"PO-Revision-Date: 2020-09-29 09:41+0000\n"
-"Last-Translator: Nathan <bonnemainsnathan@gmail.com>\n"
+"PO-Revision-Date: 2020-10-02 14:41+0000\n"
+"Last-Translator: Yannick Boursin <elipsoid@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/fr/>\n"
 "Language: fr\n"
@@ -100,11 +100,11 @@ msgstr "Vous devez fournir soit un utilisateur soit un numéro de série"
 
 #: lib/policy.py:1354
 msgid "Define in which resolver the user should be registered."
-msgstr ""
+msgstr "Définir dans quel résolveur l'utilisateur devrait être enregistré."
 
 #: lib/policy.py:1358
 msgid "Define in which realm the user should be registered."
-msgstr ""
+msgstr "Définir dans quel royaume l'utilisateur devrait être enregistré."
 
 #: lib/policy.py:1362
 msgid ""
@@ -144,11 +144,12 @@ msgstr "L'administrateur est autorisé à définir les propriétés d'un jeton."
 
 #: lib/policy.py:1390
 msgid "Admin is allowed to set the OTP PIN of tokens."
-msgstr ""
+msgstr "L'administrateur est autorisé à définir le PIN OTP des jetons."
 
 #: lib/policy.py:1396
 msgid "Admin is allowed to set a random OTP PIN of tokens."
 msgstr ""
+"L'administrateur est autorisé à définir un PIN OTP aléatoire pour les jetons."
 
 #: lib/policy.py:1400
 msgid "Admin is allowed to manually set and delete token info."
@@ -159,6 +160,7 @@ msgstr ""
 #: lib/policy.py:1404
 msgid "Admin is allowed to set the OTP PIN during enrollment."
 msgstr ""
+"L'administrateur est autorisé à définir un PIN OTP pendant l'enrôlement."
 
 #: lib/policy.py:1409
 msgid "Admin is allowed to resync tokens."
@@ -226,6 +228,8 @@ msgstr "L'administrateur est autorisé à lister les jetons."
 #: lib/policy.py:1479
 msgid "Admin is allowed to retrieve a serial for a given OTP value."
 msgstr ""
+"L'administrateur est autorisé à récupérer un numéro de série pour une valeur "
+"OTP donnée."
 
 #: lib/policy.py:1484
 msgid "Admin is allowed to retrieve random keys from privacyIDEA."
@@ -244,10 +248,12 @@ msgid ""
 "Admin is allowed to copy the assigned user to another token, i.e. assign "
 "a user ot another token."
 msgstr ""
+"L'administrateur est autorisé à copier l'utilisateur assigné vers un autre "
+"jeton, c'est à dire assigner un utilisateur à un autre jeton."
 
 #: lib/policy.py:1501
 msgid "Admin is allowed to trigger the lost token workflow."
-msgstr ""
+msgstr "L'administrateur est autorisé à déclencher le workflow de jeton perdu."
 
 #: lib/policy.py:1507
 msgid "Admin is allowed to write and modify the system configuration."
@@ -307,14 +313,17 @@ msgid ""
 "Admin is allowed to create new CA Connector definitions and modify "
 "existing ones."
 msgstr ""
+"L'administrateur est autorisé à créer de nouvelles définitions de Connecteur "
+"CA et à modifier les définitions existantes."
 
 #: lib/policy.py:1567
 msgid "Admin is allowed to delete CA Connector definitions."
 msgstr ""
+"L'administrateur est autorisé à supprimer des définitions de Connecteur CA."
 
 #: lib/policy.py:1572
 msgid "Admin is allowed to read CA Connector definitions."
-msgstr ""
+msgstr "L'administrateur est autorisé à lire les définitions de Connecteur CA."
 
 #: lib/policy.py:1577
 msgid "Admin is allowed to write and modify the machine resolvers."
@@ -332,17 +341,20 @@ msgstr "L'administrateur est autorisé à lire les interpréteurs de machine."
 
 #: lib/policy.py:1596 lib/policy.py:1818
 msgid "Set the maximum allowed length of the OTP PIN."
-msgstr ""
+msgstr "Définir la longueur maximale autorisée du OTP PIN."
 
 #: lib/policy.py:1601 lib/policy.py:1823
 msgid "Set the minimum required length of the OTP PIN."
-msgstr ""
+msgstr "Définir la longueur minimale autorisée du OTP PIN."
 
 #: lib/policy.py:1605 lib/policy.py:1827
 msgid ""
 "Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
 msgstr ""
+"Spécifier le contenu requis de l'OTP PIN. (l)ettres, (c)hiffres, caractères "
+"(s)péciaux. Utiliser les boutons +/- ou une liste de caractères autorisés "
+"[1234567890]"
 
 #: lib/policy.py:1614
 msgid "The length of a random PIN set by the administrator."
@@ -366,6 +378,8 @@ msgstr "L'administrateur est autorisé à télécharger le journal d'audit compl
 #: lib/policy.py:1631
 msgid "Admin is allowed to add users in a userstore/UserIdResolver."
 msgstr ""
+"L'administrateur est autorisé à ajouter des utilisateurs dans un magasin d'"
+"utilisateur/UserIdResolver."
 
 #: lib/policy.py:1636
 msgid "Admin is allowed to update the users data in a userstore."
@@ -472,16 +486,22 @@ msgstr ""
 #: lib/policy.py:1736
 msgid "Admin is allowed to add and delete component subscriptions."
 msgstr ""
+"L'administrateur est autorisé à ajouter et supprimer des souscription de "
+"composants."
 
 #: lib/policy.py:1742
 msgid "The Admin is allowed to trigger a challenge for e.g. SMS OTP token."
 msgstr ""
+"L'administrateur est autorisé à déclencher un défi pour, par exemple, les "
+"jetons SMS OTP."
 
 #: lib/policy.py:1752
 msgid ""
 "The user is allowed to assign an existing token that is not yet assigned "
 "using the token serial number."
 msgstr ""
+"L'utilisateur est autorisé à assigner un jeton existant qui n'est pas encore "
+"assigné en utilisant son numéro de série."
 
 #: lib/policy.py:1758
 msgid "The user is allowed to disable his own tokens."
@@ -516,11 +536,12 @@ msgstr ""
 
 #: lib/policy.py:1796
 msgid "The user is allowed to set the OTP PIN of his tokens."
-msgstr ""
+msgstr "L'utilisateur est autorisé à définir le PIN OTP de ses jetons."
 
 #: lib/policy.py:1801
 msgid "The user is allowed to set a random OTP PIN of his tokens."
 msgstr ""
+"L'utilisateur est autorisé à définir un PIN OTP aléatoire pour ses jetons."
 
 #: lib/policy.py:1806
 msgid "The length of a random PIN set by the user."
@@ -533,7 +554,7 @@ msgstr "L'utilisateur est autorisé à définir la description du jeton."
 
 #: lib/policy.py:1813
 msgid "The user is allowed to set the OTP PIN during enrollment."
-msgstr ""
+msgstr "L'utilisateur est autorisé à définir un PIN TOP pendant l'enrôlement."
 
 #: lib/policy.py:1836
 msgid "Allow the user to view his own token history."
@@ -560,6 +581,8 @@ msgstr ""
 #: lib/policy.py:1852
 msgid "The user is allowed to do a password reset in an editable UserIdResolver."
 msgstr ""
+"L'utilisateur est autorisé à remettre à zéro son mot de passe dans un "
+"UserIdResolver éditable."
 
 #: lib/policy.py:1861
 msgid "Limit the number of allowed tokens in a realm."
@@ -580,10 +603,14 @@ msgid ""
 "Set a random OTP PIN with this length for a token during the enrollment "
 "process."
 msgstr ""
+"Définir un PIN OTP aléatoire avec cette longueur pour un jeton pendant le "
+"processus d'enrôlement."
 
 #: lib/policy.py:1880
 msgid "In case of a random OTP PIN use this python module to process the PIN."
 msgstr ""
+"Dans le cas d'un PIN OTP aléatoire, utiliser ce module python pour traiter "
+"le PIN."
 
 #: lib/policy.py:1885
 msgid ""
