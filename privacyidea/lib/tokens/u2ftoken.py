@@ -262,7 +262,8 @@ class U2fTokenClass(TokenClass):
                        U2FACTION.REQ: {
                            'type': 'str',
                            'desc': _("Only specified U2F tokens are "
-                                     "authorized.")
+                                     "authorized."),
+                           'group': GROUP.CONDITIONS,
                        }
                    },
                    SCOPE.ENROLL: {

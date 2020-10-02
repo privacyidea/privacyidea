@@ -589,11 +589,13 @@ class WebAuthnTokenClass(TokenClass):
                     WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST: {
                         'type': 'str',
                         'desc': _("A list of WebAuthn authenticators acceptable for authorization, given as "
-                                  "a space-separated list of AAGUIDs. Per default all authenticators are acceptable.")
+                                  "a space-separated list of AAGUIDs. Per default all authenticators are acceptable."),
+                        'group': GROUP.CONDITIONS,
                     },
                     WEBAUTHNACTION.REQ: {
                         'type': 'str',
-                        'desc': _("Only the specified WebAuthn-tokens are authorized.")
+                        'desc': _("Only the specified WebAuthn-tokens are authorized."),
+                        'group': GROUP.CONDITIONS,
                     }
                 },
                 SCOPE.ENROLL: {
