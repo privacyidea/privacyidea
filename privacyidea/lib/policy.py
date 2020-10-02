@@ -2032,8 +2032,7 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("Allow the application to choose which token types should be used "
                           "for authentication. Application may set the parameter 'type' in "
                           "the request. Works with validate/check, validate/samlcheck and "
-                          "validate/triggerchallenge."),
-                'group': GROUP.CONDITIONS,
+                          "validate/triggerchallenge.")
             },
             ACTION.AUTHMAXSUCCESS: {
                 'type': 'str',
