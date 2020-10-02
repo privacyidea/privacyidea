@@ -136,13 +136,24 @@ This will read the configuration (only the database uri) from the config file
 Table size
 ~~~~~~~~~~
 
-Sometimes the entires to be written to the database may be longer than the
+Sometimes the entries to be written to the database may be longer than the
 column in the database. You can either enlarge the columns in the database or
 you can set
 
    PI_AUDIT_SQL_TRUNCATE = True
 
 in ``pi.cfg``. This will truncate each entry to the defined column length.
+
+If the default column length of the audit log table are to shore, you can
+make the columns longer in the database. You should then also increase this
+information for truncation with a setting in the config file ``pi.cfg`` using
+the setting:
+
+    PI_AUDIT_SQL_COLUMN_LENGTH = {"user": 100,
+                                  "policies": 1000}
+
+which will increase truncation of the user column to 100 and the policies
+column to 1000.
 
 .. _logger_audit:
 

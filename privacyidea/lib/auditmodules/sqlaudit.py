@@ -33,6 +33,7 @@ The SQL Audit Module is configured like this:
     Optional:
     PI_AUDIT_SQL_URI = "sqlite://"
     PI_AUDIT_SQL_TRUNCATE = True | False
+    PI_AUDIT_SQL_COLUMN_LENGTH = {"user": 60, "info": 10 ...}
 
 If the PI_AUDIT_SQL_URI is omitted the Audit data is written to the
 token database.
@@ -86,7 +87,7 @@ class Audit(AuditBase):
     """
 
     is_readable = True
-    
+
     def __init__(self, config=None):
         super(Audit, self).__init__(config)
         self.name = "sqlaudit"
@@ -97,7 +98,11 @@ class Audit(AuditBase):
             self.read_keys(self.config.get("PI_AUDIT_KEY_PUBLIC"),
                            self.config.get("PI_AUDIT_KEY_PRIVATE"))
             self.sign_object = Sign(self.private, self.public)
-
+        # Read column_length from the config file
+        config_column_length = self.config.get("PI_AUDIT_SQL_COLUMN_LENGTH", {})
+        # fill the missing parts with the default from the models
+        self.custom_column_length = {k: (v if k not in config_column_length else config_column_length[k])
+                                     for k, v in column_length.items()}
         # We can use "sqlaudit" as the key because the SQLAudit connection
         # string is fixed for a running privacyIDEA instance.
         # In other words, we will not run into any problems with changing connect strings.
@@ -136,10 +141,10 @@ class Audit(AuditBase):
 
     def _truncate_data(self):
         """
-        Truncate self.audit_data according to the column_length.
+        Truncate self.audit_data according to the self.custom_column_length.
         :return: None
         """
-        for column, l in column_length.items():
+        for column, l in self.custom_column_length.items():
             if column in self.audit_data:
                 data = self.audit_data[column]
                 if isinstance(data, string_types):
@@ -207,10 +212,10 @@ class Audit(AuditBase):
         # if param contains search filters, we build the search filter
         # to only return the number of those entries
         filter_condition = self._create_filter(param, timelimit=timelimit)
-        
+
         try:
-            count = self.session.query(LogEntry.id)\
-                .filter(filter_condition)\
+            count = self.session.query(LogEntry.id) \
+                .filter(filter_condition) \
                 .count()
         finally:
             self.session.close()
@@ -222,7 +227,7 @@ class Audit(AuditBase):
         It should hash the data and do a hash chain and sign the data
         """
         try:
-            self.audit_data["policies"] = ",".join(self.audit_data.get("policies",[]))
+            self.audit_data["policies"] = ",".join(self.audit_data.get("policies", []))
             if self.config.get("PI_AUDIT_SQL_TRUNCATE"):
                 self._truncate_data()
             if "tokentype" in self.audit_data:
@@ -298,7 +303,7 @@ class Audit(AuditBase):
         finally:
             # self.session.close()
             pass
-            
+
         return res
 
     @staticmethod
@@ -429,7 +434,7 @@ class Audit(AuditBase):
                 log.debug("{0!s}".format(traceback.format_exc()))
 
         return paging_object
-        
+
     def search_query(self, search_dict, page_size=15, page=1, sortorder="asc",
                      sortname="number", timelimit=None):
         """
@@ -443,7 +448,7 @@ class Audit(AuditBase):
         try:
             limit = int(page_size)
             offset = (int(page) - 1) * limit
-            
+
             # create filter condition
             filter_condition = self._create_filter(search_dict,
                                                    timelimit=timelimit)
@@ -458,7 +463,7 @@ class Audit(AuditBase):
                     filter_condition).order_by(
                     asc(self._get_logentry_attribute("number"))).limit(
                     limit).offset(offset)
-                                         
+
         except Exception as exx:  # pragma: no cover
             log.error("exception {0!r}".format(exx))
             log.debug("{0!s}".format(traceback.format_exc()))
@@ -479,7 +484,7 @@ class Audit(AuditBase):
         """
         self.session.query(LogEntry).delete()
         self.session.commit()
-    
+
     def audit_entry_to_dict(self, audit_entry):
         sig = None
         if self.sign_data:
