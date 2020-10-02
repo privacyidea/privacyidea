@@ -377,7 +377,9 @@ class GROUP(object):
     MACHINE = "machine"
     USER = "user"
     PIN = "pin"
-
+    MODIFYING_RESPONSE = "modifying response"
+    CONDITIONS = "conditions"
+    SETTING_ACTIONS = "setting actions"
 
 class MAIN_MENU(object):
     __doc__ = """These are the allowed top level menu items. These are used
@@ -389,6 +391,7 @@ class MAIN_MENU(object):
     CONFIG = "config"
     AUDIT = "audit"
     COMPONENTS = "components"
+
 
 
 class LOGINMODE(object):
@@ -2021,77 +2024,100 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _("Allow the user to authenticate (default). If set to '{0!s}', "
                           "the authentication of the user will be denied.").format(AUTHORIZED.DENY),
-                'value': [AUTHORIZED.ALLOW, AUTHORIZED.DENY]
+                'value': [AUTHORIZED.ALLOW, AUTHORIZED.DENY],
+                'group': GROUP.MODIFYING_RESPONSE,
             },
             ACTION.APPLICATION_TOKENTYPE: {
                 'type': 'bool',
                 'desc': _("Allow the application to choose which token types should be used "
                           "for authentication. Application may set the parameter 'type' in "
                           "the request. Works with validate/check, validate/samlcheck and "
-                          "validate/triggerchallenge.")
+                          "validate/triggerchallenge."),
+                'group': GROUP.CONDITIONS,
             },
             ACTION.AUTHMAXSUCCESS: {
                 'type': 'str',
                 'desc': _("You can specify how many successful authentication "
                           "requests a user is allowed to do in a given time. "
                           "Specify like 1/5s, 2/10m, 10/1h - s, m, h being "
-                          "second, minute and hour.")
+                          "second, minute and hour."),
+                'group': GROUP.CONDITIONS,
             },
             ACTION.AUTHMAXFAIL: {
                 'type': 'str',
                 'desc': _("You can specify how many failed authentication "
                           "requests a user is allowed to do in a given time. "
                           "Specify like 1/5s, 2/10m, 10/1h - s, m, h being "
-                          "second, minute and hour.")
+                          "second, minute and hour."),
+                'group': GROUP.CONDITIONS,
             },
             ACTION.LASTAUTH: {
                 'type': 'str',
                 'desc': _("You can specify in which time frame the user needs "
                           "to authenticate again with this token. If the user "
                           "authenticates later, authentication will fail. "
-                          "Specify like 30h, 7d or 1y.")
+                          "Specify like 30h, 7d or 1y."),
+                'group': GROUP.CONDITIONS,
             },
             ACTION.TOKENTYPE: {
                 'type': 'str',
                 'desc': _('The user will only be authenticated with this '
-                          'very tokentype.')},
+                          'very tokentype.'),
+                'group': GROUP.CONDITIONS,
+            },
+
             ACTION.SERIAL: {
                 'type': 'str',
                 'desc': _('The user will only be authenticated if the serial '
-                          'number of the token matches this regexp.')},
+                          'number of the token matches this regexp.'),
+                'group': GROUP.CONDITIONS,
+            },
             ACTION.TOKENINFO: {
                 'type': 'str',
                 'desc': _("The user will only be authenticated if the tokeninfo "
-                          "field matches the regexp. key/<regexp>/")},
+                          "field matches the regexp. key/<regexp>/"),
+                'group': GROUP.CONDITIONS,
+            },
             ACTION.SETREALM: {
                 'type': 'str',
                 'value': realms,
                 'desc': _('The Realm of the user is set to this very realm. '
                           'This is important if the user is not contained in '
-                          'the default realm and can not pass his realm.')},
+                          'the default realm and can not pass his realm.'),
+                'group': GROUP.SETTING_ACTIONS,
+            },
             ACTION.NODETAILSUCCESS: {
                 'type': 'bool',
                 'desc': _('In case of successful authentication additional '
-                          'no detail information will be returned.')},
+                          'no detail information will be returned.'),
+                'group': GROUP.SETTING_ACTIONS,
+            },
             ACTION.NODETAILFAIL: {
                 'type': 'bool',
                 'desc': _('In case of failed authentication additional '
-                          'no detail information will be returned.')},
+                          'no detail information will be returned.'),
+                'group': GROUP.SETTING_ACTIONS,
+            },
             ACTION.ADDUSERINRESPONSE: {
                 'type': 'bool',
                 'desc': _('In case of successful authentication user data '
                           'will be added in the detail branch of the '
-                          'authentication response.')},
+                          'authentication response.'),
+                'group': GROUP.SETTING_ACTIONS,
+            },
             ACTION.ADDRESOLVERINRESPONSE: {
                 'type': 'bool',
                 'desc': _('In case of successful authentication the user resolver and '
                           'realm will be added in the detail branch of the '
-                          'authentication response.')},
+                          'authentication response.'),
+                'group': GROUP.SETTING_ACTIONS,
+            },
             ACTION.APIKEY: {
                 'type': 'bool',
                 'desc': _('The sending of an API Auth Key is required during'
                           'authentication. This avoids rogue authenticate '
-                          'requests against the /validate/check interface.')
+                          'requests against the /validate/check interface.'),
+                'group': GROUP.SETTING_ACTIONS,
             }
         },
 
