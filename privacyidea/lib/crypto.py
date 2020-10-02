@@ -57,6 +57,7 @@ import ctypes
 import base64
 import traceback
 from six import PY2
+from passlib.context import CryptContext
 
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException
@@ -73,15 +74,17 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
-import passlib.hash
-from passlib.hash import argon2
-
 
 if not PY2:
     long = int
 
+# The CryptContext makes it easier to work with multiple password hash algorithms:
+# The first algorithm in the list is the default algorithm used for hashing.
+# When verifying a password hash, all algorithms in the context are checked
+# until one succeeds (or all fail).
+pass_ctx = CryptContext(['argon2', 'pbkdf2_sha512'], argon2__rounds=9)
+
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
-ROUNDS = 9
 
 log = logging.getLogger(__name__)
 
@@ -165,24 +168,29 @@ def hash(val, seed, algo=None):
 
 
 @log_with(log, log_entry=False, log_exit=False)
-def hash2(password):
+def pass_hash(password):
     """
-    Hash values with argon2
-    :param val:
-    :return:
+    Hash password with crypt context
+    :param password: The password to hash
+    :type password: str
+    :return: The hash string of the password
     """
-    pw_dig = argon2.using(rounds=ROUNDS).hash(password)
+    pw_dig = pass_ctx.hash(password)
     return pw_dig
 
 
 @log_with(log, log_entry=False, log_exit=False)
-def verify_hash2(password, hvalue):
+def verify_pass_hash(password, hvalue):
     """
-    Verify the hashed value
-    :param val:
-    :return:
+    Verify the hashed password value
+    :param password: The plaintext password to verify
+    :type password: str
+    :param hvalue: The hashed password
+    :type hvalue: str
+    :return: True if the password matches
+    :rtype: bool
     """
-    return argon2.verify(password, hvalue)
+    return pass_ctx.verify(password, hvalue)
 
 
 def hash_with_pepper(password):
@@ -198,7 +206,7 @@ def hash_with_pepper(password):
     :rtype: str
     """
     key = get_app_config_value("PI_PEPPER", "missing")
-    return hash2(key + password)
+    return pass_hash(key + password)
 
 
 def verify_with_pepper(passwordhash, password):
@@ -216,13 +224,7 @@ def verify_with_pepper(passwordhash, password):
     password = password or ""
     key = get_app_config_value("PI_PEPPER", "missing")
 
-    success = False
-    if passwordhash.startswith("$argon2"):
-        success = argon2.verify(key + password, passwordhash)
-    elif passwordhash.startswith("$pbkdf2"):
-        success = passlib.hash.pbkdf2_sha512.verify(key + password, passwordhash)
-
-    return success
+    return verify_pass_hash(key + password, passwordhash)
 
 
 def init_hsm():
