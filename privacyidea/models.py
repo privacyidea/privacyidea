@@ -417,17 +417,16 @@ class Token(MethodsMixin, db.Model):
             else:
                 log.debug("we got a hashed PIN!")
                 if self.pin_hash:
-                    # New PIN verification
-                    if verify_pass_hash(pin, self.pin_hash):
-                        return True
-                    else:
+                    try:
+                        # New PIN verification
+                        return verify_pass_hash(pin, self.pin_hash)
+                    except ValueError as _e:
                         # old PIN verification
                         mypHash = self.get_hashed_pin(pin)
                 else:
                     mypHash = pin
                 if mypHash == (self.pin_hash or u""):
                     res = True
-    
         return res
 
 #    def split_pin_pass(self, passwd, prepend=True):
