@@ -6,12 +6,12 @@ privacyIDEA
     :alt: Build Status
     :target: https://travis-ci.org/privacyidea/privacyidea
 
-.. image:: https://circleci.com/gh/privacyidea/privacyidea/tree/master.svg?style=shield&circle-token=:circle-token
-    :alt: CircleCI
-    :target: https://circleci.com/gh/privacyidea/privacyidea
+.. .. image:: https://circleci.com/gh/privacyidea/privacyidea/tree/master.svg?style=shield&circle-token=:circle-token
+..     :alt: CircleCI
+..     :target: https://circleci.com/gh/privacyidea/privacyidea
 
-.. image:: https://codecov.io/github/privacyidea/privacyidea/coverage.svg?branch=master
-    :target: https://codecov.io/github/privacyidea/privacyidea?branch=master
+.. image:: https://codecov.io/gh/privacyidea/privacyidea/coverage.svg?branch=master
+    :target: https://codecov.io/gh/privacyidea/privacyidea?branch=master
 
 .. .. image:: https://img.shields.io/pypi/dm/privacyidea.svg
 ..    :alt: Downloads
