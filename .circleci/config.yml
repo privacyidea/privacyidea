@@ -1,6 +1,14 @@
 jobs:
   build:
-    executor: python/default
+    docker:
+      - image: circleci/mysql:latest-ram
+        environment:
+          MYSQL_DATABASE: pi
+          MYSQL_USER: pi
+          MYSQL_PASSWORD: test123
+          MYSQL_RANDOM_ROOT_PASSWORD: yes
+    environment:
+      TEST_DATABASE_URL: mysql+pymysql://pi:test123@localhost/pi
     steps:
       - checkout
       - run: git submodule sync
@@ -12,6 +20,7 @@ jobs:
           command: |
             python -b -m pytest --cov=privacyidea tests/
           name: Test
+
 orbs:
   python: circleci/python@1.1.0
 
