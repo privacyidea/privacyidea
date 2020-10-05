@@ -136,13 +136,26 @@ This will read the configuration (only the database uri) from the config file
 Table size
 ~~~~~~~~~~
 
-Sometimes the entires to be written to the database may be longer than the
-column in the database. You can either enlarge the columns in the database or
-you can set
+Sometimes the entries to be written to the database may be longer than the
+column in the database. You should set
 
    PI_AUDIT_SQL_TRUNCATE = True
 
 in ``pi.cfg``. This will truncate each entry to the defined column length.
+
+However, if you sill want to fetch more information in the audit log, you can
+increase the column length directly in the database by the usual database means.
+However, privacyIDEA does not know about this, and will still truncate the entries
+to the originally defined length.
+
+To avoid this, you need to tell privacyIDEA about the changes. In :ref:cfgfile pi.cfg add the setting
+like:
+
+    PI_AUDIT_SQL_COLUMN_LENGTH = {"user": 100,
+                                  "policies": 1000}
+
+which will increase truncation of the user column to 100 and the policies
+column to 1000. Check the database schema for the available columns.
 
 .. _logger_audit:
 

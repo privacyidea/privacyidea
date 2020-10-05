@@ -306,6 +306,24 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(audit_log.auditdata[0].get("token_type"), "spass")
 
 
+class AuditColumnLengthTestCase(OverrideConfigTestCase):
+    class Config(TestingConfig):
+        # this needs to exist on app creation
+        PI_AUDIT_SQL_COLUMN_LENGTH = {'user': 10}
+
+    def setUp(self):
+        self.Audit = getAudit(self.app.config)
+        self.Audit.clear()
+
+    def test_01_check_custom_column_lengths(self):
+        # Since changing the database during tests would be a hassle, we just
+        # reduce the custom length and check if it gets applied
+        self.Audit.log({"action": "test06", "tokentype": "spass",
+                        "user": "a_very_long_username@long_realm"})
+        self.Audit._truncate_data()
+        self.assertEqual(len(self.Audit.audit_data.get("user")), 10, self.Audit.audit_data)
+
+
 class AuditFileTestCase(OverrideConfigTestCase):
     class Config(TestingConfig):
         # this needs to exist on app creation
