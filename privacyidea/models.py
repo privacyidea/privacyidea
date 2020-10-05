@@ -55,7 +55,7 @@ from sqlalchemy.schema import Sequence
 from .lib.log import log_with
 from privacyidea.lib.utils import (is_true, convert_column_to_unicode,
                                    hexlify_and_unicode)
-from privacyidea.lib.crypto import hash2, verify_hash2
+from privacyidea.lib.crypto import pass_hash, verify_pass_hash
 
 
 log = logging.getLogger(__name__)
@@ -360,8 +360,7 @@ class Token(MethodsMixin, db.Model):
         :return: the hashed pin
         :rtype: str
         """
-        self.pin_hash = ""
-        self.pin_hash = hash2(pin)
+        self.pin_hash = pass_hash(pin)
         return self.pin_hash
 
     def get_hashed_pin(self, pin):
@@ -418,17 +417,16 @@ class Token(MethodsMixin, db.Model):
             else:
                 log.debug("we got a hashed PIN!")
                 if self.pin_hash:
-                    if self.pin_hash.startswith("$argon2"):
+                    try:
                         # New PIN verification
-                        return verify_hash2(pin, self.pin_hash)
-                    else:
+                        return verify_pass_hash(pin, self.pin_hash)
+                    except ValueError as _e:
                         # old PIN verification
                         mypHash = self.get_hashed_pin(pin)
                 else:
                     mypHash = pin
                 if mypHash == (self.pin_hash or u""):
                     res = True
-    
         return res
 
 #    def split_pin_pass(self, passwd, prepend=True):

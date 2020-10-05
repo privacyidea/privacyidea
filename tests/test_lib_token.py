@@ -20,7 +20,7 @@ from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import (Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types, delete_privacyidea_config, SYSCONF)
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy, PolicyClass, delete_policy
-from privacyidea.lib.utils import b32encode_and_unicode
+from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
 from privacyidea.lib.error import PolicyError
 import datetime
 from dateutil import parser
@@ -1550,7 +1550,7 @@ class TokenTestCase(MyTestCase):
         # now set the old pin
         from privacyidea.lib.crypto import hash
         tokenobject.token.pin_hash = hash("1234", b"1234567890")
-        tokenobject.token.pin_seed = binascii.hexlify(b"1234567890")
+        tokenobject.token.pin_seed = hexlify_and_unicode(b"1234567890")
         tokenobject.token.save()
         r = tokenobject.token.check_pin("1234")
         self.assertTrue(r)

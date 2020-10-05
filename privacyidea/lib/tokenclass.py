@@ -860,7 +860,7 @@ class TokenClass(object):
         :param default: the default value, if the key does not exist
         :type default: string
         :return: the value for the key
-        :rtype: int or string
+        :rtype: int or str or dict
         """
         tokeninfo = self.token.get_info()
         if key:
