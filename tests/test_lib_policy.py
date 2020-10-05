@@ -1198,7 +1198,7 @@ class PolicyTestCase(MyTestCase):
         user3.info = {"type": "notverysecure", "groups": ["b", "c"]}
 
         # no user => policy error
-        with self.assertRaisesRegexp(PolicyError, ".*userinfo is not available.*"):
+        with self.assertRaisesRegexp(PolicyError, ".* a user_object is not available.*"):
             P.match_policies(user_object=None)
 
         # empty user => policy error

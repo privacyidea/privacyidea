@@ -826,14 +826,14 @@ class PolicyClass(object):
                     policy['name']
                 ))
         else:
-            log.warning(u"Policy {!r} has condition on userinfo {!r}, but userinfo is not available".format(
+            log.warning(u"Policy {!r} has condition on userinfo {!r}, but a user_object is not available".format(
                 policy['name'], key
             ))
             # If the policy specifies a userinfo condition, but no user object is available,
             # the policy is misconfigured. We have to raise a PolicyError to ensure that
             # the privacyIDEA server does not silently misbehave.
             raise PolicyError(
-                u"Policy {!r} has condition on userinfo, but userinfo is not available".format(
+                u"Policy {!r} has condition on userinfo, but a user_object is not available".format(
                     policy['name']
                 ))
 
