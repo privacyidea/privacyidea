@@ -78,11 +78,14 @@ from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 if not PY2:
     long = int
 
+# Number of hash rounds for the argon2 algorithm
+ROUNDS = 9
+
 # The CryptContext makes it easier to work with multiple password hash algorithms:
 # The first algorithm in the list is the default algorithm used for hashing.
 # When verifying a password hash, all algorithms in the context are checked
 # until one succeeds (or all fail).
-pass_ctx = CryptContext(['argon2', 'pbkdf2_sha512'], argon2__rounds=9)
+pass_ctx = CryptContext(['argon2', 'pbkdf2_sha512'], argon2__rounds=ROUNDS)
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
 
