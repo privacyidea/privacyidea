@@ -37,7 +37,7 @@ import time
 from hashlib import md5
 
 from privacyidea.lib.utils import to_unicode, to_bytes
-from privacyidea.lib.crypto import zerome
+from privacyidea.lib.crypto import zerome, safe_compare
 from privacyidea.lib.log import log_with
 
 
@@ -107,7 +107,7 @@ class mTimeOtp(object):
 
         for i in range(otime - window, otime + window):
             otp = self.calcOtp(i, to_unicode(key), to_unicode(pin))
-            if anOtpVal == otp:
+            if safe_compare(anOtpVal, otp):
                 res = i
                 log.debug("otpvalue {0!r} found at: {1!r}".format(anOtpVal, res))
                 break

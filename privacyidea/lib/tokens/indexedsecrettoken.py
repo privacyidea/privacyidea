@@ -37,7 +37,7 @@ import logging
 import datetime
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
-from privacyidea.lib.crypto import urandom
+from privacyidea.lib.crypto import urandom, safe_compare
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 from privacyidea.lib.utils import to_unicode
@@ -277,7 +277,7 @@ class IndexedSecretTokenClass(TokenClass):
                     secret_string = to_unicode(self.token.get_otpkey().getKey())
                     if len(options["data"]) == len(passw):
                         expected_answer = "".join([secret_string[x - 1] for x in options["data"]])
-                        if passw == expected_answer:
+                        if safe_compare(passw, expected_answer):
                             r_success = 1
                             # Set valid OTP to true. We must not delete the challenge now,
                             # Since we need it for further mutlichallenges
