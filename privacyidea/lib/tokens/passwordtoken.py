@@ -64,7 +64,7 @@ class PasswordTokenClass(TokenClass):
             # getKey() returns bytes and since we can not assume, that the
             # password only contains printable characters, we need to compare
             # bytes strings here. This also avoids making another copy of 'key'.
-            if safe_compare(key, to_bytes(password)):
+            if safe_compare(key, password):
                 res = 0
 
             zerome(key)
