@@ -457,7 +457,7 @@ class FourEyesTokenClass(TokenClass):
         remaining_realms = self._get_remaining_realms(used_tokens)
         if remaining_realms:
             message = "Please authenticate with another token from " \
-                      "either realm: {0!s}.".format(",".join(remaining_realms))
+                      "either realm: {0!s}.".format(", ".join(remaining_realms))
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
         tokentype = self.get_tokentype().lower()
