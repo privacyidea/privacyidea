@@ -20,7 +20,7 @@ This file contains the definition of the password token class
 
 import logging
 
-from privacyidea.lib.crypto import zerome
+from privacyidea.lib.crypto import zerome, safe_compare
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.decorators import check_token_locked
@@ -64,7 +64,7 @@ class PasswordTokenClass(TokenClass):
             # getKey() returns bytes and since we can not assume, that the
             # password only contains printable characters, we need to compare
             # bytes strings here. This also avoids making another copy of 'key'.
-            if key == to_bytes(password):
+            if safe_compare(key, password):
                 res = 0
 
             zerome(key)

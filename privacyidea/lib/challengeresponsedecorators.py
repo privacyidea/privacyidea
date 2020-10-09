@@ -31,7 +31,7 @@ import logging
 from privacyidea.lib.policy import Match
 from privacyidea.lib.policy import ACTION, SCOPE, check_pin, SCOPE
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.crypto import hash2, verify_hash2, get_rand_digit_str
+from privacyidea.lib.crypto import pass_hash, verify_pass_hash, get_rand_digit_str
 from privacyidea.models import Challenge
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
@@ -106,7 +106,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                 # PIN from the 1st response is stored in challenge.data
                 if challenge.data:
                     # Verify the password
-                    if verify_hash2(args[1], challenge.data):
+                    if verify_pass_hash(args[1], challenge.data):
                         g = options.get("g")
                         challenge.set_otp_status(True)
                         token_obj.challenge_janitor()
@@ -143,7 +143,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                     challenge.set_otp_status(True)
                     seed = get_rand_digit_str(SEED_LENGTH)
                     reply_dict = _create_pin_reset_challenge(token_obj, _("Please enter the new PIN again"),
-                                                             hash2(args[1]))
+                                                             pass_hash(args[1]))
                     return False, reply_dict
 
     success, reply_dict = wrapped_function(*args, **kwds)

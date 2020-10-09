@@ -1,4 +1,4 @@
-Version 3.4.1, 2020-10-xx
+Version 3.4.1, 2020-10-09
 
   Fixes:
    * Fix the deletion of the registration token (#2356)
@@ -14,6 +14,9 @@ Version 3.4.1, 2020-10-xx
    * remove PI_PEPPER and pyCrypto (#2409)
    * only check for existing JWT algorithms (#2407)
    * Use Argon2 for PINs and local admins (#2413)
+   * Fix error when logging in with REMOTE_USER (#2423)
+   * Use a secure way to compare strings to avoid
+     theoretical side channel attacks (#2415)
 
 Version 3.4, 2020-09-08
 

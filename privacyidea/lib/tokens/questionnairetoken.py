@@ -37,6 +37,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
+from privacyidea.lib.crypto import safe_compare
 import random
 import json
 import datetime
@@ -267,7 +268,8 @@ class QuestionnaireTokenClass(TokenClass):
         res = -1
         question = challenge_object.challenge
         answer = self.get_tokeninfo(question)
-        if answer == given_answer:
+        # We need to compare two unicode strings
+        if safe_compare(answer, given_answer):
             res = 1
         else:
             log.debug("The answer for token {0!s} does not match.".format(

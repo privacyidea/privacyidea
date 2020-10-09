@@ -57,6 +57,7 @@ import ctypes
 import base64
 import traceback
 from six import PY2
+from passlib.context import CryptContext
 
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException
@@ -75,13 +76,30 @@ from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
 import passlib.hash
 from passlib.hash import argon2
+try:
+    # For Python 3.6 and above
+    from secrets import compare_digest
+except ImportError:
+    # For Python 2.7 and above
+    from hmac import compare_digest
+
+
+def safe_compare(a, b):
+    return compare_digest(to_bytes(a), to_bytes(b))
 
 
 if not PY2:
     long = int
 
-FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
 ROUNDS = 9
+
+# The CryptContext makes it easier to work with multiple password hash algorithms:
+# The first algorithm in the list is the default algorithm used for hashing.
+# When verifying a password hash, all algorithms in the context are checked
+# until one succeeds (or all fail).
+pass_ctx = CryptContext(['argon2', 'pbkdf2_sha512'], argon2__rounds=ROUNDS)
+
+FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
 
 log = logging.getLogger(__name__)
 
@@ -104,7 +122,7 @@ class SecretObj(object):
     def compare(self, key):
         bhOtpKey = binascii.unhexlify(key)
         enc_otp_key = to_bytes(encrypt(bhOtpKey, self.iv))
-        return enc_otp_key == self.val
+        return safe_compare(enc_otp_key, self.val)
 
     def hmac_digest(self, data_input, hash_algo):
         self._setupKey_()
@@ -165,24 +183,29 @@ def hash(val, seed, algo=None):
 
 
 @log_with(log, log_entry=False, log_exit=False)
-def hash2(password):
+def pass_hash(password):
     """
-    Hash values with argon2
-    :param val:
-    :return:
+    Hash password with crypt context
+    :param password: The password to hash
+    :type password: str
+    :return: The hash string of the password
     """
-    pw_dig = argon2.using(rounds=ROUNDS).hash(password)
+    pw_dig = pass_ctx.hash(password)
     return pw_dig
 
 
 @log_with(log, log_entry=False, log_exit=False)
-def verify_hash2(password, hvalue):
+def verify_pass_hash(password, hvalue):
     """
-    Verify the hashed value
-    :param val:
-    :return:
+    Verify the hashed password value
+    :param password: The plaintext password to verify
+    :type password: str
+    :param hvalue: The hashed password
+    :type hvalue: str
+    :return: True if the password matches
+    :rtype: bool
     """
-    return argon2.verify(password, hvalue)
+    return pass_ctx.verify(password, hvalue)
 
 
 def hash_with_pepper(password):
@@ -198,7 +221,7 @@ def hash_with_pepper(password):
     :rtype: str
     """
     key = get_app_config_value("PI_PEPPER", "missing")
-    return hash2(key + password)
+    return pass_hash(key + password)
 
 
 def verify_with_pepper(passwordhash, password):
@@ -216,13 +239,7 @@ def verify_with_pepper(passwordhash, password):
     password = password or ""
     key = get_app_config_value("PI_PEPPER", "missing")
 
-    success = False
-    if passwordhash.startswith("$argon2"):
-        success = argon2.verify(key + password, passwordhash)
-    elif passwordhash.startswith("$pbkdf2"):
-        success = passlib.hash.pbkdf2_sha512.verify(key + password, passwordhash)
-
-    return success
+    return verify_pass_hash(key + password, passwordhash)
 
 
 def init_hsm():
@@ -671,7 +688,7 @@ def _slow_rsa_verify_raw(key, sig, msg):
     else:  # pragma: no cover
         raise TypeError('No public key')
 
-    # compute m**d (mod n)
+    # compute m**d (mod n) and compare the two integers
     return msg == pow(sig, pn.e, pn.n)
 
 

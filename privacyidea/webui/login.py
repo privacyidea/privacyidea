@@ -114,7 +114,7 @@ def single_page_application():
             realms = ",".join(get_realms())
 
     try:
-        if is_remote_user_allowed(request):
+        if is_remote_user_allowed(request, write_to_audit_log=False):
             remote_user = request.remote_user
         password_reset = is_password_reset(g)
         hsm_ready = True
