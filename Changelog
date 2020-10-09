@@ -1,4 +1,4 @@
-Version 3.4.1, 2020-10-xx
+Version 3.4.1, 2020-10-09
 
   Fixes:
    * Fix the deletion of the registration token (#2356)
