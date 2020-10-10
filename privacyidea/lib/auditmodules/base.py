@@ -52,6 +52,7 @@ import logging
 import traceback
 from privacyidea.lib.log import log_with
 import socket
+import datetime
 
 log = logging.getLogger(__name__)
 
@@ -108,7 +109,8 @@ class Audit(object):  # pragma: no cover
                    'privacyidea_server': socket.gethostname(),
                    'realm': '',
                    'user': '',
-                   'client': ''
+                   'client': '',
+                   'startdate': datetime.datetime.now()
                    }
         #controller = request.environ['pylons.routes_dict']['controller']
         #action = request.environ['pylons.routes_dict']['action']

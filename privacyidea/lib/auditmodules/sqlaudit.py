@@ -235,6 +235,10 @@ class Audit(AuditBase):
                             "Error occurs in action: {0!r}.".format(self.audit_data.get("action")))
                 if not "token_type" in self.audit_data:
                     self.audit_data["token_type"] = self.audit_data.get("tokentype")
+            if self.audit_data.get("startdate"):
+                duration = datetime.datetime.now() - self.audit_data.get("startdate")
+            else:
+                duration = None
             le = LogEntry(action=self.audit_data.get("action"),
                           success=int(self.audit_data.get("success", 0)),
                           serial=self.audit_data.get("serial"),
@@ -249,7 +253,9 @@ class Audit(AuditBase):
                           client=self.audit_data.get("client", ""),
                           loglevel=self.audit_data.get("log_level"),
                           clearance_level=self.audit_data.get("clearance_level"),
-                          policies=self.audit_data.get("policies")
+                          policies=self.audit_data.get("policies"),
+                          startdate=self.audit_data.get("startdate"),
+                          duration=duration
                           )
             self.session.add(le)
             self.session.commit()

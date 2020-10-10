@@ -2623,10 +2623,14 @@ class Audit(MethodsMixin, db.Model):
                  client="",
                  loglevel="default",
                  clearance_level="default",
-                 policies=""
+                 policies="",
+                 startdate=None,
+                 duration=None
                  ):
         self.signature = ""
         self.date = datetime.now()
+        self.startdate = startdate
+        self.duration = duration
         self.action = convert_column_to_unicode(action)
         self.success = success
         self.serial = convert_column_to_unicode(serial)
