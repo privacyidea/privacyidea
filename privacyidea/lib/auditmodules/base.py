@@ -94,28 +94,6 @@ class Audit(object):  # pragma: no cover
         self.private = ""
         self.public = ""
 
-    @log_with(log)
-    def initialize(self):
-        # TODO: This method is not used anywhere
-        # defaults
-        self.audit_data = {'action_detail': '',
-                   'info': '',
-                   'log_level': 'INFO',
-                   'administrator': '',
-                   'value': '',
-                   'key': '',
-                   'serial': '',
-                   'token_type': '',
-                   'clearance_level': 0,
-                   'privacyidea_server': socket.gethostname(),
-                   'realm': '',
-                   'user': '',
-                   'client': ''
-                   }
-        #controller = request.environ['pylons.routes_dict']['controller']
-        #action = request.environ['pylons.routes_dict']['action']
-        #c.audit['action'] = "%s/%s" % (controller, action)
-
     def log_token_num(self, count):
         """
         Log the number of the tokens.
