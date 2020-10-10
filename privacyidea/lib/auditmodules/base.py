@@ -165,7 +165,9 @@ class Audit(object):  # pragma: no cover
 
     @property
     def has_data(self):
-        return bool(self.audit_data)
+        # We check if there is actually audit_data with an action.
+        # Since the audit_data is initialized with the startdate.
+        return bool(self.audit_data and "action" in self.audit_data)
 
     @log_with(log)
     def log(self, param):

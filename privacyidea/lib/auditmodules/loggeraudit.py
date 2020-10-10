@@ -71,6 +71,8 @@ class Audit(AuditBase):
 
     def __init__(self, config=None):
         super(Audit, self).__init__(config)
+        # overwrite the startdate from the superclass with the isoformat
+        self.audit_data["startdate"] = datetime.utcnow().isoformat()
         self.name = "loggeraudit"
         self.qualname = self.config.get('PI_AUDIT_LOGGER_QUALNAME', __name__)
         self.logger = logging.getLogger(self.qualname)
