@@ -527,4 +527,6 @@ class Audit(AuditBase):
         audit_dict['client'] = audit_entry.client
         audit_dict['log_level'] = audit_entry.loglevel
         audit_dict['clearance_level'] = audit_entry.clearance_level
+        audit_dict['startdate'] = audit_entry.startdate.isoformat() if audit_entry.startdate else None
+        audit_dict['duration'] = audit_entry.duration.total_seconds() if audit_entry.duration else None
         return audit_dict

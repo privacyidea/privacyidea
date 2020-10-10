@@ -89,13 +89,14 @@ class Audit(object):  # pragma: no cover
         :return:
         """
         self.name = "AuditBase"
-        self.audit_data = {}
+        self.audit_data = {'startdate': datetime.datetime.now()}
         self.config = config or {}
         self.private = ""
         self.public = ""
 
     @log_with(log)
     def initialize(self):
+        # TODO: This method is not used anywhere
         # defaults
         self.audit_data = {'action_detail': '',
                    'info': '',
@@ -109,8 +110,7 @@ class Audit(object):  # pragma: no cover
                    'privacyidea_server': socket.gethostname(),
                    'realm': '',
                    'user': '',
-                   'client': '',
-                   'startdate': datetime.datetime.now()
+                   'client': ''
                    }
         #controller = request.environ['pylons.routes_dict']['controller']
         #action = request.environ['pylons.routes_dict']['action']
