@@ -8,13 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2020-09-04 06:51+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2020-10-13 21:26+0000\n"
+"Last-Translator: Maria Gimenez <m.gimenez@redlink.com.ar>\n"
+"Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/es/>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.3-dev\n"
 "Generated-By: Babel 2.8.0\n"
 
 #: api/auth.py:213
@@ -23,71 +26,78 @@ msgstr ""
 
 #: api/auth.py:217
 msgid "Authentication failure. Missing Username"
-msgstr ""
+msgstr "Fallo la autenticación. Usuario no encontrado"
 
 #: api/auth.py:325
 msgid "Authentication failure. Wrong credentials"
-msgstr ""
+msgstr "Fallo la autenticación. Credenciales incorrectas"
 
 #: api/lib/utils.py:289
 msgid "Authentication failure. Missing Authorization header."
-msgstr ""
+msgstr "Fallo la autenticación. Falta el header de autenticación."
 
 #: api/lib/utils.py:317 api/lib/utils.py:327
 msgid "Authentication failure. Your token has expired: {0!s}"
-msgstr ""
+msgstr "Fallo la autenticación. El token a expirado: {0!s}"
 
 #: api/lib/utils.py:324
 msgid "Authentication failure. Error during decoding your token: {0!s}"
 msgstr ""
+"Fallo la autenticación. Hubo un error durante la decodificación de su token: "
+"{0!s}"
 
 #: api/lib/utils.py:331
 msgid ""
 "Authentication failure. The username {0!s} is not allowed to impersonate "
 "via JWT."
 msgstr ""
+"Fallo la autenticación. El usuario {0!s} no tiene permitido impersonarse vía "
+"JWT"
 
 #: api/lib/utils.py:335
 msgid ""
 "Authentication failure. You do not have the necessary role ({0!s}) to "
 "access this resource!"
 msgstr ""
+"Fallo la autenticación. Usted no tiene el rol ({0!s}) necesario para acceder "
+"al recurso!"
 
 #: api/lib/utils.py:353
 msgid "'{0!s}' is an invalid policy name."
-msgstr ""
+msgstr "'{0!s}' es un nombre de política invalido"
 
 #: api/lib/utils.py:356
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
 msgstr ""
+"El nombre de la política solo puede contener los caracteres a-zA-Z0-9_. -"
 
 #: lib/challengeresponsedecorators.py:145
 msgid "Please enter the new PIN again"
-msgstr ""
+msgstr "Por favor, ingrese el nuevo PIN otra vez"
 
 #: lib/challengeresponsedecorators.py:159
 msgid "Please enter a new PIN"
-msgstr ""
+msgstr "Por favor, ingrese un nuevo PIN"
 
 #: lib/decorators.py:43 lib/token.py:2130
 msgid "This action is not possible, since the token is locked"
-msgstr ""
+msgstr "Esta acción no es posible debido a que el token esta bloqueado"
 
 #: lib/decorators.py:94
 msgid "You need to specify a serial or a user."
-msgstr ""
+msgstr "Usted necesita especificar un serial o un usuario"
 
 #: lib/decorators.py:96
 msgid "Invalid serial number."
-msgstr ""
+msgstr "Numero de serial invalido."
 
 #: lib/decorators.py:98
 msgid "Invalid user."
-msgstr ""
+msgstr "Usuario invalido."
 
 #: lib/error.py:170
 msgid "You either need to provide user or serial"
-msgstr ""
+msgstr "Usted necesita proveer un usuario o un serial"
 
 #: lib/policy.py:1354
 msgid "Define in which resolver the user should be registered."
