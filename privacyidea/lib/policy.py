@@ -245,6 +245,7 @@ class ACTION(object):
     FORCE_APP_PIN = "force_app_pin"
     GETSERIAL = "getserial"
     GETRANDOM = "getrandom"
+    HIDE_AUDIT_COLUMNS = "hide_audit_columns"
     IMPORT = "importtokens"
     LASTAUTH = "last_auth"
     LOGINMODE = "login_mode"
@@ -1625,6 +1626,11 @@ def get_static_policy_definitions(scope=None):
                                          "entries of the last 10d, 3m or 2y."),
                                "group": GROUP.SYSTEM,
                                'mainmenu': [MAIN_MENU.AUDIT]},
+            ACTION.HIDE_AUDIT_COLUMNS: {'type': 'str',
+                                        "desc": _("For this admin the specified columns will "
+                                                  "not be displayed in the audit."),
+                                        "group": GROUP.SYSTEM,
+                                        'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.AUDIT_DOWNLOAD: {'type': 'bool',
                                "desc": _("The admin is allowed to download "
                                          "the complete auditlog."),
@@ -1842,6 +1848,11 @@ def get_static_policy_definitions(scope=None):
                                "desc": _("The user will only see audit "
                                          "entries of the last 10d, 3m or 2y."),
                                'mainmenu': [MAIN_MENU.AUDIT]},
+            ACTION.HIDE_AUDIT_COLUMNS: {'type': 'str',
+                                        "desc": _("For this user the specified columns will "
+                                                  "not be displayed in the audit."),
+                                        "group": GROUP.SYSTEM,
+                                        'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.USERLIST: {'type': 'bool',
                               'desc': _("The user is allowed to view his "
                                         "own user information."),

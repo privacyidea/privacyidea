@@ -34,7 +34,7 @@ It only provides the method
 from flask import (Blueprint, request, current_app, stream_with_context)
 from .lib.utils import (send_result, send_file)
 from ..api.lib.prepolicy import (prepolicy, check_base_action, auditlog_age,
-                                 allowed_audit_realm)
+                                 allowed_audit_realm, hide_audit_columns)
 from ..api.auth import admin_required
 from ..lib.policy import ACTION
 from flask import g
@@ -51,6 +51,7 @@ audit_blueprint = Blueprint('audit_blueprint', __name__)
 @prepolicy(check_base_action, request, ACTION.AUDIT)
 @prepolicy(allowed_audit_realm, request, ACTION.AUDIT)
 @prepolicy(auditlog_age, request)
+@prepolicy(hide_audit_columns, request)
 def search_audit():
     """
     return a paginated list of audit entries.
@@ -99,8 +100,9 @@ def search_audit():
 @audit_blueprint.route('/<csvfile>', methods=['GET'])
 @prepolicy(check_base_action, request, ACTION.AUDIT_DOWNLOAD)
 @prepolicy(auditlog_age, request)
+@prepolicy(hide_audit_columns, request)
 @admin_required
-def download_csv(csvfile=None):
+def download_csv(csvfile=None, timelimit=None, hidden_columns=None):
     """
     Download the audit entry as CSV file.
 
@@ -142,8 +144,11 @@ def download_csv(csvfile=None):
     if "timelimit" in param:
         timelimit = parse_timedelta(param["timelimit"])
         del param["timelimit"]
-    else:
-        timelimit = None
+    if "hidden_columns" in param:
+        hidden_columns = param["hidden_columns"]
+        del param["hidden_columns"]
+
     return send_file(stream_with_context(audit.csv_generator(param=param,
-                                                             timelimit=timelimit)),
+                                                             timelimit=timelimit,
+                                                             hidden_columns=hidden_columns)),
                      csvfile)
