@@ -20,6 +20,7 @@ It also contains a shortcut to the policy tab (see :ref:`policies`).
    system_config.rst
    caconnectors.rst
    smtpserver_config.rst
+   radiusserver_config.rst
    sms_gateway_config.rst
    token_config.rst
    privacyidea-appliance.rst
