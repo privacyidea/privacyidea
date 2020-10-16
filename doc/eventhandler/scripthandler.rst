@@ -60,6 +60,12 @@ serial
 Add ``--serial <serial number>`` as script parameter. If no serial number is
 given, *none* will be passed.
 
+sync_to_database
+....
+
+Finish current transaction before running the script. This is useful if changes
+to the database should be made available to the script or the running request.
+
 user
 ....
 
