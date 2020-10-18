@@ -8,14 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2020-09-04 06:51+0200\n"
-"PO-Revision-Date: 2020-08-26 22:38+0200\n"
-"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"PO-Revision-Date: 2020-10-19 18:29+0000\n"
+"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/de/>\n"
 "Language: de\n"
-"Language-Team: de <LL@li.org>\n"
-"Plural-Forms: nplurals=2; plural=(n != 1)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.3.1-dev\n"
 "Generated-By: Babel 2.8.0\n"
 
 #: api/auth.py:213
@@ -64,7 +66,8 @@ msgstr "'{0!s}' ist ein ungültiger Name für eine Richtlinie."
 
 #: api/lib/utils.py:356
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
-msgstr "Der Name der Richtlinie darf nur die Zeichen 'a-zA-Z0-9_. -' enthalten."
+msgstr ""
+"Der Name der Richtlinie darf nur die Zeichen 'a-zA-Z0-9_. -' enthalten.-"
 
 #: lib/challengeresponsedecorators.py:145
 msgid "Please enter the new PIN again"
@@ -109,23 +112,22 @@ msgid ""
 "The SMTP server configuration, that should be used to send the "
 "registration email."
 msgstr ""
-"Die SMTP-Server-Konfiguration mit der Registrierungs-Emails versendet "
-"werden."
+"Die SMTP-Server-Konfiguration mit der Registrierung-E-Mails versendet werden."
 
 #: lib/policy.py:1366
 msgid ""
 "Only users with this email address are allowed to register. This is a "
 "regular expression."
 msgstr ""
-"Nur Benutzer mit dieser Email-Adresse können sich registrieren. "
-"(Regulärer Ausdruck)"
+"Nur Benutzer mit dieser E-Mail-Adresse können sich registrieren. (Regulärer "
+"Ausdruck)."
 
 #: lib/policy.py:1371
 msgid ""
 "The body of the registration email. Use '{regkey}' as tag for the "
 "registration key."
 msgstr ""
-"Der Inhalt der Registrierungs-Email. Benutze '{regkey}' als Tag für den "
+"Der Inhalt der Registrierung-E-Mail. Benutze „{regkey}“ als Tag für den "
 "Registrierungsschlüssel."
 
 #: lib/policy.py:1377
@@ -331,9 +333,9 @@ msgid ""
 "Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
 msgstr ""
-"Geben Sie den geforderten Inhalt der OTP PIN an. (c) für Zeichen, (n) für"
-" Zahlen, (s) für Sonderzeichen. Sie können die Modifizierer +/- verwenden"
-" oder eine dedizierte Liste an Zeichen [1234565890] angeben."
+"Geben Sie den geforderten Inhalt der Einmalpasswort-PIN an. (c) für Zeichen, "
+"(n) für Zahlen, (s) für Sonderzeichen. Sie können die Modifizierer +/- "
+"verwenden oder eine dedizierte Liste an Zeichen [1234565890] angeben"
 
 #: lib/policy.py:1614
 msgid "The length of a random PIN set by the administrator."
@@ -351,7 +353,7 @@ msgstr ""
 
 #: lib/policy.py:1626
 msgid "The admin is allowed to download the complete auditlog."
-msgstr "Der  Administrator kann das Audit-Log herunterladen."
+msgstr "Der Administrator kann das Audit-Protokoll herunterladen."
 
 #: lib/policy.py:1631
 msgid "Admin is allowed to add users in a userstore/UserIdResolver."
@@ -468,8 +470,8 @@ msgstr "Der Benutzer darf seine eigenen Token löschen."
 #: lib/policy.py:1776
 msgid "The user is allowed to unassign his own tokens."
 msgstr ""
-"Der Benutzer darf die Zuweisung seiner eigenen Token aufheben. (Danach "
-"ist dies nicht mehr sein Token!)"
+"Der Benutzer darf die Zuweisung seiner eigenen Token aufheben. (Danach ist "
+"dies nicht mehr sein Token!)."
 
 #: lib/policy.py:1781
 msgid "The user is allowed to resyncronize his tokens."
@@ -609,8 +611,8 @@ msgstr ""
 #: lib/policy.py:1929
 msgid "The length of the password in case of temporary token (lost token)."
 msgstr ""
-"Die Länge des Passworts für einen temporären Token (Workflow \"Verlorener"
-" Token\")"
+"Die Länge des Passworts für einen temporären Token (Workflow „Verlorener "
+"Token“)."
 
 #: lib/policy.py:1933
 msgid ""
@@ -637,8 +639,8 @@ msgid ""
 "This is a whitespace separated list of tokentypes, that can be used with "
 "challenge response."
 msgstr ""
-"Liste von Tokentypen, die für Challenge Response verwendet werden können."
-" (Trennung durch Leerzeichen)"
+"Liste von Tokentypen, die für Challenge Response verwendet werden können ("
+"Trennung durch Leerzeichen)."
 
 #: lib/policy.py:1956
 msgid ""
@@ -744,9 +746,9 @@ msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
 msgstr ""
-"Der Benutzer darf sich anmelden (Standardeinstellung). Wenn dies auf "
-"'{0!s}' gesetzt wird, wird dem Benutzer die Authentifierung verweigert, "
-"auch wenn er die korrekten Credentials angegeben hat."
+"Der Benutzer darf sich anmelden (Standardeinstellung). Wenn dies auf „{0!s}“ "
+"gesetzt wird, wird dem Benutzer die Authentisierung verweigert, auch wenn er "
+"die korrekten Credentials angegeben hat."
 
 #: lib/policy.py:2028
 msgid ""
@@ -755,11 +757,10 @@ msgid ""
 "Works with validate/check, validate/samlcheck and "
 "validate/triggerchallenge."
 msgstr ""
-"Die Applikation, die den Authentifizierungsrequest an privacyIDEA sendet,"
-" darf selber bestimmen, mit welchem Tokentyp die Authentifizierung "
-"erfolgen soll. Hierzu sendet die Applikation den Parameter 'type' mit. "
-"Dies gilt für validate/check, validate/samlcheck und "
-"validate/triggerchallenge."
+"Die Applikation, die den Authentifizierungsrequest an privacyIDEA sendet, "
+"darf selber bestimmen, mit welchem Tokentyp die Authentifizierung erfolgen "
+"soll. Hierzu sendet die Applikation den Parameter „type“ mit. Dies gilt für "
+"validate/check, validate/samlcheck und validate/triggerchallenge."
 
 #: lib/policy.py:2035
 msgid ""
@@ -1325,8 +1326,8 @@ msgid ""
 "The new value of the parameter. Can contain tags like {0}, {1} for the "
 "matched sub strings."
 msgstr ""
-"Der neue Wert des Parameters. Er kann Tags wie '{0}' oder '{1}' enthalten"
-" entsprechend der passenden Teil-Zeichenfolge."
+"Der neue Wert des Parameters. Er kann Tags wie „{0}“ oder „{1}“ enthalten "
+"entsprechend der passenden Teil-Zeichenfolge."
 
 #: lib/eventhandler/requestmangler.py:116
 msgid "The parameter, that should match some values."
@@ -1451,7 +1452,7 @@ msgstr "Die Mobil-Nummer wird dynamisch aus dem Benutzerverzeichnis gelesen."
 
 #: lib/eventhandler/tokenhandler.py:173
 msgid "Dynamically read the email address from the user store."
-msgstr "Die Email-Adresse wird dynamisch aus dem Benutzerverzeichnis gelesen."
+msgstr "Die E-Mail-Adresse wird dynamisch aus dem Benutzerverzeichnis gelesen."
 
 #: lib/eventhandler/tokenhandler.py:178
 msgid "A dictionary of additional init parameters."
@@ -1509,11 +1510,11 @@ msgstr "Diesen Tokeninfo-Eintrag löschen."
 
 #: lib/eventhandler/usernotification.py:127
 msgid "Send notification email via this email server."
-msgstr "Benachrichtigungs-EMail über diesen Email-Server versenden."
+msgstr "Benachrichtigung-E-Mail über diesen E-Mail-Server versenden."
 
 #: lib/eventhandler/usernotification.py:131
 msgid "Either send email as plain text or HTML."
-msgstr "Sende Email als Text oder HTML."
+msgstr "Sende E-Mail als Text oder HTML."
 
 #: lib/eventhandler/usernotification.py:135
 msgid "Send QR-Code image as an attachment (cid URL: token_image)"
@@ -1521,15 +1522,15 @@ msgstr "Der QR-Code wird als Bild-Anhang versendet (cid URL: token_image)"
 
 #: lib/eventhandler/usernotification.py:140
 msgid "The subject of the mail that is sent."
-msgstr "Die Betreffzeile der Email."
+msgstr "Die Betreffzeile der E-Mail."
 
 #: lib/eventhandler/usernotification.py:144
 msgid "The Reply-To header in the sent email."
-msgstr "Das Antworten-An Feld in der gesendeten EMail."
+msgstr "Das Antworten-An-Feld in der gesendeten E-Mail."
 
 #: lib/eventhandler/usernotification.py:148
 msgid "The body of the mail that is sent."
-msgstr "Der Textkörper der EMail."
+msgstr "Der Textkörper der E-Mail."
 
 #: lib/eventhandler/usernotification.py:152
 #: lib/eventhandler/usernotification.py:190
@@ -1538,7 +1539,7 @@ msgstr "Benachrichtigung an diesen Benutzer senden."
 
 #: lib/eventhandler/usernotification.py:173
 msgid "Any email address, to which the notification should be sent."
-msgstr "Eine EMail-Adresse, an die die Benachrichtigung gesendet werden soll."
+msgstr "Eine E-Mail-Adresse, an die die Benachrichtigung gesendet werden soll."
 
 #: lib/eventhandler/usernotification.py:182
 msgid "Send the user notification via a predefined SMS gateway."
@@ -1682,11 +1683,11 @@ msgstr ""
 
 #: lib/smsprovider/HttpSMSProvider.py:257
 msgid "Username in case of basic authentication."
-msgstr "Benutzername (Basic Authentication)"
+msgstr "Benutzername (Basic Authentication)."
 
 #: lib/smsprovider/HttpSMSProvider.py:261
 msgid "Password in case of basic authentication."
-msgstr "Passwort (Basic Authentication)"
+msgstr "Passwort (Basic Authentication)."
 
 #: lib/smsprovider/HttpSMSProvider.py:265
 msgid "Should the SSL certificate be verified."
@@ -1850,12 +1851,12 @@ msgstr ""
 
 #: lib/tokens/emailtoken.py:152
 msgid "EMail Token"
-msgstr "EMail Token"
+msgstr "E-Mail-Token"
 
 #: lib/tokens/emailtoken.py:154
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
-"EMail: Ein Einmalpasswort über Email an die Mail-Adresse des Benutzers "
+"E-Mail: Ein Einmalpasswort über E-Mail an die E-Mail-Adresse des Benutzers "
 "versenden."
 
 #: lib/tokens/emailtoken.py:162
@@ -1864,52 +1865,50 @@ msgid ""
 "<serial> as parameters. You may also specify a filename as email template"
 " starting with \"file:\"."
 msgstr ""
-"Dieser Text wird beim Email-Token via Email versendet. Sie können <otp> "
+"Dieser Text wird beim E-Mail-Token via E-Mail versendet. Sie können <otp> "
 "und <serial> als Tags verwenden. Alternativ können Sie einen Dateinamen "
-"einer Email-Template-Datei angeben. Dies muss dann mit \"file:\" "
-"beginnen."
+"einer E-Mail-Vorlage-Datei angeben. Dies muss dann mit „file:“ beginnen."
 
 #: lib/tokens/emailtoken.py:168
 msgid ""
 "The subject of the EMail for an EMail token. Use <otp> and <serial> as "
 "parameters."
 msgstr ""
-"Die Betreff-Zeile der Email. Es können die Tags <otp> und <serial> "
-"verwendet werden."
+"Die Betreff-Zeile der E-Mail. Es können die Auszeichnungsmarkierungen <otp> "
+"und <serial> verwendet werden."
 
 #: lib/tokens/emailtoken.py:173
 msgid ""
 "If set, a new EMail OTP will be sent after successful authentication with"
 " one EMail OTP."
 msgstr ""
-"Ein neues Einmalpasswort wird per Email versendet, direkt nachdem sich "
-"der Benutzer mit dem Einmalpasswort aus der letzten Email angemeldet hat."
+"Ein neues Einmalpasswort wird per E-Mail versendet, direkt nachdem sich der "
+"Benutzer mit dem Einmalpasswort aus der letzten E-Mail angemeldet hat."
 
 #: lib/tokens/emailtoken.py:178
 msgid ""
 "Use an alternate challenge text for telling the user to enter the code "
 "from the eMail."
 msgstr ""
-"Ein alternativer Challenge-Text, um den Benutzer aufzufordern, den Code "
-"aus der Email einzugeben."
+"Ein alternativer Challenge-Text, um den Benutzer aufzufordern, den Code aus "
+"der E-Mail einzugeben."
 
 #: lib/tokens/emailtoken.py:185
 msgid "The user may only have this maximum number of email tokens assigned."
 msgstr ""
-"Der Benutzer darf nur maximal diese Anzahl an Email Token zugewiesen "
-"haben."
+"Der Benutzer darf nur maximal diese Anzahl an E-Mail-Token zugewiesen haben."
 
 #: lib/tokens/emailtoken.py:190
 msgid ""
 "The user may only have this maximum number of active email tokens "
 "assigned."
 msgstr ""
-"Der Benutzer darf nur maximal diese Anzahl an aktiven Email Token "
+"Der Benutzer darf nur maximal diese Anzahl an aktiven E-Mail-Token "
 "zugewiesen haben."
 
 #: lib/tokens/emailtoken.py:268
 msgid "Enter the OTP from the Email:"
-msgstr "Bitte geben Sie das Einmalpasswort aus der Email ein:"
+msgstr "Bitte geben Sie das Einmalpasswort aus der E-Mail ein:"
 
 #: lib/tokens/foureyestoken.py:126
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
@@ -2179,7 +2178,7 @@ msgstr ""
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr ""
 "Push Token können den privacyIDEA Server nach "
-"Authentifizierungsanforderungen pollen."
+"Authentifizierungsanforderungen pollen"
 
 #: lib/tokens/pushtoken.py:472
 msgid "URL for privacyIDEA Push Token"
@@ -2770,4 +2769,3 @@ msgstr ""
 #~ " bevorzugt bei der Kommunikation mit "
 #~ "WebAuthn Token verwendet wird. Standard: "
 #~ "usb ble nfc internal lightning"
-
