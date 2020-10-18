@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2020-09-10 06:16+0000\n"
-"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"PO-Revision-Date: 2020-10-19 18:29+0000\n"
+"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.3-dev\n"
+"X-Generator: Weblate 4.3.1-dev\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -601,7 +601,7 @@ msgstr "Zertifikatsvorlage"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:235
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr "Zertifikate: x509 Zertifikate ausrollen."
+msgstr "Certificate: Ein x509 Zertifikats-Token ausrollen."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:69
 msgid "Certificates Templates file"
@@ -1062,7 +1062,7 @@ msgstr "Email-Token Einstellungen"
 #: privacyidea/static/components/token/controllers/tokenControllers.js:231
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
-"EMail: Ein Einmal-Passwort per Email an die Email-Adresse des Benutzers "
+"E-Mail: Ein Einmalpasswort über E-Mail an die E-Mail-Adresse des Benutzers "
 "versenden."
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:19
@@ -2637,7 +2637,7 @@ msgstr "SMS-Token Einstellungen"
 #: privacyidea/static/components/token/controllers/tokenControllers.js:233
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
-"SMS: Einmal-Passwort wird per SMS an das Mobiltelefon des Benutzers gesendet."
+"SMS: Ein Einmalpasswort per SMS an das Mobiltelefon des Benutzers senden."
 
 #: privacyidea/static/components/config/controllers/smtpServerController.js:75
 msgid "SMTP Config saved."
