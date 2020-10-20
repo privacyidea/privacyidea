@@ -453,6 +453,7 @@ def derive_key(xml, password):
 def parsePSKCdata(xml_data,
                   preshared_key_hex=None,
                   password=None,
+                  validate_mac='check_fail_hard',
                   do_checkserial=False):
     """
     This function parses XML data of a PSKC file, (RFC6030)
@@ -467,6 +468,10 @@ def parsePSKCdata(xml_data,
     :param password: The password that encrypted the keys
     :param do_checkserial: Check if the serial numbers conform to the OATH
         specification (not yet implemented)
+    :param validate_mac: Operation mode of hmac validation. Possible values: # TODO Use const instead
+        - 'check_fail_hard' : If an invalid hmac is encountered an exception is thrown and no token gets parsed.
+        - 'check_fail_soft' : Tokens with invalid hmac are ignored on parsing.
+        - 'no_check' : Hmac of tokens are not checked, every token is parsed.
 
     :return: a dictionary of token dictionaries
         { serial : { otpkey , counter, .... }}
@@ -529,18 +534,23 @@ def parsePSKCdata(xml_data,
                 else:
                     token["otpkey"] = to_unicode(secret)
 
-                encrypted_mac_key = xml.keycontainer.find("mackey").text
-                mac_key = aes_decrypt_b64(preshared_key, encrypted_mac_key)
+                if validate_mac != 'no_check':
+                    # Validate MAC:
+                    encrypted_mac_key = xml.keycontainer.find("mackey").text
+                    mac_key = aes_decrypt_b64(preshared_key, encrypted_mac_key)
 
-                enc_data_bin = base64.b64decode(enc_data)
-                hm = hmac.new(key=mac_key, msg=enc_data_bin, digestmod=hashlib.sha1)
-                mac_value_calculated = b64encode_and_unicode(hm.digest())
+                    enc_data_bin = base64.b64decode(enc_data)
+                    hm = hmac.new(key=mac_key, msg=enc_data_bin, digestmod=hashlib.sha1)
+                    mac_value_calculated = b64encode_and_unicode(hm.digest())
 
-                mac_value_xml = key.data.find('valuemac').text.strip()
+                    mac_value_xml = key.data.find('valuemac').text.strip()
 
-                # TODO Skip this confirmation step if some policy is set
-                if mac_value_xml != mac_value_calculated:
-                    raise ImportException('XML could not be validated, MAC-Value does not match encoded data.')
+                    is_in_valid = not hmac.compare_digest(mac_value_xml, mac_value_calculated)
+
+                    if is_in_valid and validate_mac == 'check_fail_hard':
+                        raise ImportException('XML could not be validated, MAC-Value does not match encoded data.')
+                    elif is_in_valid and validate_mac == 'check_fail_soft':
+                        continue
 
         except Exception as exx:
             log.error("Failed to import tokendata: {0!s}".format(exx))

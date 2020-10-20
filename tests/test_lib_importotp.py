@@ -587,6 +587,29 @@ class ImportOTPTestCase(MyTestCase):
                          "3132333435363738393031323334353637383930")
         self.assertEqual(tokens["987654321"].get("description"), "Manufacturer")
 
+        # Test 'check_fail_hard' no token parsed and import exception
+        xml_wrong_mac = XML_PSKC_AES.replace("Su+NvtQfmvfJzF6bmQiJqoLRExc=", "Su+NvtQfmvfJzF6XYZiJqoLRExc=")
+        with pytest.raises(ImportException):
+            parsePSKCdata(xml_wrong_mac,
+                          preshared_key_hex=encryption_key_hex)
+
+        # Test 'no_check' all tokens parsed and no exception
+        xml_wrong_mac = XML_PSKC_AES.replace("Su+NvtQfmvfJzF6bmQiJqoLRExc=", "Su+NvtQfmvfJzF6XYZiJqoLRExc=")
+        tokens = parsePSKCdata(xml_wrong_mac,
+                               preshared_key_hex=encryption_key_hex, validate_mac='no_check')
+        self.assertEqual(len(tokens), 1)
+        self.assertEqual(tokens["987654321"].get("type"), "hotp")
+        self.assertEqual(tokens["987654321"].get("otplen"), "8")
+        self.assertEqual(tokens["987654321"].get("otpkey"),
+                         "3132333435363738393031323334353637383930")
+        self.assertEqual(tokens["987654321"].get("description"), "Manufacturer")
+
+        # Test 'check_fail_soft' no token parsed and no exception
+        xml_wrong_mac = XML_PSKC_AES.replace("Su+NvtQfmvfJzF6bmQiJqoLRExc=", "Su+NvtQfmvfJzF6XYZiJqoLRExc=")
+        tokens = parsePSKCdata(xml_wrong_mac,
+                               preshared_key_hex=encryption_key_hex, validate_mac='check_fail_soft')
+        self.assertEqual(len(tokens), 0)
+
     def test_05_import_pskc_password(self):
         password = "qwerty"
 
@@ -635,14 +658,6 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens.get("t2").get("description"), "something <with> xml!")
         # password token
         self.assertEqual(tokens.get("t4").get("otpkey"), u"lässig")
-
-    def test_07_import_pskc_aes_fail(self):
-        encryption_key_hex = "12345678901234567890123456789012"
-
-        xml_wrong_mac = XML_PSKC_AES.replace("Su+NvtQfmvfJzF6bmQiJqoLRExc=", "Su+NvtQfmvfJzF6XYZiJqoLRExc=")
-        with pytest.raises(ImportException):
-            parsePSKCdata(xml_wrong_mac,
-                          preshared_key_hex=encryption_key_hex)
 
 
 class GPGTestCase(MyTestCase):
