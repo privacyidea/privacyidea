@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2020-09-04 06:51+0200\n"
-"PO-Revision-Date: 2020-10-19 18:29+0000\n"
-"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"PO-Revision-Date: 2020-10-20 10:41+0000\n"
+"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/de/>\n"
 "Language: de\n"
@@ -1815,7 +1815,7 @@ msgstr "Anzahl der Benutzer mit zugewiesenen Token"
 
 #: lib/tokens/certificatetoken.py:153
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr "Certificate: Ein x509 Zertifikats-Token ausrollen."
+msgstr "Zertifikate: Ein x509 Zertifikats-Token ausrollen."
 
 #: lib/tokens/certificatetoken.py:164
 msgid "The user may only have this maximum number of certificates assigned."
