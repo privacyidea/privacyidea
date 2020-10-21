@@ -468,9 +468,9 @@ def parsePSKCdata(xml_data,
     :param password: The password that encrypted the keys
     :param do_checkserial: Check if the serial numbers conform to the OATH
         specification (not yet implemented)
-    :param validate_mac: Operation mode of hmac validation. Possible values: # TODO Use const instead
+    :param validate_mac: Operation mode of hmac validation. Possible values: # TODO Use const instead (?)
         - 'check_fail_hard' : If an invalid hmac is encountered an exception is thrown and no token gets parsed.
-        - 'check_fail_soft' : Tokens with invalid hmac are ignored on parsing.
+        - 'check_fail_soft' : Skip tokens with invalid MAC.
         - 'no_check' : Hmac of tokens are not checked, every token is parsed.
 
     :return: a dictionary of token dictionaries
