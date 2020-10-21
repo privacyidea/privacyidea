@@ -907,6 +907,65 @@ def create_internal(name):
     metadata.create_all(engine)
 
 
+def r_export(filename=None, resolver=None, print_passwords=False):
+    """
+    Export the resolver, specified by 'resolver' to a json file. If no resolver name
+    is given, all resolver configurations are exported. By default, the content is censored.
+    This behavior may be changed by 'print_passwords'.
+    If the filename is omitted, the resolvers are written to stdout.
+    """
+    from privacyidea.lib.resolver import get_resolver_list
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4)
+    resolvers = get_resolver_list(filter_resolver_name=resolver, censor=not print_passwords)
+    resolver_str = pp.pformat(resolvers)
+    if filename:
+        with open(filename, 'w') as f:
+            f.write(resolver_str)
+    else:
+        print(resolver_str)
+
+
+@resolver_manager.command
+def r_import(filename, replace=False):
+    """
+    Import the resolvers from a json file. Existing resolvers are skipped by default.
+    If 'replace' is specified the configuration of any existing resolver is updated
+    """
+    from privacyidea.lib.resolver import get_resolver_list, delete_resolver, save_resolver
+    from privacyidea.lib.realm import get_realm, Resolver
+
+    with open(filename, 'r') as f:
+        contents = f.read()
+    resolvers = ast.literal_eval(contents)
+
+    for resolver in resolvers:
+        action_str = "Created"
+        if get_resolver_list(filter_resolver_name=resolver):
+            if not replace:
+                print("Resolver {0!s} exists and -r is not specified, "
+                      "skipping import.".format(resolver))
+                continue
+            else:
+                action_str = "Updated"
+        name = resolvers.get(resolver).get("resolvername")
+        type = resolvers.get(resolver).get("type")
+        data = resolvers.get(resolver).get("data")
+        # now we can create the resolver
+        keys = ['Server', 'Driver', 'User', 'Password', 'Database',
+                'Table', 'Limit', 'Editable', 'Map']
+        params = {'resolver': name, 'type': type}
+        for key in keys:
+            params.update({key: data.get(key)})
+        r = save_resolver(params)
+
+        print("{0!s} resolver {1!s} with result {2!s}".format(action_str, name, r))
+
+
+resolver_manager.add_command('import', Command(r_import))
+resolver_manager.add_command('export', Command(r_export))
+
+
 # unfortunately it is not possible in flask_script to add a command with a
 # different name and options. So we create an appropriate command class.
 class ListResolver(Command):
@@ -1191,6 +1250,10 @@ def p_import(filename, cleanup=False):
                        time=policy.get("time"),
                        user=policy.get("user"))
         print("Added policy {0!s} with result {1!s}".format(name, r))
+
+
+policy_manager.add_command('import', Command(p_import))
+policy_manager.add_command('export', Command(p_export))
 
 
 @policy_manager.command
