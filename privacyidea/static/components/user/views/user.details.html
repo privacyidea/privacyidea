@@ -74,7 +74,7 @@
          max-size="5"
          boundary-links="true" ng-change="pageChanged()"></div>
 
-    <div class="table-responsive">
+    <div class="table-responsive form-group">
         <table class="table table-bordered table-striped">
             <thead>
             <tr>
@@ -120,7 +120,7 @@
     </div>
     <div class="text-center">
         <button ng-click="enrollToken()" class="btn btn-primary"
-                ng-disabled="checkEnroll()"
+                ng-disabled="!checkEnroll()"
                 id="enrollButton"
                 translate>Enroll New Token
         </button>
