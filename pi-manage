@@ -952,10 +952,8 @@ def r_import(filename, replace=False):
         type = resolvers.get(resolver).get("type")
         data = resolvers.get(resolver).get("data")
         # now we can create the resolver
-        keys = ['Server', 'Driver', 'User', 'Password', 'Database',
-                'Table', 'Limit', 'Editable', 'Map']
         params = {'resolver': name, 'type': type}
-        for key in keys:
+        for key in data.keys():
             params.update({key: data.get(key)})
         r = save_resolver(params)
 
