@@ -446,7 +446,8 @@ class EmailTokenClass(HotpTokenClass):
 
         log.debug("sending Email to {0!r}".format(recipient))
 
-        identifier = get_from_config("email.identifier")
+        # The token specific identifier has priority over the system wide identifier
+        identifier = self.get_tokeninfo("email.identifier") or get_from_config("email.identifier")
         if identifier:
             # New way to send email
             ret = send_email_identifier(identifier, recipient, subject, message,
