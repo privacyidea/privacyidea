@@ -698,6 +698,7 @@ myApp.controller("tokenImportController", function ($scope, Upload,
                 data: {file: file,
                     type: $scope.form.type,
                     psk: $scope.form.psk,
+                    // TODO $scope.form.validateMAC
                     password: $scope.form.password,
                     tokenrealms: $scope.form.realm},
             }).then(function (resp) {

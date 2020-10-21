@@ -69,12 +69,28 @@
         </p>
         <input class="form-control"
                placeholder="{{ 'Pre Shared Key' | translate }}"
-               ng-keypress="form.password =''"
+               ng-keypress="form.password = ''"
                ng-model="form.psk" minlength="0" maxlength="32">
         <input class="form-control"
                placeholder="{{ 'Password' | translate }}"
                ng-keypress="form.psk = ''"
                ng-model="form.password">
+        <div></div>
+        <div class="mt-5px">
+            <p class="help help-block" translate>
+                You can choose how to verify the authenticity of the stored tokens.
+                <!--                TODO make a (better) description -->
+            </p>
+            <select class="form-control"
+                    ng-model="form.validateMAC">
+<!--                FIXME How to make these strings translatable?-->
+                <option ng-repeat="(key, desc) in {no_check: 'Do not verify the authenticity',
+                 check_fail_hard : 'Abort operation on unverifiable token',
+                  check_fail_soft : 'Skip tokens that can not be verified'}"
+                    value="{{ key }}">{{ desc }}
+                </option>
+            </select>
+        </div>
     </div>
 
     <div class="mt-5px">

@@ -911,6 +911,8 @@ def loadtokens_api(filename=None):
                    'Yubikey CSV', 'pskc']
     file_type = getParam(request.all_data, "type", required)
     hashlib = getParam(request.all_data, "aladdin_hashlib")
+    # TODO Get parameter psck_validateMac with default to <?>
+    # TODO Add parameter to description
     aes_psk = getParam(request.all_data, "psk")
     aes_password = getParam(request.all_data, "password")
     if aes_psk and len(aes_psk) != 32:
