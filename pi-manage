@@ -907,6 +907,8 @@ def create_internal(name):
     metadata.create_all(engine)
 
 
+# Todo: hide the r_import and r_export in the help output but keep them for backwards-compability
+@resolver_manager.command
 def r_export(filename=None, resolver=None, print_passwords=False):
     """
     Export the resolver, specified by 'resolver' to a json file. If no resolver name
@@ -930,10 +932,11 @@ def r_export(filename=None, resolver=None, print_passwords=False):
 def r_import(filename, replace=False):
     """
     Import the resolvers from a json file. Existing resolvers are skipped by default.
-    If 'replace' is specified the configuration of any existing resolver is updated
+    If 'replace' is specified the configuration of any existing resolver is updated.
+    Values given as __CENSORED__ (like e.g. passwords) are not touched during the update.
     """
-    from privacyidea.lib.resolver import get_resolver_list, delete_resolver, save_resolver
-    from privacyidea.lib.realm import get_realm, Resolver
+    # Todo: Support the cleanup option to remove all resolvers which do not exist in the imported file
+    from privacyidea.lib.resolver import get_resolver_list, save_resolver
 
     with open(filename, 'r') as f:
         contents = f.read()
@@ -1194,6 +1197,7 @@ def delete(name):
     print(r)
 
 
+# Todo: hide the p_import and p_export in the help output but keep them for backwards-compability
 @policy_manager.command
 def p_export(filename=None):
     """
