@@ -31,7 +31,7 @@ def get_file_list(file_path):
 
 
 install_requires = ["beautifulsoup4[lxml]>=4.3.2",
-                    "cbor2>=5.0.1",
+                    "cbor2>=5.2.0",
                     "configobj>=5.0.6",
                     "croniter>=0.3.8",
                     "cryptography>=2.4.2",
