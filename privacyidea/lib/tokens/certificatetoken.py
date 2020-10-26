@@ -5,6 +5,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2020-10-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add attestation certificate functionality
 #  2016-04-26 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add the possibility to create key pair on server side
 #             Provide download for pkcs12 file
@@ -33,21 +35,105 @@ The code is tested in test_lib_tokens_certificate.py.
 
 import logging
 
-from privacyidea.lib.utils import to_unicode, b64encode_and_unicode
+from privacyidea.lib.utils import to_unicode, b64encode_and_unicode, to_byte_string
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.caconnector import get_caconnector_object
 from privacyidea.lib.user import get_user_from_param
 from OpenSSL import crypto
+from cryptography.x509 import load_pem_x509_certificate, load_pem_x509_csr
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import padding
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.lib.error import privacyIDEAError
 
 optional = True
 required = False
 
 log = logging.getLogger(__name__)
+
+YUBICO_ATTESTATION_ROOT_CERT = """-----BEGIN CERTIFICATE-----
+MIIDFzCCAf+gAwIBAgIDBAZHMA0GCSqGSIb3DQEBCwUAMCsxKTAnBgNVBAMMIFl1
+YmljbyBQSVYgUm9vdCBDQSBTZXJpYWwgMjYzNzUxMCAXDTE2MDMxNDAwMDAwMFoY
+DzIwNTIwNDE3MDAwMDAwWjArMSkwJwYDVQQDDCBZdWJpY28gUElWIFJvb3QgQ0Eg
+U2VyaWFsIDI2Mzc1MTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMN2
+cMTNR6YCdcTFRxuPy31PabRn5m6pJ+nSE0HRWpoaM8fc8wHC+Tmb98jmNvhWNE2E
+ilU85uYKfEFP9d6Q2GmytqBnxZsAa3KqZiCCx2LwQ4iYEOb1llgotVr/whEpdVOq
+joU0P5e1j1y7OfwOvky/+AXIN/9Xp0VFlYRk2tQ9GcdYKDmqU+db9iKwpAzid4oH
+BVLIhmD3pvkWaRA2H3DA9t7H/HNq5v3OiO1jyLZeKqZoMbPObrxqDg+9fOdShzgf
+wCqgT3XVmTeiwvBSTctyi9mHQfYd2DwkaqxRnLbNVyK9zl+DzjSGp9IhVPiVtGet
+X02dxhQnGS7K6BO0Qe8CAwEAAaNCMEAwHQYDVR0OBBYEFMpfyvLEojGc6SJf8ez0
+1d8Cv4O/MA8GA1UdEwQIMAYBAf8CAQEwDgYDVR0PAQH/BAQDAgEGMA0GCSqGSIb3
+DQEBCwUAA4IBAQBc7Ih8Bc1fkC+FyN1fhjWioBCMr3vjneh7MLbA6kSoyWF70N3s
+XhbXvT4eRh0hvxqvMZNjPU/VlRn6gLVtoEikDLrYFXN6Hh6Wmyy1GTnspnOvMvz2
+lLKuym9KYdYLDgnj3BeAvzIhVzzYSeU77/Cupofj093OuAswW0jYvXsGTyix6B3d
+bW5yWvyS9zNXaqGaUmP3U9/b6DlHdDogMLu3VLpBB9bm5bjaKWWJYgWltCVgUbFq
+Fqyi4+JE014cSgR57Jcu3dZiehB6UtAPgad9L5cNvua/IWRmm+ANy3O2LH++Pyl8
+SREzU8onbBsjMg9QDiSf5oJLKvd/Ren+zGY7
+-----END CERTIFICATE-----"""
+
+YUBICO_ATTESTATION_INTERMEDIATE = """-----BEGIN CERTIFICATE-----
+MIIC+jCCAeKgAwIBAgIJAIZ3F+AdGSsmMA0GCSqGSIb3DQEBCwUAMCsxKTAnBgNV
+BAMMIFl1YmljbyBQSVYgUm9vdCBDQSBTZXJpYWwgMjYzNzUxMCAXDTE2MDMxNDAw
+MDAwMFoYDzIwNTIwNDE3MDAwMDAwWjAhMR8wHQYDVQQDDBZZdWJpY28gUElWIEF0
+dGVzdGF0aW9uMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxVuN6bk8
+U2mCiP7acPxciHhBJaIde4SOkzatZytMq0W+suDVnBuhaNVr+GNcg8uDOGK3ZK6D
+NzeOyGCA5gH4daqu9m6n1XbFwSWtqp6d3LV+6Y4qtD+ZDfefIKAooJ+zsSJfrzj7
+c0b0x5Mw3frQhuDJxnKZr/sklwWHh91hRW+BhspDCNzeBKOm1qYglknKDI/FnacL
+kCyNaYlb5JdnUEx+L8iq2SWkAg57UPOIT0Phz3RvxXCguMj+BWsSAPVhv5lnABha
+L0b/y7V4OprZKfkSolVuYHS5YqRVnDepJ7IylEpdMpEW4/7rOHSMqocIEB8SPt2T
+jibBrZvzkcoJbwIDAQABoykwJzARBgorBgEEAYLECgMDBAMFAQIwEgYDVR0TAQH/
+BAgwBgEB/wIBADANBgkqhkiG9w0BAQsFAAOCAQEABVe3v1pBdPlf7C7SuHgm5e9P
+6r9aZMnPBn/KjAr8Gkcc1qztyFtUcgCfuFmrcyWy1gKjWYMxae7BXz3yKxsiyrb8
++fshMp4I8whUbckmEEIIHTy18FqxmNRo3JHx05FUeqA0i/Zl6xOfOhy/Q8XR0DMj
+xiWgTOTpqlmA2AIesBBfuOENDDAccukRMLTXDY97L2luDFTJ99NaHKjjhCOLHmTS
+BuCSS5h/F6roSi7rjh2bEOaErLG+G1hVWAzfBNXgrsUuirWRk0WKhJKeUrfNPILh
+CzYH/zLEaIsLjRg+tnmKJu2E4IdodScri7oGVhVyhUW5DrcX+/8CPqnoBpd7zQ==
+-----END CERTIFICATE-----
+"""
+
+VERIFY_CERTIFICATE_CHAIN = True
+
+
+def _verify_cert(parent, child):
+    ca = load_pem_x509_certificate(to_byte_string(parent), default_backend())
+    cert = load_pem_x509_certificate(to_byte_string(child), default_backend())
+    ca.public_key().verify(
+        cert.signature,
+        cert.tbs_certificate_bytes,
+        padding.PKCS1v15(),
+        cert.signature_hash_algorithm
+    )
+
+
+def verify_certificate(certificate, chain):
+    """
+    Verify a certificate against the certificate chain, which can be of any length
+
+    The certificate chain starts with the root certificate and contains further
+    intermediate certificates
+
+    :param certificate: The certificate
+    :type certificate: PEM encoded string
+    :param chain: A list of PEM encoded certificates
+    :type chain: list
+    :return: raises an exception
+    """
+    # first reverse the list, since it can be popped better
+    chain = chain.reverse()
+    # verify chain
+    while chain:
+        signer = chain.pop()
+        if chain:
+            # There is another element in the list, so we check the intermediate:
+            signee = chain.pop()
+            _verify_cert(signer, signee)
+        else:
+            # This was the last certficate in the chain, so we check the certificate
+            _verify_cert(signer, certificate)
 
 
 class CertificateTokenClass(TokenClass):
@@ -80,6 +166,7 @@ class CertificateTokenClass(TokenClass):
            user=cornelius
            realm=realm1
            request=<PEM encoded request>
+           attestation=<PEM encoded attestation certificate>
            ca=<name of the ca connector>
 
       **Example Initialization Request, key generation on servers side**
@@ -200,6 +287,21 @@ class CertificateTokenClass(TokenClass):
             self.add_tokeninfo("CA", ca)
             cacon = get_caconnector_object(ca)
         if request:
+            request_csr = load_pem_x509_csr(to_byte_string(request), default_backend())
+            if not request_csr.is_signature_valid:
+                raise privacyIDEAError("request has invalid signature.")
+            # If a request is sent, we can have an attestation certificate
+            attestation = getParam(param, "attestation", optional)
+            if attestation:
+                request_numbers = request_csr.public_key().public_numbers()
+                attestation_cert = load_pem_x509_certificate(to_byte_string(attestation), default_backend())
+                attestation_numbers = attestation_cert.public_key().public_numbers()
+                if request_numbers != attestation_numbers:
+                    log.warning("certificate request does not match attestation certificate.")
+                    raise privacyIDEAError("certificate request does not match attestation certificate.")
+                if VERIFY_CERTIFICATE_CHAIN:
+                    verify_certificate(to_byte_string(attestation),
+                                       [YUBICO_ATTESTATION_ROOT_CERT, YUBICO_ATTESTATION_INTERMEDIATE])
             # During the initialization process, we need to create the
             # certificate
             x509object = cacon.sign_request(request,

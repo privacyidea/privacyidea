@@ -6,8 +6,8 @@ from .base import MyTestCase
 from privacyidea.lib.tokens.certificatetoken import CertificateTokenClass
 from privacyidea.models import Token
 from privacyidea.lib.caconnector import save_caconnector
-from privacyidea.lib.token import get_tokens
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.token import get_tokens, remove_token
+from privacyidea.lib.error import ParameterError, privacyIDEAError
 from privacyidea.lib.utils import int_to_hex
 import os
 from OpenSSL import crypto
@@ -71,6 +71,76 @@ oysLynYXZkm0wFudTV04K0aKlMJTp/G96sJOtw1yqrkZSe0rNVcDs9vo+HAoMWO/
 XZp8nprZvJuk6/QIRpadjRkv4NElZ2oNu6a8mtaO38xxnfQm4FEMbm5p+4tM
 -----END CERTIFICATE REQUEST-----"""
 
+BOGUS_ATTESTATION = """-----BEGIN CERTIFICATE-----
+MIIDozCCAougAwIBAgIUAlblMK5ormWoid9l8hM2x9VPJv4wDQYJKoZIhvcNAQEL
+BQAwYTELMAkGA1UEBhMCREUxDzANBgNVBAgMBkhlc3NlbjEPMA0GA1UEBwwGS2Fz
+c2VsMRQwEgYDVQQKDAtwcml2YWN5SURFQTEaMBgGA1UEAwwRYm9ndXNfYXR0ZXN0
+YXRpb24wHhcNMjAxMDI2MTA1MjEyWhcNMjAxMTI1MTA1MjEyWjBhMQswCQYDVQQG
+EwJERTEPMA0GA1UECAwGSGVzc2VuMQ8wDQYDVQQHDAZLYXNzZWwxFDASBgNVBAoM
+C3ByaXZhY3lJREVBMRowGAYDVQQDDBFib2d1c19hdHRlc3RhdGlvbjCCASIwDQYJ
+KoZIhvcNAQEBBQADggEPADCCAQoCggEBAK5Vn8fOMMtwIeKGrbaqzICwuPtmhZoT
+epkdiJEEhVNEQhGItjcCegZAmnkRlPZM0qFXUoUkoIZVFihN8jDgm8tjZVwf2FPo
+YJFVqSRgqwFw5nxQx8h/TBJ4X5IJtU9U+irFmsZS8Ff4j+a4SJieR64/Q/r9oV2q
+dgwznse1QjV+05rQviWKK6nKYUZm+BmmCeYvFlJ1x7uY8qeN48fqomz+WQ2IAQMH
+WiKM6uBJqX0S1/z4abqwSC7qExTq+L/JUnwZdDxY31T+cjF3qCeLwIaGvj2Itjum
+aRUi3bbB4cCEJ7N5VBLuMUna4VKDv7ZSdYDdVAKolgPAYL7b8+UhSOECAwEAAaNT
+MFEwHQYDVR0OBBYEFFWifSe1imyuEqfPQDS+dDB1MHL+MB8GA1UdIwQYMBaAFFWi
+fSe1imyuEqfPQDS+dDB1MHL+MA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQEL
+BQADggEBABGEhd6HMaJ52mwTrixVKtaPXOS9K20MVqlNzFKA8xe91578Q0GsrP29
+ZEXgpcvbG52OvzhCuafLnb4BQmhS/oEaTQLjQXPoG8Mz3l7GkqS5QLeNmgx4MGhj
+BxxgoTvp8d2OQD6aXKDpr4IF8vdc+GSNZ6OC96b2EDQn9jHfxZzPSx4F5XIA9fyl
+KuOsMevU9r3tE7aWPtl/d397zgxQdZ1QKvY4nogArAMpCzwAAbF7+qKoJIUrMvEx
+dae+xapkTiMKISuCqhv89rmVDhZlJ098PcHuJDWn6vsvpxykHEXvAE321W/6h7C/
+ZHPVHkcHIwzETqjhRuLCYhXblFmfnRo=
+-----END CERTIFICATE-----
+"""
+
+YUBIKEY_CSR = """-----BEGIN CERTIFICATE REQUEST-----
+MIICbTCCAVUCAQAwFzEVMBMGA1UEAwwMY249Y29ybmVsaXVzMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzqQ5MCVz5J3mNzuFWYPvo275g7n3SLAL1egF
+QGHNxVq8ES9bTtBPuNDofwWrrSQLkNQ/YOwVtk6+jtkmq/IvfzXCpqG8UjrZiPuz
++nEguVEO+K8NFr69XbmrMNWsazy87ihKT2/UCRX3mK932zYVLh7uD9DZYK3bucQ/
+xiUy+ePpULjshKDE0pz9ziWAhX46rUynQBsKWBifwl424dFE6Ua23LQoouztAvcl
+eeGGjmlnUu6CIbeELcznqDlXfaMe6VBjdymr5KX/3O5MS14IK2IILXW4JmyT6/VF
+6s2DWFMVRuZrQ8Ev2YhLPdX9DP9RUu1U+yctWe9MUM5xzetamQIDAQABoBEwDwYJ
+KoZIhvcNAQkOMQIwADANBgkqhkiG9w0BAQsFAAOCAQEArLWY74prQRtKojwMEOsw
+4efmzCwOvLoO/WXDwzrr7kgSOawQanhFzD+Z4kCwapf1ZMmobBnyWREpL4EC9PzC
+YH+mgSDCI0jDj/4OSfklb31IzRhuWcCVOpV9xuiDW875WM792t09ILCpx4rayw2a
+8t92zv49IcWHtJNqpo2Q8064p2fzYf1J1r4OEBKUUxEIcw2/nifIiHHTb7DqDF4+
+XjcD3ygUfTVbCzPYBmLPwvt+80AxgT2Nd6E612L/fbI9clv5DsvMwnVeSvlP1wXo
+5BampVY4p5CQRFLlCQa9fGWZrT+ArC9Djo0mHf32x6pEsSz0zMOlmjHrh+ChVkAs
+tA==
+-----END CERTIFICATE REQUEST-----"""
+
+YUBIKEY_ATTEST = """-----BEGIN CERTIFICATE-----
+MIIDIDCCAgigAwIBAgIQG9hW/ORI6D3vd8zMxQXNPjANBgkqhkiG9w0BAQsFADAh
+MR8wHQYDVQQDDBZZdWJpY28gUElWIEF0dGVzdGF0aW9uMCAXDTE2MDMxNDAwMDAw
+MFoYDzIwNTIwNDE3MDAwMDAwWjAlMSMwIQYDVQQDDBpZdWJpS2V5IFBJViBBdHRl
+c3RhdGlvbiA5YTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAM6kOTAl
+c+Sd5jc7hVmD76Nu+YO590iwC9XoBUBhzcVavBEvW07QT7jQ6H8Fq60kC5DUP2Ds
+FbZOvo7ZJqvyL381wqahvFI62Yj7s/pxILlRDvivDRa+vV25qzDVrGs8vO4oSk9v
+1AkV95ivd9s2FS4e7g/Q2WCt27nEP8YlMvnj6VC47ISgxNKc/c4lgIV+Oq1Mp0Ab
+ClgYn8JeNuHRROlGtty0KKLs7QL3JXnhho5pZ1LugiG3hC3M56g5V32jHulQY3cp
+q+Sl/9zuTEteCCtiCC11uCZsk+v1RerNg1hTFUbma0PBL9mISz3V/Qz/UVLtVPsn
+LVnvTFDOcc3rWpkCAwEAAaNOMEwwEQYKKwYBBAGCxAoDAwQDBQECMBQGCisGAQQB
+gsQKAwcEBgIEAKb+EDAQBgorBgEEAYLECgMIBAICATAPBgorBgEEAYLECgMJBAEB
+MA0GCSqGSIb3DQEBCwUAA4IBAQDEIv9hTeLL4Eb62mh5nZVJ1epJc4GZ0PmjQPWt
+V73nuAns2gkG5weJd3osVcGN0vfqfKzBIZKFRPw2bXrDylgNmMZRJqpVHJ2gfy4I
+vDLhYYB9tAk0SkzoHGsQdmHq9IjZRMeEg/0gl0qpjtkDc1ypQm8BLSJqwtQlv4BX
+eaGmyo8RKiihI9xu2CmcafcQPbLLLtGAllGdRDakBejkZLL2mb6FaoLcEBidTcN4
+/BUNZ+7Tkb7c3iUl5Q0boM+2CKQ9LAKcdaSr8JaCrD1rp+nOCPIcq+cFrdNaLBrn
+QQeweMv1LvLaxlnyRNOVbtSzbYVW7laFcEpwuEhAq+5bM6AO
+-----END CERTIFICATE-----"""
+
+YUBIKEY_PUBKEY = """-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzqQ5MCVz5J3mNzuFWYPv
+o275g7n3SLAL1egFQGHNxVq8ES9bTtBPuNDofwWrrSQLkNQ/YOwVtk6+jtkmq/Iv
+fzXCpqG8UjrZiPuz+nEguVEO+K8NFr69XbmrMNWsazy87ihKT2/UCRX3mK932zYV
+Lh7uD9DZYK3bucQ/xiUy+ePpULjshKDE0pz9ziWAhX46rUynQBsKWBifwl424dFE
+6Ua23LQoouztAvcleeGGjmlnUu6CIbeELcznqDlXfaMe6VBjdymr5KX/3O5MS14I
+K2IILXW4JmyT6/VF6s2DWFMVRuZrQ8Ev2YhLPdX9DP9RUu1U+yctWe9MUM5xzeta
+mQIDAQAB
+-----END PUBLIC KEY-----"""
 
 class CertificateTokenTestCase(MyTestCase):
 
@@ -145,6 +215,66 @@ class CertificateTokenTestCase(MyTestCase):
         self.assertEqual("{0!r}".format(x509obj.get_subject()),
                          "<X509Name object '/C=DE/ST=Hessen"
                          "/O=privacyidea/CN=requester.localdomain'>")
+        remove_token(self.serial2)
+
+    def test_02a_fail_request_with_attestation(self):
+        cwd = os.getcwd()
+        # setup ca connector
+        r = save_caconnector({"cakey": CAKEY,
+                              "cacert": CACERT,
+                              "type": "local",
+                              "caconnector": "localCA",
+                              "openssl.cnf": OPENSSLCNF,
+                              "CSRDir": "",
+                              "CertificateDir": "",
+                              "WorkingDir": cwd + "/" + WORKINGDIR})
+
+        db_token = Token(self.serial2, tokentype="certificate")
+        db_token.save()
+        token = CertificateTokenClass(db_token)
+
+        # A cert request will fail, since the attestation certificate does not match
+        self.assertRaises(privacyIDEAError,
+                          token.update,
+                          {"ca": "localCA",
+                           "attestation": BOGUS_ATTESTATION,
+                           "request": REQUEST})
+        remove_token(self.serial2)
+
+    def test_02b_success_request_with_attestation(self):
+        cwd = os.getcwd()
+        # setup ca connector
+        r = save_caconnector({"cakey": CAKEY,
+                              "cacert": CACERT,
+                              "type": "local",
+                              "caconnector": "localCA",
+                              "openssl.cnf": OPENSSLCNF,
+                              "CSRDir": "",
+                              "CertificateDir": "",
+                              "WorkingDir": cwd + "/" + WORKINGDIR})
+
+        db_token = Token(self.serial2, tokentype="certificate")
+        db_token.save()
+        token = CertificateTokenClass(db_token)
+
+        # The cert request will success with a valid attestation certificate
+        token.update({"ca": "localCA",
+                      "attestation": YUBIKEY_ATTEST,
+                      "request": YUBIKEY_CSR})
+        class_prefix = token.get_class_prefix()
+        self.assertTrue(class_prefix == "CRT", class_prefix)
+        self.assertTrue(token.get_class_type() == "certificate", token)
+
+        detail = token.get_init_detail()
+        certificate = detail.get("certificate")
+        # At each testrun, the certificate might get another serial number!
+        x509obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
+        self.assertEqual("{0!r}".format(x509obj.get_issuer()),
+                         "<X509Name object '/C=DE/ST=Hessen"
+                         "/O=privacyidea/CN=CA001'>")
+        self.assertEqual("{0!r}".format(x509obj.get_subject()),
+                         "<X509Name object '/CN=cn=cornelius'>")
+        remove_token(self.serial2)
 
 
     def test_03_class_methods(self):
