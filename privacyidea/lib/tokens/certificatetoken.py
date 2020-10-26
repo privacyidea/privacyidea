@@ -132,7 +132,7 @@ def verify_certificate(certificate, chain):
             signee = chain.pop()
             _verify_cert(signer, signee)
         else:
-            # This was the last certficate in the chain, so we check the certificate
+            # This was the last certificate in the chain, so we check the certificate
             _verify_cert(signer, certificate)
 
 
