@@ -55,20 +55,6 @@ optional = True
 required = False
 
 
-def _pickle_in(s):
-    # This prepares a dictionary containing realms and token serials (only ascii!)
-    # to be stored to the database into the "data" column in the Challenge table
-    r = json.dumps(s)
-    if len(r) > 512:
-        log.warning("Congratulations! Challenge data longer than 512! Will fail to store this to database.")
-    return r
-
-
-def _pickle_out(s):
-    # Used to read Challenge "data"
-    return json.loads(s)
-
-
 class FourEyesTokenClass(TokenClass):
     """
     The FourEyes token can be used to implement the Two Man Rule.
@@ -388,7 +374,7 @@ class FourEyesTokenClass(TokenClass):
         if len(challengeobject_list) == 1:
             remaining_realms = self._get_remaining_realms(options.get("data", {}))
             if remaining_realms:
-                options["data"] = _pickle_in(options.get("data", {}))
+                options["data"] = json.dumps(options.get("data", {}))
                 options["message"] = "Remaining tokens: {0!s}".format(remaining_realms)
                 return True
         return False
@@ -426,7 +412,7 @@ class FourEyesTokenClass(TokenClass):
             for challengeobject in challengeobject_list:
                 if challengeobject.is_valid():
                     # challenge is still valid
-                    used_tokens = _pickle_out(challengeobject_list[0].data or _pickle_in({}))
+                    used_tokens = json.loads(challengeobject_list[0].data or json.dumps({}))
                     remaining_realms = self._get_remaining_realms(used_tokens)
                     r_success = self._authenticate_remaining_realms(passw, remaining_realms, used_tokens, options)
 
@@ -467,8 +453,8 @@ class FourEyesTokenClass(TokenClass):
         message = ""
         if type(options.get("data")) == dict:
             # In the special first chal-resp case we do not have pickled data, yet. So we need to convert
-            options["data"] = _pickle_in(options.get("data"))
-        used_tokens = _pickle_out(options.get("data", _pickle_in({})))
+            options["data"] = json.dumps(options.get("data"))
+        used_tokens = json.loads(options.get("data", json.dumps({})))
         remaining_realms = self._get_remaining_realms(used_tokens)
         if remaining_realms:
             message = "Please authenticate with another token from " \
