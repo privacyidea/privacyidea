@@ -450,6 +450,7 @@ class FourEyesTokenClass(TokenClass):
         """
         options = options or {}
         attributes = {}
+        message = ""
         if type(options.get("data")) == dict:
             # In the special first chal-resp case we do not have pickled data, yet. So we need to convert
             options["data"] = pickle.dumps(options.get("data"))
