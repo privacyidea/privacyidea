@@ -74,6 +74,7 @@ from privacyidea.lib.policy import (delete_policy, enable_policy,
                                     PolicyClass, set_policy)
 from privacyidea.lib.event import (delete_event, enable_event,
                                    set_event, EventConfiguration)
+from privacyidea.lib.resolver import get_resolver_list, save_resolver
 from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_class,
                                          get_caconnector_object,
@@ -100,6 +101,7 @@ import base64
 
 SILENT = True
 MYSQL_DIALECTS = ["mysql", "pymysql", "mysql+pymysql"]
+DEFAULT_CONFTYPE_LIST = ["policy", "resolver", "event"]
 
 app = create_app(config_name='production', silent=SILENT)
 manager = Manager(app)
@@ -117,6 +119,9 @@ audit_manager = Manager(usage="Manage Audit log")
 authcache_manager = Manager(usage="Manage AuthCache")
 hsm_manager = Manager(usage="Manage HSM")
 token_manager = Manager(usage="Manage tokens")
+config_manager = Manager(usage="Manage the privacyIDEA configuration")
+config_import_manager = Manager(usage="import configuration")
+config_export_manager = Manager(usage="export configuration")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
@@ -130,6 +135,9 @@ manager.add_command('audit', audit_manager)
 manager.add_command('authcache', authcache_manager)
 manager.add_command('hsm', hsm_manager)
 manager.add_command('token', token_manager)
+manager.add_command('config', config_manager)
+config_manager.add_command('import', config_import_manager)
+config_manager.add_command('export', config_export_manager)
 
 
 @hsm_manager.command
@@ -907,6 +915,27 @@ def create_internal(name):
     metadata.create_all(engine)
 
 
+def r_export(filename=None, resolver=None, stdout=True, print_passwords=False):
+    """
+    Export the resolver, specified by 'resolver' to a file. If no resolver name
+    is given, all resolver configurations are exported. By default, the content is censored.
+    This behavior may be changed by 'print_passwords'.
+    If the filename is omitted or the option stdout is given, the resolvers are written to stdout.
+    """
+    conf_export(conftype="resolver", filename=filename, name=resolver, stdout=stdout,
+                print_passwords=print_passwords)
+
+
+def r_import(filename=None, cleanup=None, update=False):
+    """
+    Import the resolvers from a json file. Existing resolvers are skipped by default.
+    If 'update' is specified the configuration of any existing resolver is updated.
+    Values given as __CENSORED__ (like e.g. passwords) are not touched during the update.
+    """
+    # Todo: Support the cleanup option to remove all resolvers which do not exist in the imported file
+    conf_import(conftype="event", filename=filename, cleanup=cleanup, update=update)
+
+
 # unfortunately it is not possible in flask_script to add a command with a
 # different name and options. So we create an appropriate command class.
 class ListResolver(Command):
@@ -1044,52 +1073,22 @@ def delete(eid):
 
 
 @event_manager.command
-def e_export(filename=None):
+def e_export(filename=None, event=None, stdout=True):
     """
-    Export all events to a file
+    Export the specified event or all events to a file.
+    If the filename is omitted or the option stdout is given, the event configurations are written to stdout.
     """
-    import pprint
-    pp = pprint.PrettyPrinter(indent=4)
-    conf = EventConfiguration()
-    events = conf.events
-    event_str = pp.pformat(events)
-    if filename:
-        with open(filename, "w") as f:
-            f.write(event_str)
-    else:
-        print(event_str)
+    conf_export(conftype="event", filename=filename, name=event, stdout=stdout)
 
 
 @event_manager.command
-def e_import(filename, cleanup=False):
+def e_import(filename=None, cleanup=False, update=False):
     """
     Import the events from a file.
     If 'cleanup' is specified the existing events are deleted before the
     events from the file are imported.
     """
-    if cleanup:
-        print("Cleanup old events.")
-        conf = EventConfiguration()
-        events = conf.events
-        for event in events:
-            name = event.get("name")
-            r = delete_event(event.get("id"))
-            print("Deleted event '{0!s}' with result {1!s}".format(name, r))
-
-    with open(filename, 'r') as f:
-        contents = f.read()
-
-    events = ast.literal_eval(contents)
-    for event in events:
-        name = event.get("name")
-        r = set_event(name, event.get("event"), event.get("handlermodule"),
-                      event.get("action"),
-                      conditions=event.get("conditions"),
-                      ordering=event.get("ordering"),
-                      options=event.get("options"),
-                      active=event.get("active"),
-                      position=event.get("position", "post"))
-        print("Added event '{0!s}' with result {1!s}".format(name, r))
+    conf_import(conftype="event", filename=filename, cleanup=cleanup, update=update)
 
 
 # Policy interface
@@ -1138,59 +1137,22 @@ def delete(name):
 
 
 @policy_manager.command
-def p_export(filename=None):
+def p_export(filename=None, policy=None, stdout=True):
     """
-    Export all policies to a file.
-    If the filename is omitted, the policies are written to stdout.
+    Export the specified policy or all policies to a file.
+    If the filename is omitted or the option stdout is given, the policies are written to stdout.
     """
-    import pprint
-    pp = pprint.PrettyPrinter(indent=4)
-    pol_cls = PolicyClass()
-    policies = pol_cls.list_policies()
-    pol_str = pp.pformat(policies)
-    if filename:
-        with open(filename, 'w') as f:
-            f.write(pol_str)
-    else:
-        print(pol_str)
+    conf_export(conftype="policy", filename=filename, name=policy, stdout=stdout)
 
 
 @policy_manager.command
-def p_import(filename, cleanup=False):
+def p_import(filename=None, cleanup=False, update=False):
     """
     Import the policies from a file.
     If 'cleanup' is specified the existing policies are deleted before the
     policies from the file are imported.
     """
-    if cleanup:
-        print("Cleanup old policies.")
-        pol_cls = PolicyClass()
-        policies = pol_cls.list_policies()
-        for policy in policies:
-            name = policy.get("name")
-            r = delete_policy(name)
-            print("Deleted policy {0!s} with result {1!s}".format(name, r))
-
-    with open(filename, 'r') as f:
-        contents = f.read()
-    policies = ast.literal_eval(contents)
-    for policy in policies:
-        name = policy.get("name")
-        r = set_policy(name,
-                       action=policy.get("action"),
-                       active=policy.get("active", True),
-                       adminrealm=policy.get("adminrealm"),
-                       adminuser=policy.get("adminuser"),
-                       check_all_resolvers=policy.get(
-                           "check_all_resolvers", False),
-                       client=policy.get("client"),
-                       # condition=policy.get("condition"),
-                       realm=policy.get("realm"),
-                       resolver=policy.get("resolver"),
-                       scope=policy.get("scope"),
-                       time=policy.get("time"),
-                       user=policy.get("user"))
-        print("Added policy {0!s} with result {1!s}".format(name, r))
+    conf_import(conftype="policy", filename=filename, cleanup=cleanup, update=update)
 
 
 @policy_manager.command
@@ -1319,6 +1281,249 @@ def import_tokens(file, tokenrealm=None):
 token_manager.add_command('import', Command(import_tokens))
 
 
+def conf_export(conftype=DEFAULT_CONFTYPE_LIST, filename=None, name=None, stdout=True, print_passwords=False):
+    """
+    Export configurations to a file or write them to stdout if no filename is given.
+    """
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4)
+
+    ret_dict = {}
+    conf = None
+    if isinstance(conftype, list):
+        conftype_list = conftype
+    else:
+        conftype_list = [conftype]
+
+    for conftype in conftype_list:
+        if conftype == "policy":
+            pol_cls = PolicyClass()
+            conf = pol_cls.list_policies(name=name)
+        elif conftype == "resolver":
+            from privacyidea.lib.resolver import get_resolver_list
+            resolver_dict = get_resolver_list(filter_resolver_name=name,
+                                              censor=not print_passwords)
+            conf = list(resolver_dict.values())
+        elif conftype == "event":
+            event_cls = EventConfiguration()
+            if name:
+                conf = [e for e in event_cls.events if (e.get("name") == name)]
+            else:
+                conf = event_cls.events
+        if not conf:
+            print("The requested {0!s} configuration is empty.".format(conftype), file=sys.stderr)
+        ret_dict[conftype] = conf
+
+    ret_str = pp.pformat(ret_dict)
+    if filename:
+        with open(filename, 'w') as f:
+            f.write(ret_str)
+    if stdout or not filename:
+        print(ret_str)
+
+
+def conf_import(filename=None, conftype=None, cleanup=False, update=False):
+    """
+    import privacyIDEA configuration from file
+    """
+    if filename:
+        with open(filename, 'r') as f:
+            contents = f.read()
+    else:
+        filename = "Standard input"
+        contents = sys.stdin.read()
+
+    contents_var = ast.literal_eval(contents)
+
+    # be backwards-compatible. In old versions of pi-manage config were exported to
+    # individual files as python list without dict key
+    if isinstance(contents_var, list):
+        conftype_list = [conftype]
+        contents_var = {conftype: contents_var}
+    else:
+        if conftype:
+            conftype_list = [conftype]
+        else:
+            conftype_list = list(contents_var.keys())
+
+    for conftype in conftype_list:
+
+        print("Importing {0!s} from {1!s}".format(conftype, filename))
+
+        config_list = contents_var[conftype]
+
+        if conftype == "policy":
+            cls = PolicyClass()
+        elif conftype == "resolver":
+            pass
+        elif conftype == "event":
+            cls = EventConfiguration()
+
+        if cleanup:
+            print("Cleanup old {0!s}.".format(conftype))
+            if conftype == "policy":
+                policies = cls.list_policies()
+                for policy in policies:
+                    name = policy.get("name")
+                    r = delete_policy(name)
+                    print("Deleted policy {0!s} with result {1!s}".format(name, r))
+            elif conftype == "resolver":
+                # Todo: Implement resolver cleanup on import
+                print("No cleanup for resolvers implemented")
+            elif conftype == "event":
+                events = cls.events
+                for event in events:
+                    name = event.get("name")
+                    r = delete_event(event.get("id"))
+                    print("Deleted event '{0!s}' with result {1!s}".format(name, r),
+                          file=sys.stderr)
+
+        for config in config_list:
+            action_str = "Added"
+            if conftype == "policy":
+                name = config.get("name")
+                exists = cls.list_policies(name=name)
+            elif conftype == "resolver":
+                name = config.get("resolvername")
+                exists = get_resolver_list(filter_resolver_name=name)
+            elif conftype == "event":
+                # Todo: This check does not work properly. The event is created nevertheless
+                name = config.get("name")
+                events_with_name = [e for e in cls.events if (name in e.get("name"))]
+                if events_with_name:
+                    exists = True
+                    event_id = events_with_name[0].get("id")
+                else:
+                    exists = False
+                    event_id = None
+            else:
+                print("Warning: conftype {0!s} not in policy, event and resolver".format(conftype))
+            if exists:
+                if not update:
+                    print("{0!s} {1!s} exists and -u is not specified, "
+                          "skipping import.".format(conftype, name))
+                    continue
+                else:
+                    action_str = "Updated"
+            if conftype == "policy":
+                r = set_policy(name,
+                               action=config.get("action"),
+                               active=config.get("active", True),
+                               adminrealm=config.get("adminrealm"),
+                               adminuser=config.get("adminuser"),
+                               check_all_resolvers=config.get(
+                                   "check_all_resolvers", False),
+                               client=config.get("client"),
+                               # condition=policy.get("condition"),
+                               realm=config.get("realm"),
+                               resolver=config.get("resolver"),
+                               scope=config.get("scope"),
+                               time=config.get("time"),
+                               user=config.get("user"))
+            elif conftype == "resolver":
+                resolvertype = config.get("type")
+                data = config.get("data")
+                # now we can create the resolver
+                params = {'resolver': name, 'type': resolvertype}
+                for key in data.keys():
+                    params.update({key: data.get(key)})
+                r = save_resolver(params)
+            elif conftype == "event":
+                r = set_event(name, config.get("event"), config.get("handlermodule"),
+                              config.get("action"),
+                              conditions=config.get("conditions"),
+                              ordering=config.get("ordering"),
+                              options=config.get("options"),
+                              active=config.get("active"),
+                              position=config.get("position", "post"),
+                              id=event_id)
+
+            print("{0!s} {1!s} {2!s} with result {3!s}".format(action_str, conftype, name, r))
+
+
+@config_export_manager.option("--print_passwords", "-p", action="store_true",
+                              help="Print the passwords used in the resolver configuration. "
+                                   "This will overwrite existing passwords on import.")
+@config_export_manager.option("--archive", "-a", action="store_true",
+                              help="Compress the created config-backup as tar.gz archive")
+@config_export_manager.option("--stdout", "-s", action="store_true",
+                              help="Print the configuration also to stdout.")
+@config_export_manager.option("--directory", "-d", action="store_true",
+                              help="Directory where the backup will be stored.")
+def fullexport(directory=None, stdout=False, archive=False, print_passwords=False):
+    """
+    This option exports resolvers, policies and event handlers to standard output or to a file and optionally
+    compresses them as tar.gz archive
+    """
+    print("Exporting privacyIDEA configuration.", file=sys.stderr)
+    if archive or directory:
+        from socket import gethostname
+        DATE = datetime.datetime.now().strftime("%Y%m%d-%H%M")
+        BASE_NAME = "privacyidea-config-backup"
+        HOSTNAME = gethostname()
+        if not directory:
+            directory = os.path.abspath('./')
+        else:
+            directory = os.path.abspath(directory)
+            call(["mkdir", "-p", directory])
+        config_backup_file_base = "%s/%s-%s-%s" % (directory, BASE_NAME, HOSTNAME, DATE)
+        config_backup_file = config_backup_file_base + ".py"
+        conf_export(filename=config_backup_file, stdout=stdout, print_passwords=print_passwords)
+        if archive:
+            config_backup_archive = config_backup_file_base + ".tar.gz"
+            call(["tar", "-zcf", config_backup_archive, config_backup_file])
+            # cleanup
+            if os.path.isfile(config_backup_file):
+                os.remove(config_backup_file)
+    else:
+        conf_export(filename=None, stdout=True, print_passwords=print_passwords)
+
+
+@config_import_manager.option("--file", "-f", dest="file",
+                              help="The file to import.")
+@config_import_manager.option("--archive", "-a", action="store_true",
+                              help="The specified file is a tar.gz archive containing a configuration "
+                                   "backup file with a name containing 'pi-config-backup'.")
+@config_import_manager.option("--update", "-u", action="store_true",
+                              help="Update the existing configuration. New policies, resolvers and events will also "
+                                   "be added.")
+@config_import_manager.option("--cleanup", "-c", action="store_true",
+                              help="The configuration on the target machine will be wiped before the import.")
+@config_import_manager.option("--wipe", "-w", action="store_true", dest="cleanup",
+                              help="Wipe is an alias for cleanup.")
+def fullimport(file=None, cleanup=False, update=False, archive=False):
+    """
+    This option reads configuration-backups from a plain file a tar.gz archive or from standard input and imports
+    the contained resolvers, policies and event handlers.
+    """
+    if file:
+        if os.path.isfile(file):
+            if archive:
+                archive_file = file
+                p = Popen(["tar", "-ztf", archive_file], stdout=PIPE, universal_newlines=True)
+                std_out, err_out = p.communicate()
+                for line in std_out.split("\n"):
+                    if re.search(r"pi-config-backup", line):
+                        file = "{0!s}".format(line.strip())
+                call(["tar", "-zxf", archive_file, "-C", "./"])
+
+            conf_import(filename=file, cleanup=cleanup, update=update)
+            # cleanup
+            if archive:
+                os.remove(file)
+    else:
+        conf_import(cleanup=cleanup, update=update)
+
+
+config_export_manager.add_command('policy', Command(p_export))
+config_export_manager.add_command('resolver', Command(r_export))
+config_export_manager.add_command('event', Command(e_export))
+
+config_import_manager.add_command('policy', Command(p_import))
+config_import_manager.add_command('resolver', Command(r_import))
+config_import_manager.add_command('event', Command(e_import))
+
+
 if __name__ == '__main__':
     # We add one blank line, to separate the messages from the initialization
     print("""
@@ -1327,5 +1532,5 @@ if __name__ == '__main__':
   / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
  / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
 /_/                       /___/
-   """)
+   """, file=sys.stderr)
     manager.run()
