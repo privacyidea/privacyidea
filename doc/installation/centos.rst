@@ -173,9 +173,9 @@ the ldap ports::
 If something does not seem right, check for "``denied``" entries in
 ``/var/log/audit/audit.log``
 
-Some LDAP-resolver could be listening on differnt port.
-This have to manually configured to your needs for SElinux.
-Please check the audit.log first to see if SElinux prevents this.
+Some LDAP-resolver could be listening on a different port.
+In this case SELinux has to be configured accordingly.
+Please check the SELinux audit.log to see if SELinux might block any connection.
 
 For testing purposes we use a self-signed certificate which should already have
 been created. In production environments this should be replaced by a certificate
