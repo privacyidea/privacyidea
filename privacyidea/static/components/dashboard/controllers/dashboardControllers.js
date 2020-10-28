@@ -149,24 +149,40 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
         return 0;
      };
 
-    $scope.get_total_token_number();
-    $scope.get_token_hardware();
-    $scope.get_token_software();
-    $scope.get_policies();
-    $scope.get_events();
-    $scope.getSubscriptions();
-    $scope.getAuthentication();
-    $scope.getAdministration();
-
-        // listen to the reload broadcast
-    $scope.$on("piReload", function() {
+    if (AuthFactory.checkRight('tokenlist')) {
         $scope.get_total_token_number();
         $scope.get_token_hardware();
         $scope.get_token_software();
+    };
+    if (AuthFactory.checkRight('policyread')) {
         $scope.get_policies();
+    };
+    if (AuthFactory.checkRight('eventhandler_read')) {
         $scope.get_events();
-        $scope.getSubscriptions();
+    };
+    $scope.getSubscriptions();
+    if (AuthFactory.checkRight('auditlog')) {
         $scope.getAuthentication();
         $scope.getAdministration();
+    };
+
+        // listen to the reload broadcast
+    $scope.$on("piReload", function() {
+        if (AuthFactory.checkRight('tokenlist')) {
+            $scope.get_total_token_number();
+            $scope.get_token_hardware();
+            $scope.get_token_software();
+        };
+        if (AuthFactory.checkRight('policyread')) {
+            $scope.get_policies();
+        };
+        if (AuthFactory.checkRight('eventhandler_read')) {
+            $scope.get_events();
+        };
+        $scope.getSubscriptions();
+        if (AuthFactory.checkRight('auditlog')) {
+            $scope.getAuthentication();
+            $scope.getAdministration();
+        };
     });
 });
