@@ -452,7 +452,7 @@ class FourEyesTokenClass(TokenClass):
         attributes = {}
         message = ""
         if type(options.get("data")) == dict:
-            # In the special first chal-resp case we do not have pickled data, yet. So we need to convert
+            # In the special first chal-resp case we do not have jsonified data, yet. So we need to convert
             options["data"] = json.dumps(options.get("data"))
         used_tokens = json.loads(options.get("data", json.dumps({})))
         remaining_realms = self._get_remaining_realms(used_tokens)
