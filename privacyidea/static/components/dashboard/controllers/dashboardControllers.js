@@ -35,83 +35,73 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
     $scope.authentications = {"success": 0, "fail": 0};
 
     $scope.get_total_token_number = function () {
-        if (AuthFactory.checkRight('tokenlist')) {
-            // We call getTokens with pagesize=0, so that we do
-            // not need any user resolving.
-            TokenFactory.getTokensNoCancel(function (data) {
-                    if (data) {
-                        $scope.tokens.total = data.result.value.count;
-                    }
-                }, {"pagesize": 0});
-        };
+        // We call getTokens with pagesize=0, so that we do
+        // not need any user resolving.
+        TokenFactory.getTokensNoCancel(function (data) {
+                if (data) {
+                    $scope.tokens.total = data.result.value.count;
+                }
+            }, {"pagesize": 0});
     };
 
     $scope.get_token_hardware = function () {
-        if (AuthFactory.checkRight('tokenlist')) {
-            TokenFactory.getTokensNoCancel(function (data) {
-                    if (data) {
-                        $scope.tokens.hardware = data.result.value.count;
-                    }
-                }, {"pagesize": 0, "infokey": "tokenkind", "infovalue": "hardware"});
-            TokenFactory.getTokensNoCancel(function (data) {
+        TokenFactory.getTokensNoCancel(function (data) {
                 if (data) {
-                    $scope.tokens.unassigned_hardware = data.result.value.count;
+                    $scope.tokens.hardware = data.result.value.count;
                 }
-            }, {"pagesize": 0, "infokey": "tokenkind", "infovalue": "hardware", "assigned": "False"});
-        };
+            }, {"pagesize": 0, "infokey": "tokenkind", "infovalue": "hardware"});
+        TokenFactory.getTokensNoCancel(function (data) {
+            if (data) {
+                $scope.tokens.unassigned_hardware = data.result.value.count;
+            }
+        }, {"pagesize": 0, "infokey": "tokenkind", "infovalue": "hardware", "assigned": "False"});
     };
 
     $scope.get_token_software = function () {
-        if (AuthFactory.checkRight('tokenlist')) {
-            TokenFactory.getTokensNoCancel(function (data) {
-                    if (data) {
-                        $scope.tokens.software = data.result.value.count;
-                    }
-                }, {"pagesize": 0, "infokey": "tokenkind", "infovalue": "software"});
-            TokenFactory.getTokensNoCancel(function (data) {
+        TokenFactory.getTokensNoCancel(function (data) {
                 if (data) {
-                    $scope.tokens.unassigned_software = data.result.value.count;
+                    $scope.tokens.software = data.result.value.count;
                 }
-            }, {"pagesize": 0, "infokey": "tokenkind", "infovalue": "software", "assigned": "False"});
-        };
+            }, {"pagesize": 0, "infokey": "tokenkind", "infovalue": "software"});
+        TokenFactory.getTokensNoCancel(function (data) {
+            if (data) {
+                $scope.tokens.unassigned_software = data.result.value.count;
+            }
+        }, {"pagesize": 0, "infokey": "tokenkind", "infovalue": "software", "assigned": "False"});
     };
 
     $scope.get_policies = function () {
-        if (AuthFactory.checkRight('policyread')) {
-            ConfigFactory.getPolicies(function(data) {
-                $scope.policies = {"active": [], "num_active": 0,
-                           "inactive": [], "num_inactive": 0};
-                var policies = data.result.value;
-                angular.forEach(policies, function(policy) {
-                    if (policy.active) {
-                        $scope.policies.active.push(policy.name);
-                        $scope.policies.num_active += 1;
-                    } else {
-                        $scope.policies.inactive.push(policy.name);
-                        $scope.policies.num_inactive += 1;
-                    }
-                });
+        ConfigFactory.getPolicies(function(data) {
+            $scope.policies = {"active": [], "num_active": 0,
+                       "inactive": [], "num_inactive": 0};
+            var policies = data.result.value;
+            angular.forEach(policies, function(policy) {
+                if (policy.active) {
+                    $scope.policies.active.push(policy.name);
+                    $scope.policies.num_active += 1;
+                } else {
+                    $scope.policies.inactive.push(policy.name);
+                    $scope.policies.num_inactive += 1;
+                }
             });
-        };
+        });
     };
 
     $scope.get_events = function () {
-        if (AuthFactory.checkRight('eventhandling_read ')) {
-            $scope.events = {"active": [], "num_active": 0,
-                         "inactive": [], "num_inactive": 0};
-            ConfigFactory.getEvents(function(data) {
-                var events = data.result.value;
-                angular.forEach(events, function(event) {
-                    if (event.active) {
-                        $scope.events.active.push(event);
-                        $scope.events.num_active += 1;
-                    } else {
-                        $scope.events.inactive.push(event);
-                        $scope.events.num_inactive += 1;
-                    }
-                });
+        $scope.events = {"active": [], "num_active": 0,
+                     "inactive": [], "num_inactive": 0};
+        ConfigFactory.getEvents(function(data) {
+            var events = data.result.value;
+            angular.forEach(events, function(event) {
+                if (event.active) {
+                    $scope.events.active.push(event);
+                    $scope.events.num_active += 1;
+                } else {
+                    $scope.events.inactive.push(event);
+                    $scope.events.num_inactive += 1;
+                }
             });
-        };
+        });
     };
 
 
@@ -122,39 +112,35 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
      };
 
      $scope.getAuthentication = function () {
-        if (AuthFactory.checkRight('auditlog')) {
-            $scope.authentications = {"success": 0, "fail": 0};
-            AuditFactory.get({"timelimit": "1d", "action": "*validate*"},
-                function (data) {
-                var authentications = data.result.value.auditdata;
-                angular.forEach(authentications, function(authlog) {
-                    if (authlog.success) {
-                        $scope.authentications.success += 1;
-                    } else {
-                        $scope.authentications.fail += 1;
-                    }
-                });
+        $scope.authentications = {"success": 0, "fail": 0};
+        AuditFactory.get({"timelimit": "1d", "action": "*validate*"},
+            function (data) {
+            var authentications = data.result.value.auditdata;
+            angular.forEach(authentications, function(authlog) {
+                if (authlog.success) {
+                    $scope.authentications.success += 1;
+                } else {
+                    $scope.authentications.fail += 1;
+                }
             });
-        };
+        });
      };
 
      $scope.getAdministration = function () {
-        if (AuthFactory.checkRight('auditlog')) {
-             $scope.administration = [];
-             angular.forEach(["system", "resolver", "realm", "policy", "event"],
-                 function(adminaction) {
-                    AuditFactory.get({"timelimit": "1d", "action": "POST /"+adminaction+"*"},
-                        function (data) {
-                        angular.forEach(data.result.value.auditdata, function(auditentry) {
-                            $scope.administration.push(auditentry);
-                        });
-                        // reverse sort it by date
-                        $scope.administration.sort($scope.compare_auditentries);
-                        // only return the last 5 entries
-                        $scope.administration = $scope.administration.slice(0, 5);
+         $scope.administration = [];
+         angular.forEach(["system", "resolver", "realm", "policy", "event"],
+             function(adminaction) {
+                AuditFactory.get({"timelimit": "1d", "action": "POST /"+adminaction+"*"},
+                    function (data) {
+                    angular.forEach(data.result.value.auditdata, function(auditentry) {
+                        $scope.administration.push(auditentry);
                     });
-                 });
-         };
+                    // reverse sort it by date
+                    $scope.administration.sort($scope.compare_auditentries);
+                    // only return the last 5 entries
+                    $scope.administration = $scope.administration.slice(0, 5);
+                });
+             });
      };
 
      $scope.compare_auditentries = function (a, b) {
