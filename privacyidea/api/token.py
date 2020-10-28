@@ -902,6 +902,7 @@ def loadtokens_api(filename=None):
         "oathcsv" or "yubikeycsv".
     :jsonparam tokenrealms: comma separated list of realms.
     :jsonparam psk: Pre Shared Key, when importing PSKC
+    :jsonparam pskcValidateMAC: Determines how invalid MACs should be handled when importing PSKC
     :return: The number of the imported tokens
     :rtype: int
     """
@@ -911,8 +912,7 @@ def loadtokens_api(filename=None):
                    'Yubikey CSV', 'pskc']
     file_type = getParam(request.all_data, "type", required)
     hashlib = getParam(request.all_data, "aladdin_hashlib")
-    # TODO Get parameter psck_validateMac with default to <?>
-    # TODO Add parameter to description
+    aes_validate_mac = getParam(request.all_data, "pskcValidateMAC", default='check_fail_hard')
     aes_psk = getParam(request.all_data, "psk")
     aes_password = getParam(request.all_data, "password")
     if aes_psk and len(aes_psk) != 32:
@@ -967,7 +967,7 @@ def loadtokens_api(filename=None):
         TOKENS = parseYubicoCSV(file_contents)
     elif file_type in ["pskc"]:
         TOKENS = parsePSKCdata(file_contents, preshared_key_hex=aes_psk,
-                               password=aes_password)
+                               password=aes_password, validate_mac=aes_validate_mac)
 
     # Now import the Tokens from the dictionary
     ret = ""
