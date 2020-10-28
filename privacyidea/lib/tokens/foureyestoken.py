@@ -393,7 +393,7 @@ class FourEyesTokenClass(TokenClass):
         :param options: additional arguments from the request, which could
                         be token specific. Usually "transaction_id"
         :type options: dict
-        :return: return 1 if the answer to the question is correct, -1 otherwise.
+        :return: return 1 if the answer to the challenge is correct, -1 otherwise.
         :rtype: int
         """
         options = options or {}
@@ -431,9 +431,6 @@ class FourEyesTokenClass(TokenClass):
         The submitted challenge will be preserved in the challenge
         database.
 
-        The challenge is a randomly selected question of the available
-        questions for this token.
-
         If no transaction id is given, the system will create a transaction
         id and return it, so that the response can refer to this transaction.
 
@@ -462,7 +459,7 @@ class FourEyesTokenClass(TokenClass):
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
         tokentype = self.get_tokentype().lower()
-        # Maybe there is a QUESTIONChallengeValidityTime...
+        # Maybe there is a 4EYESChallengeValidityTime...
         lookup_for = tokentype.capitalize() + 'ChallengeValidityTime'
         validity = int(get_from_config(lookup_for, validity))
 
