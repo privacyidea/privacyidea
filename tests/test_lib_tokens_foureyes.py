@@ -39,6 +39,7 @@ class FourEyesTokenTestCase(MyTestCase):
 
     def test_03_authenticate(self):
         self.setUp_user_realms()
+
         init_token({"type": "pw",
                     "otpkey": "password1",
                     "pin": "pin1",
@@ -65,16 +66,16 @@ class FourEyesTokenTestCase(MyTestCase):
         r = check_serial_pass("eye1", "pin1password1 pin2password2")
         self.assertEqual(r[0], True)
 
+        # This triggers the challenge for the next token
         r = check_serial_pass("eye1", "pin1password1")
         self.assertEqual(r[0], False)
-        self.assertEqual(r[1].get("foureyes"), "Only found 1 tokens in realm "
-                                               "realm1")
+        self.assertTrue("transaction_id" in r[1])
+        self.assertEqual(r[1].get("message"), 'Please authenticate with another token from either realm: realm1.')
 
         # check false separator
         r = check_serial_pass("eye1", "pin1password1:pin2password2")
         self.assertFalse(r[0])
-        self.assertEqual(r[1].get("foureyes"), "Only found 0 tokens in realm "
-                                               "realm1")
+        self.assertEqual(r[1].get("foureyes"), "Only found 0 tokens in realm {0!s}".format(self.realm1))
 
         # check authentication also works if the 4eyes-token is in the same realm
         tok.add_user(User('cornelius', self.realm1))
