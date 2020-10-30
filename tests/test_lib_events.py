@@ -1760,6 +1760,27 @@ class TokenEventTestCase(MyTestCase):
         self.assertEqual(t.get_tokeninfo("email"), user_obj.info.get("email"))
         remove_token(t.token.serial)
 
+        # Enroll an Email token with specific SMTP server config
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "email",
+                                        "user": "1",
+                                        "smtp_identifier": "myServer"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="email")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
+        self.assertEqual(t.get_tokeninfo("email"), user_obj.info.get("email"))
+        self.assertEqual(t.get_tokeninfo("email.identifier"), "myServer")
+        remove_token(t.token.serial)
+
         # Enroll an mOTP token
         options = {"g": g,
                    "request": req,

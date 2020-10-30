@@ -50,6 +50,7 @@ from privacyidea.lib.token import (set_realms, remove_token, enable_token,
 from privacyidea.lib.utils import (parse_date, is_true,
                                    parse_time_offset_from_now)
 from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
+from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib import _
 import logging
 import datetime
@@ -172,6 +173,13 @@ class TokenEventHandler(BaseEventHandler):
                             "visibleValue": "email",
                             "description": _("Dynamically read the email address "
                                              "from the user store.")
+                        },
+                        "smtp_identifier": {
+                            "type": "str",
+                            "visibleIf": "tokentype",
+                            "visibleValue": "email",
+                            "description": _("Use a specific SMTP server configuration for this token."),
+                            "value": [server.config.identifier for server in get_smtpservers()]
                         },
                         "additional_params": {
                             "type": "str",
@@ -405,6 +413,8 @@ class TokenEventHandler(BaseEventHandler):
                         if not init_param['email']:
                             log.warning("Enrolling EMail token. But the user {0!s}"
                                         "has no email address!".format(user))
+                    if handler_options.get("smtp_identifier"):
+                        init_param["email.identifier"] = handler_options.get("smtp_identifier")
                 elif tokentype == "motp":
                     init_param['motppin'] = handler_options.get("motppin")
 

@@ -488,3 +488,25 @@ class EmailTokenTestCase(MyTestCase):
         self.assertTrue(r, r)
         delete_smtpserver("myServer")
         delete_privacyidea_config("email.identifier")
+
+    @smtpmock.activate
+    def test_23_specific_email_config(self):
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
+        transactionid = "123456098723"
+        # create new configuration
+        r = add_smtpserver(identifier="myServer", server="1.2.3.4")
+        set_privacyidea_config("email.identifier", "myServer")
+        # set it to the token instead of changing the global config
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = EmailTokenClass(db_token)
+        token.add_tokeninfo("email.identifier", "myServer")
+        self.assertTrue(token.check_otp("123456", 1, 10) == -1)
+        c = token.create_challenge(transactionid)
+        self.assertTrue(c[0], c)
+        otp = c[1]
+        self.assertTrue(c[3].get("state"), transactionid)
+
+        # check for the challenges response
+        r = token.check_challenge_response(passw=otp)
+        self.assertTrue(r, r)
+        delete_smtpserver("myServer")
