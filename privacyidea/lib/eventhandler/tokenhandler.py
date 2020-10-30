@@ -178,8 +178,8 @@ class TokenEventHandler(BaseEventHandler):
                             "type": "str",
                             "visibleIf": "tokentype",
                             "visibleValue": "email",
-                            "description": _("Use a specific SMTP server for this token."),
-                            "value": list(map(lambda smtp: smtp.config.identifier, get_smtpservers()))
+                            "description": _("Use a specific SMTP server configuration for this token."),
+                            "value": [server.config.identifier for server in get_smtpservers()]
                         },
                         "additional_params": {
                             "type": "str",
