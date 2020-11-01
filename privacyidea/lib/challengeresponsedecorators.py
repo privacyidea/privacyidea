@@ -59,6 +59,7 @@ def _create_pin_reset_challenge(token_obj, message, challenge_data=None):
     reply_dict = {}
     reply_dict["multi_challenge"] = [{"transaction_id": db_challenge.transaction_id,
                                       "message": message,
+                                      "attributes": None,
                                       "serial": token_obj.token.serial,
                                       "type": token_obj.token.tokentype}]
     reply_dict["message"] = message
