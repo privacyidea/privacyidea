@@ -456,7 +456,8 @@ angular.module("privacyideaApp")
                  subscription_state = 1
                  subscription_state = 2
                  */
-                if ($scope.welcomeStep < 4) {
+                $scope.resetWelcome();
+                if (($scope.welcomeStep < 4 && !$scope.hide_welcome) || $scope.welcomeStep < 5) {
                     // We did not walk through the welcome dialog, yet.
                     if (($scope.subscription_state === 0 && !$scope.hide_welcome) ||
                         ($scope.subscription_state === 1)) {
@@ -485,7 +486,7 @@ angular.module("privacyideaApp")
         $scope.privacyideaVersionNumber = null;
         $scope.logoutWarning = false;
         $scope.myCountdown = "";
-        $scope.welcomeStep = 0;
+        $scope.resetWelcome();
         $scope.dialogNoToken = false;
         $scope.privacyideaSupportLink = $rootScope.publicLink;
         $state.go("login");
@@ -496,12 +497,18 @@ angular.module("privacyideaApp")
 
     $scope.nextWelcome = function() {
         $scope.welcomeStep += 1;
-        if ($scope.welcomeStep === 2 || ($scope.subscription_state === 0 && $scope.welcomeStep === 4)) {
+        if (($scope.subscription_state == 0 && $scope.welcomeStep === 4) ||
+            ($scope.subscription_state == 1 && $scope.welcomeStep === 5)) {
             $('#dialogWelcome').modal("hide");
         }
     };
     $scope.resetWelcome = function() {
-        $scope.welcomeStep = 0;
+        if ($scope.hide_welcome) {
+            $scope.welcomeStep = 4;
+        } else {
+            $scope.welcomeStep = 0;
+        }
+
     };
 
     $scope.closeNoToken = function() {
@@ -512,7 +519,7 @@ angular.module("privacyideaApp")
     $scope.lock_screen = function () {
         // We need to destroy the auth_token
         $scope.loggedInUser.auth_token = null;
-        $scope.welcomeStep = 0;
+        $scope.resetWelcome();
         Idle.unwatch();
         $('#dialogLock').modal({
             keyboard: false,
