@@ -47,14 +47,6 @@
                 </p>
             </div>
 
-            <!-- In case of expired subscription -->
-            <div class="modal-body" ng-show="subscription_state === 2" translate>
-                <p>Your subscription is not valid anymore. Either you exceeded the number of tokens or the
-                    subscription expired. Please check, if you need to renew your subscription.
-                </p>
-            </div>
-
-
             <div class="modal-footer">
                 <button type="button" class="btn btn-default"
                         ng-click="nextWelcome()" translate>Next
@@ -62,7 +54,7 @@
             </div>
         </div>
 
-        <div class="modal-content" ng-show="welcomeStep === 1">
+        <div class="modal-content" ng-show="subscription_state === 0 && welcomeStep === 1">
             <div class="modal-header">
                 <h4 class="modal-title" id="myModalLabel" translate
                 >The value of open source</h4>
@@ -97,7 +89,7 @@
             </div>
         </div>
 
-        <div class="modal-content" ng-show="welcomeStep === 2">
+        <div class="modal-content" ng-show="subscription_state === 0 && welcomeStep === 2">
             <div class="modal-header">
                 <h4 class="modal-title" id="myModalLabel" translate
                 >The added value of privacyIDEA Enterprise Edition</h4>
@@ -148,7 +140,8 @@
             </div>
         </div>
 
-        <div class="modal-content" ng-show="welcomeStep === 3">
+        <div class="modal-content" ng-show="(subscription_state === 0 && welcomeStep === 3 ) ||
+                                            (subscription_state === 1 && welcomeStep === 1)">
             <div class="modal-header">
                 <h4 class="modal-title" id="myModalLabel" translate
                 >Thank you for improving your security!</h4>

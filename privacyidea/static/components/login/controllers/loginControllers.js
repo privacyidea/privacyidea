@@ -459,11 +459,12 @@ angular.module("privacyideaApp")
                 if ($scope.welcomeStep < 4) {
                     // We did not walk through the welcome dialog, yet.
                     if (($scope.subscription_state === 0 && !$scope.hide_welcome) ||
-                        ($scope.subscription_state === 1) ||
-                        ($scope.subscription_state === 2)) {
+                        ($scope.subscription_state === 1)) {
                         $('#dialogWelcome').modal("show");
                     }
                 }
+                var $random_number = Math.floor(Math.random() * (9999 + 1000 + 1)) + 1000;
+                $scope.class_subscription_expired = "subscriptionExpired" + $random_number;
             }
             if ( $scope.unlocking ) {
                 $('#dialogLock').modal('hide');
@@ -495,7 +496,7 @@ angular.module("privacyideaApp")
 
     $scope.nextWelcome = function() {
         $scope.welcomeStep += 1;
-        if ($scope.welcomeStep === 4) {
+        if ($scope.welcomeStep === 2 || ($scope.subscription_state === 0 && $scope.welcomeStep === 4)) {
             $('#dialogWelcome').modal("hide");
         }
     };
