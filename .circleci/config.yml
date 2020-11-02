@@ -1,6 +1,29 @@
-version: 2
 jobs:
-  build:
+  test_generic:
+    description: Run all tests with the latest packages
+    executor: python/default
+    steps:
+      - checkout
+      - run: git submodule sync
+      - run: git submodule update --init
+      # We do not want any caching (always the latest packages) therefore we
+      # install the packages directly (not using the python orb)
+      - run:
+          command: pip install pytest pytest-cov mock responses testfixtures
+      - run:
+          command: pip install -e .
+      - run:
+          command: mkdir -p test-report
+      - run:
+          command: |
+            python -b -m pytest --cov=privacyidea --junit-xml=test-report/report_generic.xml tests/
+          name: Test generic
+      - store_artifacts:
+          path: test-report/report_generic.xml
+          destination: generic-test-report
+
+  test_mysql:
+    description: Run all tests with MySQL database backend
     docker:
       # this is a debian based image but this shouldn't be a problem.
       - image: circleci/python:2.7-stretch
@@ -24,20 +47,30 @@ jobs:
       # Setup the Virtualenv for building/installing privacyidea
       # We won't use requirements.txt here since we build using setup.py
       - run:
-          name: install dependencies
+          command: mkdir -p test-report
+      - run:
           command: |
-            virtualenv venv
-            . venv/bin/activate
-            pip install sphinx mock sphinxcontrib-httpdomain
+            python -b -m pytest --cov=privacyidea --junit-xml=test-report/report_mysql.xml tests/
+          name: MySQL Test
+      - store_artifacts:
+          path: test-report/report_mysql.xml
+          destination: mysql-test-report
 
       - save_cache:
           paths:
             - ./venv
           key: v1-dependencies-{{ checksum "requirements.txt" }}
 
-      # run builds (currently no tests in CircleCI)
-      - run:
-          name: run setup.py build
-          command: |
-            . venv/bin/activate
-            python setup.py build
+version: 2.1
+workflows:
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 6 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - test_generic
+      - test_mysql
