@@ -300,8 +300,16 @@ class CertificateTokenClass(TokenClass):
                     log.warning("certificate request does not match attestation certificate.")
                     raise privacyIDEAError("certificate request does not match attestation certificate.")
                 if VERIFY_CERTIFICATE_CHAIN:
-                    verify_certificate(to_byte_string(attestation),
-                                       [YUBICO_ATTESTATION_ROOT_CERT, YUBICO_ATTESTATION_INTERMEDIATE])
+                    verified = False
+                    for chain in [ [YUBICO_ATTESTATION_ROOT_CERT, YUBICO_ATTESTATION_INTERMEDIATE] ]:
+                        try:
+                            verify_certificate(to_byte_string(attestation), chain)
+                            verified = True
+                        except Exception as exx:
+                            log.debug(u"Can not verify attestation certificate against chain {0!s}.".format(chain))
+                    if not verified:
+                        raise Exception("Failed to verify certificate chain of attestation certificate.")
+
             # During the initialization process, we need to create the
             # certificate
             x509object = cacon.sign_request(request,
