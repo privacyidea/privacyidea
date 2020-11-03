@@ -30,6 +30,7 @@ from testfixtures import Replace, test_datetime
 import datetime
 import time
 import responses
+import mock
 from . import smtpmock, ldap3mock, radiusmock
 
 
@@ -4257,6 +4258,57 @@ class AChallengeResponse(MyApiTestCase):
         remove_token("admintok1")
         remove_token("admintok2")
         remove_token("admintok3")
+
+    @smtpmock.activate
+    def test_18_email_triggerchallenge_no_pin(self):
+        # Test that the HOTP value from an email token without a PIN
+        # can not be used in challenge response after the challenge expired.
+        smtpmock.setdata(response={"hans@dampf.com": (200, 'OK')})
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        serial = "smtp01"
+        user = "timelimituser"
+        # Create token without PIN
+        r = init_token({"type": "email", "serial": serial,
+                        "otpkey": self.otpkey,
+                        "email": "hans@dampf.com"}, user=User(user, self.realm2))
+        self.assertTrue(r)
+
+        # Trigger challenge for the user
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"user": user, "realm": self.realm2},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result.get("value"), 1)
+            detail = res.json.get("detail")
+            self.assertEqual(detail.get("messages")[0],
+                             _("Enter the OTP from the Email:"))
+            transaction_id = detail.get("transaction_id")
+
+        # If we wait long enough, the challenge has expired,
+        # while the HOTP value 287082 in itself would still be valid.
+        # However, the authentication with the expired transaction_id has to fail
+        new_utcnow = datetime.datetime.utcnow().replace(tzinfo=None) + datetime.timedelta(minutes=12)
+        new_now = datetime.datetime.now().replace(tzinfo=None) + datetime.timedelta(minutes=12)
+        with mock.patch('privacyidea.models.datetime') as mock_datetime:
+            mock_datetime.utcnow.return_value = new_utcnow
+            mock_datetime.now.return_value = new_now
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": user, "realm": self.realm2,
+                                                     "transaction_id": transaction_id,
+                                                     "pass": self.valid_otp_values[1]}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = res.json.get("result")
+                self.assertFalse(result.get("value"))
+                detail = res.json.get("detail")
+                self.assertEqual("Response did not match the challenge.", detail.get("message"))
+
+        remove_token(serial)
 
 
 class TriggeredPoliciesTestCase(MyApiTestCase):
