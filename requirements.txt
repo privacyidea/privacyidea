@@ -13,7 +13,7 @@ click==7.1.2
 configobj==5.0.6
 contextlib2==0.6.0.post1; python_version < '3.0'
 croniter==0.3.34
-cryptography==3.1.1
+cryptography==3.2
 defusedxml==0.6.0
 ecdsa==0.16.0
 enum34==1.1.10; python_version < '3.0'
