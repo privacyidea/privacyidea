@@ -119,7 +119,7 @@
 
         <div class="text-center">
             <button type="button" ng-click="enrollToken()"
-                    ng-disabled="!checkEnroll() || formEnrollToken.$invalid"
+                    ng-disabled="!checkEnroll() || formEnrollToken.$invalid || enrolling"
                     class="btn btn-primary" translate>Enroll Token
             </button>
         </div>

@@ -213,6 +213,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         // Note: A primitive does not work in the ng-model of the checkbox!
         useIt: false
     };
+    $scope.enrolling = false;
 
     $scope.formInit = {
         tokenTypes: {"hotp": gettextCatalog.getString("HOTP: event based One Time Passwords"),
@@ -490,6 +491,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     };
 
     $scope.enrollToken = function () {
+        $scope.enrolling = true;
         //debug: console.log($scope.newUser.user);
         //debug: console.log($scope.newUser.realm);
         //debug: console.log($scope.newUser.pin);
