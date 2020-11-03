@@ -1,10 +1,10 @@
-
+q
 privacyIDEA
 ===========
 
-.. image:: https://travis-ci.org/privacyidea/privacyidea.svg?branch=master
+.. image:: https://travis-ci.com/privacyidea/privacyidea.svg?branch=master
     :alt: Build Status
-    :target: https://travis-ci.org/privacyidea/privacyidea
+    :target: https://travis-ci.com/privacyidea/privacyidea
 
 .. .. image:: https://circleci.com/gh/privacyidea/privacyidea/tree/master.svg?style=shield&circle-token=:circle-token
 ..     :alt: CircleCI

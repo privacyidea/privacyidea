@@ -1,43 +1,68 @@
-version: 2
+version: 2.1
+
 jobs:
-  build:
+  test_generic:
+    description: Run all tests with the latest packages
     docker:
-      # this is a debian based image but this shouldn't be a problem.
-      - image: circleci/python:2.7-stretch
-
-    working_directory: ~/repo
-
+      # in the long run we could use matrix tests here for multiple python versions
+      - image: cimg/python:3.6
     steps:
       - checkout
       - run: git submodule sync
       - run: git submodule update --init
-        # install some required packages for building ubuntu packages
-      - run: sudo -u root apt-get install build-essential python-setuptools python-all devscripts lsb-release
-
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "requirements.txt" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
-
-      # Setup the Virtualenv for building/installing privacyidea
-      # We won't use requirements.txt here since we build using setup.py
+      - run: mkdir -p test-results/generic
+      # We do not want any caching (always the latest packages) therefore we
+      # install the packages directly (not using the python orb)
+      - run: pip install pytest pytest-cov mock responses testfixtures
+      - run: pip install -e .
+      - run: pip freeze > test-results/generic/packages.txt
       - run:
-          name: install dependencies
           command: |
-            virtualenv venv
-            . venv/bin/activate
-            pip install sphinx mock sphinxcontrib-httpdomain
+            python -b -m pytest --cov=privacyidea --junit-xml=test-results/generic/results.xml tests/
+          name: Test generic
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results/generic
 
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
-
-      # run builds (currently no tests in CircleCI)
+  test_mysql:
+    description: Run all tests with MySQL database backend
+    docker:
+      - image: cimg/python:3.6
+        environment:
+          TEST_DATABASE_URL: mysql+pymysql://pi:test123@localhost/pi
+      - image: circleci/mysql:latest-ram
+        environment:
+          MYSQL_DATABASE: pi
+          MYSQL_USER: pi
+          MYSQL_PASSWORD: test123
+          MYSQL_RANDOM_ROOT_PASSWORD: yes
+    steps:
+      - checkout
+      - run: git submodule sync
+      - run: git submodule update --init
+      - run: pip install -r tests/requirements.txt
+      - run: mkdir -p test-results/mysql
       - run:
-          name: run setup.py build
           command: |
-            . venv/bin/activate
-            python setup.py build
+            python -b -m pytest --cov=privacyidea --junit-xml=test-results/mysql/results.xml tests/
+          name: MySQL Test
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results/mysql
+
+workflows:
+  version: 2
+  nightly:
+    triggers:
+      - schedule:
+          # Start the nightly test at 5:00 UTC only on branch "master"
+          cron: "0 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - test_generic
+      - test_mysql

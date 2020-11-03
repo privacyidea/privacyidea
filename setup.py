@@ -104,7 +104,7 @@ setup(
     author_email='cornelius@privacyidea.org',
     url='http://www.privacyidea.org',
     keywords='OTP, two factor authentication, management, security',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.9.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     packages=find_packages(),
     scripts=["pi-manage"] + get_scripts("tools"),
     extras_require={
@@ -148,7 +148,8 @@ setup(
                  'Programming Language :: Python :: 3.5',
                  'Programming Language :: Python :: 3.6',
                  'Programming Language :: Python :: 3.7',
-                 'Programming Language :: Python :: 3.8'
+                 'Programming Language :: Python :: 3.8',
+                 'Programming Language :: Python :: 3.9'
                  ],
     zip_safe=False,
     long_description=get_file_contents('README.rst')
