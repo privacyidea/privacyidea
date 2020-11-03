@@ -60,39 +60,6 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
         }
     };
 
-    if ($scope.loggedInUser.role === "admin") {
-        /*
-        * Functions to check and to create a default realm. At the moment this is
-        * in the tokenview, as the token view is the first view. This could be
-        * changed to be located anywhere else.
-        */
-        ConfigFactory.getRealms(function (data) {
-            // Check if there is a realm defined, or if we should display the
-            // Auto Create Dialog
-            var number_of_realms = Object.keys(data.result.value).length;
-            if (number_of_realms === 0) {
-                $('#dialogAutoCreateRealm').modal();
-            }
-        });
-        /*
-         Welcome dialog, which displays a lot of information to the
-         administrator.
-
-         We display it if
-         subscription_state = 0 and hide_welcome = false
-         subscription_state = 1
-         subscription_state = 2
-         */
-        if ($scope.welcomeStep < 4) {
-            // We did not walk through the welcome dialog, yet.
-            if (($scope.subscription_state === 0 && !$scope.hide_welcome) ||
-                ($scope.subscription_state === 1) ||
-                ($scope.subscription_state === 2)) {
-                $('#dialogWelcome').modal("show");
-            }
-        }
-    }
-
     // single token function
     $scope.reset = function (serial) {
         TokenFactory.reset(serial, $scope.get);

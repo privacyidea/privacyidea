@@ -158,3 +158,10 @@
 <div class="alert alert-warning" ng-show="logoutWarning" translate>
     You will be logged out in {{ myCountdown }} second(s).
 </div>
+<div class="alert alert-warning {{ class_subscription_expired }}"
+    ng-show="subscription_state === 2">
+    <div translate>
+        Your subscription is not valid anymore. Either you exceeded the number of tokens or the
+        subscription expired. Please check, if you need to renew your <a ui-sref="component.subscriptions">subscription</a>.
+    </div>
+</div>

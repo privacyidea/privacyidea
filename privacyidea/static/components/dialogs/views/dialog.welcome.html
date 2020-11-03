@@ -15,7 +15,7 @@
             </div>
 
             <!-- In case of no subscription and less than 50 users -->
-            <div class="modal-body" ng-show="subscription_state === 0" translate>
+            <div class="modal-body" translate>
                 <p>First, we would like to give you some background
                     information on privacyIDEA.</p>
                 <p>privacyIDEA is an <b>Enterprise Level</b>
@@ -29,31 +29,6 @@
                     paid programming of new features.
                 </p>
             </div>
-
-            <!-- In case of no subscription and more than 50 users -->
-            <div class="modal-body" ng-show="subscription_state === 1" translate>
-                <p><b>You are using privacyIDEA with more than 50 users.</b></p>
-                <p>Thank you for your trust!</p>
-                <p>For the productive enterprise use we recommend the
-                    <a target=netknights
-                       href="https://netknights.it/en/produkte/privacyidea/">privacyIDEA Enterprise Edition</a>.
-                </p>
-                <p>NetKnights provides the
-                    <a target=netknights
-                       href="https://netknights.it/en/produkte/privacyidea/">privacyIDEA Enterprise Edition</a>
-                    including <b>Support and Service Level Agreements</b>.
-                    Moreover NetKnights provides services, consultancy and
-                    paid programming of new features.
-                </p>
-            </div>
-
-            <!-- In case of expired subscription -->
-            <div class="modal-body" ng-show="subscription_state === 2" translate>
-                <p>Your subscription is not valid anymore. Either you exceeded the number of tokens or the
-                    subscription expired. Please check, if you need to renew your subscription.
-                </p>
-            </div>
-
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-default"
@@ -165,6 +140,30 @@
                 </button>
                 <button type="button" class="btn btn-success"
                         ng-click="nextWelcome()" translate>Dive In!
+                </button>
+            </div>
+        </div>
+
+        <div class="modal-content" ng-show="welcomeStep === 4">
+            <!-- In case of no subscription and more than 50 users -->
+            <div class="modal-body" translate>
+                <p><b>You are using privacyIDEA with more than 50 users.</b></p>
+                <p>Thank you for your trust!</p>
+                <p>For the productive enterprise use we recommend the
+                    <a target=netknights
+                       href="https://netknights.it/en/produkte/privacyidea/">privacyIDEA Enterprise Edition</a>.
+                </p>
+                <p>NetKnights provides the
+                    <a target=netknights
+                       href="https://netknights.it/en/produkte/privacyidea/">privacyIDEA Enterprise Edition</a>
+                    including <b>Support and Service Level Agreements</b>.
+                    Moreover NetKnights provides services, consultancy and
+                    paid programming of new features.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success"
+                    ng-click="nextWelcome()" translate>Okay
                 </button>
             </div>
         </div>
