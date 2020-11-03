@@ -2675,7 +2675,7 @@ class AuthCache(MethodsMixin, db.Model):
     user_agent = db.Column(db.Unicode(120), default=u"")
     # We can hash the password like this:
     # binascii.hexlify(hashlib.sha256("secret123456").digest())
-    authentication = db.Column(db.Unicode(64), default=u"")
+    authentication = db.Column(db.Unicode(255), default=u"")
 
     def __init__(self, username, realm, resolver, authentication,
                  first_auth=None, last_auth=None):
