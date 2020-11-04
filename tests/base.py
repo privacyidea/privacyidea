@@ -11,6 +11,7 @@ from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import User
 from privacyidea.lib.auth import create_db_admin
 from privacyidea.lib.auditmodules.base import Audit
+from privacyidea.lib.lifecycle import call_finalizers
 
 
 PWFILE = "tests/testdata/passwords"
@@ -169,6 +170,7 @@ class MyTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        call_finalizers()
         db.session.remove()
         db.drop_all()
         cls.app_context.pop()

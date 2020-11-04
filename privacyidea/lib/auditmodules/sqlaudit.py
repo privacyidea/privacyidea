@@ -114,7 +114,7 @@ class Audit(AuditBase):
         self.session = Session()
         # Ensure that the connection gets returned to the pool when the request has
         # been handled. This may close an already-closed session, but this is not a problem.
-        register_finalizer(self.session.close)
+        register_finalizer(self._finalize_session)
         self.session._model_changes = {}
 
     def _create_engine(self):
@@ -138,6 +138,11 @@ class Audit(AuditBase):
             engine = create_engine(connect_string)
             log.debug("Using no SQL pool_size.")
         return engine
+
+    def _finalize_session(self):
+        """ Close current session and dispose connections of db engine"""
+        self.session.close()
+        self.engine.dispose()
 
     def _truncate_data(self):
         """
