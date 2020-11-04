@@ -82,11 +82,13 @@
             </p>
             <select class="form-control"
                     ng-model="form.validateMAC">
-<!--                FIXME How to make these strings translatable?-->
+                <!--                TODO Set default value for this!-->
+                <!--                FIXME How to make these strings translatable?-->
                 <option ng-repeat="(key, desc) in {no_check: 'Do not verify the authenticity',
                  check_fail_hard : 'Abort operation on unverifiable token',
                   check_fail_soft : 'Skip tokens that can not be verified'}"
-                    value="{{ key }}">{{ desc }}
+                        value="{{ key }}">
+                    {{ desc }}
                 </option>
             </select>
         </div>
@@ -140,7 +142,7 @@
         Uploaded Tokens: {{ uploadedTokens }}
     </div>
     <div>
-<!--        How to translate this?-->
+        <!--        How to translate this?-->
         Skipped Tokens: {{ notImportedTokens }}
     </div>
 </div>
