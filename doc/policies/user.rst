@@ -191,6 +191,13 @@ view older entries.
 
 Can be something like 10m (10 minutes), 10h (10 hours) or 10d (ten days).
 
+hide_audit_columns
+~~~~~~~~~~~~~~~~~~
+
+type: string
+
+With this user policy the specified columns will not be displayed in the audit.
+For example a value ``sig_check log_level`` will hide these two columns.
 
 updateuser
 ~~~~~~~~~~
