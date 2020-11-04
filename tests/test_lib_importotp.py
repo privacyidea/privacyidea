@@ -577,6 +577,7 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens["PW001"].get("otpkey"), hexlify_and_unicode("123456789012"))
 
     def test_04_import_pskc_aes(self):
+        # Test default and all tokens are valid
         encryption_key_hex = "12345678901234567890123456789012"
         tokens = parsePSKCdata(XML_PSKC_AES,
                                preshared_key_hex=encryption_key_hex)
