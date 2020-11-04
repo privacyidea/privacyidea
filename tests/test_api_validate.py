@@ -1274,9 +1274,13 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertFalse(result.get("value"))
 
         # Failcounter for the first token is increased
-        # Failcounter for the second token is unchanged
+        # Failcounter for the second token is increased, since both tokens are in the
+        # the challenge_response_tokenlist.
         self.assertEqual(tokens[0].get_failcount(), 6)
-        self.assertEqual(tokens[1].get_failcount(), 5)
+        self.assertEqual(tokens[1].get_failcount(), 6)
+        # Check that the received OTP counter is set to 1 for this token
+        challs = get_challenges(serial=chalresp_serials[0])
+        self.assertEqual(challs[0].received_count, 1)
 
         # send the correct OTP value
         with self.app.test_request_context('/validate/check',
@@ -1294,10 +1298,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # Failcounter for the first token is reset
         # Failcounter for the second token is unchanged
         self.assertEqual(tokens[0].get_failcount(), 0)
-        self.assertEqual(tokens[1].get_failcount(), 5)
-
-        # Set the same failcount for both tokens
-        tokens[0].set_failcount(5)
+        self.assertEqual(tokens[1].get_failcount(), 6)
 
         # trigger a challenge for both tokens
         with self.app.test_request_context('/validate/triggerchallenge',
@@ -1324,8 +1325,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertFalse(result.get("value"))
 
         # Failcounter for both tokens are increased
-        self.assertEqual(tokens[0].get_failcount(), 6)
-        self.assertEqual(tokens[1].get_failcount(), 6)
+        self.assertEqual(tokens[0].get_failcount(), 1)
+        self.assertEqual(tokens[1].get_failcount(), 7)
 
         # delete the tokens
         for serial in chalresp_serials:

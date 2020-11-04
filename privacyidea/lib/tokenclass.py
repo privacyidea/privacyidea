@@ -1396,7 +1396,7 @@ class TokenClass(object):
         ``options`` parameter contains a key ``state`` or ``transactionid``.
 
         This method does not try to verify the response itself!
-        It only determines, if this is a response for a challenge or not.
+        It only determines, if this could be a response for a challenge or not.
         The response is verified in check_challenge_response.
 
         :param passw: password, which might be pin or pin+otp
@@ -1409,15 +1409,8 @@ class TokenClass(object):
         :rtype: bool
         """
         options = options or {}
-        challenge_response = False
         transaction_id = options.get("transaction_id") or options.get("state")
-        if transaction_id:
-            # Now we also need to check, if the transaction_id is an entry to the
-            # serial number of this token
-            chals = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
-            challenge_response = bool(chals)
-
-        return challenge_response
+        return bool(transaction_id)
 
     @check_token_locked
     def check_challenge_response(self, user=None, passw=None, options=None):

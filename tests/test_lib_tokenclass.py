@@ -567,8 +567,9 @@ class TokenBaseTestCase(MyTestCase):
                                                 realm=self.realm1),
                                             "test123456",
                                             options={"transaction_id": transaction_id})
-        # The token has not DB entry in the challenges table
-        self.assertFalse(resp)
+        # Even if the token has no transaction_id in the database, the "transaction_id" in the
+        # request paramters defines, that it is a chal_resp.
+        self.assertTrue(resp)
 
         # Create a challenge
         C = Challenge(serial=self.serial1, transaction_id=transaction_id, challenge="12")
