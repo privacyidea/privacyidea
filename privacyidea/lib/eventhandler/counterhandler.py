@@ -44,7 +44,7 @@ class CounterEventHandler(BaseEventHandler):
     """
 
     identifier = "Counter"
-    description = "This event handler increases arbitrary counters in the database."
+    description = "This event handler increases, decreases or resets arbitrary counters in the database."
 
     @property
     def allowed_positions(cls):
