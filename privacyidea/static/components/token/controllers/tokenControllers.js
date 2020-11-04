@@ -703,7 +703,8 @@ myApp.controller("tokenImportController", function ($scope, Upload,
                     tokenrealms: $scope.form.realm},
             }).then(function (resp) {
                 $scope.uploadedFile = resp.config.data.file.name;
-                $scope.uploadedTokens = resp.data.result.value;
+                $scope.uploadedTokens = resp.data.result.value.n_imported;
+                $scope.notImportedTokens = resp.data.result.value.n_not_imported;
             }, function (error) {
                 if (error.data.result.error.code === -401) {
                     $state.go('login');

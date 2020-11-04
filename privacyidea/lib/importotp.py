@@ -468,15 +468,16 @@ def parsePSKCdata(xml_data,
     :param password: The password that encrypted the keys
     :param do_checkserial: Check if the serial numbers conform to the OATH
         specification (not yet implemented)
-    :param validate_mac: Operation mode of hmac validation. Possible values: # TODO Use const instead (?)
+    :param validate_mac: Operation mode of hmac validation. Possible values:
         - 'check_fail_hard' : If an invalid hmac is encountered an exception is thrown and no token gets parsed.
         - 'check_fail_soft' : Skip tokens with invalid MAC.
         - 'no_check' : Hmac of tokens are not checked, every token is parsed.
 
-    :return: a dictionary of token dictionaries
-        { serial : { otpkey , counter, .... }}
+    :return: a dictionary of token dictionaries and a list of serial of not imported tokens
+        { serial : { otpkey , counter, .... }}, [serial, serial, ...]
     """
 
+    not_imported_tokens_names = []
     tokens = {}
     xml = strip_prefix_from_soup(BeautifulSoup(xml_data, "lxml"))
 
@@ -545,11 +546,14 @@ def parsePSKCdata(xml_data,
 
                     mac_value_xml = key.data.find('valuemac').text.strip()
 
-                    is_in_valid = not hmac.compare_digest(mac_value_xml, mac_value_calculated)
+                    is_invalid = not hmac.compare_digest(mac_value_xml, mac_value_calculated)
 
-                    if is_in_valid and validate_mac == 'check_fail_hard':
-                        raise ImportException('XML could not be validated, MAC-Value does not match encoded data.')
-                    elif is_in_valid and validate_mac == 'check_fail_soft':
+                    if is_invalid and validate_mac == 'check_fail_hard':
+                        not_imported_tokens_names = ['error' for _ in key_packages]
+                        tokens = {}  # Reset imported tokens
+                        break
+                    elif is_invalid and validate_mac == 'check_fail_soft':
+                        not_imported_tokens_names.append(serial)
                         continue
 
         except Exception as exx:
@@ -567,7 +571,7 @@ def parsePSKCdata(xml_data,
                 token["timeShift"] = key.data.timedrift.text.strip()
 
         tokens[serial] = token
-    return tokens
+    return tokens, not_imported_tokens_names
 
 
 class GPGImport(object):
