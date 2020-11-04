@@ -477,6 +477,8 @@ def parsePSKCdata(xml_data,
         { serial : { otpkey , counter, .... }}, [serial, serial, ...]
     """
 
+    abort = False
+
     not_imported_tokens_names = []
     tokens = {}
     xml = strip_prefix_from_soup(BeautifulSoup(xml_data, "lxml"))
@@ -549,9 +551,7 @@ def parsePSKCdata(xml_data,
                     is_invalid = not hmac.compare_digest(mac_value_xml, mac_value_calculated)
 
                     if is_invalid and validate_mac == 'check_fail_hard':
-                        not_imported_tokens_names = ['error' for _ in key_packages]
-                        tokens = {}  # Reset imported tokens
-                        break
+                        abort = True
                     elif is_invalid and validate_mac == 'check_fail_soft':
                         not_imported_tokens_names.append(serial)
                         continue
@@ -571,6 +571,12 @@ def parsePSKCdata(xml_data,
                 token["timeShift"] = key.data.timedrift.text.strip()
 
         tokens[serial] = token
+
+    if abort:
+        # Add descriptions to list and reset tokens.
+        not_imported_tokens_names = [t['description'] for t in tokens]
+        tokens = {}
+
     return tokens, not_imported_tokens_names
 
 
