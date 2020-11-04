@@ -165,9 +165,10 @@ and ``{ua_string}`` for information on the user agent and ``{username}`` and
 set failcounter
 ...............
 
-Using the action ``set failcounter`` you can reset the fail counter by
-setting it to 0 or also "block" the token by setting the fail counter to what
-ever value the "max_fail" is, e.g. 10. Only integer values are allowed.
+Using the action ``set failcounter`` you can set, increase or decrease the fail counter
+of the token by setting the action to ``n``, ``+n`` or ``-n`` respectively.
+You may use this to reset the failcounter by setting it to 0 or to "block" the token by setting
+the fail counter to the value of "max_fail" or greater.
 
 set random pin
 ..............
