@@ -169,6 +169,16 @@ Using the action ``set failcounter`` you can reset the fail counter by
 setting it to 0 or also "block" the token by setting the fail counter to what
 ever value the "max_fail" is, e.g. 10. Only integer values are allowed.
 
+change failcounter
+..................
+
+Using the action ``change failcounter`` you can increase or decrease the failcounter.
+Positive and negative integer values are allowed.
+
+.. note:: To limit a token handler in decreasing the fail counter, you may use the event handler
+   condition **failcounter** (c.f. :ref:`handlerconditions`).
+
+
 set random pin
 ..............
 
