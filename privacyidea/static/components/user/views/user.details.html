@@ -106,7 +106,7 @@
                 <td>{{ token.count_window }}</td>
                 <td>{{ token.description }}</td>
                 <td><span class="label"
-                          ng-class="{'label-success': token.failcount==0,
+                          ng-class="{'label-success': token.failcount<=0,
                                     'label-warning': token.failcount>0,
                                     'label-danger': token.failcount>=token.maxfail}">
                     {{ token.failcount }}
