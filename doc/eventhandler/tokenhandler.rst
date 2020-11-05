@@ -168,7 +168,7 @@ set failcounter
 Using the action ``set failcounter`` you can set, increase or decrease the fail counter
 of the token by setting the action to ``n``, ``+n`` or ``-n`` respectively.
 You may use this to reset the fail counter by setting it to 0 or to "block" the token by setting
-the fail counter to the value of "max_fail" or greater.
+the fail counter to the value of "max_fail".
 
 set random pin
 ..............

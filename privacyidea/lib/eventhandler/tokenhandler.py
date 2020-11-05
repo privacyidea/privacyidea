@@ -236,9 +236,8 @@ class TokenEventHandler(BaseEventHandler):
                                {
                                    "type": "str",
                                    "required": True,
-                                   "description": _("Set the failcounter of "
-                                                    "the token. Any value or increment n, "
-                                                    "given by +n or -n is accepted.")
+                                   "description": _("Increase, decrease or set the fail counter of the token. "
+                                                    "Values of +n, -n or n with n being an integer are accepted.")
                                }
                        },
                    ACTION_TYPE.SET_TOKENINFO:
@@ -375,14 +374,15 @@ class TokenEventHandler(BaseEventHandler):
                 elif action.lower() == ACTION_TYPE.SET_FAILCOUNTER:
                     try:
                         handler_option = handler_options.get("fail counter")
+                        token_obj = get_one_token(serial=serial)
                         if handler_option.startswith("+"):
-                            token_failcount = get_one_token(serial=serial).token.failcount
-                            set_failcounter(serial, token_failcount + int(handler_option[1:]))
+                            token_obj.set_failcount(token_obj.token.failcount
+                                                    + int(handler_option[1:]))
                         elif handler_option.startswith("-"):
-                            token_failcount = get_one_token(serial=serial).token.failcount
-                            set_failcounter(serial, token_failcount - int(handler_option[1:]))
+                            token_obj.set_failcount(token_obj.token.failcount
+                                                    - int(handler_option[1:]))
                         else:
-                            set_failcounter(serial, int(handler_option))
+                            token_obj.set_failcount(int(handler_option))
                     except Exception as exx:
                         log.warning("Misconfiguration: Failed to set fail "
                                     "counter!")
