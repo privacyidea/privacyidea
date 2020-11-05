@@ -1471,7 +1471,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "time": self.time,
              "conditions": self.get_conditions_tuples(),
              "priority": self.priority}
-        action_list = [x.strip().split("=") for x in (self.action or "").split(
+        action_list = [x.strip().split("=", 1) for x in (self.action or "").split(
             ",")]
         action_dict = {}
         for a in action_list:
