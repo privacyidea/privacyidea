@@ -2,13 +2,14 @@
 This test file tests the lib.tokens.certificatetoken
 """
 
-from .base import MyTestCase
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.tokens.certificatetoken import CertificateTokenClass
 from privacyidea.models import Token
 from privacyidea.lib.caconnector import save_caconnector
 from privacyidea.lib.token import get_tokens, remove_token
 from privacyidea.lib.error import ParameterError, privacyIDEAError
 from privacyidea.lib.utils import int_to_hex
+from privacyidea.lib.tokens.certificatetoken import parse_chainfile, verify_certificate_path, ACTION
 import os
 from OpenSSL import crypto
 
@@ -142,11 +143,67 @@ K2IILXW4JmyT6/VF6s2DWFMVRuZrQ8Ev2YhLPdX9DP9RUu1U+yctWe9MUM5xzeta
 mQIDAQAB
 -----END PUBLIC KEY-----"""
 
+YUBICO_ATTESTATION_ROOT_CERT = """-----BEGIN CERTIFICATE-----
+MIIDFzCCAf+gAwIBAgIDBAZHMA0GCSqGSIb3DQEBCwUAMCsxKTAnBgNVBAMMIFl1
+YmljbyBQSVYgUm9vdCBDQSBTZXJpYWwgMjYzNzUxMCAXDTE2MDMxNDAwMDAwMFoY
+DzIwNTIwNDE3MDAwMDAwWjArMSkwJwYDVQQDDCBZdWJpY28gUElWIFJvb3QgQ0Eg
+U2VyaWFsIDI2Mzc1MTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMN2
+cMTNR6YCdcTFRxuPy31PabRn5m6pJ+nSE0HRWpoaM8fc8wHC+Tmb98jmNvhWNE2E
+ilU85uYKfEFP9d6Q2GmytqBnxZsAa3KqZiCCx2LwQ4iYEOb1llgotVr/whEpdVOq
+joU0P5e1j1y7OfwOvky/+AXIN/9Xp0VFlYRk2tQ9GcdYKDmqU+db9iKwpAzid4oH
+BVLIhmD3pvkWaRA2H3DA9t7H/HNq5v3OiO1jyLZeKqZoMbPObrxqDg+9fOdShzgf
+wCqgT3XVmTeiwvBSTctyi9mHQfYd2DwkaqxRnLbNVyK9zl+DzjSGp9IhVPiVtGet
+X02dxhQnGS7K6BO0Qe8CAwEAAaNCMEAwHQYDVR0OBBYEFMpfyvLEojGc6SJf8ez0
+1d8Cv4O/MA8GA1UdEwQIMAYBAf8CAQEwDgYDVR0PAQH/BAQDAgEGMA0GCSqGSIb3
+DQEBCwUAA4IBAQBc7Ih8Bc1fkC+FyN1fhjWioBCMr3vjneh7MLbA6kSoyWF70N3s
+XhbXvT4eRh0hvxqvMZNjPU/VlRn6gLVtoEikDLrYFXN6Hh6Wmyy1GTnspnOvMvz2
+lLKuym9KYdYLDgnj3BeAvzIhVzzYSeU77/Cupofj093OuAswW0jYvXsGTyix6B3d
+bW5yWvyS9zNXaqGaUmP3U9/b6DlHdDogMLu3VLpBB9bm5bjaKWWJYgWltCVgUbFq
+Fqyi4+JE014cSgR57Jcu3dZiehB6UtAPgad9L5cNvua/IWRmm+ANy3O2LH++Pyl8
+SREzU8onbBsjMg9QDiSf5oJLKvd/Ren+zGY7
+-----END CERTIFICATE-----"""
+
+YUBICO_ATTESTATION_INTERMEDIATE = """-----BEGIN CERTIFICATE-----
+MIIC+jCCAeKgAwIBAgIJAIZ3F+AdGSsmMA0GCSqGSIb3DQEBCwUAMCsxKTAnBgNV
+BAMMIFl1YmljbyBQSVYgUm9vdCBDQSBTZXJpYWwgMjYzNzUxMCAXDTE2MDMxNDAw
+MDAwMFoYDzIwNTIwNDE3MDAwMDAwWjAhMR8wHQYDVQQDDBZZdWJpY28gUElWIEF0
+dGVzdGF0aW9uMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxVuN6bk8
+U2mCiP7acPxciHhBJaIde4SOkzatZytMq0W+suDVnBuhaNVr+GNcg8uDOGK3ZK6D
+NzeOyGCA5gH4daqu9m6n1XbFwSWtqp6d3LV+6Y4qtD+ZDfefIKAooJ+zsSJfrzj7
+c0b0x5Mw3frQhuDJxnKZr/sklwWHh91hRW+BhspDCNzeBKOm1qYglknKDI/FnacL
+kCyNaYlb5JdnUEx+L8iq2SWkAg57UPOIT0Phz3RvxXCguMj+BWsSAPVhv5lnABha
+L0b/y7V4OprZKfkSolVuYHS5YqRVnDepJ7IylEpdMpEW4/7rOHSMqocIEB8SPt2T
+jibBrZvzkcoJbwIDAQABoykwJzARBgorBgEEAYLECgMDBAMFAQIwEgYDVR0TAQH/
+BAgwBgEB/wIBADANBgkqhkiG9w0BAQsFAAOCAQEABVe3v1pBdPlf7C7SuHgm5e9P
+6r9aZMnPBn/KjAr8Gkcc1qztyFtUcgCfuFmrcyWy1gKjWYMxae7BXz3yKxsiyrb8
++fshMp4I8whUbckmEEIIHTy18FqxmNRo3JHx05FUeqA0i/Zl6xOfOhy/Q8XR0DMj
+xiWgTOTpqlmA2AIesBBfuOENDDAccukRMLTXDY97L2luDFTJ99NaHKjjhCOLHmTS
+BuCSS5h/F6roSi7rjh2bEOaErLG+G1hVWAzfBNXgrsUuirWRk0WKhJKeUrfNPILh
+CzYH/zLEaIsLjRg+tnmKJu2E4IdodScri7oGVhVyhUW5DrcX+/8CPqnoBpd7zQ==
+-----END CERTIFICATE-----
+"""
+
 class CertificateTokenTestCase(MyTestCase):
 
     serial1 = "CRT0001"
     serial2 = "CRT0002"
     serial3 = "CRT0003"
+
+    def test_001_parse_cert_chain(self):
+        chain = parse_chainfile("tests/testdata/attestation/yubico.pem")
+        self.assertEqual(2, len(chain))
+        self.assertEqual(YUBICO_ATTESTATION_ROOT_CERT.strip(), chain[0].strip())
+        self.assertEqual(YUBICO_ATTESTATION_INTERMEDIATE.strip(), chain[1].strip())
+
+    def test_002_verify(self):
+        # Verify an attestation certificate against trusted CA chain path.
+        r = verify_certificate_path(YUBIKEY_ATTEST, ["tests/testdata/attestation",
+                                                     "tests/testdata/feitian_non_exist"])
+        self.assertTrue(r)
+
+        # Verification against an empty chain, due to misconfiguration failes.
+        r = verify_certificate_path(YUBIKEY_ATTEST, ["tests/testdata/feitian_non_exist"])
+        self.assertFalse(r)
 
     def test_01_create_token_from_certificate(self):
         db_token = Token(self.serial1, tokentype="certificate")
@@ -260,7 +317,8 @@ class CertificateTokenTestCase(MyTestCase):
         # The cert request will success with a valid attestation certificate
         token.update({"ca": "localCA",
                       "attestation": YUBIKEY_ATTEST,
-                      "request": YUBIKEY_CSR})
+                      "request": YUBIKEY_CSR,
+                      ACTION.TRUSTED_CA_PATH: ["tests/testdata/attestation/"]})
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "CRT", class_prefix)
         self.assertTrue(token.get_class_type() == "certificate", token)
@@ -346,3 +404,37 @@ class CertificateTokenTestCase(MyTestCase):
         r = token.revoke()
         self.assertEqual(r, int_to_hex(x509obj.get_serial_number()))
 
+    def test_05_get_default_settings(self):
+        from privacyidea.lib.policy import set_policy, delete_policy, PolicyClass, SCOPE
+        from privacyidea.lib.tokens.certificatetoken import ACTION, CertificateTokenClass
+
+        params = {}
+        g = FakeFlaskG()
+        g.audit_object = FakeAudit()
+        # trusted path for a user
+        g.logged_in_user = {"user": "hans",
+                            "realm": "default",
+                            "role": "user"}
+        set_policy("pol1", scope=SCOPE.USER,
+                   action="certificate_{0!s}=tests/testdata/attestation/".format(ACTION.TRUSTED_CA_PATH))
+        g.policy_object = PolicyClass()
+        p = CertificateTokenClass.get_default_settings(g, params)
+        self.assertEqual(["tests/testdata/attestation/"],
+                         p.get("trusted_Attestation_CA_path"))
+        delete_policy("pol1")
+        # the same should work for an admin user
+        g.logged_in_user = {"user": "admin",
+                            "realm": "super",
+                            "role": "admin"}
+        set_policy("pol1", scope=SCOPE.ADMIN,
+                   action="certificate_{0!s}=tests/testdata/attestation/".format(ACTION.TRUSTED_CA_PATH))
+        g.policy_object = PolicyClass()
+        p = CertificateTokenClass.get_default_settings(g, params)
+        self.assertEqual(["tests/testdata/attestation/"],
+                         p.get("trusted_Attestation_CA_path"))
+        delete_policy("pol1")
+        # If we have no policy, we revert to default
+        g.policy_object = PolicyClass()
+        p = CertificateTokenClass.get_default_settings(g, params)
+        self.assertEqual(["/etc/privacyidea/trusted_attestation_ca"],
+                         p.get("trusted_Attestation_CA_path"))

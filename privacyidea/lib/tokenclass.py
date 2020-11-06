@@ -477,7 +477,6 @@ class TokenClass(object):
         else:
             raise ParameterError("Unknown OTP key format: {!r}".format(otpkeyformat))
 
-
     def update(self, param, reset_failcount=True):
         """
         Update the token object
