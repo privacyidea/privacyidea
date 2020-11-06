@@ -934,7 +934,7 @@ def r_import(filename=None, cleanup=None, update=False):
     Values given as __CENSORED__ (like e.g. passwords) are not touched during the update.
     """
     # Todo: Support the cleanup option to remove all resolvers which do not exist in the imported file
-    conf_import(conftype="event", filename=filename, cleanup=cleanup, update=update)
+    conf_import(conftype="resolver", filename=filename, cleanup=cleanup, update=update)
 
 
 # unfortunately it is not possible in flask_script to add a command with a
