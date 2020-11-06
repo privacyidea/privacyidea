@@ -2156,7 +2156,7 @@ class TokenEventTestCase(MyTestCase):
 
         remove_token("SPASS01")
 
-    def test_10_set_failcounter(self):
+    def test_10_set_or_change_failcounter(self):
         # setup realms
         self.setUp_user_realms()
 
@@ -2188,7 +2188,7 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # The token faile counter will be set to 7
+        # The token fail counter will be set to 7
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -2202,6 +2202,19 @@ class TokenEventTestCase(MyTestCase):
         t = get_tokens(serial="SPASS01")
         tw = t[0].get_failcount()
         self.assertEqual(tw, 7)
+
+        # check the change failcount option starting with the set failcount of 7
+        handler_options = {-1: {"change fail counter": "-8"},
+                           1: {"change fail counter": "2"},
+                           2: {"change fail counter": "+1"}}
+        for failcount, handler_option in handler_options.items():
+            options["handler_def"]["options"].update(handler_option)
+            res = t_handler.do(ACTION_TYPE.CHANGE_FAILCOUNTER, options=options)
+            self.assertTrue(res)
+            # Check if the token has the correct sync window
+            t = get_tokens(serial="SPASS01")
+            tw = t[0].get_failcount()
+            self.assertEqual(tw, failcount)
 
         remove_token("SPASS01")
 
