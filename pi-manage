@@ -98,10 +98,11 @@ from privacyidea.lib.token import import_token
 import jwt
 import ast
 import base64
+import tarfile
 
 SILENT = True
 MYSQL_DIALECTS = ["mysql", "pymysql", "mysql+pymysql"]
-DEFAULT_CONFTYPE_LIST = ["policy", "resolver", "event"]
+DEFAULT_CONFTYPE_LIST = ("policy", "resolver", "event")
 
 app = create_app(config_name='production', silent=SILENT)
 manager = Manager(app)
@@ -1318,7 +1319,7 @@ def conf_export(conftype=DEFAULT_CONFTYPE_LIST, filename=None, name=None, stdout
     if filename:
         with open(filename, 'w') as f:
             f.write(ret_str)
-    if stdout or not filename:
+    if not filename:
         print(ret_str)
 
 
@@ -1462,28 +1463,28 @@ def fullexport(directory=None, stdout=False, archive=False, print_passwords=Fals
         BASE_NAME = "privacyidea-config-backup"
         HOSTNAME = gethostname()
         if not directory:
-            directory = os.path.abspath('./')
+            directory = './'
         else:
-            directory = os.path.abspath(directory)
             call(["mkdir", "-p", directory])
         config_backup_file_base = "%s/%s-%s-%s" % (directory, BASE_NAME, HOSTNAME, DATE)
         config_backup_file = config_backup_file_base + ".py"
         conf_export(filename=config_backup_file, stdout=stdout, print_passwords=print_passwords)
         if archive:
             config_backup_archive = config_backup_file_base + ".tar.gz"
-            call(["tar", "-zcf", config_backup_archive, config_backup_file])
+            tar = tarfile.open(config_backup_archive, "w:gz")
+            tar.add(config_backup_file)
+            tar.close()
             # cleanup
-            if os.path.isfile(config_backup_file):
+            if tarfile.is_tarfile(config_backup_archive):
                 os.remove(config_backup_file)
     else:
         conf_export(filename=None, stdout=True, print_passwords=print_passwords)
 
 
 @config_import_manager.option("--file", "-f", dest="file",
-                              help="The file to import.")
-@config_import_manager.option("--archive", "-a", action="store_true",
-                              help="The specified file is a tar.gz archive containing a configuration "
-                                   "backup file with a name containing 'pi-config-backup'.")
+                              help="The file to import. It can be a plain python file or a tar.gz archive "
+                                   "containing a configuration backup file with a name containing "
+                                   "'privacyidea-config-backup'.")
 @config_import_manager.option("--update", "-u", action="store_true",
                               help="Update the existing configuration. New policies, resolvers and events will also "
                                    "be added.")
@@ -1491,26 +1492,27 @@ def fullexport(directory=None, stdout=False, archive=False, print_passwords=Fals
                               help="The configuration on the target machine will be wiped before the import.")
 @config_import_manager.option("--wipe", "-w", action="store_true", dest="cleanup",
                               help="Wipe is an alias for cleanup.")
-def fullimport(file=None, cleanup=False, update=False, archive=False):
+def fullimport(file=None, cleanup=False, update=False):
     """
     This option reads configuration-backups from a plain file a tar.gz archive or from standard input and imports
     the contained resolvers, policies and event handlers.
     """
     if file:
         if os.path.isfile(file):
-            if archive:
-                archive_file = file
-                p = Popen(["tar", "-ztf", archive_file], stdout=PIPE, universal_newlines=True)
-                std_out, err_out = p.communicate()
-                for line in std_out.split("\n"):
-                    if re.search(r"pi-config-backup", line):
-                        file = "{0!s}".format(line.strip())
-                call(["tar", "-zxf", archive_file, "-C", "./"])
-
-            conf_import(filename=file, cleanup=cleanup, update=update)
-            # cleanup
-            if archive:
-                os.remove(file)
+            if tarfile.is_tarfile(file):
+                tarinfo_objects = []
+                tar = tarfile.open(file)
+                for member in tar.members:
+                    if re.search(r"privacyidea-config-backup", member.name):
+                        tarinfo_objects.append(member)
+                tar.extractall(members=tarinfo_objects)
+                tar.close()
+                for tarinfo in tarinfo_objects:
+                    conf_import(filename=tarinfo.name, cleanup=cleanup, update=update)
+                    # cleanup extracted files
+                    os.remove(tarinfo.name)
+            else:
+                conf_import(filename=file, cleanup=cleanup, update=update)
     else:
         conf_import(cleanup=cleanup, update=update)
 
