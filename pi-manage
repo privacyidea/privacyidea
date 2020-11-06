@@ -1319,7 +1319,7 @@ def conf_export(conftype=DEFAULT_CONFTYPE_LIST, filename=None, name=None, stdout
     if filename:
         with open(filename, 'w') as f:
             f.write(ret_str)
-    if not filename:
+    if stdout or not filename:
         print(ret_str)
 
 
