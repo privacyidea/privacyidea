@@ -449,9 +449,12 @@ class WebAuthnTestCase(unittest.TestCase):
         auth_data = auth_data[:32] + struct.pack('!B', flags) + auth_data[33:]
         webauthn_assertion_response.assertion_response['authData'] = webauthn_b64_encode(auth_data)
 
-        # FIXME This *should* fail because UP=0, but will fail anyway later on because the signature is invalid.
-        # TODO Build a mock Authenticator implementation, to be able to sign arbitrary authenticator data statements.
-        # TODO Sign an authenticator data statement with UP=0 and test against that so that the signature is valid.
+        # FIXME: This *should* fail because UP=0, but will fail anyway later on because the
+        #  signature is invalid.
+        # TODO: Build a mock Authenticator implementation, to be able to sign arbitrary
+        #  authenticator data statements.
+        # TODO: Sign an authenticator data statement with UP=0 and test against that so that the
+        #  signature is valid.
         with self.assertRaises(AuthenticationRejectedException):
             webauthn_assertion_response.verify()
 
@@ -459,8 +462,11 @@ class WebAuthnTestCase(unittest.TestCase):
         webauthn_assertion_response = self.getAssertionResponse()
         webauthn_assertion_response.webauthn_user.sign_count = ASSERTION_RESPONSE_SIGN_COUNT
 
-        with self.assertRaises(AuthenticationRejectedException):
+        with self.assertRaisesRegexp(AuthenticationRejectedException,
+                                     'Duplicate authentication detected.'):
             webauthn_assertion_response.verify()
+        # TODO: we shold add a test for a missing sign_count (or 0) but we need
+        #  to change the auth data for that.
 
     def test_07_webauthn_b64_decode(self):
         self.assertEqual(webauthn_b64_decode(URL_DECODE_TEST_STRING), URL_DECODE_EXPECTED_RESULT)
