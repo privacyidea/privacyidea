@@ -465,7 +465,7 @@ class WebAuthnTestCase(unittest.TestCase):
         with self.assertRaisesRegexp(AuthenticationRejectedException,
                                      'Duplicate authentication detected.'):
             webauthn_assertion_response.verify()
-        # TODO: we shold add a test for a missing sign_count (or 0) but we need
+        # TODO: we should add a test for a missing sign_count (or 0) but we need
         #  to change the auth data for that.
 
     def test_07_webauthn_b64_decode(self):
