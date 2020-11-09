@@ -19,7 +19,7 @@ def upgrade():
         op.add_column('pidea_audit', sa.Column('duration', sa.Interval(), nullable=True))
         op.add_column('pidea_audit', sa.Column('startdate', sa.DateTime(), nullable=True))
     except Exception as exx:
-        print("Could not add retries and timeout to radiusserver")
+        print("Could not add duration and startdate to the table pidea_audit.")
         print(exx)
 
 
