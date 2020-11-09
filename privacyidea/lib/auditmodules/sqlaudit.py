@@ -114,7 +114,7 @@ class Audit(AuditBase):
         self.session = Session()
         # Ensure that the connection gets returned to the pool when the request has
         # been handled. This may close an already-closed session, but this is not a problem.
-        register_finalizer(self.session.close)
+        register_finalizer(self._finalize_session)
         self.session._model_changes = {}
 
     def _create_engine(self):
@@ -138,6 +138,11 @@ class Audit(AuditBase):
             engine = create_engine(connect_string)
             log.debug("Using no SQL pool_size.")
         return engine
+
+    def _finalize_session(self):
+        """ Close current session and dispose connections of db engine"""
+        self.session.close()
+        self.engine.dispose()
 
     def _truncate_data(self):
         """
@@ -360,7 +365,7 @@ class Audit(AuditBase):
                     'clearance_level': LogEntry.clearance_level}
         return sortname.get(key)
 
-    def csv_generator(self, param=None, user=None, timelimit=None, hidden_columns=None):
+    def csv_generator(self, param=None, user=None, timelimit=None):
         """
         Returns the audit log as csv file.
         :param timelimit: Limit the number of dumped entries by time
@@ -375,8 +380,7 @@ class Audit(AuditBase):
         logentries = self.session.query(LogEntry).filter(filter_condition).all()
 
         for le in logentries:
-            audit_dict = self.remove_hidden_columns(self.audit_entry_to_dict(le),
-                                                    hidden_columns)
+            audit_dict = self.remove_hidden_columns(self.audit_entry_to_dict(le))
             yield u",".join([u"'{0!s}'".format(x) for x in audit_dict.values()]) + u"\n"
 
     def get_count(self, search_dict, timedelta=None, success=None):
@@ -396,7 +400,7 @@ class Audit(AuditBase):
         return log_count
 
     def search(self, search_dict, page_size=15, page=1, sortorder="asc",
-               timelimit=None, hidden_columns=None):
+               timelimit=None):
         """
         This function returns the audit log as a Pagination object.
 
@@ -421,9 +425,7 @@ class Audit(AuditBase):
             try:
                 le = next(auditIter)
                 # Fill the list
-                audit_entry_dict = self.remove_hidden_columns(self.audit_entry_to_dict(le),
-                                                              hidden_columns)
-                paging_object.auditdata.append(audit_entry_dict)
+                paging_object.auditdata.append(self.audit_entry_to_dict(le))
             except StopIteration as _e:
                 log.debug("Interation stopped.")
                 break
@@ -487,12 +489,6 @@ class Audit(AuditBase):
         """
         self.session.query(LogEntry).delete()
         self.session.commit()
-
-    def remove_hidden_columns(self, audit_dict, hidden_columns):
-        if hidden_columns:
-            for column in hidden_columns:
-                audit_dict.pop(column, None)
-        return audit_dict
 
     def audit_entry_to_dict(self, audit_entry):
         sig = None

@@ -1408,8 +1408,6 @@ def u2ftoken_allowed(request, action):
     return True
 
 
-
-
 def allowed_audit_realm(request=None, action=None):
     """
     This decorator function takes the request and adds additional parameters 

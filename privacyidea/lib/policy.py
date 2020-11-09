@@ -1627,8 +1627,8 @@ def get_static_policy_definitions(scope=None):
                                "group": GROUP.SYSTEM,
                                'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.HIDE_AUDIT_COLUMNS: {'type': 'str',
-                                        "desc": _("For this admin the specified columns will "
-                                                  "not be displayed in the audit."),
+                                        "desc": _("The admin will not see the specified columns "
+                                                  "in the audit."),
                                         "group": GROUP.SYSTEM,
                                         'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.AUDIT_DOWNLOAD: {'type': 'bool',
@@ -1849,8 +1849,8 @@ def get_static_policy_definitions(scope=None):
                                          "entries of the last 10d, 3m or 2y."),
                                'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.HIDE_AUDIT_COLUMNS: {'type': 'str',
-                                        "desc": _("For this user the specified columns will "
-                                                  "not be displayed in the audit."),
+                                        "desc": _("The user will not see the specified columns "
+                                                  "in the audit."),
                                         "group": GROUP.SYSTEM,
                                         'mainmenu': [MAIN_MENU.AUDIT]},
             ACTION.USERLIST: {'type': 'bool',

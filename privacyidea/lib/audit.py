@@ -111,8 +111,14 @@ def search(config, param=None, user=None):
         del param["hidden_columns"]
 
     pagination = audit.search(param, sortorder=sortorder, page=page,
-                              page_size=page_size, timelimit=timelimit,
-                              hidden_columns=hidden_columns)
+                              page_size=page_size, timelimit=timelimit)
+
+    # delete hidden columns from response
+    if hidden_columns:
+        for audit_row in pagination.auditdata:
+            for col in hidden_columns:
+                if col in audit_row:
+                    del audit_row[col]
 
     ret = {"auditdata": pagination.auditdata,
            "prev": pagination.prev,

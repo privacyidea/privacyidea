@@ -196,8 +196,12 @@ hide_audit_columns
 
 type: string
 
-With this user policy the specified columns will not be displayed in the audit.
+This species a blank separated list of audit columns, that should be removed
+from the response (:ref:`rest_audit`) and also from the WebUI.
 For example a value ``sig_check log_level`` will hide these two columns.
+
+The list of available columns can be checked by examining the response of the
+request to the :ref:`rest_audit`.
 
 updateuser
 ~~~~~~~~~~
