@@ -2198,7 +2198,7 @@ class TokenEventTestCase(MyTestCase):
         t_handler = TokenEventHandler()
         res = t_handler.do(ACTION_TYPE.SET_FAILCOUNTER, options=options)
         self.assertTrue(res)
-        # Check if the token has the correct sync window
+        # Check if the token has the correct fail counter
         t = get_tokens(serial="SPASS01")
         tw = t[0].get_failcount()
         self.assertEqual(tw, 7)
@@ -2211,7 +2211,7 @@ class TokenEventTestCase(MyTestCase):
             options["handler_def"]["options"].update(handler_option)
             res = t_handler.do(ACTION_TYPE.CHANGE_FAILCOUNTER, options=options)
             self.assertTrue(res)
-            # Check if the token has the correct sync window
+            # Check if the token has the correct fail counter
             t = get_tokens(serial="SPASS01")
             tw = t[0].get_failcount()
             self.assertEqual(tw, failcount)

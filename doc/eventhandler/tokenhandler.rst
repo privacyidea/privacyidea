@@ -172,11 +172,14 @@ ever value the "max_fail" is, e.g. 10. Only integer values are allowed.
 change failcounter
 ..................
 
-Using the action ``change failcounter`` you can increase or decrease the failcounter.
-Positive and negative integer values are allowed.
+Using the action ``change failcounter`` you can increase or decrease the fail counter.
+Positive and negative integer values are allowed. Positive values will increase the
+fail counter, negative values will decrease it.
 
-.. note:: To limit a token handler in decreasing the fail counter, you may use the event handler
-   condition **failcounter** (c.f. :ref:`handlerconditions`).
+.. note:: To limit a token handler in decreasing the fail counter, you may use the
+   event handler condition **failcounter** (c.f. :ref:`handlerconditions`) and set
+   it to e.g. ">-5". Once this condition is not met anymore, the event handler will
+   not be triggered.
 
 
 set random pin
