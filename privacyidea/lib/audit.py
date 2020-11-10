@@ -89,6 +89,7 @@ def search(config, param=None, user=None):
     page_size = 15
     page = 1
     timelimit = None
+    hidden_columns = None
     # The filtering dictionary
     param = param or {}
     # special treatment for:
@@ -105,9 +106,19 @@ def search(config, param=None, user=None):
     if "timelimit" in param:
         timelimit = parse_timedelta(param["timelimit"])
         del param["timelimit"]
+    if "hidden_columns" in param:
+        hidden_columns = param["hidden_columns"]
+        del param["hidden_columns"]
 
     pagination = audit.search(param, sortorder=sortorder, page=page,
                               page_size=page_size, timelimit=timelimit)
+
+    # delete hidden columns from response
+    if hidden_columns:
+        for audit_row in pagination.auditdata:
+            for col in hidden_columns:
+                if col in audit_row:
+                    del audit_row[col]
 
     ret = {"auditdata": pagination.auditdata,
            "prev": pagination.prev,
