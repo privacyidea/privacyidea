@@ -39,7 +39,7 @@ from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 from privacyidea.app import PiResponseClass as Response
-
+from collections import OrderedDict
 
 class EventHandlerLibTestCase(MyTestCase):
 
@@ -2204,11 +2204,11 @@ class TokenEventTestCase(MyTestCase):
         self.assertEqual(tw, 7)
 
         # check the change failcount option starting with the set failcount of 7
-        handler_options = {-1: {"change fail counter": "-8"},
-                           1: {"change fail counter": "2"},
-                           2: {"change fail counter": "+1"}}
-        for failcount, handler_option in handler_options.items():
-            options["handler_def"]["options"].update(handler_option)
+        handler_options = OrderedDict([("-8", -1),
+                                       ("2", 1),
+                                       ("+1", 2)])
+        for diff, failcount in handler_options.items():
+            options["handler_def"] = {"options": {"change fail counter": diff}}
             res = t_handler.do(ACTION_TYPE.CHANGE_FAILCOUNTER, options=options)
             self.assertTrue(res)
             # Check if the token has the correct fail counter
