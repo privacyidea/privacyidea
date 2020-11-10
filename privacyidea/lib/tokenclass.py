@@ -453,7 +453,6 @@ class TokenClass(object):
 
         return pin_match, otp_counter, reply
 
-
     @staticmethod
     def decode_otpkey(otpkey, otpkeyformat):
         """
@@ -1387,7 +1386,7 @@ class TokenClass(object):
 
     def is_challenge_response(self, passw, user=None, options=None):
         """
-        This method checks, if this is a request  that is supposed to be
+        This method checks, if this is a request that is supposed to be
         the answer to a previous challenge.
 
         The default behaviour to check if this is the response to a
