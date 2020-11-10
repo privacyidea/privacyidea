@@ -358,6 +358,8 @@ class Audit(AuditBase):
                     'success': LogEntry.success,
                     'serial': LogEntry.serial,
                     'date': LogEntry.date,
+                    'startdate': LogEntry.startdate,
+                    'duration': LogEntry.duration,
                     'token_type': LogEntry.token_type,
                     'user': LogEntry.user,
                     'realm': LogEntry.realm,
