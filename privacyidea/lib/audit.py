@@ -57,7 +57,7 @@ from privacyidea.lib.utils import parse_timedelta, get_module_class
 
 
 @log_with(log, log_entry=False)
-def getAudit(config):
+def getAudit(config, startdate=None):
     """
     This wrapper function creates a new audit object based on the config
     from the config file. The config file entry could look like this:
@@ -68,10 +68,11 @@ def getAudit(config):
     entries.
 
     :param config: The config entries from the file config
+    :param startdate: The datetime startdate of the request
     :return: Audit Object
     """
     audit_module = config.get("PI_AUDIT_MODULE")
-    audit = get_module_class(audit_module, "Audit", "log")(config)
+    audit = get_module_class(audit_module, "Audit", "log")(config, startdate)
     return audit
 
 

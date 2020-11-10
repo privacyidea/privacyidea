@@ -88,8 +88,8 @@ class Audit(AuditBase):
 
     is_readable = True
 
-    def __init__(self, config=None):
-        super(Audit, self).__init__(config)
+    def __init__(self, config=None, startdate=None):
+        super(Audit, self).__init__(config, startdate)
         self.name = "sqlaudit"
         self.sign_data = not self.config.get("PI_AUDIT_NO_SIGN")
         self.sign_object = None

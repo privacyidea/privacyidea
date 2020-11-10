@@ -72,6 +72,7 @@ from ..lib.error import (privacyIDEAError,
                          PolicyError, ResourceNotFoundError)
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.user import User
+import datetime
 
 log = logging.getLogger(__name__)
 
@@ -82,10 +83,19 @@ log = logging.getLogger(__name__)
 @token_blueprint.before_app_request
 def log_begin_request():
     log.debug(u"Begin handling of request {!r}".format(request.full_path))
+    g.startdate = datetime.datetime.now()
 
 
 @token_blueprint.teardown_app_request
 def teardown_request(exc):
+    try:
+        if g.audit_object.has_data:
+            g.audit_object.finalize_log()
+    except AttributeError:
+        # In certain error cases the before_request was not handled
+        # completely so that we do not have an audit_object
+        # Also during calling webui, there is not audit_object, yet.
+        pass
     call_finalizers()
     log.debug(u"End handling of request {!r}".format(request.full_path))
 
@@ -157,7 +167,7 @@ def before_request():
         request.User = User()
 
     g.policy_object = PolicyClass()
-    g.audit_object = getAudit(current_app.config)
+    g.audit_object = getAudit(current_app.config, g.startdate)
     g.event_config = EventConfiguration()
     # access_route contains the ip adresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request,
@@ -237,11 +247,6 @@ def after_request(response):
     This function is called after a request
     :return: The response
     """
-    # In certain error cases the before_request was not handled
-    # completely so that we do not have an audit_object
-    if "audit_object" in g and g.audit_object.has_data:
-        g.audit_object.finalize_log()
-
     # No caching!
     response.headers['Cache-Control'] = 'no-cache'
     return response
@@ -273,7 +278,6 @@ def auth_error(error):
                     message = u'{}|{}'.format(message, error.details['message'])
 
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
-        g.audit_object.finalize_log()
     return send_error(error.message,
                       error_code=error.id,
                       details=error.details), 401
@@ -298,7 +302,6 @@ def auth_error(error):
 def policy_error(error):
     if "audit_object" in g:
         g.audit_object.add_to_log({"info": error.message}, add_with_comma=True)
-        g.audit_object.finalize_log()
     return send_error(error.message, error_code=error.id), 403
 
 
@@ -324,7 +327,6 @@ def resource_not_found_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": error.message})
-        g.audit_object.finalize_log()
     return send_error(error.message, error_code=error.id), 404
 
 
@@ -351,7 +353,6 @@ def privacyidea_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": six.text_type(error)})
-        g.audit_object.finalize_log()
     return send_error(six.text_type(error), error_code=error.id), 400
 
 
@@ -380,5 +381,4 @@ def internal_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": six.text_type(error)})
-        g.audit_object.finalize_log()
     return send_error(six.text_type(error), error_code=-500), 500

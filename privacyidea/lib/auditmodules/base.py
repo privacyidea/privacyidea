@@ -79,17 +79,19 @@ class Audit(object):  # pragma: no cover
 
     is_readable = False
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, startdate=None):
         """
         Create a new audit object.
 
         :param config: The web config is passed to the audit module, so that
         the special module implementation can get its configuration.
         :type config: dict
-        :return:
+        :param startdate: The datetime of the beginning of the request
+        :type startdate: datetime
+        :return: Audit object
         """
         self.name = "AuditBase"
-        self.audit_data = {'startdate': datetime.datetime.now()}
+        self.audit_data = {'startdate': startdate or datetime.datetime.now()}
         self.config = config or {}
         self.private = ""
         self.public = ""
