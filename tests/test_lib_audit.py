@@ -354,30 +354,39 @@ class AuditFileTestCase(OverrideConfigTestCase):
     @log_capture()
     def test_30_logger_audit_qualname(self, capture):
         # Check that the default qualname is 'privacyidea.lib.auditmodules.loggeraudit'
+        # The audit log runs 2 seconds - mocked
         current_utc_time = datetime.datetime(2018, 3, 4, 5, 6, 8)
-        with mock.patch('privacyidea.lib.auditmodules.loggeraudit.datetime') as mock_dt:
-            mock_dt.utcnow.return_value = current_utc_time
-            a = LoggerAudit(config={})
-            a.log({"action": "No PI_AUDIT_LOGGER_QUALNAME given"})
-            a.finalize_log()
-            capture.check_present(
-                ('privacyidea.lib.auditmodules.loggeraudit', 'INFO',
-                 '{{"action": "No PI_AUDIT_LOGGER_QUALNAME given", "policies": "", '
-                 '"startdate": "{timestamp}", '
-                 '"timestamp": "{timestamp}"}}'.format(timestamp=current_utc_time.isoformat())))
+        startdate_time = datetime.datetime(2018, 3, 4, 5, 6, 6)
+        with mock.patch('privacyidea.lib.auditmodules.loggeraudit.datetime') as mock_timestamp:
+            with mock.patch('privacyidea.lib.auditmodules.base.datetime.datetime') as mock_startdate:
+                mock_timestamp.utcnow.return_value = current_utc_time
+                mock_startdate.now.return_value = startdate_time
+                a = LoggerAudit(config={})
+                a.log({"action": "No PI_AUDIT_LOGGER_QUALNAME given"})
+                a.finalize_log()
+                capture.check_present(
+                    ('privacyidea.lib.auditmodules.loggeraudit', 'INFO',
+                     '{{"action": "No PI_AUDIT_LOGGER_QUALNAME given", "duration": "0:00:02", '
+                     '"policies": "", "startdate": "{startdate}", '
+                     '"timestamp": "{timestamp}"}}'.format(timestamp=current_utc_time.isoformat(),
+                                                           startdate=startdate_time.isoformat())))
 
         # Now change the qualname to 'pi-audit'
         current_utc_time = datetime.datetime(2020, 3, 4, 5, 6, 8)
+        startdate_time = datetime.datetime(2020, 3, 4, 5, 6, 0)
         with mock.patch('privacyidea.lib.auditmodules.loggeraudit.datetime') as mock_dt:
-            mock_dt.utcnow.return_value = current_utc_time
-            a = LoggerAudit(config={"PI_AUDIT_LOGGER_QUALNAME": "pi-audit"})
-            a.log({"action": "PI_AUDIT_LOGGER_QUALNAME given"})
-            a.finalize_log()
-            capture.check_present(
-                ('pi-audit', 'INFO',
-                 '{{"action": "PI_AUDIT_LOGGER_QUALNAME given", "policies": "", '
-                 '"startdate": "{timestamp}", '
-                 '"timestamp": "{timestamp}"}}'.format(timestamp=current_utc_time.isoformat())))
+            with mock.patch('privacyidea.lib.auditmodules.base.datetime.datetime') as mock_startdate:
+                mock_dt.utcnow.return_value = current_utc_time
+                mock_startdate.now.return_value = startdate_time
+                a = LoggerAudit(config={"PI_AUDIT_LOGGER_QUALNAME": "pi-audit"})
+                a.log({"action": "PI_AUDIT_LOGGER_QUALNAME given"})
+                a.finalize_log()
+                capture.check_present(
+                    ('pi-audit', 'INFO',
+                     '{{"action": "PI_AUDIT_LOGGER_QUALNAME given", "duration": "0:00:08", '
+                     '"policies": "", "startdate": "{startdate}", '
+                     '"timestamp": "{timestamp}"}}'.format(timestamp=current_utc_time.isoformat(),
+                                                           startdate=startdate_time.isoformat())))
 
 
 class ContainerAuditTestCase(OverrideConfigTestCase):
