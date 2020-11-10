@@ -341,6 +341,11 @@ class Audit(AuditBase):
                                                    le.client,
                                                    le.loglevel,
                                                    le.clearance_level)
+        # If we have the new log entries, we also add them for signing and verification.
+        if le.startdate:
+            s += ",{0!s}".format(le.startdate)
+        if le.duration:
+            s += ",{0!s}".format(le.duration)
         return s
 
     @staticmethod
