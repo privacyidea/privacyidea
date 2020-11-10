@@ -102,7 +102,7 @@ def search_audit():
 @prepolicy(auditlog_age, request)
 @prepolicy(hide_audit_columns, request)
 @admin_required
-def download_csv(csvfile=None, timelimit=None):
+def download_csv(csvfile=None):
     """
     Download the audit entry as CSV file.
 
@@ -144,7 +144,8 @@ def download_csv(csvfile=None, timelimit=None):
     if "timelimit" in param:
         timelimit = parse_timedelta(param["timelimit"])
         del param["timelimit"]
-
+    else:
+        timelimit = None
     return send_file(stream_with_context(audit.csv_generator(param=param,
                                                              timelimit=timelimit)),
                      csvfile)

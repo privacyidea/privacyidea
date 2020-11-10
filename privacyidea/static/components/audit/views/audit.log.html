@@ -22,90 +22,90 @@
         <table class="table table-bordered table-striped" id="tableauditlog">
             <thead>
             <tr>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('number'))"><translate>number</translate></th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('date'))"
+                <th ng-if="audit_columns.includes('number')"><translate>number</translate></th>
+                <th ng-if="audit_columns.includes('date')"
                     class="pifilter"><translate>date</translate>
                     <pi-filter ng-model="dateFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('action'))"
+                <th ng-if="audit_columns.includes('action')"
                     class="pifilter"><translate>action</translate>
                     <pi-filter ng-model="actionFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('success'))"
+                <th ng-if="audit_columns.includes('success')"
                     class="pifilter"><translate>success</translate>
                     <pi-filter ng-model="successFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('action_detail'))"
+                <th ng-if="audit_columns.includes('action_detail')"
                     class="pifilter"><translate>action detail</translate>
                     <pi-filter ng-model="action_detailFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('serial'))"
+                <th ng-if="audit_columns.includes('serial')"
                     class="pifilter"><translate>serial</translate>
                     <pi-filter ng-model="serialFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return"></pi-filter>
                 </th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('token_type'))"
+                <th ng-if="audit_columns.includes('token_type')"
                     class="pifilter"><translate>token type</translate>
                     <pi-filter ng-model="typeFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('administrator'))"
+                <th ng-if="audit_columns.includes('administrator')"
                     class="pifilter"><translate>administrator</translate>
                     <pi-filter ng-model="administratorFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('user'))"
+                <th ng-if="audit_columns.includes('user')"
                     class="pifilter"><translate>user</translate>
                     <pi-filter ng-model="userFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('realm'))"
+                <th ng-if="audit_columns.includes('realm')"
                     class="pifilter"><translate>realm</translate>
                     <pi-filter ng-model="realmFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('resolver'))"
+                <th ng-if="audit_columns.includes('resolver')"
                     class="pifilter"><translate>resolver</translate>
                     <pi-filter ng-model="resolverFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('policies'))"
+                <th ng-if="audit_columns.includes('policies')"
                     class="pifilter" ng-if="loggedInUser.role == 'admin'"><translate>policies</translate>
                     <pi-filter ng-model="policiesFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('client'))"
+                <th ng-if="audit_columns.includes('client')"
                     class="pifilter"><translate>client</translate>
                     <pi-filter ng-model="clientFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('info'))"
+                <th ng-if="audit_columns.includes('info')"
                     class="pifilter"><translate>info</translate>
                     <pi-filter ng-model="infoFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('sig_check'))" translate>sig_check</th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('missing_line'))" translate>missing_line</th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('clearance_level'))" translate>clearance</th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('log_level'))" translate>log level</th>
-                <th ng-hide="!(auditdata.auditdata[0].hasOwnProperty('privacyidea_server'))"
+                <th ng-if="audit_columns.includes('sig_check')" translate>sig_check</th>
+                <th ng-if="audit_columns.includes('missing_line')" translate>missing_line</th>
+                <th ng-if="audit_columns.includes('clearance_level')" translate>clearance</th>
+                <th ng-if="audit_columns.includes('log_level')" translate>log level</th>
+                <th ng-if="audit_columns.includes('privacyidea_server')"
                     class="pifilter"><translate>privacyidea server</translate>
                     <pi-filter ng-model="serverFilter"
                                ng-change="getAuditList('livesearch')"
@@ -115,32 +115,32 @@
             </thead>
             <tbody>
             <tr ng-repeat="audit in auditdata.auditdata">
-                <td ng-hide="!(audit.hasOwnProperty('number'))">{{ audit.number }}</td>
+                <td ng-if="audit_columns.includes('number')">{{ audit.number }}</td>
                 <td>{{ audit.date | date:dateFormat }}</td>
-                <td ng-hide="!(audit.hasOwnProperty('action'))">{{ audit.action }}</td>
-                <td ng-hide="!(audit.hasOwnProperty('success'))"><span status-class="{{ audit.success }}">
+                <td ng-if="audit_columns.includes('action')">{{ audit.action }}</td>
+                <td ng-if="audit_columns.includes('success')"><span status-class="{{ audit.success }}">
                 {{ audit.success }}
             </span></td>
-                <td ng-hide="!(audit.hasOwnProperty('action_detail'))">{{ audit.action_detail }}</td>
+                <td ng-if="audit_columns.includes('action_detail')">{{ audit.action_detail }}</td>
                 <td>
                     <a ng-repeat="serial in audit.serial_list" ui-sref="token.details({tokenSerial:serial})"
                        ng-click="$rootScope.returnTo=audit;">
                     {{ serial }}</a>
                 </td>
-                <td ng-hide="!(audit.hasOwnProperty('token_type'))">{{ audit.token_type }}</td>
-                <td ng-hide="!(audit.hasOwnProperty('administrator'))">{{ audit.administrator }}</td>
-                <td ng-hide="!(audit.hasOwnProperty('user'))">
+                <td ng-if="audit_columns.includes('token_type')">{{ audit.token_type }}</td>
+                <td ng-if="audit_columns.includes('administrator')">{{ audit.administrator }}</td>
+                <td ng-if="audit_columns.includes('user')">
                     <a ui-sref="user.details({username:audit.user,realmname:audit.realm})">
                     {{ audit.user }}</a></td>
-                <td ng-hide="!(audit.hasOwnProperty('realm'))">
+                <td ng-if="audit_columns.includes('realm')">
                     <a ng-if="loggedInUser.role == 'admin'" ui-sref="config.realms.list">{{ audit.realm }}</a>
                     <span ng-if="loggedInUser.role == 'user'">{{ audit.realm }}</span>
                 </td>
-                <td ng-hide="!(audit.hasOwnProperty('resolver'))">
+                <td ng-if="audit_columns.includes('resolver')">
                     <a ng-if="loggedInUser.role == 'admin'" ui-sref="config.resolvers.list">{{ audit.resolver }}</a>
                     <span ng-if="loggedInUser.role == 'user'">{{ audit.resolver }}</span>
                 </td>
-                <td ng-hide="!(audit.hasOwnProperty('policies'))" ng-if="loggedInUser.role == 'admin'">
+                <td ng-if="audit_columns.includes('policies')" ng-if="loggedInUser.role == 'admin'">
                     <span ng-repeat="policy in audit.policies">
                         <span ng-if="policy.endsWith('+')">
                             {{ policy }}
@@ -151,16 +151,16 @@
                         </span>
                     </span>
                 </td>
-                <td ng-hide="!(audit.hasOwnProperty('client'))">{{ audit.client }}</td>
-                <td ng-hide="!(audit.hasOwnProperty('info'))">{{ audit.info }}</td>
-                <td ng-hide="!(audit.hasOwnProperty('sig_check'))"><span status-class="{{ audit.sig_check }}">
+                <td ng-if="audit_columns.includes('client')">{{ audit.client }}</td>
+                <td ng-if="audit_columns.includes('info')">{{ audit.info }}</td>
+                <td ng-if="audit_columns.includes('sig_check')"><span status-class="{{ audit.sig_check }}">
                 {{ audit.sig_check }}
             </span></td>
-                <td ng-hide="!(audit.hasOwnProperty('missing_line'))"><span status-class="{{ audit.missing_line }}">
+                <td ng-if="audit_columns.includes('missing_line')"><span status-class="{{ audit.missing_line }}">
                 {{ audit.missing_line }}</span></td>
-                <td ng-hide="!(audit.hasOwnProperty('clearance_level'))">{{ audit.clearance_level }}</td>
-                <td ng-hide="!(audit.hasOwnProperty('log_level'))">{{ audit.log_level }}</td>
-                <td ng-hide="!(audit.hasOwnProperty('privacyidea_server'))">{{ audit.privacyidea_server }}</td>
+                <td ng-if="audit_columns.includes('clearance_level')">{{ audit.clearance_level }}</td>
+                <td ng-if="audit_columns.includes('log_level')">{{ audit.log_level }}</td>
+                <td ng-if="audit_columns.includes('privacyidea_server')">{{ audit.privacyidea_server }}</td>
             </tr>
             </tbody>
         </table>

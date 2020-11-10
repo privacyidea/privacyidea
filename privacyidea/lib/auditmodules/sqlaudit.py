@@ -380,7 +380,7 @@ class Audit(AuditBase):
         logentries = self.session.query(LogEntry).filter(filter_condition).all()
 
         for le in logentries:
-            audit_dict = self.remove_hidden_columns(self.audit_entry_to_dict(le))
+            audit_dict = self.audit_entry_to_dict(le)
             yield u",".join([u"'{0!s}'".format(x) for x in audit_dict.values()]) + u"\n"
 
     def get_count(self, search_dict, timedelta=None, success=None):
