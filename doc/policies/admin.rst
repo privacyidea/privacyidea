@@ -562,10 +562,10 @@ type: bool
 
 The administrator is allowed to download the audit log.
 
-.. note:: The download is not restricted to filters and audit age.
+.. note:: The download is **not** restricted to filters, hidden columns and audit age.
    Thus, if you want to avoid, that an administrator can see older
-   logs, you need to disallow downloading the data. Otherwise he
-   may download the audit log and look at older entries manually.
+   logs or columns, hidden by `hide_audit_columns`, you need to disallow downloading the data.
+   Otherwise he may download the audit log and look at older entries manually.
 
 auditlog_age
 ~~~~~~~~~~~~
@@ -577,6 +577,18 @@ remove from the audit table but the administrator is simply not allowed to
 view older entries.
 
 Can be something like 10m (10 minutes), 10h (10 hours) or 10d (ten days).
+
+hide_audit_columns
+~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This species a blank separated list of audit columns, that should be removed
+from the response and also from the WebUI.
+For example a value ``sig_check log_level`` will hide these two columns.
+
+The list of available columns can be checked by examining the response of the
+request to the :ref:`rest_audit`.
 
 trigger_challenge
 ~~~~~~~~~~~~~~~~~

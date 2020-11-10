@@ -1,7 +1,7 @@
-.. _rest_audit:
-
 .. use the docstring from the module file
 .. automodule:: privacyidea.api.auth
+
+.. _rest_audit:
 
 Audit endpoint
 ..............
