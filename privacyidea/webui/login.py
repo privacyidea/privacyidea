@@ -148,6 +148,13 @@ def single_page_application():
     else:
         login_text = ""
 
+    gdpr_link = Match.action_only(g, action=ACTION.GDPR_LINK, scope=SCOPE.WEBUI) \
+        .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
+    if len(gdpr_link) and list(gdpr_link)[0] and sub_state not in [1, 2]:
+        gdpr_link = list(gdpr_link)[0]
+    else:
+        gdpr_link = ""
+
     render_context = {
         'instance': instance,
         'backendUrl': backend_url,
@@ -165,6 +172,7 @@ def single_page_application():
         'realms': realms,
         'external_links': external_links,
         'login_text': login_text,
+        'gdpr_link': gdpr_link,
         'logo': logo,
         'page_title': page_title
     }
