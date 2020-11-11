@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This test tests the authmodules/Apache2/privacyidea_apache.py
 """

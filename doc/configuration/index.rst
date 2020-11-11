@@ -3,6 +3,8 @@
 Configuration
 =============
 
+.. index:: configuration
+
 The configuration menu can be used to define useridresolvers and realms,
 set the system config and the token config.
 
@@ -17,7 +19,7 @@ It also contains a shortcut to the :ref:`policies`, :ref:`eventhandler` and
    system_config.rst
    caconnectors.rst
    smtpserver_config.rst
+   radiusserver_config.rst
    sms_gateway_config.rst
    token_config.rst
-   radius_server_config.rst
    privacyidea-appliance.rst

@@ -90,7 +90,7 @@ Prepend the PIN in front of the OTP value.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Defines if the OTP PIN should be given in front ("pin123456")
-or in the back ("12345pin") of the OTP value.
+or in the back ("123456pin") of the OTP value.
 
 
 .. _return_saml_attributes:

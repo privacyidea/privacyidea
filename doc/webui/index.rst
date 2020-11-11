@@ -11,7 +11,7 @@ manages his own tokens. This section gives an overview on the interface and link
 respective sections in the documentation.
 
 Dashboard
-------
+---------
 
 .. index:: dashboard
 
@@ -106,7 +106,7 @@ behavior of the system, manages the :ref:`eventhandler` and lets the user set up
    *The Config section is the heart of the privacyIDEA server.*
 
 Audit
--------
+-----
 
 In this tab, the :ref:`audit` log is displayed which lists all events the server registers.
 
@@ -137,3 +137,4 @@ are connected to your network.
 
 Subscriptions, e.g. with `NetKnights <https://netknights.it/en/>`_, the
 company behind privacyIDEA, can also be viewed and managed in this tab.
+

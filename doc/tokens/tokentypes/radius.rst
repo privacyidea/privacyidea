@@ -26,13 +26,13 @@ the RADIUS server.
 **RADIUS Server configuration**
 
 The configuration of the RADIUS server to which the authentication request will
-be forwarded. The configuration can be defined in :ref:`radius_server_config`
+be forwarded. The configuration can be defined in :ref:`radiusserver_config`
 
 **RADIUS User**
 
 When forwarding the request to the RADIUS server, the authentication request
 will be issued for this user. If the user is left empty, the RADIUS request
-will be sent with the same user.
+will be sent with the same user currently trying to authenticate.
 
 **RADIUS Secret**
 
