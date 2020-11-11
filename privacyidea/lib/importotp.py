@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2020-11-11 Timo Sturm <timo.sturm@netknights.it>
+#             Select how to validate PSKC imports
 #  2018-05-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add fileversion to OATH CSV
 #  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>

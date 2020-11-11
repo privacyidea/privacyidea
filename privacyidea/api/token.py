@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2020-11-11 Timo Sturm <timo.sturm@netknights.it>
+#            Select how to validate PSKC imports
 # 2020-01-28 Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
 #            Add WebAuthn token
 # 2018-06-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>

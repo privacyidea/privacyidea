@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2020-11-11 Timo Sturm <timo.sturm@netknights.it>
+#            Select how to validate PSKC imports
 # 2018-02-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Allow to import PSKC file
 # 2017-11-21 Cornelius Kölbel <corenlius.koelbel@netknights.it>
