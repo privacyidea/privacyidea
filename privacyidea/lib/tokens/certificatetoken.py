@@ -411,7 +411,7 @@ class CertificateTokenClass(TokenClass):
                     verified = verify_certificate_path(attestation,
                                                        param.get(ACTION.TRUSTED_CA_PATH))
                     if not verified:
-                        raise Exception("Failed to verify certificate chain of attestation certificate.")
+                        raise privacyIDEAError("Failed to verify certificate chain of attestation certificate.")
 
             # During the initialization process, we need to create the
             # certificate

@@ -3,13 +3,14 @@ This test file tests the lib.tokens.certificatetoken
 """
 
 from .base import MyTestCase, FakeFlaskG, FakeAudit
-from privacyidea.lib.tokens.certificatetoken import CertificateTokenClass
 from privacyidea.models import Token
 from privacyidea.lib.caconnector import save_caconnector
 from privacyidea.lib.token import get_tokens, remove_token
 from privacyidea.lib.error import ParameterError, privacyIDEAError
 from privacyidea.lib.utils import int_to_hex
-from privacyidea.lib.tokens.certificatetoken import parse_chainfile, verify_certificate_path, ACTION
+from privacyidea.lib.tokens.certificatetoken import (parse_chainfile, verify_certificate_path, ACTION,
+                                                     CertificateTokenClass)
+from privacyidea.lib.policy import set_policy, delete_policy, PolicyClass, SCOPE
 import os
 from OpenSSL import crypto
 
@@ -405,9 +406,6 @@ class CertificateTokenTestCase(MyTestCase):
         self.assertEqual(r, int_to_hex(x509obj.get_serial_number()))
 
     def test_05_get_default_settings(self):
-        from privacyidea.lib.policy import set_policy, delete_policy, PolicyClass, SCOPE
-        from privacyidea.lib.tokens.certificatetoken import ACTION, CertificateTokenClass
-
         params = {}
         g = FakeFlaskG()
         g.audit_object = FakeAudit()
