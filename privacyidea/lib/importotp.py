@@ -475,7 +475,7 @@ def parsePSKCdata(xml_data,
         - 'check_fail_soft' : Skip tokens with invalid MAC.
         - 'no_check' : Hmac of tokens are not checked, every token is parsed.
 
-    :return: a dictionary of token dictionaries and a list of serial of not imported tokens
+    :return: tuple of a dictionary of token dictionaries and a list of serial of not imported tokens
         { serial : { otpkey , counter, .... }}, [serial, serial, ...]
     """
 
