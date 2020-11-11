@@ -562,7 +562,7 @@ class ImportOTPTestCase(MyTestCase):
     def test_03_import_pskc(self):
         self.assertRaises(ImportException, parsePSKCdata, 'not xml')
 
-        tokens = parsePSKCdata(XML_PSKC)
+        tokens, _ = parsePSKCdata(XML_PSKC)
         self.assertEqual(len(tokens), 7)
         self.assertEqual(tokens["1000133508267"].get("type"), "hotp")
         self.assertEqual(tokens["2600135004013"].get("type"), "totp")
@@ -579,26 +579,29 @@ class ImportOTPTestCase(MyTestCase):
     def test_04_import_pskc_aes(self):
         # Test default and all tokens are valid
         encryption_key_hex = "12345678901234567890123456789012"
-        tokens = parsePSKCdata(XML_PSKC_AES,
-                               preshared_key_hex=encryption_key_hex)
+        tokens, not_imported = parsePSKCdata(XML_PSKC_AES,
+                                             preshared_key_hex=encryption_key_hex)
         self.assertEqual(len(tokens), 1)
+        self.assertEqual(len(not_imported), 0)
         self.assertEqual(tokens["987654321"].get("type"), "hotp")
         self.assertEqual(tokens["987654321"].get("otplen"), "8")
         self.assertEqual(tokens["987654321"].get("otpkey"),
                          "3132333435363738393031323334353637383930")
         self.assertEqual(tokens["987654321"].get("description"), "Manufacturer")
 
-        # Test 'check_fail_hard' no token parsed and import exception
+        # Test 'check_fail_hard' no token parsed
         xml_wrong_mac = XML_PSKC_AES.replace("Su+NvtQfmvfJzF6bmQiJqoLRExc=", "Su+NvtQfmvfJzF6XYZiJqoLRExc=")
-        with pytest.raises(ImportException):
-            parsePSKCdata(xml_wrong_mac,
-                          preshared_key_hex=encryption_key_hex)
+        tokens, not_imported = parsePSKCdata(xml_wrong_mac,
+                                             preshared_key_hex=encryption_key_hex)
+        self.assertEqual(len(tokens), 0)
+        self.assertEqual(len(not_imported), 1)
 
         # Test 'no_check' all tokens parsed and no exception
         xml_wrong_mac = XML_PSKC_AES.replace("Su+NvtQfmvfJzF6bmQiJqoLRExc=", "Su+NvtQfmvfJzF6XYZiJqoLRExc=")
-        tokens = parsePSKCdata(xml_wrong_mac,
-                               preshared_key_hex=encryption_key_hex, validate_mac='no_check')
+        tokens, not_imported = parsePSKCdata(xml_wrong_mac,
+                                             preshared_key_hex=encryption_key_hex, validate_mac='no_check')
         self.assertEqual(len(tokens), 1)
+        self.assertEqual(len(not_imported), 0)
         self.assertEqual(tokens["987654321"].get("type"), "hotp")
         self.assertEqual(tokens["987654321"].get("otplen"), "8")
         self.assertEqual(tokens["987654321"].get("otpkey"),
@@ -607,9 +610,10 @@ class ImportOTPTestCase(MyTestCase):
 
         # Test 'check_fail_soft' no token parsed and no exception
         xml_wrong_mac = XML_PSKC_AES.replace("Su+NvtQfmvfJzF6bmQiJqoLRExc=", "Su+NvtQfmvfJzF6XYZiJqoLRExc=")
-        tokens = parsePSKCdata(xml_wrong_mac,
-                               preshared_key_hex=encryption_key_hex, validate_mac='check_fail_soft')
+        tokens, not_imported = parsePSKCdata(xml_wrong_mac,
+                                             preshared_key_hex=encryption_key_hex, validate_mac='check_fail_soft')
         self.assertEqual(len(tokens), 0)
+        self.assertEqual(len(not_imported), 1)
 
     def test_05_import_pskc_password(self):
         password = "qwerty"
@@ -617,7 +621,7 @@ class ImportOTPTestCase(MyTestCase):
         self.assertRaises(ImportException, parsePSKCdata,
                           XML_PSKC_PASSWORD_PREFIX)
 
-        tokens = parsePSKCdata(XML_PSKC_PASSWORD_PREFIX, password=password)
+        tokens, _ = parsePSKCdata(XML_PSKC_PASSWORD_PREFIX, password=password)
         self.assertEqual(len(tokens), 1)
         self.assertEqual(tokens["987654321"].get("type"), "hotp")
         self.assertEqual(tokens["987654321"].get("otplen"), "8")
@@ -648,7 +652,7 @@ class ImportOTPTestCase(MyTestCase):
         remove_token("t3")
         remove_token("t4")
         # import the tokens again
-        tokens = parsePSKCdata(export, preshared_key_hex=psk)
+        tokens, _ = parsePSKCdata(export, preshared_key_hex=psk)
         self.assertEqual(len(tokens), 3)
         self.assertEqual(tokens.get("t1").get("type"), "hotp")
         self.assertEqual(tokens.get("t1").get("otpkey"), "123456")

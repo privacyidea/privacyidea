@@ -515,7 +515,10 @@ def loadtokens(pskc, preshared_key_hex):
     with open(pskc, 'r') as pskcfile:
         file_contents = pskcfile.read()
 
-    tokens = parsePSKCdata(file_contents, preshared_key_hex)
+    # TODO Should the tokens that were not imported by the janitor be appended to failed_tokens?
+    # TODO Should this method allow to change how tokens are validated, how would that be done?
+
+    tokens, _ = parsePSKCdata(file_contents, preshared_key_hex)
     success = 0
     failed = 0
     failed_tokens = []

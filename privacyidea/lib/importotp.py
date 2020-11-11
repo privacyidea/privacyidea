@@ -479,7 +479,7 @@ def parsePSKCdata(xml_data,
 
     abort = False
 
-    not_imported_tokens_names = []
+    not_imported_serials = []
     tokens = {}
     xml = strip_prefix_from_soup(BeautifulSoup(xml_data, "lxml"))
 
@@ -553,7 +553,7 @@ def parsePSKCdata(xml_data,
                     if is_invalid and validate_mac == 'check_fail_hard':
                         abort = True
                     elif is_invalid and validate_mac == 'check_fail_soft':
-                        not_imported_tokens_names.append(serial)
+                        not_imported_serials.append(serial)
                         continue
 
         except Exception as exx:
@@ -573,11 +573,10 @@ def parsePSKCdata(xml_data,
         tokens[serial] = token
 
     if abort:
-        # Add descriptions to list and reset tokens.
-        not_imported_tokens_names = [t['description'] for t in tokens]
-        tokens = {}
+        not_imported_serials = [serial for serial in tokens]
+        tokens = {}  # reset tokens
 
-    return tokens, not_imported_tokens_names
+    return tokens, not_imported_serials
 
 
 class GPGImport(object):
