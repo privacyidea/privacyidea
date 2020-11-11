@@ -52,6 +52,7 @@ import logging
 import traceback
 from privacyidea.lib.log import log_with
 import socket
+import datetime
 
 log = logging.getLogger(__name__)
 
@@ -78,41 +79,22 @@ class Audit(object):  # pragma: no cover
 
     is_readable = False
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, startdate=None):
         """
         Create a new audit object.
 
         :param config: The web config is passed to the audit module, so that
         the special module implementation can get its configuration.
         :type config: dict
-        :return:
+        :param startdate: The datetime of the beginning of the request
+        :type startdate: datetime
+        :return: Audit object
         """
         self.name = "AuditBase"
-        self.audit_data = {}
+        self.audit_data = {'startdate': startdate or datetime.datetime.now()}
         self.config = config or {}
         self.private = ""
         self.public = ""
-
-    @log_with(log)
-    def initialize(self):
-        # defaults
-        self.audit_data = {'action_detail': '',
-                   'info': '',
-                   'log_level': 'INFO',
-                   'administrator': '',
-                   'value': '',
-                   'key': '',
-                   'serial': '',
-                   'token_type': '',
-                   'clearance_level': 0,
-                   'privacyidea_server': socket.gethostname(),
-                   'realm': '',
-                   'user': '',
-                   'client': ''
-                   }
-        #controller = request.environ['pylons.routes_dict']['controller']
-        #action = request.environ['pylons.routes_dict']['action']
-        #c.audit['action'] = "%s/%s" % (controller, action)
 
     def log_token_num(self, count):
         """
@@ -163,7 +145,9 @@ class Audit(object):  # pragma: no cover
 
     @property
     def has_data(self):
-        return bool(self.audit_data)
+        # We check if there is actually audit_data with an action.
+        # Since the audit_data is initialized with the startdate.
+        return bool(self.audit_data and "action" in self.audit_data)
 
     @log_with(log)
     def log(self, param):

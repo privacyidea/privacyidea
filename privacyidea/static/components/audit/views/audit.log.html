@@ -23,8 +23,18 @@
             <thead>
             <tr>
                 <th translate>number</th>
-                <th class="pifilter"><translate>date</translate>
+                <th class="pifilter"><translate>enddate</translate>
                     <pi-filter ng-model="dateFilter"
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
+                </th>
+                <th class="pifilter"><translate>startdate</translate>
+                    <pi-filter ng-model="startdateFilter"
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
+                </th>
+                <th class="pifilter"><translate>duration</translate>
+                    <pi-filter ng-model="durationFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
@@ -103,6 +113,8 @@
             <tr ng-repeat="audit in auditdata.auditdata">
                 <td>{{ audit.number }}</td>
                 <td>{{ audit.date | date:dateFormat }}</td>
+                <td>{{ audit.startdate | date:dateFormat }}</td>
+                <td>{{ audit.duration }}</td>
                 <td>{{ audit.action }}</td>
                 <td><span status-class="{{ audit.success }}">
                 {{ audit.success }}
