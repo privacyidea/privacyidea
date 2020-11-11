@@ -969,7 +969,7 @@ def loadtokens_api(filename=None):
     elif file_type in ["yubikeycsv", "Yubikey CSV"]:
         TOKENS = parseYubicoCSV(file_contents)
     elif file_type in ["pskc"]:
-        TOKENS, not_imported_names = parsePSKCdata(file_contents, preshared_key_hex=aes_psk,
+        TOKENS, not_imported_serials = parsePSKCdata(file_contents, preshared_key_hex=aes_psk,
                                                    password=aes_password, validate_mac=aes_validate_mac)
 
     # Now import the Tokens from the dictionary
