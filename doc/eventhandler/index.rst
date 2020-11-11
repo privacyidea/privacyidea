@@ -88,6 +88,8 @@ module can require additional options.
 
    *The event* sendmail *requires the option* emailconfig.
 
+.. _handlerconditions:
+
 Conditions
 ----------
 
