@@ -992,7 +992,7 @@ def loadtokens_api(filename=None):
                         'success': True})
     # logTokenNum()
 
-    return send_result({'n_imported': len(TOKENS), 'n_not_imported': len(not_imported_names)})
+    return send_result({'n_imported': len(TOKENS), 'n_not_imported': len(not_imported_serials)})
 
 
 @token_blueprint.route('/copypin', methods=['POST'])
