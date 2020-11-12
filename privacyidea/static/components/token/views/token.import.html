@@ -78,7 +78,7 @@
         <div></div>
         <div class="mt-5px">
             <p class="help help-block" translate>
-                You can choose how the authenticity the stored tokens should be verified.
+                You can choose how the authenticity of the tokens to be imported should be verified.
             </p>
             <select class="form-control"
                     ng-model="form.validateMAC">
@@ -140,7 +140,7 @@
         Uploaded Tokens: {{ uploadedTokens }}
     </div>
     <div>
-        <!--        How to translate this?-->
-        Skipped Tokens: {{ notImportedTokens }}
+        <translate>Skippted Tokens
+            <translate>: {{ notImportedTokens }}
     </div>
 </div>

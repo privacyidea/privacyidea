@@ -904,7 +904,8 @@ def loadtokens_api(filename=None):
         "oathcsv" or "yubikeycsv".
     :jsonparam tokenrealms: comma separated list of realms.
     :jsonparam psk: Pre Shared Key, when importing PSKC
-    :jsonparam pskcValidateMAC: Determines how invalid MACs should be handled when importing PSKC
+    :jsonparam pskcValidateMAC: Determines how invalid MACs should be handled when importing PSKC.
+               Allowed values are 'no_check', 'check_fail_soft' and 'check_fail_hard'.
     :return: The number of the imported tokens
     :rtype: int
     """

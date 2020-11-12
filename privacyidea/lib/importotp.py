@@ -575,7 +575,7 @@ def parsePSKCdata(xml_data,
         tokens[serial] = token
 
     if abort:
-        not_imported_serials = [serial for serial in tokens]
+        not_imported_serials = tokens.keys()
         tokens = {}  # reset tokens
 
     return tokens, not_imported_serials
