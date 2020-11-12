@@ -164,7 +164,7 @@ class AuditTestCase(MyTestCase):
         self.Audit.log({"action": "/validate/check",
                         "success": False})
         self.Audit.finalize_log()
-        hidden_columns = ["number", "action_detail"]
+        hidden_columns = [u"number", u"action_detail"]
         res = search(self.app.config, {"hidden_columns": hidden_columns})
         self.assertTrue(res.get("count") == 1, res)
         # hidden columns are not returned in the auditdata
