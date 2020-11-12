@@ -117,9 +117,10 @@ def search(config, param=None, user=None):
 
     # delete hidden columns from response
     if hidden_columns:
-        for audit_row in pagination.auditdata:
-            audit_row = OrderedDict({audit_col: value for audit_col, value in audit_row.items()
-                                     if audit_col not in hidden_columns})
+        for i in range(len(pagination.auditdata)):
+            pagination.auditdata[i] = OrderedDict({audit_col: value for audit_col, value in
+                                                   pagination.auditdata[i].items()
+                                                   if audit_col not in hidden_columns})
 
     ret = {"auditdata": pagination.auditdata,
            "prev": pagination.prev,
