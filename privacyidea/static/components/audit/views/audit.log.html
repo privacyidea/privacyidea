@@ -140,7 +140,7 @@
                     <a ng-if="loggedInUser.role == 'admin'" ui-sref="config.resolvers.list">{{ audit.resolver }}</a>
                     <span ng-if="loggedInUser.role == 'user'">{{ audit.resolver }}</span>
                 </td>
-                <td ng-if="audit_columns.includes('policies')" ng-if="loggedInUser.role == 'admin'">
+                <td ng-if="audit_columns.includes('policies') && loggedInUser.role == 'admin'">
                     <span ng-repeat="policy in audit.policies">
                         <span ng-if="policy.endsWith('+')">
                             {{ policy }}

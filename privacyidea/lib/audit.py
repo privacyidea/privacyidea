@@ -51,6 +51,8 @@ storage.
 """
 
 import logging
+from collections import OrderedDict
+
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import parse_timedelta, get_module_class
@@ -116,9 +118,8 @@ def search(config, param=None, user=None):
     # delete hidden columns from response
     if hidden_columns:
         for audit_row in pagination.auditdata:
-            for col in hidden_columns:
-                if col in audit_row:
-                    del audit_row[col]
+            audit_row = OrderedDict({audit_col: value for audit_col, value in audit_row.items()
+                                     if audit_col not in hidden_columns})
 
     ret = {"auditdata": pagination.auditdata,
            "prev": pagination.prev,
