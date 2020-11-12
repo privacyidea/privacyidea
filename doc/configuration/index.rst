@@ -13,7 +13,6 @@ It also contains a shortcut to the policy tab (see :ref:`policies`).
 .. toctree::
    :maxdepth: 1
    :glob:
-   :numbered:
 
    useridresolvers.rst
    realms.rst

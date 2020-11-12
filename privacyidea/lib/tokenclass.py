@@ -453,7 +453,6 @@ class TokenClass(object):
 
         return pin_match, otp_counter, reply
 
-
     @staticmethod
     def decode_otpkey(otpkey, otpkeyformat):
         """
@@ -1387,8 +1386,8 @@ class TokenClass(object):
 
     def is_challenge_response(self, passw, user=None, options=None):
         """
-        This method checks, if this is a request, that is the response to
-        a previously sent challenge.
+        This method checks, if this is a request that is supposed to be
+        the answer to a previous challenge.
 
         The default behaviour to check if this is the response to a
         previous challenge is simply by checking if the request contains
@@ -1397,6 +1396,7 @@ class TokenClass(object):
 
         This method does not try to verify the response itself!
         It only determines, if this is a response for a challenge or not.
+        If the challenge still exists, is checked in has_db_challenge_response.
         The response is verified in check_challenge_response.
 
         :param passw: password, which might be pin or pin+otp
@@ -1409,11 +1409,27 @@ class TokenClass(object):
         :rtype: bool
         """
         options = options or {}
+        transaction_id = options.get("transaction_id") or options.get("state")
+        return bool(transaction_id)
+
+    def has_db_challenge_response(self, passw, user=None, options=None):
+        """
+        This method checks, if the given transaction_id is actually the response to
+        a real challenge. To do so, it verifies, if there is a DB entry for the
+        given serial number and transaction_id.
+        This is to avoid side effects by passing non-existent transaction_ids.
+
+        This method checks, if the token still has a challenge
+        :param passw:
+        :param user:
+        :param options:
+        :return:
+        """
+        options = options or {}
         challenge_response = False
         transaction_id = options.get("transaction_id") or options.get("state")
         if transaction_id:
-            # Now we also need to check, if the transaction_id is an entry to the
-            # serial number of this token
+            # Now we also need to check, if there is a corresponding DB entry
             chals = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
             challenge_response = bool(chals)
 

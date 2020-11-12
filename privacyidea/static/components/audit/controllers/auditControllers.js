@@ -56,6 +56,8 @@ myApp.controller("auditController", function (AuditFactory, $scope, $rootScope,
         $scope.params.privacyidea_server = "*" + ($scope.serverFilter || "") + "*";
         $scope.params.info = "*" + ($scope.infoFilter || "") + "*";
         $scope.params.date = "*" + ($scope.dateFilter || "") + "*";
+        $scope.params.startdate = "*" + ($scope.startdateFilter || "") + "*";
+        $scope.params.duration = "*" + ($scope.durationFilter || "") + "*";
         //debug: console.log("Request Audit Trail with params");
         //debug: console.log($scope.params);
     };

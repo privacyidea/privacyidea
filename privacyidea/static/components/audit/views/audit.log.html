@@ -23,9 +23,21 @@
             <thead>
             <tr>
                 <th ng-if="audit_columns.includes('number')"><translate>number</translate></th>
+                <th ng-if="audit_columns.includes('startdate')"
+                    class="pifilter"><translate>startdate</translate>
+                    <pi-filter ng-model="startdateFilter"
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
+                </th>
                 <th ng-if="audit_columns.includes('date')"
-                    class="pifilter"><translate>date</translate>
+                    class="pifilter"><translate>enddate</translate>
                     <pi-filter ng-model="dateFilter"
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
+                </th>
+                <th ng-if="audit_columns.includes('duration')"
+                    class="pifilter"><translate>duration</translate>
+                    <pi-filter ng-model="durationFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
@@ -116,11 +128,11 @@
             <tbody>
             <tr ng-repeat="audit in auditdata.auditdata">
                 <td ng-if="audit_columns.includes('number')">{{ audit.number }}</td>
-                <td>{{ audit.date | date:dateFormat }}</td>
+                <td ng-if="audit_columns.includes('startdate')">{{ audit.startdate | date:dateFormat }}</td>
+                <td ng-if="audit_columns.includes('date')">{{ audit.date | date:dateFormat }}</td>
+                <td ng-if="audit_columns.includes('duration')">{{ audit.duration }}</td>
                 <td ng-if="audit_columns.includes('action')">{{ audit.action }}</td>
                 <td ng-if="audit_columns.includes('success')"><span status-class="{{ audit.success }}">
-                {{ audit.success }}
-            </span></td>
                 <td ng-if="audit_columns.includes('action_detail')">{{ audit.action_detail }}</td>
                 <td>
                     <a ng-repeat="serial in audit.serial_list" ui-sref="token.details({tokenSerial:serial})"
