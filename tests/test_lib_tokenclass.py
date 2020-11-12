@@ -563,11 +563,19 @@ class TokenBaseTestCase(MyTestCase):
                                                 realm=self.realm1),
                                             "test123456")
         self.assertFalse(resp, resp)
+
+        # A the token has not DB entry in the challenges table, basically
+        # "is_cahllenge_response"
         resp = token.is_challenge_response(User(login="cornelius",
                                                 realm=self.realm1),
                                             "test123456",
                                             options={"transaction_id": transaction_id})
-        # The token has not DB entry in the challenges table
+        self.assertTrue(resp)
+        # ... but is does not "has_db_challenge_response"
+        resp = token.has_db_challenge_response(User(login="cornelius",
+                                                realm=self.realm1),
+                                               "test123456",
+                                               options={"transaction_id": transaction_id})
         self.assertFalse(resp)
 
         # Create a challenge

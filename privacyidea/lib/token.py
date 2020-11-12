@@ -2138,8 +2138,13 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                       tokenobject.user, tokenobject.get_serial()))
 
         if tokenobject.is_challenge_response(passw, user=user, options=options):
-            # This is a challenge response
-            challenge_response_token_list.append(tokenobject)
+            # This is a challenge response and it still has a challenge DB entry
+            if tokenobject.has_db_challenge_response(passw, user=user, options=options):
+                challenge_response_token_list.append(tokenobject)
+            else:
+                # This is a transaction_id, that either never existed or has expired.
+                # We add this to the invalid_token_list
+                invalid_token_list.append(tokenobject)
         elif tokenobject.is_challenge_request(passw, user=user,
                                               options=options):
             # This is a challenge request
