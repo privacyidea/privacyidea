@@ -522,7 +522,7 @@ def loadtokens(pskc, preshared_key_hex, validate_mac):
     with open(pskc, 'r') as pskcfile:
         file_contents = pskcfile.read()
 
-    tokens, _ = parsePSKCdata(file_contents, preshared_key_hex, validate_mac)
+    tokens, not_parsed_tokens = parsePSKCdata(file_contents, preshared_key_hex, validate_mac)
     success = 0
     failed = 0
     failed_tokens = []
@@ -535,6 +535,10 @@ def loadtokens(pskc, preshared_key_hex, validate_mac):
             failed = failed + 1
             failed_tokens.append(serial)
             print("--- Failed to import token. {0!s}".format(e))
+
+    if not_parsed_tokens:
+        print("The following tokens were not read from the PSKC file"
+              " because they could not be validated: {0!s}".format(not_parsed_tokens))
     print("Successfully imported {0!s} tokens.".format(success))
     print("Failed to import {0!s} tokens: {1!s}".format(failed, failed_tokens))
 
