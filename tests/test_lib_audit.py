@@ -159,6 +159,18 @@ class AuditTestCase(MyTestCase):
         res = search(self.app.config, {"timelimit": "-1d"})
         self.assertTrue(res.get("count") == 0, res)
 
+        # test that hidden columns are not returned by audit search
+        # write some test data
+        self.Audit.log({"action": "/validate/check",
+                        "success": False})
+        self.Audit.finalize_log()
+        hidden_columns = [u"number", u"action_detail"]
+        res = search(self.app.config, {"hidden_columns": hidden_columns})
+        self.assertTrue(res.get("count") == 1, res)
+        # hidden columns are not returned in the auditdata
+        for col in hidden_columns:
+            self.assertTrue(col not in res.get("auditdata")[0], res)
+
     def test_04_lib_download(self):
         # Prepare some audit entries:
         self.Audit.log({"serial": "serial1"})

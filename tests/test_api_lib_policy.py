@@ -36,7 +36,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            enroll_pin,
                                            check_external, api_key_required,
                                            mangle, is_remote_user_allowed,
-                                           required_email, auditlog_age,
+                                           required_email, auditlog_age, hide_audit_columns,
                                            papertoken_count, allowed_audit_realm,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
@@ -1495,6 +1495,47 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # finally delete policy
         delete_policy("a_age")
+
+    def test_18b_hide_audit_columns(self):
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        g.policy_object = PolicyClass()
+
+        # set a policy to hide the "serial" and the "action" columns in the audit response
+        set_policy(name="hide_audit_columns_admin",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}=serial action".format(ACTION.HIDE_AUDIT_COLUMNS))
+        g.logged_in_user = {"username": "admin1",
+                            "realm": "",
+                            "role": "admin"}
+        # request, that matches the policy
+        req.all_data = {"user": "Unknown"}
+        req.User = User("Unknown")
+        hide_audit_columns(req)
+        # Check if the hidden_columns was added
+        for col in ["serial", "action"]:
+            self.assertIn(col, req.all_data.get("hidden_columns"))
+        # delete admin policy
+        delete_policy("hide_audit_columns_admin")
+
+        # set a policy to hide the "number" and the "realm" columns in the audit response
+        set_policy(name="hide_audit_columns_user",
+                   scope=SCOPE.USER,
+                   action="{0!s}=number realm".format(ACTION.HIDE_AUDIT_COLUMNS))
+        g.logged_in_user = {"username": "user1",
+                            "realm": "",
+                            "role": "user"}
+        # request, that matches the policy
+        req.all_data = {"user": "Unknown"}
+        req.User = User("Unknown")
+        hide_audit_columns(req)
+        # Check if the hidden_columns was added
+        for col in ["number", "realm"]:
+            self.assertIn(col, req.all_data.get("hidden_columns"))
+        # delete user policy
+        delete_policy("hide_audit_columns_user")
 
     def test_19_papertoken_count(self):
         g.logged_in_user = {"username": "admin1",

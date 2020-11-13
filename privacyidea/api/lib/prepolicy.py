@@ -898,6 +898,29 @@ def auditlog_age(request=None, action=None):
     return True
 
 
+def hide_audit_columns(request=None, action=None):
+    """
+    This pre condition checks for the policy hide_audit_columns and sets the
+    "hidden_columns" parameter for the audit search. The given columns will be
+    removed from the returned audit dict.
+
+    Check ACTION.HIDE_AUDIT_COLUMNS
+
+    The decorator should wrap GET /audit/
+
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional Action
+    :type action: basestring
+    :returns: Always true. Modified the parameter request
+    """
+    hidden_columns = Match.admin_or_user(g, action=ACTION.HIDE_AUDIT_COLUMNS,
+                                         user_obj=request.User).action_values(unique=False)
+    request.all_data["hidden_columns"] = list(hidden_columns)
+
+    return True
+
+
 def mangle(request=None, action=None):
     """
     This pre condition checks if either of the parameters pass, user or realm
