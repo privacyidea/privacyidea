@@ -36,6 +36,7 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.api.lib.prepolicy import _generate_pin_from_policy
 
 optional = True
 required = False
@@ -164,7 +165,17 @@ class RegistrationTokenClass(PasswordTokenClass):
             # Otherwise genkey and otpkey will raise an exception in
             # PasswordTokenClass
             del param["genkey"]
-        param["otpkey"] = generate_password(size=self.otp_len)
+        if "registrationcode_length" in param:
+            size = param["registrationcode_length"]
+            del param["registrationcode_length"]
+        else:
+            size = self.otp_len
+        if "registrationcode_contents" in param:
+            otpkey = _generate_pin_from_policy(param["registrationcode_contents"], size=int(size))
+            del param["registrationcode_contents"]
+        else:
+            otpkey = generate_password(size=int(size))
+        param["otpkey"] = otpkey
         PasswordTokenClass.update(self, param)
 
     @log_with(log, log_entry=False)

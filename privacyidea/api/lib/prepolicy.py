@@ -506,6 +506,31 @@ def init_token_defaults(request=None, action=None):
     return True
 
 
+def init_registrationcode_length_contents(request=None, action=None):
+    """
+    This policy function is to be used as a decorator in the API token init function.
+
+    If there is a valid policy set the action values of REGISTRATIONCODE_LENGTH
+    and REGISTRATIONCODE_CONTENTS are added to request.all_data as
+
+    { 'registrationcode_length': '10', 'registrationcode_contents': 'cn' }
+    """
+    params = request.all_data
+    tokentype = params.get("type")
+    if tokentype == "registration":
+        user_object = get_user_from_param(params)
+        length_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.REGISTRATIONCODE_LENGTH,
+                                user_object=user_object).action_values(unique=True)
+        if len(length_pols) == 1:
+            request.all_data[ACTION.REGISTRATIONCODE_LENGTH] = list(length_pols)[0]
+        content_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.REGISTRATIONCODE_CONTENTS,
+                                user_object=user_object).action_values(unique=True)
+        if len(content_pols) == 1:
+            request.all_data[ACTION.REGISTRATIONCODE_CONTENTS] = list(content_pols)[0]
+
+    return True
+
+
 def init_tokenlabel(request=None, action=None):
     """
     This policy function is to be used as a decorator in the API init function.

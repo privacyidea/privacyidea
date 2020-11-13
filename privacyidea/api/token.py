@@ -83,6 +83,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_max_token_user,
                                            check_max_token_realm,
                                            init_tokenlabel, init_random_pin,
+                                           init_registrationcode_length_contents,
                                            set_random_pin,
                                            encrypt_pin, check_otp_pin,
                                            check_external, init_token_defaults,
@@ -131,6 +132,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="init")
 @prepolicy(init_token_defaults, request)
+@prepolicy(init_registrationcode_length_contents, request)
 @prepolicy(papertoken_count, request)
 @prepolicy(sms_identifiers, request)
 @prepolicy(tantoken_count, request)
@@ -161,6 +163,8 @@ def init():
     :jsonparam type: the type of the token
     :jsonparam tokenrealm: additional realms, the token should be put into
     :jsonparam otplen: length of the OTP value
+    :jsonparam registrationcode_length: the length of the generated registration code
+    :jsonparam registrationcode_contents: the content policy of the generated registration code
     :jsonparam hashlib: used hashlib sha1, sha256 or sha512
     :jsonparam validity_period_start: The beginning of the validity period
     :jsonparam validity_period_end: The end of the validity period
