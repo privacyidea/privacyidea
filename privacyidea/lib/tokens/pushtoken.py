@@ -487,7 +487,16 @@ class PushTokenClass(TokenClass):
 
     @staticmethod
     def _check_timestamp_in_range(timestamp, window):
-        """ Check if the timestamp is a valid timestamp and if it matches the time window."""
+        """ Check if the timestamp is a valid timestamp and if it matches the time window.
+
+        If the check fails a privacyIDEA error is thrown.
+
+        :param timestamp: A timestamp in iso format, either with a timezone or UTC is assumed
+        :type timestamp: str
+        :param window: Time window in minutes. The timestamp must lie within the
+                       range of -window to +window of the current time.
+        :type window: int
+        """
         try:
             ts = isoparse(timestamp)
         except (ValueError, TypeError) as _e:
@@ -506,7 +515,14 @@ class PushTokenClass(TokenClass):
 
     @classmethod
     def _api_endpoint_post(cls, request_data):
-        """ Handle all POST requests to the api endpoint """
+        """ Handle all POST requests to the api endpoint
+
+        :param request_data: Dictionary containing the parameters of the request
+        :type request_data: dict
+        :returns: The result of handling the request and a dictionary containing
+                  the details of the request handling
+        :rtype: (bool, dict)
+        """
         details = {}
         result = False
 
@@ -588,10 +604,14 @@ class PushTokenClass(TokenClass):
         """ Handle all GET requests to the api endpoint.
 
         Currently this is only used for polling.
+        :param g: The Flask context
+        :param request_data: Dictionary containing the parameters of the request
+        :type request_data: dict
+        :returns: Result of the polling operation, 'True' if an unanswered and
+                  matching challenge exists, 'False' otherwise.
+        :rtype: bool
         """
         # By default we allow polling if the policy is not set.
-        details = {}
-
         allow_polling = get_action_values_from_options(
             SCOPE.AUTH, PUSH_ACTION.ALLOW_POLLING,
             options={'g': g}) or PushAllowPolling.ALLOW
@@ -655,7 +675,7 @@ class PushTokenClass(TokenClass):
                      'check: "{0!r}"'.format(e))
             raise privacyIDEAError('Could not verify signature!')
 
-        return result, details
+        return result
 
     @classmethod
     def api_endpoint(cls, request, g):
@@ -724,10 +744,11 @@ class PushTokenClass(TokenClass):
         :return: The json string representing the result dictionary
         :rtype: tuple("json", str)
         """
+        details = {}
         if request.method == 'POST':
             result, details = cls._api_endpoint_post(request.all_data)
         elif request.method == 'GET':
-            result, details = cls._api_endpoint_get(g, request.all_data)
+            result = cls._api_endpoint_get(g, request.all_data)
         else:
             raise privacyIDEAError('Method {0!s} not allowed in \'api_endpoint\' '
                                    'for push token.'.format(request.method))
