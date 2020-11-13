@@ -1531,7 +1531,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.User = User("Unknown")
         hide_audit_columns(req)
         # Check if the hidden_columns was added
-        self.assertEqual(req.all_data.get("hidden_columns"), ["number", "realm"])
+        for col in ["number", "realm"]:
+            self.assertIn(col, req.all_data.get("hidden_columns"))
         # delete user policy
         delete_policy("hide_audit_columns_user")
 
