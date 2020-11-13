@@ -79,6 +79,7 @@ DELAY = 1.0
 
 # Timedelta in minutes
 POLL_TIME_WINDOW = 1
+UPDATE_FB_TOKEN_WINDOW = 5
 
 
 class PUSH_ACTION(object):
@@ -484,6 +485,178 @@ class PushTokenClass(TokenClass):
 
         return response_detail
 
+    @staticmethod
+    def _check_timestamp_in_range(timestamp, window):
+        """ Check if the timestamp is a valid timestamp and if it matches the time window."""
+        try:
+            ts = isoparse(timestamp)
+        except (ValueError, TypeError) as _e:
+            log.debug('{0!s}'.format(traceback.format_exc()))
+            raise privacyIDEAError('Could not parse timestamp {0!s}. '
+                                   'ISO-Format required.'.format(timestamp))
+        td = timedelta(minutes=window)
+        # We don't know if the passed timestamp is timezone aware. If no
+        # timezone is passed, we assume UTC
+        if ts.tzinfo:
+            now = datetime.now(utc)
+        else:
+            now = datetime.utcnow()
+        if not (now - td <= ts <= now + td):
+            raise privacyIDEAError('Timestamp {0!s} not in valid range.'.format(timestamp))
+
+    @classmethod
+    def _api_endpoint_post(cls, request_data):
+        """ Handle all POST requests to the api endpoint """
+        details = {}
+        result = False
+
+        serial = getParam(request_data, "serial", optional=False)
+        if all(k in request_data for k in ("fbtoken", "pubkey")):
+            log.debug("Do the 2nd step of the enrollment.")
+            try:
+                token_obj = get_one_token(serial=serial,
+                                          tokentype="push",
+                                          rollout_state="clientwait")
+                token_obj.update(request_data)
+            except ResourceNotFoundError:
+                raise ResourceNotFoundError("No token with this serial number "
+                                            "in the rollout state 'clientwait'.")
+            init_detail_dict = request_data
+
+            details = token_obj.get_init_detail(init_detail_dict)
+            result = True
+        elif all(k in request_data for k in ("nonce", "signature")):
+            log.debug("Handling the authentication response from the smartphone.")
+            challenge = getParam(request_data, "nonce")
+            signature = getParam(request_data, "signature")
+
+            # get the token_obj for the given serial:
+            token_obj = get_one_token(serial=serial, tokentype="push")
+            pubkey_obj = _build_verify_object(token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
+            # Do the 2nd step of the authentication
+            # Find valid challenges
+            challengeobject_list = get_challenges(serial=serial, challenge=challenge)
+
+            if challengeobject_list:
+                # There are valid challenges, so we check this signature
+                for chal in challengeobject_list:
+                    # verify the signature of the nonce
+                    sign_data = u"{0!s}|{1!s}".format(challenge, serial)
+                    try:
+                        pubkey_obj.verify(b32decode(signature),
+                                          sign_data.encode("utf8"),
+                                          padding.PKCS1v15(),
+                                          hashes.SHA256())
+                        # The signature was valid
+                        log.debug("Found matching challenge {0!s}.".format(chal))
+                        chal.set_otp_status(True)
+                        chal.save()
+                        result = True
+                    except InvalidSignature as _e:
+                        pass
+        elif all(k in request_data for k in ('new_fb_token', 'timestamp', 'signature')):
+            timestamp = getParam(request_data, 'timestamp', optional=False)
+            signature = getParam(request_data, 'signature', optional=False)
+            # first check if the timestamp is in the required span
+            cls._check_timestamp_in_range(timestamp, UPDATE_FB_TOKEN_WINDOW)
+            try:
+                tok = get_one_token(serial=serial, tokentype=cls.get_class_type())
+                pubkey_obj = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
+                sign_data = u"{new_fb_token}|{serial}|{timestamp}".format(**request_data)
+                pubkey_obj.verify(b32decode(signature),
+                                  sign_data.encode("utf8"),
+                                  padding.PKCS1v15(),
+                                  hashes.SHA256())
+                # If the timestamp and signature are valid we update the token
+                tok.add_tokeninfo('firebase_token', request_data['new_fb_token'])
+                result = True
+            except (ResourceNotFoundError, ParameterError,
+                    InvalidSignature, ConfigAdminError, BinasciiError) as e:
+                # to avoid disclosing information we always fail with an invalid
+                # signature error even if the token with the serial could not be found
+                log.debug('{0!s}'.format(traceback.format_exc()))
+                log.info('The following error occurred during the signature '
+                         'check: "{0!r}"'.format(e))
+                raise privacyIDEAError('Could not verify signature!')
+        else:
+            raise ParameterError("Missing parameters!")
+
+        return result, details
+
+    @classmethod
+    def _api_endpoint_get(cls, g, request_data):
+        """ Handle all GET requests to the api endpoint.
+
+        Currently this is only used for polling.
+        """
+        # By default we allow polling if the policy is not set.
+        details = {}
+
+        allow_polling = get_action_values_from_options(
+            SCOPE.AUTH, PUSH_ACTION.ALLOW_POLLING,
+            options={'g': g}) or PushAllowPolling.ALLOW
+        if allow_polling == PushAllowPolling.DENY:
+            raise PolicyError('Polling not allowed!')
+        serial = getParam(request_data, "serial", optional=False)
+        timestamp = getParam(request_data, 'timestamp', optional=False)
+        signature = getParam(request_data, 'signature', optional=False)
+        # first check if the timestamp is in the required span
+        cls._check_timestamp_in_range(timestamp, POLL_TIME_WINDOW)
+        # now check the signature
+        # first get the token
+        try:
+            tok = get_one_token(serial=serial, tokentype=cls.get_class_type())
+            # If the push_allow_polling policy is set to "token" we also
+            # need to check the POLLING_ALLOWED tokeninfo. If it evaluated
+            # to 'False', polling is not allowed for this token. If the
+            # tokeninfo value evaluates to 'True' or is not set at all,
+            # polling is allowed for this token.
+            if allow_polling == PushAllowPolling.TOKEN:
+                if not is_true(tok.get_tokeninfo(POLLING_ALLOWED, default='True')):
+                    log.debug('Polling not allowed for pushtoken {0!s} due to '
+                              'tokeninfo.'.format(serial))
+                    raise PolicyError('Polling not allowed!')
+
+            pubkey_obj = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
+            sign_data = u"{serial}|{timestamp}".format(**request_data)
+            pubkey_obj.verify(b32decode(signature),
+                              sign_data.encode("utf8"),
+                              padding.PKCS1v15(),
+                              hashes.SHA256())
+            # The signature was valid now check for an open challenge
+            # we need the private server key to sign the smartphone data
+            pem_privkey = tok.get_tokeninfo(PRIVATE_KEY_SERVER)
+            # we also need the FirebaseGateway for this token
+            fb_identifier = tok.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
+            if not fb_identifier:
+                raise ResourceNotFoundError('The pushtoken {0!s} has no Firebase configuration '
+                                            'assigned.'.format(serial))
+            fb_gateway = create_sms_instance(fb_identifier)
+            options = {'g': g}
+            challenges = []
+            challengeobject_list = get_challenges(serial=serial)
+            for chal in challengeobject_list:
+                # check if the challenge is active and not already answered
+                _cnt, answered = chal.get_otp_status()
+                if not answered and chal.is_valid():
+                    # then return the necessary smartphone data to answer
+                    # the challenge
+                    sp_data = _build_smartphone_data(serial, chal.challenge,
+                                                     fb_gateway, pem_privkey, options)
+                    challenges.append(sp_data)
+            # return the challenges as a list in the result value
+            result = challenges
+        except (ResourceNotFoundError, ParameterError,
+                InvalidSignature, ConfigAdminError, BinasciiError) as e:
+            # to avoid disclosing information we always fail with an invalid
+            # signature error even if the token with the serial could not be found
+            log.debug('{0!s}'.format(traceback.format_exc()))
+            log.info('The following error occurred during the signature '
+                     'check: "{0!r}"'.format(e))
+            raise privacyIDEAError('Could not verify signature!')
+
+        return result, details
+
     @classmethod
     def api_endpoint(cls, request, g):
         """
@@ -518,6 +691,21 @@ class PushTokenClass(TokenClass):
               nonce=<the actual challenge>
               signature=<the signed nonce>
 
+        - In some cases the Firebase service changes the token of a device. This
+          needs to be communicated to privacyIDEA through this endpoint
+          (https://github.com/privacyidea/privacyidea/wiki/concept%3A-pushtoken-poll#update
+          -firebase-token):
+
+            .. sourcecode:: http
+
+              POST /ttype/push HTTP/1.1
+              Host: https://yourprivacyideaserver
+
+              new_fb_token=<new firebase token>
+              serial=<token serial>
+              timestamp=<timestamp>
+              signature=SIGNATURE(<new_fb_token>|<serial>|<timestamp>)
+
         - And it also acts as an endpoint for polling challenges:
 
             .. sourcecode:: http
@@ -536,139 +724,10 @@ class PushTokenClass(TokenClass):
         :return: The json string representing the result dictionary
         :rtype: tuple("json", str)
         """
-        details = {}
-        result = False
-
         if request.method == 'POST':
-            serial = getParam(request.all_data, "serial", optional=False)
-            if serial and "fbtoken" in request.all_data and "pubkey" in request.all_data:
-                log.debug("Do the 2nd step of the enrollment.")
-                try:
-                    token_obj = get_one_token(serial=serial,
-                                              tokentype="push",
-                                              rollout_state="clientwait")
-                    token_obj.update(request.all_data)
-                except ResourceNotFoundError:
-                    raise ResourceNotFoundError("No token with this serial number "
-                                                "in the rollout state 'clientwait'.")
-                init_detail_dict = request.all_data
-
-                details = token_obj.get_init_detail(init_detail_dict)
-                result = True
-            elif serial and "nonce" in request.all_data and "signature" in request.all_data:
-                log.debug("Handling the authentication response from the smartphone.")
-                challenge = getParam(request.all_data, "nonce")
-                serial = getParam(request.all_data, "serial")
-                signature = getParam(request.all_data, "signature")
-
-                # get the token_obj for the given serial:
-                token_obj = get_one_token(serial=serial, tokentype="push")
-                pubkey_obj = _build_verify_object(token_obj.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
-                # Do the 2nd step of the authentication
-                # Find valid challenges
-                challengeobject_list = get_challenges(serial=serial, challenge=challenge)
-
-                if challengeobject_list:
-                    # There are valid challenges, so we check this signature
-                    for chal in challengeobject_list:
-                        # verify the signature of the nonce
-                        sign_data = u"{0!s}|{1!s}".format(challenge, serial)
-                        try:
-                            pubkey_obj.verify(b32decode(signature),
-                                              sign_data.encode("utf8"),
-                                              padding.PKCS1v15(),
-                                              hashes.SHA256())
-                            # The signature was valid
-                            log.debug("Found matching challenge {0!s}.".format(chal))
-                            chal.set_otp_status(True)
-                            chal.save()
-                            result = True
-                        except InvalidSignature as _e:
-                            pass
-
-            else:
-                raise ParameterError("Missing parameters!")
+            result, details = cls._api_endpoint_post(request.all_data)
         elif request.method == 'GET':
-            # This is only used for polling
-            # By default we allow polling if the policy is not set.
-            allow_polling = get_action_values_from_options(
-                SCOPE.AUTH, PUSH_ACTION.ALLOW_POLLING,
-                options={'g': g}) or PushAllowPolling.ALLOW
-            if allow_polling == PushAllowPolling.DENY:
-                raise PolicyError('Polling not allowed!')
-            serial = getParam(request.all_data, "serial", optional=False)
-            timestamp = getParam(request.all_data, 'timestamp', optional=False)
-            signature = getParam(request.all_data, 'signature', optional=False)
-            # first check if the timestamp is in the required span
-            try:
-                ts = isoparse(timestamp)
-            except (ValueError, TypeError) as _e:
-                log.debug('{0!s}'.format(traceback.format_exc()))
-                raise privacyIDEAError('Could not parse timestamp {0!s}. '
-                                       'ISO-Format required.'.format(timestamp))
-            # TODO: make time delta configurable
-            td = timedelta(minutes=POLL_TIME_WINDOW)
-            # We don't know if the passed timestamp is timezone aware. If no
-            # timezone is passed, we assume UTC
-            if ts.tzinfo:
-                now = datetime.now(utc)
-            else:
-                now = datetime.utcnow()
-            if not (now - td <= ts <= now + td):
-                raise privacyIDEAError('Timestamp {0!s} not in valid range.'.format(timestamp))
-            # now check the signature
-            # first get the token
-            try:
-                tok = get_one_token(serial=serial, tokentype=cls.get_class_type())
-                # If the push_allow_polling policy is set to "token" we also
-                # need to check the POLLING_ALLOWED tokeninfo. If it evaluated
-                # to 'False', polling is not allowed for this token. If the
-                # tokeninfo value evaluates to 'True' or is not set at all,
-                # polling is allowed for this token.
-                if allow_polling == PushAllowPolling.TOKEN:
-                    if not is_true(tok.get_tokeninfo(POLLING_ALLOWED, default='True')):
-                        log.debug('Polling not allowed for pushtoken {0!s} due to '
-                                  'tokeninfo.'.format(serial))
-                        raise PolicyError('Polling not allowed!')
-
-                pubkey_obj = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
-                sign_data = u"{serial}|{timestamp}".format(**request.all_data)
-                pubkey_obj.verify(b32decode(signature),
-                                  sign_data.encode("utf8"),
-                                  padding.PKCS1v15(),
-                                  hashes.SHA256())
-                # The signature was valid now check for an open challenge
-                # we need the private server key to sign the smartphone data
-                pem_privkey = tok.get_tokeninfo(PRIVATE_KEY_SERVER)
-                # we also need the FirebaseGateway for this token
-                fb_identifier = tok.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
-                if not fb_identifier:
-                    raise ResourceNotFoundError('The pushtoken {0!s} has no Firebase configuration '
-                                                'assigned.'.format(serial))
-                fb_gateway = create_sms_instance(fb_identifier)
-                options = {'g': g}
-                challenges = []
-                challengeobject_list = get_challenges(serial=serial)
-                for chal in challengeobject_list:
-                    # check if the challenge is active and not already answered
-                    _cnt, answered = chal.get_otp_status()
-                    if not answered and chal.is_valid():
-                        # then return the necessary smartphone data to answer
-                        # the challenge
-                        sp_data = _build_smartphone_data(serial, chal.challenge,
-                                                         fb_gateway, pem_privkey, options)
-                        challenges.append(sp_data)
-                # return the challenges as a list in the result value
-                result = challenges
-            except (ResourceNotFoundError, ParameterError,
-                    InvalidSignature, ConfigAdminError, BinasciiError) as e:
-                # to avoid disclosing information we always fail with an invalid
-                # signature error even if the token with the serial could not be found
-                log.debug('{0!s}'.format(traceback.format_exc()))
-                log.info('The following error occurred during the signature '
-                         'check: "{0!r}"'.format(e))
-                raise privacyIDEAError('Could not verify signature!')
-
+            result, details = cls._api_endpoint_get(g, request.all_data)
         else:
             raise privacyIDEAError('Method {0!s} not allowed in \'api_endpoint\' '
                                    'for push token.'.format(request.method))

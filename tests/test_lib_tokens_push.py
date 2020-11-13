@@ -931,6 +931,45 @@ class PushTokenTestCase(MyTestCase):
 
         remove_token(serial)
 
+    def test_11_api_endpoint_update_fbtoken(self):
+        g = FakeFlaskG()
+        # create a push token
+        tparams = {'type': 'push', 'genkey': 1}
+        tparams.update(FB_CONFIG_VALS)
+        tok = init_token(param=tparams)
+        serial = tok.get_serial()
+
+        # Run enrollment step 2
+        tok.update({"enrollment_credential": tok.get_tokeninfo("enrollment_credential"),
+                    "serial": serial,
+                    "fbtoken": "firebasetoken1",
+                    "pubkey": self.smartphone_public_key_pem_urlsafe})
+        self.assertEqual(tok.token.get('rollout_state'), 'enrolled', tok)
+        self.assertEqual(tok.get_tokeninfo('firebase_token'), 'firebasetoken1', tok)
+
+        # Create the signature
+        req_data = {'new_fb_token': 'firebasetoken2',
+                    'serial': serial,
+                    'timestamp': datetime.now(tz=utc).isoformat()}
+        sign_string = u"{new_fb_token}|{serial}|{timestamp}".format(**req_data)
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        req_data.update({'signature': b32encode(sig)})
+        # now we perform the firebase token update
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        req = Request(builder.get_environ())
+        req.all_data = req_data
+        res = PushTokenClass.api_endpoint(req, g)
+        self.assertEqual(res[0], 'json', res)
+        self.assertTrue(res[1]['result']['value'], res)
+        self.assertTrue(res[1]['result']['status'], res)
+
+        self.assertEqual(tok.token.get('rollout_state'), 'enrolled', tok)
+        self.assertEqual(tok.get_tokeninfo('firebase_token'), req_data['new_fb_token'], tok)
+        tok.delete_token()
+
     def test_15_poll_endpoint(self):
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
