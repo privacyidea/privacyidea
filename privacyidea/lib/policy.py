@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2020-11-15 Jens-U. Mozdzen <jmozdzen@nde.ag>
+#             missing http headers now are only reported as warnings
 #  2020-06-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add privacyIDEA nodes
 #  2019-09-26 Friedrich Weber <friedrich.weber@netknights.it>
@@ -788,10 +790,10 @@ class PolicyClass(object):
                 raise PolicyError(u"Unknown HTTP header key referenced in condition of policy "
                                   u"{!r}: {!r}".format(policy["name"], key))
         else:  # pragma: no cover
-            log.error(u"Policy {!r} has conditions on headers {!r}, but http header"
+            log.warning(u"Policy {!r} has conditions on headers {!r}, but http header"
                       u" is not available. This should not happen.".format(policy["name"], key))
-            raise PolicyError(u"Policy {!r} has conditions on headers {!r}, but http header"
-                        u" is not available".format(policy["name"], key))
+            # a missing header is treated as a no-match condition
+            return False
 
     @staticmethod
     def _policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
