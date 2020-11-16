@@ -20,7 +20,8 @@
                 <button ng-click="authenticate_remote_user()"
                         class="btn btn-primary btn-block" translate>Log In
                 </button>
-                <button ng-click="loginWithCredentials = true"
+                <button ng-hide="forceRemoteUser === 'True'"
+                        ng-click="loginWithCredentials = true"
                         class="btn btn-info btn-block" translate>
                     Login with credentials
                 </button>
