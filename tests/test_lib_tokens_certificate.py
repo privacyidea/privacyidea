@@ -202,7 +202,7 @@ class CertificateTokenTestCase(MyTestCase):
                                                      "tests/testdata/feitian_non_exist"])
         self.assertTrue(r)
 
-        # Verification against an empty chain, due to misconfiguration failes.
+        # Verification against an empty chain, due to misconfiguration fails.
         r = verify_certificate_path(YUBIKEY_ATTEST, ["tests/testdata/feitian_non_exist"])
         self.assertFalse(r)
 
