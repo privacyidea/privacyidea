@@ -674,3 +674,21 @@ The admin does not know the secret and can not change the secret.
 For more details of this token type see :ref:`indexedsecret_token`.
 
 New in version 3.3.
+
+.. _admin_trusted_attestation_CA:
+
+certificate_trusted_Attestation_CA_path
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+An administrator can enroll a certificate token for a user.
+If an attestation certificate is provided in addition, this policy holds the
+path to a directory, that contains trusted CA paths.
+Each PEM encoded file in this directory needs to contain the root CA certificate
+at the first position and the consecutive intermediate certificates.
+
+An additional enrollment policy :ref:`require_attestation`, if an attestation certificate
+is required.
+
+New in version 3.5.

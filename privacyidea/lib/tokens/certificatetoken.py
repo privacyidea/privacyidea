@@ -103,6 +103,7 @@ DEFAULT_CA_PATH = ["/etc/privacyidea/trusted_attestation_ca"]
 class ACTION(BASE_ACTION):
     __doc__ = """This is the list of special certificate actions."""
     TRUSTED_CA_PATH = "trusted_Attestation_CA_path"
+    REQUIRE_ATTESTATION = "require_attestation"
 
 
 def _verify_cert(parent, child):
@@ -141,6 +142,7 @@ def verify_certificate_path(certificate, trusted_ca_paths):
         else:
             log.warning("The configured attestation CA directory does not exist.")
     return verified
+
 
 def parse_chainfile(chainfile):
     """
@@ -318,6 +320,13 @@ class CertificateTokenClass(TokenClass):
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of active certificates assigned."),
                            'group': GROUP.TOKEN
+                       },
+                       ACTION.REQUIRE_ATTESTATION: {
+                           'type': 'string',
+                           'desc': _("Enrolling a certificate token can require an attestation certificate. "
+                                     "(Default: ignore)"),
+                           'group': GROUP.TOKEN,
+                           'value': [""]
                        }
                    },
                    SCOPE.USER: {
