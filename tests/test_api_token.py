@@ -1445,6 +1445,27 @@ class APITokenTestCase(MyApiTestCase):
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(len(result["value"]["tokens"]), 2)
 
+        # Finally we try to enroll a certificate with an attestation certificate required:
+        from privacyidea.lib.tokens.certificatetoken import ACTION, REQUIRE_ACTIONS
+        set_policy(name="pol1",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(ACTION.REQUIRE_ATTESTATION, REQUIRE_ACTIONS.REQUIRE_AND_VERIFY))
+        with self.app.test_request_context('/token/init',
+                                           data={"type": "certificate",
+                                                 "request": REQUEST,
+                                                 "ca": "localCA"},
+                                           method="POST",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"))
+            self.assertEqual(result.get("error").get("message"),
+                             "A policy requires that you provide an attestation certificate.")
+
+        delete_policy("pol1")
+
+
     def test_18_revoke_token(self):
         self._create_temp_token("RevToken")
 

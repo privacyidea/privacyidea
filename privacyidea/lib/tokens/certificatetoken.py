@@ -97,6 +97,7 @@ CzYH/zLEaIsLjRg+tnmKJu2E4IdodScri7oGVhVyhUW5DrcX+/8CPqnoBpd7zQ==
 """
 
 VERIFY_CERTIFICATE_CHAIN = True
+REQUIRE_ATTESTATION = True
 DEFAULT_CA_PATH = ["/etc/privacyidea/trusted_attestation_ca"]
 
 
@@ -104,6 +105,12 @@ class ACTION(BASE_ACTION):
     __doc__ = """This is the list of special certificate actions."""
     TRUSTED_CA_PATH = "trusted_Attestation_CA_path"
     REQUIRE_ATTESTATION = "require_attestation"
+
+
+class REQUIRE_ACTIONS(object):
+    IGNORE = "ignore"
+    VERIFY = "verify"
+    REQUIRE_AND_VERIFY = "require_and_verify"
 
 
 def _verify_cert(parent, child):

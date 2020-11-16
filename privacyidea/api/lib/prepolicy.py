@@ -1941,3 +1941,27 @@ def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
         else None
 
     return attestation_certificate_allowed(cert_info, allowed_certs_pols)
+
+
+def required_piv_attestation(request, action=None):
+    """
+    This is a token specific decorator certificate tokens for the endpoint
+    /token/init
+    According to the policy scope=SCOPE.ENROLL,
+    action=REQUIRE_ATTESTATION an exception is raised, if no attestation parameter
+    is given.
+    :param request:
+    :param action:
+    :return:
+    """
+    from privacyidea.lib.tokens.certificatetoken import ACTION, REQUIRE_ACTIONS
+    ttype = request.all_data.get("type")
+    if ttype and ttype.lower() == "certificate":
+        # Get attestation certificate requirement
+        require_att = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.REQUIRE_ATTESTATION,
+                                     user_object=request.User if request.User else None).action_values(unique=True)
+        if REQUIRE_ACTIONS.REQUIRE_AND_VERIFY in list(require_att):
+            if not request.all_data.get("attestation"):
+                # There is no attestation certificate in the request, although it is required!
+                log.warning("The request is missing an attestation certificate. {0!s}".format(require_att))
+                raise PolicyError("A policy requires that you provide an attestation certificate.")
