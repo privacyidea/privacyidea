@@ -586,7 +586,7 @@ class PushTokenClass(TokenClass):
                 # If the timestamp and signature are valid we update the token
                 tok.add_tokeninfo('firebase_token', request_data['new_fb_token'])
                 result = True
-            except (ResourceNotFoundError, ParameterError,
+            except (ResourceNotFoundError, ParameterError, TypeError,
                     InvalidSignature, ConfigAdminError, BinasciiError) as e:
                 # to avoid disclosing information we always fail with an invalid
                 # signature error even if the token with the serial could not be found

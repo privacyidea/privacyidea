@@ -838,15 +838,15 @@ class PushTokenTestCase(MyTestCase):
         with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
             mock_dt.now.return_value = timestamp + timedelta(minutes=9)
             self.assertRaisesRegexp(privacyIDEAError,
-                                    r'Timestamp .* not in valid '
-                                    r'range.'.format(timestamp.isoformat().translate({43: r'\+'})),
+                                    r'Timestamp {0!s} not in valid '
+                                    r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
                                     PushTokenClass._check_timestamp_in_range,
                                     timestamp.isoformat(), 8)
         with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
             mock_dt.now.return_value = timestamp - timedelta(minutes=9)
             self.assertRaisesRegexp(privacyIDEAError,
                                     r'Timestamp {0!s} not in valid '
-                                    r'range.'.format(timestamp.isoformat().translate({43: r'\+'})),
+                                    r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
                                     PushTokenClass._check_timestamp_in_range,
                                     timestamp.isoformat(), 8)
 
