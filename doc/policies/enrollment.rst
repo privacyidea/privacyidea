@@ -630,7 +630,7 @@ certificate is passed along to verify, if the key pair was generated on a (PIV) 
 
 This policy can be set to:
 
-* ``ignore`` (default): Ignore any existance of an attestation certificate
+* ``ignore`` (default): Ignore any existence of an attestation certificate
 * ``verify``: If an attestation certificate is passed along during enrollment, the attestation
   ceritificate gets verified.
 * ``require_and_verify``: An attestation certificate is required and verified. If no attestation certificate

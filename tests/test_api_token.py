@@ -160,7 +160,11 @@ class APIAttestationTestCase(MyApiTestCase):
             self.assertEqual('ERR10: certificate request does not match attestation certificate.',
                              result.get("error").get("message"))
 
-        # If a valid attestation certificate can not be verified, we will fail.
+        # If a valid attestation certificate can not be verified due to missing CA path, we will fail.
+        from privacyidea.lib.tokens.certificatetoken import ACTION, REQUIRE_ACTIONS
+        set_policy(name="pol_verify",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(ACTION.REQUIRE_ATTESTATION, REQUIRE_ACTIONS.REQUIRE_AND_VERIFY))
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "certificate",
@@ -196,7 +200,7 @@ class APIAttestationTestCase(MyApiTestCase):
 
         delete_policy("pol1")
         delete_policy("pol2")
-
+        delete_policy("pol_verify")
 
 class APITokenTestCase(MyApiTestCase):
 

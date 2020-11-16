@@ -1948,8 +1948,11 @@ def required_piv_attestation(request, action=None):
     This is a token specific decorator certificate tokens for the endpoint
     /token/init
     According to the policy scope=SCOPE.ENROLL,
-    action=REQUIRE_ATTESTATION an exception is raised, if no attestation parameter
-    is given.
+    action=REQUIRE_ATTESTATION an exception is raised, if no attestation parameter is given.
+
+    It also checks the policy if the attestation should be verified and sets the
+    parameter verify_attestation accordingly.
+
     :param request:
     :param action:
     :return:
@@ -1965,3 +1968,7 @@ def required_piv_attestation(request, action=None):
                 # There is no attestation certificate in the request, although it is required!
                 log.warning("The request is missing an attestation certificate. {0!s}".format(require_att))
                 raise PolicyError("A policy requires that you provide an attestation certificate.")
+
+        # Add parameter verify_attestation
+        request.all_data["verify_attestation"] = bool(REQUIRE_ACTIONS.VERIFY in list(require_att) or
+                                                      REQUIRE_ACTIONS.REQUIRE_AND_VERIFY in list(require_att))

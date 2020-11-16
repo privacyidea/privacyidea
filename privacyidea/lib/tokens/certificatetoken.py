@@ -96,8 +96,6 @@ CzYH/zLEaIsLjRg+tnmKJu2E4IdodScri7oGVhVyhUW5DrcX+/8CPqnoBpd7zQ==
 -----END CERTIFICATE-----
 """
 
-VERIFY_CERTIFICATE_CHAIN = True
-REQUIRE_ATTESTATION = True
 DEFAULT_CA_PATH = ["/etc/privacyidea/trusted_attestation_ca"]
 
 
@@ -411,23 +409,26 @@ class CertificateTokenClass(TokenClass):
             self.add_tokeninfo("CA", ca)
             cacon = get_caconnector_object(ca)
         if request:
-            request_csr = load_pem_x509_csr(to_byte_string(request), default_backend())
-            if not request_csr.is_signature_valid:
-                raise privacyIDEAError("request has invalid signature.")
-            # If a request is sent, we can have an attestation certificate
-            attestation = getParam(param, "attestation", optional)
-            if attestation:
-                request_numbers = request_csr.public_key().public_numbers()
-                attestation_cert = load_pem_x509_certificate(to_byte_string(attestation), default_backend())
-                attestation_numbers = attestation_cert.public_key().public_numbers()
-                if request_numbers != attestation_numbers:
-                    log.warning("certificate request does not match attestation certificate.")
-                    raise privacyIDEAError("certificate request does not match attestation certificate.")
-                if VERIFY_CERTIFICATE_CHAIN:
-                    verified = verify_certificate_path(attestation,
-                                                       param.get(ACTION.TRUSTED_CA_PATH))
-                    if not verified:
-                        raise privacyIDEAError("Failed to verify certificate chain of attestation certificate.")
+            if not spkac:
+                # We only do the whole attestation checking in case we have no SPKAC
+                request_csr = load_pem_x509_csr(to_byte_string(request), default_backend())
+                if not request_csr.is_signature_valid:
+                    raise privacyIDEAError("request has invalid signature.")
+                # If a request is sent, we can have an attestation certificate
+                attestation = getParam(param, "attestation", optional)
+                verify_attestation = getParam(param, "verify_attestation", optional)
+                if attestation:
+                    request_numbers = request_csr.public_key().public_numbers()
+                    attestation_cert = load_pem_x509_certificate(to_byte_string(attestation), default_backend())
+                    attestation_numbers = attestation_cert.public_key().public_numbers()
+                    if request_numbers != attestation_numbers:
+                        log.warning("certificate request does not match attestation certificate.")
+                        raise privacyIDEAError("certificate request does not match attestation certificate.")
+                    if verify_attestation:
+                        verified = verify_certificate_path(attestation,
+                                                           param.get(ACTION.TRUSTED_CA_PATH))
+                        if not verified:
+                            raise privacyIDEAError("Failed to verify certificate chain of attestation certificate.")
 
             # During the initialization process, we need to create the
             # certificate
