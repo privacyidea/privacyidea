@@ -352,6 +352,7 @@ class ACTION(object):
     SHOW_SEED = "show_seed"
     CUSTOM_MENU = "custom_menu"
     CUSTOM_BASELINE = "custom_baseline"
+    GDPR_LINK = "privacy_statement_link"
     STATISTICSREAD = "statistics_read"
     STATISTICSDELETE = "statistics_delete"
     LOGIN_TEXT = "login_text"
@@ -2191,6 +2192,10 @@ def get_static_policy_definitions(scope=None):
             ACTION.CUSTOM_BASELINE: {
                 'type': 'str',
                 'desc': _("Use your own html template for the web UI baseline/footer.")
+            },
+            ACTION.GDPR_LINK: {
+                'type': 'str',
+                'desc': _("Link your privacy statement to be displayed in the baseline/footer.")
             },
             ACTION.USERDETAILS: {
                 'type': 'bool',

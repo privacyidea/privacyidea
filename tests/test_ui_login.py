@@ -84,3 +84,12 @@ class LoginUITestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(b"<input type=hidden id=REMOTE_USER value=\"foo\">" in res.data)
+
+    def test_07_privacy_statement_link(self):
+        set_policy("gdpr_link", scope=SCOPE.WEBUI,
+                   action="{0!s}=https://privacyidea.org/".format(ACTION.GDPR_LINK))
+        with self.app.test_request_context('/',
+                                           method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(b"https://privacyidea.org/" in res.data)
