@@ -1741,6 +1741,27 @@ class TokenEventTestCase(MyTestCase):
         self.assertEqual(t.get_tokeninfo("phone"), user_obj.info.get("mobile"))
         remove_token(t.token.serial)
 
+        # Enroll an SMS token with specific SMS gateway config
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "sms",
+                                        "user": "1",
+                                        "sms_identifier": "mySMSGateway"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="sms")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
+        self.assertEqual(t.get_tokeninfo("phone"), user_obj.info.get("mobile"))
+        self.assertEqual(t.get_tokeninfo("sms.identifier"), "mySMSGateway")
+        remove_token(t.token.serial)
+
         # Enroll an Email token
         options = {"g": g,
                    "request": req,
