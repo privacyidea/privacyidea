@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2020-11-11 Timo Sturm <timo.sturm@netknights.it>
+#             Select how to validate PSKC imports
 #  2018-05-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add fileversion to OATH CSV
 #  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -47,7 +49,6 @@ It is used for importing SafeNet (former Aladdin)
 XML files, that hold the OTP secrets for eToken PASS.
 '''
 import hmac, hashlib
-
 import defusedxml.ElementTree as etree
 import re
 import binascii
@@ -55,7 +56,6 @@ import base64
 import html
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-
 from privacyidea.lib.utils import (modhex_decode, modhex_encode,
                                    hexlify_and_unicode, to_unicode, to_utf8,
                                    b64encode_and_unicode)
@@ -438,7 +438,7 @@ def derive_key(xml, password):
         raise ImportException("The XML KeyContainer specifies a derived "
                               "encryption key, but no password given!")
 
-    keymeth= xml.keycontainer.encryptionkey.derivedkey.keyderivationmethod
+    keymeth = xml.keycontainer.encryptionkey.derivedkey.keyderivationmethod
     derivation_algo = keymeth["algorithm"].split("#")[-1]
     if derivation_algo.lower() != "pbkdf2":
         raise ImportException("We only support PBKDF2 as Key derivation "
@@ -455,6 +455,7 @@ def derive_key(xml, password):
 def parsePSKCdata(xml_data,
                   preshared_key_hex=None,
                   password=None,
+                  validate_mac='check_fail_hard',
                   do_checkserial=False):
     """
     This function parses XML data of a PSKC file, (RFC6030)
@@ -469,11 +470,18 @@ def parsePSKCdata(xml_data,
     :param password: The password that encrypted the keys
     :param do_checkserial: Check if the serial numbers conform to the OATH
         specification (not yet implemented)
+    :param validate_mac: Operation mode of hmac validation. Possible values:
+        - 'check_fail_hard' : If an invalid hmac is encountered no token gets parsed.
+        - 'check_fail_soft' : Skip tokens with invalid MAC.
+        - 'no_check' : Hmac of tokens are not checked, every token is parsed.
 
-    :return: a dictionary of token dictionaries
-        { serial : { otpkey , counter, .... }}
+    :return: tuple of a dictionary of token dictionaries and a list of serial of not imported tokens
+        { serial : { otpkey , counter, .... }}, [serial, serial, ...]
     """
 
+    abort = False
+
+    not_imported_serials = []
     tokens = {}
     xml = strip_prefix_from_soup(BeautifulSoup(xml_data, "lxml"))
 
@@ -519,18 +527,43 @@ def parsePSKCdata(xml_data,
                                           "AES128-CBC.")
                 enc_data = key.data.secret.encryptedvalue.ciphervalue.text
                 enc_data = enc_data.strip()
-                secret = aes_decrypt_b64(binascii.unhexlify(preshared_key_hex), enc_data)
+
+                preshared_key = binascii.unhexlify(preshared_key_hex)
+
+                secret = aes_decrypt_b64(preshared_key, enc_data)
+
                 if token["type"].lower() in ["hotp", "totp"]:
                     token["otpkey"] = hexlify_and_unicode(secret)
                 elif token["type"].lower() in ["pw"]:
                     token["otpkey"] = to_unicode(secret)
                 else:
                     token["otpkey"] = to_unicode(secret)
+
+                if validate_mac != 'no_check':
+                    # Validate MAC:
+                    encrypted_mac_key = xml.keycontainer.find("mackey").text
+                    mac_key = aes_decrypt_b64(preshared_key, encrypted_mac_key)
+
+                    enc_data_bin = base64.b64decode(enc_data)
+                    hm = hmac.new(key=mac_key, msg=enc_data_bin, digestmod=hashlib.sha1)
+                    mac_value_calculated = b64encode_and_unicode(hm.digest())
+
+                    mac_value_xml = key.data.find('valuemac').text.strip()
+
+                    is_invalid = not hmac.compare_digest(mac_value_xml, mac_value_calculated)
+
+                    if is_invalid and validate_mac == 'check_fail_hard':
+                        abort = True
+                    elif is_invalid and validate_mac == 'check_fail_soft':
+                        not_imported_serials.append(serial)
+                        continue
+
         except Exception as exx:
             log.error("Failed to import tokendata: {0!s}".format(exx))
             log.debug(traceback.format_exc())
             raise ImportException("Failed to import tokendata. Wrong "
                                   "encryption key? %s" % exx)
+
         if token["type"] in ["hotp", "totp"] and key.data.counter:
             token["counter"] = key.data.counter.text.strip()
         if token["type"] == "totp":
@@ -540,7 +573,12 @@ def parsePSKCdata(xml_data,
                 token["timeShift"] = key.data.timedrift.text.strip()
 
         tokens[serial] = token
-    return tokens
+
+    if abort:
+        not_imported_serials = tokens.keys()
+        tokens = {}  # reset tokens
+
+    return tokens, not_imported_serials
 
 
 class GPGImport(object):
@@ -675,7 +713,8 @@ def export_pskc(tokenobj_list, psk=None):
                 encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
             else:
                 encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
-            hm = hmac.new(key=mackey, msg=otpkey, digestmod=hashlib.sha1)
+
+            hm = hmac.new(key=mackey, msg=base64.b64decode(encrypted_otpkey), digestmod=hashlib.sha1)
             mac_value = b64encode_and_unicode(hm.digest())
         except TypeError:
             # Some keys might be odd string length
@@ -701,8 +740,8 @@ def export_pskc(tokenobj_list, psk=None):
                                  <xenc:CipherValue>{encrypted_otpkey}</xenc:CipherValue>
                              </xenc:CipherData>
                          </EncryptedValue>
+                         <ValueMAC>{value_mac}</ValueMAC>
                      </Secret>
-                     <ValueMAC>{value_mac}</ValueMAC>
                     <Time>
                         <PlainValue>0</PlainValue>
                     </Time>

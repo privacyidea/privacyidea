@@ -361,7 +361,7 @@ class DisplayTANTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            value = result.get("value")
+            value = result.get("value")['n_imported']
             self.assertTrue(value == 1, result)
 
         from privacyidea.lib.token import set_pin
