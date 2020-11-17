@@ -45,7 +45,7 @@ jobs:
           # Cancel workflow if there were no changes for one day
           # (https://discuss.circleci.com/t/how-to-programmatically-end-or-cancel-the-workflow-build/37742)
           command: |
-            if [[ -n $(git log --since=1.day) ]] ; then
+            if [[ -z $(git log --since=1.day) ]] ; then
               circleci-agent step halt
             fi
           name: Check for changes
@@ -53,6 +53,10 @@ jobs:
           key: v1-deps-{{ checksum "requirements.txt" }}
       - run: pip install -r tests/requirements.txt
       - run: mkdir -p test-results/mysql
+      - run:
+          # The databases don't like exceeding the column length so we activate truncating
+          command: sed -i -e 's/\(TESTING = True\)$/\1\n    PI_AUDIT_SQL_TRUNCATE = True/'
+          name: Patch config
       - run:
           command: |
             python -b -m pytest --cov=privacyidea --junit-xml=test-results/mysql/results.xml tests/
