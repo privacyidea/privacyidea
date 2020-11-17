@@ -70,6 +70,10 @@ would create a TOTP token, that uses the SHA256 hashing algorithm instead of SHA
 ``genkey: 0`` overrides the default behaviour of generating an OTP secret. Instead the
 fixed OTP secret "31323334" (``otpkey``) is used.
 
+If the tokentype is set to "email" or "sms", you can also specify an SMTP server or SMS gateway
+configuration for the token enrolled by selecting a configuration in the corresponding field
+(**smtp_identifier** or **sms_identifier**). If none is selected, then the default system configuration
+will be used.
 
 set description
 ...............

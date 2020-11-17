@@ -52,6 +52,7 @@ from privacyidea.lib.utils import (parse_date, is_true,
                                    parse_time_offset_from_now)
 from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
 from privacyidea.lib.smtpserver import get_smtpservers
+from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib import _
 import logging
 import datetime
@@ -182,6 +183,13 @@ class TokenEventHandler(BaseEventHandler):
                             "visibleValue": "email",
                             "description": _("Use a specific SMTP server configuration for this token."),
                             "value": [server.config.identifier for server in get_smtpservers()]
+                        },
+                        "sms_identifier": {
+                            "type": "str",
+                            "visibleIf": "tokentype",
+                            "visibleValue": "sms",
+                            "description": _("Use a specific SMS gateway configuration for this token."),
+                            "value": [gateway.identifier for gateway in get_smsgateway()]
                         },
                         "additional_params": {
                             "type": "str",
@@ -426,6 +434,8 @@ class TokenEventHandler(BaseEventHandler):
                         if not init_param['phone']:
                             log.warning("Enrolling SMS token. But the user "
                                         "{0!r} has no mobile number!".format(user))
+                    if handler_options.get("sms_identifier"):
+                        init_param["sms.identifier"] = handler_options.get("sms_identifier")
                 elif tokentype == "email":
                     if handler_options.get("dynamic_email"):
                         init_param["dynamic_email"] = 1
