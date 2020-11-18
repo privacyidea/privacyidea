@@ -174,7 +174,7 @@ class RegistrationTokenClass(PasswordTokenClass):
         else:
             size = self.otp_len
         if "registration.contents" in param:
-            contents =param["registration.contents"]
+            contents = param["registration.contents"]
             del param["registration.contents"]
         else:
             contents = self.otp_contents
