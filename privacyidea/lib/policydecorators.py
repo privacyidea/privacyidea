@@ -490,9 +490,9 @@ def login_mode(wrapped_function, *args, **kwds):
     that the authentication should be performed against privacyIDEA.
 
     :param wrapped_function: Usually the function check_webui_user
-    :param args: arguments user_obj and password
-    :param kwds: keyword arguments like options and !check_otp!
-    kwds["options"] contains the flask g
+    :param `*args`: arguments user_obj and password
+    :param `**kwds`: keyword arguments like options and !check_otp!
+        kwds["options"] contains the flask g
     :return: calls the original function with the modified "check_otp" argument
     """
     # if tokenclass.check_pin is called in any other way, options may be None
@@ -521,15 +521,16 @@ def login_mode(wrapped_function, *args, **kwds):
 def auth_otppin(wrapped_function, *args, **kwds):
     """
     Decorator to decorate the tokenclass.check_pin function.
+
     Depending on the ACTION.OTPPIN it
-    * either simply accepts an empty pin
-    * checks the pin against the userstore
-    * or passes the request to the wrapped_function
+     * either simply accepts an empty pin
+     * checks the pin against the userstore
+     * or passes the request to the wrapped_function
 
     :param wrapped_function: In this case the wrapped function should be
-    tokenclass.check_ping
-    :param *args: args[1] is the pin
-    :param **kwds: kwds["options"] contains the flask g
+        :py:func:`privacyidea.lib.tokenclass.TokenClass.check_pin`
+    :param `*args`: args[1] is the pin
+    :param `**kwds`: kwds["options"] contains the flask g
     :return: True or False
     """
     # if tokenclass.check_pin is called in any other way, options may be None
@@ -580,12 +581,11 @@ def config_lost_token(wrapped_function, *args, **kwds):
     how the lostToken should be generated.
 
     :param wrapped_function: Usually the function lost_token()
-    :param args: argument "serial" as the old serial number
-    :param kwds: keyword arguments like "validity", "contents", "pw_len"
-    kwds["options"] contains the flask g
-
+    :param `*args`: argument "serial" as the old serial number
+    :param `**kwds`: keyword arguments like "validity", "contents", "pw_len"
+        kwds["options"] contains the flask g
     :return: calls the original function with the modified "validity",
-    "contents" and "pw_len" argument
+        "contents" and "pw_len" argument
     """
     # if called in any other way, options may be None
     #  or it might have no element "g".
