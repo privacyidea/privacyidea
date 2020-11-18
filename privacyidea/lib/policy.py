@@ -284,6 +284,8 @@ class ACTION(object):
     POLICYREAD = "policyread"
     POLICYTEMPLATEURL = "policy_template_url"
     REALM = "realm"
+    REGISTRATIONCODE_LENGTH = "registration.length"
+    REGISTRATIONCODE_CONTENTS = "registration.contents"
     REMOTE_USER = "remote_user"
     REQUIREDEMAIL = "requiredemail"
     RESET = "reset"
@@ -1952,6 +1954,20 @@ def get_static_policy_definitions(scope=None):
                 'value': list(range(1, 61)),
                 'desc': _('The length of the validity for the temporary '
                           'token (in days).')},
+            ACTION.REGISTRATIONCODE_LENGTH: {
+                'type': 'int',
+                'value': list(range(1, 32)),
+                "desc": _("Set the length of registration codes."),
+                'group': GROUP.TOKEN},
+            ACTION.REGISTRATIONCODE_CONTENTS: {
+                'type': 'str',
+                "desc": _("Specify the required "
+                          "contents of the registration code. "
+                          "(c)haracters, (n)umeric, "
+                          "(s)pecial. Use modifiers +/- or a list "
+                          "of allowed characters [1234567890]"),
+                'group': GROUP.TOKEN
+            }
         },
         SCOPE.AUTH: {
             ACTION.OTPPIN: {

@@ -34,6 +34,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            init_token_defaults, _generate_pin_from_policy,
                                            encrypt_pin, check_otp_pin,
                                            enroll_pin,
+                                           init_registrationcode_length_contents,
                                            check_external, api_key_required,
                                            mangle, is_remote_user_allowed,
                                            required_email, auditlog_age, hide_audit_columns,
@@ -66,6 +67,7 @@ from privacyidea.lib.tokens.tantoken import TANACTION
 from privacyidea.lib.tokens.smstoken import SMSACTION
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
+from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
 
 from flask import Request, g, current_app, jsonify
 from werkzeug.test import EnvironBuilder
@@ -2954,6 +2956,40 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         check_application_tokentype(req)
         # Check that the tokentype was removed
         self.assertEqual(req.all_data.get("type"), None)
+
+    def test_35_init_registrationcode_length_contents(self):
+        g.logged_in_user = {"username": "admin1",
+                            "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'type': "registration"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+
+        # first test without any policy
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "registration"}
+        init_registrationcode_length_contents(req)
+        # Check, if the tokenlabel was added
+        self.assertEqual(req.all_data.get("registration.length"), DEFAULT_LENGTH)
+        self.assertEqual(req.all_data.get("registration.contents"), DEFAULT_CONTENTS)
+
+        # now create a policy for the length of the registration code
+        set_policy(name="reg_length",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(ACTION.REGISTRATIONCODE_LENGTH, 6))
+        set_policy(name="reg_contents",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(ACTION.REGISTRATIONCODE_CONTENTS, "+n"))
+        # request, that matches the policy
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "registration"}
+        init_registrationcode_length_contents(req)
+        # Check, if the tokenlabel was added
+        self.assertEqual(req.all_data.get("registration.length"), "6")
+        self.assertEqual(req.all_data.get("registration.contents"), "+n")
+        # delete policy
+        delete_policy("reg_length")
+        delete_policy("reg_contents")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):

@@ -213,6 +213,25 @@ type: bool
 If set the OTP PIN of a token will be encrypted. The default
 behaviour is to hash the OTP PIN, which is safer.
 
+registration.length
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: registration token
+
+type: int
+
+This is the length of the generated registration codes.
+
+registration.contents
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+contents: cns
+
+This defines what characters the registrationcodes should contain.
+
+This takes the same values like the admin policy :ref:`admin_policies_otp_pin_contents`.
 
 lostTokenPWLen
 ~~~~~~~~~~~~~~

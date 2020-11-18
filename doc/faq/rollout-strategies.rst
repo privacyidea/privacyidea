@@ -20,9 +20,9 @@ Registration Code
 ~~~~~~~~~~~~~~~~~
 
 If your users are physically not available and spread around the world, you can
-send a registration code to the users by postal mail. The registration code
+send a :ref:`registration_token` code to the users by postal mail. The registration code
 is a special token type which can be used by the user to authenticate with 2FA.
-If used once, the registration token get deleted and can not be used anymore.
+If used once, the registration token gets deleted and can not be used anymore.
 While logged in, the user can enroll a token on his own.
 
 .. _faq_initial_synchronization:
