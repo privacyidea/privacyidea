@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2020-11-18 Henning Hollermann <henning.hollermann@netknights.it>
+#            Allow import and export of events, resolvers and policies
 # 2018-08-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Allow creation of HSM keys
 # 2017-10-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -1291,7 +1293,7 @@ def conf_export(conftype=DEFAULT_CONFTYPE_LIST, filename=None, name=None, stdout
 
     ret_dict = {}
     conf = None
-    if isinstance(conftype, list):
+    if isinstance(conftype, list) or isinstance(conftype, tuple):
         conftype_list = conftype
     else:
         conftype_list = [conftype]
@@ -1353,6 +1355,7 @@ def conf_import(filename=None, conftype=None, cleanup=False, update=False):
 
         config_list = contents_var[conftype]
 
+        cls = None
         if conftype == "policy":
             cls = PolicyClass()
         elif conftype == "resolver":
@@ -1360,6 +1363,7 @@ def conf_import(filename=None, conftype=None, cleanup=False, update=False):
         elif conftype == "event":
             cls = EventConfiguration()
 
+        name = None
         if cleanup:
             print("Cleanup old {0!s}.".format(conftype))
             if conftype == "policy":
@@ -1381,6 +1385,7 @@ def conf_import(filename=None, conftype=None, cleanup=False, update=False):
 
         for config in config_list:
             action_str = "Added"
+            exists = False
             if conftype == "policy":
                 name = config.get("name")
                 exists = cls.list_policies(name=name)
