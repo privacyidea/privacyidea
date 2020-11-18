@@ -55,7 +55,7 @@ jobs:
       - run: mkdir -p test-results/mysql
       - run:
           # The databases don't like exceeding the column length so we activate truncating
-          command: sed -i -e 's/\(TESTING = True\)$/\1\n    PI_AUDIT_SQL_TRUNCATE = True/'
+          command: sed -i -e 's/\(TESTING = True\)$/\1\n    PI_AUDIT_SQL_TRUNCATE = True/' privacyidea/config.py
           name: Patch config
       - run:
           command: |
