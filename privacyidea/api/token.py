@@ -163,8 +163,6 @@ def init():
     :jsonparam type: the type of the token
     :jsonparam tokenrealm: additional realms, the token should be put into
     :jsonparam otplen: length of the OTP value
-    :jsonparam registrationcode_length: the length of the generated registration code
-    :jsonparam registrationcode_contents: the content policy of the generated registration code
     :jsonparam hashlib: used hashlib sha1, sha256 or sha512
     :jsonparam validity_period_start: The beginning of the validity period
     :jsonparam validity_period_end: The end of the validity period

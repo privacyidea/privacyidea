@@ -67,6 +67,7 @@ from privacyidea.lib.tokens.tantoken import TANACTION
 from privacyidea.lib.tokens.smstoken import SMSACTION
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
+from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
 
 from flask import Request, g, current_app, jsonify
 from werkzeug.test import EnvironBuilder
@@ -2923,20 +2924,28 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                                  data={'type': "registration"},
                                  headers={})
         env = builder.get_environ()
+        req = Request(env)
+
+        # first test without any policy
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "registration"}
+        init_registrationcode_length_contents(req)
+        # Check, if the tokenlabel was added
+        self.assertEqual(req.all_data.get("registration.length"), DEFAULT_LENGTH)
+        self.assertEqual(req.all_data.get("registration.contents"), DEFAULT_CONTENTS)
+
         # now create a policy for the length of the registration code
         set_policy(name="reg_length",
                    scope=SCOPE.ENROLL,
                    action="{0!s}={1!s}".format(ACTION.REGISTRATIONCODE_LENGTH, 6))
         set_policy(name="reg_contents",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.REGISTRATIONCODE_CONTENTS, "cn"))
-        req = Request(env)
+                   action="{0!s}={1!s}".format(ACTION.REGISTRATIONCODE_CONTENTS, "+n"))
         # request, that matches the policy
         req.all_data = {"user": "cornelius", "realm": "home", "type": "registration"}
         init_registrationcode_length_contents(req)
         # Check, if the tokenlabel was added
-        self.assertEqual(req.all_data.get("registrationcode_length"), "6")
-        self.assertEqual(req.all_data.get("registrationcode_contents"), "cn")
+        self.assertEqual(req.all_data.get("registration.length"), "6")
+        self.assertEqual(req.all_data.get("registration.contents"), "+n")
         # delete policy
         delete_policy("reg_length")
         delete_policy("reg_contents")

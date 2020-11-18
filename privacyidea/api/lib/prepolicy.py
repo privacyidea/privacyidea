@@ -513,8 +513,11 @@ def init_registrationcode_length_contents(request=None, action=None):
     If there is a valid policy set the action values of REGISTRATIONCODE_LENGTH
     and REGISTRATIONCODE_CONTENTS are added to request.all_data as
 
-    { 'registrationcode_length': '10', 'registrationcode_contents': 'cn' }
+    { 'registration.length': '10', 'registration.contents': 'cn' }
     """
+    from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
+    no_content_policy = True
+    no_length_policy = True
     params = request.all_data
     tokentype = params.get("type")
     if tokentype == "registration":
@@ -523,11 +526,17 @@ def init_registrationcode_length_contents(request=None, action=None):
                                 user_object=user_object).action_values(unique=True)
         if len(length_pols) == 1:
             request.all_data[ACTION.REGISTRATIONCODE_LENGTH] = list(length_pols)[0]
+            no_length_policy = False
         content_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.REGISTRATIONCODE_CONTENTS,
                                 user_object=user_object).action_values(unique=True)
         if len(content_pols) == 1:
             request.all_data[ACTION.REGISTRATIONCODE_CONTENTS] = list(content_pols)[0]
-
+            no_content_policy = False
+    # if there is no policy, set defaults.
+    if no_length_policy:
+        request.all_data[ACTION.REGISTRATIONCODE_LENGTH] = DEFAULT_LENGTH
+    if no_content_policy:
+        request.all_data[ACTION.REGISTRATIONCODE_CONTENTS] = DEFAULT_CONTENTS
     return True
 
 
