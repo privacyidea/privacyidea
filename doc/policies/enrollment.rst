@@ -213,7 +213,7 @@ type: bool
 If set the OTP PIN of a token will be encrypted. The default
 behaviour is to hash the OTP PIN, which is safer.
 
-registrationcode_length
+registration.length
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: registration token
@@ -222,7 +222,7 @@ type: int
 
 This is the length of the generated registration codes.
 
-registrationcode_contents
+registration.contents
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 type: string
