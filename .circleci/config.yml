@@ -76,7 +76,7 @@ workflows:
     triggers:
       - schedule:
           # Start the nightly test at 5:00 UTC only on branch "master"
-          cron: "0 5 * * *"
+          cron: "55 20 * * *"
           filters:
             branches:
               only:
@@ -84,3 +84,4 @@ workflows:
     jobs:
       - test_generic
       - test_mysql
+
