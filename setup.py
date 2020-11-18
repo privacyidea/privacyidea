@@ -108,9 +108,11 @@ setup(
     packages=find_packages(),
     scripts=["pi-manage"] + get_scripts("tools"),
     extras_require={
-        'doc': ["Sphinx>=1.3.1",
+        'doc': ["Pallets-Sphinx-Themes>=1.2.3",
+                "Sphinx>=1.3.1",
                 "sphinxcontrib-httpdomain>=1.3.0",
-                "sphinxcontrib-plantuml>=0.18"],
+                "sphinxcontrib-plantuml>=0.18",
+                "sphinxcontrib-spelling>=7.0.0"],
         'test': ["mock>=2.0.0",
                  "pytest>=3.6.0",
                  "pytest-cov>=2.5.1",
