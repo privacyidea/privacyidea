@@ -113,17 +113,14 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
 
      $scope.getAuthentication = function () {
         $scope.authentications = {"success": 0, "fail": 0};
-        AuditFactory.get({"timelimit": "1d", "action": "*validate*"},
+        AuditFactory.get({"timelimit": "1d", "action": "*validate*", "success": "1"},
             function (data) {
-            var authentications = data.result.value.auditdata;
-            angular.forEach(authentications, function(authlog) {
-                if (authlog.success) {
-                    $scope.authentications.success += 1;
-                } else {
-                    $scope.authentications.fail += 1;
-                }
+                $scope.authentications.success = data.result.value.count;
             });
-        });
+        AuditFactory.get({"timelimit": "1d", "action": "*validate*", "success": "0"},
+            function (data) {
+                $scope.authentications.fail = data.result.value.count;
+            });
      };
 
      $scope.getAdministration = function () {
