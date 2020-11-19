@@ -822,6 +822,34 @@ class PushTokenTestCase(MyTestCase):
         delete_policy("push1")
         delete_policy("webui")
 
+    def test_07_check_timestamp(self):
+        timestamp_fmt = 'broken_timestamp_010203'
+        self.assertRaisesRegexp(privacyIDEAError,
+                                r'Could not parse timestamp {0!s}. ISO-Format '
+                                r'required.'.format(timestamp_fmt),
+                                PushTokenClass._check_timestamp_in_range, timestamp_fmt, 10)
+        timestamp = datetime(2020, 11, 13, 13, 27, tzinfo=utc)
+        with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
+            mock_dt.now.return_value = timestamp + timedelta(minutes=9)
+            PushTokenClass._check_timestamp_in_range(timestamp.isoformat(), 10)
+        with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
+            mock_dt.now.return_value = timestamp - timedelta(minutes=9)
+            PushTokenClass._check_timestamp_in_range(timestamp.isoformat(), 10)
+        with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
+            mock_dt.now.return_value = timestamp + timedelta(minutes=9)
+            self.assertRaisesRegexp(privacyIDEAError,
+                                    r'Timestamp {0!s} not in valid '
+                                    r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
+                                    PushTokenClass._check_timestamp_in_range,
+                                    timestamp.isoformat(), 8)
+        with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
+            mock_dt.now.return_value = timestamp - timedelta(minutes=9)
+            self.assertRaisesRegexp(privacyIDEAError,
+                                    r'Timestamp {0!s} not in valid '
+                                    r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
+                                    PushTokenClass._check_timestamp_in_range,
+                                    timestamp.isoformat(), 8)
+
     def test_10_api_endpoint(self):
         # first check for unused request methods
         g = FakeFlaskG()
@@ -930,6 +958,56 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(res[1]['detail']['rollout_state'], 'enrolled', res)
 
         remove_token(serial)
+
+    def test_11_api_endpoint_update_fbtoken(self):
+        g = FakeFlaskG()
+        # create a push token
+        tparams = {'type': 'push', 'genkey': 1}
+        tparams.update(FB_CONFIG_VALS)
+        tok = init_token(param=tparams)
+        serial = tok.get_serial()
+
+        # Run enrollment step 2
+        tok.update({"enrollment_credential": tok.get_tokeninfo("enrollment_credential"),
+                    "serial": serial,
+                    "fbtoken": "firebasetoken1",
+                    "pubkey": self.smartphone_public_key_pem_urlsafe})
+        self.assertEqual(tok.token.get('rollout_state'), 'enrolled', tok)
+        self.assertEqual(tok.get_tokeninfo('firebase_token'), 'firebasetoken1', tok)
+
+        req_data = {'new_fb_token': 'firebasetoken2',
+                    'serial': serial,
+                    'timestamp': datetime.now(tz=utc).isoformat()}
+
+        # now we perform the firebase token update with a broken signature
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        req = Request(builder.get_environ())
+        req.all_data = req_data
+        req.all_data.update({'signature': 'bad-signature'})
+        self.assertRaisesRegexp(privacyIDEAError, 'Could not verify signature!',
+                                PushTokenClass.api_endpoint, req, g)
+
+        # Create a correct signature
+        sign_string = u"{new_fb_token}|{serial}|{timestamp}".format(**req_data)
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        req_data.update({'signature': b32encode(sig)})
+
+        # and perform the firebase token update
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        req = Request(builder.get_environ())
+        req.all_data = req_data
+        res = PushTokenClass.api_endpoint(req, g)
+        self.assertEqual(res[0], 'json', res)
+        self.assertTrue(res[1]['result']['value'], res)
+        self.assertTrue(res[1]['result']['status'], res)
+
+        self.assertEqual(tok.token.get('rollout_state'), 'enrolled', tok)
+        self.assertEqual(tok.get_tokeninfo('firebase_token'), req_data['new_fb_token'], tok)
+        tok.delete_token()
 
     def test_15_poll_endpoint(self):
         g = FakeFlaskG()
