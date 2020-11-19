@@ -390,24 +390,42 @@ class PushTokenTestCase(MyTestCase):
                 self.assertEqual(jsonresp.get("result").get("error").get("message"),
                                  "ERR401: Failed to submit message to firebase service.")
             self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 0)
-        # disallow polling through a policy
-        set_policy('push_poll', SCOPE.AUTH,
-                   action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
-                                               PushAllowPolling.TOKEN))
-        tokenobj.add_tokeninfo(POLLING_ALLOWED, False)
-        with self.app.test_request_context('/validate/check',
-                                           method='POST',
-                                           data={"user": "cornelius",
-                                                 "realm": self.realm1,
-                                                 "pass": "pushpin"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
-            jsonresp = res.json
-            self.assertFalse(jsonresp.get("result").get("status"))
-            self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
-            self.assertEqual(jsonresp.get("result").get("error").get("message"),
-                             "ERR401: Failed to submit message to firebase service.")
-        self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 0)
+            # disallow polling the specific token through a policy
+            set_policy('push_poll', SCOPE.AUTH,
+                       action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
+                                                   PushAllowPolling.TOKEN))
+            tokenobj.add_tokeninfo(POLLING_ALLOWED, False)
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 400, res)
+                jsonresp = res.json
+                self.assertFalse(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
+                self.assertEqual(jsonresp.get("result").get("error").get("message"),
+                                 "ERR401: Failed to submit message to firebase service.")
+            self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 0)
+            # Check that the challenge is created if the request to firebase
+            # succeeded even though polling is disabled
+            # add responses, to simulate the successful communication to firebase
+            responses.replace(responses.POST,
+                              'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                              body="""{}""",
+                              content_type="application/json")
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                jsonresp = res.json
+                self.assertTrue(jsonresp.get("result").get("status"))
+            self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 1)
+            get_challenges(serial=tokenobj.token.serial)[0].delete()
         delete_policy('push_poll')
 
     @responses.activate

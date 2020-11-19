@@ -735,9 +735,9 @@ class PushTokenClass(TokenClass):
             # But only if polling is allowed.
             allow_polling = get_action_values_from_options(
                 SCOPE.AUTH, PUSH_ACTION.ALLOW_POLLING, options=options) or PushAllowPolling.ALLOW
-            if (allow_polling == PushAllowPolling.ALLOW or
-                    (allow_polling == PushAllowPolling.TOKEN and
-                     is_true(self.get_tokeninfo(POLLING_ALLOWED, default='True')))):
+            if ((allow_polling == PushAllowPolling.ALLOW or
+                 (allow_polling == PushAllowPolling.TOKEN and
+                  is_true(self.get_tokeninfo(POLLING_ALLOWED, default='True')))) or res):
                 validity = int(get_from_config('DefaultChallengeValidityTime', 120))
                 tokentype = self.get_tokentype().lower()
                 # Maybe there is a PushChallengeValidityTime...
