@@ -918,14 +918,14 @@ def create_internal(name):
     metadata.create_all(engine)
 
 
-def r_export(filename=None, resolver=None, stdout=True, print_passwords=False):
+def r_export(filename=None, resolver=None, print_passwords=False):
     """
     Export the resolver, specified by 'resolver' to a file. If no resolver name
     is given, all resolver configurations are exported. By default, the content is censored.
     This behavior may be changed by 'print_passwords'.
-    If the filename is omitted or the option stdout is given, the resolvers are written to stdout.
+    If the filename is omitted, the resolvers are written to stdout.
     """
-    conf_export(conftype="resolver", filename=filename, name=resolver, stdout=stdout,
+    conf_export(conftype="resolver", filename=filename, name=resolver,
                 print_passwords=print_passwords)
 
 
@@ -1076,12 +1076,12 @@ def delete(eid):
 
 
 @event_manager.command
-def e_export(filename=None, event=None, stdout=True):
+def e_export(filename=None, event=None):
     """
     Export the specified event or all events to a file.
-    If the filename is omitted or the option stdout is given, the event configurations are written to stdout.
+    If the filename is omitted, the event configurations are written to stdout.
     """
-    conf_export(conftype="event", filename=filename, name=event, stdout=stdout)
+    conf_export(conftype="event", filename=filename, name=event)
 
 
 @event_manager.command
@@ -1140,12 +1140,12 @@ def delete(name):
 
 
 @policy_manager.command
-def p_export(filename=None, policy=None, stdout=True):
+def p_export(filename=None, policy=None):
     """
     Export the specified policy or all policies to a file.
-    If the filename is omitted or the option stdout is given, the policies are written to stdout.
+    If the filename is omitted, the policies are written to stdout.
     """
-    conf_export(conftype="policy", filename=filename, name=policy, stdout=stdout)
+    conf_export(conftype="policy", filename=filename, name=policy)
 
 
 @policy_manager.command
@@ -1284,7 +1284,7 @@ def import_tokens(file, tokenrealm=None):
 token_manager.add_command('import', Command(import_tokens))
 
 
-def conf_export(conftype=DEFAULT_CONFTYPE_LIST, filename=None, name=None, stdout=True, print_passwords=False):
+def conf_export(conftype=DEFAULT_CONFTYPE_LIST, filename=None, name=None, print_passwords=False):
     """
     Export configurations to a file or write them to stdout if no filename is given.
     """
@@ -1321,7 +1321,7 @@ def conf_export(conftype=DEFAULT_CONFTYPE_LIST, filename=None, name=None, stdout
     if filename:
         with open(filename, 'w') as f:
             f.write(ret_str)
-    if stdout or not filename:
+    if not filename:
         print(ret_str)
 
 
@@ -1451,12 +1451,11 @@ def conf_import(filename=None, conftype=None, cleanup=False, update=False):
                               help="Print the passwords used in the resolver configuration. "
                                    "This will overwrite existing passwords on import.")
 @config_export_manager.option("--archive", "-a", action="store_true",
-                              help="Compress the created config-backup as tar.gz archive")
-@config_export_manager.option("--stdout", "-s", action="store_true",
-                              help="Print the configuration also to stdout.")
+                              help="Compress the created config-backup as tar.gz archive instead "
+                                   "of printing to standard out.")
 @config_export_manager.option("--directory", "-d", action="store_true",
                               help="Directory where the backup will be stored.")
-def fullexport(directory=None, stdout=False, archive=False, print_passwords=False):
+def fullexport(directory=None, archive=False, print_passwords=False):
     """
     This option exports resolvers, policies and event handlers to standard output or to a file and optionally
     compresses them as tar.gz archive
@@ -1473,7 +1472,7 @@ def fullexport(directory=None, stdout=False, archive=False, print_passwords=Fals
             call(["mkdir", "-p", directory])
         config_backup_file_base = "%s/%s-%s-%s" % (directory, BASE_NAME, HOSTNAME, DATE)
         config_backup_file = config_backup_file_base + ".py"
-        conf_export(filename=config_backup_file, stdout=stdout, print_passwords=print_passwords)
+        conf_export(filename=config_backup_file, print_passwords=print_passwords)
         if archive:
             config_backup_archive = config_backup_file_base + ".tar.gz"
             tar = tarfile.open(config_backup_archive, "w:gz")
@@ -1483,7 +1482,7 @@ def fullexport(directory=None, stdout=False, archive=False, print_passwords=Fals
             if tarfile.is_tarfile(config_backup_archive):
                 os.remove(config_backup_file)
     else:
-        conf_export(filename=None, stdout=True, print_passwords=print_passwords)
+        conf_export(filename=None, print_passwords=print_passwords)
 
 
 @config_import_manager.option("--file", "-f", dest="file",
