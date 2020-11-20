@@ -730,9 +730,9 @@ class PushTokenClass(TokenClass):
                                                      pem_privkey, options)
             res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
 
-            # Create the challenge in the challenge table regardless of a failure
-            # when sending the Push message to the Firebase API.
-            # But only if polling is allowed.
+            # Create the challenge in the challenge table if either the message
+            # was successfully submitted to the Firebase API or if polling is
+            # allowed in general or for this specific token.
             allow_polling = get_action_values_from_options(
                 SCOPE.AUTH, PUSH_ACTION.ALLOW_POLLING, options=options) or PushAllowPolling.ALLOW
             if ((allow_polling == PushAllowPolling.ALLOW or
