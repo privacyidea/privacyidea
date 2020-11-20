@@ -809,6 +809,32 @@ class PushTokenClass(TokenClass):
                                                      challenge, fb_gateway,
                                                      pem_privkey, options)
             res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
+
+            # Create the challenge in the challenge table if either the message
+            # was successfully submitted to the Firebase API or if polling is
+            # allowed in general or for this specific token.
+            allow_polling = get_action_values_from_options(
+                SCOPE.AUTH, PUSH_ACTION.ALLOW_POLLING, options=options) or PushAllowPolling.ALLOW
+            if ((allow_polling == PushAllowPolling.ALLOW or
+                 (allow_polling == PushAllowPolling.TOKEN and
+                  is_true(self.get_tokeninfo(POLLING_ALLOWED, default='True')))) or res):
+                validity = int(get_from_config('DefaultChallengeValidityTime', 120))
+                tokentype = self.get_tokentype().lower()
+                # Maybe there is a PushChallengeValidityTime...
+                lookup_for = tokentype.capitalize() + 'ChallengeValidityTime'
+                validity = int(get_from_config(lookup_for, validity))
+
+                # Create the challenge in the database
+                db_challenge = Challenge(self.token.serial,
+                                         transaction_id=transactionid,
+                                         challenge=challenge,
+                                         data=data,
+                                         session=options.get("session"),
+                                         validitytime=validity)
+                db_challenge.save()
+                self.challenge_janitor()
+
+            # If sending the Push message failed, we still raise an error.
             if not res:
                 raise ValidateError("Failed to submit message to firebase service.")
         else:
@@ -817,21 +843,6 @@ class PushTokenClass(TokenClass):
                                                                  PUSH_ACTION.FIREBASE_CONFIG))
             raise ValidateError("The token has no tokeninfo. Can not send via firebase service.")
 
-        validity = int(get_from_config('DefaultChallengeValidityTime', 120))
-        tokentype = self.get_tokentype().lower()
-        # Maybe there is a PushChallengeValidityTime...
-        lookup_for = tokentype.capitalize() + 'ChallengeValidityTime'
-        validity = int(get_from_config(lookup_for, validity))
-
-        # Create the challenge in the database
-        db_challenge = Challenge(self.token.serial,
-                                 transaction_id=transactionid,
-                                 challenge=challenge,
-                                 data=data,
-                                 session=options.get("session"),
-                                 validitytime=validity)
-        db_challenge.save()
-        self.challenge_janitor()
         return True, message, db_challenge.transaction_id, attributes
 
     @check_token_locked
