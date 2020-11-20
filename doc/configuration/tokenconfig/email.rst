@@ -2,7 +2,7 @@
 .. _email_token_config:
 
 Email Token Configuration
-...............
+.........................
 
 .. index:: Email Token
 
@@ -51,7 +51,7 @@ time. The user can answer the challenges in an arbitrary order.
 Set this to a true value. Defaults to off.
 
 Deprecated Configuration Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are few more config entries handled, which are deprecated in recent versions of privacyIDEA.
 

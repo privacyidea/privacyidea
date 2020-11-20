@@ -1,14 +1,13 @@
 .. _add_admin:
 
 Add an administrator
----------------
+--------------------
 
 PrivacyIDEA does not come with a pre-defined administrator user.
 If you just installed privacyIDEA, you need to create a new one
 by running::
 
    pi-manage admin add admin -e admin@localhost
-
 
 To configure privacyIDEA, continue with :ref:`login_webui`.
 

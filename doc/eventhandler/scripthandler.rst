@@ -20,7 +20,7 @@ script directory. The default script directory is ``/etc/privacyidea/scripts``.
 
 You can change the location of the script directory and give the new
 directory in the parameter ``PI_SCRIPT_HANDLER_DIRECTORY`` in your ``pi.cfg``
- file.
+file.
 
 Possible Options
 ~~~~~~~~~~~~~~~~
@@ -34,7 +34,7 @@ logged_in_role
 Add the role of the logged in user. This can be either *admin* or *user*. If
 there is no logged in user, *none* will be passed.
 
-The script will be called with the parameter
+The script will be called with the parameter::
 
    --logged_in_role <role>
 
@@ -44,7 +44,7 @@ logged_in_user
 Add the logged in user. If
 there is no logged in user, *none* will be passed.
 
-The script will be called with the parameter
+The script will be called with the parameter::
 
    --logged_in_user <username>@<realm>
 
@@ -61,7 +61,7 @@ Add ``--serial <serial number>`` as script parameter. If no serial number is
 given, *none* will be passed.
 
 sync_to_database
-....
+................
 
 Finish current transaction before running the script. This is useful if changes
 to the database should be made available to the script or the running request.
