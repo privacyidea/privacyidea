@@ -122,7 +122,7 @@ def search(config, param=None, user=None):
             pagination.auditdata[i] = OrderedDict({audit_col: value for audit_col, value in
                                                    pagination.auditdata[i].items()
                                                    if audit_col not in hidden_columns})
-    visible_columns = [ col for col in audit.available_audit_columns if col not in hidden_columns ]
+    visible_columns = [col for col in audit.available_audit_columns if col not in hidden_columns]
 
     ret = {"auditdata": pagination.auditdata,
            "auditcolumns": visible_columns,
