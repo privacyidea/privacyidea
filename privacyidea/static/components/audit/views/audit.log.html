@@ -132,7 +132,7 @@
                 <td ng-if="audit_columns.includes('date')">{{ audit.date | date:dateFormat }}</td>
                 <td ng-if="audit_columns.includes('duration')">{{ audit.duration }}</td>
                 <td ng-if="audit_columns.includes('action')">{{ audit.action }}</td>
-                <td ng-if="audit_columns.includes('success')"><span status-class="{{ audit.success }}">
+                <td ng-if="audit_columns.includes('success')"><span status-class="{{ audit.success }}">{{ audit.success }}</span>
                 <td ng-if="audit_columns.includes('action_detail')">{{ audit.action_detail }}</td>
                 <td>
                     <a ng-repeat="serial in audit.serial_list" ui-sref="token.details({tokenSerial:serial})"
