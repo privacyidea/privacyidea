@@ -92,7 +92,7 @@ def search(config, param=None, user=None):
     page_size = 15
     page = 1
     timelimit = None
-    hidden_columns = None
+    hidden_columns = []
     # The filtering dictionary
     param = param or {}
     # special treatment for:
