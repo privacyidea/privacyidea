@@ -136,6 +136,13 @@ class Audit(object):  # pragma: no cover
     def get_audit_id(self):
         return self.name
 
+    @property
+    def available_audit_columns(self):
+        return ['number', 'action', 'success', 'serial', 'date', 'startdate',
+                'duration', 'token_type', 'user', 'realm', 'administrator',
+                'action_detail', 'info', 'privacyidea_server', 'client',
+                'loglevel', 'policies', 'clearance_level']
+
     def get_total(self, param, AND=True, display_error=True, timelimit=None):
         """
         This method returns the total number of audit entries
