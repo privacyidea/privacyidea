@@ -451,14 +451,14 @@ class BaseEventHandler(object):
                 return False
 
         if CONDITION.DETAIL_ERROR_MESSAGE in conditions:
-            message = content.get("detail", {}).get("error", {}).get("message")
+            message = content.get("detail", {}).get("error", {}).get("message", "")
             search_exp = conditions.get(CONDITION.DETAIL_ERROR_MESSAGE)
             m = re.search(search_exp, message)
             if not bool(m):
                 return False
 
         if CONDITION.DETAIL_MESSAGE in conditions:
-            message = content.get("detail", {}).get("message")
+            message = content.get("detail", {}).get("message", "")
             search_exp = conditions.get(CONDITION.DETAIL_MESSAGE)
             m = re.search(search_exp, message)
             if not bool(m):

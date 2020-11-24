@@ -440,6 +440,23 @@ class BaseEventHandlerTestCase(MyTestCase):
         )
         self.assertEqual(r, False)
 
+        # Check DETAIL_MESSAGE to evaluate to False if it does not exist
+        resp = Response()
+        resp.data = """{"result": {"value": true, "status": true},
+                "detail": {"options": "Nothing"}
+                }
+                """
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE:
+                                                "special"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, False)
+
         # Check DETAIL_ERROR_MESSAGE
         resp = Response()
         resp.data = """{"result": {"value": false, "status": false},
