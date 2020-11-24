@@ -22,102 +22,102 @@
         <table class="table table-bordered table-striped" id="tableauditlog">
             <thead>
             <tr>
-                <th ng-if="audit_columns.includes('number')"><translate>number</translate></th>
-                <th ng-if="audit_columns.includes('startdate')"
+                <th ng-show="audit_columns.includes('number')"><translate>number</translate></th>
+                <th ng-show="audit_columns.includes('startdate')"
                     class="pifilter"><translate>startdate</translate>
                     <pi-filter ng-model="startdateFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('date')"
+                <th ng-show="audit_columns.includes('date')"
                     class="pifilter"><translate>enddate</translate>
                     <pi-filter ng-model="dateFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('duration')"
+                <th ng-show="audit_columns.includes('duration')"
                     class="pifilter"><translate>duration</translate>
                     <pi-filter ng-model="durationFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('action')"
+                <th ng-show="audit_columns.includes('action')"
                     class="pifilter"><translate>action</translate>
                     <pi-filter ng-model="actionFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('success')"
+                <th ng-show="audit_columns.includes('success')"
                     class="pifilter"><translate>success</translate>
                     <pi-filter ng-model="successFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('action_detail')"
+                <th ng-show="audit_columns.includes('action_detail')"
                     class="pifilter"><translate>action detail</translate>
                     <pi-filter ng-model="action_detailFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('serial')"
+                <th ng-show="audit_columns.includes('serial')"
                     class="pifilter"><translate>serial</translate>
                     <pi-filter ng-model="serialFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return"></pi-filter>
                 </th>
-                <th ng-if="audit_columns.includes('token_type')"
+                <th ng-show="audit_columns.includes('token_type')"
                     class="pifilter"><translate>token type</translate>
                     <pi-filter ng-model="typeFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('administrator')"
+                <th ng-show="audit_columns.includes('administrator')"
                     class="pifilter"><translate>administrator</translate>
                     <pi-filter ng-model="administratorFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('user')"
+                <th ng-show="audit_columns.includes('user')"
                     class="pifilter"><translate>user</translate>
                     <pi-filter ng-model="userFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('realm')"
+                <th ng-show="audit_columns.includes('realm')"
                     class="pifilter"><translate>realm</translate>
                     <pi-filter ng-model="realmFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('resolver')"
+                <th ng-show="audit_columns.includes('resolver')"
                     class="pifilter"><translate>resolver</translate>
                     <pi-filter ng-model="resolverFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('policies')"
-                    class="pifilter" ng-if="loggedInUser.role == 'admin'"><translate>policies</translate>
+                <th ng-show="audit_columns.includes('policies')"
+                    class="pifilter" ng-show="loggedInUser.role == 'admin'"><translate>policies</translate>
                     <pi-filter ng-model="policiesFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('client')"
+                <th ng-show="audit_columns.includes('client')"
                     class="pifilter"><translate>client</translate>
                     <pi-filter ng-model="clientFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('info')"
+                <th ng-show="audit_columns.includes('info')"
                     class="pifilter"><translate>info</translate>
                     <pi-filter ng-model="infoFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-if="audit_columns.includes('sig_check')" translate>sig_check</th>
-                <th ng-if="audit_columns.includes('missing_line')" translate>missing_line</th>
-                <th ng-if="audit_columns.includes('clearance_level')" translate>clearance</th>
-                <th ng-if="audit_columns.includes('log_level')" translate>log level</th>
-                <th ng-if="audit_columns.includes('privacyidea_server')"
+                <th ng-show="audit_columns.includes('sig_check')" translate>sig_check</th>
+                <th ng-show="audit_columns.includes('missing_line')" translate>missing_line</th>
+                <th ng-show="audit_columns.includes('clearance_level')" translate>clearance</th>
+                <th ng-show="audit_columns.includes('log_level')" translate>log level</th>
+                <th ng-show="audit_columns.includes('privacyidea_server')"
                     class="pifilter"><translate>privacyidea server</translate>
                     <pi-filter ng-model="serverFilter"
                                ng-change="getAuditList('livesearch')"
@@ -132,7 +132,7 @@
                 <td ng-if="audit_columns.includes('date')">{{ audit.date | date:dateFormat }}</td>
                 <td ng-if="audit_columns.includes('duration')">{{ audit.duration }}</td>
                 <td ng-if="audit_columns.includes('action')">{{ audit.action }}</td>
-                <td ng-if="audit_columns.includes('success')"><span status-class="{{ audit.success }}">
+                <td ng-if="audit_columns.includes('success')"><span status-class="{{ audit.success }}">{{ audit.success }}</span>
                 <td ng-if="audit_columns.includes('action_detail')">{{ audit.action_detail }}</td>
                 <td>
                     <a ng-repeat="serial in audit.serial_list" ui-sref="token.details({tokenSerial:serial})"

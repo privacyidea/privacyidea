@@ -92,7 +92,7 @@ def search(config, param=None, user=None):
     page_size = 15
     page = 1
     timelimit = None
-    hidden_columns = None
+    hidden_columns = []
     # The filtering dictionary
     param = param or {}
     # special treatment for:
@@ -122,8 +122,10 @@ def search(config, param=None, user=None):
             pagination.auditdata[i] = OrderedDict({audit_col: value for audit_col, value in
                                                    pagination.auditdata[i].items()
                                                    if audit_col not in hidden_columns})
+    visible_columns = [col for col in audit.available_audit_columns if col not in hidden_columns]
 
     ret = {"auditdata": pagination.auditdata,
+           "auditcolumns": visible_columns,
            "prev": pagination.prev,
            "next": pagination.next,
            "current": pagination.page,
