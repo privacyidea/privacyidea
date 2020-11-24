@@ -119,5 +119,6 @@ For further details see :ref:`rlm_perl`.
 .. [#ubuntu] Starting with privacyIDEA 2.15 Ubuntu 16.04 packages are
    provided. Starting with privacyIDEA 3.0 Ubuntu 16.04 and 18.04 packages
    are provided, Ubuntu 14.04 packages are dropped.
-.. [#simpleSAML] https://github.com/privacyidea/privacyidea/tree/master/authmodules/simpleSAMLphp
+.. [#simpleSAML] https://github.com/privacyidea/simplesamlphp-module-privacyidea
 .. [#otrs] http://www.otrs.com/
+

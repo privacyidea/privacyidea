@@ -5,14 +5,14 @@ Configuration
 
 .. index:: configuration
 
-The configuration menu can be used to define useridresolvers and realms, 
+The configuration menu can be used to define useridresolvers and realms,
 set the system config and the token config.
 
-It also contains a shortcut to the policy tab (see :ref:`policies`).
+It also contains a shortcut to the :ref:`policies`, :ref:`eventhandler` and
+:ref:`periodic_tasks`.
 
 .. toctree::
    :maxdepth: 1
-   :glob:
 
    useridresolvers.rst
    realms.rst

@@ -60,8 +60,9 @@ class FourEyesTokenClass(TokenClass):
     The FourEyes token can be used to implement the Two Man Rule.
     The FourEyes token defines how many tokens of which realms are required
     like:
-    * 2 tokens of RealmA
-    * 1 token of RealmB
+
+        * 2 tokens of RealmA
+        * 1 token of RealmB
 
     Then users (the owners of those tokens) need to login by everyone
     entering their OTP PIN and OTP value. It does not matter, in which order
@@ -161,16 +162,18 @@ class FourEyesTokenClass(TokenClass):
     @staticmethod
     def realms_dict_to_string(realms):
         """
-        This function converts the realms - if it is a dictionary - to a string.
+        This function converts the realms - if it is a dictionary - to a string::
 
-        {"realm1": {"selected": True,
-                    "count": 1 },
-         "realm2": {"selected": True,
-                    "count": 2} -> realm1:1,realm2:2
+            {"realm1": {"selected": True,
+                        "count": 1 },
+             "realm2": {"selected": True,
+                        "count": 2}}
+                                        -> "realm1:1,realm2:2"
+
         :param realms: the realms as they are passed from the WebUI
         :type realms: dict
         :return: realms
-        :rtype: basestring
+        :rtype: str
         """
         realms_string = ""
         if type(realms) is dict:
@@ -188,14 +191,15 @@ class FourEyesTokenClass(TokenClass):
     def convert_realms(realms):
         """
         This function converts the realms as given by the API parameter to a
-        dictionary.
+        dictionary::
 
-        realm1:2,realm2:1 -> {"realm1":2,
-                              "realm2":1}
+            "realm1:2,realm2:1" -> {"realm1":2,
+                                    "realm2":1}
 
         :param realms: a serialized list of realms
-        :type realms: basestring
+        :type realms: str
         :return: dict of realms
+        :rtype: dict
         """
         realms_dict = {}
         realm_list = realms.split(",")
@@ -333,16 +337,17 @@ class FourEyesTokenClass(TokenClass):
 
     def _get_remaining_tokens(self, used_tokens_with_serials):
         """
-        Takes a dictionary like
+        Takes a dictionary like::
 
-        {"realm1": ["serial1", "serial2"],
-         "realm3": ["serialB"]
+            {"realm1": ["serial1", "serial2"],
+             "realm3": ["serialB"]}
 
-        and returns a dictionary of the tokens that remain for authentication like
+        and returns a dictionary of the tokens that remain for authentication like::
 
-        {"realm1": 1, "realm3": 0}
+            {"realm1": 1, "realm3": 0}
 
-        :param used_tokens_with_serials: dict with used serials
+        :param used_tokens_with_serials: dictionary with used serials
+        :type used_tokens_with_serials: dict
         :return: dict
         """
         required_tokens = self._get_realms()
@@ -384,7 +389,7 @@ class FourEyesTokenClass(TokenClass):
         """
         This method verifies if the given response is the PIN + OTP of one of the
         remaining tokens.
-        It then returns the the otp_counter = 1
+        In case of success it then returns ``1``
 
         :param user: the requesting user
         :type user: User object
@@ -478,18 +483,19 @@ class FourEyesTokenClass(TokenClass):
 
     def is_challenge_request(self, passw, user=None, options=None):
         """
-        The 4eyes token can act as a challenge response token, either
-        * if the first passw given is the PIN of the 4eyes token or
-        * if the first passw given is the complete PIN+OTP from one of
-          the admintokens.
+        The 4eyes token can act as a challenge response token.
+
+        Either
+         * if the first passw given is the PIN of the 4eyes token or
+         * if the first passw given is the complete PIN+OTP from one of
+           the admintokens.
 
         :param passw: password, which might be pin or pin+otp
-        :type passw: string
+        :type passw: str
         :param user: The user from the authentication request
         :type user: User object
         :param options: dictionary of additional request parameters
         :type options: dict
-
         :return: true or false
         :rtype: bool
         """

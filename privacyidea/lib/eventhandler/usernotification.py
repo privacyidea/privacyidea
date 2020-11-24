@@ -92,12 +92,11 @@ class UserNotificationEventHandler(BaseEventHandler):
 
     It also returns a list of allowed action and conditions
 
-    It returns an identifier, which can be used in the eventhandlig definitions
+    It returns an identifier, which can be used in the eventhandling definitions
     """
 
     identifier = "UserNotification"
-    description = "This eventhandler notifies the user about actions on his " \
-                  "tokens"
+    description = "This eventhandler notifies the user about actions on his tokens"
 
     @property
     def allowed_positions(cls):

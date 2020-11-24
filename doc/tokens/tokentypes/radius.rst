@@ -23,16 +23,16 @@ If checked, the PIN of the token will be checked on the local server. If the
 PIN matches only the remaining part of the issued password will be sent to
 the RADIUS server.
 
-**RADIUS Server**
+**RADIUS Server configuration**
 
-The RADIUS server, to which the authentication request will be forwarded.
-You can specify the port like ``my.radius.server:1812``.
+The configuration of the RADIUS server to which the authentication request will
+be forwarded. The configuration can be defined in :ref:`radiusserver_config`
 
 **RADIUS User**
 
 When forwarding the request to the RADIUS server, the authentication request
 will be issued for this user. If the user is left empty, the RADIUS request
-will be sent with the same user.
+will be sent with the same user currently trying to authenticate.
 
 **RADIUS Secret**
 

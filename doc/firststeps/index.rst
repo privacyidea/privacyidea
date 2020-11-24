@@ -28,6 +28,6 @@ You can
 
 To attach applications read the chapter :ref:`application_plugins`.
 
-You may also go on reading the next chapter which gives an overview on the :ref:`webui`
-or you directly skip to :ref:`configuration` to get a deeper
+You may also go on reading the next chapter which gives an overview on the
+:ref:`webui` or you directly skip to :ref:`configuration` to get a deeper
 insight in the configuration possibilities.

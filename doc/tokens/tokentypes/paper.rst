@@ -1,7 +1,7 @@
 .. _paper_token:
 
 Paper Token (PPR)
------------
+-----------------
 
 .. index:: Paper Token
 
@@ -20,7 +20,7 @@ CSS
 ....
 
 You can customize the look and feel of the printed paper token.
-You may change the style sheep ``papertoken.css`` which is only loaded for
+You may change the style sheet ``papertoken.css`` which is only loaded for
 printing.
 
 Header and Footer
@@ -37,16 +37,16 @@ Create the files
 to display the contents before (top) and behind (bottom) the table.
 
 Within these html templates you may use angular replacements. To get the
-serial number of the token use
+serial number of the token use::
 
     {{ tokenEnrolled.serial }}
 
-to get the name and realm of the user use
+to get the name and realm of the user use::
 
     {{ newUser.user }}
     {{ newUser.realm }}
 
-A good example for the ``token.enrolled.paper.top.html`` is:
+A good example for the ``token.enrolled.paper.top.html`` is::
 
     <h1>{{ enrolledToken.serial }}</h1>
     <p>
@@ -54,7 +54,7 @@ A good example for the ``token.enrolled.paper.top.html`` is:
       other. You may scratch of or otherwise mark used values.
     </p>
 
-A good example for the ``token.enrolled.paper.bottom.html`` is:
+A good example for the ``token.enrolled.paper.bottom.html`` is::
 
     <p>
       The paper token is a weak second factor. Please assure, that no one gets
@@ -75,5 +75,9 @@ OTP Table
 If you want to change the complete layout of the table you need to
 overwrite the file
 ``static/components/token/views/token.enrolled.paper.html``. The
-scope variable {{ enrolledToken.otps }} contains an object with the complete
+scope variable::
+
+{{ enrolledToken.otps }}
+
+contains an object with the complete
 OTP value list.

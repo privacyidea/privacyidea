@@ -1,7 +1,7 @@
 .. _tiqr_token_config:
 
 TiQR Token Configuration
-.................
+........................
 
 .. index:: TiQR Token
 

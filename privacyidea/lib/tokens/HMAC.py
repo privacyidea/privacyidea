@@ -134,11 +134,12 @@ class HmacOtp(object):
     def checkOtp(self, anOtpVal, window, symetric=False):
         """
 
-        :param anOtpVal:
-        :type anOtpVal: bytestring
+        :param anOtpVal: The OTP value to check
+        :type anOtpVal: str
         :param window:
         :param symetric:
-        :return:
+        :return: -1 if the OTP doesn't match or the current counter
+        :rtype: int
         """
         res = -1
         start = self.counter

@@ -2,7 +2,7 @@
 .. _tokentypes:
 
 Token types in privacyIDEA
---------------------
+--------------------------
 
 .. index:: token types, Yubico, Yubikey, SMS, SSH Key, registration, TiQR
 
