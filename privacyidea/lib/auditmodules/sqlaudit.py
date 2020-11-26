@@ -46,7 +46,7 @@ from privacyidea.lib.crypto import Sign
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
 from privacyidea.lib.lifecycle import register_finalizer
-from privacyidea.lib.utils import truncate_comma_list
+from privacyidea.lib.utils import truncate_comma_list, is_true
 from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
 import datetime
@@ -184,7 +184,7 @@ class Audit(AuditBase):
                         # "success" is the only integer.
                         search_value = search_value.strip("*")
                         conditions.append(getattr(LogEntry, search_key) ==
-                                          int(search_value))
+                                          int(is_true(search_value)))
                     else:
                         # All other keys are compared as strings
                         column = getattr(LogEntry, search_key)
@@ -401,7 +401,7 @@ class Audit(AuditBase):
         filter_condition = self._create_filter(search_dict)
         conditions = [filter_condition]
         if success is not None:
-            conditions.append(LogEntry.success == success)
+            conditions.append(LogEntry.success == int(is_true(success)))
 
         if timedelta is not None:
             conditions.append(LogEntry.date >= datetime.datetime.now() -
