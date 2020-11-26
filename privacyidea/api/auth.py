@@ -59,7 +59,7 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exist)
 from privacyidea.lib.user import User, split_user, log_used_user
-from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.policy import PolicyClass, REMOTE_USER
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.api.lib.postpolicy import (postpolicy, get_webui_settings, add_user_detail_to_response, check_tokentype, 
                                             check_tokeninfo, check_serial, no_detail_on_fail, no_detail_on_success,
@@ -254,7 +254,7 @@ def get_auth_token():
     user_obj = User()
 
     # Check if the remote user is allowed
-    if (request.remote_user == username) and is_remote_user_allowed(request):
+    if (request.remote_user == username) and is_remote_user_allowed(request) != REMOTE_USER.DISABLE:
         # Authenticated by the Web Server
         # Check if the username exists
         # 1. in local admins

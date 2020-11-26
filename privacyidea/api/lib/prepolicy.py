@@ -1229,9 +1229,9 @@ def is_remote_user_allowed(req, write_to_audit_log=True):
     :param req: The flask request, containing the remote user and the client IP
     :param write_to_audit_log: whether the policy name should be added to the audit log entry
     :type write_to_audit_log: bool
-    :return: 0 if disabled, 1 if allowed, 2 if forced.
+    :return: Return a value or REMOTE_USER, can be "disable", "active" or "force".
+    :rtype: basestring
     """
-    res = 0
     if req.remote_user:
         loginname, realm = split_user(req.remote_user)
         realm = realm or get_default_realm()
@@ -1242,12 +1242,10 @@ def is_remote_user_allowed(req, write_to_audit_log=True):
                                                                 write_to_audit_log=write_to_audit_log)
         # there should be only one action value here
         if ruser_active:
-            if list(ruser_active)[0] == REMOTE_USER.ACTIVE:
-                res = 1
-            if list(ruser_active)[0] == REMOTE_USER.FORCE:
-                res = 2
+            return list(ruser_active)[0]
 
-    return res
+    # Return default "disable"
+    return REMOTE_USER.DISABLE
 
 
 def save_client_application_type(request, action):

@@ -37,7 +37,7 @@ from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.lib.passwordreset import is_password_reset
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.realm import get_realms
-from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE, Match
+from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE, Match, REMOTE_USER
 from privacyidea.lib.subscriptions import subscription_status
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.config import get_from_config, SYSCONF
@@ -115,8 +115,8 @@ def single_page_application():
 
     try:
         r = is_remote_user_allowed(request, write_to_audit_log=False)
-        force_remote_user = r == 2
-        if r:
+        force_remote_user = r == REMOTE_USER.FORCE
+        if r != REMOTE_USER.DISABLE:
             remote_user = request.remote_user
         password_reset = is_password_reset(g)
         hsm_ready = True
