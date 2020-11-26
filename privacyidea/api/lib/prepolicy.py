@@ -1229,7 +1229,7 @@ def is_remote_user_allowed(req, write_to_audit_log=True):
     :param req: The flask request, containing the remote user and the client IP
     :param write_to_audit_log: whether the policy name should be added to the audit log entry
     :type write_to_audit_log: bool
-    :return: 0 if disabled, 1 if allowrd, 2 if forced.
+    :return: 0 if disabled, 1 if allowed, 2 if forced.
     """
     res = 0
     if req.remote_user:

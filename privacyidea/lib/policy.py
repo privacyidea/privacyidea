@@ -2164,7 +2164,7 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.REMOTE_USER: {
                 'type': 'str',
-                'value': [REMOTE_USER.ACTIVE, REMOTE_USER.DISABLE],
+                'value': [REMOTE_USER.ACTIVE, REMOTE_USER.DISABLE, REMOTE_USER.FORCE],
                 'desc': _('The REMOTE_USER set by the webserver can be used '
                           'to login to privacyIDEA or it will be ignored. '
                           'Defaults to "disable".')
