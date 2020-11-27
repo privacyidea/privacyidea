@@ -13,6 +13,7 @@ from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.token import get_tokens, remove_token
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import to_unicode
 from . import ldap3mock
 
 
@@ -503,6 +504,19 @@ class AuthApiTestCase(MyApiTestCase):
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 1, aentry)
         self.assertEqual(aentry['policies'], 'remote', aentry)
+
+        # check that the policy remote_user=force passes the necessary hidden tag to the
+        # login window
+        set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.FORCE))
+        with self.app.test_request_context('/',
+                                           method='GET',
+                                           environ_base={"REMOTE_USER": "cornelius@realm1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            # The login page contains the info about force remote_user, which will hide the
+            # "login with credentials" button.
+            self.assertIn(u'input type=hidden id=FORCE_REMOTE_USER value="True"', to_unicode(res.data))
 
         # bind the remote user policy to an unknown realm
         set_policy(name="remote", scope=SCOPE.WEBUI, realm='unknown',
