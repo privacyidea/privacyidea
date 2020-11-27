@@ -1230,7 +1230,7 @@ def is_remote_user_allowed(req, write_to_audit_log=True):
     :param write_to_audit_log: whether the policy name should be added to the audit log entry
     :type write_to_audit_log: bool
     :return: Return a value or REMOTE_USER, can be "disable", "active" or "force".
-    :rtype: basestring
+    :rtype: str
     """
     if req.remote_user:
         loginname, realm = split_user(req.remote_user)
