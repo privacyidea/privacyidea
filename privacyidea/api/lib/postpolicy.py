@@ -769,5 +769,7 @@ def token_serial_from_response_g(request, response):
     and adds it to the flask g object. It decorates api functions where the serial
     is only determined during the call, e.g. validate/check.
     """
-    if g.serial is not None:
-        g.serial = response.json.get("detail", None).get("serial")
+    if "serial" not in g or g.serial is None:
+        g.serial = response.json.get("detail", {}).get("serial")
+
+    return response

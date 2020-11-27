@@ -24,6 +24,7 @@ class FakeFlaskG(object):
     audit_object = None
     client_ip = None
     request_headers = None
+    serial = None
 
 
 class FakeAudit(Audit):

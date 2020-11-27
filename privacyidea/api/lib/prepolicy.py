@@ -1207,7 +1207,7 @@ def token_serial_from_path_g(request=None, action=None):
     and adds it to the flask g object. It decorates all api functions
     where serial can be part of the url.
     """
-    if g.serial is not None:
+    if "serial" not in g or g.serial is None:
         if request.path:
             # request.path is something like '/token/setpin/SERIAL' or '/token/SERIAL'
             path_list = [x for x in request.path.split('/') if x]
@@ -1217,6 +1217,8 @@ def token_serial_from_path_g(request=None, action=None):
                 g.serial = path_list[2]
             else:
                 g.serial = None
+
+    return True
 
 
 def api_key_required(request=None, action=None):
