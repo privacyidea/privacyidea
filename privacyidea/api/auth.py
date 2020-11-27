@@ -97,6 +97,7 @@ def before_request():
     # access_route contains the ip adresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request,
                                 get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.serial = getParam(request.all_data, "serial", default=None)
     g.audit_object.log({"success": False,
                         "client": g.client_ip,
                         "client_user_agent": request.user_agent.browser,
