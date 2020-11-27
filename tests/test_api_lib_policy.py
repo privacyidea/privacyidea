@@ -1285,6 +1285,13 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         self.assertEqual(REMOTE_USER.ACTIVE, is_remote_user_allowed(req))
 
+        # Now set the remote force policy
+        set_policy(name="ruser",
+                   scope=SCOPE.WEBUI,
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.FORCE),
+                   user="super")
+        self.assertEqual(REMOTE_USER.FORCE, is_remote_user_allowed(req))
+
         set_privacyidea_config(SYSCONF.SPLITATSIGN, False)
         self.assertEqual(REMOTE_USER.DISABLE, is_remote_user_allowed(req))
 
