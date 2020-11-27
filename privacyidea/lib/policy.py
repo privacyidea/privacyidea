@@ -397,7 +397,6 @@ class MAIN_MENU(object):
     COMPONENTS = "components"
 
 
-
 class LOGINMODE(object):
     __doc__ = """This is the list of possible values for the login mode."""
     USERSTORE = "userstore"
@@ -409,6 +408,7 @@ class REMOTE_USER(object):
     __doc__ = """The list of possible values for the remote_user policy."""
     DISABLE = "disable"
     ACTIVE = "allowed"
+    FORCE = "force"
 
 
 class ACTIONVALUE(object):
@@ -2195,7 +2195,7 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.REMOTE_USER: {
                 'type': 'str',
-                'value': [REMOTE_USER.ACTIVE, REMOTE_USER.DISABLE],
+                'value': [REMOTE_USER.ACTIVE, REMOTE_USER.DISABLE, REMOTE_USER.FORCE],
                 'desc': _('The REMOTE_USER set by the webserver can be used '
                           'to login to privacyIDEA or it will be ignored. '
                           'Defaults to "disable".')

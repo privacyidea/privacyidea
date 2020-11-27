@@ -50,6 +50,8 @@ angular.module("privacyideaApp")
     if (!$scope.remoteUser) {
         $scope.loginWithCredentials = true;
     }
+    obj = angular.element(document.querySelector('#FORCE_REMOTE_USER'));
+    $scope.forceRemoteUser = obj.val();
     obj = angular.element(document.querySelector("#PASSWORD_RESET"));
     $scope.passwordReset = obj.val();
     obj = angular.element(document.querySelector("#HSM_READY"));

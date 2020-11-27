@@ -1262,7 +1262,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.ACTIVE))
 
         r = is_remote_user_allowed(req)
-        self.assertTrue(r)
+        self.assertEqual(REMOTE_USER.ACTIVE, r)
 
         # Login for the REMOTE_USER is not allowed.
         # Only allowed for user "super", but REMOTE_USER=admin
@@ -1272,23 +1272,30 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    user="super")
 
         r = is_remote_user_allowed(req)
-        self.assertFalse(r)
+        self.assertEqual(REMOTE_USER.DISABLE, r)
 
         # The remote_user "super" is allowed to login:
         env["REMOTE_USER"] = "super"
         req = Request(env)
         r = is_remote_user_allowed(req)
-        self.assertTrue(r)
+        self.assertEqual(REMOTE_USER.ACTIVE, r)
 
         # check that Splt@Sign works correctly
         create_realm(self.realm1)
         set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
         env["REMOTE_USER"] = "super@realm1"
         req = Request(env)
-        self.assertTrue(is_remote_user_allowed(req))
+        self.assertEqual(REMOTE_USER.ACTIVE, is_remote_user_allowed(req))
+
+        # Now set the remote force policy
+        set_policy(name="ruser",
+                   scope=SCOPE.WEBUI,
+                   action="{0!s}={1!s}".format(ACTION.REMOTE_USER, REMOTE_USER.FORCE),
+                   user="super")
+        self.assertEqual(REMOTE_USER.FORCE, is_remote_user_allowed(req))
 
         set_privacyidea_config(SYSCONF.SPLITATSIGN, False)
-        self.assertFalse(is_remote_user_allowed(req))
+        self.assertEqual(REMOTE_USER.DISABLE, is_remote_user_allowed(req))
 
         set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
         delete_policy("ruser")
