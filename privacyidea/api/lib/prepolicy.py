@@ -1219,7 +1219,6 @@ def token_serial_from_path_g(request=None, action=None):
                 g.serial = None
 
 
-
 def api_key_required(request=None, action=None):
     """
     This is a decorator for check_user_pass and check_serial_pass.
