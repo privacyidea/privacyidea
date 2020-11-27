@@ -49,6 +49,8 @@ from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import truncate_comma_list, is_true
 from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
+from sqlalchemy.sql import expression
+from sqlalchemy.ext.compiler import compiles
 import datetime
 import traceback
 from six import string_types
@@ -60,6 +62,26 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 log = logging.getLogger(__name__)
 
 metadata = MetaData()
+
+
+# Define function to convert SQL DateTime objects to an ISO-format string
+# By using <https://docs.sqlalchemy.org/en/13/core/compiler.html> we can
+# differentiate between different dialects.
+class to_isodate(expression.FunctionElement):
+    name = 'to_isodate'
+
+
+@compiles(to_isodate, 'oracle')
+@compiles(to_isodate, 'postgresql')
+def fn_to_isodate(element, compiler, **kw):
+    return "to_char(%s, 'IYYY-MM-DD HH24:MI:SS')" % compiler.process(element.clauses, **kw)
+
+
+@compiles(to_isodate)
+def fn_to_isodate(element, compiler, **kw):
+    # The four percent signs are necessary for two format substitutions
+    return "date_format(%s, '%%%%Y-%%%%m-%%%%d %%%%H:%%%%i:%%%%s')" % compiler.process(
+        element.clauses, **kw)
 
 
 class Audit(AuditBase):
@@ -188,9 +210,9 @@ class Audit(AuditBase):
                     else:
                         # All other keys are compared as strings
                         column = getattr(LogEntry, search_key)
-                        if search_key == "date":
+                        if search_key.endswith("date"):
                             # but we cast "date" to a string first (required on postgresql)
-                            column = cast(column, String)
+                            column = to_isodate(column)
                         search_value = search_value.replace('*', '%')
                         if '%' in search_value:
                             conditions.append(column.like(search_value))
