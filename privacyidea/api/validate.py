@@ -86,7 +86,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_request, check_application_tokentype)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
-                                            check_tokeninfo,
+                                            check_tokeninfo, token_serial_from_response_g,
                                             no_detail_on_fail,
                                             no_detail_on_success, autoassign,
                                             offline_info,
@@ -201,6 +201,7 @@ def offlinerefill():
 @postpolicy(check_tokeninfo, request=request)
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
+@postpolicy(token_serial_from_response_g, request=request)
 @postpolicy(autoassign, request=request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(pushtoken_wait, request=request)

@@ -179,8 +179,10 @@ def before_request():
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
     if serial:
+        g.serial = serial
         tokentype = get_token_type(serial)
     else:
+        g.serial = None
         tokentype = None
 
     if request.User:
