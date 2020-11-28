@@ -77,6 +77,12 @@ def fn_to_isodate(element, compiler, **kw):
     return "to_char(%s, 'IYYY-MM-DD HH24:MI:SS')" % compiler.process(element.clauses, **kw)
 
 
+@compiles(to_isodate, 'sqlite')
+def fn_to_isodate(element, compiler, **kw):
+    # sqlite does not have a DateTime type, they are already in ISO format
+    return "%s" % compiler.process(element.clauses, **kw)
+
+
 @compiles(to_isodate)
 def fn_to_isodate(element, compiler, **kw):
     # The four percent signs are necessary for two format substitutions
