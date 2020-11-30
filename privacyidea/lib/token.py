@@ -2108,6 +2108,23 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     reply_dict["transaction_ids"] = [chal.get("transaction_id") for chal in reply_dict.get("multi_challenge", [])]
 
 
+def weigh_token_type(token_obj):
+    """
+    This method returns a weight of a token type, which is used
+    to sort the tokentype list. Other weighing functions can be implemented.
+
+    The Push token weighs the most, so that it will be sorted to the end.
+
+    :param token_obj: token object
+    :return: weight of the tokentype
+    :rtype: int
+    """
+    if token_obj.type.upper() == "PUSH":
+        return 1000
+    else:
+        return ord(token_obj.type[0])
+
+
 @log_with(log)
 @libpolicy(reset_all_user_tokens)
 @libpolicy(generic_challenge_response_reset_pin)
@@ -2160,7 +2177,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
             raise TokenAdminError(_("This action is not possible, since the "
                                     "token is locked"), id=1007)
 
-    for tokenobject in tokenobject_list:
+    for tokenobject in sorted(tokenobject_list, key=weigh_token_type):
         if log.isEnabledFor(logging.DEBUG):
             # Avoid a SQL query triggered by ``tokenobject.user`` in case
             # the log level is not DEBUG

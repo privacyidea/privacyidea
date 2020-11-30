@@ -2546,7 +2546,8 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             resp = res.json
-            self.assertEqual(resp.get("detail").get("message"), "check your sms, check your email")
+            self.assertIn("check your sms", resp.get("detail").get("message"))
+            self.assertIn("check your email", resp.get("detail").get("message"))
 
         delete_policy("chalsms")
         delete_policy("chalemail")
