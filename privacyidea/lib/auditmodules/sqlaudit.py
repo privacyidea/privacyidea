@@ -182,7 +182,7 @@ class Audit(AuditBase):
                 data = self.audit_data[column]
                 if isinstance(data, string_types):
                     if column == "policies":
-                        # The policies column is shortend per comma entry
+                        # The policies column is shortened per comma entry
                         data = truncate_comma_list(data, l)
                     else:
                         data = data[:l]
@@ -216,8 +216,9 @@ class Audit(AuditBase):
                     else:
                         # All other keys are compared as strings
                         column = getattr(LogEntry, search_key)
-                        if search_key.endswith("date"):
-                            # but we cast "date" to a string first (required on postgresql)
+                        if search_key in ["date", "startdate"]:
+                            # but we cast a column with a DateTime type to an
+                            # ISO-format string first
                             column = to_isodate(column)
                         search_value = search_value.replace('*', '%')
                         if '%' in search_value:
