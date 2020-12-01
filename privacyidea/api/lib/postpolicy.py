@@ -761,15 +761,3 @@ def is_authorized(request, response):
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response
-
-
-def token_serial_from_response_g(request, response):
-    """
-    This is decorator function fetches the token serial from the response
-    and adds it to the flask g object. It decorates api functions where the serial
-    is only determined during the call, e.g. validate/check.
-    """
-    if "serial" not in g or g.serial is None:
-        g.serial = response.json.get("detail", {}).get("serial")
-
-    return response

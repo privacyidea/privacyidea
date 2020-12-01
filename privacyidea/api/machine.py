@@ -27,7 +27,8 @@ The code is tested in tests/test_api_machines
 from flask import (Blueprint,
                    request, g)
 from .lib.utils import (getParam, send_result)
-from ..api.lib.prepolicy import prepolicy, check_base_action, token_serial_from_path_g, mangle
+from ..api.lib.prepolicy import prepolicy, check_base_action, mangle
+from ..api.lib.decorators import (APIDecorator, g_add_serial)
 from ..lib.policy import ACTION
 
 from ..lib.machine import (get_machines, attach_token, detach_token,
@@ -180,8 +181,8 @@ def attach_token_api():
 
 @machine_blueprint.route('/token/<serial>/<machineid>/<resolver>/<application>',
                          methods=['DELETE'])
-@prepolicy(token_serial_from_path_g, request)
 @prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
+@APIDecorator(g_add_serial, request=request, options={"serial_position": 2})
 def detach_token_api(serial, machineid, resolver, application):
     """
     Detach a token from a machine with a certain application.

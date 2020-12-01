@@ -79,6 +79,7 @@ from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
                                     SYSCONF, ensure_no_config_object)
 from privacyidea.lib.audit import getAudit
+from privacyidea.api.lib.decorators import (APIDecorator, g_add_serial)
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
@@ -86,7 +87,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_request, check_application_tokentype)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
-                                            check_tokeninfo, token_serial_from_response_g,
+                                            check_tokeninfo,
                                             no_detail_on_fail,
                                             no_detail_on_success, autoassign,
                                             offline_info,
@@ -201,8 +202,8 @@ def offlinerefill():
 @postpolicy(check_tokeninfo, request=request)
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
-@postpolicy(token_serial_from_response_g, request=request)
 @postpolicy(autoassign, request=request)
+@APIDecorator(g_add_serial, request=request, position="post")
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(pushtoken_wait, request=request)
 @prepolicy(set_realm, request=request)
@@ -419,11 +420,13 @@ def check():
 @admin_required
 @postpolicy(is_authorized, request=request)
 @postpolicy(mangle_challenge_response, request=request)
+@APIDecorator(g_add_serial, request=request, position="post")
 @check_user_or_serial_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(check_base_action, request, action=ACTION.TRIGGERCHALLENGE)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_auth, request=request)
+@APIDecorator(g_add_serial, request=request, position="pre")
 @event("validate_triggerchallenge", request, g)
 def trigger_challenge():
     """

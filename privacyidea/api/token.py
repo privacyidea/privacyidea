@@ -78,9 +78,10 @@ from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
 from privacyidea.lib.utils import to_unicode
+from privacyidea.api.lib.decorators import (APIDecorator, g_add_serial)
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.challenge import get_challenges_paginate
-from privacyidea.api.lib.prepolicy import (prepolicy, token_serial_from_path_g, check_base_action,
+from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_token_init, check_token_upload,
                                            check_max_token_user,
                                            check_max_token_realm,
@@ -308,7 +309,7 @@ def init():
 @token_blueprint.route('/challenges/', methods=['GET'])
 @token_blueprint.route('/challenges/<serial>', methods=['GET'])
 @admin_required
-@prepolicy(token_serial_from_path_g, request)
+@APIDecorator(g_add_serial, request)
 @prepolicy(check_base_action, request, action=ACTION.GETCHALLENGES)
 @event("token_getchallenges", request, g)
 @log_with(log)
@@ -483,7 +484,7 @@ def unassign_api():
 
 @token_blueprint.route('/revoke', methods=['POST'])
 @token_blueprint.route('/revoke/<serial>', methods=['POST'])
-@prepolicy(token_serial_from_path_g, request)
+@APIDecorator(g_add_serial, request)
 @prepolicy(check_base_action, request, action=ACTION.REVOKE)
 @event("token_revoke", request, g)
 @log_with(log)
@@ -516,8 +517,8 @@ def revoke_api(serial=None):
 
 @token_blueprint.route('/enable', methods=['POST'])
 @token_blueprint.route('/enable/<serial>', methods=['POST'])
+@APIDecorator(g_add_serial, request)
 @prepolicy(check_max_token_user, request)
-@prepolicy(token_serial_from_path_g, request)
 @prepolicy(check_base_action, request, action=ACTION.ENABLE)
 @event("token_enable", request, g)
 @log_with(log)
@@ -545,7 +546,7 @@ def enable_api(serial=None):
 
 @token_blueprint.route('/disable', methods=['POST'])
 @token_blueprint.route('/disable/<serial>', methods=['POST'])
-@prepolicy(token_serial_from_path_g, request)
+@APIDecorator(g_add_serial, request)
 @prepolicy(check_base_action, request, action=ACTION.DISABLE)
 @event("token_disable", request, g)
 @log_with(log)
@@ -576,7 +577,7 @@ def disable_api(serial=None):
 
 
 @token_blueprint.route('/<serial>', methods=['DELETE'])
-@prepolicy(token_serial_from_path_g, request)
+@APIDecorator(g_add_serial, request, options={"serial_position": 1})
 @prepolicy(check_base_action, request, action=ACTION.DELETE)
 @event("token_delete", request, g)
 @log_with(log)
@@ -600,7 +601,7 @@ def delete_api(serial):
 
 @token_blueprint.route('/reset', methods=['POST'])
 @token_blueprint.route('/reset/<serial>', methods=['POST'])
-@prepolicy(token_serial_from_path_g, request)
+@APIDecorator(g_add_serial, request)
 @prepolicy(check_base_action, request, action=ACTION.RESET)
 @event("token_reset", request, g)
 @log_with(log)
@@ -626,7 +627,7 @@ def reset_api(serial=None):
 
 @token_blueprint.route('/resync', methods=['POST'])
 @token_blueprint.route('/resync/<serial>', methods=['POST'])
-@prepolicy(token_serial_from_path_g, request)
+@APIDecorator(g_add_serial, request)
 @prepolicy(check_base_action, request, action=ACTION.RESYNC)
 @event("token_resync", request, g)
 @log_with(log)
@@ -654,7 +655,7 @@ def resync_api(serial=None):
 
 @token_blueprint.route('/setpin', methods=['POST'])
 @token_blueprint.route('/setpin/<serial>', methods=['POST'])
-@prepolicy(token_serial_from_path_g, request)
+@APIDecorator(g_add_serial, request)
 @prepolicy(check_base_action, request, action=ACTION.SETPIN)
 @prepolicy(encrypt_pin, request)
 @prepolicy(check_otp_pin, request, action=ACTION.SETPIN)
@@ -705,7 +706,7 @@ def setpin_api(serial=None):
 
 @token_blueprint.route('/setrandompin', methods=['POST'])
 @token_blueprint.route('/setrandompin/<serial>', methods=['POST'])
-@prepolicy(token_serial_from_path_g, request)
+@APIDecorator(g_add_serial, request)
 @prepolicy(check_base_action, request, action=ACTION.SETRANDOMPIN)
 @prepolicy(set_random_pin, request)
 @prepolicy(encrypt_pin, request)
@@ -741,7 +742,7 @@ def setrandompin_api(serial=None):
 
 @token_blueprint.route('/description', methods=['POST'])
 @token_blueprint.route('/description/<serial>', methods=['POST'])
-@prepolicy(token_serial_from_path_g, request)
+@APIDecorator(g_add_serial, request)
 @prepolicy(check_base_action, request, action=ACTION.SETDESCRIPTION)
 @event("token_set", request, g)
 @log_with(log)
@@ -768,7 +769,7 @@ def set_description_api(serial=None):
 @token_blueprint.route('/set', methods=['POST'])
 @token_blueprint.route('/set/<serial>', methods=['POST'])
 @admin_required
-@prepolicy(token_serial_from_path_g, request)
+@APIDecorator(g_add_serial, request)
 @prepolicy(check_base_action, request, action=ACTION.SET)
 @event("token_set", request, g)
 @log_with(log)
@@ -871,9 +872,9 @@ def set_api(serial=None):
 
 @token_blueprint.route('/realm/<serial>', methods=['POST'])
 @admin_required
+@APIDecorator(g_add_serial, request)
 @log_with(log)
 @prepolicy(check_max_token_realm, request)
-@prepolicy(token_serial_from_path_g, request)
 @prepolicy(check_base_action, request, action=ACTION.TOKENREALMS)
 @event("token_realm", request, g)
 def tokenrealm_api(serial=None):
@@ -1061,8 +1062,8 @@ def copyuser_api():
 
 
 @token_blueprint.route('/lost/<serial>', methods=['POST'])
+@APIDecorator(g_add_serial, request)
 @prepolicy(check_base_action, request, action=ACTION.LOSTTOKEN)
-@prepolicy(token_serial_from_path_g, request)
 @event("token_lost", request, g)
 @log_with(log)
 def lost_api(serial=None):
@@ -1100,6 +1101,7 @@ def lost_api(serial=None):
 @token_blueprint.route('/getserial/<otp>', methods=['GET'])
 @admin_required
 @prepolicy(check_base_action, request, action=ACTION.GETSERIAL)
+@APIDecorator(g_add_serial, request, position="post")
 @event("token_getserial", request, g)
 @log_with(log)
 def get_serial_by_otp_api(otp=None):
@@ -1153,7 +1155,7 @@ def get_serial_by_otp_api(otp=None):
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['POST'])
 @admin_required
-@prepolicy(token_serial_from_path_g, request)
+@APIDecorator(g_add_serial, request)
 @prepolicy(check_base_action, request, action=ACTION.SETTOKENINFO)
 @event("token_info", request, g)
 @log_with(log)
@@ -1178,7 +1180,7 @@ def set_tokeninfo_api(serial, key):
 
 @token_blueprint.route('/info/<serial>/<key>', methods=['DELETE'])
 @admin_required
-@prepolicy(token_serial_from_path_g, request)
+@APIDecorator(g_add_serial, request)
 @prepolicy(check_base_action, request, action=ACTION.SETTOKENINFO)
 @event("token_info", request, g)
 @log_with(log)
