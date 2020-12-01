@@ -60,12 +60,7 @@ class APIDecorator(object):
 
     def __call__(self, wrapped_function):
         """
-        This decorates the given function. The prepolicy decorator is ment
-        for API functions on the API level.
-
-        If some error occur the a DecoratorException is raised.
-
-        The decorator function can modify the request data.
+        This decorates the given function according to the given position.
 
         :param wrapped_function: The function, that is decorated.
         :type wrapped_function: API function
@@ -89,7 +84,7 @@ class APIDecorator(object):
 
 def g_add_serial(request, response=None, options=()):
     """
-    This is decorator function fetches the token serial and adds it to the flask
+    This decorator function fetches the token serial and adds it to the flask
     g object.
     With a given response, this decorator checks for the serial in the response.
     If no response is given, the decorator checks first in the request and in the
