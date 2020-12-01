@@ -69,16 +69,16 @@ class APIDecorator(object):
         """
         @functools.wraps(wrapped_function)
         def function_wrapper(*args, **kwds):
-            if self.position == "pre":
-                self.function(self.request,
-                              options=self.options)
-            elif self.position == "post":
+            if self.position == "post":
                 response = wrapped_function(*args, **kwds)
                 return self.function(self.request,
                                      response=response,
                                      options=self.options,
                                      *args, **kwds)
-            return wrapped_function(*args, **kwds)
+            else:
+                self.function(self.request,
+                              options=self.options)
+                return wrapped_function(*args, **kwds)
 
         return function_wrapper
 
