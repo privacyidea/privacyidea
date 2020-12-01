@@ -34,6 +34,7 @@ log = logging.getLogger(__name__)
 optional = True
 required = False
 
+
 class APIDecorator(object):
     """
     This is the decorator to either wrap an API function call or act as response-modifier.
