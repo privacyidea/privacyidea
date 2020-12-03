@@ -14,7 +14,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
-DICT_FILE="tests/testdata/dictionary"
+DICT_FILE = "tests/testdata/dictionary"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
 CLIENT_FILE = "tests/testdata/google-services.json"
 FB_CONFIG_VALS = {
@@ -168,4 +168,3 @@ class PushAPITestCase(MyApiTestCase):
         remove_token("spass01")
         delete_policy("push1")
         delete_policy("push2")
-
