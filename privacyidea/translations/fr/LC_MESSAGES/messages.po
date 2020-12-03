@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2020-09-04 06:51+0200\n"
-"PO-Revision-Date: 2020-10-19 18:29+0000\n"
+"PO-Revision-Date: 2020-12-04 17:29+0000\n"
 "Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/fr/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.3.1-dev\n"
+"X-Generator: Weblate 4.4-dev\n"
 "Generated-By: Babel 2.8.0\n"
 
 #: api/auth.py:213
@@ -617,18 +617,25 @@ msgid ""
 "If the administrator sets the OTP PIN during enrollment or later, the "
 "user will have to change the PIN during first use."
 msgstr ""
+"Si l'administrateur définit le NIP à usage unique lors de l'inscription ou "
+"ultérieurement, l'utilisateur devra modifier le NIP lors de la première "
+"utilisation."
 
 #: lib/policy.py:1892
 msgid ""
 "The user needs to change his PIN on a regular basis. To change the PIN "
 "every 180 days, enter '180d'."
 msgstr ""
+"L'utilisateur doit changer son NIP régulièrement. Pour changer le NIP tous "
+"les 180 jours, saisissez « 180d »."
 
 #: lib/policy.py:1899
 msgid ""
 "The OTP PIN can be hashed or encrypted. Hashing the PIN is the default "
 "behaviour."
 msgstr ""
+"Le NIP à usage unique peut être haché ou chiffré. Le hachage du NIP est le "
+"comportement par défaut."
 
 #: lib/policy.py:1904
 msgid ""
@@ -643,6 +650,8 @@ msgstr ""
 #: lib/policy.py:1916
 msgid "This is the URL to the token image for smartphone apps like FreeOTP."
 msgstr ""
+"Il s'agit de l'URL de l'image du jeton pour les applications pour téléphone "
+"telles que FreeOTP."
 
 #: lib/policy.py:1923
 msgid ""
@@ -669,6 +678,8 @@ msgid ""
 "Either use the Token PIN , use the Userstore Password or use no fixed "
 "password component."
 msgstr ""
+"Utilisez le NIP du jeton, utilisez le mot de passe du magasin d'utilisateur "
+"ou n'utilisez aucun composant de mot de passe fixe."
 
 #: lib/policy.py:1951
 msgid ""
@@ -699,6 +710,9 @@ msgid ""
 "If the PIN of a token is to be changed, this will allow the user to "
 "change the PIN during a validate/check request via challenge / response."
 msgstr ""
+"Si le NIP d'un jeton doit être modifié, cela permettra à l'utilisateur de "
+"changer le NIP lors d'une demande de validation / vérification via challenge "
+"/ réponse."
 
 #: lib/policy.py:1977
 msgid ""
@@ -1383,7 +1397,7 @@ msgstr "Le corps du courriel envoyé."
 #: lib/eventhandler/usernotification.py:152
 #: lib/eventhandler/usernotification.py:190
 msgid "Send notification to this user."
-msgstr ""
+msgstr "Envoyez une notification à cet utilisateur."
 
 #: lib/eventhandler/usernotification.py:173
 msgid "Any email address, to which the notification should be sent."
@@ -1396,7 +1410,7 @@ msgstr ""
 
 #: lib/eventhandler/usernotification.py:187
 msgid "The text of the SMS."
-msgstr ""
+msgstr "Le texte du SMS."
 
 #: lib/eventhandler/usernotification.py:197
 msgid ""
@@ -1508,7 +1522,7 @@ msgstr ""
 
 #: lib/smsprovider/HttpSMSProvider.py:261
 msgid "Password in case of basic authentication."
-msgstr ""
+msgstr "Mot de passe en cas d'authentification de base."
 
 #: lib/smsprovider/HttpSMSProvider.py:265
 msgid "Should the SSL certificate be verified."
@@ -1537,7 +1551,7 @@ msgstr ""
 
 #: lib/smsprovider/HttpSMSProvider.py:282
 msgid "The timeout in seconds."
-msgstr ""
+msgstr "Le délai d'expiration en secondes."
 
 #: lib/smsprovider/ScriptSMSProvider.py:112
 msgid ""
