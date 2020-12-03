@@ -92,6 +92,21 @@ The file in the file system is located at *privacyidea/static/contrib/css*.
 You might add a directory *privacyidea/static/custom/css/* and add your CSS
 file there.
 
+The CSS you specify here adds to the already existing styles. Thus a convenient way for
+using this setting is to help you distinguish different privacyIDEA instances like "testing", "acceptances"
+and "production" or different nodes in a redundant setup.
+
+You can create a simple CSS file *[..]/privacyidea/static/custom/css/testing.css* like::
+
+    body {
+        background-color: green;
+    }
+
+and then set in the pi.cfg::
+
+    PI_CSS = /static/custom/css/testing.css
+
+This way your testing instance will be immediately distinguishable due to the green background.
 
 Use web server rewrite modules
 ..............................
