@@ -51,6 +51,16 @@
                                 <td translate>failed</td>
                                 <td>{{ authentications.fail }}</td>
                             </tr>
+                            <tr>
+                                <td translate>failed users</td>
+                                <td>
+                                    {{ authentcations.users }}
+                                    <span ng-repeat="userobj in authentications.users">
+                                        | <a ui-sref="user.details({username: userobj.user, realmname: userobj.realm})">
+                                        {{ userobj.user }}@{{ userobj.realm }}</a>
+                                    </span>
+                                </td>
+                            </tr>
                          </tbody>
                      </table>
                  </div>
