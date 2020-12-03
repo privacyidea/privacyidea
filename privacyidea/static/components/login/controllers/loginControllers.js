@@ -69,6 +69,8 @@ angular.module("privacyideaApp")
     $scope.hasJobQueue = obj.val() == "True";
     obj = angular.element(document.querySelector('#LOGIN_TEXT'));
     $scope.piLoginText = obj.val();
+    obj = angular.element(document.querySelector('#SHOW_NODE'));
+    $scope.show_node = obj.val();
     obj = angular.element(document.querySelector('#GDPR_LINK'));
     $scope.piGDPRLink = obj.val();
     obj = angular.element(document.querySelector('#PI_TRANSLATION_WARNING'));
@@ -421,6 +423,7 @@ angular.module("privacyideaApp")
             $scope.hide_welcome = data.result.value.hide_welcome;
             $scope.hide_buttons = data.result.value.hide_buttons;
             $scope.show_seed = data.result.value.show_seed;
+            $scope.show_node = data.result.value.show_node;
             $scope.subscription_state = data.result.value.subscription_status;
             $rootScope.search_on_enter = data.result.value.search_on_enter;
             // Token specific settings

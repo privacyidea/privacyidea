@@ -363,6 +363,7 @@ class ACTION(object):
     SHOW_IOS_AUTHENTICATOR = "show_ios_privacyidea_authenticator"
     SHOW_CUSTOM_AUTHENTICATOR = "show_custom_authenticator"
     AUTHORIZED = "authorized"
+    SHOW_NODE = "show_node"
 
 
 class AUTHORIZED(object):
@@ -2279,6 +2280,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("If this is checked, the seed "
                           "will be displayed as text during enrollment.")
+            },
+            ACTION.SHOW_NODE: {
+                'type': 'bool',
+                'desc': _("If this is checked, the privacyIDEA Node name will be displayed "
+                          "below the logo.")
             },
             ACTION.SHOW_ANDROID_AUTHENTICATOR: {
                 'type': 'bool',

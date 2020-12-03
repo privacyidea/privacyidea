@@ -354,6 +354,19 @@ Other scenarios are possible.
 
 (Since privacyIDEA 3.3)
 
+show_node
+~~~~~~~~~
+
+type: bool
+
+If this policy is activated the UI will display the name of the privacyIDEA node in the top left
+corner next to the logo.
+
+This is useful, if you have a lot of different privacyIDEA nodes in a redundant setup or if you have
+test instances and prodcutive instances. This way you can easily distinguish the different instances.
+
+(Since privacyIDEA 3.5)
+
 indexedsecret_preset_attribute
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

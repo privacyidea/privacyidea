@@ -40,7 +40,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE, Match, REMOTE_USER
 from privacyidea.lib.subscriptions import subscription_status
 from privacyidea.lib.utils import get_client_ip
-from privacyidea.lib.config import get_from_config, SYSCONF
+from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_node
 from privacyidea.lib.queue import has_job_queue
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
@@ -102,6 +102,8 @@ def single_page_application():
     realms = ""
     realm_dropdown = Match.action_only(g, scope=SCOPE.WEBUI, action=ACTION.REALMDROPDOWN)\
         .policies(write_to_audit_log=False)
+    show_node = get_privacyidea_node() \
+        if Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_NODE).any(write_to_audit_log=False) else ""
     if realm_dropdown:
         try:
             realm_dropdown_values = Match.action_only(g, scope=SCOPE.WEBUI, action=ACTION.REALMDROPDOWN) \
@@ -173,6 +175,7 @@ def single_page_application():
         'customization_menu_file': customization_menu_file,
         'customization_baseline_file': customization_baseline_file,
         'realms': realms,
+        'show_node': show_node,
         'external_links': external_links,
         'login_text': login_text,
         'gdpr_link': gdpr_link,

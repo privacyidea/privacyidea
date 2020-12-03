@@ -30,7 +30,11 @@
 
         <div class="navbar-collapse collapse myMainNavbar">
             <ul class="nav navbar-nav" ng-hide="token_wizard">
-
+                <li ng-show="show_node">
+                    <a ui-sref="">
+                        <b>{{ show_node }}</b>
+                    </a>
+                </li>
                 <li ui-sref-active="active"
                     ng-show="loggedInUser.role == 'admin' && admin_dashboard">
                     <a ui-sref="dashboard">
