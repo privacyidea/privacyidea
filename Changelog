@@ -20,7 +20,7 @@ Version 3.5
   * Configure length and contents of registration token via policy (#2284)
   * Audit log now contains start time, end time and
     duration of a request (#2254)
-  * The questionaire token can now ask several questions from the list (#2137)
+  * The questionnaire token can now ask several questions from the list (#2137)
   * The length of the audit columns to be truncated can be
     configured in pi.cfg (#1756)
   * pi-manage: export resolver configuration (#1329)
