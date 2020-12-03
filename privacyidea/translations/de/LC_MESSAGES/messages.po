@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2020-09-04 06:51+0200\n"
-"PO-Revision-Date: 2020-10-20 10:41+0000\n"
-"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"PO-Revision-Date: 2020-12-04 17:29+0000\n"
+"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/de/>\n"
 "Language: de\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.3.1-dev\n"
+"X-Generator: Weblate 4.4-dev\n"
 "Generated-By: Babel 2.8.0\n"
 
 #: api/auth.py:213
@@ -1724,7 +1724,7 @@ msgstr "Proxy-Einstellung für HTTPS-Verbindungen."
 
 #: lib/smsprovider/HttpSMSProvider.py:282
 msgid "The timeout in seconds."
-msgstr "Timeout in Sekunden."
+msgstr "Die Zeitüberschreitung in Sekunden."
 
 #: lib/smsprovider/ScriptSMSProvider.py:112
 msgid ""
@@ -1737,11 +1737,11 @@ msgstr ""
 
 #: lib/smsprovider/SmppSMSProvider.py:129
 msgid "SMSC Host IP"
-msgstr "SMSC IP Adresse"
+msgstr "SMSC-IP-Adresse"
 
 #: lib/smsprovider/SmppSMSProvider.py:132
 msgid "SMSC Port"
-msgstr "SMSC Port"
+msgstr "SMSC-Port"
 
 #: lib/smsprovider/SmppSMSProvider.py:134
 msgid "SMSC Service ID"
