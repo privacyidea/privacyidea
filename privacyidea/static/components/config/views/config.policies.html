@@ -8,9 +8,13 @@
                     <a ui-sref="config.policies.list" translate>
                         All Policies</a></li>
                 <li role="presentation"
+                    ng-show="checkRight('policywrite') && $stateParams.policyname"
+                    ng-class="{ active: $state.includes('config.policies.details') && $stateParams.policyname }">
+                    <a ui-sref="config.policies.details">{{ $stateParams.policyname }}</a></li>
+                <li role="presentation"
                     ng-show="checkRight('policywrite')"
-                    ng-class="{ active: $state.includes('config.policies.details')}">
-                    <a ui-sref="config.policies.details"
+                    ng-class="{ active: $state.includes('config.policies.create') && !$stateParams.policyname}">
+                    <a ui-sref="config.policies.create"
                        translate>Create new Policy</a></li>
             </ul>
         </div>

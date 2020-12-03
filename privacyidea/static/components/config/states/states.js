@@ -153,6 +153,11 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                     controller: "policyDetailsController",
                     params: { policyname: null },
                 })
+                .state('config.policies.create', {
+                    url: "/details/",
+                    templateUrl: configpath + "config.policies.details.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "policyDetailsController",
+                })
                 .state('config.tokens', {
                     url: "/tokens/:tokentype",
                     templateUrl: configpath + "config.tokens.html" + versioningSuffixProviderProvider.$get().$get(),
