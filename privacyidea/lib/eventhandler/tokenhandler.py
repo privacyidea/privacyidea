@@ -47,7 +47,7 @@ from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    unassign_token, init_token, set_description,
                                    set_count_window, add_tokeninfo,
                                    set_failcounter, delete_tokeninfo,
-                                   get_one_token)
+                                   get_one_token, set_max_failcount)
 from privacyidea.lib.utils import (parse_date, is_true,
                                    parse_time_offset_from_now)
 from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
@@ -78,6 +78,7 @@ class ACTION_TYPE(object):
     SET_COUNTWINDOW = "set countwindow"
     SET_TOKENINFO = "set tokeninfo"
     SET_FAILCOUNTER = "set failcounter"
+    SET_MAXFAIL = "set max failcount"
     CHANGE_FAILCOUNTER = "change failcounter"
     DELETE_TOKENINFO = "delete tokeninfo"
     SET_RANDOM_PIN = "set random pin"
@@ -259,6 +260,15 @@ class TokenEventHandler(BaseEventHandler):
                                                     "Values of +n, -n with n being an integer are accepted.")
                                }
                        },
+                   ACTION_TYPE.SET_MAXFAIL:
+                       {
+                            "max failcount":
+                                {
+                                    "type": "str",
+                                    "required": True,
+                                    "description": _("Set the maximum failcounter of the token.")
+                                }
+                       },
                    ACTION_TYPE.SET_TOKENINFO:
                        {"key":
                            {
@@ -314,6 +324,7 @@ class TokenEventHandler(BaseEventHandler):
                               ACTION_TYPE.SET_COUNTWINDOW,
                               ACTION_TYPE.SET_TOKENINFO,
                               ACTION_TYPE.SET_FAILCOUNTER,
+                              ACTION_TYPE.SET_MAXFAIL,
                               ACTION_TYPE.CHANGE_FAILCOUNTER,
                               ACTION_TYPE.SET_RANDOM_PIN,
                               ACTION_TYPE.DELETE_TOKENINFO]:
@@ -398,6 +409,12 @@ class TokenEventHandler(BaseEventHandler):
                     except Exception as exx:
                         log.warning("Misconfiguration: Failed to set fail "
                                     "counter!")
+                elif action.lower() == ACTION_TYPE.SET_MAXFAIL:
+                    try:
+                        set_max_failcount(serial,
+                                          int(handler_options.get("max failcount")))
+                    except Exception as exx:
+                        log.warning("Misconfiguration: Failed to set max failcount!")
                 elif action.lower() == ACTION_TYPE.CHANGE_FAILCOUNTER:
                     try:
                         token_obj = get_one_token(serial=serial)

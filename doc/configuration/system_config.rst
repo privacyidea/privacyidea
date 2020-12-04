@@ -231,7 +231,7 @@ be resetted and must be resetted manually.
 Maximum Fail Counter
 ~~~~~~~~~~~~~~~~~~~~
 
-``DefaultMaxFailCount`` is the maximum failcounter a token way get. If the
+``DefaultMaxFailCount`` is the maximum failcounter a token may get. If the
 failcounter exceeds this number the token can not be used unless the failcounter
 is resetted.
 
