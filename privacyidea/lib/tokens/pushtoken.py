@@ -873,18 +873,20 @@ class PushTokenClass(TokenClass):
         reply = None
         pin_match = self.check_pin(passw, user=user, options=options)
         if pin_match:
-            waiting = int(options.get(PUSH_ACTION.WAIT, 20))
-            # Trigger the challenge
-            _t, _m, transaction_id, _attr = self.create_challenge(options=options)
-            # now we need to check and wait for the response to be answered in the challenge table
-            starttime = time.time()
-            while True:
-                db.session.commit()
-                otp_counter = self.check_challenge_response(options={"transaction_id": transaction_id})
-                elapsed_time = time.time() - starttime
-                if otp_counter >= 0 or elapsed_time > waiting or elapsed_time < 0:
-                    break
-                time.sleep(DELAY - (elapsed_time % DELAY))
+            if not options.get("valid_token_num"):
+                # We should only do push_wait, if we do not already have successfully authenticated tokens!
+                waiting = int(options.get(PUSH_ACTION.WAIT, 20))
+                # Trigger the challenge
+                _t, _m, transaction_id, _attr = self.create_challenge(options=options)
+                # now we need to check and wait for the response to be answered in the challenge table
+                starttime = time.time()
+                while True:
+                    db.session.commit()
+                    otp_counter = self.check_challenge_response(options={"transaction_id": transaction_id})
+                    elapsed_time = time.time() - starttime
+                    if otp_counter >= 0 or elapsed_time > waiting or elapsed_time < 0:
+                        break
+                    time.sleep(DELAY - (elapsed_time % DELAY))
 
         return pin_match, otp_counter, reply
 
