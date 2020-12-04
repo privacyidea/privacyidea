@@ -1970,5 +1970,5 @@ def required_piv_attestation(request, action=None):
                 raise PolicyError("A policy requires that you provide an attestation certificate.")
 
         # Add parameter verify_attestation
-        request.all_data["verify_attestation"] = (REQUIRE_ACTIONS.VERIFY in list(require_att) or
-                                                  REQUIRE_ACTIONS.REQUIRE_AND_VERIFY in list(require_att))
+        request.all_data["verify_attestation"] = REQUIRE_ACTIONS.VERIFY in list(require_att) or \
+                                                 REQUIRE_ACTIONS.REQUIRE_AND_VERIFY in list(require_att)
