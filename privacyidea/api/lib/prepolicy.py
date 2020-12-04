@@ -1945,7 +1945,7 @@ def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
 
 def required_piv_attestation(request, action=None):
     """
-    This is a token specific decorator certificate tokens for the endpoint
+    This is a token specific decorator for certificate tokens for the endpoint
     /token/init
     According to the policy scope=SCOPE.ENROLL,
     action=REQUIRE_ATTESTATION an exception is raised, if no attestation parameter is given.
