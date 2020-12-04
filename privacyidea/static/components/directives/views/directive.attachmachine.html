@@ -4,7 +4,7 @@ This is the directive for attaching machines to tokens.
 <div class="form-group">
     <label for="serial" translate>Machine</label>
     <input name="serial" type="text" ng-model="newMachine"
-           autocomplete="off"
+           autocomplete="new-password"
            placeholder="{{ 'start typing a machine.'|translate }}"
            typeahead-wait-ms="100"
            uib-typeahead="serial for serial in loadMachines($viewValue)"
