@@ -94,7 +94,7 @@ def verify_certificate_path(certificate, trusted_ca_paths):
     """
     from os import listdir
     from os.path import isfile, join, isdir
-    verified = False
+
     for capath in trusted_ca_paths:
         if isdir(capath):
             chainfiles = [join(capath, f) for f in listdir(capath) if isfile(join(capath, f))]
@@ -102,12 +102,12 @@ def verify_certificate_path(certificate, trusted_ca_paths):
                 chain = parse_chainfile(chainfile)
                 try:
                     verify_certificate(to_byte_string(certificate), chain)
-                    verified = True
+                    return True
                 except Exception as exx:
                     log.debug(u"Can not verify attestation certificate against chain {0!s}.".format(chain))
         else:
             log.warning("The configured attestation CA directory does not exist.")
-    return verified
+    return False
 
 
 def parse_chainfile(chainfile):
