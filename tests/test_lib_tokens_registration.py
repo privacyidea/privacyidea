@@ -5,7 +5,9 @@ This depends on lib.tokenclass
 
 from .base import MyTestCase
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
+from privacyidea.lib.token import init_token
 from privacyidea.models import Token
+from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH
 
 
 class RegistrationTokenTestCase(MyTestCase):
@@ -25,6 +27,20 @@ class RegistrationTokenTestCase(MyTestCase):
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "REG", class_prefix)
         self.assertTrue(token.get_class_type() == "registration", token)
+
+    def test_01b_create_token_with_policy(self):
+        token = init_token({"type": "registration",
+                            "registration.length": "15",
+                            "registration.contents": "-sc"})
+        init_detail = token.get_init_detail()
+        registrationcode = init_detail.get("registrationcode")
+        # the registrationcode should only contain 15 digits
+        self.assertEqual(15, len(registrationcode))
+        self.assertTrue(int(registrationcode))
+        token = init_token({"type": "registration"})
+        init_detail = token.get_init_detail()
+        registrationcode = init_detail.get("registrationcode")
+        self.assertEqual(DEFAULT_LENGTH, len(registrationcode))
 
     def test_02_class_methods(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()

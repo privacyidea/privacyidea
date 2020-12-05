@@ -46,9 +46,11 @@ from privacyidea.lib.crypto import Sign
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
 from privacyidea.lib.lifecycle import register_finalizer
-from privacyidea.lib.utils import truncate_comma_list
+from privacyidea.lib.utils import truncate_comma_list, is_true
 from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
+from sqlalchemy.sql import expression
+from sqlalchemy.ext.compiler import compiles
 import datetime
 import traceback
 from six import string_types
@@ -60,6 +62,32 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 log = logging.getLogger(__name__)
 
 metadata = MetaData()
+
+
+# Define function to convert SQL DateTime objects to an ISO-format string
+# By using <https://docs.sqlalchemy.org/en/13/core/compiler.html> we can
+# differentiate between different dialects.
+class to_isodate(expression.FunctionElement):
+    name = 'to_isodate'
+
+
+@compiles(to_isodate, 'oracle')
+@compiles(to_isodate, 'postgresql')
+def fn_to_isodate(element, compiler, **kw):
+    return "to_char(%s, 'IYYY-MM-DD HH24:MI:SS')" % compiler.process(element.clauses, **kw)
+
+
+@compiles(to_isodate, 'sqlite')
+def fn_to_isodate(element, compiler, **kw):
+    # sqlite does not have a DateTime type, they are already in ISO format
+    return "%s" % compiler.process(element.clauses, **kw)
+
+
+@compiles(to_isodate)
+def fn_to_isodate(element, compiler, **kw):
+    # The four percent signs are necessary for two format substitutions
+    return "date_format(%s, '%%%%Y-%%%%m-%%%%d %%%%H:%%%%i:%%%%s')" % compiler.process(
+        element.clauses, **kw)
 
 
 class Audit(AuditBase):
@@ -88,8 +116,8 @@ class Audit(AuditBase):
 
     is_readable = True
 
-    def __init__(self, config=None):
-        super(Audit, self).__init__(config)
+    def __init__(self, config=None, startdate=None):
+        super(Audit, self).__init__(config, startdate)
         self.name = "sqlaudit"
         self.sign_data = not self.config.get("PI_AUDIT_NO_SIGN")
         self.sign_object = None
@@ -114,7 +142,7 @@ class Audit(AuditBase):
         self.session = Session()
         # Ensure that the connection gets returned to the pool when the request has
         # been handled. This may close an already-closed session, but this is not a problem.
-        register_finalizer(self.session.close)
+        register_finalizer(self._finalize_session)
         self.session._model_changes = {}
 
     def _create_engine(self):
@@ -139,6 +167,11 @@ class Audit(AuditBase):
             log.debug("Using no SQL pool_size.")
         return engine
 
+    def _finalize_session(self):
+        """ Close current session and dispose connections of db engine"""
+        self.session.close()
+        self.engine.dispose()
+
     def _truncate_data(self):
         """
         Truncate self.audit_data according to the self.custom_column_length.
@@ -149,7 +182,7 @@ class Audit(AuditBase):
                 data = self.audit_data[column]
                 if isinstance(data, string_types):
                     if column == "policies":
-                        # The policies column is shortend per comma entry
+                        # The policies column is shortened per comma entry
                         data = truncate_comma_list(data, l)
                     else:
                         data = data[:l]
@@ -179,13 +212,14 @@ class Audit(AuditBase):
                         # "success" is the only integer.
                         search_value = search_value.strip("*")
                         conditions.append(getattr(LogEntry, search_key) ==
-                                          int(search_value))
+                                          int(is_true(search_value)))
                     else:
                         # All other keys are compared as strings
                         column = getattr(LogEntry, search_key)
-                        if search_key == "date":
-                            # but we cast "date" to a string first (required on postgresql)
-                            column = cast(column, String)
+                        if search_key in ["date", "startdate"]:
+                            # but we cast a column with a DateTime type to an
+                            # ISO-format string first
+                            column = to_isodate(column)
                         search_value = search_value.replace('*', '%')
                         if '%' in search_value:
                             conditions.append(column.like(search_value))
@@ -235,6 +269,10 @@ class Audit(AuditBase):
                             "Error occurs in action: {0!r}.".format(self.audit_data.get("action")))
                 if not "token_type" in self.audit_data:
                     self.audit_data["token_type"] = self.audit_data.get("tokentype")
+            if self.audit_data.get("startdate"):
+                duration = datetime.datetime.now() - self.audit_data.get("startdate")
+            else:
+                duration = None
             le = LogEntry(action=self.audit_data.get("action"),
                           success=int(self.audit_data.get("success", 0)),
                           serial=self.audit_data.get("serial"),
@@ -249,7 +287,9 @@ class Audit(AuditBase):
                           client=self.audit_data.get("client", ""),
                           loglevel=self.audit_data.get("log_level"),
                           clearance_level=self.audit_data.get("clearance_level"),
-                          policies=self.audit_data.get("policies")
+                          policies=self.audit_data.get("policies"),
+                          startdate=self.audit_data.get("startdate"),
+                          duration=duration
                           )
             self.session.add(le)
             self.session.commit()
@@ -335,6 +375,11 @@ class Audit(AuditBase):
                                                    le.client,
                                                    le.loglevel,
                                                    le.clearance_level)
+        # If we have the new log entries, we also add them for signing and verification.
+        if le.startdate:
+            s += ",{0!s}".format(le.startdate)
+        if le.duration:
+            s += ",{0!s}".format(le.duration)
         return s
 
     @staticmethod
@@ -347,6 +392,8 @@ class Audit(AuditBase):
                     'success': LogEntry.success,
                     'serial': LogEntry.serial,
                     'date': LogEntry.date,
+                    'startdate': LogEntry.startdate,
+                    'duration': LogEntry.duration,
                     'token_type': LogEntry.token_type,
                     'user': LogEntry.user,
                     'realm': LogEntry.realm,
@@ -383,7 +430,7 @@ class Audit(AuditBase):
         filter_condition = self._create_filter(search_dict)
         conditions = [filter_condition]
         if success is not None:
-            conditions.append(LogEntry.success == success)
+            conditions.append(LogEntry.success == int(is_true(success)))
 
         if timedelta is not None:
             conditions.append(LogEntry.date >= datetime.datetime.now() -
@@ -521,4 +568,6 @@ class Audit(AuditBase):
         audit_dict['client'] = audit_entry.client
         audit_dict['log_level'] = audit_entry.loglevel
         audit_dict['clearance_level'] = audit_entry.clearance_level
+        audit_dict['startdate'] = audit_entry.startdate.isoformat() if audit_entry.startdate else None
+        audit_dict['duration'] = audit_entry.duration.total_seconds() if audit_entry.duration else None
         return audit_dict

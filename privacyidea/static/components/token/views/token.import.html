@@ -69,12 +69,27 @@
         </p>
         <input class="form-control"
                placeholder="{{ 'Pre Shared Key' | translate }}"
-               ng-keypress="form.password =''"
+               ng-keypress="form.password = ''"
                ng-model="form.psk" minlength="0" maxlength="32">
         <input class="form-control"
                placeholder="{{ 'Password' | translate }}"
                ng-keypress="form.psk = ''"
                ng-model="form.password">
+        <div></div>
+        <div class="mt-5px">
+            <p class="help help-block" translate>
+                You can choose how the authenticity of the tokens to be imported should be verified.
+            </p>
+            <select class="form-control"
+                    ng-model="form.validateMAC">
+                <option ng-repeat="(key, desc) in {no_check: 'Do not verify the authenticity' | translate,
+                  check_fail_soft : 'Skip tokens that can not be verified' | translate,
+                  check_fail_hard : 'Abort operation on unverifiable token' | translate}"
+                        value="{{ key }}">
+                    {{ desc }}
+                </option>
+            </select>
+        </div>
     </div>
 
     <div class="mt-5px">
@@ -123,5 +138,9 @@
     </div>
     <div translate>
         Uploaded Tokens: {{ uploadedTokens }}
+    </div>
+    <div>
+        <translate>Skippted Tokens
+            <translate>: {{ notImportedTokens }}
     </div>
 </div>

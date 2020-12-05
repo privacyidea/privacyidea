@@ -51,13 +51,15 @@ storage.
 """
 
 import logging
+from collections import OrderedDict
+
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import parse_timedelta, get_module_class
 
 
 @log_with(log, log_entry=False)
-def getAudit(config):
+def getAudit(config, startdate=None):
     """
     This wrapper function creates a new audit object based on the config
     from the config file. The config file entry could look like this:
@@ -68,10 +70,11 @@ def getAudit(config):
     entries.
 
     :param config: The config entries from the file config
+    :param startdate: The datetime startdate of the request
     :return: Audit Object
     """
     audit_module = config.get("PI_AUDIT_MODULE")
-    audit = get_module_class(audit_module, "Audit", "log")(config)
+    audit = get_module_class(audit_module, "Audit", "log")(config, startdate)
     return audit
 
 
@@ -89,6 +92,7 @@ def search(config, param=None, user=None):
     page_size = 15
     page = 1
     timelimit = None
+    hidden_columns = []
     # The filtering dictionary
     param = param or {}
     # special treatment for:
@@ -105,11 +109,23 @@ def search(config, param=None, user=None):
     if "timelimit" in param:
         timelimit = parse_timedelta(param["timelimit"])
         del param["timelimit"]
+    if "hidden_columns" in param:
+        hidden_columns = param["hidden_columns"]
+        del param["hidden_columns"]
 
     pagination = audit.search(param, sortorder=sortorder, page=page,
                               page_size=page_size, timelimit=timelimit)
 
+    # delete hidden columns from response
+    if hidden_columns:
+        for i in range(len(pagination.auditdata)):
+            pagination.auditdata[i] = OrderedDict({audit_col: value for audit_col, value in
+                                                   pagination.auditdata[i].items()
+                                                   if audit_col not in hidden_columns})
+    visible_columns = [col for col in audit.available_audit_columns if col not in hidden_columns]
+
     ret = {"auditdata": pagination.auditdata,
+           "auditcolumns": visible_columns,
            "prev": pagination.prev,
            "next": pagination.next,
            "current": pagination.page,

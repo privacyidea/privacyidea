@@ -51,6 +51,8 @@ versions like this::
     install the pinned version, the system packages `gcc` and `python-dev` must
     be installed.
 
+.. _pip_configuration:
+
 Configuration
 .............
 

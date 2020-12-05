@@ -39,7 +39,7 @@ from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 from privacyidea.app import PiResponseClass as Response
-
+from collections import OrderedDict
 
 class EventHandlerLibTestCase(MyTestCase):
 
@@ -434,6 +434,23 @@ class BaseEventHandlerTestCase(MyTestCase):
             {"g": {},
              "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE:
                                                 "^special"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, False)
+
+        # Check DETAIL_MESSAGE to evaluate to False if it does not exist
+        resp = Response()
+        resp.data = """{"result": {"value": true, "status": true},
+                "detail": {"options": "Nothing"}
+                }
+                """
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE:
+                                                "special"}},
              "request": req,
              "response": resp
              }
@@ -1741,6 +1758,27 @@ class TokenEventTestCase(MyTestCase):
         self.assertEqual(t.get_tokeninfo("phone"), user_obj.info.get("mobile"))
         remove_token(t.token.serial)
 
+        # Enroll an SMS token with specific SMS gateway config
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "sms",
+                                        "user": "1",
+                                        "sms_identifier": "mySMSGateway"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="sms")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
+        self.assertEqual(t.get_tokeninfo("phone"), user_obj.info.get("mobile"))
+        self.assertEqual(t.get_tokeninfo("sms.identifier"), "mySMSGateway")
+        remove_token(t.token.serial)
+
         # Enroll an Email token
         options = {"g": g,
                    "request": req,
@@ -1758,6 +1796,27 @@ class TokenEventTestCase(MyTestCase):
         self.assertTrue(t)
         self.assertEqual(t.user, user_obj)
         self.assertEqual(t.get_tokeninfo("email"), user_obj.info.get("email"))
+        remove_token(t.token.serial)
+
+        # Enroll an Email token with specific SMTP server config
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "email",
+                                        "user": "1",
+                                        "smtp_identifier": "myServer"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="email")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
+        self.assertEqual(t.get_tokeninfo("email"), user_obj.info.get("email"))
+        self.assertEqual(t.get_tokeninfo("email.identifier"), "myServer")
         remove_token(t.token.serial)
 
         # Enroll an mOTP token
@@ -2135,7 +2194,7 @@ class TokenEventTestCase(MyTestCase):
 
         remove_token("SPASS01")
 
-    def test_10_set_failcounter(self):
+    def test_10_set_or_change_failcounter(self):
         # setup realms
         self.setUp_user_realms()
 
@@ -2167,7 +2226,7 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # The token faile counter will be set to 7
+        # The token fail counter will be set to 7
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -2177,10 +2236,23 @@ class TokenEventTestCase(MyTestCase):
         t_handler = TokenEventHandler()
         res = t_handler.do(ACTION_TYPE.SET_FAILCOUNTER, options=options)
         self.assertTrue(res)
-        # Check if the token has the correct sync window
+        # Check if the token has the correct fail counter
         t = get_tokens(serial="SPASS01")
         tw = t[0].get_failcount()
         self.assertEqual(tw, 7)
+
+        # check the change failcount option starting with the set failcount of 7
+        handler_options = OrderedDict([("-8", -1),
+                                       ("2", 1),
+                                       ("+1", 2)])
+        for diff, failcount in handler_options.items():
+            options["handler_def"] = {"options": {"change fail counter": diff}}
+            res = t_handler.do(ACTION_TYPE.CHANGE_FAILCOUNTER, options=options)
+            self.assertTrue(res)
+            # Check if the token has the correct fail counter
+            t = get_tokens(serial="SPASS01")
+            tw = t[0].get_failcount()
+            self.assertEqual(tw, failcount)
 
         remove_token("SPASS01")
 

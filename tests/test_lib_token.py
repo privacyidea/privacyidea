@@ -16,6 +16,7 @@ getToken....
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND, FAILCOUNTER_EXCEEDED, FAILCOUNTER_CLEAR_TIMEOUT
+from privacyidea.lib.token import weigh_token_type
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import (Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types, delete_privacyidea_config, SYSCONF)
@@ -1555,6 +1556,16 @@ class TokenTestCase(MyTestCase):
         r = tokenobject.token.check_pin("1234")
         self.assertTrue(r)
         remove_token(serial)
+
+    def test_59_weigh_token_types(self):
+
+        class dummy_token(object):
+            def __init__(self, type):
+                self.type = type
+        self.assertEqual(1000, weigh_token_type(dummy_token("push")))
+        self.assertTrue(weigh_token_type(dummy_token("push")) > weigh_token_type(dummy_token("hotp")))
+        self.assertTrue(weigh_token_type(dummy_token("push")) > weigh_token_type(dummy_token("HOTP")))
+        self.assertTrue(weigh_token_type(dummy_token("PUSH")) > weigh_token_type(dummy_token("hotp")))
 
 
 class TokenOutOfBandTestCase(MyTestCase):

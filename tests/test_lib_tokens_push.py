@@ -357,12 +357,76 @@ class PushTokenTestCase(MyTestCase):
                 jsonresp = res.json
                 self.assertFalse(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
-                self.assertEqual(jsonresp.get("result").get("error").get("message"), "ERR401: Failed to submit "
-                                                                                     "message to firebase service.")
+                self.assertEqual(jsonresp.get("result").get("error").get("message"),
+                                 "ERR401: Failed to submit message to firebase service.")
 
-            # Our ServiceAccountCredentials mock has been called once, because no access token has been fetched before
+            # Our ServiceAccountCredentials mock has been called once, because
+            # no access token has been fetched before
             self.assertEqual(len(mySA.from_json_keyfile_name.mock_calls), 1)
             self.assertIn(FIREBASE_FILE, get_app_local_store()["firebase_token"])
+
+            # By default, polling is allowed for push tokens so the corresponding
+            # challenge should be available in the challenge table, even though
+            # the request to firebase failed.
+            chals = get_challenges(serial=tokenobj.token.serial)
+            self.assertEqual(len(chals), 1)
+            chals[0].delete()
+
+            # Now disable polling and check that no challenge is created
+            # disallow polling through a policy
+            set_policy('push_poll', SCOPE.AUTH,
+                       action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
+                                                   PushAllowPolling.DENY))
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 400, res)
+                jsonresp = res.json
+                self.assertFalse(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
+                self.assertEqual(jsonresp.get("result").get("error").get("message"),
+                                 "ERR401: Failed to submit message to firebase service.")
+            self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 0)
+            # disallow polling the specific token through a policy
+            set_policy('push_poll', SCOPE.AUTH,
+                       action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
+                                                   PushAllowPolling.TOKEN))
+            tokenobj.add_tokeninfo(POLLING_ALLOWED, False)
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 400, res)
+                jsonresp = res.json
+                self.assertFalse(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
+                self.assertEqual(jsonresp.get("result").get("error").get("message"),
+                                 "ERR401: Failed to submit message to firebase service.")
+            self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 0)
+            # Check that the challenge is created if the request to firebase
+            # succeeded even though polling is disabled
+            # add responses, to simulate the successful communication to firebase
+            responses.replace(responses.POST,
+                              'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                              body="""{}""",
+                              content_type="application/json")
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                jsonresp = res.json
+                self.assertTrue(jsonresp.get("result").get("status"))
+            self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 1)
+            get_challenges(serial=tokenobj.token.serial)[0].delete()
+        delete_policy('push_poll')
 
     @responses.activate
     def test_03b_api_authenticate_client(self):
@@ -822,6 +886,34 @@ class PushTokenTestCase(MyTestCase):
         delete_policy("push1")
         delete_policy("webui")
 
+    def test_07_check_timestamp(self):
+        timestamp_fmt = 'broken_timestamp_010203'
+        self.assertRaisesRegexp(privacyIDEAError,
+                                r'Could not parse timestamp {0!s}. ISO-Format '
+                                r'required.'.format(timestamp_fmt),
+                                PushTokenClass._check_timestamp_in_range, timestamp_fmt, 10)
+        timestamp = datetime(2020, 11, 13, 13, 27, tzinfo=utc)
+        with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
+            mock_dt.now.return_value = timestamp + timedelta(minutes=9)
+            PushTokenClass._check_timestamp_in_range(timestamp.isoformat(), 10)
+        with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
+            mock_dt.now.return_value = timestamp - timedelta(minutes=9)
+            PushTokenClass._check_timestamp_in_range(timestamp.isoformat(), 10)
+        with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
+            mock_dt.now.return_value = timestamp + timedelta(minutes=9)
+            self.assertRaisesRegexp(privacyIDEAError,
+                                    r'Timestamp {0!s} not in valid '
+                                    r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
+                                    PushTokenClass._check_timestamp_in_range,
+                                    timestamp.isoformat(), 8)
+        with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
+            mock_dt.now.return_value = timestamp - timedelta(minutes=9)
+            self.assertRaisesRegexp(privacyIDEAError,
+                                    r'Timestamp {0!s} not in valid '
+                                    r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
+                                    PushTokenClass._check_timestamp_in_range,
+                                    timestamp.isoformat(), 8)
+
     def test_10_api_endpoint(self):
         # first check for unused request methods
         g = FakeFlaskG()
@@ -930,6 +1022,56 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(res[1]['detail']['rollout_state'], 'enrolled', res)
 
         remove_token(serial)
+
+    def test_11_api_endpoint_update_fbtoken(self):
+        g = FakeFlaskG()
+        # create a push token
+        tparams = {'type': 'push', 'genkey': 1}
+        tparams.update(FB_CONFIG_VALS)
+        tok = init_token(param=tparams)
+        serial = tok.get_serial()
+
+        # Run enrollment step 2
+        tok.update({"enrollment_credential": tok.get_tokeninfo("enrollment_credential"),
+                    "serial": serial,
+                    "fbtoken": "firebasetoken1",
+                    "pubkey": self.smartphone_public_key_pem_urlsafe})
+        self.assertEqual(tok.token.get('rollout_state'), 'enrolled', tok)
+        self.assertEqual(tok.get_tokeninfo('firebase_token'), 'firebasetoken1', tok)
+
+        req_data = {'new_fb_token': 'firebasetoken2',
+                    'serial': serial,
+                    'timestamp': datetime.now(tz=utc).isoformat()}
+
+        # now we perform the firebase token update with a broken signature
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        req = Request(builder.get_environ())
+        req.all_data = req_data
+        req.all_data.update({'signature': 'bad-signature'})
+        self.assertRaisesRegexp(privacyIDEAError, 'Could not verify signature!',
+                                PushTokenClass.api_endpoint, req, g)
+
+        # Create a correct signature
+        sign_string = u"{new_fb_token}|{serial}|{timestamp}".format(**req_data)
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        req_data.update({'signature': b32encode(sig)})
+
+        # and perform the firebase token update
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        req = Request(builder.get_environ())
+        req.all_data = req_data
+        res = PushTokenClass.api_endpoint(req, g)
+        self.assertEqual(res[0], 'json', res)
+        self.assertTrue(res[1]['result']['value'], res)
+        self.assertTrue(res[1]['result']['status'], res)
+
+        self.assertEqual(tok.token.get('rollout_state'), 'enrolled', tok)
+        self.assertEqual(tok.get_tokeninfo('firebase_token'), req_data['new_fb_token'], tok)
+        tok.delete_token()
 
     def test_15_poll_endpoint(self):
         g = FakeFlaskG()

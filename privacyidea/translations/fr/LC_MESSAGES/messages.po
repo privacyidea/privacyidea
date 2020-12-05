@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2020-09-04 06:51+0200\n"
-"PO-Revision-Date: 2020-10-02 14:41+0000\n"
-"Last-Translator: Yannick Boursin <elipsoid@gmail.com>\n"
+"PO-Revision-Date: 2020-12-04 17:29+0000\n"
+"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/fr/>\n"
 "Language: fr\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.3-dev\n"
+"X-Generator: Weblate 4.4-dev\n"
 "Generated-By: Babel 2.8.0\n"
 
 #: api/auth.py:213
@@ -111,15 +111,15 @@ msgid ""
 "The SMTP server configuration, that should be used to send the "
 "registration email."
 msgstr ""
-"La configuration SMTP du serveur qui doit être utilisée pour envoyer l'e-"
-"mail d'inscription."
+"La configuration SMTP du serveur qui doit être utilisée pour envoyer le "
+"courriel d'inscription."
 
 #: lib/policy.py:1366
 msgid ""
 "Only users with this email address are allowed to register. This is a "
 "regular expression."
 msgstr ""
-"Seuls les utilisateurs avec cette adresse e-mail sont autorisés à "
+"Seuls les utilisateurs avec cette adresse électronique sont autorisés à "
 "s'inscrire. C'est une expression régulière."
 
 #: lib/policy.py:1371
@@ -127,7 +127,7 @@ msgid ""
 "The body of the registration email. Use '{regkey}' as tag for the "
 "registration key."
 msgstr ""
-"Le corps de l'e-mail d'inscription. Utilisez « {regkey} » comme balise pour "
+"Le corps du courriel d'inscription. Utilisez « {regkey} » comme balise pour "
 "la clé d'inscription."
 
 #: lib/policy.py:1377
@@ -603,32 +603,39 @@ msgid ""
 "Set a random OTP PIN with this length for a token during the enrollment "
 "process."
 msgstr ""
-"Définir un PIN OTP aléatoire avec cette longueur pour un jeton pendant le "
-"processus d'enrôlement."
+"Définir un NIP à usage unique aléatoire avec cette longueur pour un jeton "
+"pendant le processus d'enrôlement."
 
 #: lib/policy.py:1880
 msgid "In case of a random OTP PIN use this python module to process the PIN."
 msgstr ""
-"Dans le cas d'un PIN OTP aléatoire, utiliser ce module python pour traiter "
-"le PIN."
+"Dans le cas d'un NIP à usage unique aléatoire, utiliser ce module python "
+"pour traiter le NIP."
 
 #: lib/policy.py:1885
 msgid ""
 "If the administrator sets the OTP PIN during enrollment or later, the "
 "user will have to change the PIN during first use."
 msgstr ""
+"Si l'administrateur définit le NIP à usage unique lors de l'inscription ou "
+"ultérieurement, l'utilisateur devra modifier le NIP lors de la première "
+"utilisation."
 
 #: lib/policy.py:1892
 msgid ""
 "The user needs to change his PIN on a regular basis. To change the PIN "
 "every 180 days, enter '180d'."
 msgstr ""
+"L'utilisateur doit changer son NIP régulièrement. Pour changer le NIP tous "
+"les 180 jours, saisissez « 180d »."
 
 #: lib/policy.py:1899
 msgid ""
 "The OTP PIN can be hashed or encrypted. Hashing the PIN is the default "
 "behaviour."
 msgstr ""
+"Le NIP à usage unique peut être haché ou chiffré. Le hachage du NIP est le "
+"comportement par défaut."
 
 #: lib/policy.py:1904
 msgid ""
@@ -643,6 +650,8 @@ msgstr ""
 #: lib/policy.py:1916
 msgid "This is the URL to the token image for smartphone apps like FreeOTP."
 msgstr ""
+"Il s'agit de l'URL de l'image du jeton pour les applications pour téléphone "
+"telles que FreeOTP."
 
 #: lib/policy.py:1923
 msgid ""
@@ -669,6 +678,8 @@ msgid ""
 "Either use the Token PIN , use the Userstore Password or use no fixed "
 "password component."
 msgstr ""
+"Utilisez le NIP du jeton, utilisez le mot de passe du magasin d'utilisateur "
+"ou n'utilisez aucun composant de mot de passe fixe."
 
 #: lib/policy.py:1951
 msgid ""
@@ -699,6 +710,9 @@ msgid ""
 "If the PIN of a token is to be changed, this will allow the user to "
 "change the PIN during a validate/check request via challenge / response."
 msgstr ""
+"Si le NIP d'un jeton doit être modifié, cela permettra à l'utilisateur de "
+"changer le NIP lors d'une demande de validation / vérification via challenge "
+"/ réponse."
 
 #: lib/policy.py:1977
 msgid ""
@@ -1307,6 +1321,8 @@ msgstr ""
 #: lib/eventhandler/tokenhandler.py:173
 msgid "Dynamically read the email address from the user store."
 msgstr ""
+"Lisez dynamiquement l'adresse électronique depuis le magasin de "
+"l'utilisateur."
 
 #: lib/eventhandler/tokenhandler.py:178
 msgid "A dictionary of additional init parameters."
@@ -1356,11 +1372,11 @@ msgstr ""
 
 #: lib/eventhandler/usernotification.py:127
 msgid "Send notification email via this email server."
-msgstr ""
+msgstr "Envoyez un courriel de notification via ce serveur de messagerie."
 
 #: lib/eventhandler/usernotification.py:131
 msgid "Either send email as plain text or HTML."
-msgstr ""
+msgstr "Envoyez un courriel sous forme de texte brut ou HTML."
 
 #: lib/eventhandler/usernotification.py:135
 msgid "Send QR-Code image as an attachment (cid URL: token_image)"
@@ -1368,24 +1384,25 @@ msgstr ""
 
 #: lib/eventhandler/usernotification.py:140
 msgid "The subject of the mail that is sent."
-msgstr ""
+msgstr "L'objet du courriel envoyé."
 
 #: lib/eventhandler/usernotification.py:144
 msgid "The Reply-To header in the sent email."
-msgstr ""
+msgstr "L'en-tête Répondre-à dans le courriel envoyé."
 
 #: lib/eventhandler/usernotification.py:148
 msgid "The body of the mail that is sent."
-msgstr ""
+msgstr "Le corps du courriel envoyé."
 
 #: lib/eventhandler/usernotification.py:152
 #: lib/eventhandler/usernotification.py:190
 msgid "Send notification to this user."
-msgstr ""
+msgstr "Envoyez une notification à cet utilisateur."
 
 #: lib/eventhandler/usernotification.py:173
 msgid "Any email address, to which the notification should be sent."
 msgstr ""
+"Toute adresse électronique à laquelle la notification doit être envoyée."
 
 #: lib/eventhandler/usernotification.py:182
 msgid "Send the user notification via a predefined SMS gateway."
@@ -1393,7 +1410,7 @@ msgstr ""
 
 #: lib/eventhandler/usernotification.py:187
 msgid "The text of the SMS."
-msgstr ""
+msgstr "Le texte du SMS."
 
 #: lib/eventhandler/usernotification.py:197
 msgid ""
@@ -1505,7 +1522,7 @@ msgstr ""
 
 #: lib/smsprovider/HttpSMSProvider.py:261
 msgid "Password in case of basic authentication."
-msgstr ""
+msgstr "Mot de passe en cas d'authentification de base."
 
 #: lib/smsprovider/HttpSMSProvider.py:265
 msgid "Should the SSL certificate be verified."
@@ -1534,7 +1551,7 @@ msgstr ""
 
 #: lib/smsprovider/HttpSMSProvider.py:282
 msgid "The timeout in seconds."
-msgstr ""
+msgstr "Le délai d'expiration en secondes."
 
 #: lib/smsprovider/ScriptSMSProvider.py:112
 msgid ""
@@ -1646,11 +1663,13 @@ msgstr ""
 
 #: lib/tokens/emailtoken.py:152
 msgid "EMail Token"
-msgstr ""
+msgstr "Jeton du courriel"
 
 #: lib/tokens/emailtoken.py:154
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
+"Courriel : envoyez un mot de passe à usage unique à l'adresse électronique "
+"des utilisateurs."
 
 #: lib/tokens/emailtoken.py:162
 msgid ""
@@ -1658,38 +1677,52 @@ msgid ""
 "<serial> as parameters. You may also specify a filename as email template"
 " starting with \"file:\"."
 msgstr ""
+"Le texte qui sera envoyé par courriel pour un jeton de courriel. Utilisez "
+"<otp> et <serial> comme paramètres. Vous pouvez également spécifier un nom "
+"de fichier comme modèle de courriel commençant par « file: »."
 
 #: lib/tokens/emailtoken.py:168
 msgid ""
 "The subject of the EMail for an EMail token. Use <otp> and <serial> as "
 "parameters."
 msgstr ""
+"L'objet du courriel pour un jeton de courriel. Utilisez <otp> et <serial> "
+"comme paramètres."
 
 #: lib/tokens/emailtoken.py:173
 msgid ""
 "If set, a new EMail OTP will be sent after successful authentication with"
 " one EMail OTP."
 msgstr ""
+"S'il est défini, un nouveau mot de passe à usage unique de courriel sera "
+"envoyé après une authentification réussie avec un mot de passe précédemment "
+"envoyé par courriel."
 
 #: lib/tokens/emailtoken.py:178
 msgid ""
 "Use an alternate challenge text for telling the user to enter the code "
 "from the eMail."
 msgstr ""
+"Utilisez un autre texte de défi pour indiquer à l'utilisateur de saisir le "
+"code à partir du courriel."
 
 #: lib/tokens/emailtoken.py:185
 msgid "The user may only have this maximum number of email tokens assigned."
 msgstr ""
+"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons de "
+"messagerie."
 
 #: lib/tokens/emailtoken.py:190
 msgid ""
 "The user may only have this maximum number of active email tokens "
 "assigned."
 msgstr ""
+"L'utilisateur ne peut se voir attribuer que ce nombre maximal de jetons de "
+"messagerie actifs."
 
 #: lib/tokens/emailtoken.py:268
 msgid "Enter the OTP from the Email:"
-msgstr ""
+msgstr "Entrez le mot de passe du courriel :"
 
 #: lib/tokens/foureyestoken.py:126
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
@@ -1995,6 +2028,8 @@ msgstr ""
 #: lib/tokens/smstoken.py:199
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
+"SMS : Envoyer un mot de passe à usage unique sur le téléphone portable des "
+"utilisateurs."
 
 #: lib/tokens/smstoken.py:208
 msgid ""

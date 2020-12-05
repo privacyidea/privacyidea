@@ -32,10 +32,13 @@ import logging
 from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
 from privacyidea.lib.log import log_with
-from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.api.lib.prepolicy import _generate_pin_from_policy
+
+DEFAULT_LENGTH = 24
+DEFAULT_CONTENTS = 'cn'
 
 optional = True
 required = False
@@ -95,7 +98,8 @@ class RegistrationTokenClass(PasswordTokenClass):
         PasswordTokenClass.__init__(self, aToken)
         self.hKeyRequired = False
         self.set_type(u"registration")
-        self.otp_len = 24
+        self.otp_len = DEFAULT_LENGTH
+        self.otp_contents = DEFAULT_CONTENTS
 
     @staticmethod
     def get_class_type():
@@ -164,7 +168,17 @@ class RegistrationTokenClass(PasswordTokenClass):
             # Otherwise genkey and otpkey will raise an exception in
             # PasswordTokenClass
             del param["genkey"]
-        param["otpkey"] = generate_password(size=self.otp_len)
+        if "registration.length" in param:
+            size = param["registration.length"]
+            del param["registration.length"]
+        else:
+            size = self.otp_len
+        if "registration.contents" in param:
+            contents = param["registration.contents"]
+            del param["registration.contents"]
+        else:
+            contents = self.otp_contents
+        param["otpkey"] = _generate_pin_from_policy(contents, size=int(size))
         PasswordTokenClass.update(self, param)
 
     @log_with(log, log_entry=False)

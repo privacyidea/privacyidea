@@ -108,6 +108,7 @@ ASSERTION_RESPONSE_TMPL = {
     'signature': b'MEUCIEp28FzVKneM3U3xVl4ABOXMHq02BBnQ9cOgFDvzfn8VAiEAkytcMIpWDP5PJEIUhDB1uQSz7aZO'
                  b'hdZGYqgRmMOGzd4='
 }
+ASSERTION_RESPONSE_SIGN_COUNT = 637
 CRED_KEY = {
     'alg': -7,
     'type': 'public-key'
@@ -448,11 +449,24 @@ class WebAuthnTestCase(unittest.TestCase):
         auth_data = auth_data[:32] + struct.pack('!B', flags) + auth_data[33:]
         webauthn_assertion_response.assertion_response['authData'] = webauthn_b64_encode(auth_data)
 
-        # FIXME This *should* fail because UP=0, but will fail anyway later on because the signature is invalid.
-        # TODO Build a mock Authenticator implementation, to be able to sign arbitrary authenticator data statements.
-        # TODO Sign an authenticator data statement with UP=0 and test against that so that the signature is valid.
+        # FIXME: This *should* fail because UP=0, but will fail anyway later on because the
+        #  signature is invalid.
+        # TODO: Build a mock Authenticator implementation, to be able to sign arbitrary
+        #  authenticator data statements.
+        # TODO: Sign an authenticator data statement with UP=0 and test against that so that the
+        #  signature is valid.
         with self.assertRaises(AuthenticationRejectedException):
             webauthn_assertion_response.verify()
 
-    def test_06_webauthn_b64_decode(self):
+    def test_06_duplicate_authentication_fail_assertion(self):
+        webauthn_assertion_response = self.getAssertionResponse()
+        webauthn_assertion_response.webauthn_user.sign_count = ASSERTION_RESPONSE_SIGN_COUNT
+
+        with self.assertRaisesRegexp(AuthenticationRejectedException,
+                                     'Duplicate authentication detected.'):
+            webauthn_assertion_response.verify()
+        # TODO: we should add a test for a missing sign_count (or 0) but we need
+        #  to change the auth data for that.
+
+    def test_07_webauthn_b64_decode(self):
         self.assertEqual(webauthn_b64_decode(URL_DECODE_TEST_STRING), URL_DECODE_EXPECTED_RESULT)

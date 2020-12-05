@@ -145,9 +145,8 @@ class EmailTokenClass(HotpTokenClass):
         :type key: string
         :param ret: default return value, if nothing is found
         :type ret: user defined
-
         :return: subsection if key exists or user defined
-        :rtype : s.o.
+        :rtype: dict
         """
         res = {'type': 'email',
                'title': _('EMail Token'),
@@ -252,14 +251,16 @@ class EmailTokenClass(HotpTokenClass):
 
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
-                You can pass exception=1 to raise an exception, if
-                the SMS could not be sent. Otherwise the message is contained in the response.
-        :return: tuple of (bool, message and data)
-                 bool, if submit was successful
-                 message is submitted to the user
-                 data is preserved in the challenge
-                 attributes - additional attributes, which are displayed in the
-                    output
+            You can pass ``exception=1`` to raise an exception, if
+            the SMS could not be sent. Otherwise the message is contained in the response.
+        :return: tuple
+            of (success, message, transactionid, attributes)
+
+                * success: if submit was successful
+                * message: the text submitted to the user
+                * transactionid: the given or generated transactionid
+                * attributes: additional attributes, which are displayed in the output
+        :rtype: tuple(bool, str, str, dict)
         """
         success = False
         options = options or {}
@@ -446,7 +447,8 @@ class EmailTokenClass(HotpTokenClass):
 
         log.debug("sending Email to {0!r}".format(recipient))
 
-        identifier = get_from_config("email.identifier")
+        # The token specific identifier has priority over the system wide identifier
+        identifier = self.get_tokeninfo("email.identifier") or get_from_config("email.identifier")
         if identifier:
             # New way to send email
             ret = send_email_identifier(identifier, recipient, subject, message,

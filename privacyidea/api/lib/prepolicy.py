@@ -506,6 +506,40 @@ def init_token_defaults(request=None, action=None):
     return True
 
 
+def init_registrationcode_length_contents(request=None, action=None):
+    """
+    This policy function is to be used as a decorator in the API token init function.
+
+    If there is a valid policy set the action values of REGISTRATIONCODE_LENGTH
+    and REGISTRATIONCODE_CONTENTS are added to request.all_data as
+
+    { 'registration.length': '10', 'registration.contents': 'cn' }
+    """
+    from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
+    no_content_policy = True
+    no_length_policy = True
+    params = request.all_data
+    tokentype = params.get("type")
+    if tokentype == "registration":
+        user_object = get_user_from_param(params)
+        length_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.REGISTRATIONCODE_LENGTH,
+                                user_object=user_object).action_values(unique=True)
+        if len(length_pols) == 1:
+            request.all_data[ACTION.REGISTRATIONCODE_LENGTH] = list(length_pols)[0]
+            no_length_policy = False
+        content_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.REGISTRATIONCODE_CONTENTS,
+                                user_object=user_object).action_values(unique=True)
+        if len(content_pols) == 1:
+            request.all_data[ACTION.REGISTRATIONCODE_CONTENTS] = list(content_pols)[0]
+            no_content_policy = False
+    # if there is no policy, set defaults.
+    if no_length_policy:
+        request.all_data[ACTION.REGISTRATIONCODE_LENGTH] = DEFAULT_LENGTH
+    if no_content_policy:
+        request.all_data[ACTION.REGISTRATIONCODE_CONTENTS] = DEFAULT_CONTENTS
+    return True
+
+
 def init_tokenlabel(request=None, action=None):
     """
     This policy function is to be used as a decorator in the API init function.
@@ -898,6 +932,29 @@ def auditlog_age(request=None, action=None):
     return True
 
 
+def hide_audit_columns(request=None, action=None):
+    """
+    This pre condition checks for the policy hide_audit_columns and sets the
+    "hidden_columns" parameter for the audit search. The given columns will be
+    removed from the returned audit dict.
+
+    Check ACTION.HIDE_AUDIT_COLUMNS
+
+    The decorator should wrap GET /audit/
+
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional Action
+    :type action: basestring
+    :returns: Always true. Modified the parameter request
+    """
+    hidden_columns = Match.admin_or_user(g, action=ACTION.HIDE_AUDIT_COLUMNS,
+                                         user_obj=request.User).action_values(unique=False)
+    request.all_data["hidden_columns"] = list(hidden_columns)
+
+    return True
+
+
 def mangle(request=None, action=None):
     """
     This pre condition checks if either of the parameters pass, user or realm
@@ -1206,9 +1263,9 @@ def is_remote_user_allowed(req, write_to_audit_log=True):
     :param req: The flask request, containing the remote user and the client IP
     :param write_to_audit_log: whether the policy name should be added to the audit log entry
     :type write_to_audit_log: bool
-    :return: a bool value
+    :return: Return a value or REMOTE_USER, can be "disable", "active" or "force".
+    :rtype: str
     """
-    res = False
     if req.remote_user:
         loginname, realm = split_user(req.remote_user)
         realm = realm or get_default_realm()
@@ -1219,10 +1276,10 @@ def is_remote_user_allowed(req, write_to_audit_log=True):
                                                                 write_to_audit_log=write_to_audit_log)
         # there should be only one action value here
         if ruser_active:
-            if list(ruser_active)[0] == REMOTE_USER.ACTIVE:
-                res = True
+            return list(ruser_active)[0]
 
-    return res
+    # Return default "disable"
+    return REMOTE_USER.DISABLE
 
 
 def save_client_application_type(request, action):

@@ -50,6 +50,19 @@ class APIAuditTestCase(MyApiTestCase):
         self.assertEqual(aentry['action'], 'GET /audit/', aentry)
         self.assertEqual(aentry['success'], 1, aentry)
 
+        # Empty search, like search for a date, that contains X
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data={'date': '*X*'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            json_response = res.json
+            cols = json_response.get("result").get("value").get("auditcolumns")
+            self.assertIn("number", cols)
+            self.assertIn("serial", cols)
+            self.assertEqual(18, len(cols))
+
     def test_01_get_audit_csv(self):
         @contextmanager
         def _fake_time(t):

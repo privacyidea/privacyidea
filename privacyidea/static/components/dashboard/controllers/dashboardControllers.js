@@ -113,17 +113,14 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
 
      $scope.getAuthentication = function () {
         $scope.authentications = {"success": 0, "fail": 0};
-        AuditFactory.get({"timelimit": "1d", "action": "*validate*"},
+        AuditFactory.get({"timelimit": "1d", "action": "*validate*", "success": "1"},
             function (data) {
-            var authentications = data.result.value.auditdata;
-            angular.forEach(authentications, function(authlog) {
-                if (authlog.success) {
-                    $scope.authentications.success += 1;
-                } else {
-                    $scope.authentications.fail += 1;
-                }
+                $scope.authentications.success = data.result.value.count;
             });
-        });
+        AuditFactory.get({"timelimit": "1d", "action": "*validate*", "success": "0"},
+            function (data) {
+                $scope.authentications.fail = data.result.value.count;
+            });
      };
 
      $scope.getAdministration = function () {
@@ -149,24 +146,40 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
         return 0;
      };
 
-    $scope.get_total_token_number();
-    $scope.get_token_hardware();
-    $scope.get_token_software();
-    $scope.get_policies();
-    $scope.get_events();
-    $scope.getSubscriptions();
-    $scope.getAuthentication();
-    $scope.getAdministration();
-
-        // listen to the reload broadcast
-    $scope.$on("piReload", function() {
+    if (AuthFactory.checkRight('tokenlist')) {
         $scope.get_total_token_number();
         $scope.get_token_hardware();
         $scope.get_token_software();
+    };
+    if (AuthFactory.checkRight('policyread')) {
         $scope.get_policies();
+    };
+    if (AuthFactory.checkRight('eventhandler_read')) {
         $scope.get_events();
-        $scope.getSubscriptions();
+    };
+    $scope.getSubscriptions();
+    if (AuthFactory.checkRight('auditlog')) {
         $scope.getAuthentication();
         $scope.getAdministration();
+    };
+
+        // listen to the reload broadcast
+    $scope.$on("piReload", function() {
+        if (AuthFactory.checkRight('tokenlist')) {
+            $scope.get_total_token_number();
+            $scope.get_token_hardware();
+            $scope.get_token_software();
+        };
+        if (AuthFactory.checkRight('policyread')) {
+            $scope.get_policies();
+        };
+        if (AuthFactory.checkRight('eventhandler_read')) {
+            $scope.get_events();
+        };
+        $scope.getSubscriptions();
+        if (AuthFactory.checkRight('auditlog')) {
+            $scope.getAuthentication();
+            $scope.getAdministration();
+        };
     });
 });

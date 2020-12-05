@@ -3,6 +3,8 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2020-11-11 Timo Sturm <timo.sturm@netknights.it>
+#            Select how to validate PSKC imports
 # 2020-01-28 Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
 #            Add WebAuthn token
 # 2018-06-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -83,6 +85,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_max_token_user,
                                            check_max_token_realm,
                                            init_tokenlabel, init_random_pin,
+                                           init_registrationcode_length_contents,
                                            set_random_pin,
                                            encrypt_pin, check_otp_pin,
                                            check_external, init_token_defaults,
@@ -131,6 +134,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="init")
 @prepolicy(init_token_defaults, request)
+@prepolicy(init_registrationcode_length_contents, request)
 @prepolicy(papertoken_count, request)
 @prepolicy(sms_identifiers, request)
 @prepolicy(tantoken_count, request)
@@ -907,6 +911,8 @@ def loadtokens_api(filename=None):
         "oathcsv" or "yubikeycsv".
     :jsonparam tokenrealms: comma separated list of realms.
     :jsonparam psk: Pre Shared Key, when importing PSKC
+    :jsonparam pskcValidateMAC: Determines how invalid MACs should be handled when importing PSKC.
+               Allowed values are 'no_check', 'check_fail_soft' and 'check_fail_hard'.
     :return: The number of the imported tokens
     :rtype: int
     """
@@ -916,6 +922,7 @@ def loadtokens_api(filename=None):
                    'Yubikey CSV', 'pskc']
     file_type = getParam(request.all_data, "type", required)
     hashlib = getParam(request.all_data, "aladdin_hashlib")
+    aes_validate_mac = getParam(request.all_data, "pskcValidateMAC", default='check_fail_hard')
     aes_psk = getParam(request.all_data, "psk")
     aes_password = getParam(request.all_data, "password")
     if aes_psk and len(aes_psk) != 32:
@@ -926,6 +933,7 @@ def loadtokens_api(filename=None):
     if trealms:
         tokenrealms = trealms.split(",")
 
+    not_imported_serials = []
     TOKENS = {}
     token_file = request.files['file']
     file_contents = ""
@@ -969,8 +977,8 @@ def loadtokens_api(filename=None):
     elif file_type in ["yubikeycsv", "Yubikey CSV"]:
         TOKENS = parseYubicoCSV(file_contents)
     elif file_type in ["pskc"]:
-        TOKENS = parsePSKCdata(file_contents, preshared_key_hex=aes_psk,
-                               password=aes_password)
+        TOKENS, not_imported_serials = parsePSKCdata(file_contents, preshared_key_hex=aes_psk,
+                                                   password=aes_password, validate_mac=aes_validate_mac)
 
     # Now import the Tokens from the dictionary
     ret = ""
@@ -992,7 +1000,7 @@ def loadtokens_api(filename=None):
                         'success': True})
     # logTokenNum()
 
-    return send_result(len(TOKENS))
+    return send_result({'n_imported': len(TOKENS), 'n_not_imported': len(not_imported_serials)})
 
 
 @token_blueprint.route('/copypin', methods=['POST'])

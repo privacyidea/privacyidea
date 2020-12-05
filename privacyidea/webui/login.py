@@ -37,7 +37,7 @@ from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.lib.passwordreset import is_password_reset
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.realm import get_realms
-from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE, Match
+from privacyidea.lib.policy import PolicyClass, ACTION, SCOPE, Match, REMOTE_USER
 from privacyidea.lib.subscriptions import subscription_status
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.config import get_from_config, SYSCONF
@@ -114,7 +114,9 @@ def single_page_application():
             realms = ",".join(get_realms())
 
     try:
-        if is_remote_user_allowed(request, write_to_audit_log=False):
+        r = is_remote_user_allowed(request, write_to_audit_log=False)
+        force_remote_user = r == REMOTE_USER.FORCE
+        if r != REMOTE_USER.DISABLE:
             remote_user = request.remote_user
         password_reset = is_password_reset(g)
         hsm_ready = True
@@ -148,11 +150,19 @@ def single_page_application():
     else:
         login_text = ""
 
+    gdpr_link = Match.action_only(g, action=ACTION.GDPR_LINK, scope=SCOPE.WEBUI) \
+        .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
+    if len(gdpr_link) and list(gdpr_link)[0] and sub_state not in [1, 2]:
+        gdpr_link = list(gdpr_link)[0]
+    else:
+        gdpr_link = ""
+
     render_context = {
         'instance': instance,
         'backendUrl': backend_url,
         'browser_lang': browser_lang,
         'remote_user': remote_user,
+        'force_remote_user': force_remote_user,
         'theme': theme,
         'translation_warning': translation_warning,
         'password_reset': password_reset,
@@ -165,6 +175,7 @@ def single_page_application():
         'realms': realms,
         'external_links': external_links,
         'login_text': login_text,
+        'gdpr_link': gdpr_link,
         'logo': logo,
         'page_title': page_title
     }

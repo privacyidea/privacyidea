@@ -2,7 +2,8 @@
 
     <div class="row">  <!-- upper row -->
        <div class="col-lg-4">
-           <div class="panel panel-default">
+           <div class="panel panel-default"
+                  ng-show="checkRight('tokenlist')">
                <div class="panel-heading" translate>Tokens</div>
                 <div class="panel-body">
                     <table class="table">
@@ -35,7 +36,8 @@
            </div>
        </div>
        <div class="col-lg-4">
-             <div class="panel panel-default">
+             <div class="panel panel-default"
+                  ng-show="checkRight('auditlog')">
                  <div class="panel-heading" translate>Authentications</div>
                  <div class="panel-body">
                      <div translate>Authentications in the last 24 hours</div>
@@ -55,7 +57,8 @@
            </div>
        </div>
        <div class="col-lg-4">
-            <div class="panel panel-default">
+            <div class="panel panel-default"
+                  ng-show="checkRight('auditlog')">
                  <div class="panel-heading" translate>Administration</div>
                  <div class="panel-body">
                     <table class="table">
@@ -83,7 +86,8 @@
    </div>
    <div class="row">
        <div class="col-lg-4">
-           <div class="panel panel-default">
+           <div class="panel panel-default"
+                ng-show="checkRight('policyread')">
                  <div class="panel-heading" translate>Policies</div>
                  <div class="panel-body">
                     <table class="table">
@@ -119,7 +123,8 @@
            </div>
        </div>
        <div class="col-lg-4">
-             <div class="panel panel-default">
+             <div class="panel panel-default"
+                  ng-show="checkRight('eventhandling_read')">
                  <div class="panel-heading" translate>Events</div>
                  <div class="panel-body">
                     <table class="table">

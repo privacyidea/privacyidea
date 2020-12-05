@@ -135,12 +135,18 @@ class TimestampMethodsMixin(object):
 
 class Token(MethodsMixin, db.Model):
     """
-    The table "token" contains the basic token data like
+    The "Token" table contains the basic token data.
+
+    It contains data like
      * serial number
-     * assigned user
-     * secret key...
-    while the table "tokeninfo" contains additional information that is specific
-    to the tokentype.
+     * secret key
+     * PINs
+     * ...
+
+    The table :py:class:`privacyidea.models.TokenOwner` contains the owner
+    information of the specified token.
+    The table :py:class:`privacyidea.models.TokenInfo` contains additional information
+    that is specific to the tokentype.
     """
     __tablename__ = 'token'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
@@ -286,12 +292,13 @@ class Token(MethodsMixin, db.Model):
     def set_realms(self, realms, add=False):
         """
         Set the list of the realms.
-        This is done by filling the tokenrealm table.
+
+        This is done by filling the :py:class:`privacyidea.models.TokenRealm` table.
+
         :param realms: realms
-        :type realms: list
-        :param add: If set, the realms are added. I.e. old realms are not
-            deleted
-        :type add: boolean
+        :type realms: list[str]
+        :param add: If set, the realms are added. I.e. old realms are not deleted
+        :type add: bool
         """
         # delete old TokenRealms
         if not add:
@@ -1353,13 +1360,15 @@ def cleanup_challenges():
 
 class Policy(TimestampMethodsMixin, db.Model):
     """
-    The policy table contains policy definitions which control
-    the behaviour during
+    The policy table contains the policy definitions.
+
+    The Policies control the behaviour in the scopes
      * enrollment
      * authentication
      * authorization
      * administration
      * user actions
+     * webui
     """
     __tablename__ = "policy"
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
@@ -1471,7 +1480,7 @@ class Policy(TimestampMethodsMixin, db.Model):
              "time": self.time,
              "conditions": self.get_conditions_tuples(),
              "priority": self.priority}
-        action_list = [x.strip().split("=") for x in (self.action or "").split(
+        action_list = [x.strip().split("=", 1) for x in (self.action or "").split(
             ",")]
         action_dict = {}
         for a in action_list:
@@ -2585,6 +2594,8 @@ class Audit(MethodsMixin, db.Model):
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("audit_seq"), primary_key=True)
     date = db.Column(db.DateTime)
+    startdate = db.Column(db.DateTime)
+    duration = db.Column(db.Interval)
     signature = db.Column(db.Unicode(audit_column_length.get("signature")))
     action = db.Column(db.Unicode(audit_column_length.get("action")))
     success = db.Column(db.Integer)
@@ -2621,10 +2632,14 @@ class Audit(MethodsMixin, db.Model):
                  client="",
                  loglevel="default",
                  clearance_level="default",
-                 policies=""
+                 policies="",
+                 startdate=None,
+                 duration=None
                  ):
         self.signature = ""
         self.date = datetime.now()
+        self.startdate = startdate
+        self.duration = duration
         self.action = convert_column_to_unicode(action)
         self.success = success
         self.serial = convert_column_to_unicode(serial)
@@ -2675,7 +2690,7 @@ class AuthCache(MethodsMixin, db.Model):
     user_agent = db.Column(db.Unicode(120), default=u"")
     # We can hash the password like this:
     # binascii.hexlify(hashlib.sha256("secret123456").digest())
-    authentication = db.Column(db.Unicode(64), default=u"")
+    authentication = db.Column(db.Unicode(255), default=u"")
 
     def __init__(self, username, realm, resolver, authentication,
                  first_auth=None, last_auth=None):

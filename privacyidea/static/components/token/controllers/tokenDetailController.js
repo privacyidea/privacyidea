@@ -65,6 +65,7 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.params = {page: 1};
     $scope.form = {options: {}};
     $scope.editTokenInfo = 0;
+    $scope.pin1 = $scope.pin2 = "";
     $scope.testTokenPlaceholder = gettextCatalog.getString('Enter PIN and OTP to check the' +
         ' token.');
     ConfigFactory.getSystemConfig(function(data) {

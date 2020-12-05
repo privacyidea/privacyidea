@@ -6,7 +6,7 @@ import stat
 import sys
 
 #VERSION = "2.1dev4"
-VERSION = "3.4.1"
+VERSION = "3.5dev1"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -104,13 +104,15 @@ setup(
     author_email='cornelius@privacyidea.org',
     url='http://www.privacyidea.org',
     keywords='OTP, two factor authentication, management, security',
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.9.*',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     packages=find_packages(),
     scripts=["pi-manage"] + get_scripts("tools"),
     extras_require={
-        'doc': ["Sphinx>=1.3.1",
+        'doc': ["Pallets-Sphinx-Themes>=1.2.3",
+                "Sphinx>=1.3.1",
                 "sphinxcontrib-httpdomain>=1.3.0",
-                "sphinxcontrib-plantuml>=0.18"],
+                "sphinxcontrib-plantuml>=0.18",
+                "sphinxcontrib-spelling>=7.0.0"],
         'test': ["mock>=2.0.0",
                  "pytest>=3.6.0",
                  "pytest-cov>=2.5.1",
@@ -148,7 +150,8 @@ setup(
                  'Programming Language :: Python :: 3.5',
                  'Programming Language :: Python :: 3.6',
                  'Programming Language :: Python :: 3.7',
-                 'Programming Language :: Python :: 3.8'
+                 'Programming Language :: Python :: 3.8',
+                 'Programming Language :: Python :: 3.9'
                  ],
     zip_safe=False,
     long_description=get_file_contents('README.rst')

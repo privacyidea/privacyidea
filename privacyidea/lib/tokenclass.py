@@ -230,7 +230,9 @@ class TokenClass(object):
         
         An orphaned token means, that it has a user assigned, but the user 
         does not exist in the user store (anymore)
+
         :return: True / False
+        :rtype: bool
         """
         orphaned = False
         if self.token.first_owner:
@@ -298,6 +300,7 @@ class TokenClass(object):
     def set_tokeninfo(self, info):
         """
         Set the tokeninfo field in the DB. Old values will be deleted.
+
         :param info: dictionary with key and value
         :type info: dict
         :return:
@@ -317,6 +320,7 @@ class TokenClass(object):
     def add_tokeninfo(self, key, value, value_type=None):
         """
         Add a key and a value to the DB tokeninfo
+
         :param key:
         :param value:
         :return:
@@ -432,12 +436,13 @@ class TokenClass(object):
         :type options: dict
 
         :return: returns tuple of
-                 1. true or false for the pin match,
-                 2. the otpcounter (int) and the
-                 3. reply (dict) that will be added as
-                    additional information in the JSON response
-                    of ``/validate/check``.
-        :rtype: tuple
+
+            1. true or false for the pin match,
+            2. the otpcounter (int) and the
+            3. reply (dict) that will be added as additional information in
+                the JSON response of ``/validate/check``.
+
+        :rtype: tuple(bool, int, dict)
         """
         pin_match = False
         otp_counter = -1
@@ -452,7 +457,6 @@ class TokenClass(object):
                 #self.set_otp_count(otp_counter)
 
         return pin_match, otp_counter, reply
-
 
     @staticmethod
     def decode_otpkey(otpkey, otpkeyformat):
@@ -674,6 +678,7 @@ class TokenClass(object):
     def set_realms(self, realms, add=False):
         """
         Set the list of the realms of a token.
+
         :param realms: realms the token should be assigned to
         :type realms: list
         :param add: if the realms should be added and not replaced
@@ -684,8 +689,9 @@ class TokenClass(object):
     def get_realms(self):
         """
         Return a list of realms the token is assigned to
+
         :return: realms
-        :rtype:l list
+        :rtype: list
         """
         return self.token.get_realms()
         
@@ -725,10 +731,11 @@ class TokenClass(object):
         """
         set the PIN of a token.
         Usually the pin is stored in a hashed way.
+
         :param pin: the pin to be set for the token
         :type pin: basestring
         :param encrypt: If set to True, the pin is stored encrypted and
-                        can be retrieved from the database again
+            can be retrieved from the database again
         :type encrypt: bool
         """
         storeHashed = not encrypt
@@ -821,6 +828,7 @@ class TokenClass(object):
     def get_hashlib(hLibStr):
         """
         Returns a hashlib function for a given string
+
         :param hLibStr: the hashlib
         :type hLibStr: string
         :return: the hashlib
@@ -879,6 +887,7 @@ class TokenClass(object):
         """
         Sets the counter for the maximum allowed successful logins
         as key "count_auth_success_max" in token info
+
         :param count: a number
         :type count: int
         """
@@ -889,6 +898,7 @@ class TokenClass(object):
         """
         Sets the counter for the occurred successful logins
         as key "count_auth_success" in token info
+
         :param count: a number
         :type count: int
         """
@@ -899,6 +909,7 @@ class TokenClass(object):
         """
         Sets the counter for the maximum allowed login attempts
         as key "count_auth_max" in token info
+
         :param count: a number
         :type count: int
         """
@@ -909,6 +920,7 @@ class TokenClass(object):
         """
         Sets the counter for the occurred login attepms
         as key "count_auth" in token info
+
         :param count: a number
         :type count: int
         """
@@ -946,8 +958,9 @@ class TokenClass(object):
         """
         returns the end of validity period (if set)
         if not set, "" is returned.
+
         :return: the end of the validity period
-        :rtype: string
+        :rtype: str
         """
         end = self.get_tokeninfo("validity_period_end", "")
         if end:
@@ -958,10 +971,11 @@ class TokenClass(object):
     def set_validity_period_end(self, end_date):
         """
         sets the end date of the validity period for a token
+
         :param end_date: the end date in the format YYYY-MM-DDTHH:MM+OOOO
                          if the format is wrong, the method will
                          throw an exception
-        :type end_date: string
+        :type end_date: str
         """
         if not end_date:
             self.del_tokeninfo("validity_period_end")
@@ -978,8 +992,9 @@ class TokenClass(object):
         """
         returns the start of validity period (if set)
         if not set, "" is returned.
+
         :return: the start of the validity period
-        :rtype: string
+        :rtype: str
         """
         start = self.get_tokeninfo("validity_period_start", "")
         if start:
@@ -990,10 +1005,11 @@ class TokenClass(object):
     def set_validity_period_start(self, start_date):
         """
         sets the start date of the validity period for a token
+
         :param start_date: the start date in the format YYYY-MM-DDTHH:MM+OOOO
                            if the format is wrong, the method will
                            throw an exception
-        :type start_date: string
+        :type start_date: str
         """
         if not start_date:
             self.del_tokeninfo("validity_period_start")
@@ -1011,7 +1027,6 @@ class TokenClass(object):
         Sets the timestamp for the next_pin_change. Provide a
         difference like 90d (90 days).
 
-        Either provider the
         :param diff: The time delta.
         :type diff: basestring
         :param password: Do no set next_pin_change but next_password_change
@@ -1027,9 +1042,9 @@ class TokenClass(object):
     def is_pin_change(self, password=False):
         """
         Returns true if the pin of the token needs to be changed.
+
         :param password: Whether the password needs to be changed.
         :type password: bool
-
         :return: True or False
         """
         key = "next_pin_change"
@@ -1099,7 +1114,9 @@ class TokenClass(object):
         """
         Checks if the failcounter is exceeded. It returns True, if the
         failcounter is less than maxfail
+
         :return: True or False
+        :rtype: bool
         """
         return self.token.failcount < self.token.maxfail
 
@@ -1342,9 +1359,9 @@ class TokenClass(object):
         Each token type can decide on its own under which condition a challenge
         is triggered by overwriting this method.
 
-        **please note**: in case of pin policy == 2 (no pin is required)
-        the ``check_pin`` would always return true! Thus each request
-        containing a ``data`` or ``challenge`` would trigger a challenge!
+        .. note:: in case of ``pin policy == 2`` (no pin is required)
+                  the ``check_pin`` would always return true! Thus each request
+                  containing a ``data`` or ``challenge`` would trigger a challenge!
 
         The Challenge workflow is like this.
 
@@ -1352,19 +1369,19 @@ class TokenClass(object):
         a request which will create a new challenge (is_challenge_request) or if
         this is a response to an existing challenge (is_challenge_response).
         In these two cases during request processing the following functions are
-        called.
+        called::
 
-        is_challenge_request or is_challenge_response  <-------+
-                 |                       |                     |
-                 V                       V                     |
-        create_challenge        check_challenge_response     create_challenge
-                 |                       |                     ^
-                 |                       |                     |
-                 |              has_further_challenge [yes] ---+
-                 |                      [no]
-                 |                       |
-                 V                       V
-        challenge_janitor       challenge_janitor
+            is_challenge_request or is_challenge_response  <-------+
+                     |                       |                     |
+                     V                       V                     |
+            create_challenge        check_challenge_response     create_challenge
+                     |                       |                     ^
+                     |                       |                     |
+                     |              has_further_challenge [yes] ---+
+                     |                      [no]
+                     |                       |
+                     V                       V
+            challenge_janitor       challenge_janitor
 
         :param passw: password, which might be pin or pin+otp
         :type passw: string
@@ -1372,7 +1389,6 @@ class TokenClass(object):
         :type user: User object
         :param options: dictionary of additional request parameters
         :type options: dict
-
         :return: true or false
         :rtype: bool
         """
@@ -1386,8 +1402,8 @@ class TokenClass(object):
 
     def is_challenge_response(self, passw, user=None, options=None):
         """
-        This method checks, if this is a request, that is the response to
-        a previously sent challenge.
+        This method checks, if this is a request that is supposed to be
+        the answer to a previous challenge.
 
         The default behaviour to check if this is the response to a
         previous challenge is simply by checking if the request contains
@@ -1396,6 +1412,7 @@ class TokenClass(object):
 
         This method does not try to verify the response itself!
         It only determines, if this is a response for a challenge or not.
+        If the challenge still exists, is checked in has_db_challenge_response.
         The response is verified in check_challenge_response.
 
         :param passw: password, which might be pin or pin+otp
@@ -1408,11 +1425,28 @@ class TokenClass(object):
         :rtype: bool
         """
         options = options or {}
+        transaction_id = options.get("transaction_id") or options.get("state")
+        return bool(transaction_id)
+
+    def has_db_challenge_response(self, passw, user=None, options=None):
+        """
+        This method checks, if the given transaction_id is actually the response to
+        a real challenge. To do so, it verifies, if there is a DB entry for the
+        given serial number and transaction_id.
+        This is to avoid side effects by passing non-existent transaction_ids.
+
+        This method checks, if the token still has a challenge
+
+        :param passw:
+        :param user:
+        :param options:
+        :return:
+        """
+        options = options or {}
         challenge_response = False
         transaction_id = options.get("transaction_id") or options.get("state")
         if transaction_id:
-            # Now we also need to check, if the transaction_id is an entry to the
-            # serial number of this token
+            # Now we also need to check, if there is a corresponding DB entry
             chals = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
             challenge_response = bool(chals)
 
@@ -1609,6 +1643,7 @@ class TokenClass(object):
         policies.
 
         The returned dictionary is added to the parameters of the API call.
+
         :param g: context object, see documentation of ``Match``
         :param params: The call parameters
         :type params: dict

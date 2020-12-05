@@ -6,7 +6,11 @@ RADIUS server configuration
 .. index:: RADIUS server
 
 At *config->system->RADIUS servers* the administrator
-can configure to which RADIUS servers privacyIDEA can forward authentication requests.
+can configure a RADIUS servers to which privacyIDEA can forward authentication requests.
+
+.. figure:: images/radius-server-config.png
+   :width: 700
+
 These RADIUS servers can be used with :ref:`RADIUS tokens <radius_token>`
 and in the :ref:`Passthru Policy <passthru_policy>`.
 

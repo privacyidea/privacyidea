@@ -8,6 +8,8 @@
     <div class="col-sm-6" ng-show="enrolledToken.rollout_state === 'clientwait'">
         <p class="help-block" translate>
             Please scan the QR code with the privacyIDEA Authenticator App
+            or click <a href="{{ enrolledToken.pushurl.value }}">this link</a> on your
+            smartphone.
         </p>
         <img width="{{ qrCodeWidth }}"
              ng-src="{{ enrolledToken.pushurl.img }}"/>

@@ -56,11 +56,19 @@ This policy defines, if the login to the privacyIDEA using the web servers
 integrated authentication (like basic authentication or digest
 authentication) should be allowed.
 
-Possible values are "disable" and "allowed".
+Possible values are "disable", "allowed" and "force".
+
+If set to "allowed" a user can choose to use the REMOTE_USER or login with
+credentials. If set to "force", the user can not switch to login with credentials but
+can only login with the REMOTE_USER from the browser.
 
 .. note:: The policy is evaluated before the user is logged in. At this point
    in time there is no realm known, so a policy to allow remote_user must not
    select any realm.
+
+.. note:: The policy setting "force" only works on the UI level. On the API level
+   the user could still log in with credentials! If you want to avoid this, see
+   the next note.
 
 .. note:: The policy *login_mode* and *remote_user* work independent of each
    other. I.e. you can disable *login_mode* and allow *remote_user*.
@@ -150,7 +158,7 @@ default URL is a Github repository [#defaulturl]_.
 .. note:: When setting a template_url policy the modified URL will only get
    active after the user has logged out and in again.
 
-.. [#defaulurl] https://github.com/privacyidea/policy-templates/.
+.. [#defaulturl] https://github.com/privacyidea/policy-templates/.
 
 
 .. _policy_default_tokentype:
