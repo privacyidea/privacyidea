@@ -73,17 +73,6 @@ class REQUIRE_ACTIONS(object):
     REQUIRE_AND_VERIFY = "require_and_verify"
 
 
-def _verify_cert(parent, child):
-    ca = load_pem_x509_certificate(to_byte_string(parent), default_backend())
-    cert = load_pem_x509_certificate(to_byte_string(child), default_backend())
-    ca.public_key().verify(
-        cert.signature,
-        cert.tbs_certificate_bytes,
-        padding.PKCS1v15(),
-        cert.signature_hash_algorithm
-    )
-
-
 def verify_certificate_path(certificate, trusted_ca_paths):
     """
     Verify a certificate against the list of directories each containing files with
@@ -155,17 +144,29 @@ def verify_certificate(certificate, chain):
     chain = list(reversed(chain))
     if not chain:
         raise privacyIDEAError("Can not verify certificate against an empty chain.")
+    certificate = load_pem_x509_certificate(to_byte_string(certificate), default_backend())
+    chain = [load_pem_x509_certificate(to_byte_string(c), default_backend()) for c in chain]
     # verify chain
     while chain:
         signer = chain.pop()
         if chain:
             # There is another element in the list, so we check the intermediate:
             signee = chain.pop()
-            _verify_cert(signer, signee)
+            signer.public_key().verify(
+                signee.signature,
+                signee.tbs_certificate_bytes,
+                padding.PKCS1v15(),
+                signee.signature_hash_algorithm
+            )
             signer = signee
 
     # This was the last certificate in the chain, so we check the certificate
-    _verify_cert(signer, certificate)
+    signer.public_key().verify(
+        certificate.signature,
+        certificate.tbs_certificate_bytes,
+        padding.PKCS1v15(),
+        certificate.signature_hash_algorithm
+    )
 
 
 class CertificateTokenClass(TokenClass):
