@@ -50,6 +50,7 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, ACTION as BASE_ACTION, GROUP, Match
 from privacyidea.lib.error import privacyIDEAError
+import traceback
 
 optional = True
 required = False
@@ -387,10 +388,18 @@ class CertificateTokenClass(TokenClass):
                     if request_numbers != attestation_numbers:
                         log.warning("certificate request does not match attestation certificate.")
                         raise privacyIDEAError("certificate request does not match attestation certificate.")
-                    if verify_attestation:
+
+                    try:
                         verified = verify_certificate_path(attestation,
                                                            param.get(ACTION.TRUSTED_CA_PATH))
-                        if not verified:
+                    except Exception as exx:
+                        # We could have file system errors during verification.
+                        log.debug("{0!s}".format(traceback.format_exc()))
+                        verified = False
+
+                    if not verified:
+                        log.warning("Failed to verify certificate chain of attestation certificate.")
+                        if verify_attestation:
                             raise privacyIDEAError("Failed to verify certificate chain of attestation certificate.")
 
             # During the initialization process, we need to create the
