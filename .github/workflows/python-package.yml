@@ -29,7 +29,7 @@ jobs:
         python -m pip install pytest
         python -m pip install pytest-cov
         python -m pip install codecov
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        python -m pip install -r tests/requirements.txt
     - name: Test with pytest
       run: |
         pytest -v --cov=privacyidea --cov-report=xml --cov-report=html tests
