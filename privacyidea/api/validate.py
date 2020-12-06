@@ -363,10 +363,11 @@ def check():
     otp_only = getParam(request.all_data, "otponly")
     token_type = getParam(request.all_data, "type")
     options = {"g": g,
-               "clientip": g.client_ip}
+               "clientip": g.client_ip,
+               "user": user}
     # Add all params to the options
     for key, value in request.all_data.items():
-            if value and key not in ["g", "clientip"]:
+            if value and key not in ["g", "clientip", "user"]:
                 options[key] = value
 
     g.audit_object.log({"user": user.login,
@@ -502,6 +503,10 @@ def trigger_challenge():
     options = {"g": g,
                "clientip": g.client_ip,
                "user": user}
+    # Add all params to the options
+    for key, value in request.all_data.items():
+        if value and key not in ["g", "clientip", "user"]:
+            options[key] = value
 
     token_objs = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)
     # Only use the tokens, that are allowed to do challenge response
