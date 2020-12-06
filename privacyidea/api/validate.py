@@ -367,8 +367,8 @@ def check():
                "user": user}
     # Add all params to the options
     for key, value in request.all_data.items():
-            if value and key not in ["g", "clientip", "user"]:
-                options[key] = value
+        if value and key not in ["g", "clientip", "user"]:
+            options[key] = value
 
     g.audit_object.log({"user": user.login,
                         "resolver": user.resolver,
