@@ -78,7 +78,6 @@ from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
 from privacyidea.lib.utils import to_unicode
-#from privacyidea.api.lib.decorators import postAddSerialToG
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.challenge import get_challenges_paginate
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
