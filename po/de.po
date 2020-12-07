@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2020-10-21 11:26+0000\n"
-"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"PO-Revision-Date: 2020-12-08 18:29+0000\n"
+"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.3.1\n"
+"X-Generator: Weblate 4.4-dev\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -397,7 +397,7 @@ msgstr "Ein Attribut, das die IP-Adresse der Maschine enthält"
 
 #: privacyidea/static/components/recovery/controllers/recoveryControllers.js:19
 msgid "An Email to reset the password has been sent to you."
-msgstr "Eine Email wurde an Sie gesendet, um Ihr Passwort zurückzusetzen."
+msgstr "Eine E-Mail wurde an Sie gesendet, um Ihr Passwort zurückzusetzen."
 
 #: privacyidea/static/components/machine/views/machine.details.html:127
 #: privacyidea/static/components/machine/views/machine.details.html:51
@@ -1057,7 +1057,7 @@ msgstr "Drupal"
 
 #: privacyidea/static/components/config/views/config.token.email.html:1
 msgid "EMail Token settings"
-msgstr "Email-Token Einstellungen"
+msgstr "E-Mail-Token-Einstellungen"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:231
 msgid "EMail: Send a One Time Password to the users email address."
@@ -1179,11 +1179,11 @@ msgstr "Benutzerquelle editierbar"
 #: privacyidea/static/components/register/views/register.html:52
 #: privacyidea/static/components/user/views/user.password.html:28
 msgid "Email"
-msgstr "EMail"
+msgstr "E-Mail"
 
 #: privacyidea/static/components/token/views/token.enroll.email.html:18
 msgid "Email Address"
-msgstr "EMail-Adresse"
+msgstr "E-Mail-Adresse"
 
 #: privacyidea/static/components/config/views/config.events.details.html:11
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:11
@@ -1342,7 +1342,7 @@ msgid ""
 "For Email tokens to work properly you need to set the\n"
 "    <a ui-sref=\"config.tokens({tokentype:'email'})\">Email Token Config</a>!"
 msgstr ""
-"Damit Email-Token richtig funktionieren, müssen Sie die   <a ui-sref="
+"Damit E-Mail-Token richtig funktionieren, müssen Sie die   <a ui-sref="
 "\"config.tokens({tokentype:'email'})\">Email-Token Konfiguration</a> setzen."
 
 #: privacyidea/static/components/token/views/token.import.html:25
@@ -2422,7 +2422,7 @@ msgstr "Nochmal lesen"
 #: privacyidea/static/components/token/views/token.enroll.email.html:15
 msgid "Read email address dynamically from user source on each request."
 msgstr ""
-"Die Email-Adresse wird bei jeder Authentifizierung dynamisch aus der "
+"Die E-Mail-Adresse wird bei jeder Authentifizierung dynamisch aus der "
 "Benutzerquelle gelesen."
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:15
@@ -2456,7 +2456,7 @@ msgstr "Empfangen"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:128
 msgid "Recipient for testing"
-msgstr "Empfänger für Test-Emails"
+msgstr "Empfänger für Test-E-Mails"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:84
 msgid "Recorded Last Runs"
@@ -2814,11 +2814,11 @@ msgstr "Reset-Code senden"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:135
 msgid "Send Test Email"
-msgstr "Sende Test-Email"
+msgstr "Test-E-Mail senden"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:123
 msgid "Send mail from job queue"
-msgstr "Sende Email über die Job-Queue"
+msgstr "E-Mail über die Arbeitwarteschlange senden"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:111
 msgid "Send test RADIUS request"
@@ -2834,7 +2834,7 @@ msgstr "Absender"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:57
 msgid "Sender Email"
-msgstr "Absende-Email-Adresse"
+msgstr "Absende-E-Mail-Adresse"
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:10
 msgid "Separator"
@@ -3023,7 +3023,7 @@ msgstr "Aufgabenmodul"
 
 #: privacyidea/static/components/config/controllers/smtpServerController.js:65
 msgid "Test Email sent successfully."
-msgstr "Test Email wurde erfolgreich versendet."
+msgstr "Test-E-Mail wurde erfolgreich versendet."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:86
 msgid "Test HTTP Resolver"
@@ -3052,7 +3052,7 @@ msgstr "Yubikey testen"
 
 #: privacyidea/static/components/token/views/token.details.html:414
 msgid "Test token"
-msgstr " Token testen"
+msgstr "Token testen"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:153
 msgid "Thank you for improving your security!"
@@ -3098,14 +3098,14 @@ msgid ""
 "    the given email address, when the correct OTP PIN was presented by the "
 "user."
 msgstr ""
-"Der EMail-Token ist ein Challenge-Response-Token, der - nachdem die richtige "
-"OTP-PIN eingegeben wurde -einen OTP-Wert an die hinterlegte EMail-Adresse "
-"sendet."
+"Der E-Mail-Token ist ein Challenge-Response-Token, der - nachdem die "
+"richtige OTP-PIN eingegeben wurde -einen OTP-Wert an die hinterlegte E-Mail-"
+"Adresse sendet."
 
 #: privacyidea/static/components/token/views/token.enroll.email.html:1
 msgid "The Email Token sends the OTP value to the users email address."
 msgstr ""
-"Der EMail-Token sendet einen OTP-Wert an die EMail-Adresse des Benutzers."
+"Der E-Mail-Token sendet einen OTP-Wert an die E-Mail-Adresse des Benutzers."
 
 #: privacyidea/static/components/token/views/token.enrolled.tiqr.html:9
 msgid "The Enrollment URL"
@@ -3994,8 +3994,8 @@ msgid ""
 "                sender. Usually this should be an email address identifying\n"
 "                your system."
 msgstr ""
-"Die Email-Adresse des Versenders. Dies sollte eine Email-Adresse sein,, die "
-"Ihr privacyIDEA-System identifiziert."
+"Die E-Mail-Adresse des Versenders. Dies sollte eine E-Mail-Adresse sein,, "
+"die Ihr privacyIDEA-System identifiziert."
 
 #: privacyidea/static/components/config/views/config.token.question.html:12
 msgid "This is the number of answers a user needs to define to enroll a token."
@@ -4345,7 +4345,7 @@ msgstr "Benutzer Quelle"
 
 #: privacyidea/static/components/register/controllers/registerControllers.js:15
 msgid "User account created. An Email has been sent to you."
-msgstr "Benutzerkonto wurde angelegt. Eine Email wurde an Sie gesendet."
+msgstr "Benutzerkonto wurde angelegt. Eine E-Mail wurde an Sie gesendet."
 
 #: privacyidea/static/components/user/controllers/userControllers.js:59
 msgid "User created."
@@ -4710,11 +4710,11 @@ msgstr "eindeutige Benutzer mit aktiven Token"
 
 #: privacyidea/static/components/user/views/user.list.html:29
 msgid "email"
-msgstr "EMail"
+msgstr "E-Mail"
 
 #: privacyidea/static/components/token/views/token.getserial.html:18
 msgid "enter some OTP value"
-msgstr "Geben Sie einen OTP-Wert ein..."
+msgstr "Geben Sie einen OTP-Wert ein"
 
 #: privacyidea/static/components/token/views/token.list.html:57
 #: privacyidea/static/components/user/views/user.details.html:86
@@ -4743,7 +4743,7 @@ msgstr "ID"
 
 #: privacyidea/static/components/audit/views/audit.log.html:86
 msgid "info"
-msgstr "Info"
+msgstr "Infos"
 
 #: privacyidea/static/components/token/views/token.details.html:31
 msgid "locked"
