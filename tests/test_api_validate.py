@@ -23,6 +23,7 @@ from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_re
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm, get_realms
 from privacyidea.lib.radiusserver import add_radius
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.tokens.webauthn import webauthn_b64_decode
 from privacyidea.lib import _
 from passlib.hash import argon2
 
@@ -31,6 +32,7 @@ import datetime
 import time
 import responses
 import mock
+import binascii
 from . import smtpmock, ldap3mock, radiusmock
 
 
@@ -2882,6 +2884,124 @@ class RegistrationValidity(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
             self.assertEqual("matching 1 tokens, Outside validity period", detail.get("message"))
+
+
+class WebAuthn(MyApiTestCase):
+
+    username = "selfservice"
+    pin = "webauthnpin"
+    serial = "WAN0001D434"
+
+    def setUp(self):
+        # Set up the WebAuthn Token from the lib test case
+        super(MyApiTestCase, self).setUp()
+        self.setUp_user_realms()
+
+        set_policy("wan1", scope=SCOPE.ENROLL,
+                   action="webauthn_relying_party_id=example.com")
+        set_policy("wan2", scope=SCOPE.ENROLL,
+                   action="webauthn_relying_party_name=example")
+
+    def test_01_enroll_token(self):
+        client_data = "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoibmgwaUJ6MFNNbmRsVnNQUkdM" \
+                      "dk9DUWMtUHByUHhPSmYzMEtlWm1UWFk5NCIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZXhhbXBsZS5jb" \
+                      "20iLCJjcm9zc09yaWdpbiI6ZmFsc2V9"
+        regdata = """o2NmbXRmcGFja2VkZ2F0dFN0bXSjY2FsZyZjc2lnWEgwRgIhANAt-cBR3mZglj13PZPXA3srJYxX
+↵J6v-LzxAhmxZM7AsAiEAxu4gi8AiKOfyhU68HcIBHuIwgjBWJUlt4cIETWFYdetjeDVjgVkCwDCC
+↵ArwwggGkoAMCAQICBAOt8BIwDQYJKoZIhvcNAQELBQAwLjEsMCoGA1UEAxMjWXViaWNvIFUyRiBS
+↵b290IENBIFNlcmlhbCA0NTcyMDA2MzEwIBcNMTQwODAxMDAwMDAwWhgPMjA1MDA5MDQwMDAwMDBa
+↵MG0xCzAJBgNVBAYTAlNFMRIwEAYDVQQKDAlZdWJpY28gQUIxIjAgBgNVBAsMGUF1dGhlbnRpY2F0
+↵b3IgQXR0ZXN0YXRpb24xJjAkBgNVBAMMHVl1YmljbyBVMkYgRUUgU2VyaWFsIDYxNzMwODM0MFkw
+↵EwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEGZ6HnBYtt9w57kpCoEYWpbMJ_soJL3a-CUj5bW6VyuTM
+↵Zc1UoFnPvcfJsxsrHWwYRHnCwGH0GKqVS1lqLBz6F6NsMGowIgYJKwYBBAGCxAoCBBUxLjMuNi4x
+↵LjQuMS40MTQ4Mi4xLjcwEwYLKwYBBAGC5RwCAQEEBAMCBDAwIQYLKwYBBAGC5RwBAQQEEgQQ-iuZ
+↵3J45QlePkkow0jxBGDAMBgNVHRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4IBAQAo67Nn_tHY8OKJ
+↵68qf9tgHV8YOmuV8sXKMmxw4yru9hNkjfagxrCGUnw8t_Awxa_2xdbNuY6Iru1gOrcpSgNB5hA5a
+↵HiVyYlo7-4dgM9v7IqlpyTi4nOFxNZQAoSUtlwKpEpPVRRnpYN0izoon6wXrfnm3UMAC_tkBa3Ee
+↵ya10UBvZFMu-jtlXEoG3T0TrB3zmHssGq4WpclUmfujjmCv0PwyyGjgtI1655M5tspjEBUJQQCMr
+↵K2HhDNcMYhW8A7fpQHG3DhLRxH-WZVou-Z1M5Vp_G0sf-RTuE22eYSBHFIhkaYiARDEWZTiJuGSG
+↵2cnJ_7yThUU1abNFdEuMoLQ3aGF1dGhEYXRhWMSjeab27q-5pV43jBGANOJ1Hmgvq58tMKsT0hJV
+↵hs4ZR0EAAAD4-iuZ3J45QlePkkow0jxBGABAkNhnmLSbmlUebUHbpXxU-zMfqtnIqT5y2E3sfQgW
+↵wE1FlUGvPg_c4zNcIucBnQAN8qTHJ8clzq7v5oQnnJz7T6UBAgMmIAEhWCBARZY9ak9nT6EI-dwL
+↵uj0TB5-XjlmAvivyWLi9WSI7pCJYIEJicw0LtP_hdy8yh6ANEUXBJsWtkGDci9DcN1rDG1tE"""
+        # First enrollment step
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"user": self.username,
+                                                 "pin": self.pin,
+                                                 "serial": self.serial,
+                                                 "type": "webauthn",
+                                                 "genkey": 1},
+                                           headers={"authorization": self.at,
+                                                    "Host": "pi.example.com",
+                                                    "Origin": "https://pi.example.com"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            webAuthnRequest = data.get("detail").get("webAuthnRegisterRequest")
+            self.assertEqual("Please confirm with your WebAuthn token", webAuthnRequest.get("message"))
+            transaction_id = webAuthnRequest.get("transaction_id")
+
+        # We need to change the nonce in the challenge database to use our recorded WebAuthN enrollment data
+        recorded_nonce = "nh0iBz0SMndlVsPRGLvOCQc-PprPxOJf30KeZmTXY94"
+        recorded_nonce_hex = binascii.hexlify(webauthn_b64_decode(recorded_nonce))
+        # Update the nonce in the challenge database.
+        from privacyidea.lib.challenge import get_challenges
+        chal = get_challenges(serial=self.serial, transaction_id=transaction_id)[0]
+        chal.challenge = recorded_nonce_hex
+        chal.save()
+
+        # 2nd enrollment step
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"user": self.username,
+                                                 "pin": self.pin,
+                                                 "serial": self.serial,
+                                                 "type": "webauthn",
+                                                 "transaction_id": transaction_id,
+                                                 "clientdata": client_data,
+                                                 "regdata": regdata},
+                                           headers={"authorization": self.at,
+                                                    "Host": "pi.example.com",
+                                                    "Origin": "https://pi.example.com"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertEqual('Yubico U2F EE Serial 61730834',
+                             data.get("detail").get("webAuthnRegisterResponse").get("subject"))
+
+    def test_10_validate_check(self):
+        # Run challenge request agsint /validate/check
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": self.username,
+                                                 "pass": self.pin},
+                                           headers={"Host": "pi.example.com",
+                                                    "Origin": "https://pi.example.com"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            data = res.json
+            self.assertTrue("transaction_id" in data.get("detail"))
+            self.assertEqual(self.serial, data.get("detail").get("serial"))
+            self.assertEqual("Please confirm with your WebAuthn token (Yubico U2F EE Serial 61730834)",
+                             data.get("detail").get("message"))
+
+    def test_11_trigger_challenge(self):
+        # Run challenge request agsint /validate/triggerchallenge
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"user": self.username},
+                                           headers={"Host": "pi.example.com",
+                                                    "authorization": self.at,
+                                                    "Origin": "https://pi.example.com"}):
+            res = self.app.full_dispatch_request()
+            data = res.json
+            print(data)
+            self.assertEqual(200, res.status_code)
+            self.assertTrue("transaction_id" in data.get("detail"))
+            self.assertEqual(self.serial, data.get("detail").get("serial"))
+            self.assertEqual("Please confirm with your WebAuthn token (Yubico U2F EE Serial 61730834)",
+                             data.get("detail").get("message"))
 
 
 class MultiChallege(MyApiTestCase):
