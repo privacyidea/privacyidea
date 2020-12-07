@@ -1201,26 +1201,6 @@ def check_external(request=None, action="init"):
     return True
 
 
-def token_serial_from_path_g(request=None, action=None):
-    """
-    This is decorator function fetches the token serial from the route
-    and adds it to the flask g object. It decorates all api functions
-    where serial can be part of the url.
-    """
-    if "serial" not in g or g.serial is None:
-        if request.path:
-            # request.path is something like '/token/setpin/SERIAL' or '/token/SERIAL'
-            path_list = [x for x in request.path.split('/') if x]
-            if path_list[0] == "token" and len(path_list) == 2:
-                g.serial == path_list[1]
-            elif path_list[0] in ["token", "machine"]:
-                g.serial = path_list[2]
-            else:
-                g.serial = None
-
-    return True
-
-
 def api_key_required(request=None, action=None):
     """
     This is a decorator for check_user_pass and check_serial_pass.
