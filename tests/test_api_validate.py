@@ -738,6 +738,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(result.get("value") is True, result)
             detail = res.json.get("detail")
             self.assertEqual(detail.get("otplen"), 6)
+            # check if serial has been added to g
+            self.assertTrue(self.app_context.g.serial, detail["serial"])
 
         # Check that the counter is increased!
         tokenobject_list = get_tokens(serial=self.serials[0])
@@ -887,6 +889,8 @@ class ValidateAPITestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
+            # if there is NO matching token, g.serial is set to None
+            self.assertTrue(self.app_context.g.serial is None)
 
         tok = get_tokens(serial="SE1")[0]
         self.assertEqual(tok.token.failcount, 1)
@@ -2076,6 +2080,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(detail.get("messages")[0],
                              _("Enter the OTP from the SMS:"))
             transaction_id = detail.get("transaction_ids")[0]
+            # check if serial has been added to g
+            self.assertTrue(self.app_context.g.serial, detail["serial"])
 
         # Check authentication
         with self.app.test_request_context('/validate/check',
@@ -2105,6 +2111,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(detail.get("messages")[0],
                              _("Enter the OTP from the SMS:"))
             transaction_id = detail.get("transaction_ids")[0]
+            # check if serial has been added to g
+            self.assertTrue(self.app_context.g.serial, detail["serial"])
 
         # Check authentication
         with self.app.test_request_context('/validate/check',
@@ -2409,6 +2417,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
             detail = res.json.get("detail")
             self.assertEqual(detail.get("type"), "undetermined")
+            # check if serial has been added to g
+            self.assertTrue(self.app_context.g.serial is None)
 
         # two same token types.
         remove_token("PW1")
