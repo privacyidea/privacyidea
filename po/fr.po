@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2020-10-19 18:29+0000\n"
+"PO-Revision-Date: 2020-12-08 18:29+0000\n"
 "Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/fr/>\n"
@@ -9,7 +9,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.3.1-dev\n"
+"X-Generator: Weblate 4.4-dev\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -315,7 +315,7 @@ msgstr "Un attribut qui contient l'adresse IP."
 
 #: privacyidea/static/components/recovery/controllers/recoveryControllers.js:19
 msgid "An Email to reset the password has been sent to you."
-msgstr "Un e-mail de réinitialisation du mot de passe vous a été envoyé."
+msgstr "Un courriel de réinitialisation du mot de passe vous a été envoyé."
 
 #: privacyidea/static/components/machine/views/machine.details.html:127
 #: privacyidea/static/components/machine/views/machine.details.html:51
@@ -961,7 +961,7 @@ msgstr "Drupal"
 
 #: privacyidea/static/components/config/views/config.token.email.html:1
 msgid "EMail Token settings"
-msgstr ""
+msgstr "Paramètres des jetons de courriel"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:231
 msgid "EMail: Send a One Time Password to the users email address."
@@ -1085,11 +1085,11 @@ msgstr "Modifier l'utilisateur de la base"
 #: privacyidea/static/components/register/views/register.html:52
 #: privacyidea/static/components/user/views/user.password.html:28
 msgid "Email"
-msgstr "E-mail"
+msgstr "Courriel"
 
 #: privacyidea/static/components/token/views/token.enroll.email.html:18
 msgid "Email Address"
-msgstr "Adresse e-mail"
+msgstr "Adresse courriel"
 
 #: privacyidea/static/components/config/views/config.events.details.html:11
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:11
@@ -1251,6 +1251,10 @@ msgid ""
 "For Email tokens to work properly you need to set the\n"
 "    <a ui-sref=\"config.tokens({tokentype:'email'})\">Email Token Config</a>!"
 msgstr ""
+"Pour que les jetons de messagerie fonctionnent correctement, vous devez "
+"définir le\n"
+"    <a ui-sref=\"config.tokens({tokentype:'email'})\">Configuration du jeton "
+"de courriel</a> !"
 
 #: privacyidea/static/components/token/views/token.import.html:25
 msgid "For HOTP and TOTP tokens:"
@@ -2275,8 +2279,8 @@ msgstr "Lire à nouveau"
 #: privacyidea/static/components/token/views/token.enroll.email.html:15
 msgid "Read email address dynamically from user source on each request."
 msgstr ""
-"Lire l'adresse e-mail de façon dynamique à partir de la source utilisateur à "
-"chaque requête."
+"Lire l'adresse courrielde façon dynamique à partir de la source utilisateur "
+"à chaque requête."
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:15
 msgid "Read number dynamically from user source on each request."
@@ -2656,11 +2660,11 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:135
 msgid "Send Test Email"
-msgstr "Envoyer un e-mail de test"
+msgstr "Envoyer un courriel de test"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:123
 msgid "Send mail from job queue"
-msgstr ""
+msgstr "Envoyer des courriels depuis la file d'attente des travaux"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:111
 msgid "Send test RADIUS request"
@@ -2676,7 +2680,7 @@ msgstr "Destinateur"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:57
 msgid "Sender Email"
-msgstr "Destinateur de l'e-mail"
+msgstr "Destinataire du courriel"
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:10
 msgid "Separator"
@@ -2865,7 +2869,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/controllers/smtpServerController.js:65
 msgid "Test Email sent successfully."
-msgstr "L'e-mail de test a bien été envoyé."
+msgstr "Le courriel de test a bien été envoyé."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:86
 msgid "Test HTTP Resolver"
@@ -2932,10 +2936,16 @@ msgid ""
 "The EMail token is a challenge response token that sends the OTP value to\n"
 "    the given email address, when the correct OTP PIN was presented by the user."
 msgstr ""
+"Le jeton de messagerie est un jeton de réponse de défi qui envoie la valeur "
+"de MDP à usage unique à\n"
+"    l'adresse courriel donnée, lorsque le bon NIP à usage unique a été "
+"présenté par l'utilisateur."
 
 #: privacyidea/static/components/token/views/token.enroll.email.html:1
 msgid "The Email Token sends the OTP value to the users email address."
 msgstr ""
+"Le jeton de messagerie envoie la valeur de MDP à usage unique à l'adresse "
+"courriel des utilisateurs."
 
 #: privacyidea/static/components/token/views/token.enrolled.tiqr.html:9
 msgid "The Enrollment URL"
@@ -3580,6 +3590,10 @@ msgid ""
 "                sender. Usually this should be an email address identifying\n"
 "                your system."
 msgstr ""
+"Il s'agit de l'adresse courriel du\n"
+"                expéditeur. Habituellement, il doit s'agir d'une adresse "
+"courriel identifiant\n"
+"                votre système."
 
 #: privacyidea/static/components/config/views/config.token.question.html:12
 msgid "This is the number of answers a user needs to define to enroll a token."
@@ -3903,7 +3917,7 @@ msgstr ""
 
 #: privacyidea/static/components/register/controllers/registerControllers.js:15
 msgid "User account created. An Email has been sent to you."
-msgstr ""
+msgstr "Compte utilisateur créé. Un courriel vous a été envoyé."
 
 #: privacyidea/static/components/user/controllers/userControllers.js:59
 msgid "User created."
@@ -4193,7 +4207,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:168
 msgid "certificate"
-msgstr ""
+msgstr "certificat"
 
 #: privacyidea/static/components/audit/views/audit.log.html:93
 msgid "clearance"
@@ -4201,22 +4215,22 @@ msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:81
 msgid "client"
-msgstr ""
+msgstr "client"
 
 #: privacyidea/static/components/audit/views/audit.log.html:26
 msgid "date"
-msgstr ""
+msgstr "date"
 
 #: privacyidea/static/components/token/views/token.list.html:46
 #: privacyidea/static/components/user/views/user.details.html:85
 #: privacyidea/static/components/user/views/user.list.html:37
 msgid "description"
-msgstr ""
+msgstr "description"
 
 #: privacyidea/static/components/token/views/token.details.html:28
 #: privacyidea/static/components/token/views/token.list.html:110
 msgid "disabled"
-msgstr ""
+msgstr "désactivé"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:32
 msgid "distinct users with active tokens"
@@ -4224,11 +4238,11 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.list.html:29
 msgid "email"
-msgstr ""
+msgstr "courriel"
 
 #: privacyidea/static/components/token/views/token.getserial.html:18
 msgid "enter some OTP value"
-msgstr ""
+msgstr "entrez une valeur à usage unique"
 
 #: privacyidea/static/components/token/views/token.list.html:57
 #: privacyidea/static/components/user/views/user.details.html:86
@@ -4237,27 +4251,27 @@ msgstr ""
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:49
 msgid "failed"
-msgstr ""
+msgstr "échec"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:291
 msgid "filter action..."
-msgstr ""
+msgstr "filtre d'action…"
 
 #: privacyidea/static/components/user/views/user.list.html:23
 msgid "givenname"
-msgstr ""
+msgstr "prénom"
 
 #: privacyidea/static/components/machine/views/machine.list.html:15
 msgid "hostname"
-msgstr ""
+msgstr "nom d'hôte"
 
 #: privacyidea/static/components/user/views/user.list.html:38
 msgid "id"
-msgstr ""
+msgstr "ID"
 
 #: privacyidea/static/components/audit/views/audit.log.html:86
 msgid "info"
-msgstr ""
+msgstr "infos"
 
 #: privacyidea/static/components/token/views/token.details.html:31
 msgid "locked"
