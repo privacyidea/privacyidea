@@ -755,7 +755,7 @@ class PolicyClass(object):
                     if section == CONDITION_SECTION.USERINFO:
                         if not self._policy_matches_info_condition(policy, key, comparator, value,
                                                                    CONDITION_SECTION.USERINFO,
-                                                                   userobj=user_object):
+                                                                   user_object=user_object):
                             include_policy = False
                             break
                     elif section == CONDITION_SECTION.TOKENINFO:
@@ -812,25 +812,28 @@ class PolicyClass(object):
                         u" is not available".format(policy["name"], key))
 
     @staticmethod
-    def _policy_matches_info_condition(policy, key, comparator, value, type, userobj=None, dbtoken=None):
+    def _policy_matches_info_condition(policy, key, comparator, value, type, user_object=None, dbtoken=None):
         """
         Check if the given policy matches a certain userinfo or tokeninfo condition depending
         on the specified ``type``.
-        For the userinfo, if ``userobj_or_dbtoken`` is None, a PolicyError is raised.
-        In case of a tokeninfo, no exception is raised. The condition is effectively set to True.
+        For the userinfo, if ``user_object`` is None, a PolicyError is raised.
+        In case of a tokeninfo, no exception is raised if ``dbtoken`` is None. The condition
+        is effectively set to True.
         :param policy: a policy dictionary, the policy in question
         :param key: a tokeninfo key
         :param comparator: a value comparator: one of "equal", "contains"
         :param value: a value against which the tokeninfo value will be compared
-        :param userobj_or_dbtoken: a User object, a dbtoken object or None
+        :param type: the info type to match, "userinfo" or "tokeninfo"
+        :param user_object: a User object, if any, or None
+        :param dbtoken: a dbtoken object, if any, or None
         :return: a Boolean
         """
         # Match the user object's user info, if it is not-None and non-empty
         from privacyidea.lib.tokenclass import TokenClass
 
-        if userobj or dbtoken:
+        if user_object or dbtoken:
             if type == CONDITION_SECTION.USERINFO:
-                info = userobj.info
+                info = user_object.info
             elif type == CONDITION_SECTION.TOKENINFO:
                 info = dbtoken.get_info()
             else:
