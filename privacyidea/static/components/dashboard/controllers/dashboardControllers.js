@@ -120,6 +120,15 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
         AuditFactory.get({"timelimit": "1d", "action": "*validate*", "success": "0"},
             function (data) {
                 $scope.authentications.fail = data.result.value.count;
+                $scope.authentications.users = Array();
+                $scope.authentications.serials = Array();
+                angular.forEach(data.result.value.auditdata, function(auditentry){
+                    if (auditentry.user) {
+                        $scope.authentications.users.push({"user": auditentry.user, "realm": auditentry.realm});
+                    } else {
+                        $scope.authentications.serials.push(auditentry.serial);
+                    }
+                });
             });
      };
 

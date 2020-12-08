@@ -51,6 +51,19 @@
                                 <td translate>failed</td>
                                 <td>{{ authentications.fail }}</td>
                             </tr>
+                            <tr>
+                                <td translate>failed users / tokens</td>
+                                <td>
+                                    <span ng-repeat="userobj in authentications.users">
+                                        | <a ui-sref="user.details({username: userobj.user, realmname: userobj.realm})">
+                                        {{ userobj.user }}@{{ userobj.realm }}</a>
+                                    </span>
+                                    <span ng-repeat="serial in authentications.serials">
+                                        | <a ui-sref="token.details({tokenSerial: serial})">
+                                        {{ serial }}</a>
+                                    </span>
+                                </td>
+                            </tr>
                          </tbody>
                      </table>
                  </div>
