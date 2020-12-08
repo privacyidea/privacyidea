@@ -1345,6 +1345,50 @@ class PolicyTestCase(MyTestCase):
         delete_policy("delete_node2")
         delete_policy("enable")
 
+    def test_31_filter_by_conditions_tokeninfo(self):
+        def _names(policies):
+            return set(p['name'] for p in policies)
+
+        from privacyidea.lib.tokenclass import TokenClass
+        from privacyidea.models import Token
+        serial = "filter_by_conditions_token"
+        db_token = Token(serial, tokentype="spass")
+        db_token.save()
+        token = TokenClass(db_token)
+        token.set_tokeninfo({"fixedpin": "true", "otherinfo": "true"})
+
+        P = PolicyClass()
+
+        class MockUser(object):
+            login = 'login'
+            realm = 'realm'
+            resolver = 'resolver'
+
+        user1 = MockUser()
+
+        # Policy with initially inactive condition, setpin is allowed for this token
+        set_policy("setpin_pol", scope=SCOPE.USER, action=ACTION.SETPIN,
+                   conditions=[("tokeninfo", "fixedpin", "equals", "false", False)])
+
+        # policy matches, because the condition on tokeninfo is inactive
+        self.assertEqual(_names(P.match_policies(user_object=user1, serial=serial)),
+                         {"setpin_pol"})
+
+        # activate the condition
+        set_policy("setpin_pol", conditions=[("tokeninfo", "fixedpin", "equals", "false", True)])
+
+        # policy does not match anymore, because the condition on tokeninfo is active
+        # setpin action not returned for our token with tokeninfo "fixedpin" = "true"
+        self.assertEqual(_names(P.match_policies(user_object=user1, serial=serial)),
+                         set())
+
+        # A request without any serial number will match the policy.
+        # The condition is dropped in this case and a log message is written.
+        self.assertEqual(_names(P.match_policies(user_object=user1)),
+                         {"setpin_pol"})
+
+        delete_policy("setpin_pol")
+        db_token.delete()
 
 class PolicyMatchTestCase(MyTestCase):
     @classmethod
