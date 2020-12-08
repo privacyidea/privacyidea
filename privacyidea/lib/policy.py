@@ -655,9 +655,9 @@ class PolicyClass(object):
 
     @log_with(log)
     def match_policies(self, name=None, scope=None, realm=None, active=None,
-                       resolver=None, user=None, user_object=None, pinode=None, serial=None,
+                       resolver=None, user=None, user_object=None, pinode=None,
                        client=None, action=None, adminrealm=None, adminuser=None, time=None,
-                       sort_by_priority=True, audit_data=None, request_headers=None):
+                       sort_by_priority=True, audit_data=None, request_headers=None, serial=None):
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -755,7 +755,7 @@ class PolicyClass(object):
                     if section == CONDITION_SECTION.USERINFO:
                         if not self._policy_matches_info_condition(policy, key, comparator, value,
                                                                    CONDITION_SECTION.USERINFO,
-                                                                   userobj_or_dbtoken=user_object):
+                                                                   userobj=user_object):
                             include_policy = False
                             break
                     elif section == CONDITION_SECTION.TOKENINFO:
@@ -765,7 +765,7 @@ class PolicyClass(object):
                             dbtoken = None
                         if not self._policy_matches_info_condition(policy, key, comparator, value,
                                                                    CONDITION_SECTION.TOKENINFO,
-                                                                   userobj_or_dbtoken=dbtoken):
+                                                                   dbtoken=dbtoken):
                             include_policy = False
                             break
                     elif section == CONDITION_SECTION.HTTP_REQUEST_HEADER:
@@ -812,7 +812,7 @@ class PolicyClass(object):
                         u" is not available".format(policy["name"], key))
 
     @staticmethod
-    def _policy_matches_info_condition(policy, key, comparator, value, type, userobj_or_dbtoken=None):
+    def _policy_matches_info_condition(policy, key, comparator, value, type, userobj=None, dbtoken=None):
         """
         Check if the given policy matches a certain userinfo or tokeninfo condition depending
         on the specified ``type``.
@@ -828,11 +828,11 @@ class PolicyClass(object):
         # Match the user object's user info, if it is not-None and non-empty
         from privacyidea.lib.tokenclass import TokenClass
 
-        if userobj_or_dbtoken is not None:
+        if userobj or dbtoken:
             if type == CONDITION_SECTION.USERINFO:
-                info = userobj_or_dbtoken.info
+                info = userobj.info
             elif type == CONDITION_SECTION.TOKENINFO:
-                info = userobj_or_dbtoken.get_info()
+                info = dbtoken.get_info()
             else:
                 info = {}
 
@@ -2672,8 +2672,8 @@ class Match(object):
 
     @classmethod
     def generic(cls, g, scope=None, realm=None, resolver=None, user=None, user_object=None,
-                client=None, action=None, adminrealm=None, adminuser=None, time=None, serial=None,
-                active=True, sort_by_priority=True):
+                client=None, action=None, adminrealm=None, adminuser=None, time=None,
+                active=True, sort_by_priority=True, serial=None):
         """
         Low-level legacy policy matching interface: Search for active policies and return
         them sorted by priority. All parameters that should be used for matching have to
