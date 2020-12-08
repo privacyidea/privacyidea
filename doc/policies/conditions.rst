@@ -31,6 +31,7 @@ Sections
 ~~~~~~~~
 
 privacyIDEA 3.1 implements only one section, which is called ``userinfo``.
+The class ``tokeninfo`` is first supported with privacyIDEA 3.5.
 
 ``userinfo``
 ^^^^^^^^^^^^
@@ -105,6 +106,16 @@ allowed to log in.
 If the userinfo of the user that is trying to log in does not contain attributes
 ``email`` or ``groups`` (due to a resolver misconfiguration, for example), privacyIDEA
 throws an error and the request is aborted.
+
+
+``tokeninfo``
+^^^^^^^^^^^^
+
+The tokeninfo condition works the same way as userinfo but matches the tokeninfo instead.
+
+.. note:: In contrast to the userinfo condition, a missing token in the request, does not cancel it.
+   Instead the condition is effectively **disabled** for the request.
+
 
 ``HTTP Request Header``
 ^^^^^^^^^^^^^^^^^^^^^^^
