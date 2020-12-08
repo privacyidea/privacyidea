@@ -121,8 +121,13 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
             function (data) {
                 $scope.authentications.fail = data.result.value.count;
                 $scope.authentications.users = Array();
+                $scope.authentications.serials = Array();
                 angular.forEach(data.result.value.auditdata, function(auditentry){
-                    $scope.authentications.users.push({"user": auditentry.user, "realm": auditentry.realm});
+                    if (auditentry.user) {
+                        $scope.authentications.users.push({"user": auditentry.user, "realm": auditentry.realm});
+                    } else {
+                        $scope.authentications.serials.push(auditentry.serial);
+                    }
                 });
             });
      };
