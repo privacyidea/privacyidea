@@ -63,8 +63,8 @@ DEFAULT_CA_PATH = ["/etc/privacyidea/trusted_attestation_ca"]
 
 class ACTION(BASE_ACTION):
     __doc__ = """This is the list of special certificate actions."""
-    TRUSTED_CA_PATH = "trusted_Attestation_CA_path"
-    REQUIRE_ATTESTATION = "require_attestation"
+    TRUSTED_CA_PATH = "certificate_trusted_Attestation_CA_path"
+    REQUIRE_ATTESTATION = "certificate_require_attestation"
 
 
 class REQUIRE_ACTIONS(object):
@@ -342,7 +342,7 @@ class CertificateTokenClass(TokenClass):
                                                                                             params)
         # Now we fetch CA-pathes from the policies
         paths = Match.generic(g, scope=role,
-                              action="{0!s}_{1!s}".format(cls.get_class_type(), ACTION.TRUSTED_CA_PATH),
+                              action=ACTION.TRUSTED_CA_PATH,
                               user=username,
                               realm=userrealm,
                               adminuser=adminuser,

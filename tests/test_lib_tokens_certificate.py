@@ -414,25 +414,25 @@ class CertificateTokenTestCase(MyTestCase):
                             "realm": "default",
                             "role": "user"}
         set_policy("pol1", scope=SCOPE.USER,
-                   action="certificate_{0!s}=tests/testdata/attestation/".format(ACTION.TRUSTED_CA_PATH))
+                   action="{0!s}=tests/testdata/attestation/".format(ACTION.TRUSTED_CA_PATH))
         g.policy_object = PolicyClass()
         p = CertificateTokenClass.get_default_settings(g, params)
         self.assertEqual(["tests/testdata/attestation/"],
-                         p.get("trusted_Attestation_CA_path"))
+                         p.get(ACTION.TRUSTED_CA_PATH))
         delete_policy("pol1")
         # the same should work for an admin user
         g.logged_in_user = {"user": "admin",
                             "realm": "super",
                             "role": "admin"}
         set_policy("pol1", scope=SCOPE.ADMIN,
-                   action="certificate_{0!s}=tests/testdata/attestation/".format(ACTION.TRUSTED_CA_PATH))
+                   action="{0!s}=tests/testdata/attestation/".format(ACTION.TRUSTED_CA_PATH))
         g.policy_object = PolicyClass()
         p = CertificateTokenClass.get_default_settings(g, params)
         self.assertEqual(["tests/testdata/attestation/"],
-                         p.get("trusted_Attestation_CA_path"))
+                         p.get(ACTION.TRUSTED_CA_PATH))
         delete_policy("pol1")
         # If we have no policy, we revert to default
         g.policy_object = PolicyClass()
         p = CertificateTokenClass.get_default_settings(g, params)
         self.assertEqual(["/etc/privacyidea/trusted_attestation_ca"],
-                         p.get("trusted_Attestation_CA_path"))
+                         p.get(ACTION.TRUSTED_CA_PATH))

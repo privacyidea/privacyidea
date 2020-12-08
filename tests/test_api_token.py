@@ -181,7 +181,7 @@ class APIAttestationTestCase(MyApiTestCase):
 
         # The admin enrolls the certificate, so we need an admin policy
         set_policy("pol1", scope=SCOPE.ADMIN,
-                   action="certificate_{0!s}=tests/testdata/attestation/".format(ACTION.TRUSTED_CA_PATH))
+                   action="{0!s}=tests/testdata/attestation/".format(ACTION.TRUSTED_CA_PATH))
         set_policy("pol2", scope=SCOPE.ADMIN,
                    action="enrollCERTIFICATE")
 
