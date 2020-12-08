@@ -820,7 +820,7 @@ class PolicyClass(object):
         In case of a tokeninfo, no exception is raised if ``dbtoken`` is None. The condition
         is effectively set to True.
         :param policy: a policy dictionary, the policy in question
-        :param key: a tokeninfo key
+        :param key: a tokeninfo or userinfo key
         :param comparator: a value comparator: one of "equal", "contains"
         :param value: a value against which the tokeninfo value will be compared
         :param type: the info type to match, "userinfo" or "tokeninfo"
