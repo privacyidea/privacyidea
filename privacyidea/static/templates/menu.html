@@ -30,7 +30,6 @@
 
         <div class="navbar-collapse collapse myMainNavbar">
             <ul class="nav navbar-nav" ng-hide="token_wizard">
-
                 <li ui-sref-active="active"
                     ng-show="loggedInUser.role == 'admin' && admin_dashboard">
                     <a ui-sref="dashboard">
@@ -96,6 +95,11 @@
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
+                <li ng-show="show_node">
+                    <a>
+                        <b>{{ show_node }}</b>
+                    </a>
+                </li>
                 <li>
                     <spinner name="spinner" show="false"></spinner>
                 </li>
