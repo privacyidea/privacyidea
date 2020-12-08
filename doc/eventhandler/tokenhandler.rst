@@ -173,6 +173,8 @@ Using the action ``set failcounter`` you can reset the fail counter by
 setting it to 0 or also "block" the token by setting the fail counter to what
 ever value the "max_fail" is, e.g. 10. Only integer values are allowed.
 
+See :ref:`failcounter`.
+
 change failcounter
 ..................
 
@@ -185,6 +187,14 @@ fail counter, negative values will decrease it.
    it to e.g. ">-5". Once this condition is not met anymore, the event handler will
    not be triggered.
 
+set max failcount
+.................
+
+Using the action ``set max failcount`` you can set the maximum failcounter of a
+token to the specific value.
+Only integer values are allowed.
+
+See :ref:`failcounter`.
 
 set random pin
 ..............
