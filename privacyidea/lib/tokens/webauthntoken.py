@@ -32,7 +32,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError, RegistrationError, PolicyError
-from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token import get_tokens, get_one_token
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
@@ -155,7 +155,7 @@ from the first step. *alternativeAlgorithm*, *authenticatorSelection*,
 *timeout*, *attestation*, and *authenticatorSelectionList* are optional. If
 *attestation* is not provided, the client should default to `direct`
 attestation. If *timeout* is not provided, it may be omitted, or a sensible
-default chosen. Any other optional values must be omiffed, if the server has
+default chosen. Any other optional values must be omitted, if the server has
 not sent them. Please note that the nonce will be a binary, encoded using the
 web-safe base64 algorithm specified by WebAuthn, and needs to be decoded and
 passed as Uint8Array.
@@ -924,7 +924,7 @@ class WebAuthnTokenClass(TokenClass):
                 raise ValueError("Creating a WebAuthn token requires user to be provided")
 
             # To aid with unit testing a fixed nonce may be passed in.
-            nonce = params['nonce'] if 'nonce' in params else self._get_nonce()
+            nonce = self._get_nonce()
 
             # Create the challenge in the database
             challenge = Challenge(serial=self.token.serial,
@@ -1069,13 +1069,29 @@ class WebAuthnTokenClass(TokenClass):
 
         message = self._get_message(options)
 
-        # To aid with unit testing a fixed nonce may be passed in.
-        nonce = options['nonce'] if 'nonce' in options else self._get_nonce()
+        # if a transaction id is given, check if there are other webauthn
+        # token and reuse the challenge.
+        # TODO: It might be more sensible to pass around a list of all tokens
+        #  currently doing challenge creation in this request.
+        challenge = None
+        if transactionid:
+            for c in get_challenges(transaction_id=transactionid):
+                # TODO: this throws an exception if the token does not exists
+                #  but just created a challenge with it...
+                if get_one_token(serial=c.serial, tokentype=self.get_class_type()):
+                    challenge = c.challenge
+                    break
+
+        if not challenge:
+            nonce = self._get_nonce()
+            challenge = hexlify_and_unicode(nonce)
+        else:
+            nonce = binascii.unhexlify(challenge)
 
         # Create the challenge in the database
         challenge = Challenge(serial=self.token.serial,
                               transaction_id=transactionid,
-                              challenge=hexlify_and_unicode(nonce),
+                              challenge=challenge,
                               data=None,
                               session=getParam(options, "session", optional),
                               validitytime=self._get_challenge_validity_time())

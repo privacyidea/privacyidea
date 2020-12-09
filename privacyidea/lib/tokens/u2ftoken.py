@@ -30,6 +30,7 @@
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.token import get_one_token
 from privacyidea.lib.log import log_with
 import logging
 from privacyidea.models import Challenge
@@ -43,6 +44,7 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
 from privacyidea.lib.error import ValidateError, PolicyError, ParameterError
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION, get_action_values_from_options
 from privacyidea.lib.policy import Match
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.utils import is_true, hexlify_and_unicode, to_unicode
 import binascii
 import json
@@ -437,11 +439,25 @@ class U2fTokenClass(TokenClass):
         lookup_for = tokentype.capitalize() + 'ChallengeValidityTime'
         validity = int(get_from_config(lookup_for, validity))
 
-        challenge = geturandom(32)
+        # if a transaction id is given, check if there are other u2f token and
+        # reuse the challenge
+        challenge = None
+        if transactionid:
+            for c in get_challenges(transaction_id=transactionid):
+                if get_one_token(serial=c.serial, tokentype=self.get_class_type()):
+                    challenge = c.challenge
+                    break
+
+        if not challenge:
+            nonce = geturandom(32)
+            challenge = hexlify_and_unicode(nonce)
+        else:
+            nonce = binascii.unhexlify(challenge)
+
         # Create the challenge in the database
         db_challenge = Challenge(self.token.serial,
                                  transaction_id=transactionid,
-                                 challenge=hexlify_and_unicode(challenge),
+                                 challenge=challenge,
                                  data=None,
                                  session=options.get("session"),
                                  validitytime=validity)
@@ -450,7 +466,7 @@ class U2fTokenClass(TokenClass):
         key_handle_hex = sec_object.getKey()
         key_handle_bin = binascii.unhexlify(key_handle_hex)
         key_handle_url = url_encode(key_handle_bin)
-        challenge_url = url_encode(challenge)
+        challenge_url = url_encode(nonce)
         u2f_sign_request = {"appId": self.get_tokeninfo("appId"),
                             "version": U2F_Version,
                             "challenge": challenge_url,

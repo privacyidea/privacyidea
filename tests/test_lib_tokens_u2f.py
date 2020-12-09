@@ -8,8 +8,11 @@ from privacyidea.lib.tokens.u2f import (check_registration_data,
                                         parse_registration_data, url_decode,
                                         check_response, parse_response_data,
                                         der_encode, der_decode)
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, remove_token, check_user_pass
+from privacyidea.lib.user import User
+from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.utils import hexlify_and_unicode, to_bytes
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib import _
@@ -283,3 +286,117 @@ class U2FTokenTestCase(MyTestCase):
         with self.assertRaisesRegexp(Exception,
                                      "The signature needs to be 64 bytes."):
             der_decode(binascii.unhexlify(long_sig_hex))
+
+
+class MultipleU2FTokenTestCase(MyTestCase):
+    app_id = 'https://localhost:5000'
+    reg_data1 = ("BQSUSmNE4buL5xIqMlaRyJSMHhSvr37LpTT2e-zxyVoY21dzl1gZwcTws9I8r"
+                 "CCKwHV-j9dt3NsWIPypid8PsKWsQMU-IQlPNvVsMXxXyhMLjBoUvdiDZShlo5"
+                 "w-P6_i_bT2mDF9O07q2lMW-AXGyIKKSrlsh-1oJBklRUYQ0sbfyEgwggK8MII"
+                 "BpKADAgECAgQDrfASMA0GCSqGSIb3DQEBCwUAMC4xLDAqBgNVBAMTI1l1Ymlj"
+                 "byBVMkYgUm9vdCBDQSBTZXJpYWwgNDU3MjAwNjMxMCAXDTE0MDgwMTAwMDAwM"
+                 "FoYDzIwNTAwOTA0MDAwMDAwWjBtMQswCQYDVQQGEwJTRTESMBAGA1UECgwJWX"
+                 "ViaWNvIEFCMSIwIAYDVQQLDBlBdXRoZW50aWNhdG9yIEF0dGVzdGF0aW9uMSY"
+                 "wJAYDVQQDDB1ZdWJpY28gVTJGIEVFIFNlcmlhbCA2MTczMDgzNDBZMBMGByqG"
+                 "SM49AgEGCCqGSM49AwEHA0IABBmeh5wWLbfcOe5KQqBGFqWzCf7KCS92vglI-"
+                 "W1ulcrkzGXNVKBZz73HybMbKx1sGER5wsBh9BiqlUtZaiwc-hejbDBqMCIGCS"
+                 "sGAQQBgsQKAgQVMS4zLjYuMS40LjEuNDE0ODIuMS43MBMGCysGAQQBguUcAgE"
+                 "BBAQDAgQwMCEGCysGAQQBguUcAQEEBBIEEPormdyeOUJXj5JKMNI8QRgwDAYD"
+                 "VR0TAQH_BAIwADANBgkqhkiG9w0BAQsFAAOCAQEAKOuzZ_7R2PDiievKn_bYB"
+                 "1fGDprlfLFyjJscOMq7vYTZI32oMawhlJ8PLfwMMWv9sXWzbmOiK7tYDq3KUo"
+                 "DQeYQOWh4lcmJaO_uHYDPb-yKpack4uJzhcTWUAKElLZcCqRKT1UUZ6WDdIs6"
+                 "KJ-sF6355t1DAAv7ZAWtxHsmtdFAb2RTLvo7ZVxKBt09E6wd85h7LBquFqXJV"
+                 "Jn7o45gr9D8Msho4LSNeueTObbKYxAVCUEAjKyth4QzXDGIVvAO36UBxtw4S0"
+                 "cR_lmVaLvmdTOVafxtLH_kU7hNtnmEgRxSIZGmIgEQxFmU4ibhkhtnJyf-8k4"
+                 "VFNWmzRXRLjKC0NzBEAiBcVPalM6D9t0JFcDFEJW4OiMr945SDuiJFaxlwi9M"
+                 "SawIgdpy0pATSpLXaiFfUqxoFXaMfo-oSqssdZdcWIlWGCpI")
+    client_data1 = ('eyJjaGFsbGVuZ2UiOiJJeF9HbWo1SkVFYktDR3k0QV9BVVZFYWRGTWNJam'
+                    'hBOC1meTJha1ZFaUFRIiwib3JpZ2luIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6'
+                    'NTAwMCIsInR5cCI6Im5hdmlnYXRvci5pZC5maW5pc2hFbnJvbGxtZW50In0')
+
+    reg_data2 = ('BQREKCB4dlbzcqkU7T1talLdlX8pV-aJa0ijSpM2JIXg490mvhXVRquJuSkhr'
+                 'iz0YFrBsB0FjtbTejlsHeKO5de2QKfcG86b738Bq_RntwwH9Nf1VrsFHrdHnh'
+                 '57-9-z7dTGKVD57W_LQch2QtjgZcPslUq19kbz-PXs-WJxgRNhMMUwggK8MII'
+                 'BpKADAgECAgQDrfASMA0GCSqGSIb3DQEBCwUAMC4xLDAqBgNVBAMTI1l1Ymlj'
+                 'byBVMkYgUm9vdCBDQSBTZXJpYWwgNDU3MjAwNjMxMCAXDTE0MDgwMTAwMDAwM'
+                 'FoYDzIwNTAwOTA0MDAwMDAwWjBtMQswCQYDVQQGEwJTRTESMBAGA1UECgwJWX'
+                 'ViaWNvIEFCMSIwIAYDVQQLDBlBdXRoZW50aWNhdG9yIEF0dGVzdGF0aW9uMSY'
+                 'wJAYDVQQDDB1ZdWJpY28gVTJGIEVFIFNlcmlhbCA2MTczMDgzNDBZMBMGByqG'
+                 'SM49AgEGCCqGSM49AwEHA0IABBmeh5wWLbfcOe5KQqBGFqWzCf7KCS92vglI-'
+                 'W1ulcrkzGXNVKBZz73HybMbKx1sGER5wsBh9BiqlUtZaiwc-hejbDBqMCIGCS'
+                 'sGAQQBgsQKAgQVMS4zLjYuMS40LjEuNDE0ODIuMS43MBMGCysGAQQBguUcAgE'
+                 'BBAQDAgQwMCEGCysGAQQBguUcAQEEBBIEEPormdyeOUJXj5JKMNI8QRgwDAYD'
+                 'VR0TAQH_BAIwADANBgkqhkiG9w0BAQsFAAOCAQEAKOuzZ_7R2PDiievKn_bYB'
+                 '1fGDprlfLFyjJscOMq7vYTZI32oMawhlJ8PLfwMMWv9sXWzbmOiK7tYDq3KUo'
+                 'DQeYQOWh4lcmJaO_uHYDPb-yKpack4uJzhcTWUAKElLZcCqRKT1UUZ6WDdIs6'
+                 'KJ-sF6355t1DAAv7ZAWtxHsmtdFAb2RTLvo7ZVxKBt09E6wd85h7LBquFqXJV'
+                 'Jn7o45gr9D8Msho4LSNeueTObbKYxAVCUEAjKyth4QzXDGIVvAO36UBxtw4S0'
+                 'cR_lmVaLvmdTOVafxtLH_kU7hNtnmEgRxSIZGmIgEQxFmU4ibhkhtnJyf-8k4'
+                 'VFNWmzRXRLjKC0NzBFAiEAgx6TM_lyZE6SQx05Wlot-hMK-Cp2p8itseOPNp_'
+                 'xtu4CIDpSYJYOb10vM32rjrBNDd-AoKJWbIQRtAwjVEZjXwz6')
+
+    client_data2 = ('eyJjaGFsbGVuZ2UiOiJUdU84MDVPTEQzdXpUNmNnalZ6blRJSjRrZXg4N'
+                    'WlremlUTG1aNC1jQnBvIiwib3JpZ2luIjoiaHR0cHM6Ly9sb2NhbGhvc3'
+                    'Q6NTAwMCIsInR5cCI6Im5hdmlnYXRvci5pZC5maW5pc2hFbnJvbGxtZW5'
+                    '0In0')
+
+    def setUp(self) -> None:
+        self.setUp_user_realms()
+        self.user = User(login='cornelius', resolver=self.resolvername1,
+                         realm=self.realm1)
+        set_privacyidea_config("u2f.appId", self.app_id)
+        # init step 1
+        self.token1 = init_token({'type': 'u2f'})
+        self.serial1 = self.token1.token.serial
+        # finish init step 1
+        res = self.token1.get_init_detail()
+        # init step 2
+        self.token1 = init_token({"type": "u2f",
+                                  "serial": self.serial1,
+                                  "regdata": self.reg_data1,
+                                  "clientdata": self.client_data1},
+                                 user=self.user)
+        # Token 2
+        # init step 1
+        self.token2 = init_token({'type': 'u2f'})
+        self.serial2 = self.token2.token.serial
+        # finish init step 1
+        res = self.token2.get_init_detail()
+        # init step 2
+        self.token2 = init_token({"type": "u2f",
+                                  "serial": self.serial2,
+                                  "regdata": self.reg_data2,
+                                  "clientdata": self.client_data2},
+                                 user=self.user)
+
+    def tearDown(self) -> None:
+        remove_token(serial=self.serial1)
+        remove_token(serial=self.serial2)
+
+    def test_01_multiple_token(self):
+        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN))
+        res, reply = check_user_pass(self.user, '')
+        self.assertFalse(res)
+        self.assertIn('transaction_id', reply, reply)
+        tid = reply['transaction_id']
+        self.assertIn('multi_challenge', reply, reply)
+        self.assertEqual(len(reply['multi_challenge']), 2, reply['multi_challenge'])
+        self.assertIn('messages', reply, reply)
+        self.assertEqual(len(reply['messages']), 2, reply['messages'])
+        # check that the serials of the challenges are different
+        chal1 = reply['multi_challenge'][0]
+        chal2 = reply['multi_challenge'][1]
+        self.assertNotEqual(chal1['serial'], chal2['serial'],
+                            reply['multi_challenge'])
+        self.assertEqual(chal1['transaction_id'], chal2['transaction_id'],
+                         reply['multi_challenge'])
+        # Now make sure that the requests contain the same challenge
+        self.assertEqual(chal1['attributes']['u2fSignRequest']['challenge'],
+                         chal2['attributes']['u2fSignRequest']['challenge'],
+                         reply['multi_challenge'])
+        # check that we have two challenges in the db with the same challenge
+        chals = get_challenges(transaction_id=tid)
+        self.assertEqual(len(chals), 2, chals)
+        self.assertEqual(chals[0].challenge, chals[1].challenge, chals)
+
+        delete_policy('otppin')
