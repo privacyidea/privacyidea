@@ -1365,6 +1365,7 @@ class PolicyTestCase(MyTestCase):
             resolver = 'resolver'
 
         user1 = MockUser()
+        user1.info = {"email": "foo@bar.com"}
 
         # Policy with initially inactive condition, setpin is allowed for this token
         set_policy("setpin_pol", scope=SCOPE.USER, action=ACTION.SETPIN,
