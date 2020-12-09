@@ -320,3 +320,21 @@ The user does not see the value and can not change the value.
 For more details of this token type see :ref:`indexedsecret_token`.
 
 New in version 3.3.
+
+.. _user_trusted_attestation_CA:
+
+certificate_trusted_Attestation_CA_path
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+A user can enroll a certificate token.
+If an attestation certificate is provided in addition, this policy holds the
+path to a directory, that contains trusted CA paths.
+Each PEM encoded file in this directory needs to contain the root CA certificate
+at the first position and the consecutive intermediate certificates.
+
+An additional enrollment policy :ref:`require_attestation`, if an attestation certificate
+is required.
+
+New in version 3.5.

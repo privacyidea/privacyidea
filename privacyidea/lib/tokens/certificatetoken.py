@@ -5,6 +5,8 @@
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org
 #
+#  2020-10-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add attestation certificate functionality
 #  2016-04-26 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Add the possibility to create key pair on server side
 #             Provide download for pkcs12 file
@@ -33,21 +35,138 @@ The code is tested in test_lib_tokens_certificate.py.
 
 import logging
 
-from privacyidea.lib.utils import to_unicode, b64encode_and_unicode
+from privacyidea.lib.utils import to_unicode, b64encode_and_unicode, to_byte_string
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.caconnector import get_caconnector_object
 from privacyidea.lib.user import get_user_from_param
+from privacyidea.lib.utils import determine_logged_in_userparams
 from OpenSSL import crypto
+from cryptography.x509 import load_pem_x509_certificate, load_pem_x509_csr
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import padding
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.lib.policy import SCOPE, ACTION as BASE_ACTION, GROUP, Match
+from privacyidea.lib.error import privacyIDEAError
+import traceback
 
 optional = True
 required = False
 
 log = logging.getLogger(__name__)
+
+
+DEFAULT_CA_PATH = ["/etc/privacyidea/trusted_attestation_ca"]
+
+
+class ACTION(BASE_ACTION):
+    __doc__ = """This is the list of special certificate actions."""
+    TRUSTED_CA_PATH = "certificate_trusted_Attestation_CA_path"
+    REQUIRE_ATTESTATION = "certificate_require_attestation"
+
+
+class REQUIRE_ACTIONS(object):
+    IGNORE = "ignore"
+    VERIFY = "verify"
+    REQUIRE_AND_VERIFY = "require_and_verify"
+
+
+def verify_certificate_path(certificate, trusted_ca_paths):
+    """
+    Verify a certificate against the list of directories each containing files with
+    a certificate chain.
+
+    :param certificate: The PEM certificate to verify
+    :param trusted_ca_paths: A list of directories
+    :return: True or False
+    """
+    from os import listdir
+    from os.path import isfile, join, isdir
+
+    for capath in trusted_ca_paths:
+        if isdir(capath):
+            chainfiles = [join(capath, f) for f in listdir(capath) if isfile(join(capath, f))]
+            for chainfile in chainfiles:
+                chain = parse_chainfile(chainfile)
+                try:
+                    verify_certificate(to_byte_string(certificate), chain)
+                    return True
+                except Exception as exx:
+                    log.debug(u"Can not verify attestation certificate against chain {0!s}.".format(chain))
+        else:
+            log.warning("The configured attestation CA directory does not exist.")
+    return False
+
+
+def parse_chainfile(chainfile):
+    """
+    Parse a text file, that contains a list of CA files.
+    The topmost being the trusted Root CA followed by intermediate
+
+    :param chainfile: The filename to parse
+    :return: A list of PEM certificates
+    """
+    cacerts = []
+    cacert = ""
+    with open(chainfile) as f:
+        lines = f.readlines()
+    for line in lines:
+        if line.startswith("-----BEGIN CERTIFICATE-----"):
+            cacert = line
+        elif line.startswith("-----END CERTIFICATE-----"):
+            cacert += line
+            # End of certificate
+            cacerts.append(cacert)
+        elif line.startswith("#") or line == "":
+            # Empty line or comment
+            pass
+        else:
+            cacert += line
+    return cacerts
+
+
+def verify_certificate(certificate, chain):
+    """
+    Verify a certificate against the certificate chain, which can be of any length
+
+    The certificate chain starts with the root certificate and contains further
+    intermediate certificates
+
+    :param certificate: The certificate
+    :type certificate: PEM encoded string
+    :param chain: A list of PEM encoded certificates
+    :type chain: list
+    :return: raises an exception
+    """
+    # first reverse the list, since it can be popped better
+    chain = list(reversed(chain))
+    if not chain:
+        raise privacyIDEAError("Can not verify certificate against an empty chain.")
+    certificate = load_pem_x509_certificate(to_byte_string(certificate), default_backend())
+    chain = [load_pem_x509_certificate(to_byte_string(c), default_backend()) for c in chain]
+    # verify chain
+    while chain:
+        signer = chain.pop()
+        if chain:
+            # There is another element in the list, so we check the intermediate:
+            signee = chain.pop()
+            signer.public_key().verify(
+                signee.signature,
+                signee.tbs_certificate_bytes,
+                padding.PKCS1v15(),
+                signee.signature_hash_algorithm
+            )
+            signer = signee
+
+    # This was the last certificate in the chain, so we check the certificate
+    signer.public_key().verify(
+        certificate.signature,
+        certificate.tbs_certificate_bytes,
+        padding.PKCS1v15(),
+        certificate.signature_hash_algorithm
+    )
 
 
 class CertificateTokenClass(TokenClass):
@@ -80,6 +199,7 @@ class CertificateTokenClass(TokenClass):
            user=cornelius
            realm=realm1
            request=<PEM encoded request>
+           attestation=<PEM encoded attestation certificate>
            ca=<name of the ca connector>
 
       **Example Initialization Request, key generation on servers side**
@@ -168,6 +288,29 @@ class CertificateTokenClass(TokenClass):
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of active certificates assigned."),
                            'group': GROUP.TOKEN
+                       },
+                       ACTION.REQUIRE_ATTESTATION: {
+                           'type': 'str',
+                           'desc': _("Enrolling a certificate token can require an attestation certificate. "
+                                     "(Default: ignore)"),
+                           'group': GROUP.TOKEN,
+                           'value': [REQUIRE_ACTIONS.IGNORE,
+                                     REQUIRE_ACTIONS.VERIFY,
+                                     REQUIRE_ACTIONS.REQUIRE_AND_VERIFY]
+                       }
+                   },
+                   SCOPE.USER: {
+                       ACTION.TRUSTED_CA_PATH: {
+                           'type': 'str',
+                           'desc': _("The directory containing attestation certificate chains."),
+                           'group': GROUP.TOKEN
+                       }
+                   },
+                   SCOPE.ADMIN: {
+                       ACTION.TRUSTED_CA_PATH: {
+                           'type': 'str',
+                           'desc': _("The directory containing attestation certificate chains."),
+                           'group': GROUP.TOKEN
                        }
                    }
                }
@@ -177,6 +320,37 @@ class CertificateTokenClass(TokenClass):
         else:
             if ret == 'all':
                 ret = res
+        return ret
+
+    @classmethod
+    def get_default_settings(cls, g, params):
+        """
+        This method returns a dictionary with additional settings for token
+        enrollment.
+        The settings that are evaluated are
+        SCOPE.ADMIN|SCOPE.USER, action=trusted_Assertion_CA_path
+        It sets a list of configured paths.
+
+        The returned dictionary is added to the parameters of the API call.
+        :param g: context object, see documentation of ``Match``
+        :param params: The call parameters
+        :type params: dict
+        :return: default parameters
+        """
+        ret = {ACTION.TRUSTED_CA_PATH: DEFAULT_CA_PATH}
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
+                                                                                            params)
+        # Now we fetch CA-pathes from the policies
+        paths = Match.generic(g, scope=role,
+                              action=ACTION.TRUSTED_CA_PATH,
+                              user=username,
+                              realm=userrealm,
+                              adminuser=adminuser,
+                              adminrealm=adminrealm).action_values(unique=False,
+                                                                   allow_white_space_in_action=True)
+        if paths:
+            ret[ACTION.TRUSTED_CA_PATH] = list(paths)
+
         return ret
 
     def update(self, param):
@@ -200,6 +374,35 @@ class CertificateTokenClass(TokenClass):
             self.add_tokeninfo("CA", ca)
             cacon = get_caconnector_object(ca)
         if request:
+            if not spkac:
+                # We only do the whole attestation checking in case we have no SPKAC
+                request_csr = load_pem_x509_csr(to_byte_string(request), default_backend())
+                if not request_csr.is_signature_valid:
+                    raise privacyIDEAError("request has invalid signature.")
+                # If a request is sent, we can have an attestation certificate
+                attestation = getParam(param, "attestation", optional)
+                verify_attestation = getParam(param, "verify_attestation", optional)
+                if attestation:
+                    request_numbers = request_csr.public_key().public_numbers()
+                    attestation_cert = load_pem_x509_certificate(to_byte_string(attestation), default_backend())
+                    attestation_numbers = attestation_cert.public_key().public_numbers()
+                    if request_numbers != attestation_numbers:
+                        log.warning("certificate request does not match attestation certificate.")
+                        raise privacyIDEAError("certificate request does not match attestation certificate.")
+
+                    try:
+                        verified = verify_certificate_path(attestation,
+                                                           param.get(ACTION.TRUSTED_CA_PATH))
+                    except Exception as exx:
+                        # We could have file system errors during verification.
+                        log.debug("{0!s}".format(traceback.format_exc()))
+                        verified = False
+
+                    if not verified:
+                        log.warning("Failed to verify certificate chain of attestation certificate.")
+                        if verify_attestation:
+                            raise privacyIDEAError("Failed to verify certificate chain of attestation certificate.")
+
             # During the initialization process, we need to create the
             # certificate
             x509object = cacon.sign_request(request,

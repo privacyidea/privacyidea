@@ -125,6 +125,83 @@ class API000TokenAdminRealmList(MyApiTestCase):
             self.assertEqual(0, result.get("value").get("count"))
 
 
+class APIAttestationTestCase(MyApiTestCase):
+
+    def test_00_realms_and_ca(self):
+        # Setup realms and CA
+        self.setUp_user_realms()
+        cwd = os.getcwd()
+        # setup ca connector
+        r = save_caconnector({"cakey": CAKEY,
+                              "cacert": CACERT,
+                              "type": "local",
+                              "caconnector": "localCA",
+                              "openssl.cnf": OPENSSLCNF,
+                              "CSRDir": "",
+                              "CertificateDir": "",
+                              "WorkingDir": cwd + "/" + WORKINGDIR})
+
+    def test_01_enroll_certificate(self):
+        # Enroll a certificate without a policy
+        from .test_lib_tokens_certificate import YUBIKEY_CSR, BOGUS_ATTESTATION, YUBIKEY_ATTEST, ACTION
+
+        # A bogus attestation certificate will fail!
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "certificate",
+                                                 "request": YUBIKEY_CSR,
+                                                 "attestation": BOGUS_ATTESTATION,
+                                                 "ca": "localCA"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            result = res.json.get("result")
+            self.assertEqual(400, res.status_code)
+            self.assertEqual(10, result.get("error").get("code"))
+            self.assertEqual('ERR10: certificate request does not match attestation certificate.',
+                             result.get("error").get("message"))
+
+        # If a valid attestation certificate can not be verified due to missing CA path, we will fail.
+        from privacyidea.lib.tokens.certificatetoken import ACTION, REQUIRE_ACTIONS
+        set_policy(name="pol_verify",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(ACTION.REQUIRE_ATTESTATION, REQUIRE_ACTIONS.REQUIRE_AND_VERIFY))
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "certificate",
+                                                 "request": YUBIKEY_CSR,
+                                                 "attestation": YUBIKEY_ATTEST,
+                                                 "ca": "localCA"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            result = res.json.get("result")
+            self.assertEqual(400, res.status_code)
+            self.assertEqual(10, result.get("error").get("code"))
+            self.assertEqual('ERR10: Failed to verify certificate chain of attestation certificate.',
+                             result.get("error").get("message"))
+
+        # The admin enrolls the certificate, so we need an admin policy
+        set_policy("pol1", scope=SCOPE.ADMIN,
+                   action="{0!s}=tests/testdata/attestation/".format(ACTION.TRUSTED_CA_PATH))
+        set_policy("pol2", scope=SCOPE.ADMIN,
+                   action="enrollCERTIFICATE")
+
+        # If the attestation certificate matches and it is trusted, then we succeed.
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "certificate",
+                                                 "request": YUBIKEY_CSR,
+                                                 "attestation": YUBIKEY_ATTEST,
+                                                 "ca": "localCA"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            result = res.json.get("result")
+            self.assertEqual(200, res.status_code)
+            self.assertTrue(result.get("value"))
+
+        delete_policy("pol1")
+        delete_policy("pol2")
+        delete_policy("pol_verify")
+
 class APITokenTestCase(MyApiTestCase):
 
     def _create_temp_token(self, serial):
@@ -1371,6 +1448,27 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = json.loads(res.data.decode('utf8')).get("result")
             self.assertEqual(len(result["value"]["tokens"]), 2)
+
+        # Finally we try to enroll a certificate with an attestation certificate required:
+        from privacyidea.lib.tokens.certificatetoken import ACTION, REQUIRE_ACTIONS
+        set_policy(name="pol1",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(ACTION.REQUIRE_ATTESTATION, REQUIRE_ACTIONS.REQUIRE_AND_VERIFY))
+        with self.app.test_request_context('/token/init',
+                                           data={"type": "certificate",
+                                                 "request": REQUEST,
+                                                 "ca": "localCA"},
+                                           method="POST",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"))
+            self.assertEqual(result.get("error").get("message"),
+                             "A policy requires that you provide an attestation certificate.")
+
+        delete_policy("pol1")
+
 
     def test_18_revoke_token(self):
         self._create_temp_token("RevToken")

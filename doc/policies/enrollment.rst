@@ -636,6 +636,31 @@ in the attestation certificate matches accordingly the token can be enrolled.
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_authz_req`.
 
+
+.. _require_attestation:
+
+certificate_require_attestation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+When enrolling a certificate token, privacyIDEA can require that an attestation
+certificate is passed along to verify, if the key pair was generated on a (PIV) smartcard.
+
+This policy can be set to:
+
+* ``ignore`` (default): Ignore any existence of an attestation certificate
+* ``verify``: If an attestation certificate is passed along during enrollment, the attestation
+  ceritificate gets verified.
+* ``require_and_verify``: An attestation certificate is required and verified. If no attestation certificate
+  is provided, the enrollment will fail.
+
+The trusted root certificate authorities and intermediate certificate authorities can be configured via
+the policies :ref:`admin_trusted_attestation_CA` and :ref:`user_trusted_attestation_CA
+
+
+
+
 .. rubric:: Footnotes
 
 .. [#rpid] https://w3.org/TR/webauthn-2/#rp-id

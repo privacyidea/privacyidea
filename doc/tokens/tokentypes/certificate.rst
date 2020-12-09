@@ -3,15 +3,15 @@
 Certificate Token
 ------------
 
-.. index:: certificates, client certificates, request, CSR, CA
+.. index:: certificates, client certificates, request, CSR, CA, attestation
 
 Starting with version 2.3 privacyIDEA supports certificates. A user can
 
-* upload a certificate request,
+* submit a certificate signing request (including an attestation certificate),
 * upload a certificate or
-* he can generate a certificate request in the browser.
+* he can generate a certificate signing request in the browser.
 
-privacyIDEA does not sign certificate requests itself but connects to
+privacyIDEA does not sign certificate signing requests itself but connects to
 existing certificate authorities. To do so, you need to define
 :ref:`caconnectors`.
 
