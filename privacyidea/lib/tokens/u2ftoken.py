@@ -30,7 +30,7 @@
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.token import get_one_token
+from privacyidea.lib.token import get_tokens
 from privacyidea.lib.log import log_with
 import logging
 from privacyidea.models import Challenge
@@ -444,7 +444,8 @@ class U2fTokenClass(TokenClass):
         challenge = None
         if transactionid:
             for c in get_challenges(transaction_id=transactionid):
-                if get_one_token(serial=c.serial, tokentype=self.get_class_type()):
+                if get_tokens(serial=c.serial, tokentype=self.get_class_type(),
+                              count=True):
                     challenge = c.challenge
                     break
 

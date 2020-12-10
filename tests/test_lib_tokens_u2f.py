@@ -340,7 +340,7 @@ class MultipleU2FTokenTestCase(MyTestCase):
                     'Q6NTAwMCIsInR5cCI6Im5hdmlnYXRvci5pZC5maW5pc2hFbnJvbGxtZW5'
                     '0In0')
 
-    def setUp(self) -> None:
+    def setUp(self):
         self.setUp_user_realms()
         self.user = User(login='cornelius', resolver=self.resolvername1,
                          realm=self.realm1)
@@ -369,10 +369,11 @@ class MultipleU2FTokenTestCase(MyTestCase):
                                   "clientdata": self.client_data2},
                                  user=self.user)
 
-    def tearDown(self) -> None:
+    def tearDown(self):
         remove_token(serial=self.serial1)
         remove_token(serial=self.serial2)
 
+    # TODO: also test challenge-response with different tokens (u2f + totp)
     def test_01_multiple_token(self):
         set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN))
         res, reply = check_user_pass(self.user, '')

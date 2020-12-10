@@ -551,7 +551,7 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
         WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
         WEBAUTHNACTION.TIMEOUT: TIMEOUT}
 
-    def setUp(self) -> None:
+    def setUp(self):
         self.setUp_user_realms()
         set_policy(name="WebAuthn", scope=SCOPE.ENROLL,
                    action='{0!s}={1!s},{2!s}={3!s}'.format(WEBAUTHNACTION.RELYING_PARTY_NAME,
@@ -611,10 +611,11 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
         self.assertEqual('Yubico U2F EE Serial 23925734103241087',
                          res['webAuthnRegisterResponse']['subject'], res)
 
-    def tearDown(self) -> None:
+    def tearDown(self):
         remove_token(serial=self.serial1)
         remove_token(serial=self.serial2)
 
+    # TODO: also test challenge-response with different tokens (webauthn + totp)
     def test_01_mulitple_webauthntoken_auth(self):
         set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN))
         res, reply = check_user_pass(self.user, '', options=self.auth_options)

@@ -32,7 +32,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError, RegistrationError, PolicyError
-from privacyidea.lib.token import get_tokens, get_one_token
+from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
@@ -1078,7 +1078,8 @@ class WebAuthnTokenClass(TokenClass):
             for c in get_challenges(transaction_id=transactionid):
                 # TODO: this throws an exception if the token does not exists
                 #  but just created a challenge with it...
-                if get_one_token(serial=c.serial, tokentype=self.get_class_type()):
+                if get_tokens(serial=c.serial, tokentype=self.get_class_type(),
+                              count=True):
                     challenge = c.challenge
                     break
 
