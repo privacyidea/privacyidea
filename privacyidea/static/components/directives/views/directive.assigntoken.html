@@ -4,7 +4,7 @@ This is the directive for assigning tokens to users.
 <div class="form-group">
     <label for="serial" translate>Serial</label>
     <input name="serial" type="text" ng-model="newTokenObject.serial"
-           autocomplete="off" required
+           autocomplete="new-password" required
            placeholder="{{ 'start typing a serial number of a token that is notassigned, yet.'|translate}} "
            ng-keypress="toggleLoadSerials($event.which==13)"
            typeahead-wait-ms="100"
