@@ -80,6 +80,7 @@ class CONDITION(object):
     CLIENT_IP = "client_ip"
     ROLLOUT_STATE = "rollout_state"
 
+
 class GROUP(object):
     """
     These are the event handler groups. The conditions
@@ -89,6 +90,7 @@ class GROUP(object):
     GENERAL = "general"
     USER = "user"
     COUNTER = "timer"
+
 
 class BaseEventHandler(object):
     """
