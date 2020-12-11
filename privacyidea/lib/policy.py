@@ -2284,7 +2284,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.SHOW_NODE: {
                 'type': 'bool',
                 'desc': _("If this is checked, the privacyIDEA Node name will be displayed "
-                          "below the logo.")
+                          "in the menu bar.")
             },
             ACTION.SHOW_ANDROID_AUTHENTICATOR: {
                 'type': 'bool',
