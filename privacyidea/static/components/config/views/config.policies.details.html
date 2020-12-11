@@ -270,9 +270,7 @@
         <div class="tab-pane action" id="action">
             <h3 translate>Action</h3>
             <div class="form-group">
-                <label for="action" class="col-sm-3 control-label">
-                    <translate>Action</translate>
-                    <br>
+                <label for="action" class="col-sm-3">
                     <button class="btn btn-sm btn-success"
                             ng-show="!onlySelectedVisible"
                             ng-click="onlySelectedVisible=true">
@@ -285,7 +283,7 @@
                     </button>
                 </label>
 
-                <div class="col-sm-9">
+                <div class="col-sm-12">
                     <div class="input-group">
                         <input type="text" ng-model="action_filter"
                                placeholder="{{ 'filter action...'|translate }}"
