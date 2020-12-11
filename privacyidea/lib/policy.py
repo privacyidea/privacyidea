@@ -2526,7 +2526,7 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=None, active=True,
                    resolver=None, user=None, user_object=None,
                    client=g.client_ip, action=action, adminrealm=None, time=None,
-                   sort_by_priority=True)
+                   sort_by_priority=True, serial=g.serial)
 
     @classmethod
     def realm(cls, g, scope, action, realm):
@@ -2546,7 +2546,7 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=realm, active=True,
                    resolver=None, user=None, user_object=None,
                    client=g.client_ip, action=action, adminrealm=None, time=None,
-                   sort_by_priority=True)
+                   sort_by_priority=True, serial=g.serial)
 
     @classmethod
     def user(cls, g, scope, action, user_object):
@@ -2572,7 +2572,7 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=None, active=True,
                    resolver=None, user=None, user_object=user_object,
                    client=g.client_ip, action=action, adminrealm=None, time=None,
-                   sort_by_priority=True)
+                   sort_by_priority=True, serial=g.serial)
 
     @classmethod
     def token(cls, g, scope, action, token_obj):
@@ -2590,7 +2590,6 @@ class Match(object):
         :param token_obj: The token where the user object or the realm should match.
         :rtype: ``Match``
         """
-        # Todo: eventually consider token serial given by g.serial
         if token_obj.user:
             return cls.user(g, scope, action, token_obj.user)
         else:
@@ -2628,7 +2627,7 @@ class Match(object):
         return cls(g, name=None, scope=SCOPE.ADMIN, user_object=user_obj, active=True,
                    resolver=None, client=g.client_ip, action=action,
                    adminuser=adminuser, adminrealm=adminrealm, time=None,
-                   sort_by_priority=True)
+                   sort_by_priority=True, serial=g.serial)
 
     @classmethod
     def admin_or_user(cls, g, action, user_obj):
@@ -2661,7 +2660,7 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=userrealm, active=True,
                    resolver=None, user=username, user_object=user_obj,
                    client=g.client_ip, action=action, adminrealm=adminrealm, adminuser=adminuser,
-                   time=None, sort_by_priority=True)
+                   time=None, sort_by_priority=True, serial=g.serial)
 
     @classmethod
     def generic(cls, g, scope=None, realm=None, resolver=None, user=None, user_object=None,
