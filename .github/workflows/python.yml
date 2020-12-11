@@ -84,13 +84,14 @@ jobs:
     - name: Download coverage report artifacts
       uses: actions/download-artifact@v2
       with:
-        path: cov_reports
+        path: ~/cov_reports
     - name: Combine coverage reports
       run: |
-        coverage combine cov_reports/*
+        coverage combine coverage-*
         coverage xml
+      working-directory: ~/cov_reports
     - name: Codecov upload
       uses: codecov/codecov-action@v1
       with:
-        file: ~/coverage.xml
+        file: ~/cov_reports/coverage.xml
 
