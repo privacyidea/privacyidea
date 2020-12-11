@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2020-12-08 18:29+0000\n"
-"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"PO-Revision-Date: 2020-12-12 11:29+0000\n"
+"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -393,7 +393,7 @@ msgstr "Ein Attribut oder DN zur Identifizierung der Maschine"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:197
 msgid "An Attribute that contains the IP address."
-msgstr "Ein Attribut, das die IP-Adresse der Maschine enthält"
+msgstr "Ein Attribut, das die IP-Adresse der Maschine enthält."
 
 #: privacyidea/static/components/recovery/controllers/recoveryControllers.js:19
 msgid "An Email to reset the password has been sent to you."
@@ -1082,7 +1082,7 @@ msgstr "Bearbeite CA-Konnector {{ connectorname }}"
 
 #: privacyidea/static/components/config/views/config.events.details.html:3
 msgid "Edit Event Handler {{ eventid }}"
-msgstr "Bearbeite Ereignisdefinition  {{ eventid }}"
+msgstr "Ereignisdefinition {{ eventid }} bearbeiten"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:3
 msgid "Edit HTTP Resolver {{ resolvername }}"
@@ -1220,7 +1220,7 @@ msgstr "Token ausrollen"
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:168
 msgid "Enroll a new token"
-msgstr "Neuen Token ausrollen "
+msgstr "Neuen Token ausrollen"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:74
 msgid "Enter OTP + PIN to check the token."
@@ -1261,7 +1261,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/factories/config.js:43
 msgid "Error fetching policy template"
-msgstr "Fehler beim Laden der Richtlinien-Vorlage."
+msgstr "Fehler beim Laden der Richtlinien-Vorlage"
 
 #: privacyidea/static/components/config/factories/config.js:33
 msgid "Error fetching policy templates."
@@ -1343,7 +1343,7 @@ msgid ""
 "    <a ui-sref=\"config.tokens({tokentype:'email'})\">Email Token Config</a>!"
 msgstr ""
 "Damit E-Mail-Token richtig funktionieren, müssen Sie die   <a ui-sref="
-"\"config.tokens({tokentype:'email'})\">Email-Token Konfiguration</a> setzen."
+"\"config.tokens({tokentype:'email'})\">Email-Token Konfiguration</a> setzen!"
 
 #: privacyidea/static/components/token/views/token.import.html:25
 msgid "For HOTP and TOTP tokens:"
@@ -1358,8 +1358,8 @@ msgid ""
 "For SMS tokens to work properly you need to set the\n"
 "    <a ui-sref=\"config.tokens({tokentype:'sms'})\">SMS Token Config</a>!"
 msgstr ""
-"Damit SMS-Token richtig funktionieren, müssen Sie die     <a ui-sref="
-"\"config.tokens({tokentype:'sms'})\">SMS-Token Konfiguration</a> setzen."
+"Damit SMS-Token richtig funktionieren, müssen Sie die  <a ui-sref=\"config."
+"tokens({tokentype:'sms'})\">SMS-Token Konfiguration</a> setzen!"
 
 #: privacyidea/static/components/token/views/token.enroll.tiqr.html:1
 msgid ""
@@ -1367,7 +1367,7 @@ msgid ""
 "    <a ui-sref=\"config.tokens({tokentype:'tiqr'})\">TiQR Token Config</a>!"
 msgstr ""
 "Damit TiQR-Token richtig funktionieren, müssen Sie die  <a ui-sref=\"config."
-"tokens({tokentype:'tiqr'})\">TiQR-Token Konfiguration</a> setzen."
+"tokens({tokentype:'tiqr'})\">TiQR-Token Konfiguration</a> setzen!"
 
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:8
 msgid ""
