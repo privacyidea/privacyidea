@@ -44,7 +44,7 @@ jobs:
        
     - name: Test with pytest
       run: |
-        python -b -m pytest -v --cov=privacyidea --cov-report=xml --cov-append tests
+        python -b -m pytest -v --cov=privacyidea --cov-report= tests
 
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
