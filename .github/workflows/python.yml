@@ -85,12 +85,13 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         path: ~/cov_reports
+
     - name: Combine coverage reports
-      run: |
-        ls -R
-        coverage combine coverage-*
-        coverage xml
+      run: ls -R
       working-directory: ~/cov_reports
+#        coverage combine coverage-*
+#        coverage xml
+#
     - name: Codecov upload
       uses: codecov/codecov-action@v1
       with:
