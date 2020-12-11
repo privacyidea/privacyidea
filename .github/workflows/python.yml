@@ -28,23 +28,26 @@ jobs:
 
     - name: Cache pip installation
       uses: actions/cache@v2
+      id: venv-cache
       with:
-        # This path is specific to Ubuntu
-        path: ~/.cache/pip
-        # Look to see if there is a cache hit for the corresponding requirements file
-        key: ${{ runner.os }}-pip-py_${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+        path: |
+          ~/.cache/pip
+          ~/venv
+        key: ${{ runner.os }}-pip-py_${{ matrix.python-version }}-${{ hashFiles('requirements.txt', 'tests/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-py_${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
+        python -m venv ~/venv && . ~/venv/bin/activate
         python -m pip install --upgrade pip setuptools
         pip install -r tests/requirements.txt
-       
+      if: steps.venv-cache.outputs.cache-hit != 'true'
+
     - name: Test with pytest
       run: |
-        python -b -m pytest -v --cov=privacyidea --cov-report= tests
+        python -b -m pytest -v --cov=privacyidea tests
 
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
