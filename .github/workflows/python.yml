@@ -59,7 +59,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: coverage-${{ matrix.python-version }}
-        path: ~/.coverage
+        path: ./.coverage
         retention-days: 1
 
   finish:
