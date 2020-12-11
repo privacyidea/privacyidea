@@ -119,8 +119,9 @@
     <div class="tab-content">
         <div class="tab-pane active" id="condition">
             <h3 translate>Condition</h3>
-                <div>
-                    <label for="condition" class="col-sm-3 pl-0px">
+            <div class="row">
+                <div class="col-sm-3">
+                    <label for="condition">
                         <button class="btn btn-sm btn-success"
                                 ng-show="!onlySelectedVisible"
                                 ng-click="onlySelectedVisible=true">
@@ -132,8 +133,9 @@
                             <translate>Show all conditions</translate>
                         </button>
                     </label>
-
-                    <div class="input-group col-sm-12">
+                </div>
+                <div class="col-sm-9">
+                    <div class="input-group">
                         <input type="text" ng-model="condition_filter"
                                placeholder="{{ 'filter condition...'|translate }}"
                                ng-change="isOpen = (condition_filter.length > 0)"
@@ -145,69 +147,74 @@
                         </span>
                     </div>
                 </div>
-                <div class="mt-5px">
-                    <uib-accordion close-others="false">
-                        <div uib-accordion-group
-                             class="panel-default"
-                             is-open="isOpen"
-                             heading="{{ conditionGroup || 'miscellaneous'}}"
-                             ng-repeat="conditionGroup in conditionGroups">
-                            <table class="table table-hover">
-                                <tr ng-repeat="(conditionname, condition) in handlerConditions"
-                                 ng-show="(conditionCheckBox[conditionname] ||
-                                        !onlySelectedVisible) &&
-                                        conditionname.toLowerCase().match(condition_filter.toLowerCase()) !== null"
-                                            ng-if="condition.group===null || conditionGroup===condition.group">
-                                    <td>
-                                        <label for="cb_{{ conditionname }}">
-                                            <input type="checkbox"
-                                                   name="{{ conditionname }}"
-                                                   ng-model="conditionCheckBox[conditionname]"
-                                                   id="cb_{{ conditionname }}">
-                                            {{ conditionname }}
-                                        </label>
-                                    </td>
-                                    <td>
-                                        <select class="form-control"
-                                                ng-if="condition.type!=='multi' && condition.value"
-                                                ng-disabled="!conditionCheckBox[conditionname]"
-                                                ng-required="condition.required && condition.value"
-                                                ng-model="conds[conditionname]"
-                                                ng-options="value for value in condition.value">
-                                        </select>
-                                        <div isteven-multi-select
-                                             ng-if="condition.type==='multi'"
-                                             ng-disabled="!conditionCheckBox[conditionname]"
-                                             input-model="condition.value"
-                                             output-model="conds[conditionname]"
-                                             button-label="icon name"
-                                             item-label="icon name maker"
-                                             tick-property="ticked">
-                                        </div>
-                                        <textarea type="text" rows="6"
-                                                  ng-disabled="!conditionCheckBox[conditionname]"
-                                                  ng-required="condition.required && !condition.value"
-                                                  ng-if="condition.type==='text' && !condition.value"
-                                                  class="form-control"
-                                                  ng-model="conds[conditionname]">
-                                        </textarea>
-                                        <input class="form-control"
-                                               ng-disabled="!conditionCheckBox[conditionname]"
-                                               ng-required="condition.required && !condition.value"
-                                               ng-model="conds[conditionname]"
-                                               ng-if="(condition.type==='str' && !condition.value)
-                                || condition.type==='regexp'">
-                                        <p class="help help-block"
-                                           ng-disabled="!conditionCheckBox[conditionname]">
-                                            {{ condition.desc }}
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </uib-accordion>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="mt-5px">
+                        <uib-accordion close-others="false">
+                            <div uib-accordion-group
+                                 class="panel-default"
+                                 is-open="isOpen"
+                                 heading="{{ conditionGroup || 'miscellaneous'}}"
+                                 ng-repeat="conditionGroup in conditionGroups">
+                                <table class="table table-hover">
+                                    <tr ng-repeat="(conditionname, condition) in handlerConditions"
+                                     ng-show="(conditionCheckBox[conditionname] ||
+                                            !onlySelectedVisible) &&
+                                            conditionname.toLowerCase().match(condition_filter.toLowerCase()) !== null"
+                                                ng-if="condition.group===null || conditionGroup===condition.group">
+                                        <td>
+                                            <label for="cb_{{ conditionname }}">
+                                                <input type="checkbox"
+                                                       name="{{ conditionname }}"
+                                                       ng-model="conditionCheckBox[conditionname]"
+                                                       id="cb_{{ conditionname }}">
+                                                {{ conditionname }}
+                                            </label>
+                                        </td>
+                                        <td>
+                                            <select class="form-control"
+                                                    ng-if="condition.type!=='multi' && condition.value"
+                                                    ng-disabled="!conditionCheckBox[conditionname]"
+                                                    ng-required="condition.required && condition.value"
+                                                    ng-model="conds[conditionname]"
+                                                    ng-options="value for value in condition.value">
+                                            </select>
+                                            <div isteven-multi-select
+                                                 ng-if="condition.type==='multi'"
+                                                 ng-disabled="!conditionCheckBox[conditionname]"
+                                                 input-model="condition.value"
+                                                 output-model="conds[conditionname]"
+                                                 button-label="icon name"
+                                                 item-label="icon name maker"
+                                                 tick-property="ticked">
+                                            </div>
+                                            <textarea type="text" rows="6"
+                                                      ng-disabled="!conditionCheckBox[conditionname]"
+                                                      ng-required="condition.required && !condition.value"
+                                                      ng-if="condition.type==='text' && !condition.value"
+                                                      class="form-control"
+                                                      ng-model="conds[conditionname]">
+                                            </textarea>
+                                            <input class="form-control"
+                                                   ng-disabled="!conditionCheckBox[conditionname]"
+                                                   ng-required="condition.required && !condition.value"
+                                                   ng-model="conds[conditionname]"
+                                                   ng-if="(condition.type==='str' && !condition.value)
+                                    || condition.type==='regexp'">
+                                            <p class="help help-block"
+                                               ng-disabled="!conditionCheckBox[conditionname]">
+                                                {{ condition.desc }}
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </uib-accordion>
+                    </div>
                 </div>
             </div>
+        </div>
 
         <div class="tab-pane" id="action">
             <h3 translate>Action</h3>

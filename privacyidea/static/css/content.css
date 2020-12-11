@@ -79,10 +79,6 @@ input[type="checkbox"] {
     margin-top: 5px;
 }
 
-.pl-0px {
-    padding-left: 0px;
-}
-
 .centered {
     display: table;
     margin: auto;
