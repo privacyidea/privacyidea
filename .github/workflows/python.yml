@@ -31,8 +31,9 @@ jobs:
         # This path is specific to Ubuntu
         path: ~/.cache/pip
         # Look to see if there is a cache hit for the corresponding requirements file
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        key: ${{ runner.os }}-pip-py_${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
+          ${{ runner.os }}-pip-py_${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
 
     - name: Install dependencies
@@ -44,6 +45,14 @@ jobs:
       run: |
         python -b -m pytest -v --cov=privacyidea --cov-report=xml --cov-append tests
 
+    - name: Coveralls Parallel
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        path-to-lcov: coverage.xml
+        flag-name: run-${{ matrix.test_number }}
+        parallel: true
+
   finish:
     needs: build
     runs-on: ubuntu-18.04
@@ -52,4 +61,5 @@ jobs:
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.github_token }}
-        path-to-lcov: coverage.xml
+        parallel-finished: true
+
