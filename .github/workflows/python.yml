@@ -38,6 +38,11 @@ jobs:
           ${{ runner.os }}-pip-py_${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
 
+    - name: Install venv for Python 2.7
+      run: |
+        pip install py2venv
+      if: matrix.python-version == '2.7'
+
     - name: Install dependencies
       run: |
         python -m venv ~/venv && . ~/venv/bin/activate
@@ -48,7 +53,7 @@ jobs:
     - name: Test with pytest
       run: |
         . ~/venv/bin/activate
-        python -b -m pytest -v --cov=privacyidea tests
+        python -b -m pytest -v --cov=privacyidea tests/test_api_validate.py
 
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
