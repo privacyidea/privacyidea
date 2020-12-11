@@ -1090,13 +1090,13 @@ class WebAuthnTokenClass(TokenClass):
             nonce = binascii.unhexlify(challenge)
 
         # Create the challenge in the database
-        challenge = Challenge(serial=self.token.serial,
-                              transaction_id=transactionid,
-                              challenge=challenge,
-                              data=None,
-                              session=getParam(options, "session", optional),
-                              validitytime=self._get_challenge_validity_time())
-        challenge.save()
+        db_challenge = Challenge(serial=self.token.serial,
+                                 transaction_id=transactionid,
+                                 challenge=challenge,
+                                 data=None,
+                                 session=getParam(options, "session", optional),
+                                 validitytime=self._get_challenge_validity_time())
+        db_challenge.save()
 
         public_key_credential_request_options = WebAuthnAssertionOptions(
             challenge=webauthn_b64_encode(nonce),
@@ -1118,7 +1118,7 @@ class WebAuthnTokenClass(TokenClass):
             "img": user.icon_url
         }
 
-        return True, message, challenge.transaction_id, response_details
+        return True, message, db_challenge.transaction_id, response_details
     
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
