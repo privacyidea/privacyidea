@@ -61,7 +61,7 @@ import os
 import struct
 import unittest
 from copy import copy
-
+from mock import patch
 from privacyidea.lib.user import User
 
 from privacyidea.lib.config import set_privacyidea_config
@@ -76,8 +76,9 @@ from .base import MyTestCase
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, WEBAUTHNACTION, WEBAUTHNCONFIG,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT, WEBAUTHNINFO)
-from privacyidea.lib.token import init_token
-from privacyidea.lib.policy import set_policy, SCOPE
+from privacyidea.lib.token import init_token, check_user_pass, remove_token
+from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
+from privacyidea.lib.challenge import get_challenges
 
 TRUST_ANCHOR_DIR = "{}/testdata/trusted_attestation_roots".format(os.path.abspath(os.path.dirname(__file__)))
 REGISTRATION_RESPONSE_TMPL = {
@@ -244,8 +245,9 @@ class WebAuthnTokenTestCase(MyTestCase):
         self.assertEqual(RP_NAME, self.token.get_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_NAME))
 
     def test_03_token_update(self):
-        self.init_params['nonce'] = webauthn_b64_decode(REGISTRATION_CHALLENGE)
-        self.token.get_init_detail(self.init_params, self.user)
+        with patch('privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
+            mock_nonce.return_value = webauthn_b64_decode(REGISTRATION_CHALLENGE)
+            self.token.get_init_detail(self.init_params, self.user)
         self.token.update({
             'type': 'webauthn',
             'serial': self.token.token.serial,
@@ -311,10 +313,11 @@ class WebAuthnTokenTestCase(MyTestCase):
         self.assertTrue(sign_count == -1)
 
     def test_07_none_attestation(self):
-        self.init_params['nonce'] = webauthn_b64_decode(NONE_ATTESTATION_REGISTRATION_CHALLENGE)
-        self.init_params[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] = 'none'
-        self.user = User(login=NONE_ATTESTATION_USER_NAME)
-        self.token.get_init_detail(self.init_params, self.user)
+        with patch('privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
+            mock_nonce.return_value = webauthn_b64_decode(NONE_ATTESTATION_REGISTRATION_CHALLENGE)
+            self.init_params[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] = 'none'
+            self.user = User(login=NONE_ATTESTATION_USER_NAME)
+            self.token.get_init_detail(self.init_params, self.user)
         self.token.update({
             'type': 'webauthn',
             'serial': self.token.token.serial,
@@ -470,3 +473,173 @@ class WebAuthnTestCase(unittest.TestCase):
 
     def test_07_webauthn_b64_decode(self):
         self.assertEqual(webauthn_b64_decode(URL_DECODE_TEST_STRING), URL_DECODE_EXPECTED_RESULT)
+
+
+class MultipleWebAuthnTokenTestCase(MyTestCase):
+    rp_name = 'pitest'
+    rp_id = 'pitest.local'
+    app_id = 'https://pitest.local:5000'
+    client_data1 = ('eyJjaGFsbGVuZ2UiOiJlTENMaUpsaEpPdHZhdURuR05ERHdRWUZieFZBbE'
+                    'JOTGZjcXQ3NEZ6cGVZ\r\nIiwiY2xpZW50RXh0ZW5zaW9ucyI6e30sImhh'
+                    'c2hBbGdvcml0aG0iOiJTSEEtMjU2Iiwib3JpZ2lu\r\nIjoiaHR0cHM6Ly'
+                    '9waXRlc3QubG9jYWw6NTAwMCIsInR5cGUiOiJ3ZWJhdXRobi5jcmVhdGUifQ')
+    reg_data1 = ('o2NmbXRoZmlkby11MmZnYXR0U3RtdKJjc2lnWEgwRgIhAOV477bXb_0txmSFn'
+                 'n-Sgnhlrdl_edxK\r\naDVKZZ-jy89HAiEAivdhbia91Y8UsFprkvuymfRJr2'
+                 'FhKk3btE1T2uG_PXhjeDVjgVkCwDCCArww\r\nggGkoAMCAQICBAOt8BIwDQY'
+                 'JKoZIhvcNAQELBQAwLjEsMCoGA1UEAxMjWXViaWNvIFUyRiBSb290\r\nIENB'
+                 'IFNlcmlhbCA0NTcyMDA2MzEwIBcNMTQwODAxMDAwMDAwWhgPMjA1MDA5MDQwM'
+                 'DAwMDBaMG0x\r\nCzAJBgNVBAYTAlNFMRIwEAYDVQQKDAlZdWJpY28gQUIxIj'
+                 'AgBgNVBAsMGUF1dGhlbnRpY2F0b3Ig\r\nQXR0ZXN0YXRpb24xJjAkBgNVBAM'
+                 'MHVl1YmljbyBVMkYgRUUgU2VyaWFsIDYxNzMwODM0MFkwEwYH\r\nKoZIzj0C'
+                 'AQYIKoZIzj0DAQcDQgAEGZ6HnBYtt9w57kpCoEYWpbMJ_soJL3a-CUj5bW6Vy'
+                 'uTMZc1U\r\noFnPvcfJsxsrHWwYRHnCwGH0GKqVS1lqLBz6F6NsMGowIgYJKw'
+                 'YBBAGCxAoCBBUxLjMuNi4xLjQu\r\nMS40MTQ4Mi4xLjcwEwYLKwYBBAGC5Rw'
+                 'CAQEEBAMCBDAwIQYLKwYBBAGC5RwBAQQEEgQQ-iuZ3J45\r\nQlePkkow0jxB'
+                 'GDAMBgNVHRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4IBAQAo67Nn_tHY8OKJ6'
+                 '8qf\r\n9tgHV8YOmuV8sXKMmxw4yru9hNkjfagxrCGUnw8t_Awxa_2xdbNuY6'
+                 'Iru1gOrcpSgNB5hA5aHiVy\r\nYlo7-4dgM9v7IqlpyTi4nOFxNZQAoSUtlwK'
+                 'pEpPVRRnpYN0izoon6wXrfnm3UMAC_tkBa3Eeya10\r\nUBvZFMu-jtlXEoG3'
+                 'T0TrB3zmHssGq4WpclUmfujjmCv0PwyyGjgtI1655M5tspjEBUJQQCMrK2Hh'
+                 '\r\nDNcMYhW8A7fpQHG3DhLRxH-WZVou-Z1M5Vp_G0sf-RTuE22eYSBHFIhkaYi'
+                 'ARDEWZTiJuGSG2cnJ\r\n_7yThUU1abNFdEuMoLQ3aGF1dGhEYXRhWMQWJeYw'
+                 'kTqKuQrIIynVbIb5ZwDrxRtUsbT69Ja-Yeiy\r\n9kEAAAAAAAAAAAAAAAAAA'
+                 'AAAAAAAAABA8Fiap8SFbm99-iwuVdn2BbJ-gWJkWlQhasMDTOeLRoGX\r\nzp'
+                 'c8k-cldR2neh4enFZe_eMftsJMhxdxl4Py_4idEaUBAgMmIAEhWCDXbuIEoFe'
+                 'XpAnfvegi4KkY\r\nNc0FjraVVgZrTtBaVnoZLyJYIDTYuM6O11SMTZuSWWBO'
+                 'FBW3B3UrxBj-HjPola1okria')
+    serial1 = 'WAN0000704B'
+    nonce1 = 'eLCLiJlhJOtvauDnGNDDwQYFbxVAlBNLfcqt74FzpeY'
+
+    client_data2 = ('eyJjaGFsbGVuZ2UiOiJGbnlMMEZ6VlZFQ3U5d01IajJQTVhzRVBYa0xwQy'
+                    '0tNkFRY0duNHdZX3hn\r\nIiwiY2xpZW50RXh0ZW5zaW9ucyI6e30sImhh'
+                    'c2hBbGdvcml0aG0iOiJTSEEtMjU2Iiwib3JpZ2lu\r\nIjoiaHR0cHM6Ly'
+                    '9waXRlc3QubG9jYWw6NTAwMCIsInR5cGUiOiJ3ZWJhdXRobi5jcmVhdGUifQ')
+    reg_data2 = ('o2NmbXRoZmlkby11MmZnYXR0U3RtdKJjc2lnWEcwRQIhANTcUgL-wcH6b61n6'
+                 '_eolC37Dw9G7_h6\r\nznFfsG37lObtAiBSEx5hny-NPyycq7vfkHV3Jzj3f_'
+                 'Vn5bh6haYizInC8mN4NWOBWQJTMIICTzCC\r\nATegAwIBAgIEEjbRfzANBgk'
+                 'qhkiG9w0BAQsFADAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJvb3Qg\r\nQ0Eg'
+                 'U2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwM'
+                 'DAwMFowMTEv\r\nMC0GA1UEAwwmWXViaWNvIFUyRiBFRSBTZXJpYWwgMjM5Mj'
+                 'U3MzQxMDMyNDEwODcwWTATBgcqhkjO\r\nPQIBBggqhkjOPQMBBwNCAATTZak'
+                 'eXpng1bQ5wNmvu4f0BY5H3RKxRO2xTSsz-NNcFRPkDXnw-Zmr\r\n4jZxlZOB'
+                 'ydwrB4WLgqxjR2IEzPc01q4hozswOTAiBgkrBgEEAYLECgIEFTEuMy42LjEuN'
+                 'C4xLjQx\r\nNDgyLjEuNTATBgsrBgEEAYLlHAIBAQQEAwIFIDANBgkqhkiG9w'
+                 '0BAQsFAAOCAQEAIhubs7JyJPE-\r\nvqMi8DUer0ZJZqNvcmmFfI4j-eUFtVJ'
+                 '13U5BIj5_JhEJFGnPkp-lJj5sx3aBskhtqvQfsc-r6FUI\r\n8T9nUPbIGyne'
+                 'YBtecgi7-mR25WSpHX1kq1JK0E67Ws4hixUm8XH4fN71I5joQyxQub8VeBl6t'
+                 'uu-\r\nMqvRdpM4OJwkuMl6zuPxvGFkdsr0LxNn3yko0CZVxjudPNCrabaZb-'
+                 'VzeIuZUvgCq0-UEVWxCdwe\r\nIOxtJUIXWFfuq-GbR4pfJheGDTGdPkWmD8Q'
+                 'GmDVpBWHczmQmiHUG10WXn4Bn2zFIgAtoMFje34jx\r\n1fXrvNjWMqRlN9jo'
+                 'oxvQY4Rrf2hhdXRoRGF0YVjEFiXmMJE6irkKyCMp1WyG-WcA68UbVLG0-vSW'
+                 '\r\nvmHosvZBAAAAAAAAAAAAAAAAAAAAAAAAAAAAQNEGCFfy7qPnR-evAu5q4'
+                 '1SvPKP0w5KmRqQLbjEX\r\nA0jyIzTiwYnY39CYWaMmpPmWyOsFNyKgkpjFI4'
+                 '8qsworRHWlAQIDJiABIVggz5UnPRI1wM8RErq3\r\nzvQeEMdPkH0t5OLrWb-'
+                 '3j7pFZ3ciWCBOKhWKM_s8Ayf65080LBPp3nfarOadhoZbbSqUN2LjFg')
+    serial2 = 'WAN0001831A'
+    nonce2 = 'FnyL0FzVVECu9wMHj2PMXsEPXkLpC--6AQcGn4wY_xg'
+
+    init_params = {
+            WEBAUTHNACTION.RELYING_PARTY_ID: rp_id,
+            WEBAUTHNACTION.RELYING_PARTY_NAME: rp_name,
+            WEBAUTHNACTION.TIMEOUT: TIMEOUT,
+            WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM: DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+            WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
+            WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
+        }
+    auth_options = {
+        WEBAUTHNACTION.ALLOWED_TRANSPORTS: ALLOWED_TRANSPORTS,
+        WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
+        WEBAUTHNACTION.TIMEOUT: TIMEOUT}
+
+    def setUp(self):
+        self.setUp_user_realms()
+        set_policy(name="WebAuthn", scope=SCOPE.ENROLL,
+                   action='{0!s}={1!s},{2!s}={3!s}'.format(WEBAUTHNACTION.RELYING_PARTY_NAME,
+                                                           self.rp_name,
+                                                           WEBAUTHNACTION.RELYING_PARTY_ID,
+                                                           self.rp_id))
+        set_privacyidea_config(WEBAUTHNCONFIG.APP_ID, self.app_id)
+        self.user = User(login='hans', realm=self.realm1,
+                         resolver=self.resolvername1)
+        # TODO: extract token enrollment into a local function
+        # init token step 1
+        self.token1 = init_token({'type': 'webauthn',
+                                  'serial': self.serial1},
+                                 user=self.user)
+        # TODO: use mocking to set nonce
+        with patch('privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
+            mock_nonce.return_value = webauthn_b64_decode(self.nonce1)
+            res = self.token1.get_init_detail(self.init_params, self.user)
+        self.assertEqual(self.serial1, res['serial'], res)
+        self.assertEqual(self.nonce1, res['webAuthnRegisterRequest']['nonce'], res)
+
+        # init token step 2
+        self.token1.update({
+            'type': 'webauthn',
+            'serial': self.serial1,
+            'regdata': self.reg_data1,
+            'clientdata': self.client_data1,
+            WEBAUTHNACTION.RELYING_PARTY_ID: self.rp_id,
+            WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
+            'HTTP_ORIGIN': self.app_id
+        })
+        res = self.token1.get_init_detail()
+        self.assertEqual('Yubico U2F EE Serial 61730834',
+                         res['webAuthnRegisterResponse']['subject'], res)
+        # enroll the second webauthn token
+        # init token step 1
+        self.token2 = init_token({'type': 'webauthn',
+                                  'serial': self.serial2},
+                                 user=self.user)
+        with patch('privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
+            mock_nonce.return_value = webauthn_b64_decode(self.nonce2)
+            res = self.token2.get_init_detail(self.init_params, self.user)
+        self.assertEqual(self.serial2, res['serial'], res)
+        self.assertEqual(self.nonce2, res['webAuthnRegisterRequest']['nonce'], res)
+
+        # init token step 2
+        self.token2.update({
+            'type': 'webauthn',
+            'serial': self.serial2,
+            'regdata': self.reg_data2,
+            'clientdata': self.client_data2,
+            WEBAUTHNACTION.RELYING_PARTY_ID: self.rp_id,
+            WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
+            'HTTP_ORIGIN': self.app_id
+        })
+        res = self.token2.get_init_detail()
+        self.assertEqual('Yubico U2F EE Serial 23925734103241087',
+                         res['webAuthnRegisterResponse']['subject'], res)
+
+    def tearDown(self):
+        remove_token(serial=self.serial1)
+        remove_token(serial=self.serial2)
+
+    # TODO: also test challenge-response with different tokens (webauthn + totp)
+    def test_01_mulitple_webauthntoken_auth(self):
+        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN))
+        res, reply = check_user_pass(self.user, '', options=self.auth_options)
+        self.assertFalse(res)
+        self.assertIn('transaction_id', reply, reply)
+        tid = reply['transaction_id']
+        self.assertIn('multi_challenge', reply, reply)
+        self.assertEqual(len(reply['multi_challenge']), 2, reply['multi_challenge'])
+        self.assertIn('messages', reply, reply)
+        self.assertEqual(len(reply['messages']), 2, reply['messages'])
+        # check that the serials of the challenges are different
+        chal1 = reply['multi_challenge'][0]
+        chal2 = reply['multi_challenge'][1]
+        self.assertNotEqual(chal1['serial'], chal2['serial'],
+                            reply['multi_challenge'])
+        self.assertEqual(chal1['transaction_id'], chal2['transaction_id'],
+                         reply['multi_challenge'])
+        # Now make sure that the requests contain the same challenge
+        self.assertEqual(chal1['attributes']['webAuthnSignRequest']['challenge'],
+                         chal2['attributes']['webAuthnSignRequest']['challenge'],
+                         reply['multi_challenge'])
+        # check that we have two challenges in the db with the same challenge
+        chals = get_challenges(transaction_id=tid)
+        self.assertEqual(len(chals), 2, chals)
+        self.assertEqual(chals[0].challenge, chals[1].challenge, chals)
+
+        delete_policy('otppin')

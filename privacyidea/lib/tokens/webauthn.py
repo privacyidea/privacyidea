@@ -1493,7 +1493,7 @@ class WebAuthnAssertionResponse(object):
             # ceremony was initiated, verify that credential.id identifies one
             # of the public key credentials that were listed in allowCredentials.
             if self.allow_credentials and self.assertion_response.get('id') not in self.allow_credentials:
-                raise AuthenticationRejectedException('Invalid credential.')
+                raise AuthenticationRejectedException('Credential not allowed.')
 
             # Step 2.
             #
@@ -1502,7 +1502,8 @@ class WebAuthnAssertionResponse(object):
             # identified by credential.id.
             user_handle = self.assertion_response.get('userHandle')
             if user_handle and not user_handle == self.webauthn_user.user_id:
-                raise AuthenticationRejectedException('Invalid credential.')
+                raise AuthenticationRejectedException('Invalid credential: user '
+                                                      'handle does not match.')
 
             # Step 3.
             #
