@@ -47,6 +47,7 @@ jobs:
 
     - name: Test with pytest
       run: |
+        . ~/venv/bin/activate
         python -b -m pytest -v --cov=privacyidea tests
 
     - name: Archive code coverage results
