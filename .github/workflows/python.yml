@@ -46,21 +46,40 @@ jobs:
       run: |
         python -b -m pytest -v --cov=privacyidea --cov-report=xml --cov-append tests
 
-    - name: Coveralls Parallel
-      uses: coverallsapp/github-action@master
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v2
       with:
-        github-token: ${{ secrets.github_token }}
-        path-to-lcov: coverage.xml
-        flag-name: run-${{ matrix.test_number }}
-        parallel: true
+        name: coverage-${{ matrix.python-version }}
+        path: ~/.coverage
+        retention-days: 1
 
   finish:
     needs: build
     runs-on: ubuntu-18.04
     steps:
-    - name: Coveralls Finished
-      uses: coverallsapp/github-action@master
+    - name: Cache pip installation
+      uses: actions/cache@v2
       with:
-        github-token: ${{ secrets.github_token }}
-        parallel-finished: true
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-coverage }}
+        restore-keys: |
+          ${{ runner.os }}-pip-coverage
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools
+        pip install coverage
+    - name: Download coverage report artifacts
+      uses: actions/download-artifact@v2
+      with:
+        path: cov_reports
+    - name: Combine coverage reports
+      run: |
+        coverage combine cov_reports/*
+        coverage xml
+    - name: Codecov upload
+      uses: codecov/codecov-action@v1
+      with:
+        file: ~/coverage.xml
 
