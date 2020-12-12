@@ -269,22 +269,21 @@
         </div>
         <div class="tab-pane action" id="action">
             <h3 translate>Action</h3>
-            <div class="form-group">
-                <label for="action" class="col-sm-3 control-label">
-                    <translate>Action</translate>
-                    <br>
-                    <button class="btn btn-sm btn-success"
-                            ng-show="!onlySelectedVisible"
-                            ng-click="onlySelectedVisible=true">
-                        <translate>Show selected actions only</translate>
-                    </button>
-                    <button class="btn btn-sm btn-success"
-                            ng-show="onlySelectedVisible"
-                            ng-click="onlySelectedVisible=false">
-                        <translate>Show all actions</translate>
-                    </button>
-                </label>
-
+            <div class="row">
+                <div class="col-sm-3">
+                    <label for="action">
+                        <button class="btn btn-sm btn-success"
+                                ng-show="!onlySelectedVisible"
+                                ng-click="onlySelectedVisible=true">
+                            <translate>Show selected actions only</translate>
+                        </button>
+                        <button class="btn btn-sm btn-success"
+                                ng-show="onlySelectedVisible"
+                                ng-click="onlySelectedVisible=false">
+                            <translate>Show all actions</translate>
+                        </button>
+                    </label>
+                </div>
                 <div class="col-sm-9">
                     <div class="input-group">
                         <input type="text" ng-model="action_filter"
@@ -297,6 +296,10 @@
                             <span class="glyphicon glyphicon-remove-circle"></span>
                         </span>
                     </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-12">
                     <div ng-show="isActionValues" class="mt-5px">
                         <uib-accordion close-others="false">
                             <div uib-accordion-group
