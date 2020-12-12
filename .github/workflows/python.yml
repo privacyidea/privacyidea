@@ -90,6 +90,7 @@ jobs:
       working-directory: ./cov_reports
       run: |
         ls -l
+        file coverage-2.7
         coverage combine coverage-*
         coverage xml
 
