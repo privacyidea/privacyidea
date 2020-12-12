@@ -89,7 +89,7 @@ jobs:
     - name: Combine coverage reports
       working-directory: ./cov_reports
       run: |
-        ls -l
+        ls -R
         file coverage-2.7
         coverage combine coverage-*
         coverage xml
