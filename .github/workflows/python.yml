@@ -53,7 +53,7 @@ jobs:
     - name: Test with pytest
       run: |
         . ~/venv/bin/activate
-        python -b -m pytest -v --cov=privacyidea tests
+        python -b -m pytest -v --cov=privacyidea tests/test_lib_realm.py
 
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
@@ -89,6 +89,7 @@ jobs:
     - name: Combine coverage reports
       working-directory: ./cov_reports
       run: |
+        ls -l
         coverage combine coverage-*
         coverage xml
 
