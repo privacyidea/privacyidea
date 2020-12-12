@@ -87,8 +87,8 @@ jobs:
         path: ~/cov_reports
 
     - name: Combine coverage reports
-      run: ls -R
       working-directory: ~/cov_reports
+      run: ls -R
 #        coverage combine coverage-*
 #        coverage xml
 #
