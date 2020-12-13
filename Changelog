@@ -1,39 +1,45 @@
-Version 3.5
+Version 3.5dev3, 2020-12-xx
 
   Features:
   * 4Eyes token uses multi challenge authentication (#2317)
-
+  * Require attestation certificate when enrolling
+    certificate token (#2152)
 
   Enhancements:
-  * Choose SMS Gateway Identifier in Tokenhandler
-    when enrolling SMS token (#2506)
-  * Choose SMTP Identifier in Tokenhandler
-    when enrolling Email token (#2452)
-  * PIN can be changed with Challlenge Response when authenticating
-    at the WebUI (#2474)
-  * Allow to update firebase_token of a Push Token (#2436)
-  * Increase of decrease failcounter in Tokenhandler (#2402)
-  * Hide some audit log columns for service desk users (#2372)
-  * Support WebAuthn tokens without sign_count (TODO: which tokens are these?) (#2361)
-  * Allow to configure a link to a policy statement/GDPR (#2325)
-  * PSKC import now verifies the MAC of the token secrets (#2312)
-  * Configure length and contents of registration token via policy (#2284)
-  * Audit log now contains start time, end time and
-    duration of a request (#2254)
-  * The questionnaire token can now ask several questions from the list (#2137)
-  * The length of the audit columns to be truncated can be
-    configured in pi.cfg (#1756)
+  * Tokens
+    * Allow to update firebase_token of a Push Token (#2436)
+    * Support WebAuthn tokens without sign_count (#2361)
+    * PSKC import now verifies the MAC of the token secrets (#2312)
+    * Configure length and contents of registration token via policy (#2284)
+    * The questionnaire token can now ask several questions from the list (#2137)
+  * Event handler:
+    * Choose SMS Gateway Identifier in Tokenhandler
+      when enrolling SMS token (#2506)
+    * Choose SMTP Identifier in Tokenhandler
+      when enrolling Email token (#2452)
+    * Increase or decrease failcounter in Tokenhandler (#2402)
+    * Allow to set maxfail counter in event handlers (#2541)
+  * Web UI
+    * PIN can be changed with Challlenge Response when authenticating
+      at the WebUI (#2474)
+    * Hide some audit log columns for service desk users (#2372)
+    * Allow to configure a link to a policy statement/GDPR (#2325)
+    * Audit log now contains start time, end time and
+      duration of a request (#2254)
+    * The length of the audit columns to be truncated can be
+      configured in pi.cfg (#1756)
+    * Action grouping in scope authorization (#2438)
+    * Redesign welcome message for community version (#2397)
+    * Add usernames and serials of failed authentications
+      as shortlink into dashboard (#2475)
+    * Policy to add node name in the web UI (#1961)
+    * Make event conditions searchable (#2148)
+    * Align search layout in event conditions and policy actions (#2557)
   * pi-manage: export resolver configuration (#1329)
-
-  # UI
-  * Action grouping in scope authorization (#2438)
-  * Redesign welcome message for community version (#2397)
-
-
-  # Documentation
-  * Add note about SELinux and using non-standard ports (#2459)
-  * Explain sync_to_database for script handlers (#2450)
-  * Add documentation for RADIUS configuration (#2448)
+  * Documentation:
+    * Add note about SELinux and using non-standard ports (#2459)
+    * Explain sync_to_database for script handlers (#2450)
+    * Add documentation for RADIUS configuration (#2448)
 
   Fixes:
   * Allow equal signs in policy actions (#2494)
@@ -49,9 +55,9 @@ Version 3.5
   * Fix url_decode (#2345)
   * Fix missing adminuser when importing policies (#2340)
   * Hide browser autocomplete in user search field (#2292)
-
-
-
+  * Disable browser autocomple fields that clash with
+    search fields in the UI (#2401)
+  * Fix challenge response with multiple FIDO2 tokens (#2092)
 
 
 Version 3.4.1, 2020-10-09
