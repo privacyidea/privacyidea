@@ -66,6 +66,8 @@ jobs:
     needs: build
     runs-on: ubuntu-18.04
     steps:
+    - name: Checkout code for coverage
+      uses: actions/checkout@v2
     - name: Cache pip installation
       uses: actions/cache@v2
       with:
