@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['2.7', '3.5', '3.9']
+        python-version: ['2.7', '3.5', '3.6', '3.7', '3.8', '3.9']
 
     steps:
     - uses: actions/checkout@v2
@@ -53,7 +53,7 @@ jobs:
     - name: Test with pytest
       run: |
         . ~/venv/bin/activate
-        python -b -m pytest -v --cov=privacyidea tests/test_lib_realm.py
+        python -b -m pytest -v --cov=privacyidea tests/
 
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
