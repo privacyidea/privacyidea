@@ -2866,6 +2866,84 @@ class ValidateAPITestCase(MyApiTestCase):
         delete_policy("pol_chalresp")
         delete_policy("pol_application_tokentype")
 
+    def test_36_authorize_by_tokeninfo_condition(self):
+
+        init_token({"type": "spass", "serial": "softwareToken", "pin": "software1"},
+                   tokenkind="software", user=User("cornelius", self.realm1))
+        init_token({"type": "spass", "serial": "hardwareToken", "pin": "hardware1"},
+                   tokenkind="hardware", user=User("cornelius", self.realm1))
+        set_policy(name="always_deny_access", action="{0!s}=deny_access".format(ACTION.AUTHORIZED),
+                   scope=SCOPE.AUTHZ, priority=100)
+        # policy to allow tokens, condition is deactivated. All tokens will be authorized
+        set_policy(name="allow_hardware_tokens", action="{0!s}=grant_access".format(ACTION.AUTHORIZED),
+                   scope=SCOPE.AUTHZ, priority=1,
+                   conditions=[("tokeninfo", "tokenkind", "equals", "hardware", False)])
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "software1"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "hardware1"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+        # activate condition, only hardware tokens will be authorized
+        set_policy(name="allow_hardware_tokens",
+                   conditions=[("tokeninfo", "tokenkind", "equals", "hardware", True)])
+
+        # token with tokenkind = software is not authorized
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "software1"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = res.json.get("result")
+            # User is not authorized under these conditions (tokenkind = software)
+            self.assertEqual(result.get("error").get("code"), 401)
+            self.assertFalse(result.get("status"))
+
+        # token with tokenkind = hardware is authorized
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "hardware1"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+        # wrong password raises exception since the tokeninfo policy cannot be checked
+        # because there is not token serial in the result
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "wrongpassword"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+            result = res.json.get("result")
+            # Policy has tokeninfo, but no token object available
+            self.assertEqual(result.get("error").get("code"), 303)
+            self.assertFalse(result.get("status"))
+
+        delete_policy("always_deny_access")
+        delete_policy("allow_hardware_tokens")
+        remove_token("softwareToken")
+        remove_token("hardwareToken")
+
 
 class RegistrationValidity(MyApiTestCase):
 

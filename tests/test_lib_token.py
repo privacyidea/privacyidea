@@ -1737,6 +1737,7 @@ class TokenFailCounterTestCase(MyTestCase):
         g.policy_object = PolicyClass()
         g.audit_object = FakeAudit()
         g.client_ip = None
+        g.serial = None
         options = {"g": g}
 
         check_token_list([token1, token2], pin1, user=user,

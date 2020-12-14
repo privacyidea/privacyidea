@@ -30,7 +30,7 @@ consists of five parts:
 Sections
 ~~~~~~~~
 
-privacyIDEA 3.1 implements only one section, which is called ``userinfo``.
+privacyIDEA implements three sections ``userinfo``, ``tokeninfo`` and ``HTTP Request Headers``.
 
 ``userinfo``
 ^^^^^^^^^^^^
@@ -105,6 +105,16 @@ allowed to log in.
 If the userinfo of the user that is trying to log in does not contain attributes
 ``email`` or ``groups`` (due to a resolver misconfiguration, for example), privacyIDEA
 throws an error and the request is aborted.
+
+
+``tokeninfo``
+^^^^^^^^^^^^
+
+The tokeninfo condition works the same way as userinfo but matches the tokeninfo instead.
+
+.. note:: Similar to the userinfo condition, a policy with an active tokeninfo condition will
+   throw an exception whenever the token object cannot be determined (usually from the serial).
+
 
 ``HTTP Request Header``
 ^^^^^^^^^^^^^^^^^^^^^^^

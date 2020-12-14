@@ -169,7 +169,7 @@ from configobj import ConfigObj
 from operator import itemgetter
 import six
 import logging
-from ..models import (Policy, db, save_config_timestamp)
+from ..models import (Policy, db, save_config_timestamp, Token)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node)
 from privacyidea.lib.framework import get_app_config_value
@@ -436,6 +436,7 @@ class TIMEOUT_ACTION(object):
 class CONDITION_SECTION(object):
     __doc__ = """This is a list of available sections for conditions of policies """
     USERINFO = "userinfo"
+    TOKENINFO = "tokeninfo"
     HTTP_REQUEST_HEADER = "HTTP Request header"
 
 
@@ -657,7 +658,7 @@ class PolicyClass(object):
     def match_policies(self, name=None, scope=None, realm=None, active=None,
                        resolver=None, user=None, user_object=None, pinode=None,
                        client=None, action=None, adminrealm=None, adminuser=None, time=None,
-                       sort_by_priority=True, audit_data=None, request_headers=None):
+                       sort_by_priority=True, audit_data=None, request_headers=None, serial=None):
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -726,7 +727,8 @@ class PolicyClass(object):
         log.debug("Policies after matching time: {0!s}".format([p.get("name") for p in reduced_policies]))
 
         # filter policies by the policy conditions
-        reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers)
+        reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
+                                                              serial)
         log.debug("Policies after matching conditions".format([p.get("name") for p in reduced_policies]))
 
         if audit_data is not None:
@@ -735,7 +737,7 @@ class PolicyClass(object):
 
         return reduced_policies
 
-    def filter_policies_by_conditions(self, policies, user_object=None, request_headers=None):
+    def filter_policies_by_conditions(self, policies, user_object=None, request_headers=None, serial=None):
         """
         Given a list of policy dictionaries and a current user object (if any),
         return a list of all policies whose conditions match the given user object.
@@ -752,7 +754,16 @@ class PolicyClass(object):
             for section, key, comparator, value, active in policy['conditions']:
                 if active:
                     if section == CONDITION_SECTION.USERINFO:
-                        if not self._policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
+                        if not self._policy_matches_info_condition(policy, key, comparator, value,
+                                                                   CONDITION_SECTION.USERINFO,
+                                                                   user_object=user_object):
+                            include_policy = False
+                            break
+                    elif section == CONDITION_SECTION.TOKENINFO:
+                        dbtoken = Token.query.filter(Token.serial == serial).first() if serial else None
+                        if not self._policy_matches_info_condition(policy, key, comparator, value,
+                                                                   CONDITION_SECTION.TOKENINFO,
+                                                                   dbtoken=dbtoken):
                             include_policy = False
                             break
                     elif section == CONDITION_SECTION.HTTP_REQUEST_HEADER:
@@ -799,48 +810,54 @@ class PolicyClass(object):
                         u" is not available".format(policy["name"], key))
 
     @staticmethod
-    def _policy_matches_userinfo_condition(policy, key, comparator, value, user_object):
+    def _policy_matches_info_condition(policy, key, comparator, value, type, user_object=None, dbtoken=None):
         """
-        Check if the given policy matches a certain userinfo condition.
-        If ``user_object`` is None, a PolicyError is raised.
+        Check if the given policy matches a certain userinfo or tokeninfo condition depending
+        on the specified ``type``.
+        For the userinfo, if ``user_object`` is None or the requested ``key`` is not contained,
+        a PolicyError is raised.
+        In case of a tokeninfo, no exception is raised if ``dbtoken`` is malformed. Instead, the
+        condition is effectively set to True and the policy may apply.
         :param policy: a policy dictionary, the policy in question
-        :param key: a userinfo key
+        :param key: a tokeninfo or userinfo key
         :param comparator: a value comparator: one of "equal", "contains"
-        :param value: a value against which the userinfo value will be compared
+        :param value: a value against which the tokeninfo or userinfo value will be compared
+        :param type: the info type to match, "userinfo" or "tokeninfo"
         :param user_object: a User object, if any, or None
+        :param dbtoken: a dbtoken object, if any, or None
         :return: a Boolean
         """
-        # Match the user object's user info, if it is not-None and non-empty
-        if user_object is not None:
-            info = user_object.info
+        if user_object is not None or dbtoken is not None:
+            info = user_object.info if user_object is not None else dbtoken.get_info()
+
             if key in info:
                 try:
                     return compare_values(info[key], comparator, value)
                 except Exception as exx:
-                    log.warning(u"Error during handling the condition on userinfo {!r} of policy {!r}: {!r}".format(
-                        key, policy['name'], exx
+                    log.warning(u"Error during handling the condition on {!s} {!r} of policy {!r}: {!r}".format(
+                        type, key, policy['name'], exx
                     ))
                     raise PolicyError(
-                        u"Invalid comparison in the userinfo conditions of policy {!r}".format(policy['name']))
+                        u"Invalid comparison in the {!s} conditions of policy {!r}".format(type, policy['name']))
             else:
-                # If we do have a user object, but the conditions of policies reference
-                # an unknown userinfo key, we have a misconfiguration and raise an error.
-                log.warning(u"Unknown userinfo key referenced in a condition of policy {!r}: {!r}".format(
-                    policy['name'], key
+                log.warning(u"Unknown {!s} key referenced in a condition of policy {!r}: {!r}".format(
+                    type, policy['name'], key
                 ))
-                raise PolicyError(u"Unknown key in the userinfo conditions of policy {!r}".format(
-                    policy['name']
+                # If we do have an user or token object, but the conditions of policies reference
+                # an unknown userinfo or tokeninfo key, we have a misconfiguration and raise an error.
+                raise PolicyError(u"Unknown key in the {!s} conditions of policy {!r}".format(
+                    type, policy['name']
                 ))
         else:
-            log.warning(u"Policy {!r} has condition on userinfo {!r}, but a user_object is not available".format(
-                policy['name'], key
+            log.warning(u"Policy {!r} has condition on {!s} {!r}, but the according object"
+                        u" is not available.".format(policy['name'], type, key
             ))
-            # If the policy specifies a userinfo condition, but no user object is available,
+            # If the policy specifies a userinfo or tokeninfo condition, but no object is available,
             # the policy is misconfigured. We have to raise a PolicyError to ensure that
             # the privacyIDEA server does not silently misbehave.
             raise PolicyError(
-                u"Policy {!r} has condition on userinfo, but a user_object is not available".format(
-                    policy['name']
+                u"Policy {!r} has condition on {!s}, but an according object is not available".format(
+                    policy['name'], type
                 ))
 
     @staticmethod
@@ -2349,6 +2366,9 @@ def get_policy_condition_sections():
         CONDITION_SECTION.USERINFO: {
             "description": _("The policy only matches if certain conditions on the user info are fulfilled.")
         },
+        CONDITION_SECTION.TOKENINFO: {
+            "description": _("The policy only matches if certain conditions on the token info are fulfilled.")
+        },
         CONDITION_SECTION.HTTP_REQUEST_HEADER: {
             "description": _("The policy only matches if certain conditions on the HTTP Request header are fulfilled.")
         }
@@ -2525,7 +2545,7 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=realm, active=True,
                    resolver=None, user=None, user_object=None,
                    client=g.client_ip, action=action, adminrealm=None, time=None,
-                   sort_by_priority=True)
+                   sort_by_priority=True, serial=g.serial)
 
     @classmethod
     def user(cls, g, scope, action, user_object):
@@ -2551,7 +2571,7 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=None, active=True,
                    resolver=None, user=None, user_object=user_object,
                    client=g.client_ip, action=action, adminrealm=None, time=None,
-                   sort_by_priority=True)
+                   sort_by_priority=True, serial=g.serial)
 
     @classmethod
     def token(cls, g, scope, action, token_obj):
@@ -2606,7 +2626,7 @@ class Match(object):
         return cls(g, name=None, scope=SCOPE.ADMIN, user_object=user_obj, active=True,
                    resolver=None, client=g.client_ip, action=action,
                    adminuser=adminuser, adminrealm=adminrealm, time=None,
-                   sort_by_priority=True)
+                   sort_by_priority=True, serial=g.serial)
 
     @classmethod
     def admin_or_user(cls, g, action, user_obj):
@@ -2639,12 +2659,12 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=userrealm, active=True,
                    resolver=None, user=username, user_object=user_obj,
                    client=g.client_ip, action=action, adminrealm=adminrealm, adminuser=adminuser,
-                   time=None, sort_by_priority=True)
+                   time=None, sort_by_priority=True, serial=g.serial)
 
     @classmethod
     def generic(cls, g, scope=None, realm=None, resolver=None, user=None, user_object=None,
                 client=None, action=None, adminrealm=None, adminuser=None, time=None,
-                active=True, sort_by_priority=True):
+                active=True, sort_by_priority=True, serial=None):
         """
         Low-level legacy policy matching interface: Search for active policies and return
         them sorted by priority. All parameters that should be used for matching have to
@@ -2656,10 +2676,12 @@ class Match(object):
         """
         if client is None:
             client = g.client_ip if hasattr(g, "client_ip") else None
+        if serial is None:
+            serial = g.serial if hasattr(g, "serial") else None
         return cls(g, name=None, scope=scope, realm=realm, active=active,
                    resolver=resolver, user=user, user_object=user_object,
                    client=client, action=action, adminrealm=adminrealm,
-                   adminuser=adminuser, time=time,
+                   adminuser=adminuser, time=time, serial=serial,
                    sort_by_priority=sort_by_priority)
 
 
