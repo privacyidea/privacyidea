@@ -1,4 +1,4 @@
-Version 3.5dev3, 2020-12-xx
+Version 3.5dev4, 2020-12-xx
 
   Features:
   * 4Eyes token uses multi challenge authentication (#2317)
@@ -19,6 +19,8 @@ Version 3.5dev3, 2020-12-xx
       when enrolling Email token (#2452)
     * Increase or decrease failcounter in Tokenhandler (#2402)
     * Allow to set maxfail counter in event handlers (#2541)
+  * Policies:
+    * Add extended conditions for tokeninfo (#1947)
   * Web UI
     * PIN can be changed with Challlenge Response when authenticating
       at the WebUI (#2474)
