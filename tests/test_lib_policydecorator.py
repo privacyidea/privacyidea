@@ -801,6 +801,7 @@ class LibPolicyTestCase(MyTestCase):
         g.policy_object = PolicyClass()
         g.audit_object = FakeAudit()
         g.client_ip = None
+        g.serial = None
         options = {"g": g}
 
         r = reset_all_user_tokens(self.fake_check_token_list,
