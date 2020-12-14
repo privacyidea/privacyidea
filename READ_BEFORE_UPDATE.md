@@ -1,5 +1,16 @@
 # Update Notes
 
+## Update from 3.4 to 3.5
+
+* The audit log table now also records the start date and the duration
+  of a request.
+
+* The authcache database table gets a longer column "authentication" 
+  to cope with the longer Argon2 hashes.
+
+Be sure to run the schema update script.
+The current database schema now is d5870fd2f2a4.
+
 ## Update from 3.3 to 3.4
 
 * Policies can now contain the privacyIDEA node as condition.
