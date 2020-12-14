@@ -112,9 +112,8 @@ throws an error and the request is aborted.
 
 The tokeninfo condition works the same way as userinfo but matches the tokeninfo instead.
 
-.. note:: In contrast to the userinfo condition, a missing token in the request, does not cancel it.
-   Instead the condition is handled as being fulfilled, so it is effectively **disabled** for the request.
-   Therefore the policy may apply.
+.. note:: Similar to the userinfo condition, a policy with an active tokeninfo condition will
+   throw an exception whenever the token object cannot be determined (usually from the serial).
 
 
 ``HTTP Request Header``
