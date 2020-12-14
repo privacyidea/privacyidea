@@ -1198,7 +1198,7 @@ class PolicyTestCase(MyTestCase):
         user3.info = {"type": "notverysecure", "groups": ["b", "c"]}
 
         # no user => policy error
-        with self.assertRaisesRegexp(PolicyError, ".* a user_object is not available.*"):
+        with self.assertRaisesRegexp(PolicyError, ".* an according object is not available.*"):
             P.match_policies(user_object=None)
 
         # empty user => policy error
@@ -1383,10 +1383,9 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(_names(P.match_policies(user_object=user1, serial=serial)),
                          set())
 
-        # A request without any serial number will match the policy.
-        # The condition is dropped in this case and a log message is written.
-        self.assertEqual(_names(P.match_policies(user_object=user1)),
-                         {"setpin_pol"})
+        # A request without any serial number will raise a Policy error, since condition
+        # on tokeninfo is there, but no dbtoken object is available.
+        self.assertRaises(PolicyError, P.match_policies, user_object=user1)
 
         delete_policy("setpin_pol")
         db_token.delete()

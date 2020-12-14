@@ -842,29 +842,22 @@ class PolicyClass(object):
                 log.warning(u"Unknown {!s} key referenced in a condition of policy {!r}: {!r}".format(
                     type, policy['name'], key
                 ))
-                # If we do have a user object, but the conditions of policies reference
-                # an unknown userinfo key, we have a misconfiguration and raise an error.
-                if type == CONDITION_SECTION.USERINFO:
-                    raise PolicyError(u"Unknown key in the {!s} conditions of policy {!r}".format(
-                        type, policy['name']
-                    ))
+                # If we do have an user or token object, but the conditions of policies reference
+                # an unknown userinfo or tokeninfo key, we have a misconfiguration and raise an error.
+                raise PolicyError(u"Unknown key in the {!s} conditions of policy {!r}".format(
+                    type, policy['name']
+                ))
         else:
-            # If the policy specifies a userinfo condition, but no user object is available,
+            log.warning(u"Policy {!r} has condition on {!s} {!r}, but the according object"
+                        u" is not available.".format(policy['name'], type, key
+            ))
+            # If the policy specifies a userinfo or tokeninfo condition, but no object is available,
             # the policy is misconfigured. We have to raise a PolicyError to ensure that
             # the privacyIDEA server does not silently misbehave.
-            if type == CONDITION_SECTION.USERINFO:
-                raise PolicyError(
-                    u"Policy {!r} has condition on userinfo, but a user_object is not available".format(
-                        policy['name']
-                    ))
-            # If the policy specifies a tokeninfo but not token is available, the policy tokeninfo condition
-            # has no effect. Note: This differs from the userinfo conditions, since no exception is raised!
-            elif type == CONDITION_SECTION.TOKENINFO:
-                log.warning(u"Policy {!r} has condition on tokeninfo {!r}, but the according token object"
-                            u" is not available. Condition is dropped for this request.".format(policy['name'], key
+            raise PolicyError(
+                u"Policy {!r} has condition on {!s}, but an according object is not available".format(
+                    policy['name'], type
                 ))
-
-        return True
 
     @staticmethod
     def check_for_conflicts(policies, action):
@@ -2526,7 +2519,7 @@ class Match(object):
         return cls(g, name=None, scope=scope, realm=None, active=True,
                    resolver=None, user=None, user_object=None,
                    client=g.client_ip, action=action, adminrealm=None, time=None,
-                   sort_by_priority=True, serial=g.serial)
+                   sort_by_priority=True)
 
     @classmethod
     def realm(cls, g, scope, action, realm):
