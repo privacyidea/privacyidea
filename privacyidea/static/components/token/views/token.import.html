@@ -130,17 +130,16 @@
 </form>
 
 <div ng-show="uploadedFile">
-    <div translate>
-        Progress: {{ uploadProgress }}%
-    </div>
-    <div translate>
-        Uploaded File: {{ uploadedFile }}
-    </div>
-    <div translate>
-        Uploaded Tokens: {{ uploadedTokens }}
+    <div>
+        <span translate>Progress</span>: {{ uploadProgress }}%
     </div>
     <div>
-        <translate>Skippted Tokens
-            <translate>: {{ notImportedTokens }}
+        <span translate>Uploaded File</span>: {{ uploadedFile }}
+    </div>
+    <div>
+        <span translate>Uploaded Tokens</span>: {{ uploadedTokens }}
+    </div>
+    <div>
+        <span translate>Skipped Tokens</span>: {{ notImportedTokens }}
     </div>
 </div>
