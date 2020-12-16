@@ -168,7 +168,7 @@ easy as running `pytest <http://pytest.org/>`_ with the following options::
 Contributing
 ============
 
-There are a lot of different way to contribute to privacyIDEA, even
+There are a lot of different ways to contribute to privacyIDEA, even
 if you are not a developer.
 
 If you found a security vulnerability please report it to
