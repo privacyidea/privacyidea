@@ -10,9 +10,10 @@ There are ready made packages for Ubuntu.
 
 Packages of older releases of privacyIDEA up to version 2.23 are available for
 Ubuntu 14.04 LTS and Ubuntu 16.04 LTS from a public ppa repository [#ppa]_.
+Using these is deprecated.
 
 For recent releases of privacyIDEA starting from version 3.0 a repository is
-available which provides packages for Ubuntu 16.04 LTS and 18.04 LTS [#ubuntu]_.
+available which provides packages for Ubuntu 16.04 LTS, 18.04 LTS and 20.04LTS [#ubuntu]_.
 
 .. note:: The packages ``privacyidea-apache2`` and ``privacyidea-nginx`` assume
    that you want to run a privacyIDEA system. These packages deactivate all
@@ -41,7 +42,7 @@ On Ubuntu 16.04 check the fingerprint of the key::
 
    gpg --with-fingerprint NetKnights-Release.asc
 
-On 18.04 you need to run::
+On 18.04 and 20.04 you need to run::
 
    gpg --import --import-options show-only --with-fingerprint NetKnights-Release.asc
 
@@ -54,7 +55,7 @@ Now add the signing key to your system::
 
    apt-key add NetKnights-Release.asc
 
-Now you need to add the repository for your release (either xenial/16.04LTS or bionic/18.04LTS)
+Now you need to add the repository for your release (either xenial/16.04LTS, bionic/18.04LTS, focal/20.04LTS)
 
 You can do this by running the command::
 
@@ -63,6 +64,10 @@ You can do this by running the command::
 or::
 
    add-apt-repository http://lancelot.netknights.it/community/bionic/stable
+
+or::
+
+   add-apt-repository http://lancelot.netknights.it/community/focal/stable
 
 As an alternative you can add the repo in a dedicated file. Create a new 
 file ``/etc/apt/sources.list.d/privacyidea-community.list`` with the
@@ -73,6 +78,10 @@ following contents::
 or::
 
    deb http://lancelot.netknights.it/community/bionic/stable bionic main
+
+or::
+
+   deb http://lancelot.netknights.it/community/focal/stable focal main
 
 .. note:: While the link http://lancelot.netknights.it/community/ and its
    subdirectories are browsable, it is only available via http! Most browsers
@@ -119,6 +128,7 @@ For further details see :ref:`rlm_perl`.
 .. [#ubuntu] Starting with privacyIDEA 2.15 Ubuntu 16.04 packages are
    provided. Starting with privacyIDEA 3.0 Ubuntu 16.04 and 18.04 packages
    are provided, Ubuntu 14.04 packages are dropped.
+   Starting with privacyIDEA 3.5 Ubuntu 20.04 packages are available.
 .. [#simpleSAML] https://github.com/privacyidea/simplesamlphp-module-privacyidea
 .. [#otrs] http://www.otrs.com/
 
