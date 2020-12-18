@@ -13,7 +13,7 @@ more-itertools==5.0.0; python_version < '3.0'
 more-itertools==8.5.0; python_version > '3.0'
 packaging==20.4
 pluggy==0.13.1
-py==1.9.0
+py==1.10.0
 pyparsing==2.4.7
 pytest==4.6.11; python_version < '3.0'
 pytest==6.1.0; python_version > '3.0'
