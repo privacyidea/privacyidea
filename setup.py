@@ -116,7 +116,8 @@ setup(
         'test': ["mock>=2.0.0",
                  "pytest>=3.6.0",
                  "pytest-cov>=2.5.1",
-                 "responses>=0.9.0"],
+                 "responses>=0.9.0",
+                 "testfixtures>=6.14.2"],
         'postgres': ['psycopg2>=2.8.3']
     },
     install_requires=install_requires,
