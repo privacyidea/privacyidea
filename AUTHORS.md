@@ -1,16 +1,21 @@
-# Authors in version 3.4
+# Authors in version 3.5
 
 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 Paul Lettich <paul.lettich@netknights.it>
 Henning Hollermann <hollermann@physik.rwth-aachen.de>
-Jean-Pierre <jean-pierre.hoehmann@netknights.it>
-Koen Roggemans <koen.roggemans@ritacollege.be>
-Omoto <eomoto@santandertecnologia.com.ar>
-pablo-knight <62021672+pablo-knight@users.noreply.github.com>
-Bruno <bruno.cascio@celerative.com>
+Timo Sturm <timo.sturm@netknights.it>
+Julio Storch <julio.storch@netknights.it>
+Sebastian Lemling <sebastian@lemling.de>
+J. Lavoie <j.lavoie@net-c.ca>
+Jaime Zubieta <jaime.zb0@gmail.com>
+Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
+Allan Nordhøy <epost@anotheragency.no>
+Jens-U. Mozdzen <jmozdzen@nde.ag>
+Maksym Mohylko <maksym.mohylko@gmail.com>
+Maria Gimenez <m.gimenez@redlink.com.ar>
+Nathan <bonnemainsnathan@gmail.com>
 Luis Gallo <gallolp@gmail.com>
-Robin Gloster <mail@glob.in>
-marcohald <marcohald@users.noreply.github.com>
+Yannick Boursin <elipsoid@gmail.com>
 
 
 # Overall authors
@@ -84,6 +89,18 @@ mjbecker <39964311+mjbecker@users.noreply.github.com>
 quynh-axiadids <quynh@axiadids.com>
 renini <r.r.arends@hr.nl>
 root <root@Svr040.livingston.nhsscotland.com>
+Yannick Boursin <elipsoid@gmail.com>
+Timo Sturm <timo.sturm@netknights.it>
+Julio Storch <julio.storch@netknights.it>
+Sebastian Lemling <sebastian@lemling.de>
+J. Lavoie <j.lavoie@net-c.ca>
+Jaime Zubieta <jaime.zb0@gmail.com>
+Allan Nordhøy <epost@anotheragency.no>
+Jens-U. Mozdzen <jmozdzen@nde.ag>
+Maksym Mohylko <maksym.mohylko@gmail.com>
+Maria Gimenez <m.gimenez@redlink.com.ar>
+Nathan <bonnemainsnathan@gmail.com>
+
 
 Created using
 git shortlog -sne ed39864429ca01452acb20bd1d0f340cf136bce6.. | cut -f 2,3
