@@ -52,7 +52,8 @@ class Audit(AuditBase):
         write_conf = self.config.get('PI_AUDIT_CONTAINER_WRITE')
         read_conf = self.config.get('PI_AUDIT_CONTAINER_READ')
         # Initialize all modules
-        self.write_modules = [get_module_class(audit_module, "Audit", "log")(config, startdate) for audit_module in write_conf]
+        self.write_modules = [get_module_class(audit_module, "Audit", "log")(config, startdate)
+                              for audit_module in write_conf]
         self.read_module = get_module_class(read_conf, "Audit", "log")(config, startdate)
         if not self.read_module.is_readable:
             log.warning(u"The specified PI_AUDIT_CONTAINER_READ {0!s} is not readable.".format(self.read_module))
