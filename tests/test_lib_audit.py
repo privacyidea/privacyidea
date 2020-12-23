@@ -413,7 +413,8 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
                                                          "privacyidea.lib.auditmodules.sqlaudit"],
                             "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
                             "PI_AUDIT_NO_SIGN": True,
-                            "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')})
+                            "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')},
+                           startdate=None)
         self.assertFalse(a.has_data)
         a.log({"action": "something_test_30"})
         self.assertTrue(a.has_data)
