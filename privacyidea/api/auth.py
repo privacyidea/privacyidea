@@ -365,7 +365,7 @@ def get_auth_token():
                         "authtype": authtype,
                         "exp": datetime.utcnow() + validity,
                         "rights": rights},
-                       secret, algorithm='HS256').decode('utf8')
+                       secret, algorithm='HS256')
 
     # Add the role to the response, so that the WebUI can make decisions
     # based on this (only show selfservice, not the admin part)
