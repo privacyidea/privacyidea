@@ -29,6 +29,13 @@ myApp.controller("smtpServerController", function($scope, $stateParams, inform,
     if ($scope.identifier) {
         // We are editing an existing SMTP Server
         $scope.getSmtpServers($scope.identifier);
+    } else {
+        // This is a new SMTP server
+        $scope.params = {
+            tls: true,
+            port: 25,
+            timeout: 10
+        }
     }
 
     // Get all servers

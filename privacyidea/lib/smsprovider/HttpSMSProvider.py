@@ -262,6 +262,7 @@ class HttpSMSProvider(ISMSProvider):
                                            "authentication.")
                       },
                       "CHECK_SSL": {
+                          "required": True,
                           "description": _("Should the SSL certificate be "
                                            "verified."),
                           "values": ["yes", "no"]
