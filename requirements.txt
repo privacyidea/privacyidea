@@ -51,8 +51,7 @@ pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycparser==2.20
 pydash==4.9.2
-PyJWT==1.7.1; python_version <= '3.5'
-PyJWT==2.0.0; python_version > '3.5'
+PyJWT==1.7.1
 PyMySQL==0.10.1; python_version <= '3.5'
 PyMySQL==1.0.2; python_version > '3.5'
 pyOpenSSL==20.0.1
