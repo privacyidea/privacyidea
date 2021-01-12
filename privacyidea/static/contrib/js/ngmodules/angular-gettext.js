@@ -450,6 +450,16 @@ angular.module('gettext').directive('translate', ["gettextCatalog", "$parse", "$
         restrict: 'AE',
         terminal: true,
         compile: function compile(element, attrs) {
+            var translate = attrs.translate;
+            if (translate && translate.match(/^yes|no$/i)) {
+                // Ignore the translate attribute if it has a "yes" or "no" value, assuming that it is the HTML
+                // native translate attribute, see
+                // https://html.spec.whatwg.org/multipage/dom.html#the-translate-attribute
+                //
+                // In that case we skip processing as this attribute is intended for the user agent itself.
+                return;
+            }
+
             // Validate attributes
             gettextUtil.assert(!attrs.translatePlural || attrs.translateN, 'translate-n', 'translate-plural');
             gettextUtil.assert(!attrs.translateN || attrs.translatePlural, 'translate-plural', 'translate-n');
