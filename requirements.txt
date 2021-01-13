@@ -16,7 +16,6 @@ croniter==1.0.1
 cryptography==3.2.1; python_version == '3.5'
 cryptography==3.3.1; python_version != '3.5'
 defusedxml==0.6.0
-ecdsa==0.16.1
 enum34==1.1.10; python_version < '3.0'
 Flask==1.1.2
 Flask-Babel==2.0.0

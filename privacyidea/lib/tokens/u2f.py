@@ -25,11 +25,11 @@ from hashlib import sha256
 import base64
 import logging
 import time
-import ecdsa
 import struct
 import six
-from cryptography.hazmat.primitives.asymmetric.utils import (encode_dss_signature,
-                                                             decode_dss_signature)
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import hashes
+from cryptography.exceptions import InvalidSignature
 
 from privacyidea.lib.utils import (to_bytes, to_unicode, hexlify_and_unicode,
                                    urlsafe_b64encode_and_unicode)
@@ -199,47 +199,6 @@ def check_registration_data(attestation_cert, app_id,
     return True
 
 
-def sign_challenge(user_priv_key, app_id, client_data, counter,
-                   user_presence_byte=b'\x01'):
-    """
-    This creates a signature for the U2F data.
-    Only used in test scenario
-
-    The calculation of the signature is described here:
-    https://fidoalliance.org/specs/fido-u2f-v1.0-nfc-bt-amendment-20150514/fido-u2f-raw-message-formats.html#authentication-response-message-success
-
-    The input_data is a concatenation of:
-        * AppParameter: sha256(app_id)
-        * The user presence [1byte]
-        * counter [4byte]
-        * ChallengeParameter: sha256(client_data)
-
-    :param user_priv_key: The private key
-    :type user_priv_key: hex string
-    :param app_id: The application id
-    :type app_id: str
-    :param client_data: the stringified JSON
-    :type client_data: str
-    :param counter: the authentication counter
-    :type counter: int
-    :param user_presence_byte: one byte 0x01
-    :type user_presence_byte: char
-    :return: The DER encoded signature
-    :rtype: hex string
-    """
-    app_id_hash = sha256(to_bytes(app_id)).digest()
-    client_data_hash = sha256(to_bytes(client_data)).digest()
-    counter_bin = struct.pack(">L", counter)
-    input_data = app_id_hash + user_presence_byte + counter_bin + \
-                 client_data_hash
-    priv_key_bin = binascii.unhexlify(user_priv_key)
-    sk = ecdsa.SigningKey.from_string(priv_key_bin, curve=ecdsa.NIST256p,
-                                      hashfunc=sha256)
-    signature = sk.sign(input_data)
-    der_sig = der_encode(signature)
-    return hexlify_and_unicode(der_sig)
-
-
 def check_response(user_pub_key, app_id, client_data, signature,
                    counter, user_presence_byte=b'\x01'):
     """
@@ -271,65 +230,20 @@ def check_response(user_pub_key, app_id, client_data, signature,
     counter_bin = struct.pack(">L", counter)
     signature_bin = binascii.unhexlify(signature)
 
-    input_data = app_id_hash + user_presence_byte + counter_bin \
-                 + client_data_hash
+    input_data = app_id_hash + user_presence_byte + counter_bin + client_data_hash
 
-    # The first byte 0x04 only indicates, that the public key is in the
-    # uncompressed format x: 32 byte, y: 32byte
-    user_pub_key_bin = user_pub_key_bin[1:]
-    signature_bin_asn = der_decode(signature_bin)
-    vkey = ecdsa.VerifyingKey.from_string(user_pub_key_bin,
-                                          curve=ecdsa.NIST256p,
-                                          hashfunc=sha256)
     try:
-        vkey.verify(signature_bin_asn, input_data)
-    except ecdsa.BadSignatureError:
+        vkey = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(),
+                                                            user_pub_key_bin)
+        vkey.verify(signature_bin, input_data, ec.ECDSA(hashes.SHA256()))
+    except (ValueError, TypeError) as e:
+        log.error("Could not load application specific public key!")
+        log.debug('{0!s}'.format(e))
+        res = False
+    except InvalidSignature:
         log.error("Bad signature for app_id {0!s}".format(app_id))
         res = False
     return res
-
-
-def der_encode(signature_bin_asn):
-    """
-    This encodes a raw signature to DER.
-    It uses the encode_dss_signature() function from cryptography.
-
-    :param signature_bin_asn: RAW signature
-    :type signature_bin_asn: bytes
-    :return: DER encoded signature
-    :rtype: bytes
-    """
-    if len(signature_bin_asn) != 64:
-        raise Exception("The signature needs to be 64 bytes.")
-    vr = int(binascii.hexlify(signature_bin_asn[:32]), 16)
-    vs = int(binascii.hexlify(signature_bin_asn[32:]), 16)
-    signature_bin = encode_dss_signature(vr, vs)
-    return signature_bin
-
-
-def der_decode(signature_bin):
-    """
-    This decodes a DER encoded signature so that it can be used with ecdsa.
-    It uses the decode_dss_signature() function from cryptography.
-
-    :param signature_bin: DER encoded signature
-    :type signature_bin: bytes
-    :return: raw signature
-    :rtype: bytes
-    """
-    try:
-        r, s = decode_dss_signature(signature_bin)
-        sig_bin_asn = binascii.unhexlify('{0:064x}{1:064x}'.format(r, s))
-    except ValueError as _e:
-        raise Exception("The signature is not in supported DER format.")
-
-    # we can only check for too long signatures since we prepend the hex-values
-    # with '0' to reach 64 digits. This will prevent an error in case the one of
-    # the values (r, s) is smaller than 32 bytes (first byte is '0'
-    # in original value).
-    if len(sig_bin_asn) != 64:
-        raise Exception("The signature needs to be 64 bytes.")
-    return sig_bin_asn
 
 
 def x509name_to_string(x509name):
