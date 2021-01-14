@@ -12,6 +12,7 @@ except ImportError:
 SCRIPTS = [
     'creategoogleauthenticator-file',
     'getgooglecodes',
+    'privacyidea-convert-base32.py',
     'privacyidea-create-ad-users',
     'privacyidea-create-certificate',
     'privacyidea-create-pwidresolver-user',
@@ -37,12 +38,6 @@ SCRIPTS = [
     '../pi-manage'
 ]
 
-SCRIPTS_FAIL = [
-    'privacyidea-convert-base32.py',
-    'privacyidea-decrypt-safeword.py',
-    'privacyidea-find-oath'
-]
-
 
 @unittest.skipIf(sys.version_info < (3, 0),
                  'Scripts can currently only be tested with Python 3')
@@ -50,15 +45,6 @@ class ScriptsTestCase(unittest.TestCase):
 
     def test_01_loading_scripts(self):
         for script in SCRIPTS:
-            with self.subTest(script=script):
-                loader = SourceFileLoader(script, os.path.join('tools', script))
-                spec = spec_from_loader(loader.name, loader)
-                mod = module_from_spec(spec)
-                loader.exec_module(mod)
-
-    @unittest.expectedFailure
-    def test_02_failing_scripts(self):
-        for script in SCRIPTS_FAIL:
             with self.subTest(script=script):
                 loader = SourceFileLoader(script, os.path.join('tools', script))
                 spec = spec_from_loader(loader.name, loader)

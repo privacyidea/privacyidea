@@ -133,15 +133,12 @@ class Config(object):
 def reencrypt(enc_data, iv, old_key, new_key):
     # decrypt LinOTP
     iv = binascii.unhexlify(iv)
-    input = binascii.unhexlify(enc_data)
-    output = aes_cbc_decrypt(old_key, iv, input)
-    eof = len(output) - 1
-    if eof == -1:
+    input_data = binascii.unhexlify(enc_data)
+    output = aes_cbc_decrypt(old_key, iv, input_data)
+    if not output:
         raise Exception('invalid encoded secret!')
     # unpad
-    while output[eof] == '\0':
-        eof -= 1
-    output = output[0:eof-1]
+    output = output.rstrip(b'\0')
     data = binascii.unhexlify(output)
 
     # encrypt anew
@@ -526,16 +523,16 @@ def migrate(config_obj):
 def usage():
     print("""
 privacyidea-migrate-linotp.py --generate-example-config [--config <config file>]
-    
+
     --generate-example-config, -g   Output an example config file. 
                                     This is a JSON file, that needs to be passed
                                     to this command.
-                                    
+
     --config, -c <file>             The config file, that contains the complete
                                     configuration.
-                                    
-{0!s}                                    
-    """.format(__doc__))
+
+{0!s}
+""".format(__doc__))
 
 
 def read_enckey(encfile):
