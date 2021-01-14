@@ -163,7 +163,7 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
     if (AuthFactory.checkRight('policyread')) {
         $scope.get_policies();
     };
-    if (AuthFactory.checkRight('eventhandler_read')) {
+    if (AuthFactory.checkRight('eventhandling_read')) {
         $scope.get_events();
     };
     $scope.getSubscriptions();
@@ -182,7 +182,7 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
         if (AuthFactory.checkRight('policyread')) {
             $scope.get_policies();
         };
-        if (AuthFactory.checkRight('eventhandler_read')) {
+        if (AuthFactory.checkRight('eventhandling_read')) {
             $scope.get_events();
         };
         $scope.getSubscriptions();
