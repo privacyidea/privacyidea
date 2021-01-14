@@ -15,6 +15,14 @@
                                 </td>
                             </tr>
                             <tr>
+                                <td colspan="2">
+                                    <span ng-repeat="(type, number) in tokens.by_type">
+                                        | {{ type }}: <a ui-sref="token.list()"
+                                           ng-click="$rootScope.returnTo=dashboard;">{{ number }}</a>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
                                 <td translate>Hardware</td>
                                 <td>{{ tokens.hardware }}</td>
                             </tr>

@@ -44,6 +44,23 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
             }, {"pagesize": 0});
     };
 
+    $scope.get_token_by_type = function () {
+        $scope.tokens.by_type = {};
+        var tokentypes = ['certificate', 'daplug', 'email', 'foureyes', 'hotp', 'indexedsecret',
+        'motp', 'ocra', 'paper', 'password', 'push', 'questionnaire', 'radius', 'registration',
+        'remote', 'sms', 'spass', 'sshkey', 'tan', 'tiqr', 'totp', 'u2f', 'vasco', 'webauthn',
+        'yubico', 'yubikey'];
+        tokentypes.forEach(function (tokentype, index) {
+            TokenFactory.getTokensNoCancel(function (data) {
+                    if (data) {
+                        if (data.result.value.count != 0) {
+                            $scope.tokens.by_type[tokentype] = data.result.value.count;
+                        }
+                    }
+            }, {"pagesize": 0, "type": tokentype});
+        });
+    };
+
     $scope.get_token_hardware = function () {
         TokenFactory.getTokensNoCancel(function (data) {
                 if (data) {
@@ -157,6 +174,7 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
 
     if (AuthFactory.checkRight('tokenlist')) {
         $scope.get_total_token_number();
+        $scope.get_token_by_type();
         $scope.get_token_hardware();
         $scope.get_token_software();
     };
@@ -176,6 +194,7 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
     $scope.$on("piReload", function() {
         if (AuthFactory.checkRight('tokenlist')) {
             $scope.get_total_token_number();
+            $scope.get_token_by_type();
             $scope.get_token_hardware();
             $scope.get_token_software();
         };
