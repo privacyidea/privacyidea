@@ -30,7 +30,7 @@ myApp.controller("auditController", function (AuditFactory, $scope, $rootScope,
                      page_size: 10,
                      page: 1};
     $scope.instanceUrl = instanceUrl;
-    var df = gettextCatalog.getString("yyyy-MM-dd HH:mm:ss");
+    var df = "yyyy-MM-dd HH:mm:ss";
     $scope.dateFormat = df;
 
     // If the state is called with some filter values
