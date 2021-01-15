@@ -311,7 +311,8 @@
                                     <tr ng-repeat="action in actions"
                                         ng-show="(actionCheckBox[action.name] ||
                                     !onlySelectedVisible) &&
-                                    action.name.toLowerCase().match(action_filter.toLowerCase()) !== null"
+                                    (action.name.toLowerCase().match(action_filter.toLowerCase()) !== null ||
+                                    action.desc.toLowerCase().match(action_filter.toLowerCase()) !== null)"
                                         ng-if="action.group===null || actionGroup===action.group">
                                         <td>
                                             <label for="cb_{{ action.name }}">
