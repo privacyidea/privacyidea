@@ -18,6 +18,8 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
+# Use table definition from the point where the changes took place. If we use
+# the table definition from models.py we might run into problems
 class Policy(Base):
     __tablename__ = "policy"
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
