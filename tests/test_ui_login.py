@@ -33,7 +33,7 @@ class AlternativeWebUI(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             self.assertEqual(res.mimetype, 'text/html', res)
-            self.assertIn("This is an alternative UI", res.data)
+            self.assertIn(b"This is an alternative UI", res.data)
 
 
 class LoginUITestCase(MyTestCase):
