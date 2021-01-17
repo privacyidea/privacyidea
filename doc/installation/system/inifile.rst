@@ -216,3 +216,23 @@ in ``pi.cfg`` using the parameter ``PI_TOKEN_MODULES``:
 
     PI_TOKEN_MODULES = [ "myproject.cooltoken", "myproject.lametoken" ]
 
+.. _custom_web_ui:
+
+Custom Web UI
+-------------
+
+The Web UI is a single page application, that is initiated from the file
+``static/templates/index.html``. This file pulls all CSS, the javascript framework
+and all the javascript business logic.
+
+You can configure privacyIDEA to use a complete different, your own Web UI.
+
+You can do this using the following config values:
+
+    PI_INDEX_HTML = "myindex.html"
+    PI_STATIC_FOLDER = "mystatic"
+    PI_TEMPLATE_FOLDER = "mystatic/templates"
+
+In this example the file ``mystatic/templates/myindex.html`` would be loaded
+as the initial single page application.
+
