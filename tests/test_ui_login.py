@@ -27,7 +27,7 @@ class AlternativeWebUI(MyTestCase):
         db.session.commit()
 
     def test_01_normal_login(self):
-        # We just test, if the alterrnative page is calles
+        # We just test, if the alterrnative page is called
         with self.app.test_request_context('/',
                                            method='GET'):
             res = self.app.full_dispatch_request()
