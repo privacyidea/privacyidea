@@ -225,7 +225,7 @@ The Web UI is a single page application, that is initiated from the file
 ``static/templates/index.html``. This file pulls all CSS, the javascript framework
 and all the javascript business logic.
 
-You can configure privacyIDEA to use a complete different, your own Web UI.
+You can configure privacyIDEA to use a completely different, your own Web UI.
 
 You can do this using the following config values:
 
