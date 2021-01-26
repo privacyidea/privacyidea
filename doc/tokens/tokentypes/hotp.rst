@@ -74,6 +74,8 @@ the QR-Code enrollment Feature.
 
 The Google Authenticator is available for iOS, Android and Blackberry devices.
 
+.. _hotp_token_enrollment:
+
 Enrollment
 ~~~~~~~~~~
 
