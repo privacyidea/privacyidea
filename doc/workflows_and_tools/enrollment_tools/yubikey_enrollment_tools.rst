@@ -6,7 +6,7 @@ Yubikey Enrollment Tools
 .. index:: Yubikey, Yubico AES mode, Yubikey OATH-HOTP mode
 
 The Yubikey can be used with privacyIDEA in Yubico's own AES mode (*Yubico OTP*),
-in the HOTP mode (*OATH-HOTP*) or the seldomly used static password mode.
+in the HOTP mode (*OATH-HOTP*) or the seldom used static password mode.
 
 This section describes several tools which can be used to initialize and enroll a
 Yubikey with privacyIDEA.
