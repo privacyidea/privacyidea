@@ -5,7 +5,7 @@ Yubikey
 
 .. index:: Yubikey, Yubico AES mode
 
-As Yubikey token type, privacyIDEA refers to Yubicos own AES mode.
+As Yubikey token type, privacyIDEA refers to Yubico's own AES mode.
 A Yubikey, configured in this mode
 outputs a 44 character OTP value, consisting of a 12 character prefix and
 a 32 character OTP. But in contrast to the :ref:`yubico_token` Cloud
