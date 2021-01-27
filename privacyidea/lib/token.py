@@ -68,6 +68,8 @@ import logging
 from six import string_types
 
 from sqlalchemy import (and_, func)
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql import expression
 
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
@@ -108,6 +110,23 @@ required = False
 
 ENCODING = "utf-8"
 
+
+# Define function to convert Oracle CLOBs to VARCHAR before using them in a
+# compare operation.
+# By using <https://docs.sqlalchemy.org/en/13/core/compiler.html> we can
+# differentiate between different dialects.
+class clob_to_varchar(expression.FunctionElement):
+    name = 'clob_to_varchar'
+
+
+@compiles(clob_to_varchar)
+def fn_clob_to_varchar_default(element, compiler, **kw):
+    return compiler.process(element.clauses, **kw)
+
+
+@compiles(clob_to_varchar, 'oracle')
+def fn_clob_to_varchar_oracle(element, compiler, **kw):
+    return "to_char(%s)" % compiler.process(element.clauses, **kw)
 
 @log_with(log)
 def create_tokenclass_object(db_token):
@@ -287,7 +306,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             raise privacyIDEAError("I can only create SQL filters from "
                                    "tokeninfo of length 1.")
         sql_query = sql_query.filter(TokenInfo.Key == list(tokeninfo)[0])
-        sql_query = sql_query.filter(TokenInfo.Value == list(tokeninfo.values())[0])
+        sql_query = sql_query.filter(clob_to_varchar(TokenInfo.Value) == list(tokeninfo.values())[0])
         sql_query = sql_query.filter(TokenInfo.token_id == Token.id)
 
     return sql_query
