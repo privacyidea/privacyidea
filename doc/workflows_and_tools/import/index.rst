@@ -44,6 +44,7 @@ import the GPG encrypted file to privacyIDEA!
 
       gpg -e -a -r <keyid>  import.csv
 
+.. _import_oath_csv:
 
 OATH CSV
 --------
@@ -108,8 +109,7 @@ and the first three colums will be the user:
 Yubikey CSV
 -----------
 
-Here you can import the CSV file that is written by the Yubikey personalization
-tool [#yubipers]_.
+Here you can import the CSV file that is written by the :ref:`ykpersgui` [#yubipers]_.
 privacyIDEA can import all Yubikey modes, either Yubico mode or HOTP mode.
 
 .. figure:: yubikey.png
