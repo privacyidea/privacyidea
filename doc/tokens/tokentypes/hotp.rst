@@ -41,7 +41,7 @@ privacyIDEA also supports the following seedable HOTP tokens:
 
 * SafeNet eToken NG OTP
 * SafeNet eToken Pass
-* Yubikey in OATH mode
+* Yubikey in OATH mode (See :ref:`yubikey_enrollment_tools` on how to enroll Yubikeys in HOTP mode.)
 * Daplug
 
 Those tokens can be initialized by privacyIDEA. Thus you can be sure, that

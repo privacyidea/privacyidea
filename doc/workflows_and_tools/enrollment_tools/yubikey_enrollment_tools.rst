@@ -86,7 +86,7 @@ length of the *OTP value* and the field *OTP length* is automatically filled.
     complete length of the OTP value to work correctly.
 
 The process is similar for the HOTP mode. You have to deselect *OATH Token Identifier*.
-Copy the shown secret to the HOTP :ref:`hotp_token_enrollment` form in privacyIDEA.
+Copy the displayed secret to the HOTP :ref:`hotp_token_enrollment` form in privacyIDEA.
 
 .. figure:: images/ykpers-quick-initialize-oath-hotp.png
    :width: 500
@@ -115,18 +115,17 @@ For Yubikeys in HOTP mode, set the output format as::
 
    YUBIHOTP{serial}_{configSlot},{secretKeyTxt},hotp,{hotpDigits}
 
-Upon clicking *Write Configuration* for the first time, you be prompted to select an output file name and
+Upon clicking *Write Configuration* for the first time, you will be prompted to select an output file name and
 the generated configuration is written both to the device and to the selected file. In the *Advanced* mode
 select *Program Multiple Yubikeys* and *Automatically program Yubikeys when inserted* to program each Yubikey
-immediately after detection.
+automatically after you insert it.
 
 .. figure:: images/ykpers-mass-initialize.png
    :width: 500
 
    *Write Configuration initializes the Yubikey*
 
-The tool is also able to do a mass-initialization by selecting *Program multiple Yubikeys* and
-plugging one Yubikey after the other. During this process the token secrets are automatically
+During this process the token secrets are automatically
 appended to the selected export file. Note again, that for HOTP, you have to deselect
 *OATH Token Identifier*.
 
