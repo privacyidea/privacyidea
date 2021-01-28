@@ -6,8 +6,7 @@ from .base import MyTestCase
 from privacyidea.lib.tokens.u2ftoken import U2fTokenClass
 from privacyidea.lib.tokens.u2f import (check_registration_data,
                                         parse_registration_data, url_decode,
-                                        check_response, parse_response_data,
-                                        der_encode, der_decode)
+                                        check_response, parse_response_data)
 from privacyidea.lib.token import init_token, remove_token, check_user_pass
 from privacyidea.lib.user import User
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
@@ -251,41 +250,6 @@ class U2FTokenTestCase(MyTestCase):
         with self.assertRaisesRegexp(Exception,
                                      'The registration data is in a wrong format.'):
             parse_registration_data(reg_data)
-
-    def test_05_der_signature(self):
-        import os
-        r = os.urandom(32)
-        s = os.urandom(32)
-
-        # get a valid signature
-        sig_der_bin = der_encode(r + s)
-
-        # check for wrong signature length
-        broken_sig_bin_raw = r + s[1:]
-        with self.assertRaisesRegexp(Exception,
-                                     "The signature needs to be 64 bytes."):
-            der_encode(broken_sig_bin_raw)
-
-        # decode valid signature
-        sig_bin = der_decode(sig_der_bin)
-        self.assertEqual(sig_bin[:32], r)
-        self.assertEqual(sig_bin[32:], s)
-
-        # decode broken signature
-        broken_sig_hex = '304502207f3e632dc9fd607aa9e04c9130f1ddff0d44cf3f2dc3' \
-                         '639b194a720815454d39022053883079bc3fcacd8f178a0bd40d' \
-                         '88ef1286195665c8bd78300a15c23aee5f8c'
-        with self.assertRaisesRegexp(Exception,
-                                     "The signature is not in supported DER format."):
-            der_decode(binascii.unhexlify(broken_sig_hex))
-
-        # invalid signature length
-        long_sig_hex = '3048022201027f3e632dc9fd607aa9e04c9130f1ddff0d44cf3f2' \
-                       'dc3639b194a720815454d390222010253883079bc3fcacd8f178a' \
-                       '0bd40d88ef1286195665c8bd78300a15c23aee5f8c'
-        with self.assertRaisesRegexp(Exception,
-                                     "The signature needs to be 64 bytes."):
-            der_decode(binascii.unhexlify(long_sig_hex))
 
 
 class MultipleU2FTokenTestCase(MyTestCase):

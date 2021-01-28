@@ -113,6 +113,12 @@ class TestingConfig(Config):
                        "resolver": "resolverX"}]
 
 
+class AltUIConfig(TestingConfig):
+    PI_INDEX_HTML = "testui.html"
+    PI_STATIC_FOLDER = "../tests/testdata/altstatic"
+    PI_TEMPLATE_FOLDER = "../tests/testdata/altstatic/templates"
+
+
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'data.sqlite')
@@ -154,5 +160,6 @@ config = {
     'testing': TestingConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig,
-    'heroku': HerokuConfig
+    'heroku': HerokuConfig,
+    'altUI': AltUIConfig
 }

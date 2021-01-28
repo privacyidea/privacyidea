@@ -311,15 +311,16 @@
                                     <tr ng-repeat="action in actions"
                                         ng-show="(actionCheckBox[action.name] ||
                                     !onlySelectedVisible) &&
-                                    action.name.toLowerCase().match(action_filter.toLowerCase()) !== null"
+                                    (action.name.toLowerCase().match(action_filter.toLowerCase()) !== null ||
+                                    action.desc.toLowerCase().match(action_filter.toLowerCase()) !== null)"
                                         ng-if="action.group===null || actionGroup===action.group">
                                         <td>
-                                            <label for="cb_{{ action.name }}">
-                                                <input type="checkbox"
-                                                       name="{{ action.name }}"
-                                                       ng-model="actionCheckBox[action.name]"
-                                                       id="cb_{{ action.name }}">
-                                                {{ action.name }}
+                                            <input type="checkbox"
+                                                   name="{{ action.name }}"
+                                                   ng-model="actionCheckBox[action.name]"
+                                                   id="cb_{{ action.name }}">
+                                            <label for="cb_{{ action.name }}"
+                                                   ng-bind-html="action.name | highlight: action_filter">
                                             </label>
                                         </td>
 
@@ -377,8 +378,8 @@
                                         <td>
                                             <!-- This is the description of the policy action
                                              -->
-                                            <p class="help help-block">
-                                                {{ action.desc }}
+                                            <p class="help help-block"
+                                               ng-bind-html="action.desc | highlight: action_filter">
                                             </p>
                                         </td>
                                     </tr>

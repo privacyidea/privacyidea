@@ -30,6 +30,11 @@ myApp.controller("privacyideaServerController", function($scope, $stateParams,
     if ($scope.identifier) {
         // We are editing an existing RADIUS Server
         $scope.getPrivacyideaServers($scope.identifier);
+        } else {
+        // This is a new privacyIDEA server
+        $scope.params = {
+            tls: true
+        }
     }
 
     // Get all servers
