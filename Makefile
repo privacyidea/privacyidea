@@ -56,7 +56,6 @@ depdoc:
 
 doc-man:
 	(cd doc; make man)
-	#(cd doc/installation/system/pimanage; make man)
 
 doc-html:
 	(cd doc; make html)

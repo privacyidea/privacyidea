@@ -1,3 +1,12 @@
+Version 3.5.1, 2020-01-28
+
+  Fixes:
+  * Fix DB migration script for update from prior of 3.3. (#2582)
+  * Fix the internal interface of container audit module (#2562)
+  * Add missing headers to /auth request (#2599)
+  * Fix tokeninfo value filter with Oracle db (#2602)
+
+
 Version 3.5, 2020-12-22
 
   Features:
