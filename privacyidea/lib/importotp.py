@@ -508,7 +508,8 @@ def parsePSKCdata(xml_data,
 
         # Special treatment for pskc files exported from Yubico
         if algo in ("http://www.yubico.com/#yubikey-aes",
-                    "urn:ietf:params:xml:ns:keyprov:pskc:hotp"):
+                    "urn:ietf:params:xml:ns:keyprov:pskc:hotp") \
+                and re.match(r"\d+:\d+", serial):  # check if the serial fits the pattern "<SerialNo>:<Slot>
             t_type = "yubikey"
             serial_split = serial.split(":")
             serial_no = serial_split[0]
