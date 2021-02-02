@@ -18,10 +18,10 @@ jobs:
     outputs:
       run_tests: ${{ steps.check.outputs.run_tests}}
     steps:
-    - name: 'Check for changes in sources'
-    - id: check
     - uses: actions/checkout@v2
-    - run: ./contrib/gh_check_for_changes.sh
+    - name: 'Check for changes in sources'
+      id: check
+      run: ./contrib/gh_check_for_changes.sh
 
   build:
     name: 'Run tests with Python ${{ matrix.python-version }}'
