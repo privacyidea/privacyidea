@@ -293,3 +293,6 @@ plantuml = 'java -Djava.awt.headless=true -jar /usr/share/plantuml/plantuml.jar'
 
 # Use SVG inside <object> in supported browsers (all except IE8), falling back to PNG.
 plantuml_output_format = 'svg'
+
+# Some changes to docs directory
+
