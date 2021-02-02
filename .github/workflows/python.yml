@@ -4,21 +4,41 @@
 name: Python Tests
 
 on:
+  # run on each push to every branch of the repository but only on
+  # pull requests to the 'master' and 'branch-*' branches
   push:
   pull_request:
-    branches: [ master ]
+    branches:
+      - 'master'
+      - 'branch-*'
 
 jobs:
+  pre_check:
+    name: 'Check for code changes'
+    outputs:
+      run_tests: ${{ steps.check.outputs.run_tests}}
+    steps:
+    - name: 'Check for changes in sources'
+    - id: check
+    - uses: actions/checkout@v2
+    - run: ./contrib/gh_check_for_changes.sh
+
   build:
+    name: 'Run tests with Python ${{ matrix.python-version }}'
+    needs: pre_check
+    if: needs.pre_check.outputs.run_tests == 'true'
     runs-on: ubuntu-18.04
     strategy:
+      # don't cancel running matrix tests when one test fails
       fail-fast: false
       matrix:
+        # current supported Python versions (and 2.7 and 3.5 for legacy support)
         python-version: ['2.7', '3.5', '3.6', '3.7', '3.8', '3.9']
 
     steps:
     - uses: actions/checkout@v2
       with:
+        # clone submodules as well
         submodules: 'recursive'
 
     - name: Set up Python ${{ matrix.python-version }}
@@ -30,6 +50,7 @@ jobs:
       uses: actions/cache@v2
       id: venv-cache
       with:
+        # we are caching the complete virtual environment here
         path: |
           ~/.cache/pip
           ~/venv
@@ -39,11 +60,13 @@ jobs:
           ${{ runner.os }}-pip-
 
     - name: Install venv for Python 2.7
+      # of course Python 2.7 needs some special treatment
       run: |
         pip install py2venv
       if: matrix.python-version == '2.7'
 
     - name: Install dependencies
+      # in order to cache the virtual environment we need to create it first
       run: |
         python -m venv ~/venv && . ~/venv/bin/activate
         python -m pip install --upgrade pip setuptools
@@ -56,6 +79,8 @@ jobs:
         python -b -m pytest -v --cov=privacyidea tests/
 
     - name: Archive code coverage results
+      # save the code coverage results as artifacts in order to merge them
+      # in the 'finish' job
       uses: actions/upload-artifact@v2
       with:
         name: coverage-${{ matrix.python-version }}
@@ -63,6 +88,7 @@ jobs:
         retention-days: 1
 
   finish:
+    # run this job after matrix build is finished
     needs: build
     runs-on: ubuntu-18.04
     steps:
@@ -77,7 +103,7 @@ jobs:
           ${{ runner.os }}-pip-coverage
           ${{ runner.os }}-pip-
 
-    - name: Install coverage for merging output 
+    - name: Install coverage for merging output
       run: |
         python -m pip install --upgrade pip setuptools
         python -m pip install coverage
@@ -98,4 +124,3 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         file: ./cov_reports/coverage.xml
-
