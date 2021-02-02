@@ -10,12 +10,6 @@
                     ng-class="{ active: tokentype == 'totp'}">
                     <a ui-sref="config.tokens({tokentype: 'totp'})">TOTP</a>
                 </li>
-                <!--
-                <li role="presentation"
-                    ng-class="{ active: tokentype == 'motp'}">
-                    <a ui-sref="config.tokens({tokentype: 'motp'})">mOTP</a>
-                </li>
-                -->
                 <li role="presentation"
                     ng-class="{ active: tokentype == 'u2f'}">
                     <a ui-sref="config.tokens({tokentype: 'u2f'})">U2F</a>
