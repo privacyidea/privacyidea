@@ -25,7 +25,7 @@ jobs:
       run: ./contrib/gh_check_for_changes.sh
 
   build:
-    name: 'Run tests with Python ${{ matrix.python-version }}'
+    name: 'Run tests with Python'
     needs: pre_check
     if: needs.pre_check.outputs.run_tests == 'true'
     runs-on: ubuntu-18.04

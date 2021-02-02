@@ -21,12 +21,14 @@ include_patterns=(
 )
 
 if [[ -n ${GITHUB_BASE_REF} ]]; then
+  echo "BASE: ${GITHUB_BASE_REF}"
   # we are in a pull request
   # first get the base branch updated (github only clones with depth 1)
   git fetch origin "${GITHUB_BASE_REF}" --depth=1
   # now get all changed files
   CHANGED_FILES=$( git diff --name-only --diff-filter=AM "${GITHUB_BASE_REF}"... )
 elif [[ -n ${GITHUB_REF} ]]; then
+  echo "BASE: ${GITHUB_REF}"
   # This is a push event to branch GITHUB_REF
   git fetch origin "${GITHUB_REF}" --depth=1
   CHANGED_FILES=$( git diff --name-only --diff-filter=AM "${GITHUB_REF}"... )
