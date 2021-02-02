@@ -1,4 +1,5 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# This workflow will check for changed files, install Python dependencies and
+# run tests with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
 name: Python Tests
@@ -13,7 +14,36 @@ on:
       - 'branch-*'
 
 jobs:
+  pre_check:
+    name: 'Check for code changes'
+    runs-on: ubuntu-latest
+    outputs:
+      run_tests: ${{ steps.check.outputs.run_tests}}
+    steps:
+    - uses: actions/checkout@v2
+    - name: 'Get changed file list'
+      id: list
+      run: |
+        if [ $GITHUB_BASE_REF ]; then
+          git fetch origin $GITHUB_BASE_REF --depth=1
+          export DIFF=$( git diff --name-only --diff-filter=AM origin/$GITHUB_BASE_REF $GITHUB_SHA )
+        else
+          git fetch origin ${{ github.event.before }} --depth=1
+          export DIFF=$( git diff --name-only --diff-filter=AM ${{ github.event.before }} $GITHUB_SHA )
+        fi
+        echo "Changed files: $DIFF"
+        # Escape newlines (replace \n with %0A)
+        echo "::set-output name=diff::$( echo "$DIFF" | sed ':a;N;$!ba;s/\n/%0A/g' )"
+    - name: 'Check for changes in sources'
+      id: check
+      env:
+        DIFF: ${{ steps.list.outputs.diff }}
+      run: ./.github/check_for_changes.sh
+
   build:
+    name: 'Run tests with Python'
+    needs: pre_check
+    if: needs.pre_check.outputs.run_tests == 'true'
     runs-on: ubuntu-18.04
     strategy:
       # don't cancel running matrix tests when one test fails
@@ -90,7 +120,7 @@ jobs:
           ${{ runner.os }}-pip-coverage
           ${{ runner.os }}-pip-
 
-    - name: Install coverage for merging output 
+    - name: Install coverage for merging output
       run: |
         python -m pip install --upgrade pip setuptools
         python -m pip install coverage
