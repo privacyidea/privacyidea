@@ -166,7 +166,9 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
     if (AuthFactory.checkRight('eventhandling_read')) {
         $scope.get_events();
     };
-    $scope.getSubscriptions();
+    if (AuthFactory.checkRight('managesubscription')) {
+        $scope.getSubscriptions();
+    };
     if (AuthFactory.checkRight('auditlog')) {
         $scope.getAuthentication();
         $scope.getAdministration();
@@ -185,7 +187,9 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
         if (AuthFactory.checkRight('eventhandling_read')) {
             $scope.get_events();
         };
-        $scope.getSubscriptions();
+        if (AuthFactory.checkRight('managesubscription')) {
+            $scope.getSubscriptions();
+        };
         if (AuthFactory.checkRight('auditlog')) {
             $scope.getAuthentication();
             $scope.getAdministration();
