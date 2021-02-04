@@ -620,8 +620,8 @@ class ImportOTPTestCase(MyTestCase):
 
         tokens, _ = parsePSKCdata(YUBIKEY_PSKC_HOTP)
         self.assertTrue(len(tokens) == 1, len(tokens))
-        self.assertTrue("UBAM10944003_1" in tokens, tokens)
-        self.assertEqual(tokens["UBAM10944003_1"]["type"], "yubikey")
+        self.assertTrue("UBOM10944003_1" in tokens, tokens)
+        self.assertEqual(tokens["UBOM10944003_1"]["type"], "hotp")
 
     def test_03_import_pskc(self):
         self.assertRaises(ImportException, parsePSKCdata, 'not xml')

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2021-02-04 Timo Sturm <timo.sturm@netknights.it>
+#             Fix import of yubikeys from yubico
 #  2020-11-11 Timo Sturm <timo.sturm@netknights.it>
 #             Select how to validate PSKC imports
 #  2018-05-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -507,14 +509,15 @@ def parsePSKCdata(xml_data,
         serial = key["id"]
 
         # Special treatment for pskc files exported from Yubico
-        if algo in ("http://www.yubico.com/#yubikey-aes",
-                    "urn:ietf:params:xml:ns:keyprov:pskc:hotp") \
-                and re.match(r"\d+:\d+", serial):  # check if the serial fits the pattern "<SerialNo>:<Slot>
-            t_type = "yubikey"
+        yubi_mapping = {"http://www.yubico.com/#yubikey-aes": ("yubikey", "UBAM"),
+                        "urn:ietf:params:xml:ns:keyprov:pskc:hotp": ("hotp", "UBOM")}
+        if algo in yubi_mapping.keys() and re.match(r"\d+:\d+",
+                                                    serial):  # check if the serial fits the pattern "<SerialNo>:<Slot>
+            t_type = yubi_mapping[algo][0]
             serial_split = serial.split(":")
             serial_no = serial_split[0]
             slot = serial_split[1]
-            serial = "UBAM{0!s}_{1!s}".format(serial_no, slot)
+            serial = "{!s}{!s}_{!s}".format(yubi_mapping[algo][1], serial_no, slot)
         else:
             try:
                 serial = key_package.deviceinfo.serialno.string.strip()
