@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2021-02-04 Timo Sturm <timo.sturm@netknights.it>
+#             Fix import of yubikeys from yubico
 #  2020-11-11 Timo Sturm <timo.sturm@netknights.it>
 #             Select how to validate PSKC imports
 #  2018-05-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -502,13 +504,29 @@ def parsePSKCdata(xml_data,
             token["description"] = key_package.deviceinfo.manufacturer.string
         except Exception as exx:
             log.debug("Can not get manufacturer string {0!s}".format(exx))
-        serial = key["id"]
-        try:
-            serial = key_package.deviceinfo.serialno.string.strip()
-        except Exception as exx:
-            log.debug("Can not get serial string from device info {0!s}".format(exx))
+
         algo = key["algorithm"]
-        token["type"] = algo.split(":")[-1].lower()
+        serial = key["id"]
+
+        # Special treatment for pskc files exported from Yubico
+        yubi_mapping = {"http://www.yubico.com/#yubikey-aes": ("yubikey", "UBAM"),
+                        "urn:ietf:params:xml:ns:keyprov:pskc:hotp": ("hotp", "UBOM")}
+        if algo in yubi_mapping.keys() and re.match(r"\d+:\d+",
+                                                    serial):  # check if the serial fits the pattern "<SerialNo>:<Slot>
+            t_type = yubi_mapping[algo][0]
+            serial_split = serial.split(":")
+            serial_no = serial_split[0]
+            slot = serial_split[1]
+            serial = "{!s}{!s}_{!s}".format(yubi_mapping[algo][1], serial_no, slot)
+        else:
+            try:
+                serial = key_package.deviceinfo.serialno.string.strip()
+            except Exception as exx:
+                log.debug("Can not get serial string from device info {0!s}".format(exx))
+            t_type = algo.split(":")[-1].lower()
+
+        token["type"] = t_type
+
         parameters = key.algorithmparameters
         token["otplen"] = parameters.responseformat["length"] or 6
         try:
