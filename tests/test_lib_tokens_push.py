@@ -871,6 +871,8 @@ class PushTokenTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(res.json['result']['status'])
             self.assertTrue(res.json['result']['value'])
+            # check for the serial value in g
+            self.assertTrue(self.app_context.g.serial, tokenobj.token.serial)
 
         # We can now log in
         with self.app.test_request_context('/auth',
@@ -1126,25 +1128,38 @@ class PushTokenTestCase(MyTestCase):
 
         # now check that we receive the challenge when polling
         # since we mock the time we can use the same request data
-        with mock.patch('privacyidea.models.datetime') as mock_dt1,\
-                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
-            mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
-            res = PushTokenClass.api_endpoint(req, g)
-        self.assertTrue(res[1]['result']['status'], res)
-        chall = res[1]['result']['value'][0]
-        self.assertEqual(chall['nonce'], challenge, chall)
-        self.assertIn('signature', chall, chall)
-        # check that the signature matches
-        sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**chall)
-        parsed_stripped_server_pubkey = serialization.load_pem_public_key(
-            to_bytes(self.server_public_key_pem),
-            default_backend())
-        parsed_stripped_server_pubkey.verify(b32decode(chall['signature']),
-                                             sign_string.encode('utf8'),
-                                             padding.PKCS1v15(),
-                                             hashes.SHA256())
-        self.assertFalse(db_challenge.get_otp_status()[1], str(db_challenge))
+        # for this request we use the full app context to trigger
+        # before_request and check g
+        with self.app.test_request_context('/ttype/push',
+                                           method='GET',
+                                           data={"serial": serial,
+                                                 "timestamp": ts,
+                                                 "signature": b32encode(sig)}):
+            with mock.patch('privacyidea.models.datetime') as mock_dt1,\
+                    mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
+                mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+                mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
+                res = self.app.full_dispatch_request()
+
+            # check that the serial was set in flask g
+            self.assertTrue(self.app_context.g.serial, serial)
+
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            chall = res.json['result']['value'][0]
+            self.assertTrue(chall)
+            self.assertEqual(chall['nonce'], challenge, chall)
+            self.assertIn('signature', chall, chall)
+            # check that the signature matches
+            sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**chall)
+            parsed_stripped_server_pubkey = serialization.load_pem_public_key(
+                to_bytes(self.server_public_key_pem),
+                default_backend())
+            parsed_stripped_server_pubkey.verify(b32decode(chall['signature']),
+                                                 sign_string.encode('utf8'),
+                                                 padding.PKCS1v15(),
+                                                 hashes.SHA256())
+            self.assertFalse(db_challenge.get_otp_status()[1], str(db_challenge))
 
         # Now mark the challenge as answered so we receive an empty list
         db_challenge.set_otp_status(True)
