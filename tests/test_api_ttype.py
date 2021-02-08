@@ -1,18 +1,27 @@
+# -*- coding: utf-8 -*-
 from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
-from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.config import (set_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token)
 from privacyidea.lib.policy import (SCOPE, set_policy)
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
-from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.lib.tokens.pushtoken import (PUSH_ACTION,
                                               strip_key,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
                                               PUBLIC_KEY_SERVER)
+from privacyidea.lib.utils import b32encode_and_unicode
+from datetime import datetime, timedelta
+from pytz import utc
+from base64 import b32decode, b32encode
+import mock
+import responses
+
+from .test_lib_tokens_push import myAccessTokenInfo, myCredentials
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
@@ -230,3 +239,83 @@ class TtypePushAPITestCase(MyApiTestCase):
             self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), self.firebase_config_name)
             # remove the token
             remove_token(serial)
+
+    def test_02_api_push_poll(self):
+        r = set_smsgateway(self.firebase_config_name,
+                           u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           "myFB", FB_CONFIG_VALS)
+        self.assertGreater(r, 0)
+
+        # create a new push token
+        tokenobj = self._create_push_token()
+        serial = tokenobj.get_serial()
+
+        # set PIN
+        tokenobj.set_pin("pushpin")
+        tokenobj.add_user(User("cornelius", self.realm1))
+
+        # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.ServiceAccountCredentials') as mySA:
+            # alternative: side_effect instead of return_value
+            mySA.from_json_keyfile_name.return_value = myCredentials(myAccessTokenInfo("my_bearer_token"))
+
+            # add responses, to simulate the communication to firebase
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                          body="""{}""",
+                          content_type="application/json")
+
+            # Send the first authentication request to trigger the challenge.
+            # No push notification is submitted to firebase, but a challenge is created anyway
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 400, res)
+                jsonresp = res.json
+                self.assertFalse(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
+                self.assertEqual(jsonresp.get("result").get("error").get("message"),
+                                 "ERR401: Failed to submit message to firebase service.")
+
+        # first create a signature
+        ts = datetime.utcnow().isoformat()
+        sign_string = u"{serial}|{timestamp}".format(serial=serial, timestamp=ts)
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        # now check that we receive the challenge when polling
+        with self.app.test_request_context('/ttype/push',
+                                           method='GET',
+                                           data={"serial": serial,
+                                                 "timestamp": ts,
+                                                 "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+
+            # check that the serial was set in flask g (via before_request in ttype.py)
+            self.assertTrue(self.app_context.g.serial, serial)
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            chall = res.json['result']['value'][0]
+            self.assertTrue(chall)
+
+            challenge = chall["nonce"]
+            # This is what the smartphone answers.
+            # create the signature:
+            sign_data = "{0!s}|{1!s}".format(challenge, serial)
+            signature = b32encode_and_unicode(
+                self.smartphone_private_key.sign(sign_data.encode("utf-8"),
+                                                 padding.PKCS1v15(),
+                                                 hashes.SHA256()))
+
+            # Answer the challenge
+            with self.app.test_request_context('/ttype/push',
+                                               method='POST',
+                                               data={"serial": serial,
+                                                     "nonce": challenge,
+                                                     "signature": signature}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                self.assertTrue(res.json['result']['status'])
+                self.assertTrue(res.json['result']['value'])
