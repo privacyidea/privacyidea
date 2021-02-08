@@ -141,9 +141,10 @@ class TtypePushAPITestCase(MyApiTestCase):
                                                  "genkey": 1},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertNotEqual(res.status_code,  200)
+            self.assertNotEqual(res.status_code, 200)
             error = res.json.get("result").get("error")
-            self.assertEqual(error.get("message"), "Missing enrollment policy for push token: push_firebase_configuration")
+            self.assertEqual(error.get("message"),
+                             "Missing enrollment policy for push token: push_firebase_configuration")
             self.assertEqual(error.get("code"), 303)
 
         r = set_smsgateway(self.firebase_config_name,
@@ -161,7 +162,7 @@ class TtypePushAPITestCase(MyApiTestCase):
                                                  "genkey": 1},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code,  200)
+            self.assertEqual(res.status_code, 200)
             detail = res.json.get("detail")
             serial = detail.get("serial")
             self.assertEqual(detail.get("rollout_state"), "clientwait")
@@ -234,7 +235,8 @@ class TtypePushAPITestCase(MyApiTestCase):
             tokeninfo = token_obj.get_tokeninfo()
             self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
             self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
-            self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(), pubkey)
+            self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(),
+                             pubkey)
             # The token should also contain the firebase config
             self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), self.firebase_config_name)
             # remove the token
