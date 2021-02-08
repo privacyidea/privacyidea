@@ -61,6 +61,7 @@ from .realm import (get_realms, realm_is_defined,
                     get_realm)
 from .config import get_from_config, SYSCONF, get_config_object
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
+from privacyidea.models import UserAttribute
 
 log = logging.getLogger(__name__)
 
@@ -283,7 +284,50 @@ class User(object):
         y = get_resolver_object(self.resolver)
         userInfo = y.getUserInfo(uid)
         return userInfo
-    
+
+    @log_with(log)
+    def set_attribute(self, attrkey, attrvalue, attrtype=None):
+        """
+        Set an additional attribute for a user
+
+        :param attrkey: The key of the attribute
+        :param attrvalue: The value of the attribute
+        :return: The id of the attribute setting
+        """
+        ua = UserAttribute(user_id=self.uid, resolver=self.resolver, realm_id=self.realm_id,
+                           Key=attrkey, Value=attrvalue, Type=attrtype).save()
+        return ua
+
+    @log_with(log)
+    def get_attributes(self):
+        """
+        returns the additional attributes of a user
+        :return: a dictionary of attributes with keys and values
+        """
+        r = {}
+        attributes = UserAttribute.query.filter_by(user_id=self.uid, resolver=self.resolver,
+                                                   realm_id=self.realm_id).all()
+        for attr in attributes:
+            r[attr.Key] = attr.Value
+        return r
+
+    @log_with(log)
+    def delete_attribute(self, attrkey=None):
+        """
+        Delete the given key as user attribute.
+        If no key is given, then all attributes are deleted
+
+        :param attrkey: The key to delete
+        :return: The number of deleted rows
+        """
+        if attrkey:
+            ua = UserAttribute.query.filter_by(user_id=self.uid, resolver=self.resolver,
+                                               realm_id=self.realm_id, Key=attrkey).delete()
+        else:
+            ua = UserAttribute.query.filter_by(user_id=self.uid, resolver=self.resolver,
+                                               realm_id=self.realm_id).delete()
+        return ua
+
     @log_with(log)
     def get_user_phone(self, phone_type='phone', index=None):
         """
