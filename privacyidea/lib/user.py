@@ -59,7 +59,7 @@ from .resolver import (get_resolver_object,
 from .realm import (get_realms, realm_is_defined,
                     get_default_realm,
                     get_realm)
-from .config import get_from_config, SYSCONF
+from .config import get_from_config, SYSCONF, get_config_object
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
 
 log = logging.getLogger(__name__)
@@ -90,6 +90,7 @@ class User(object):
         self.login = login or ""
         self.used_login = self.login
         self.realm = (realm or "").lower()
+        self.realm_id = None
         if resolver == "**":
             resolver = ""
         self.resolver = resolver or ""
@@ -101,6 +102,10 @@ class User(object):
             self._get_user_from_userstore()
             # Just store the resolver type
             self.rtype = get_resolver_type(self.resolver)
+            # Add realm_id to User object
+            if self.realm:
+                realms = get_config_object().realm
+                self.realm_id = realms.get(self.realm, {}).get("id")
 
     @user_cache(user_init)
     def _get_user_from_userstore(self):

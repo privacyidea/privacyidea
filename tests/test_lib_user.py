@@ -99,6 +99,7 @@ class UserTestCase(MyTestCase):
         self.assertTrue(uid == "0", uid)
         self.assertTrue(rtype == "passwdresolver", rtype)
         self.assertTrue(resolvername == self.resolvername1, resolvername)
+        self.assertEqual(user.realm_id, 1)
         
     def test_03_get_username(self):
         username = get_username("0", self.resolvername1)

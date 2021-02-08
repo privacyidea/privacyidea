@@ -132,7 +132,8 @@ class SharedConfigClass(object):
                 for realm in Realm.query.all():
                     if realm.default:
                         default_realm = realm.name
-                    realmdef = {"option": realm.option,
+                    realmdef = {"id": realm.id,
+                                "option": realm.option,
                                 "default": realm.default,
                                 "resolver": []}
                     for x in realm.resolver_list:
