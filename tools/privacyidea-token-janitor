@@ -333,11 +333,12 @@ def export_token_data(token_list):
     return tokens
 
 
-def export_user_data(token_list):
+def export_user_data(token_list, attributes=None):
     """
     Returns a list of users with the information how many tokens this user has assigned
 
     :param token_list:
+    :param attributes: display additional user attributes
     :return:
     """
     users = {}
@@ -357,6 +358,11 @@ def export_user_data(token_list):
                 user.resolver,
                 user.realm
             )
+            if attributes:
+                for att in attributes.split(","):
+                    uid += ",'{0!s}'".format(
+                        user.info.get(att, "")
+                    )
         else:
             uid = u"N/A" + u", " * 5
 
@@ -400,6 +406,7 @@ def export_user_data(token_list):
                               'the output should only contain the number of tokens owned '
                               'by the user.',
                 dest='sum_tokens', action='store_true')
+@manager.option('--attributes', help='Extends the sum function to display additional user attributes.')
 @manager.option('--tokenrealms', help='A comma separated list of realms, to which the tokens '
                                       'should be assigned.')
 @manager.option('--csv', dest='csv', action='store_true',
@@ -411,7 +418,8 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
          tokeninfo_value_greater_than, tokeninfo_value_less_than,
          tokeninfo_value_after, tokeninfo_value_before,
          orphaned, tokentype, serial, description, action, set_description,
-         set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv, chunksize):
+         set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv,
+         chunksize, attributes):
     """
     finds all tokens which match the conditions
     """
@@ -462,7 +470,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 for token in tokens:
                     print(u",".join([u"'{0!s}'".format(x) for x in token]))
             else:
-                users = export_user_data(tlist)
+                users = export_user_data(tlist, attributes)
                 for user, tokens in users.items():
                     print(u"{0!s},{1!s}".format(user, len(tokens)))
 
