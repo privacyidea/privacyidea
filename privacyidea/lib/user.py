@@ -58,8 +58,8 @@ from .resolver import (get_resolver_object,
 
 from .realm import (get_realms, realm_is_defined,
                     get_default_realm,
-                    get_realm)
-from .config import get_from_config, SYSCONF, get_config_object
+                    get_realm, get_realm_id)
+from .config import get_from_config, SYSCONF
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
 from privacyidea.models import UserAttribute
 
@@ -104,9 +104,7 @@ class User(object):
             # Just store the resolver type
             self.rtype = get_resolver_type(self.resolver)
             # Add realm_id to User object
-            if self.realm:
-                realms = get_config_object().realm
-                self.realm_id = realms.get(self.realm, {}).get("id")
+            self.realm_id = get_realm_id(self.realm)
 
     @user_cache(user_init)
     def _get_user_from_userstore(self):
@@ -283,6 +281,8 @@ class User(object):
         (uid, _rtype, _resolver) = self.get_user_identifiers()
         y = get_resolver_object(self.resolver)
         userInfo = y.getUserInfo(uid)
+        # Now add the additional attributes, this is used e.g. in ADDUSERINRESPONSE
+        userInfo.update(self.attributes)
         return userInfo
 
     @log_with(log)
@@ -298,18 +298,14 @@ class User(object):
                            Key=attrkey, Value=attrvalue, Type=attrtype).save()
         return ua
 
-    @log_with(log)
-    def get_attributes(self):
+    @property
+    def attributes(self):
         """
         returns the additional attributes of a user
         :return: a dictionary of attributes with keys and values
         """
-        r = {}
-        attributes = UserAttribute.query.filter_by(user_id=self.uid, resolver=self.resolver,
-                                                   realm_id=self.realm_id).all()
-        for attr in attributes:
-            r[attr.Key] = attr.Value
-        return r
+        return get_attributes(self.uid, self.resolver, self.realm_id)
+
 
     @log_with(log)
     def delete_attribute(self, attrkey=None):
@@ -638,7 +634,19 @@ def get_user_from_param(param, optionalOrRequired=optional):
 
 
 @log_with(log)
-def get_user_list(param=None, user=None):
+def get_user_list(param=None, user=None, additional_attributes=False):
+    """
+    This function returns a list of user dictionaries.
+
+    :param param: search parameters
+    :type param: dict
+    :param user:  a specific user object to return
+    :type user: User object
+    :param additional_attributes:  Set to True, if you want to receive additional attributes
+        of external users.
+    :type additional_attributes: bool
+    :return: list of dictionaries
+    """
     users = []
     resolvers = []
     searchDict = {"username": "*"}
@@ -697,9 +705,15 @@ def get_user_list(param=None, user=None):
             log.debug("with this search dictionary: {0!r} ".format(searchDict))
             ulist = y.getUserList(searchDict)
             # Add resolvername to the list
+            realm_id = get_realm_id(param_realm or user_realm)
             for ue in ulist:
                 ue["resolver"] = resolver_name
                 ue["editable"] = y.editable
+            if additional_attributes and realm_id is not None:
+                for ue in ulist:
+                    # Add the additional attributes, by class method from User
+                    # with uid, resolvername and realm_id, which we need to determine by the realm name
+                    ue.update(get_attributes(ue.get("userid"), ue.get("resolver"), realm_id))
             log.debug("Found this userlist: {0!r}".format(ulist))
             users.extend(ulist)
 
@@ -747,3 +761,27 @@ def log_used_user(user, other_text=""):
     :return: str
     """
     return u"logged in as {0}. {1}".format(user.used_login, other_text) if user.used_login != user.login else other_text
+
+
+def get_attributes(uid, resolver, realm_id):
+    """
+    Retuns the attributes for the given user.
+
+    :param uid: The UID of the user
+    :param resolver: The name of the resolver
+    :param realm_id: The realm_id
+    :return: A dictionary of key/values
+    """
+    r = {}
+    attributes = UserAttribute.query.filter_by(user_id=uid, resolver=resolver, realm_id=realm_id).all()
+    for attr in attributes:
+        r[attr.Key] = attr.Value
+    return r
+
+
+def is_attribute_at_all():
+    """
+    Check if there are additional user attributes at all
+    :return: bool
+    """
+    return bool(UserAttribute.query.count())

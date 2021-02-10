@@ -32,7 +32,7 @@ from .lib.utils import (getParam,
 from ..api.lib.prepolicy import prepolicy, check_base_action, realmadmin
 from ..lib.policy import ACTION
 from privacyidea.api.auth import admin_required, user_required
-from privacyidea.lib.user import create_user, get_user_from_param, User
+from privacyidea.lib.user import create_user, User, is_attribute_at_all
 from privacyidea.lib.event import event
 
 
@@ -104,12 +104,76 @@ def get_users():
         }
     """
     realm = getParam(request.all_data, "realm")
-    users = get_user_list(request.all_data)
+    attr = is_attribute_at_all()
+    users = get_user_list(request.all_data, additional_attributes=attr)
 
     g.audit_object.log({'success': True,
                         'info': "realm: {0!s}".format(realm)})
     
     return send_result(users)
+
+
+@user_blueprint.route('/attribute', methods=['POST'])
+@user_required
+@event("set_user_attribute", request, g)
+def set_user_attribute():
+    """
+    Set an additional attribute for an external user.
+    The user is specified by the usual parameters user, resolver and realm.
+
+    :httpparam key: The name of the attributes
+    :httpparam value: The value of the attribute
+    :httpparam type: an optional type of the attribute
+
+    The database id of the attribute is returned. The return
+    value thus should be >=0.
+    """
+    # We basically need a user, otherwise we will fail, but the
+    # user object is later simply used from request.User. We only
+    # need to avoid an empty User object.
+    _user = getParam(request.all_data, "user", optional=False)
+    attrkey = getParam(request.all_data, "key", optional=False)
+    attrvalue = getParam(request.all_data, "value", optional=False)
+    attrtype = getParam(request.all_data, "value", optional=True)
+    r = request.User.set_attribute(attrkey, attrvalue, attrtype)
+    return send_result(r)
+
+
+@user_blueprint.route('/attribute', methods=['GET'])
+@user_required
+@event("get_user_attribute", request, g)
+def get_user_attribute():
+    """
+    Return the additional attribute of the given user.
+    The user is specified by the usual parameters user, resolver and realm.
+
+    :httpparam key: The optinoal name of the attribute. If it is not specified
+         all additional attributes of the user are returned.
+
+    """
+    _user = getParam(request.all_data, "user", optional=False)
+    attrkey = getParam(request.all_data, "key", optional=True)
+    r = request.User.attributes
+    if attrkey:
+        r = r.get(attrkey)
+    return send_result(r)
+
+
+@user_blueprint.route('/attribute/<attrkey>/<username>/<realm>', methods=['DELETE'])
+@user_required
+@event("delete_user_attribute", request, g)
+def delete_user_attribute(attrkey, username, realm=None):
+    """
+    Delete a specified additional attribute from the user.
+    The user is specified by the usual parameters user, resolver and realm.
+
+    :httpparam key: The name of the attribute that should be deleted from the user.
+
+    Returns the number of deleted attributes.
+    """
+    user = User(username, realm)
+    r = user.delete_attribute(attrkey)
+    return send_result(r)
 
 
 @user_blueprint.route('/<resolvername>/<username>', methods=['DELETE'])

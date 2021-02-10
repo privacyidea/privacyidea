@@ -471,25 +471,25 @@ class UserTestCase(MyTestCase):
         self.assertTrue(r > 0)
         r = user.set_attribute("hugen", "dubel")
         self.assertTrue(r > 1)
-        attrs = user.get_attributes()
+        attrs = user.attributes
         self.assertEqual(attrs.get("hans"), "wurst")
         self.assertEqual(attrs.get("hugen"), "dubel")
         # Now we can overwrite attributes
         r = user.set_attribute("hans", "meiser")
-        attrs = user.get_attributes()
+        attrs = user.attributes
         self.assertEqual(attrs.get("hans"), "meiser")
         self.assertEqual(attrs.get("hugen"), "dubel")
         # now delete some attributes of the user
         r = user.delete_attribute("hans")
         self.assertTrue(r == 1)
-        attrs = user.get_attributes()
+        attrs = user.attributes
         self.assertEqual(attrs.get("hans"), None)
         self.assertEqual(attrs.get("hugen"), "dubel")
         # delete all attributes
         user.set_attribute("key", "value")
         r = user.delete_attribute()
         self.assertTrue(r == 2)
-        attrs = user.get_attributes()
+        attrs = user.attributes
         self.assertEqual(attrs.get("hans"), None)
         self.assertEqual(attrs.get("hugen"), None)
         self.assertEqual(attrs.get("key"), None)

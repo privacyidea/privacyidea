@@ -3,6 +3,7 @@ from .base import MyApiTestCase
 import json
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
+from privacyidea.lib.user import User
 from six.moves.urllib.parse import urlencode
 
 PWFILE = "tests/testdata/passwd"
@@ -324,3 +325,112 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("value"))
+
+    def test_10_additional_attributes(self):
+        with self.app.test_request_context('/user/attribute',
+                                           method='POST',
+                                           data={"user": "cornelius@realm1",
+                                                 "key": "newattribute",
+                                                 "value": "newvalue"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("value") >= 0)
+
+        # Now we verify if the user has the additional attribute:
+        with self.app.test_request_context('/user/attribute',
+                                           method='GET',
+                                           data={"user": "cornelius@realm1"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            self.assertIn("newattribute", result.get("value"))
+            self.assertEqual(result.get("value").get("newattribute"), "newvalue")
+
+        with self.app.test_request_context('/user/attribute',
+                                           method='GET',
+                                           data={"user": "cornelius@realm1",
+                                                 "key": "newattribute"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            self.assertEqual(result.get("value"), "newvalue")
+
+        # Now we check, if the additional attribute is also contained in the
+        # user listing
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           data={"realm": "realm1"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            additional_attribute_found = False
+            # check in the user list for the username=cornelius
+            for user in result.get("value"):
+                if user.get("username") == "cornelius":
+                    self.assertEqual(user.get("newattribute"), "newvalue")
+                    additional_attribute_found = True
+            self.assertTrue(additional_attribute_found)
+
+        # Now we search for the one explicit user
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           data={"realm": "realm1",
+                                                 "username": "cornelius"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            # check in the user list for the username=cornelius
+            self.assertEqual(len(result.get("value")), 1)
+            self.assertEqual(result.get("value")[0].get("newattribute"), "newvalue")
+
+        # The additional attribute should also be returned, if the user authenticates successfully.
+        from privacyidea.lib.token import init_token, remove_token
+        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION
+        init_token({"serial": "SPASS1", "type": "spass", "pin": "test"}, user=User("cornelius", self.realm1))
+        set_policy(name="POL1", scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE)
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius@realm1",
+                                                 "pass": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            details = res.json.get("detail")
+            user_data = details.get("user")
+            self.assertIn("newattribute", user_data)
+            self.assertEqual(user_data.get("newattribute"), "newvalue")
+        remove_token("SPASS1")
+        delete_policy("POL1")
+
+        # Now we delete the additional user attribute
+        with self.app.test_request_context('/user/attribute/newattribute/cornelius/realm1',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("value") >= 0)
+
+        # and verify, that it is gone
+        with self.app.test_request_context('/user/attribute',
+                                           method='GET',
+                                           data={"user": "cornelius@realm1"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            self.assertNotIn("newattribute", result.get("value"))
