@@ -111,7 +111,6 @@ Actions:
 
 """.format("|".join(ALLOWED_ACTIONS))
 
-
 app = create_app(config_name='production', silent=True)
 manager = Manager(app)
 
@@ -135,6 +134,7 @@ def _compare_greater_than(_key, given_value_string):
             return int(value) > given_value
         except ValueError:
             return False
+
     return comparator
 
 
@@ -150,6 +150,7 @@ def _compare_less_than(_key, given_value_string):
             return int(value) < given_value
         except ValueError:
             return False
+
     return comparator
 
 
@@ -187,6 +188,7 @@ def _compare_after(key, given_value_string):
             return _parse_datetime(key, value) > given_value
         except ValueError:
             return False
+
     return comparator
 
 
@@ -202,12 +204,14 @@ def _compare_before(key, given_value_string):
             return _parse_datetime(key, value) < given_value
         except ValueError:
             return False
+
     return comparator
 
 
 def _compare_regex(_key, given_regex):
     def comparator(value):
         return re.search(given_regex, value)
+
     return comparator
 
 
@@ -304,11 +308,12 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
         yield filtered_list
 
 
-def export_token_data(token_list):
+def export_token_data(token_list, attributes=None):
     """
     Returns a list of tokens. Each token again is a simple list of data
 
     :param token_list:
+    :param attributes: display additional user attributes
     :return:
     """
     tokens = []
@@ -324,6 +329,12 @@ def export_token_data(token_list):
                 token_data.append(u"{0!s}".format(user.uid))
                 token_data.append(u"{0!s}".format(user.resolver))
                 token_data.append(u"{0!s}".format(user.realm))
+
+            if attributes:
+                for att in attributes.split(","):
+                    token_data.append(u"{0!s}".format(
+                        user.info.get(att, ""))
+                    )
         except Exception:
             sys.stderr.write("Failed to determine user for token {0!s}.\n".format(
                 token_obj.token.serial
@@ -373,6 +384,7 @@ def export_user_data(token_list, attributes=None):
 
     return users
 
+
 @manager.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
 @manager.option('--assigned', help='True|False|None')
 @manager.option('--active', help='True|False|None')
@@ -406,7 +418,7 @@ def export_user_data(token_list, attributes=None):
                               'the output should only contain the number of tokens owned '
                               'by the user.',
                 dest='sum_tokens', action='store_true')
-@manager.option('--attributes', help='Extends the sum function to display additional user attributes.')
+@manager.option('--attributes', help='Extends the "listuser" function to display additional user attributes')
 @manager.option('--tokenrealms', help='A comma separated list of realms, to which the tokens '
                                       'should be assigned.')
 @manager.option('--csv', dest='csv', action='store_true',
@@ -424,10 +436,10 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
     finds all tokens which match the conditions
     """
     if action and action not in ALLOWED_ACTIONS:
-            sys.stderr.write("Unknown action. Allowed actions are {0!s}\n".format(
-                ", ".join(["'{0!s}'".format(x) for x in ALLOWED_ACTIONS])
-            ))
-            sys.exit(1)
+        sys.stderr.write("Unknown action. Allowed actions are {0!s}\n".format(
+            ", ".join(["'{0!s}'".format(x) for x in ALLOWED_ACTIONS])
+        ))
+        sys.exit(1)
     if chunksize is not None:
         chunksize = int(chunksize)
     tvfilter = build_tokenvalue_filter(tokeninfo_key,
@@ -448,7 +460,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
         if not action:
             if not csv:
                 print("Token serial\tTokeninfo")
-                print("="*42)
+                print("=" * 42)
                 for token_obj in tlist:
                     print("{0!s} ({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
                         token_obj.token.serial,
@@ -466,7 +478,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
 
         elif action == "listuser":
             if not sum_tokens:
-                tokens = export_token_data(tlist)
+                tokens = export_token_data(tlist, attributes)
                 for token in tokens:
                     print(u",".join([u"'{0!s}'".format(x) for x in token]))
             else:
