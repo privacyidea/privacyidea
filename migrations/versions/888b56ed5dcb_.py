@@ -1,4 +1,4 @@
-"""Add table for additional user attributes
+"""v3.6: Add table for additional user attributes
 
 Revision ID: 888b56ed5dcb
 Revises: d5870fd2f2a4
