@@ -6,6 +6,7 @@
             <th translate>IP/FQDN</th>
             <th translate>Sender</th>
             <th translate>TLS</th>
+            <th translate>SSL</th>
             <th translate>Description</th>
         </tr>
         </thead>
@@ -24,6 +25,10 @@
             <td>
                 <span class="glyphicon glyphicon-ok"
                     ng-show="server.tls"></span>
+            </td>
+            <td>
+                <span class="glyphicon glyphicon-ok"
+                    ng-show="server.ssl"></span>
             </td>
             <td>
                 {{ server.description | limitTo: 20 }}

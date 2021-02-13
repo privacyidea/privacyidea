@@ -2314,6 +2314,7 @@ class SMTPServer(MethodsMixin, db.Model):
     password = db.Column(db.Unicode(255), default=u"")
     sender = db.Column(db.Unicode(255), default=u"")
     tls = db.Column(db.Boolean, default=False)
+    ssl = db.Column(db.Boolean, default=False)
     description = db.Column(db.Unicode(2000), default=u'')
     timeout = db.Column(db.Integer, default=10)
     enqueue_job = db.Column(db.Boolean, nullable=False, default=False)
@@ -2331,6 +2332,7 @@ class SMTPServer(MethodsMixin, db.Model):
             "password": self.password,
             "sender": self.sender,
             "tls": self.tls,
+            "ssl": self.ssl,
             "description": self.description,
             "timeout": self.timeout,
             "enqueue_job": self.enqueue_job,
@@ -2357,6 +2359,8 @@ class SMTPServer(MethodsMixin, db.Model):
                 values["sender"] = self.sender
             if self.tls is not None:
                 values["tls"] = self.tls
+            if self.ssl is not None:
+                values["ssl"] = self.ssl
             if self.description is not None:
                 values["description"] = self.description
             if self.timeout is not None:

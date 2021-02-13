@@ -99,8 +99,11 @@ class SMTPServer(object):
         msg['To'] = ",".join(recipient)
         msg['Date'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
         msg['Reply-To'] = reply_to
-
-        mail = smtplib.SMTP(config['server'], port=int(config['port']),
+        if config.get('ssl', True):
+            mail = smtplib.SMTP_SSL(config['server'], port=int(config['port']),
+                            timeout=config.get('timeout', TIMEOUT))
+        else:
+            mail = smtplib.SMTP(config['server'], port=int(config['port']),
                             timeout=config.get('timeout', TIMEOUT))
         log.debug(u"submitting message to {0!s}".format(msg["To"]))
         log.debug("Saying EHLO to mailserver {0!s}".format(config['server']))
@@ -244,7 +247,7 @@ def get_smtpservers(identifier=None, server=None):
 
 @log_with(log)
 def add_smtpserver(identifier, server, port=25, username="", password="",
-                   sender="", description="", tls=False, timeout=TIMEOUT,
+                   sender="", description="", tls=False, ssl=False, timeout=TIMEOUT,
                    enqueue_job=False):
     """
     This adds an smtp server to the smtp server database table.
@@ -262,7 +265,7 @@ def add_smtpserver(identifier, server, port=25, username="", password="",
     cryptedPassword = encryptPassword(password)
     r = SMTPServerDB(identifier=identifier, server=server, port=port,
                      username=username, password=cryptedPassword, sender=sender,
-                     description=description, tls=tls, timeout=timeout,
+                     description=description, tls=tls, ssl=ssl, timeout=timeout,
                      enqueue_job=enqueue_job).save()
     return r
 

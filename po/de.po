@@ -3993,6 +3993,10 @@ msgstr "STARTTLS mit einer LDAP-Verbindung auf Port 389 benutzen."
 msgid "Use TLS"
 msgstr "TLS verwenden"
 
+#: privacyidea/static/components/config/views/config.smtp.edit.html:121
+msgid "Use SSL"
+msgstr "SSL verwenden"
+
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:32
 #: privacyidea/static/components/token/views/token.enroll.totp.html:31
 msgid "Use two-step enrollment with the privacyIDEA Authenticator App"

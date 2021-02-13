@@ -63,6 +63,7 @@ def create(identifier=None):
     :param username: The mail username for authentication at the SMTP server
     :param password: The password for authentication at the SMTP server
     :param tls: If the server should do TLS
+    :param ssl: If the server should do SSL
     :param description: A description for the definition
     """
     param = request.all_data
@@ -72,12 +73,13 @@ def create(identifier=None):
     password = getParam(param, "password", default="")
     sender = getParam(param, "sender", default="")
     tls = is_true(getParam(param, "tls", default=False))
+    ssl = is_true(getParam(param, "ssl", default=False))
     description = getParam(param, "description", default="")
     timeout = int(getParam(param, "timeout") or 10)
     enqueue_job = is_true(getParam(param, "enqueue_job", default=False))
 
     r = add_smtpserver(identifier, server, port=port, username=username,
-                       password=password, tls=tls, description=description,
+                       password=password, tls=tls, ssl=ssl, description=description,
                        sender=sender, timeout=timeout, enqueue_job=enqueue_job)
 
     g.audit_object.log({'success': r > 0,
@@ -101,6 +103,7 @@ def list_smtpservers():
             decrypted_password = ""
         res[server.config.identifier] = {"server": server.config.server,
                                          "tls": server.config.tls,
+                                         "ssl": server.config.ssl,
                                          "username": server.config.username,
                                          "password": decrypted_password,
                                          "port": server.config.port,
@@ -145,13 +148,14 @@ def test():
     password = getParam(param, "password", default="")
     sender = getParam(param, "sender", default="")
     tls = is_true(getParam(param, "tls", default=False))
+    ssl = is_true(getParam(param, "ssl", default=True))
     recipient = getParam(param, "recipient", required)
     timeout = int(getParam(param, "timeout") or 10)
     enqueue_job = is_true(getParam(param, "enqueue_job", default=False))
 
     s = dict(identifier=identifier, server=server, port=port,
              username=username, password=password, sender=sender,
-             tls=tls, timeout=timeout, enqueue_job=enqueue_job)
+             tls=tls, ssl=ssl, timeout=timeout, enqueue_job=enqueue_job)
     r = send_or_enqueue_email(s, recipient,
                               u"Test Email from privacyIDEA",
                               u"This is a test email from privacyIDEA. "
