@@ -898,6 +898,29 @@ def required_email(request=None, action=None):
     return True
 
 
+def check_additional_attributes(request=None, action=None):
+    """
+    This pre condition checks for the policies delete_user_attributes and
+    set_user_attributes, if the user or admin is allowed to set or deleted
+    the requested attribute.
+
+    It decorates POST /user/attribute and DELETE /user/attribute/...
+
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional action, (would be set/delete)
+    :return: Raises a PolicyError, if the wrong attribute is given.
+    """
+    ERROR = "You are not allowed to set this additional user attribute!"
+    if action == "delete":
+        attr_pols = Match.admin_or_user(g, action=ACTION.DELETE_USER_ATTRIBUTES, user_obj=request.User).action_values(unique=True)
+    elif action == "set":
+        attr_pols = Match.admin_or_user(g, action=ACTION.SET_USER_ATTRIBUTES, user_obj=request.User).action_values(
+            unique=True)
+    pass
+    raise PolicyError(ERROR)
+
+
 def auditlog_age(request=None, action=None):
     """
     This pre condition checks for the policy auditlog_age and set the
