@@ -77,6 +77,7 @@ Read about the functionality of the users view in the following sections.
 
    user_details
    manage_users
+   user_attributes
 
 
 Machines
