@@ -95,6 +95,7 @@ XML_PSKC = '''<?xml version="1.0" encoding="UTF-8"?>
     </DeviceInfo>
     <Key Id="1000133508267" Algorithm="urn:ietf:params:xml:ns:keyprov:pskc:hotp">
       <AlgorithmParameters>
+        <Suite>sha256</Suite>
         <ResponseFormat Length="6" Encoding="DECIMAL"/>
       </AlgorithmParameters>
       <Data>
@@ -629,14 +630,19 @@ class ImportOTPTestCase(MyTestCase):
         tokens, _ = parsePSKCdata(XML_PSKC)
         self.assertEqual(len(tokens), 7)
         self.assertEqual(tokens["1000133508267"].get("type"), "hotp")
+        self.assertEqual(tokens["1000133508267"].get("hashlib"), "sha256")
         self.assertEqual(tokens["2600135004013"].get("type"), "totp")
+        self.assertEqual(tokens["2600135004013"].get("hashlib"), "sha1")
+
         # Check the TOTP counter...
         self.assertEqual(tokens["2600135004013"].get("counter"), "121212")
         self.assertEqual(tokens["2600135004013"].get("timeShift"), "-122")
         self.assertEqual(tokens["2600135004013"].get("timeStep"), "60")
+
         # check the PW token
         self.assertEqual(tokens["PW001"].get("type"), "pw")
         self.assertEqual(tokens["PW001"].get("otplen"), "12")
+
         # The secret (password) of the pw token is "123456789012"
         self.assertEqual(tokens["PW001"].get("otpkey"), hexlify_and_unicode("123456789012"))
 
