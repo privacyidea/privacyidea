@@ -128,6 +128,8 @@ privacyIDEA lets you import PSKC files.
 All necessary information (OTP length, Hash algorithm, token type) are read
 from the file.
 
+.. note:: If the Hash algorithm is not specified for a token, SHA1 is used as the default.
+
 PSKC files can be encrypted - either with a password or an AES key. You can
 provide this during the upload.
 
