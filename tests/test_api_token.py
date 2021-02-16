@@ -373,13 +373,16 @@ class APITokenTestCase(MyApiTestCase):
         # get all tokens
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           headers={'Authorization': self.at}):
+                                           headers={'Authorization': self.at},
+                                           data={"counts": "true"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
             tokenlist = result.get("value").get("tokens")
+            counts = result.get("value").get("counts")
             self.assertTrue(len(tokenlist) == 2, len(tokenlist))
+            self.assertTrue(counts, {'hotp': 2, 'total': 2})
 
         remove_token(serial="totp1")
 
