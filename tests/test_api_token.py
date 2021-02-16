@@ -369,6 +369,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(len(tokenlist) == 1, len(tokenlist))
             token0 = tokenlist[0]
             self.assertTrue(token0.get("serial") == "totp1", token0)
+            self.assertIsNone(result.get("value").get("counts"))
 
         # get all tokens
         with self.app.test_request_context('/token/',
