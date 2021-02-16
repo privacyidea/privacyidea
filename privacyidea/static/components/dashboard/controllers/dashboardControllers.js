@@ -34,14 +34,16 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
     $scope.subscriptions = {};
     $scope.authentications = {"success": 0, "fail": 0};
 
-    $scope.get_total_token_number = function () {
+    $scope.get_token_counts = function () {
         // We call getTokens with pagesize=0, so that we do
         // not need any user resolving.
         TokenFactory.getTokensNoCancel(function (data) {
                 if (data) {
+                    $scope.tokens.counts = data.result.value.counts;
+                    delete $scope.tokens.counts["total"];
                     $scope.tokens.total = data.result.value.count;
                 }
-            }, {"pagesize": 0});
+            }, {"pagesize": 0, "counts": "true"});
     };
 
     $scope.get_token_hardware = function () {
@@ -156,7 +158,7 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
      };
 
     if (AuthFactory.checkRight('tokenlist')) {
-        $scope.get_total_token_number();
+        $scope.get_token_counts();
         $scope.get_token_hardware();
         $scope.get_token_software();
     };
@@ -177,7 +179,7 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
         // listen to the reload broadcast
     $scope.$on("piReload", function() {
         if (AuthFactory.checkRight('tokenlist')) {
-            $scope.get_total_token_number();
+            $scope.get_token_counts();
             $scope.get_token_hardware();
             $scope.get_token_software();
         };
