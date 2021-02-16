@@ -402,7 +402,7 @@ class Audit(AuditBase):
                     'info': LogEntry.info,
                     'privacyidea_server': LogEntry.privacyidea_server,
                     'client': LogEntry.client,
-                    'loglevel': LogEntry.loglevel,
+                    'log_level': LogEntry.loglevel,
                     'policies': LogEntry.policies,
                     'clearance_level': LogEntry.clearance_level}
         return sortname.get(key)

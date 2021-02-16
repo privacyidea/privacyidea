@@ -141,7 +141,8 @@ class Audit(object):  # pragma: no cover
         return ['number', 'action', 'success', 'serial', 'date', 'startdate',
                 'duration', 'token_type', 'user', 'realm', 'administrator',
                 'action_detail', 'info', 'privacyidea_server', 'client',
-                'loglevel', 'policies', 'clearance_level']
+                'log_level', 'policies', 'clearance_level', 'sig_check',
+                'missing_line', 'resolver']
 
     def get_total(self, param, AND=True, display_error=True, timelimit=None):
         """
