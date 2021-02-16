@@ -445,7 +445,8 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 serial=None, active=None, resolver=None, rollout_state=None,
                 sortby=Token.serial, sortdir="asc", psize=15,
-                page=1, description=None, userid=None, allowed_realms=None, tokeninfo=None):
+                page=1, description=None, userid=None, allowed_realms=None, tokeninfo=None,
+                counts=False):
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -479,7 +480,9 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :type allowed_realms: list
     :param tokeninfo: Return tokens with the given tokeninfo. The tokeninfo
         is a key/value dictionary
-    :return: dict with tokens, prev, next and count
+    :param counts: Boolean flag whether to return the token numbers per tokentype
+    :type counts: bool
+    :return: dict with tokens, prev, next, count and optionally counts
     :rtype: dict
     """
     sql_query = _create_token_query(tokentype=tokentype, realm=realm,
@@ -538,7 +541,22 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
            "next": next,
            "current": page,
            "count": pagination.total}
+    if counts is True:
+        ret.update({"counts": get_token_type_counts(sql_query)})
     return ret
+
+
+def get_token_type_counts(token_sql_query_obj):
+    """
+    This function extracts the numbers of tokens per tokentype from the given sql query object
+    """
+    token_list_full = token_sql_query_obj.all()
+    tokentypes_in_list = set([token.tokentype for token in token_list_full])
+    counts = dict.fromkeys(tokentypes_in_list, "")
+    for tokentype in tokentypes_in_list:
+        counts[tokentype] = sum(1 for token in token_list_full if token.tokentype == tokentype)
+    counts["total"] = len(token_list_full)
+    return counts
 
 
 def get_one_token(*args, **kwargs):

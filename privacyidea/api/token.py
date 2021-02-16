@@ -364,6 +364,8 @@ def list_api():
     :query page: request a certain page
     :query assigned: Only return assigned (True) or not assigned (False) tokens
     :query active: Only return active (True) or inactive (False) tokens
+    :query counts: If ``true`` return also the numbers of tokens per type in the
+        ``counts`` field
     :query pagesize: limit the number of returned tokens
     :query user_fields: additional user fields from the userid resolver of
         the owner (user)
@@ -391,6 +393,7 @@ def list_api():
     output_format = getParam(param, "outform", optional)
     assigned = getParam(param, "assigned", optional)
     active = getParam(param, "active", optional)
+    counts = getParam(param, "counts", optional)
     tokeninfokey = getParam(param, "infokey", optional)
     tokeninfovalue = getParam(param, "infovalue", optional)
     tokeninfo = None
@@ -400,6 +403,8 @@ def list_api():
         assigned = assigned.lower() == "true"
     if active:
         active = active.lower() == "true"
+    if counts:
+        counts = counts.lower() == "true"
     
     user_fields = []
     if ufields:
@@ -418,7 +423,7 @@ def list_api():
                                  resolver=resolver,
                                  description=description,
                                  userid=userid, allowed_realms=allowed_realms,
-                                 tokeninfo=tokeninfo)
+                                 tokeninfo=tokeninfo, counts=counts)
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)
