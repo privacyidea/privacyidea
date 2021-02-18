@@ -24,7 +24,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
                                    check_serial_valid, determine_logged_in_userparams,
-                                   to_list)
+                                   to_list, parse_string_to_dict)
 from privacyidea.lib.crypto import generate_password
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
@@ -973,3 +973,31 @@ class UtilsTestCase(MyTestCase):
         r = to_list({"Hallo", "Du", "da"})
         self.assertIsInstance(r, list)
         self.assertEqual(3, len(r))
+
+    def test_35_parse_string_to_dict(self):
+        # We can have as many whitespaces
+        d = parse_string_to_dict(" :key1: v1 v2  v3:key2: v4 v5 ")
+        self.assertIn("key1", d)
+        self.assertIn("key2", d)
+        self.assertEqual(d.get("key1"), ["v1", "v2", "v3"])
+        self.assertEqual(d.get("key2"), ["v4", "v5"])
+
+        d = parse_string_to_dict(" :key1: v1 v2  *:*: v4 v5 ")
+        self.assertIn("key1", d)
+        self.assertIn("*", d)
+        self.assertEqual(d.get("key1"), ["v1", "v2", "*"])
+        self.assertEqual(d.get("*"), ["v4", "v5"])
+
+        # we can hove no whitespaces
+        d = parse_string_to_dict(":key1:v1 v2 v3 :key2:v4 v5")
+        self.assertIn("key1", d)
+        self.assertIn("key2", d)
+        self.assertEqual(d.get("key1"), ["v1", "v2", "v3"])
+        self.assertEqual(d.get("key2"), ["v4", "v5"])
+
+        # side effect: we can skip the leading colon
+        d = parse_string_to_dict("key1:v1 v2 v3 :key2:v4 v5")
+        self.assertIn("key1", d)
+        self.assertIn("key2", d)
+        self.assertEqual(d.get("key1"), ["v1", "v2", "v3"])
+        self.assertEqual(d.get("key2"), ["v4", "v5"])
