@@ -4,6 +4,8 @@ import json
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import User
+from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION
 from six.moves.urllib.parse import urlencode
 
 PWFILE = "tests/testdata/passwd"
@@ -327,6 +329,24 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"))
 
     def test_10_additional_attributes(self):
+        from privacyidea.lib.policy import set_policy, ACTION, SCOPE, delete_policy
+        with self.app.test_request_context('/user/attribute',
+                                           method='POST',
+                                           data={"user": "cornelius@realm1",
+                                                 "key": "newattribute",
+                                                 "value": "newvalue"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), res.data)
+            self.assertEqual(result.get("error").get("message"),
+                             "You are not allowed to set this custom user attribute!")
+
+        # Allow to set custom attributes
+        set_policy("custom_attr", scope=SCOPE.ADMIN,
+                   action="{0!s}=:*:*".format(ACTION.SET_USER_ATTRIBUTES))
+
         with self.app.test_request_context('/user/attribute',
                                            method='POST',
                                            data={"user": "cornelius@realm1",
@@ -338,6 +358,7 @@ class APIUsersTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"), res.data)
             self.assertTrue(result.get("value") >= 0)
+
 
         # Now we verify if the user has the additional attribute:
         with self.app.test_request_context('/user/attribute',
@@ -364,6 +385,7 @@ class APIUsersTestCase(MyApiTestCase):
 
         # Now we check, if the additional attribute is also contained in the
         # user listing
+        delete_policy("custom_attr")
         with self.app.test_request_context('/user/',
                                            method='GET',
                                            data={"realm": "realm1"},
@@ -395,8 +417,6 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertEqual(result.get("value")[0].get("newattribute"), "newvalue")
 
         # The additional attribute should also be returned, if the user authenticates successfully.
-        from privacyidea.lib.token import init_token, remove_token
-        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION
         init_token({"serial": "SPASS1", "type": "spass", "pin": "test"}, user=User("cornelius", self.realm1))
         set_policy(name="POL1", scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE)
         with self.app.test_request_context('/validate/check',
@@ -415,6 +435,8 @@ class APIUsersTestCase(MyApiTestCase):
         delete_policy("POL1")
 
         # Now we delete the additional user attribute
+        set_policy("custom_attr", scope=SCOPE.ADMIN,
+                   action="{0!s}=*".format(ACTION.DELETE_USER_ATTRIBUTES))
         with self.app.test_request_context('/user/attribute/newattribute/cornelius/realm1',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
