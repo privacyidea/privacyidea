@@ -548,10 +548,10 @@ class LibPolicyTestCase(MyTestCase):
         realm = "myrealm"
         resolver = "reso001"
 
-        r = save_resolver({"resolver": "reso001",
+        r = save_resolver({"resolver": resolver,
                            "type": "passwdresolver",
                            "fileName": "tests/testdata/passwords"})
-        (added, failed) = set_realm("myrealm", ["reso001"])
+        (added, failed) = set_realm(realm, [resolver])
 
         def fake_check_user_pass(user, passw, options=None):
             return True, {"message": "Fake Authentication"}
@@ -572,10 +572,10 @@ class LibPolicyTestCase(MyTestCase):
         AuthCache(username, realm, resolver, _hash_password(password),
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=3),
                   last_auth=datetime.datetime.utcnow() - timedelta(minutes=1)).save()
-        r = auth_cache(fake_check_user_pass, User("cornelius", "myrealm"),
+        r = auth_cache(fake_check_user_pass, User(username,realm),
                         password, options=options)
         self.assertTrue(r[0])
-        self.assertEqual(r[1].get("message"), "Authenticated by AuthCache." )
+        self.assertEqual(r[1].get("message"), "Authenticated by AuthCache.")
 
         # We have an authentication, that is not read from the authcache,
         # since the authcache first_auth is too old.
@@ -584,7 +584,7 @@ class LibPolicyTestCase(MyTestCase):
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=5),
                   last_auth=datetime.datetime.utcnow() - timedelta(
                       minutes=1)).save()
-        r = auth_cache(fake_check_user_pass, User("cornelius", "myrealm"),
+        r = auth_cache(fake_check_user_pass, User(username, realm),
                        password, options=options)
         self.assertTrue(r[0])
         self.assertEqual(r[1].get("message"), "Fake Authentication")
@@ -596,7 +596,7 @@ class LibPolicyTestCase(MyTestCase):
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=1),
                   last_auth=datetime.datetime.utcnow() - timedelta(
                       minutes=10)).save()
-        r = auth_cache(fake_check_user_pass, User("cornelius", "myrealm"),
+        r = auth_cache(fake_check_user_pass, User(username, realm),
                        password, options=options)
         self.assertTrue(r[0])
         self.assertEqual(r[1].get("message"), "Fake Authentication")
@@ -619,15 +619,49 @@ class LibPolicyTestCase(MyTestCase):
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=2),
                   last_auth=datetime.datetime.utcnow() - timedelta(
                       hours=1)).save()
-        r = auth_cache(fake_check_user_pass, User("cornelius", "myrealm"),
+        r = auth_cache(fake_check_user_pass, User(username,realm),
                        password, options=options)
         self.assertTrue(r[0])
         self.assertEqual(r[1].get("message"), "Authenticated by AuthCache.")
 
+        # TODO Thus we need the additional column auth_count. That simply records, how often this auth_cache entry was used.
+        #  The setting 10s/2 will mean, check first_auth to be less than 10s ago and check auth_count to be less than 2.
+        #  (If it exceeds the auth_cache entry can be deleted again.) ~ Cornelius
+
+        # Test auth_cache policy with format "<seconds>/<#allowed authentications>"
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   realm=realm,
+                   resolver=resolver,
+                   action="{0!s}={1!s}".format(ACTION.AUTH_CACHE, "50s/2"))
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        options = {"g": g}
+
+        AuthCache(username, realm, resolver, _hash_password(password),
+                  first_auth=datetime.datetime.utcnow()).save()
+
+        r = auth_cache(fake_check_user_pass, User(username, realm),
+                       password, options=options)
+        self.assertTrue(r[0])
+        self.assertEqual(r[1].get("message"), "Authenticated by AuthCache.")
+
+        r = auth_cache(fake_check_user_pass, User(username, realm),
+                       password, options=options)
+        self.assertTrue(r[0])
+        self.assertEqual(r[1].get("message"), "Authenticated by AuthCache.")
+
+        r = auth_cache(fake_check_user_pass, User(username, realm),
+                       password, options=options)
+        self.assertTrue(r[0])
+        self.assertEqual(r[1].get("message"), "Fake Authentication")
+
         # Clean up
         delete_policy("pol1")
-        delete_realm("myrealm")
-        delete_resolver("reso001")
+        delete_realm(realm)
+        delete_resolver(resolver)
 
     @radiusmock.activate
     def test_13_passthru_priorities(self):
