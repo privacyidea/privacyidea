@@ -447,9 +447,11 @@ class EmailTokenClass(HotpTokenClass):
             mail_from = get_from_config("email.mailfrom", "privacyidea@localhost")
             email_tls = get_from_config("email.tls", default=False,
                                         return_bool=True)
+            email_ssl = get_from_config("email.ssl", default=False,
+                                        return_bool=True)
             ret = send_email_data(mailserver, subject, message, mail_from,
                                   recipient, username, password, port,
-                                  email_tls)
+                                  email_tls, email_ssl)
         return ret, message
 
     @classmethod
@@ -463,9 +465,11 @@ class EmailTokenClass(HotpTokenClass):
         username = getParam(params, "email.username")
         port = getParam(params, "email.port", default=25)
         email_tls = getParam(params, "email.tls", default=False)
+        email_ssl = getParam(params, "email.ssl", default=False)
         r = send_email_data(mailserver, subject, message, mail_from,
                             recipient, username=username,
-                            password=password, port=port, email_tls=email_tls)
+                            password=password, port=port, email_tls=email_tls,
+                            email_ssl=email_ssl)
 
         description = "Could not send email."
         if r:

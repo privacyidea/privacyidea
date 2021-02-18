@@ -180,7 +180,8 @@ def send_email_identifier(identifier, recipient, subject, body, sender=None,
 @log_with(log)
 def send_email_data(mailserver, subject, message, mail_from,
                     recipient, username=None,
-                    password=None, port=25, email_tls=False, timeout=TIMEOUT):
+                    password=None, port=25, email_tls=False, email_ssl=False,
+                    timeout=TIMEOUT):
     """
     Send an email via the given email configuration data.
 
@@ -194,12 +195,14 @@ def send_email_data(mailserver, subject, message, mail_from,
     :param port: The mail server port
     :param email_tls: If the mailserver requires TLS
     :type email_tls: bool
+    :param email_ssl: If the mailserver requires SSL
+    :type email_ssl: bool
     :return: True or False
     """
     dbserver = SMTPServerDB(identifier="emailtoken", server=mailserver,
                             sender=mail_from, username=username,
-                            password=password, port=port, tls=email_tls, timeout=timeout,
-                            enqueue_job=False)
+                            password=password, port=port, tls=email_tls, ssl=email_ssl,
+                            timeout=timeout, enqueue_job=False)
     smtpserver = SMTPServer(dbserver)
     return smtpserver.send_email(recipient, subject, message)
 
