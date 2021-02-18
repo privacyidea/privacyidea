@@ -533,12 +533,11 @@ def parsePSKCdata(xml_data,
 
         hash_lib = "sha1"
 
-        try:
-            # Check if hashlib is explicitly set in file
-            if parameters.suite and parameters.suite.string:
-                hash_lib = parameters.suite.string.lower()
-        except Exception as e:
-            log.warning(f"No compatible suite contained, falling back to default {hash_lib}.")
+        # Check if hashlib is explicitly set in file
+        if parameters.suite and parameters.suite.string:
+            hash_lib = parameters.suite.string.lower()
+        else:
+            log.warning("No hashlib defined, falling back to default {}.".format(hash_lib))
 
         token["hashlib"] = hash_lib
 
