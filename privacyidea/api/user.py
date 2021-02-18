@@ -29,7 +29,8 @@ from flask import (Blueprint,
                    request)
 from .lib.utils import (getParam,
                         send_result)
-from ..api.lib.prepolicy import prepolicy, check_base_action, realmadmin
+from ..api.lib.prepolicy import (prepolicy, check_base_action, realmadmin,
+                                 check_custom_user_attributes)
 from ..lib.policy import ACTION
 from privacyidea.api.auth import admin_required, user_required
 from privacyidea.lib.user import create_user, User, is_attribute_at_all
@@ -105,7 +106,7 @@ def get_users():
     """
     realm = getParam(request.all_data, "realm")
     attr = is_attribute_at_all()
-    users = get_user_list(request.all_data, additional_attributes=attr)
+    users = get_user_list(request.all_data, custom_attributes=attr)
 
     g.audit_object.log({'success': True,
                         'info': "realm: {0!s}".format(realm)})
@@ -114,11 +115,12 @@ def get_users():
 
 
 @user_blueprint.route('/attribute', methods=['POST'])
+@prepolicy(check_custom_user_attributes, request, "set")
 @user_required
-@event("set_user_attribute", request, g)
+@event("set_custom_user_attribute", request, g)
 def set_user_attribute():
     """
-    Set an additional attribute for an external user.
+    Set a custom attribute for an external user.
     The user is specified by the usual parameters user, resolver and realm.
 
     :httpparam key: The name of the attributes
@@ -134,7 +136,7 @@ def set_user_attribute():
     _user = getParam(request.all_data, "user", optional=False)
     attrkey = getParam(request.all_data, "key", optional=False)
     attrvalue = getParam(request.all_data, "value", optional=False)
-    attrtype = getParam(request.all_data, "value", optional=True)
+    attrtype = getParam(request.all_data, "type", optional=True)
     r = request.User.set_attribute(attrkey, attrvalue, attrtype)
     return send_result(r)
 
@@ -144,11 +146,11 @@ def set_user_attribute():
 @event("get_user_attribute", request, g)
 def get_user_attribute():
     """
-    Return the additional attribute of the given user.
+    Return the custom attribute of the given user.
     The user is specified by the usual parameters user, resolver and realm.
 
     :httpparam key: The optinoal name of the attribute. If it is not specified
-         all additional attributes of the user are returned.
+         all custom attributes of the user are returned.
 
     """
     _user = getParam(request.all_data, "user", optional=False)
@@ -160,11 +162,12 @@ def get_user_attribute():
 
 
 @user_blueprint.route('/attribute/<attrkey>/<username>/<realm>', methods=['DELETE'])
+@prepolicy(check_custom_user_attributes, request, "delete")
 @user_required
-@event("delete_user_attribute", request, g)
+@event("delete_custom_user_attribute", request, g)
 def delete_user_attribute(attrkey, username, realm=None):
     """
-    Delete a specified additional attribute from the user.
+    Delete a specified custom attribute from the user.
     The user is specified by the usual parameters user, resolver and realm.
 
     :httpparam key: The name of the attribute that should be deleted from the user.

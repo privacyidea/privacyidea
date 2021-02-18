@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #  2021-02-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
-#             Add additional user attributes
+#             Add custom user attributes
 #  2020-06-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add privacyIDEA nodes
 #  2019-09-26 Friedrich Weber <friedrich.weber@netknights.it>
@@ -367,8 +367,8 @@ class ACTION(object):
     SHOW_CUSTOM_AUTHENTICATOR = "show_custom_authenticator"
     AUTHORIZED = "authorized"
     SHOW_NODE = "show_node"
-    SET_USER_ATTRIBUTES = "set_user_attributes"
-    DELETE_USER_ATTRIBUTES = "delete_user_attributes"
+    SET_USER_ATTRIBUTES = "set_custom_user_attributes"
+    DELETE_USER_ATTRIBUTES = "delete_custom_user_attributes"
 
 
 class TYPE(object):
@@ -1800,7 +1800,7 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.GENERAL},
             ACTION.SET_USER_ATTRIBUTES: {
                 'type': TYPE.STRING,
-                'desc': _("The Admin is allowed to set certain additional user "
+                'desc': _("The Admin is allowed to set certain custom user "
                           "attributes. If the Admin should be allowed to set any "
                           "attribute, set this to '*:*'. For more details, check "
                           "the documenation."),
@@ -1808,7 +1808,7 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.USER},
             ACTION.DELETE_USER_ATTRIBUTES: {
                 'type': TYPE.STRING,
-                'desc': _("The Admin is allowed to deleted certain additional user "
+                'desc': _("The Admin is allowed to deleted certain custom user "
                           "attributes. If the Admin should be allowed to delete any "
                           "attribute, set this to '*'. For more details, check "
                           "the documentation."),
@@ -1930,7 +1930,7 @@ def get_static_policy_definitions(scope=None):
                                    'mainmenu': []},
             ACTION.SET_USER_ATTRIBUTES: {
                 'type': TYPE.STRING,
-                'desc': _("The user is allowed to set certain additional user "
+                'desc': _("The user is allowed to set certain custom user "
                           "attributes. If the user should be allowed to set any "
                           "attribute, set this to '*:*'. For more details, check "
                           "the documenation."),
@@ -1938,7 +1938,7 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.USER},
             ACTION.DELETE_USER_ATTRIBUTES: {
                 'type': TYPE.STRING,
-                'desc': _("The user is allowed to deleted certain additional user "
+                'desc': _("The user is allowed to deleted certain custom user "
                           "attributes. If the user should be allowed to delete any "
                           "attribute, set this to '*'. For more details, check "
                           "the documentation."),

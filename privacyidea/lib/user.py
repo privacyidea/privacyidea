@@ -281,14 +281,14 @@ class User(object):
         (uid, _rtype, _resolver) = self.get_user_identifiers()
         y = get_resolver_object(self.resolver)
         userInfo = y.getUserInfo(uid)
-        # Now add the additional attributes, this is used e.g. in ADDUSERINRESPONSE
+        # Now add the custom attributes, this is used e.g. in ADDUSERINRESPONSE
         userInfo.update(self.attributes)
         return userInfo
 
     @log_with(log)
     def set_attribute(self, attrkey, attrvalue, attrtype=None):
         """
-        Set an additional attribute for a user
+        Set a custom attribute for a user
 
         :param attrkey: The key of the attribute
         :param attrvalue: The value of the attribute
@@ -301,7 +301,7 @@ class User(object):
     @property
     def attributes(self):
         """
-        returns the additional attributes of a user
+        returns the custom attributes of a user
         :return: a dictionary of attributes with keys and values
         """
         return get_attributes(self.uid, self.resolver, self.realm_id)
@@ -634,7 +634,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
 
 
 @log_with(log)
-def get_user_list(param=None, user=None, additional_attributes=False):
+def get_user_list(param=None, user=None, custom_attributes=False):
     """
     This function returns a list of user dictionaries.
 
@@ -642,9 +642,9 @@ def get_user_list(param=None, user=None, additional_attributes=False):
     :type param: dict
     :param user:  a specific user object to return
     :type user: User object
-    :param additional_attributes:  Set to True, if you want to receive additional attributes
+    :param custom_attributes:  Set to True, if you want to receive custom attributes
         of external users.
-    :type additional_attributes: bool
+    :type custom_attributes: bool
     :return: list of dictionaries
     """
     users = []
@@ -709,9 +709,9 @@ def get_user_list(param=None, user=None, additional_attributes=False):
             for ue in ulist:
                 ue["resolver"] = resolver_name
                 ue["editable"] = y.editable
-            if additional_attributes and realm_id is not None:
+            if custom_attributes and realm_id is not None:
                 for ue in ulist:
-                    # Add the additional attributes, by class method from User
+                    # Add the custom attributes, by class method from User
                     # with uid, resolvername and realm_id, which we need to determine by the realm name
                     ue.update(get_attributes(ue.get("userid"), ue.get("resolver"), realm_id))
             log.debug("Found this userlist: {0!r}".format(ulist))
@@ -781,7 +781,7 @@ def get_attributes(uid, resolver, realm_id):
 
 def is_attribute_at_all():
     """
-    Check if there are additional user attributes at all
+    Check if there are custom user attributes at all
     :return: bool
     """
     return bool(UserAttribute.query.count())

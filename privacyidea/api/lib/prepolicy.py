@@ -78,7 +78,7 @@ from privacyidea.lib.user import (get_user_from_param, get_default_realm,
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
 from privacyidea.lib.utils import (parse_timedelta, is_true, generate_charlists_from_pin_policy,
                                    check_pin_contents, get_module_class,
-                                   determine_logged_in_userparams)
+                                   determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
@@ -898,10 +898,10 @@ def required_email(request=None, action=None):
     return True
 
 
-def check_additional_attributes(request=None, action=None):
+def check_custom_user_attributes(request=None, action=None):
     """
-    This pre condition checks for the policies delete_user_attributes and
-    set_user_attributes, if the user or admin is allowed to set or deleted
+    This pre condition checks for the policies delete_custom_user_attributes and
+    set_custom_user_attributes, if the user or admin is allowed to set or deleted
     the requested attribute.
 
     It decorates POST /user/attribute and DELETE /user/attribute/...
@@ -911,14 +911,50 @@ def check_additional_attributes(request=None, action=None):
     :param action: An optional action, (would be set/delete)
     :return: Raises a PolicyError, if the wrong attribute is given.
     """
-    ERROR = "You are not allowed to set this additional user attribute!"
+    ERROR = "You are not allowed to {0!s} this custom user attribute!".format(action)
+    is_allowed = False
     if action == "delete":
-        attr_pols = Match.admin_or_user(g, action=ACTION.DELETE_USER_ATTRIBUTES, user_obj=request.User).action_values(unique=True)
+        attr_pol_dict = Match.admin_or_user(g, action=ACTION.DELETE_USER_ATTRIBUTES,
+                                            user_obj=request.User).action_values(unique=False,
+                                                                                 allow_white_space_in_action=True)
+        attr_key = request.all_data.get("attrkey")
+        for attr_pol_val in attr_pol_dict:
+            attr_pol_list = [x.strip() for x in attr_pol_val.strip().split() if x]
+            if attr_key in attr_pol_list or "*" in attr_pol_list:
+                is_allowed = True
+                break
+        if is_allowed:
+            g.audit_object.add_policy(attr_pol_dict.get(attr_pol_val))
+        else:
+            raise PolicyError(ERROR)
     elif action == "set":
-        attr_pols = Match.admin_or_user(g, action=ACTION.SET_USER_ATTRIBUTES, user_obj=request.User).action_values(
-            unique=True)
-    pass
-    raise PolicyError(ERROR)
+        attr_pol_dict = Match.admin_or_user(g, action=ACTION.SET_USER_ATTRIBUTES,
+                                            user_obj=request.User).action_values(unique=False,
+                                                                                 allow_white_space_in_action=True)
+        attr_key = request.all_data.get("key")
+        attr_value = request.all_data.get("value")
+        for pol_string in attr_pol_dict:
+            pol_dict = parse_string_to_dict(pol_string)
+            if attr_value in pol_dict.get(attr_key, []):
+                # It is allowed to set the key to this value
+                is_allowed = True
+                break
+            if attr_value in pol_dict.get("*", []):
+                # this value can be set in any key
+                is_allowed = True
+                break
+            if "*" in pol_dict.get(attr_key, []):
+                # This key can be set to any value
+                is_allowed = True
+                break
+            if "*" in pol_dict.get("*", []):
+                # Any key can be set to any value
+                is_allowed = True
+                break
+        if is_allowed:
+            g.audit_object.add_policy(attr_pol_dict.get(pol_string))
+        else:
+            raise PolicyError(ERROR)
 
 
 def auditlog_age(request=None, action=None):

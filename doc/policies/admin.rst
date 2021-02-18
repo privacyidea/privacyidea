@@ -705,42 +705,42 @@ is required.
 
 New in version 3.5.
 
-.. _admin_set_user_attributes:
+.. _admin_set_custom_user_attributes:
 
-set_user_attributes
-~~~~~~~~~~~~~~~~~~~~
+set_custom_user_attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: string
 
 New in version 3.6
 
-This policy defines which additional attributes an adminsitrator is allowed to set.
+This policy defines which additional attributes an administrator is allowed to set.
 It can also define, to which value the admin is allowed to set such attribute.
 For allowing all values, the asterisk ("*") is used.
 
 .. note:: That commata are not allowed in policy actions value, so the setting has to
    be define by separating colons (":") and spaces.
 
-Each colon separates the key from the allowed values. Values in a list a separated by spaces.
+Each key is enclosed in colons and followed by a list of values separated by spaces.
 
 Example:
 
-    department: sales finance city: * *: 1 2
+    :department: sales finance :city: * :*: 1 2
 
-``department: sales finance`` means that the administrator can set an additional
+``:department: sales finance`` means that the administrator can set an additional
 attribute "department" with the allowed values of "sales" or "finance".
 
-``city: *`` means that the administrator can set an additional attribute
+``:city: *`` means that the administrator can set an additional attribute
 "city" to any value.
 
-``*: 1 2`` means that the administrator can set any other additional attribute
+``:*: 1 2`` means that the administrator can set any other additional attribute
 either to the value "1" or to the value "2".
 
 
-.. _admin_delete_user_attributes:
+.. _admin_delete_custom_user_attributes:
 
-delete_user_attributes
-~~~~~~~~~~~~~~~~~~~~~~
+delete_custom_user_attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: string
 
@@ -752,7 +752,10 @@ Example:
 
     attr1 attr2 department
 
-The administrator is allowed to delete the attributes "attr1", "attr" and
+The administrator is allowed to delete the attributes "attr1", "attr2" and
 the attributes "department" of the corresponding users.
+
+.. note:: If this policy is not set, the admin is not allowed to delete any
+   custom user attributes.
 
 New in version 3.6
