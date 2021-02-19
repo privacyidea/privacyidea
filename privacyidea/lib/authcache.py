@@ -108,9 +108,9 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
         cache. Only find newer entries 
     :param last_auth: The timestamp when the entry was last successfully 
         verified. Only find newer entries
-    :param max_number_of_authentications: Maximum number of times the authcache entry can be used to skip authentication,
-        as defined by ACTION.AUTH_CACHE policy. Will return False if the current number of authentications + 1 of the
-        cached authentication exceeds this value.
+    :param max_number_of_authentications: Maximum number of times the authcache entry can be used to skip
+        authentication, as defined by ACTION.AUTH_CACHE policy. Will return False if the current number of
+        authentications + 1 of the cached authentication exceeds this value.
     :return: 
     """
     conditions = []
