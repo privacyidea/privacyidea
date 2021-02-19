@@ -2688,6 +2688,7 @@ class AuthCache(MethodsMixin, db.Model):
     realm = db.Column(db.Unicode(120), default=u'', index=True)
     client_ip = db.Column(db.Unicode(40), default=u"")
     user_agent = db.Column(db.Unicode(120), default=u"")
+    current_number_of_authentications = db.Column(db.Integer, default=0)
     # We can hash the password like this:
     # binascii.hexlify(hashlib.sha256("secret123456").digest())
     authentication = db.Column(db.Unicode(255), default=u"")

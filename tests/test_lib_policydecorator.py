@@ -572,8 +572,8 @@ class LibPolicyTestCase(MyTestCase):
         AuthCache(username, realm, resolver, _hash_password(password),
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=3),
                   last_auth=datetime.datetime.utcnow() - timedelta(minutes=1)).save()
-        r = auth_cache(fake_check_user_pass, User(username,realm),
-                        password, options=options)
+        r = auth_cache(fake_check_user_pass, User(username, realm),
+                       password, options=options)
         self.assertTrue(r[0])
         self.assertEqual(r[1].get("message"), "Authenticated by AuthCache.")
 
@@ -619,14 +619,10 @@ class LibPolicyTestCase(MyTestCase):
                   first_auth=datetime.datetime.utcnow() - timedelta(hours=2),
                   last_auth=datetime.datetime.utcnow() - timedelta(
                       hours=1)).save()
-        r = auth_cache(fake_check_user_pass, User(username,realm),
+        r = auth_cache(fake_check_user_pass, User(username, realm),
                        password, options=options)
         self.assertTrue(r[0])
         self.assertEqual(r[1].get("message"), "Authenticated by AuthCache.")
-
-        # TODO Thus we need the additional column auth_count. That simply records, how often this auth_cache entry was used.
-        #  The setting 10s/2 will mean, check first_auth to be less than 10s ago and check auth_count to be less than 2.
-        #  (If it exceeds the auth_cache entry can be deleted again.) ~ Cornelius
 
         # Test auth_cache policy with format "<seconds>/<#allowed authentications>"
         set_policy(name="pol1",
@@ -652,6 +648,28 @@ class LibPolicyTestCase(MyTestCase):
                        password, options=options)
         self.assertTrue(r[0])
         self.assertEqual(r[1].get("message"), "Authenticated by AuthCache.")
+
+        r = auth_cache(fake_check_user_pass, User(username, realm),
+                       password, options=options)
+        self.assertTrue(r[0])
+        self.assertEqual(r[1].get("message"), "Fake Authentication")
+
+        delete_from_cache(username, realm, resolver, password)
+
+        # Authentication not read from cache because first auth was too long ago
+        set_policy(name="pol1",
+                   scope=SCOPE.AUTH,
+                   realm=realm,
+                   resolver=resolver,
+                   action="{0!s}={1!s}".format(ACTION.AUTH_CACHE, "50s/2"))
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        options = {"g": g}
+
+        AuthCache(username, realm, resolver, _hash_password(password),
+                  first_auth=datetime.datetime.utcnow() - timedelta(seconds=55)).save()
 
         r = auth_cache(fake_check_user_pass, User(username, realm),
                        password, options=options)
