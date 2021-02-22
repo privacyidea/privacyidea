@@ -66,6 +66,13 @@
         </div>
     </div>
 
+    <div class="panel-body">
+        <div class="text-center">
+            Allowed custom attributes:
+            {{ allowed_custom_attributes }}
+        </div>
+    </div>
+
     <h3 translate>Tokens for user {{ username }}</h3>
     <!-- Tokens for user -->
     <div uib-pagination ng-show="tokendata.count > 5"

@@ -154,6 +154,16 @@ angular.module("privacyideaApp")
             });
         };
 
+        $scope.getEditableAttributes = function () {
+            UserFactory.getEditableAttributes({
+                user: $scope.username,
+                resolver: $scope.resolver,
+                realm: $scope.realmname
+            }, function(data) {
+                $scope.allowed_custom_attributes = data.result.value;
+            });
+        }
+
         $scope.updateUser = function () {
             UserFactory.updateUser($scope.resolvername, $scope.User,
             function (data) {
@@ -211,6 +221,7 @@ angular.module("privacyideaApp")
 
         $scope.getUserDetails();
         $scope._getUserToken();
+        $scope.getEditableAttributes();
 
         // listen to the reload broadcast
         $scope.$on("piReload", function() {

@@ -67,6 +67,13 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
                     {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).then(function(response) { callback(response.data)},
                             function(error) { AuthFactory.authError(error.data) });
+            },
+            getEditableAttributes: function(params, callback) {
+                $http.get(userUrl + "/editable_attributes/", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken() },
+                    params: params
+                }).then(function(response) { callback(response.data)},
+                        function(error) { AuthFactory.authError(error.data) });
             }
         };
 
