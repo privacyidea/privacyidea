@@ -182,7 +182,7 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
-                                   determine_logged_in_userparams)
+                                   determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.utils.compare import compare_values, CompareError, COMPARATOR_FUNCTIONS, COMPARATORS, \
     COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.user import User
@@ -2725,6 +2725,40 @@ class Match(object):
                    client=client, action=action, adminrealm=adminrealm,
                    adminuser=adminuser, time=time, serial=serial,
                    sort_by_priority=sort_by_priority)
+
+
+def get_allowed_custom_attributes(g, user_obj):
+    """
+    Return the list off allowed custom user attributes that can be set
+    and deleted.
+    Returns a dictionary with the two keys "delete" and "set.
+
+    :param g:
+    :param user_obj: The User object to check the allowed attributes for
+    :return: dict
+    """
+    deleteables = []
+    setables = {}
+    del_pol_dict = Match.admin_or_user(g, action=ACTION.DELETE_USER_ATTRIBUTES,
+                                       user_obj=user_obj).action_values(unique=False,
+                                                                        allow_white_space_in_action=True)
+    for keys in del_pol_dict:
+        deleteables.extend([k.strip() for k in keys.strip().split()])
+    deleteables = list(set(deleteables))
+    set_pol_dict = Match.admin_or_user(g, action=ACTION.SET_USER_ATTRIBUTES,
+                                       user_obj=user_obj).action_values(unique=False,
+                                                                        allow_white_space_in_action=True)
+    for keys in set_pol_dict:
+        # parse through each policy
+        d = parse_string_to_dict(keys)
+        for k, vals in d.items():
+            if k not in setables:
+                # initialize with an empty string
+                setables[k] = []
+            for v in vals:
+                setables[k].append(v)
+
+    return {"delete": deleteables, "set": setables}
 
 
 def check_pin(g, pin, tokentype, user_obj):

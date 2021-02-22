@@ -31,7 +31,7 @@ from .lib.utils import (getParam,
                         send_result)
 from ..api.lib.prepolicy import (prepolicy, check_base_action, realmadmin,
                                  check_custom_user_attributes)
-from ..lib.policy import ACTION
+from ..lib.policy import ACTION, get_allowed_custom_attributes
 from privacyidea.api.auth import admin_required, user_required
 from privacyidea.lib.user import create_user, User, is_attribute_at_all
 from privacyidea.lib.event import event
@@ -158,6 +158,22 @@ def get_user_attribute():
     r = request.User.attributes
     if attrkey:
         r = r.get(attrkey)
+    return send_result(r)
+
+
+@user_blueprint.route('/editable_attributes/', methods=['GET'])
+@user_required
+@event("get_editable_attributes", request, g)
+def get_editable_attributes():
+    """
+    The resulting editable custom attributes according to the policies
+    are returned. This can be a user specific result.
+
+    Works for admins and normal users.
+    :return:
+    """
+    _user = getParam(request.all_data, "user", optional=False)
+    r = get_allowed_custom_attributes(g, request.User)
     return send_result(r)
 
 

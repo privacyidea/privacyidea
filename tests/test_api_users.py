@@ -359,7 +359,6 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"), res.data)
             self.assertTrue(result.get("value") >= 0)
 
-
         # Now we verify if the user has the additional attribute:
         with self.app.test_request_context('/user/attribute',
                                            method='GET',
@@ -456,3 +455,36 @@ class APIUsersTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"), res.data)
             self.assertNotIn("newattribute", result.get("value"))
+
+        # Check, which attributes the admin is allowed to set or delete
+        set_policy("custom_attr", scope=SCOPE.ADMIN,
+                   action="{0!s}=:hello: one two".format(ACTION.SET_USER_ATTRIBUTES))
+        set_policy("custom_attr2", scope=SCOPE.ADMIN,
+                   action="{0!s}=:hello2: * :hello: three".format(ACTION.SET_USER_ATTRIBUTES))
+        set_policy("custom_attr3", scope=SCOPE.ADMIN,
+                   action="{0!s}=:*: on off".format(ACTION.SET_USER_ATTRIBUTES))
+        set_policy("custom_attr4", scope=SCOPE.ADMIN,
+                   action="{0!s}=*".format(ACTION.DELETE_USER_ATTRIBUTES))
+        with self.app.test_request_context('/user/editable_attributes/',
+                                           method='GET',
+                                           data={"user": "cornelius@realm1"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            value = result.get("value")
+            self.assertIn("delete", value)
+            self.assertEqual(value.get("delete"), ['*'])
+            self.assertIn("set", value)
+            setables = value.get("set")
+            self.assertIn("*", setables)
+            self.assertIn("hello", setables)
+            self.assertIn("hello2", setables)
+            self.assertEqual(["on", "off"], setables.get("*"))
+            self.assertEqual(["one", "two", "three"], setables.get("hello"))
+            self.assertEqual(["*"], setables.get("hello2"))
+
+        delete_policy("custom_attr")
+        delete_policy("custom_attr2")
+        delete_policy("custom_attr3")
+        delete_policy("custom_attr4")
