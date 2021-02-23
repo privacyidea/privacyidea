@@ -113,7 +113,7 @@ to the audit log using the variable ``PI_AUDIT_SERVERNAME``.
 You can run the database for the audit module on another database or even
 server. For this you can specify the database URI via ``PI_AUDIT_SQL_URI``.
 
-``PI_AUDIT_TRUNCATE = True`` lets you truncate audit entries, that to the length
+``PI_AUDIT_SQL_TRUNCATE = True`` lets you truncate audit entries, to the length
 of the database fields.
 
 In certain cases when you experiencing problems you may use the parameters
