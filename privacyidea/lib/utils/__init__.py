@@ -1460,11 +1460,11 @@ def parse_string_to_dict(s, split_char=":"):
     """
     d = {}
     # create a list like ["key1", "valueA valueB valueC", "key2", "valueD valueE"]
-    l = [x.strip() for x in s.strip().split(split_char) if x ]
-    l.reverse()
-    while len(l) >= 2:
-        k = l.pop()
-        v = l.pop()
+    li = [x.strip() for x in s.strip().split(split_char) if x]
+    li.reverse()
+    while len(li) >= 2:
+        k = li.pop()
+        v = li.pop()
         value = [x.strip() for x in v.split(" ") if x]
         d[k] = value
     return d

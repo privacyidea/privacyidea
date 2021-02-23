@@ -1001,3 +1001,18 @@ class UtilsTestCase(MyTestCase):
         self.assertIn("key2", d)
         self.assertEqual(d.get("key1"), ["v1", "v2", "v3"])
         self.assertEqual(d.get("key2"), ["v4", "v5"])
+
+        # errors
+        d = parse_string_to_dict("key1:v1 v2 v3 :key2::v4 v5")
+        self.assertIn("key1", d)
+        self.assertIn("key2", d)
+        self.assertEqual(d.get("key1"), ["v1", "v2", "v3"])
+        self.assertEqual(d.get("key2"), ["v4", "v5"])
+
+        d = parse_string_to_dict(":key1:v1 v2 v3 :key2: ::key3: v5")
+        self.assertIn("key1", d)
+        self.assertIn("key2", d)
+        self.assertIn("key3", d)
+        self.assertEqual(d.get("key1"), ["v1", "v2", "v3"])
+        self.assertEqual(d.get("key2"), [])
+        self.assertEqual(d.get("key3"), ["v5"])
