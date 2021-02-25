@@ -940,7 +940,7 @@ def gen_serial(tokentype=None, prefix=None):
 
 
 @log_with(log)
-def import_token(serial, token_dict, default_hashlib=None, tokenrealms=None):
+def import_token(serial, token_dict, tokenrealms=None):
     """
     This function is used during the import of a PSKC file.
 
@@ -959,8 +959,6 @@ def import_token(serial, token_dict, default_hashlib=None, tokenrealms=None):
             }
 
     :type token_dict: dict
-    :param default_hashlib: Set the given hashlib as default
-    :type default_hashlib: str
     :param tokenrealms: List of realms to set as realms of the token
     :type tokenrealms: list
     :return: the token object
@@ -977,9 +975,6 @@ def import_token(serial, token_dict, default_hashlib=None, tokenrealms=None):
         user_obj = User(token_dict.get("user").get("username"),
                         token_dict.get("user").get("realm"),
                         token_dict.get("user").get("resolver"))
-
-    if default_hashlib and default_hashlib != "auto":
-        init_param['hashlib'] = default_hashlib
 
     # Imported tokens are usually hardware tokens
     token = init_token(init_param, user=user_obj,
