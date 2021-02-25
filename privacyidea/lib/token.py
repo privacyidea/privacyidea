@@ -1081,8 +1081,7 @@ def init_token(param, user=None, tokenrealms=None,
     if user is not None and user.login != "":
         tokenobject.add_user(user)
 
-    upd_params = param
-    tokenobject.update(upd_params)
+    tokenobject.update(param)
 
     try:
         # Save the token to the database
