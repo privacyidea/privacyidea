@@ -46,7 +46,7 @@ from dateutil.tz import tzlocal, tzutc
 from flask_script.commands import InvalidCommand
 
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.utils import parse_legacy_time
+from privacyidea.lib.utils import parse_legacy_time, to_unicode
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    unassign_token, import_token,
@@ -55,6 +55,9 @@ from privacyidea.app import create_app
 from flask_script import Manager
 import re
 import sys
+from base64 import b32encode
+from binascii import unhexlify
+
 
 __version__ = "0.1"
 
@@ -424,6 +427,8 @@ def export_user_data(token_list, attributes=None):
 @manager.option('--csv', dest='csv', action='store_true',
                 help='In case of a simple find, the output is written as CSV instead of the '
                      'formatted output.')
+@manager.option('--b32', dest='b32', action='store_true',
+                help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.')
 @manager.option('--chunksize', default=None,
                 help='Read tokens from the database in smaller chunks to perform operations.')
 def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
@@ -431,7 +436,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
          tokeninfo_value_after, tokeninfo_value_before,
          orphaned, tokentype, serial, description, action, set_description,
          set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv,
-         chunksize, attributes):
+         chunksize, attributes, b32):
     """
     finds all tokens which match the conditions
     """
@@ -487,12 +492,29 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                     print(u"{0!s},{1!s}".format(user, len(tokens)))
 
         elif action == "export":
-            key, token_num, soup = export_pskc(tlist)
-            sys.stderr.write("\n{0!s} tokens exported.\n".format(token_num))
-            sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
-                             "You need this key to import the "
-                             "tokens again:\n\n\t{0!s}\n\n".format(key))
-            print("{0!s}".format(soup))
+            if csv:
+                for tokenobj in tlist:
+                    if tokenobj.type.lower() not in ["totp", "hotp"]:
+                        continue
+                    type = tokenobj.type.lower()
+                    serial = tokenobj.token.serial
+                    otplen = tokenobj.token.otplen
+                    otpkey = tokenobj.token.get_otpkey().getKey()
+                    if b32:
+                        otpkey = b32encode(unhexlify(otpkey))
+                    otpkey = to_unicode(otpkey)
+                    if type == "totp":
+                        timestep = tokenobj.get_tokeninfo("timeStep")
+                        print(u"{!s}, {!s}, {!s}, {!s}, {!s}".format(serial, otpkey, type, otplen, timestep))
+                    else:
+                        print(u"{!s}, {!s}, {!s}, {!s}".format(serial, otpkey, type, otplen))
+            else:
+                key, token_num, soup = export_pskc(tlist)
+                sys.stderr.write("\n{0!s} tokens exported.\n".format(token_num))
+                sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
+                                 "You need this key to import the "
+                                 "tokens again:\n\n\t{0!s}\n\n".format(key))
+                print("{0!s}".format(soup))
         else:
             for token_obj in tlist:
                 try:
