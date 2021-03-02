@@ -316,7 +316,8 @@ def create(directory="/var/lib/privacyidea/backup/",
 
     if not enckey:
         # Exclude enckey from backup
-        backup_call.append("--exclude={0!s}".format(enc_file))
+        # since tar v1.30 --exclude cannot be appended
+        backup_call.insert(1, "--exclude={0!s}".format(enc_file))
 
     call(backup_call)
     os.unlink(sqlfile)
