@@ -1186,7 +1186,9 @@ def p_import(filename, cleanup=False):
                        check_all_resolvers=policy.get(
                            "check_all_resolvers", False),
                        client=policy.get("client"),
-                       # condition=policy.get("condition"),
+                       conditions=policy.get("conditions"),
+                       pinode=policy.get("pinode"),
+                       priority=policy.get("priority"),
                        realm=policy.get("realm"),
                        resolver=policy.get("resolver"),
                        scope=policy.get("scope"),
