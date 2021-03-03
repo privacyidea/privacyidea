@@ -718,7 +718,7 @@ This policy defines which additional attributes an administrator is allowed to s
 It can also define, to which value the admin is allowed to set such attribute.
 For allowing all values, the asterisk ("*") is used.
 
-.. note:: That commata are not allowed in policy actions value, so the setting has to
+.. note:: That commas are not allowed in policy actions value, so the setting has to
    be define by separating colons (":") and spaces.
 
 Each key is enclosed in colons and followed by a list of values separated by spaces.

@@ -765,7 +765,7 @@ def log_used_user(user, other_text=""):
 
 def get_attributes(uid, resolver, realm_id):
     """
-    Retuns the attributes for the given user.
+    Returns the attributes for the given user.
 
     :param uid: The UID of the user
     :param resolver: The name of the resolver
