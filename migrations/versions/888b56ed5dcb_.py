@@ -1,4 +1,4 @@
-"""v3.6: Add table for additional user attributes
+"""v3.6: Add table for custom user attributes
 
 Revision ID: 888b56ed5dcb
 Revises: d5870fd2f2a4
@@ -16,7 +16,7 @@ import sqlalchemy as sa
 
 def upgrade():
     try:
-        op.create_table('userattribute',
+        op.create_table('customuserattribute',
             sa.Column('id', sa.Integer(), nullable=False),
             sa.Column('user_id', sa.Unicode(length=320), nullable=True),
             sa.Column('resolver', sa.Unicode(length=120), nullable=True),
@@ -27,15 +27,15 @@ def upgrade():
             sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ),
             sa.PrimaryKeyConstraint('id')
         )
-        op.create_index(op.f('ix_userattribute_resolver'), 'userattribute', ['resolver'], unique=False)
-        op.create_index(op.f('ix_userattribute_user_id'), 'userattribute', ['user_id'], unique=False)
+        op.create_index(op.f('ix_customuserattribute_resolver'), 'customuserattribute', ['resolver'], unique=False)
+        op.create_index(op.f('ix_customuserattribute_user_id'), 'customuserattribute', ['user_id'], unique=False)
     except Exception as exx:
         print("Could not add table 'userattribute'.")
         print(exx)
 
 
 def downgrade():
-    op.drop_index(op.f('ix_userattribute_user_id'), table_name='userattribute')
-    op.drop_index(op.f('ix_userattribute_resolver'), table_name='userattribute')
-    op.drop_table('userattribute')
+    op.drop_index(op.f('ix_customuserattribute_user_id'), table_name='customuserattribute')
+    op.drop_index(op.f('ix_customuserattribute_resolver'), table_name='customuserattribute')
+    op.drop_table('customuserattribute')
 

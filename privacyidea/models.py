@@ -693,9 +693,9 @@ class TokenInfo(MethodsMixin, db.Model):
         return ret
 
 
-class UserAttribute(MethodsMixin, db.Model):
+class CustomUserAttribute(MethodsMixin, db.Model):
     """
-    The table "userattribute" is used to store additional, internal attributes
+    The table "customuserattribute" is used to store additional, internal attributes
     for also external users.
 
     A user is identified by the user_id,  the resolver_id and the realm_id.
@@ -707,10 +707,10 @@ class UserAttribute(MethodsMixin, db.Model):
           there is not logic reference on a database level.
           Since users could be deleted from external user stores
           without privacyIDEA realizing that, this table could pile up
-          with remnants of unattributes.
+          with remnants of attributes.
     """
-    __tablename__ = 'userattribute'
-    id = db.Column(db.Integer(), Sequence("userattribute_seq"), primary_key=True)
+    __tablename__ = 'customuserattribute'
+    id = db.Column(db.Integer(), Sequence("customuserattribute_seq"), primary_key=True)
     user_id = db.Column(db.Unicode(320), default=u'', index=True)
     resolver = db.Column(db.Unicode(120), default=u'', index=True)
     realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
@@ -720,7 +720,7 @@ class UserAttribute(MethodsMixin, db.Model):
 
     def __init__(self, user_id, resolver, realm_id, Key, Value, Type=None):
         """
-        Create a new userattribute for a user tuple
+        Create a new customuserattribute for a user tuple
         """
         self.user_id = user_id
         self.resolver = resolver
@@ -730,10 +730,10 @@ class UserAttribute(MethodsMixin, db.Model):
         self.Type = Type
 
     def save(self, persistent=True):
-        ua = UserAttribute.query.filter_by(user_id=self.user_id,
-                                           resolver=self.resolver,
-                                           realm_id=self.realm_id,
-                                           Key=self.Key).first()
+        ua = CustomUserAttribute.query.filter_by(user_id=self.user_id,
+                                                 resolver=self.resolver,
+                                                 realm_id=self.realm_id,
+                                                 Key=self.Key).first()
         if ua is None:
             # create a new one
             db.session.add(self)
@@ -741,11 +741,11 @@ class UserAttribute(MethodsMixin, db.Model):
             ret = self.id
         else:
             # update
-            UserAttribute.query.filter_by(user_id=self.user_id,
-                                           resolver=self.resolver,
-                                           realm_id=self.realm_id,
-                                           Key=self.Key
-                                          ).update({'Value': self.Value, 'Type': self.Type})
+            CustomUserAttribute.query.filter_by(user_id=self.user_id,
+                                                resolver=self.resolver,
+                                                realm_id=self.realm_id,
+                                                Key=self.Key
+                                                ).update({'Value': self.Value, 'Type': self.Type})
             ret = ua.id
         if persistent:
             db.session.commit()

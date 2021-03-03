@@ -61,7 +61,7 @@ from .realm import (get_realms, realm_is_defined,
                     get_realm, get_realm_id)
 from .config import get_from_config, SYSCONF
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
-from privacyidea.models import UserAttribute, db
+from privacyidea.models import CustomUserAttribute, db
 
 log = logging.getLogger(__name__)
 
@@ -294,8 +294,8 @@ class User(object):
         :param attrvalue: The value of the attribute
         :return: The id of the attribute setting
         """
-        ua = UserAttribute(user_id=self.uid, resolver=self.resolver, realm_id=self.realm_id,
-                           Key=attrkey, Value=attrvalue, Type=attrtype).save()
+        ua = CustomUserAttribute(user_id=self.uid, resolver=self.resolver, realm_id=self.realm_id,
+                                 Key=attrkey, Value=attrvalue, Type=attrtype).save()
         return ua
 
     @property
@@ -317,11 +317,11 @@ class User(object):
         :return: The number of deleted rows
         """
         if attrkey:
-            ua = UserAttribute.query.filter_by(user_id=self.uid, resolver=self.resolver,
-                                               realm_id=self.realm_id, Key=attrkey).delete()
+            ua = CustomUserAttribute.query.filter_by(user_id=self.uid, resolver=self.resolver,
+                                                     realm_id=self.realm_id, Key=attrkey).delete()
         else:
-            ua = UserAttribute.query.filter_by(user_id=self.uid, resolver=self.resolver,
-                                               realm_id=self.realm_id).delete()
+            ua = CustomUserAttribute.query.filter_by(user_id=self.uid, resolver=self.resolver,
+                                                     realm_id=self.realm_id).delete()
         db.session.commit()
         return ua
 
@@ -774,7 +774,7 @@ def get_attributes(uid, resolver, realm_id):
     :return: A dictionary of key/values
     """
     r = {}
-    attributes = UserAttribute.query.filter_by(user_id=uid, resolver=resolver, realm_id=realm_id).all()
+    attributes = CustomUserAttribute.query.filter_by(user_id=uid, resolver=resolver, realm_id=realm_id).all()
     for attr in attributes:
         r[attr.Key] = attr.Value
     return r
@@ -785,4 +785,4 @@ def is_attribute_at_all():
     Check if there are custom user attributes at all
     :return: bool
     """
-    return bool(UserAttribute.query.count())
+    return bool(CustomUserAttribute.query.count())
