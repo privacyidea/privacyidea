@@ -3063,7 +3063,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "anykey"}
         check_custom_user_attributes(req, "delete")
 
-        ### set custom attributes ###
+        """
+        set custom attributes
+        """
         # no policy set
         req.all_data = {"user": "cornelius", "realm": self.realm1,
                         "key": "department", "value": "finance"}

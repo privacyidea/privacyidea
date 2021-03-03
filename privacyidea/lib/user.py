@@ -306,7 +306,6 @@ class User(object):
         """
         return get_attributes(self.uid, self.resolver, self.realm_id)
 
-
     @log_with(log)
     def delete_attribute(self, attrkey=None):
         """

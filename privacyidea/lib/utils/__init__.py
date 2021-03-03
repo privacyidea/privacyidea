@@ -1468,4 +1468,3 @@ def parse_string_to_dict(s, split_char=":"):
         value = [x.strip() for x in v.split(" ") if x]
         d[k] = value
     return d
-

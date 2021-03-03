@@ -38,4 +38,3 @@ def downgrade():
     op.drop_index(op.f('ix_customuserattribute_user_id'), table_name='customuserattribute')
     op.drop_index(op.f('ix_customuserattribute_resolver'), table_name='customuserattribute')
     op.drop_table('customuserattribute')
-
