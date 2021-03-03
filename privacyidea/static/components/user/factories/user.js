@@ -74,7 +74,32 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
                     params: params
                 }).then(function(response) { callback(response.data)},
                         function(error) { AuthFactory.authError(error.data) });
+            },
+            setCustomAttribute: function(username, realmname, key, value, callback) {
+                var params = {
+                    "user": username, "realm": realmname,
+                    "key": key, "value": value};
+                $http.post(userUrl + "/attribute", params,
+                    {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function(response) {callback(response.data)},
+                    function(error) {AuthFactory.authError(error.data)});
+            },
+            deleteCustomAttribute: function(username, realmname, key, callback) {
+                $http.delete(userUrl + "/attribute/" + key + "/" + username + "/" + realmname,
+                    {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function(response) {callback(response.data)},
+                    function(error) {AuthFactory.authError(error.data)});
+            },
+            getCustomAttributes: function(username, realmname, callback) {
+                var params = {
+                    "user": username, "realm": realmname};
+                $http.get(userUrl + "/attribute",
+                    {headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                     params: params
+                    }).then(function(response) {callback(response.data)},
+                    function(error) {AuthFactory.authError(error.data)});
             }
+
         };
 
 });

@@ -61,7 +61,7 @@ from .realm import (get_realms, realm_is_defined,
                     get_realm, get_realm_id)
 from .config import get_from_config, SYSCONF
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
-from privacyidea.models import UserAttribute
+from privacyidea.models import UserAttribute, db
 
 log = logging.getLogger(__name__)
 
@@ -322,6 +322,7 @@ class User(object):
         else:
             ua = UserAttribute.query.filter_by(user_id=self.uid, resolver=self.resolver,
                                                realm_id=self.realm_id).delete()
+        db.session.commit()
         return ua
 
     @log_with(log)
