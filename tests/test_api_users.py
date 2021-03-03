@@ -28,6 +28,57 @@ class APIUsersTestCase(MyApiTestCase):
                     "mobile": "mobile"}'
     }
 
+    def _create_user_wordy(self):
+        """
+        This creates a user "wordy" in the realm "sqlrealm"
+        """
+        realm = "sqlrealm"
+        resolver = "SQL1"
+        parameters = self.parameters
+        parameters["resolver"] = resolver
+        parameters["type"] = "sqlresolver"
+
+        rid = save_resolver(parameters)
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(realm, [resolver])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 1)
+        with self.app.test_request_context('/user/',
+                                           method='POST',
+                                           data={"user": "wordy",
+                                                 "resolver": resolver,
+                                                 "surname": "zappa",
+                                                 "givenname": "frank",
+                                                 "email": "f@z.com",
+                                                 "phone": "12345",
+                                                 "mobile": "12345",
+                                                 "password": "12345"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value") > 6, result.get("value"))
+
+    def _get_wordy_auth_token(self, password="12345"):
+        """
+        User wordy logs in and gets an auth-token: self.wordy_auth_token
+        :return:
+        """
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "wordy@{0!s}".format("sqlrealm"),
+                                                 "password": password}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            # In self.at_user we store the user token
+            self.wordy_auth_token = result.get("value").get("token")
+            # check that this is a user
+            role = result.get("value").get("role")
+            self.assertTrue(role == "user", result)
+
     def test_00_get_empty_users(self):
         with self.app.test_request_context('/user/',
                                            method='GET',
@@ -121,21 +172,7 @@ class APIUsersTestCase(MyApiTestCase):
         self.assertEqual(len(added), 1)
 
         # CREATE a user
-        with self.app.test_request_context('/user/',
-                                           method='POST',
-                                           data={"user": "wordy",
-                                                 "resolver": resolver,
-                                                 "surname": "zappa",
-                                                 "givenname": "frank",
-                                                 "email": "f@z.com",
-                                                 "phone": "12345",
-                                                 "mobile": "12345",
-                                                 "password": "12345"},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("value") > 6, result.get("value"))
+        self._create_user_wordy()
 
         # Get users
         with self.app.test_request_context('/user/',
@@ -163,19 +200,8 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"))
 
         # Get user authentication and update by user.
-        with self.app.test_request_context('/auth',
-                                           method='POST',
-                                           data={"username": "wordy@{0!s}".format(realm),
-                                                 "password": "passwort"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("status"), res.data)
-            # In self.at_user we store the user token
-            wordy_auth_token = result.get("value").get("token")
-            # check that this is a user
-            role = result.get("value").get("role")
-            self.assertTrue(role == "user", result)
+        self._get_wordy_auth_token("passwort")
+        wordy_auth_token = self.wordy_auth_token
 
         # Even if a user specifies another username, the username is
         # overwritten by his own name!
@@ -484,7 +510,38 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertEqual(["one", "two", "three"], setables.get("hello"))
             self.assertEqual(["*"], setables.get("hello2"))
 
+        set_policy("custom_create_user", scope=SCOPE.ADMIN,
+                   action=ACTION.ADDUSER)
+        # CREATE a user
+        self._create_user_wordy()
+        self._get_wordy_auth_token()
+        # The admin sets attributes for this user:
+        with self.app.test_request_context('/user/attribute',
+                                           method='POST',
+                                           data={"user": "wordy@sqlrealm",
+                                                 "key": "hello",
+                                                 "value": "one"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("value") >= 0)
+
+        # We let the user wordy@sqlrealm login and GET his attributes
+        with self.app.test_request_context('/user/attribute',
+                                           method='GET',
+                                           data={"user": "cornelius@realm1"},
+                                           headers={'Authorization': self.wordy_auth_token}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            self.assertIn("hello", result.get("value"))
+            self.assertEqual("one", result.get("value").get("hello"))
+
         delete_policy("custom_attr")
         delete_policy("custom_attr2")
         delete_policy("custom_attr3")
         delete_policy("custom_attr4")
+        delete_policy("custom_create_user")

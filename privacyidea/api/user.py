@@ -153,7 +153,6 @@ def get_user_attribute():
          all custom attributes of the user are returned.
 
     """
-    # FIXME: Check if "user" is contained if a user issues the request
     _user = getParam(request.all_data, "user", optional=False)
     attrkey = getParam(request.all_data, "key", optional=True)
     r = request.User.attributes
