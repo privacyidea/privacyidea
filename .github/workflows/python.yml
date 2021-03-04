@@ -106,6 +106,10 @@ jobs:
     - name: Test with pytest
       run: |
         . ~/venv/bin/activate
+        pwd
+        which python
+        which pip
+        pip freeze
         python -b -m pytest -v --cov=privacyidea tests/
 
     - name: Archive code coverage results
