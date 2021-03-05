@@ -110,6 +110,8 @@ elif os.path.isfile("/etc/ssl/certs/ca-bundle.crt"):
 else:
     DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
 
+# Todo: exclude SSLv2 and SSLv3 using e.g. SSL_OP_NO_SSLv2
+DEFAULT_TLS_PROTOCOLS = ssl.PROTOCOL_TLS
 
 class LockingServerPool(ldap3.ServerPool):
     """
@@ -765,14 +767,17 @@ class IdResolver (UserIdResolver):
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
         self.tls_verify = is_true(config.get("TLS_VERIFY", False))
         # Fallback to TLSv1. (int: 3, TLSv1.1: 4, v1.2: 5)
-        self.tls_version = int(config.get("TLS_VERSION") or ssl.PROTOCOL_TLSv1)
+        self.tls_version = config.get("TLS_VERSION") or DEFAULT_TLS_PROTOCOLS
 
         self.tls_ca_file = config.get("TLS_CA_FILE") or DEFAULT_CA_FILE
-        if self.tls_verify and (self.uri.lower().startswith("ldaps") or
-                                    self.start_tls):
-            self.tls_context = Tls(validate=ssl.CERT_REQUIRED,
-                                   version=self.tls_version,
-                                   ca_certs_file=self.tls_ca_file)
+        if self.uri.lower().startswith("ldaps") or self.start_tls:
+            if self.tls_verify:
+                self.tls_context = Tls(validate=ssl.CERT_REQUIRED,
+                                       version=self.tls_version,
+                                       ca_certs_file=self.tls_ca_file)
+            else:
+                self.tls_context = Tls(validate=ssl.CERT_NONE,
+                                       version=self.tls_version)
         else:
             self.tls_context = None
         self.serverpool_persistent = is_true(config.get("SERVERPOOL_PERSISTENT", False))
@@ -983,14 +988,16 @@ class IdResolver (UserIdResolver):
         size_limit = int(param.get("SIZELIMIT", 500))
         serverpool_rounds = int(param.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         serverpool_skip = int(param.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
-        if is_true(param.get("TLS_VERIFY")) \
-                and (ldap_uri.lower().startswith("ldaps") or
-                                    param.get("START_TLS")):
-            tls_version = int(param.get("TLS_VERSION") or ssl.PROTOCOL_TLSv1)
-            tls_ca_file = param.get("TLS_CA_FILE") or DEFAULT_CA_FILE
-            tls_context = Tls(validate=ssl.CERT_REQUIRED,
-                              version=tls_version,
-                              ca_certs_file=tls_ca_file)
+        if ldap_uri.lower().startswith("ldaps") or param.get("START_TLS"):
+            tls_version = param.get("TLS_VERSION") or ssl.PROTOCOL_TLS
+            if is_true(param.get("TLS_VERIFY")):
+                tls_ca_file = param.get("TLS_CA_FILE") or DEFAULT_CA_FILE
+                tls_context = Tls(validate=ssl.CERT_REQUIRED,
+                                  version=tls_version,
+                                  ca_certs_file=tls_ca_file)
+            else:
+                tls_context = Tls(validate=ssl.CERT_NONE,
+                                  version=tls_version)
         else:
             tls_context = None
         get_info = get_info_configuration(is_true(param.get("NOSCHEMAS")))
