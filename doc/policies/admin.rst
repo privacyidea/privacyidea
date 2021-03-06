@@ -721,7 +721,8 @@ For allowing all values, the asterisk ("*") is used.
 .. note:: That commas are not allowed in policy actions value, so the setting has to
    be define by separating colons (":") and spaces.
 
-Each key is enclosed in colons and followed by a list of values separated by spaces.
+Each key is enclosed in colons and followed by a list of values separated by whitespaces,
+thus values are not allowed to contain whitespaces.
 
 Example:
 

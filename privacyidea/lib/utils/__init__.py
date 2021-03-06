@@ -1454,6 +1454,9 @@ def parse_string_to_dict(s, split_char=":"):
        {"key1": ["valueA", "valueB", "valueC"],
         "key2": ["valueD", "valueE"]
 
+    Note: a whitespace is in the string is separating the values.
+    Thus values can not contain a whitespace.
+
     :param s: The string that should be parsed
     :param split_char: The character used for splitting the string
     :return: the dict
