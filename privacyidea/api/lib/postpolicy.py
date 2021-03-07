@@ -497,9 +497,9 @@ def get_webui_settings(request, response):
                                             user=loginname, realm=realm).action_values(unique=True)
         user_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.USERPAGESIZE,
                                            user=loginname, realm=realm).action_values(unique=True)
-        token_wizard_2nd = (role == ROLE.USER
-                            and Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD2ND,
-                                          user=loginname, realm=realm).policies())
+        token_wizard_2nd = bool(role == ROLE.USER
+                                and Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD2ND,
+                                                  user=loginname, realm=realm).policies())
         admin_dashboard = (role == ROLE.ADMIN
                            and Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.ADMIN_DASHBOARD,
                                          user=loginname, realm=realm).any())
