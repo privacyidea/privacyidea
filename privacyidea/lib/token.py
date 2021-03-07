@@ -252,23 +252,23 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
     if active is not None:
         # Filter active or inactive tokens
         if active is True:
-            sql_query = sql_query.filter(Token.active == True)
+            sql_query = sql_query.filter(Token.active is True)
         else:
-            sql_query = sql_query.filter(Token.active == False)
+            sql_query = sql_query.filter(Token.active is False)
 
     if revoked is not None:
         # Filter revoked or not revoked tokens
         if revoked is True:
-            sql_query = sql_query.filter(Token.revoked == True)
+            sql_query = sql_query.filter(Token.revoked is True)
         else:
-            sql_query = sql_query.filter(Token.revoked == False)
+            sql_query = sql_query.filter(Token.revoked is False)
 
     if locked is not None:
         # Filter revoked or not revoked tokens
         if locked is True:
-            sql_query = sql_query.filter(Token.locked == True)
+            sql_query = sql_query.filter(Token.locked is True)
         else:
-            sql_query = sql_query.filter(Token.locked == False)
+            sql_query = sql_query.filter(Token.locked is False)
 
     if maxfail is not None:
         # Filter tokens, that reached maxfail
