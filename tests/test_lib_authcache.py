@@ -67,7 +67,7 @@ class AuthCacheTestCase(MyTestCase):
 
         r = verify_in_cache(self.username, self.realm, self.resolver,
                             self.password, first_auth=first_auth,
-                            last_auth=last_auth)
+                            last_auth=last_auth, max_number_of_authentications=1)
         self.assertTrue(r)
         self.assertEqual(0, auth_count1)
 
@@ -77,6 +77,11 @@ class AuthCacheTestCase(MyTestCase):
         auth_count2 = auth.auth_count
         self.assertTrue(last_auth2 > last_auth1)
         self.assertEqual(1, auth_count2)
+
+        r = verify_in_cache(self.username, self.realm, self.resolver,
+                            self.password, first_auth=first_auth,
+                            last_auth=last_auth, max_number_of_authentications=1)
+        self.assertFalse(r)
 
     def test_03_delete_old_entries(self):
         # Create a VERY old authcache entry
