@@ -136,12 +136,12 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
             result = False
 
         if result and max_number_of_authentications > 0:
+            # Check if auth_count allows this authentication too
             result = cached_auth.auth_count < max_number_of_authentications
-            increment_auth_count(cached_auth.id)
-            break
 
         if result:
             # Update the last_auth
+            increment_auth_count(cached_auth.id)
             update_cache_last_auth(cached_auth.id)
             break
 
