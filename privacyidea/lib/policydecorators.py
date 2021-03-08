@@ -44,6 +44,7 @@ policy decorators for the API (pre/post) are defined in api/lib/policy
 The functions of this module are tested in tests/test_lib_policy_decorator.py
 """
 import logging
+import re
 
 from privacyidea.lib.policy import Match
 from privacyidea.lib.error import PolicyError, privacyIDEAError
@@ -166,12 +167,11 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
             auth_times = list(auth_cache_dict)[0].split("/")
             # determine first_auth from policy!
             first_offset = parse_timedelta(auth_times[0])
+            first_auth = datetime.datetime.utcnow() - first_offset
 
-            import re
             # Use auth cache when number of allowed authentications is defined
             if len(auth_times) == 2 and re.match(r"^\d+$", auth_times[1]):
 
-                first_auth = datetime.datetime.utcnow() - first_offset
                 result = verify_in_cache(user_object.login, user_object.realm,
                                          user_object.resolver, passw,
                                          first_auth=first_auth,
@@ -184,7 +184,6 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
                     # If there is no last_auth, it is equal to first_auth
                     last_offset = first_offset
 
-                first_auth = datetime.datetime.utcnow() - first_offset
                 last_auth = datetime.datetime.utcnow() - last_offset
                 result = verify_in_cache(user_object.login, user_object.realm,
                                          user_object.resolver, passw,
