@@ -162,7 +162,6 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
         auth_cache_dict = Match.user(g, scope=SCOPE.AUTH, action=ACTION.AUTH_CACHE,
                                      user_object=user_object).action_values(unique=True, write_to_audit_log=False)
         if auth_cache_dict:
-
             # verify in cache and return an early success
             auth_times = list(auth_cache_dict)[0].split("/")
             # determine first_auth from policy!
