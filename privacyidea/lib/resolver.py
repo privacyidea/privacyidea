@@ -59,6 +59,8 @@ from sqlalchemy import func
 from .crypto import encryptPassword
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params,
                                    is_true)
+from privacyidea.lib.utils.export import (register_import_name,
+                                          register_export_name)
 import copy
 
 CENSORED = "__CENSORED__"
@@ -365,3 +367,19 @@ def pretestresolver(resolvertype, params):
     r_obj_class = get_resolver_class(resolvertype)
     (success, desc) = r_obj_class.testconnection(params)
     return success, desc
+
+
+@register_export_name('resolver')
+def export_resolver(name=None, censor=False):
+    """ Export given or all resolver configuration """
+    return get_resolver_list(filter_resolver_name=name, censor=censor)
+
+
+@register_import_name('resolver')
+def import_resolver(data):
+    """Import resolver configuration"""
+    log.debug('Import resolver config {0!s}'.format(data))
+    for _res_name, res_data in data.items():
+        # save_resolver() needs the resolver name at key 'resolver'
+        res_data['resolver'] = res_data.pop('resolvername')
+        save_resolver(res_data)

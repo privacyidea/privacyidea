@@ -44,6 +44,8 @@ from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
                       save_config_timestamp, Policy, EventHandler)
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
 from privacyidea.lib.utils import to_list
+from privacyidea.lib.utils.export import (register_import,
+                                          register_export_name)
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
@@ -209,7 +211,7 @@ class LocalConfigClass(object):
             "admin" or "public". If "public", only values with type="public"
             are returned.
         :type role: string
-        :param return_bool: If the a boolean value should be returned. Returns
+        :param return_bool: If a boolean value should be returned. Returns
             True if value is "True", "true", 1, "1", True...
         :return: If key is None, then a dictionary is returned. If a certain key
             is given a string/bool is returned.
@@ -224,7 +226,7 @@ class LocalConfigClass(object):
         for ckey, cvalue in self.config.items():
             if role == "admin" or cvalue.get("Type") == "public":
                 reduced_config[ckey] = self.config[ckey]
-        if not reduced_config and role=="admin":
+        if not reduced_config and role == "admin":
             reduced_config = self.config
 
         for ckey, cvalue in reduced_config.items():
@@ -855,7 +857,7 @@ def get_machine_resolver_module_list():
 def set_privacyidea_config(key, value, typ="", desc=""):
     """
     Set a config value and writes it to the Config database table.
-    Can by of type "password" or "public". "password" gets encrypted.
+    Can be of type "password" or "public". "password" gets encrypted.
     """
     if not typ:
         # check if this is a token specific config and if it should be public
@@ -978,3 +980,8 @@ def get_privacyidea_nodes():
         nodes.append(own_node_name)
     return nodes
 
+
+@register_export_name('config')
+def export_config():
+    """Export the global configuration"""
+    return get_config_object().config

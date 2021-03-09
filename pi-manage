@@ -97,6 +97,7 @@ from privacyidea.lib.utils import parse_timedelta
 from privacyidea.lib.crypto import create_hsm_object
 from privacyidea.lib.importotp import parseOATHcsv
 from privacyidea.lib.token import import_token
+from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
 import jwt
 import ast
 import base64
@@ -108,23 +109,25 @@ DEFAULT_CONFTYPE_LIST = ("policy", "resolver", "event")
 
 app = create_app(config_name='production', silent=SILENT)
 manager = Manager(app)
-admin_manager = Manager(usage='Create new administrators or modify existing '
-                              'ones.')
-backup_manager = Manager(usage='Create database backup and restore')
-realm_manager = Manager(usage='Create new realms, delete existing realms '
-                              'or set the default realm')
-resolver_manager = Manager(usage='Create new resolver')
-policy_manager = Manager(usage='Manage policies')
-event_manager = Manager(usage='Manage events')
-api_manager = Manager(usage="Manage API keys")
-ca_manager = Manager(usage="Manage Certificate Authorities")
-audit_manager = Manager(usage="Manage Audit log")
-authcache_manager = Manager(usage="Manage AuthCache")
-hsm_manager = Manager(usage="Manage HSM")
-token_manager = Manager(usage="Manage tokens")
-config_manager = Manager(usage="Manage the privacyIDEA configuration")
-config_import_manager = Manager(usage="import configuration")
-config_export_manager = Manager(usage="export configuration")
+admin_manager = Manager(description='Create new administrators or modify existing '
+                                    'ones.')
+backup_manager = Manager(description='Create database backup and restore')
+realm_manager = Manager(description='Create new realms, delete existing realms '
+                                    'or set the default realm')
+resolver_manager = Manager(description='Create new resolver')
+policy_manager = Manager(description='Manage policies')
+event_manager = Manager(description='Manage events')
+api_manager = Manager(description="Manage API keys")
+ca_manager = Manager(description="Manage Certificate Authorities")
+audit_manager = Manager(description="Manage Audit log")
+authcache_manager = Manager(description="Manage AuthCache")
+hsm_manager = Manager(description="Manage HSM")
+token_manager = Manager(description="Manage tokens")
+config_manager = Manager(description="Manage the privacyIDEA configuration")
+config_import_manager = Manager(description="import configuration",
+                                help="import configuration")
+config_export_manager = Manager(description="export configuration",
+                                help="export configuration")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
@@ -1286,8 +1289,130 @@ def import_tokens(file, tokenrealm=None):
 token_manager.add_command('import', Command(import_tokens))
 
 
-# conf export menu
+from functools import wraps, partial
+import inspect
+import json
 
+fmt_dict = {'python': str,
+            'json': partial(json.dumps, indent=2),
+            'yaml': yaml.safe_dump}
+
+
+def exporter_command(func):
+    """ Return a flask_script Command object for exporting data"""
+
+    opts = []
+    # get parameter of function to call
+    arguments, varargs, keywords, defaults = inspect.getargspec(func)
+    if 'name' in arguments:
+        opts.append(Option('-n', '--name',
+                           help='Name of the specific object to export'))
+    if 'id' in arguments:
+        opts.append(Option('-i', '--id',
+                           help='Id of the specific object to export'))
+    if 'censor' in arguments:
+        opts.append(Option("-c", "--censor", action="store_true",
+                           help="Censor sensitive data from the output"))
+
+    opts.append(Option('-o', '--output',
+                       help='The filename to export the data to,'
+                            ' default is <stdout>'))
+    opts.append(Option('-f', '--format', default='python',
+                       help='output format (*python*, json, yaml)'))
+
+    def exporter_wrapper(f):
+        # Add the output routines to the export function
+        @wraps(f)
+        def exp_wrapper(*args, **kwargs):
+            of = kwargs.pop('output', None)
+            fmt = kwargs.pop('format', 'python')
+            res = f(*args, **kwargs)
+            # format output according to the format parameter
+            if fmt not in fmt_dict:
+                print('Format {0!s} is not defined, using "python" instead.'.format(fmt))
+                fmt = 'python'
+            res = fmt_dict.get(fmt)(res) + '\n'
+            if of and not of == '-':
+                with open(of, 'w') as outfile:
+                    outfile.write(res)
+            else:
+                sys.stdout.write(res)
+        return exp_wrapper
+
+    # now create the command from the wrapper function
+    cmd = Command(exporter_wrapper(func))
+    # and add all the options
+    for o in opts:
+        cmd.add_option(o)
+    return cmd
+
+
+config_exporter_manager = Manager(help='registered exporter commands',
+                                  description='registered exporters')
+for e, f in EXPORT_FUNCTIONS.items():
+    config_exporter_manager.add_command(e, exporter_command(f))
+
+config_manager.add_command('exporter', config_exporter_manager)
+
+inp_fmt_dict = {'python': ast.literal_eval,
+                'json': json.loads,
+                'yaml': yaml.safe_load}
+
+
+def importer_command(func):
+    """ Return a flask_script Command object for importing data"""
+    opts = []
+    # get parameter of function to call
+    arguments, varargs, keywords, defaults = inspect.getargspec(func)
+    opts.append(Option('-i', '--input',
+                       help='The filename to import the data from,'
+                            ' default is <stdin>'))
+    opts.append(Option('-f', '--format', default='python',
+                       help='input format (*python*, json, yaml)'))
+
+    def importer_wrapper(f):
+        # Add the input routines to the import function
+        @wraps(f)
+        def imp_wrapper(*args, **kwargs):
+            d = None
+            ifname = kwargs.pop('input', None)
+            _fmt = kwargs.pop('format', 'python')
+            if ifname and not ifname == '-':
+                with open(ifname, 'r') as infile:
+                    content = infile.read()
+            else:
+                content = sys.stdin.read()
+            for tp in inp_fmt_dict:
+                try:
+                    print(tp)
+                    d = inp_fmt_dict[tp](content)
+                    break
+                except Exception as e:
+                    print(e)
+                    continue
+            if d:
+                print(d)
+                f(d, *args, **kwargs)
+            else:
+                print('Could not read input!')
+        return imp_wrapper
+
+    # now create the command from the wrapper function
+    cmd = Command(importer_wrapper(func))
+    # and add all the options
+    for o in opts:
+        cmd.add_option(o)
+    return cmd
+
+
+config_importer_manager = Manager(help='registered importer commands',
+                                  description='registered importer')
+for e, f in IMPORT_FUNCTIONS.items():
+    config_importer_manager.add_command(e, importer_command(f))
+
+config_manager.add_command('importer', config_importer_manager)
+
+# conf export menu
 def _get_conf_event(name=None, print_passwords=None):
     """ helper function for conf_export """
     event_cls = EventConfiguration()
@@ -1381,6 +1506,7 @@ class FullExport(Command):
                     os.remove(config_backup_file)
         else:
             conf_export(filename=None, print_passwords=print_passwords)
+
 
 config_export_manager.add_command('full', FullExport)
 config_export_manager.add_command('policy', Command(p_export))
