@@ -183,8 +183,10 @@ The *Server pool retry rounds* and *Server pool skip timeout* settings configure
 the LDAP server pool. When establishing a LDAP connection, the resolver uses a round-robin
 strategy to select a LDAP server from the pool. If the current server is not reachable, it is removed
 from the pool and will be re-inserted after the number of seconds specified in the *skip timeout*.
-If no server from the pool is reachable, the servers are queried again from the beginning. If
-a reachable server has not been found after the number of rounds specified in the *retry rounds*,
+If the pool is empty after a round, a timeout is added before the next round is started.
+The ldap3 module defaults system wide to 10 seconds before starting the next round.
+This timeout can be changed by setting ``PI_LDAP_POOLING_LOOP_TIMEOUT`` to an integer in seconds in ``pi.cfg``.
+If no reachable server has could been found after the number of rounds specified in the *retry rounds*,
 the request fails.
 
 By default, knowledge about unavailable pool servers is not persisted between requests.
