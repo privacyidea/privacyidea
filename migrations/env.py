@@ -31,7 +31,8 @@ def set_database_url(config):
             url = str(parsed_url)
     except Exception as exx:
         print(u"Attempted to set charset=utf8 on connection, but failed: {}".format(exx))
-    config.set_main_option('sqlalchemy.url', url)
+    # set_main_option() requires escaped "%" signs in the string
+    config.set_main_option('sqlalchemy.url', url.replace('%', '%%'))
 
 
 set_database_url(config)
