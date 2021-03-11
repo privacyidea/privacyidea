@@ -96,7 +96,7 @@ def cleanup(minutes):
 
 
 def verify_in_cache(username, realm, resolver, password, first_auth=None, last_auth=None,
-                    max_number_of_authentications=0):
+                    max_auths=0):
     """
     Verify if the given credentials are cached and if the time is correct.
     
@@ -108,10 +108,10 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
         cache. Only find newer entries 
     :param last_auth: The timestamp when the entry was last successfully 
         verified. Only find newer entries
-    :param max_number_of_authentications: Maximum number of times the authcache entry can be used to skip
+    :param max_auths: Maximum number of times the authcache entry can be used to skip
         authentication, as defined by ACTION.AUTH_CACHE policy. Will return False if the current number of
         authentications + 1 of the cached authentication exceeds this value.
-    :type max_number_of_authentications: int
+    :type max_auths: int
     :return: 
     """
     conditions = []
@@ -135,9 +135,9 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
             log.debug("Old authcache entry for user {0!s}@{1!s}.".format(username, realm))
             result = False
 
-        if result and max_number_of_authentications > 0:
+        if result and max_auths > 0:
             # Check if auth_count allows this authentication too
-            result = cached_auth.auth_count < max_number_of_authentications
+            result = cached_auth.auth_count < max_auths
 
         if result:
             # Update the last_auth

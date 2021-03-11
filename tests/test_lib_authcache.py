@@ -58,18 +58,19 @@ class AuthCacheTestCase(MyTestCase):
         # Add Entry to cache
         r = add_to_cache(self.username, self.realm, self.resolver, self.password)
         update_cache_last_auth(r)
+
         auth = AuthCache.query.filter(AuthCache.id == r).first()
         last_auth1 = auth.last_auth
         auth_count1 = auth.auth_count
+        self.assertEqual(0, auth_count1)
 
         first_auth = datetime.datetime.utcnow() - datetime.timedelta(hours=4)
         last_auth = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
 
         r = verify_in_cache(self.username, self.realm, self.resolver,
                             self.password, first_auth=first_auth,
-                            last_auth=last_auth, max_number_of_authentications=1)
+                            last_auth=last_auth, max_auths=1)
         self.assertTrue(r)
-        self.assertEqual(0, auth_count1)
 
         # The last_auth was increased!
         auth = AuthCache.query.filter(AuthCache.id == r).first()
@@ -80,8 +81,9 @@ class AuthCacheTestCase(MyTestCase):
 
         r = verify_in_cache(self.username, self.realm, self.resolver,
                             self.password, first_auth=first_auth,
-                            last_auth=last_auth, max_number_of_authentications=1)
+                            last_auth=last_auth, max_auths=1)
         self.assertFalse(r)
+
 
     def test_03_delete_old_entries(self):
         # Create a VERY old authcache entry

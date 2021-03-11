@@ -162,32 +162,31 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
         auth_cache_dict = Match.user(g, scope=SCOPE.AUTH, action=ACTION.AUTH_CACHE,
                                      user_object=user_object).action_values(unique=True, write_to_audit_log=False)
         if auth_cache_dict:
-            # verify in cache and return an early success
             auth_times = list(auth_cache_dict)[0].split("/")
+
             # determine first_auth from policy!
             first_offset = parse_timedelta(auth_times[0])
             first_auth = datetime.datetime.utcnow() - first_offset
+            last_auth = first_auth  # Default if no last auth exists
+            max_auths = 0  # Default value, 0 has no effect on verification
 
             # Use auth cache when number of allowed authentications is defined
-            if len(auth_times) == 2 and re.match(r"^\d+$", auth_times[1]):
-
-                result = verify_in_cache(user_object.login, user_object.realm,
-                                         user_object.resolver, passw,
-                                         first_auth=first_auth,
-                                         max_number_of_authentications=int(auth_times[1]))
-            else:
-                if len(auth_times) == 2:
-                    # Determine last_auth from policy
-                    last_offset = parse_timedelta(auth_times[1])
+            if len(auth_times) == 2:
+                if re.match(r"^\d+$", auth_times[1]):
+                    max_auths = int(auth_times[1])
                 else:
-                    # If there is no last_auth, it is equal to first_auth
-                    last_offset = first_offset
+                    # Determine last_auth delta from policy
+                    last_offset = parse_timedelta(auth_times[1])
+                    last_auth = datetime.datetime.utcnow() - last_offset
+            else:
+                # If there is no last_auth, it is equal to first_auth
+                last_auth = datetime.datetime.utcnow() - first_offset
 
-                last_auth = datetime.datetime.utcnow() - last_offset
-                result = verify_in_cache(user_object.login, user_object.realm,
-                                         user_object.resolver, passw,
-                                         first_auth=first_auth,
-                                         last_auth=last_auth)
+            result = verify_in_cache(user_object.login, user_object.realm,
+                                     user_object.resolver, passw,
+                                     first_auth=first_auth,
+                                     last_auth=last_auth,
+                                     max_auths=max_auths)
 
             if result:
                 g.audit_object.add_policy(next(iter(auth_cache_dict.values())))
