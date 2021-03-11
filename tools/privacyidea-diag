@@ -69,10 +69,10 @@ get_pi_cfg() {
 }
 
 current_db_revision() {
-		log
-		log "SECTION: current_db_revision"
-		log "============================="
-		call_pi_manage db current -d /opt/privacyidea/lib/privacyidea/migrations/ >> "$tempfile"
+	log
+	log "SECTION: current_db_revision"
+	log "============================="
+	call_pi_manage db current -d /opt/privacyidea/lib/privacyidea/migrations/ >> "$tempfile"
 }
 
 upload_info() {
@@ -133,10 +133,10 @@ pi_logfile() {
 }
 
 pi_auditlog() {
-		log
-		log "SECTION: privacyIDEA Auditlog"
-		log "============================="
-		call_pi_manage audit dump -f - -t 2d >> "$tempfile"
+	log
+	log "SECTION: privacyIDEA Auditlog"
+	log "============================="
+	call_pi_manage audit dump -f - -t 2d >> "$tempfile"
 }
 
 centos_auditlog() {
@@ -171,24 +171,24 @@ apache_log() {
 }
 
 FreeRADIUS_config() {
-		log
-		log "SECTION: FreeRADIUS Configurations"
-		log "=================================="
-	if [[ "${OS}" == "centos" ]]; then
-		if (rpm -qa | grep freeradius > /dev/null); then
-			ls -R /etc/raddb  >> "$tempfile";
-		else
-			log
-			log "FreeRADIUS is not installed"
-		fi
+	log
+	log "SECTION: FreeRADIUS Configurations"
+	log "=================================="
+if [[ "${OS}" == "centos" ]]; then
+	if (rpm -qa | grep freeradius > /dev/null); then
+		ls -R /etc/raddb  >> "$tempfile";
 	else
-		if (dpkg -l | grep freeradius > /dev/null); then
-			ls -R /etc//freeradius/3.0 >> "$tempfile";
-		else
-			log
-			log "FreeRADIUS is not installed"
-		fi
+		log
+		log "FreeRADIUS is not installed"
 	fi
+else
+	if (dpkg -l | grep freeradius > /dev/null); then
+		ls -R /etc//freeradius/3.0 >> "$tempfile";
+	else
+		log
+		log "FreeRADIUS is not installed"
+	fi
+fi
 }
 
 get_os
