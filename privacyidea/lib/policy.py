@@ -2401,7 +2401,7 @@ def get_policy_condition_sections():
             "description": _("The policy only matches if certain conditions on the user info are fulfilled.")
         },
         CONDITION_SECTION.TOKEN: {
-            "description": _("The policy only matches if certain conditions of the token attributes are fullfilled.")
+            "description": _("The policy only matches if certain conditions of the token attributes are fulfilled.")
         },
         CONDITION_SECTION.TOKENINFO: {
             "description": _("The policy only matches if certain conditions on the token info are fulfilled.")

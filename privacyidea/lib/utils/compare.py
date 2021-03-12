@@ -82,7 +82,7 @@ def _compare_smaller(left, comparator, right):
 
 def _compare_bigger(left, comparator, right):
     """
-    Return True if the left value as iteger is bigger than the right integer
+    Return True if the left value as integer is bigger than the right integer
     """
     return int(left or 0) > int(right)
 
