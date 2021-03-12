@@ -437,6 +437,7 @@ class CONDITION_SECTION(object):
     __doc__ = """This is a list of available sections for conditions of policies """
     USERINFO = "userinfo"
     TOKENINFO = "tokeninfo"
+    TOKEN = "token"
     HTTP_REQUEST_HEADER = "HTTP Request header"
 
 
@@ -749,6 +750,8 @@ class PolicyClass(object):
         :return: generates a list of policy dictionaries
         """
         reduced_policies = []
+        # If we have several token specific conditions, we only create the db_token (query token DB) once.
+        dbtoken = None
         for policy in policies:
             include_policy = True
             for section, key, comparator, value, active in policy['conditions']:
@@ -760,10 +763,15 @@ class PolicyClass(object):
                             include_policy = False
                             break
                     elif section == CONDITION_SECTION.TOKENINFO:
-                        dbtoken = Token.query.filter(Token.serial == serial).first() if serial else None
+                        dbtoken = dbtoken or Token.query.filter(Token.serial == serial).first() if serial else None
                         if not self._policy_matches_info_condition(policy, key, comparator, value,
                                                                    CONDITION_SECTION.TOKENINFO,
                                                                    dbtoken=dbtoken):
+                            include_policy = False
+                            break
+                    elif section == CONDITION_SECTION.TOKEN:
+                        dbtoken = dbtoken or Token.query.filter(Token.serial == serial).first() if serial else None
+                        if not self._policy_matches_token_condition(policy, key, comparator, value, dbtoken):
                             include_policy = False
                             break
                     elif section == CONDITION_SECTION.HTTP_REQUEST_HEADER:
@@ -808,6 +816,32 @@ class PolicyClass(object):
                       u" is not available. This should not happen.".format(policy["name"], key))
             raise PolicyError(u"Policy {!r} has conditions on headers {!r}, but http header"
                         u" is not available".format(policy["name"], key))
+
+    @staticmethod
+    def _policy_matches_token_condition(policy, key, comparator, value, db_token):
+        """
+
+        :param policy: a policy dictionary, the policy in question
+        :param key: the column name of the token
+        :param comparator: a value comparator: one of "equal", "contains"
+        :param value: a value against which the token value will be compared
+        :param db_token: a dbtoken object
+        :return: bool
+        """
+        if db_token and key in db_token.get():
+            try:
+                return compare_values(db_token.get(key), comparator, value)
+            except Exception as exx:
+                log.warning(u"Error during handling the condition on token {!r} "
+                            u"of policy {!r}: {!r}".format(key, policy['name'], exx))
+                raise PolicyError(
+                    u"Invalid comparison in the {!s} conditions of policy {!r}".format(type, policy['name']))
+        else:
+            log.warning(u"Unknown token column referenced in a "
+                        u"condition of policy {!r}: {!r}".format(policy['name'], key))
+            # If we do have token object but the referenced key is not an attribute of the token,
+            # we have a misconfiguration and raise an error.
+            raise PolicyError(u"Unknown key in the token conditions of policy {!r}".format(policy['name']))
 
     @staticmethod
     def _policy_matches_info_condition(policy, key, comparator, value, type, user_object=None, dbtoken=None):
@@ -2365,6 +2399,9 @@ def get_policy_condition_sections():
     return {
         CONDITION_SECTION.USERINFO: {
             "description": _("The policy only matches if certain conditions on the user info are fulfilled.")
+        },
+        CONDITION_SECTION.TOKEN: {
+            "description": _("The policy only matches if certain conditions of the token attributes are fullfilled.")
         },
         CONDITION_SECTION.TOKENINFO: {
             "description": _("The policy only matches if certain conditions on the token info are fulfilled.")

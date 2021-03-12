@@ -73,6 +73,20 @@ def _compare_equality(left, comparator, right):
     return left == right
 
 
+def _compare_smaller(left, comparator, right):
+    """
+    Return True if the left value as integer is smaller than the right integer
+    """
+    return int(left or 0) < int(right)
+
+
+def _compare_bigger(left, comparator, right):
+    """
+    Return True if the left value as iteger is bigger than the right integer
+    """
+    return int(left or 0) > int(right)
+
+
 def _compare_contains(left, comparator, right):
     """
     Return True if ``left`` has ``right`` as an element.
@@ -148,6 +162,9 @@ class COMPARATORS(object):
     IN = "in"
     NOT_IN = "!in"
 
+    SMALLER = "<"
+    BIGGER = ">"
+
 
 #: This dictionary connects comparators to comparator functions.
 #: A comparison function takes three parameters ``left``, ``comparator``, ``right``.
@@ -163,6 +180,9 @@ COMPARATOR_FUNCTIONS = {
 
     COMPARATORS.IN: _compare_in,
     COMPARATORS.NOT_IN: negate(_compare_in),
+
+    COMPARATORS.SMALLER: _compare_smaller,
+    COMPARATORS.BIGGER: _compare_bigger
 }
 
 
@@ -178,7 +198,10 @@ COMPARATOR_DESCRIPTIONS = {
     COMPARATORS.NOT_MATCHES: _("false if the value of the left attribute completely matches the given regular expression pattern on the right"),
 
     COMPARATORS.IN: _("true if the value of the left attribute is contained in the comma-separated values on the right"),
-    COMPARATORS.NOT_IN: _("false if the value of the left attribute is contained in the comma-separated values on the right")
+    COMPARATORS.NOT_IN: _("false if the value of the left attribute is contained in the comma-separated values on the right"),
+
+    COMPARATORS.SMALLER: _("true if the integer value of the left attribute is smaller than the right integer value"),
+    COMPARATORS.BIGGER: _("true if the integer value of the left attribute is bigger than the right integer value")
 }
 
 
