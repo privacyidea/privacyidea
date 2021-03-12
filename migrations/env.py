@@ -3,6 +3,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine.url import make_url
 from logging.config import fileConfig
+from six.moves.urllib.parse import quote
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -28,6 +29,8 @@ def set_database_url(config):
         if url.startswith("mysql"):
             parsed_url = make_url(url)
             parsed_url.query.setdefault("charset", "utf8")
+            # We need to quote the password in case it contains special chars
+            parsed_url.password = quote(parsed_url.password)
             url = str(parsed_url)
     except Exception as exx:
         print(u"Attempted to set charset=utf8 on connection, but failed: {}".format(exx))
@@ -99,10 +102,10 @@ def run_migrations_online():
     finally:
         connection.close()
 
+
 if context.is_offline_mode():
     print("Running offline")
     run_migrations_offline()
 else:
     print("Running online")
     run_migrations_online()
-
