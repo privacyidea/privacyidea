@@ -1445,6 +1445,10 @@ class PolicyTestCase(MyTestCase):
         # on tokeninfo is there, but no dbtoken object is available.
         self.assertRaises(PolicyError, P.match_policies, user_object=user1)
 
+        # Now check, if a wrong comparison raises an exception
+        set_policy("setpin_pol", conditions=[("token", "count", "<", "not a number", True)])
+        self.assertRaises(PolicyError, P.match_policies, user_object=user1, serial=serial)
+
         delete_policy("setpin_pol")
         db_token.delete()
 
