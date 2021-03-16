@@ -72,16 +72,32 @@
                        class="form-control"
                        ng-show="params.TLS_VERIFY"
                        placeholder="/etc/privacyidea/ldap-ca.crt"/>
-                
+            </div>
+        </div>
+        <label for="tls_force_version"
+            class="col-sm-3 control-label" translate>
+            Force TLS Version
+        </label>
+        <div class="col-sm-9">
+            <input name="tls_force_version" id="tls_force_version"
+                   ng-model="params.TLS_FORCE_VERSION"
+                   type="checkbox"/>
+            <p class="help-block" translate>
+                Select TLS Version
+            </p>
+            <div class="well" ng-show="params.TLS_FORCE_VERSION">
                 <label for="tls_version" class="control-label" translate>
                     TLS protocol version
                 </label>
                 <select class="form-control"
                         name="tls_version" id="tls_version"
-                    ng-model="params.TLS_VERSION">
+                        ng-init="selection ='TLSv1.3'"
+                        ng-model="params.TLS_VERSION"
+                        ng-show="params.TLS_FORCE_VERSION">
                         <option value="3">TLSv1</option>
                         <option value="4">TLSv1.1</option>
                         <option value="5">TLSv1.2</option>
+                        <option value="2">TLSv1.3</option>
                 </select>
             </div>
         </div>
