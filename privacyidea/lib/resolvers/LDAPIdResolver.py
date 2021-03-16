@@ -110,8 +110,9 @@ elif os.path.isfile("/etc/ssl/certs/ca-bundle.crt"):
 else:
     DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
 
-# Todo: exclude SSLv2 and SSLv3 using e.g. SSL_OP_NO_SSLv2
-DEFAULT_TLS_PROTOCOLS = ssl.PROTOCOL_TLS
+DEFAULT_TLS_PROTOCOL = ssl.PROTOCOL_TLS
+
+TLS_OPTIONS_1_3 = (ssl.OP_NO_TLSv1_2, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1, ssl.OP_NO_SSLv3)
 
 class LockingServerPool(ldap3.ServerPool):
     """
@@ -766,18 +767,26 @@ class IdResolver (UserIdResolver):
         self.resolverId = self.uri
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
         self.tls_verify = is_true(config.get("TLS_VERIFY", False))
-        # Fallback to TLSv1. (int: 3, TLSv1.1: 4, v1.2: 5)
-        self.tls_version = config.get("TLS_VERSION") or DEFAULT_TLS_PROTOCOLS
-
+        # Fallback to TLSv1. (int: 3, TLSv1.1: 4, v1.2: 5, TLS negotiation: 2)
+        self.tls_force_version = is_true(config.get("TLS_FORCE_VERSION", False))
+        self.tls_version = int(config.get("TLS_VERSION") or DEFAULT_TLS_PROTOCOL)
+        if self.tls_force_version and self.tls_version:
+            tls_version = self.tls_version
+            tls_options = TLS_OPTIONS_1_3 if tls_version == "2" else None
+        else:
+            tls_version = int(DEFAULT_TLS_PROTOCOL)
+            tls_options = None
         self.tls_ca_file = config.get("TLS_CA_FILE") or DEFAULT_CA_FILE
         if self.uri.lower().startswith("ldaps") or self.start_tls:
             if self.tls_verify:
                 self.tls_context = Tls(validate=ssl.CERT_REQUIRED,
-                                       version=self.tls_version,
+                                       version=tls_version,
+                                       ssl_options=tls_options,
                                        ca_certs_file=self.tls_ca_file)
             else:
                 self.tls_context = Tls(validate=ssl.CERT_NONE,
-                                       version=self.tls_version)
+                                       version=tls_version,
+                                       ssl_options=tls_options)
         else:
             self.tls_context = None
         self.serverpool_persistent = is_true(config.get("SERVERPOOL_PERSISTENT", False))
@@ -955,6 +964,7 @@ class IdResolver (UserIdResolver):
                                 'AUTHTYPE': 'string',
                                 'TLS_VERIFY': 'bool',
                                 'TLS_VERSION': 'int',
+                                'TLS_FORCE_VERSION': 'bool',
                                 'TLS_CA_FILE': 'string',
                                 'START_TLS': 'bool',
                                 'CACHE_TIMEOUT': 'int',
@@ -989,15 +999,22 @@ class IdResolver (UserIdResolver):
         serverpool_rounds = int(param.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         serverpool_skip = int(param.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
         if ldap_uri.lower().startswith("ldaps") or param.get("START_TLS"):
-            tls_version = param.get("TLS_VERSION") or ssl.PROTOCOL_TLS
+            tls_force_version = is_true(param.get("TLS_FORCE_VERSION")) or False
+            if tls_force_version and param.get("TLS_VERSION"):
+                tls_version = int(param.get("TLS_VERSION"))
+            else:
+                tls_version = int(DEFAULT_TLS_PROTOCOL)
+            tls_options = TLS_OPTIONS_1_3 if tls_version == "2" and tls_force_version else None
             if is_true(param.get("TLS_VERIFY")):
                 tls_ca_file = param.get("TLS_CA_FILE") or DEFAULT_CA_FILE
                 tls_context = Tls(validate=ssl.CERT_REQUIRED,
                                   version=tls_version,
+                                  ssl_options=tls_options,
                                   ca_certs_file=tls_ca_file)
             else:
                 tls_context = Tls(validate=ssl.CERT_NONE,
-                                  version=tls_version)
+                                  version=tls_version,
+                                  ssl_options=tls_options)
         else:
             tls_context = None
         get_info = get_info_configuration(is_true(param.get("NOSCHEMAS")))
