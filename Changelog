@@ -5,6 +5,8 @@ Version 3.5.2, 2020-03-XX
   * Fix missing audit entries missing_line and sig_check (#2627)
   * Fix backup on Ubuntu 20.04 (#2646)
   * Fix missing priority in policy import (#2643)
+  * Fix DB migrate URI if it contains char % (#2661)
+  * Fix long default POOLING_LOOP_TIMEOUT (#2662)
 
 Version 3.5.1, 2020-01-28
 
