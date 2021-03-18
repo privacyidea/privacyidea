@@ -45,16 +45,11 @@ def add_to_cache(username, realm, resolver, password):
     return r
 
 
-def increment_auth_count(cache_id):
-    db.session.query(AuthCache).filter(AuthCache.id == cache_id).update(
-        {AuthCache.auth_count: AuthCache.auth_count + 1})
-    db.session.commit()
-
-
-def update_cache_last_auth(cache_id):
+def update_cache(cache_id):
     last_auth = datetime.datetime.utcnow()
-    AuthCache.query.filter(
-        AuthCache.id == cache_id).update({"last_auth": last_auth})
+    db.session.query(AuthCache).filter(
+        AuthCache.id == cache_id).update({"last_auth": last_auth,
+                                          AuthCache.auth_count: AuthCache.auth_count + 1})
     db.session.commit()
 
 
@@ -140,9 +135,8 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
             result = cached_auth.auth_count < max_auths
 
         if result:
-            # Update the last_auth
-            increment_auth_count(cached_auth.id)
-            update_cache_last_auth(cached_auth.id)
+            # Update the last_auth and the auth_count
+            update_cache(cached_auth.id)
             break
 
     if not result:
