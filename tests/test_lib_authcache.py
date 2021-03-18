@@ -6,7 +6,7 @@ The lib.auth_cache.py only depends on the database model.
 from .base import MyTestCase
 
 from privacyidea.lib.authcache import (add_to_cache, delete_from_cache,
-                                       update_cache_last_auth, verify_in_cache,
+                                       update_cache, verify_in_cache,
                                        _hash_password,
                                        cleanup)
 from passlib.hash import argon2
@@ -37,7 +37,7 @@ class AuthCacheTestCase(MyTestCase):
         self.assertTrue(auth.first_auth > teststart)
         self.assertEqual(auth.last_auth, auth.first_auth)
 
-        update_cache_last_auth(r)
+        update_cache(r)
         auth = AuthCache.query.filter(AuthCache.id == r).first()
         self.assertTrue(auth.last_auth > teststart)
 
@@ -57,7 +57,6 @@ class AuthCacheTestCase(MyTestCase):
 
         # Add Entry to cache
         r = add_to_cache(self.username, self.realm, self.resolver, self.password)
-        update_cache_last_auth(r)
 
         auth = AuthCache.query.filter(AuthCache.id == r).first()
         last_auth1 = auth.last_auth

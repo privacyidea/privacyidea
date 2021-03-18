@@ -174,6 +174,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
             if len(auth_times) == 2:
                 if re.match(r"^\d+$", auth_times[1]):
                     max_auths = int(auth_times[1])
+                    last_auth = None
                 else:
                     # Determine last_auth delta from policy
                     last_offset = parse_timedelta(auth_times[1])
