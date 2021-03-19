@@ -908,7 +908,6 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         CACHE_TIMEOUT: 120,
         NOSCHEMAS: false,
         TLS_VERIFY: true,
-        TLS_FORCE_VERSION: false,
         START_TLS: true,
         SERVERPOOL_ROUNDS: 2,
         SERVERPOOL_SKIP: 30
@@ -934,7 +933,6 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
             $scope.params.NOSCHEMAS = isTrue($scope.params.NOSCHEMAS);
             $scope.params.SERVERPOOL_PERSISTENT = isTrue($scope.params.SERVERPOOL_PERSISTENT);
             $scope.params.type = 'ldapresolver';
-            $scope.params.TLS_FORCE_VERSION = isTrue($scope.params.TLS_FORCE_VERSION);
         });
     }
 
