@@ -812,14 +812,18 @@ class PolicyClass(object):
                 raise PolicyError(u"Unknown HTTP header key referenced in condition of policy "
                                   u"{!r}: {!r}".format(policy["name"], key))
         else:  # pragma: no cover
-            log.error(u"Policy {!r} has conditions on headers {!r}, but http header"
-                      u" is not available. This should not happen.".format(policy["name"], key))
-            raise PolicyError(u"Policy {!r} has conditions on headers {!r}, but http header"
-                        u" is not available".format(policy["name"], key))
+            log.error(u"Policy {!r} has conditions on HTTP headers, but HTTP header"
+                      u" is not available. This should not happen - possible "
+                      u"programming error {!s}.".format(policy["name"],
+                                                        ''.join(traceback.format_stack())))
+            raise PolicyError(u"Policy {!r} has conditions on headers {!r}, but HTTP header"
+                              u" is not available".format(policy["name"], key))
 
     @staticmethod
     def _policy_matches_token_condition(policy, key, comparator, value, db_token):
         """
+        This extended policy checks for token attributes, which are existing columns in
+        the token DB table.
 
         :param policy: a policy dictionary, the policy in question
         :param key: the column name of the token
@@ -828,20 +832,27 @@ class PolicyClass(object):
         :param db_token: a dbtoken object
         :return: bool
         """
-        if db_token and key in db_token.get():
-            try:
-                return compare_values(db_token.get(key), comparator, value)
-            except Exception as exx:
-                log.warning(u"Error during handling the condition on token {!r} "
-                            u"of policy {!r}: {!r}".format(key, policy['name'], exx))
-                raise PolicyError(
-                    u"Invalid comparison in the {!s} conditions of policy {!r}".format(type, policy['name']))
-        else:
-            log.warning(u"Unknown token column referenced in a "
-                        u"condition of policy {!r}: {!r}".format(policy['name'], key))
-            # If we do have token object but the referenced key is not an attribute of the token,
-            # we have a misconfiguration and raise an error.
-            raise PolicyError(u"Unknown key in the token conditions of policy {!r}".format(policy['name']))
+        if db_token:
+            if key in db_token.get():
+                try:
+                    return compare_values(db_token.get(key), comparator, value)
+                except Exception as exx:
+                    log.warning(u"Error during handling the condition on token {!r} "
+                                u"of policy {!r}: {!r}".format(key, policy['name'], exx))
+                    raise PolicyError(
+                        u"Invalid comparison in the {!s} conditions of policy {!r}".format(type, policy['name']))
+            else:
+                log.warning(u"Unknown token column referenced in a "
+                            u"condition of policy {!r}: {!r}".format(policy['name'], key))
+                # If we do have token object but the referenced key is not an attribute of the token,
+                # we have a misconfiguration and raise an error.
+                raise PolicyError(u"Unknown key in the token conditions of policy {!r}".format(policy['name']))
+        else:  # pragma: no cover
+            log.error(u"Policy {!r} has conditions on tokens, but a token object"
+                      u" is not available. This should not happen - possible programming "
+                      u"error: {!s}.".format(policy["name"], ''.join(traceback.format_stack())))
+            raise PolicyError(u"Policy {!r} has conditions on tokens, but a token object"
+                              u" is not available".format(policy["name"]))
 
     @staticmethod
     def _policy_matches_info_condition(policy, key, comparator, value, type, user_object=None, dbtoken=None):
@@ -883,9 +894,9 @@ class PolicyClass(object):
                     type, policy['name']
                 ))
         else:
-            log.warning(u"Policy {!r} has condition on {!s} {!r}, but the according object"
-                        u" is not available.".format(policy['name'], type, key
-            ))
+            log.error(u"Policy {!r} has condition on {!s}, but the according object"
+                      u" is not available - possible programming error "
+                      u"{!s}.".format(policy['name'], type, ''.join(traceback.format_stack())))
             # If the policy specifies a userinfo or tokeninfo condition, but no object is available,
             # the policy is misconfigured. We have to raise a PolicyError to ensure that
             # the privacyIDEA server does not silently misbehave.
