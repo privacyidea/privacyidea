@@ -193,14 +193,18 @@ has not passed yet. If the *Per-process server pool* is enabled, knowledge about
 servers is persisted within each process. This setting may improve performance in situations in
 which a LDAP server from the pool is down for extended periods of time.
 
+TLS Version
+~~~~~~~~~~~
+
+When using TLS, you may specify the TLS version to use. Starting from version 3.6, privacyIDEA
+uses TLS v1.3 by default.
+
+
 TLS certificates
 ~~~~~~~~~~~~~~~~
 
-Starting with privacyIDEA 2.18, in case of encrypted LDAPS
-connections privacyIDEA can verify the TLS
-certificate. (Python >= 2.7.9 required)
-To have privacyIDEA verify the TLS certificate, you need to check the
-according checkbox.
+When using TLS with LDAP, you can tell privacyIDEA to verify the certificate. The according
+checkbox is visible in the WebUI if the target URL starts with *ldaps* or when using STARTTLS.
 
 You can specify a file with the trusted CA certificate, that signed the
 TLS certificate. The default CA filename is */etc/privacyidea/ldap-ca.crt*
