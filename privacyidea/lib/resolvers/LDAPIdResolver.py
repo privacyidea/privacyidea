@@ -99,9 +99,13 @@ SERVERPOOL_ROUNDS = 2
 SERVERPOOL_SKIP = 30
 # The number of seconds that ldap3 waits if no server is left in the pool, before
 # starting the next round
-pooling_loop_timeout = get_app_config_value("PI_LDAP_POOLING_LOOP_TIMEOUT", 10)
-log.info("Setting system wide POOLING_LOOP_TIMEOUT to {0!s}.".format(pooling_loop_timeout))
-ldap3.set_config_parameter("POOLING_LOOP_TIMEOUT", pooling_loop_timeout)
+try:
+    pooling_loop_timeout = get_app_config_value("PI_LDAP_POOLING_LOOP_TIMEOUT", 10)
+    log.info("Setting system wide POOLING_LOOP_TIMEOUT to {0!s}.".format(pooling_loop_timeout))
+    ldap3.set_config_parameter("POOLING_LOOP_TIMEOUT", pooling_loop_timeout)
+except RuntimeError:
+    # In certain tests we run outside of the application context
+    pass
 
 # 1 sec == 10^9 nano secs == 10^7 * (100 nano secs)
 MS_AD_MULTIPLYER = 10 ** 7
