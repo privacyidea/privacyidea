@@ -14,11 +14,12 @@
 
 <div class="form-group">
     <label for="remoteServer" translate>Remote Server</label>
-    <input type="url"
-           required
-           class="form-control"
-           placeholder="{{ 'The remote Server URL'|translate }}"
-           ng-model="form['remote.server']" name="remoteServer">
+    <select ng-required="1"
+            class="form-control"
+            name="remoteServer"
+            ng-options="server.id as identifier for (identifier, server) in privacyIDEAServers"
+            ng-model="form['remote.server_id']">
+    </select>
 </div>
 
 <div class="form-group">

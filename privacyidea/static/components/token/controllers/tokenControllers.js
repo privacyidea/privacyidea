@@ -283,6 +283,10 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             // because the user might not be allowed to list RADIUS servers
             $scope.getRADIUSIdentifiers();
         }
+        if ($scope.form.type === "remote") {
+            // fetch the privacyIDEA servers
+            $scope.getPrivacyIDEAServers();
+        }
         if ($scope.form.type === "certificate") {
             $scope.getCAConnectors();
         }
@@ -533,6 +537,13 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     $scope.getRADIUSIdentifiers = function() {
         ConfigFactory.getRadiusNames(function(data){
             $scope.radiusIdentifiers = data.result.value;
+        });
+    };
+
+    // get the list of configured privacyIDEA server identifiers
+    $scope.getPrivacyIDEAServers = function() {
+        ConfigFactory.getPrivacyidea(function(data){
+            $scope.privacyIDEAServers = data.result.value;
         });
     };
 

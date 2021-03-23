@@ -33,7 +33,7 @@
 __doc__ = """This is the implementation of the remote token. The remote token
 forwards an authentication request to another privacyidea server.
 
-To do this it uses the parameters remote.server, remote.realm,
+To do this it uses the parameters remote.server_id, remote.realm,
 remote.resolver, remote.user or remote.serial.
 The parameter remote.local_checkpin determines, whether the PIN should be
 checked locally or remotely.
@@ -51,6 +51,7 @@ from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
+from privacyidea.lib.privacyideaserver import get_privacyideaserver
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
@@ -151,8 +152,15 @@ class RemoteTokenClass(TokenClass):
         self.set_otplen(6)
         TokenClass.update(self, param)
 
-        remoteServer = getParam(param, "remote.server", required)
-        self.add_tokeninfo("remote.server", remoteServer)
+        remote_server_id = getParam(param, "remote.server_id", optional)
+
+        if remote_server_id is not None:
+            if get_privacyideaserver(id=remote_server_id):
+                self.add_tokeninfo("remote.server_id", remote_server_id)
+        else:
+            remoteServer = getParam(param, "remote.server", required)
+            self.add_tokeninfo("remote.server", remoteServer)
+            log.warning("Using remote.server for remote tokens is deprecated. Use remote.server_id!")
 
         val = getParam(param, "remote.local_checkpin", optional) or 0
         self.add_tokeninfo("remote.local_checkpin", val)
@@ -233,24 +241,28 @@ class RemoteTokenClass(TokenClass):
         :rtype: int
         """
         otp_count = -1
+        pi_server_obj = None
+        remoteServer = None
 
-        remoteServer = self.get_tokeninfo("remote.server") or ""
-
-        # in preparation of the ability to relocate privacyidea urls,
-        # we introduce the remote url path
-        remotePath = self.get_tokeninfo("remote.path") or ""
-        remotePath = remotePath.strip()
+        remote_server_id = self.get_tokeninfo("remote.server_id")
+        if remote_server_id:
+            pi_server_obj = get_privacyideaserver(id=int(remote_server_id))
+        else:
+            # Deprecated
+            remoteServer = self.get_tokeninfo("remote.server") or ""
+            log.warning("Using remote.server for remote tokens is deprecated. Use remote.server_id!")
+            ssl_verify = get_from_config("remote.verify_ssl_certificate",
+                                         False, return_bool=True) or False
+            # in preparation of the ability to relocate privacyidea urls,
+            # we introduce the remote url path
+            remotePath = self.get_tokeninfo("remote.path") or ""
+            remotePath = remotePath.strip()
+            remotePath = remotePath or "/validate/check"
 
         remoteSerial = self.get_tokeninfo("remote.serial") or ""
-
         remoteUser = self.get_tokeninfo("remote.user") or ""
-
         remoteRealm = self.get_tokeninfo("remote.realm") or ""
-
         remoteResolver = self.get_tokeninfo("remote.resolver") or ""
-
-        ssl_verify = get_from_config("remote.verify_ssl_certificate",
-                                     False, return_bool=True) or False
 
         # here we also need to check for remote.user and so on....
         log.debug("checking OTP len:%r remotely on server: %r,"
@@ -258,24 +270,28 @@ class RemoteTokenClass(TokenClass):
                   (len(otpval), remoteServer, remoteSerial, remoteUser))
         params = {}
 
-        remotePath = remotePath or "/validate/check"
         if remoteSerial:
             params['serial'] = remoteSerial
         elif remoteUser:
             params['user'] = remoteUser
             params['realm'] = remoteRealm
             params['resolver'] = remoteResolver
-
         else:
             log.warning("The remote token does neither contain a "
                         "remote.serial nor a remote.user.")
             return otp_count
 
-        params['pass'] = otpval
-        request_url = "{0!s}{1!s}".format(remoteServer, remotePath)
-
         try:
-            r = requests.post(request_url, data=params, verify=ssl_verify)
+            if remoteServer:
+                # Deprecated
+                params['pass'] = otpval
+                request_url = "{0!s}{1!s}".format(remoteServer, remotePath)
+                r = requests.post(request_url, data=params, verify=ssl_verify)
+            elif pi_server_obj:
+                r = pi_server_obj.validate_check(remoteUser, otpval,
+                                                 serial=remoteSerial,
+                                                 realm=remoteRealm,
+                                                 resolver=remoteResolver)
 
             if r.status_code == requests.codes.ok:
                 response = r.json()

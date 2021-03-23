@@ -27,7 +27,7 @@ define privacyIDEA instances centrally at *config* -> *privacyIDEA servers*.
 In addition to the privacyIDEA instance the action ``forward`` takes the
 following parameters:
 
-**client_ip** The originial client IP will be passed to the child privacyIDEA
+**client_ip** The original client IP will be passed to the child privacyIDEA
 server. Otherwise the child privacyIDEA server will use the parent
 privacyIDEA server as client.
 

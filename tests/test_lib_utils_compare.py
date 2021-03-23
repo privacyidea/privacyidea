@@ -97,3 +97,10 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertTrue(compare_values("hello", "!in", "world"))
         self.assertFalse(compare_values("hello", "!in", " hello, world"))
         self.assertTrue(compare_values("hello", "!in", "hello world"))
+
+    def test_07_smaller_and_bigger(self):
+        self.assertTrue(compare_values("1", "<", 2))
+        self.assertTrue(compare_values(7, ">", 1))
+        self.assertFalse(compare_values("2", "<", "1"))
+        self.assertFalse(compare_values(2, "<", 1))
+        self.assertFalse(compare_values(2, ">", "2"))

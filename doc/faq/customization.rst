@@ -235,3 +235,10 @@ and
 
 The list of the token modules you want to add, must be specified in ``pi.cfg``.
 See :ref:`picfg_3rd_party_tokens`.
+
+Custom Web UI
+~~~~~~~~~~~~~
+
+You can also write your complete new WebUI.
+To do so you need to specify files and folders in ``pi.cfg``.
+Read more about this at :ref:`custom_web_ui`.

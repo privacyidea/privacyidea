@@ -30,7 +30,7 @@ consists of five parts:
 Sections
 ~~~~~~~~
 
-privacyIDEA implements three sections ``userinfo``, ``tokeninfo`` and ``HTTP Request Headers``.
+privacyIDEA implements three sections ``userinfo``, ``token``, ``tokeninfo`` and ``HTTP Request Headers``.
 
 ``userinfo``
 ^^^^^^^^^^^^
@@ -114,6 +114,21 @@ The tokeninfo condition works the same way as userinfo but matches the tokeninfo
 
 .. note:: Similar to the userinfo condition, a policy with an active tokeninfo condition will
    throw an exception whenever the token object cannot be determined (usually from the serial).
+
+``token``
+^^^^^^^^^
+
+The token condition works on the database columns of the token. This would be
+``description``, ``otplen``, ``count``, ``serial`` but most importantly
+also ``failcount`` and ``tokentype``.
+
+.. note:: A policy with an active tokeninfo condition will
+   throw an exception whenever the token object cannot be determined.
+   It will also throw an error, if the request ``Key`` does not exist
+   as a database column.
+
+.. note:: The matching is case sensitive. Note, that e.g. token types are
+   stored in lower case in the database.
 
 
 ``HTTP Request Header``

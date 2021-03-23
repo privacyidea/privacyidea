@@ -921,7 +921,6 @@ def loadtokens_api(filename=None):
     known_types = ['aladdin-xml', 'oathcsv', "OATH CSV", 'yubikeycsv',
                    'Yubikey CSV', 'pskc']
     file_type = getParam(request.all_data, "type", required)
-    hashlib = getParam(request.all_data, "aladdin_hashlib")
     aes_validate_mac = getParam(request.all_data, "pskcValidateMAC", default='check_fail_hard')
     aes_psk = getParam(request.all_data, "psk")
     aes_password = getParam(request.all_data, "password")
@@ -990,8 +989,7 @@ def loadtokens_api(filename=None):
 
         import_token(serial,
                      TOKENS[serial],
-                     tokenrealms=tokenrealms,
-                     default_hashlib=hashlib)
+                     tokenrealms=tokenrealms)
 
     g.audit_object.log({'info': u"{0!s}, {1!s} (imported: {2:d})".format(file_type,
                                                            token_file,
