@@ -394,7 +394,7 @@
          ng-show="checkRight('policywrite')">
         <button ng-click="createPolicy()"
                 id="createPolicyButton"
-                ng-disabled="formPolicyAdd.$invalid"
+                ng-disabled="formPolicyAdd.$invalid || selectedScope.length === 0"
                 class="btn btn-primary">
             <span class="glyphicon glyphicon-plus"></span>
             <span translate>Create Policy</span>
