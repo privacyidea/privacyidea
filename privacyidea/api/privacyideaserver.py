@@ -84,13 +84,15 @@ def list_privacyidea():
     server_list = get_privacyideaservers()
     for server in server_list:
         if g.logged_in_user.get("role") == "admin":
-            res[server.config.identifier] = {"url": server.config.url,
+            res[server.config.identifier] = {"id": server.config.id,
+                                             "url": server.config.url,
                                              "tls": server.config.tls,
                                              "description":
                                                  server.config.description}
         else:
-            # We do not pass any information to a normal user!
-            res[server.config.identifier] = {"url": "",
+            # We only pass limited information to the user
+            res[server.config.identifier] = {"id": server.config.id,
+                                             "url": "",
                                              "tls": "",
                                              "description": ""}
 
