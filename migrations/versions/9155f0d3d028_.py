@@ -1,4 +1,4 @@
-"""empty message
+"""set TLS v1.2 for existing ldap resolvers while introducing the TLS v1.3 for new ones
 
 Revision ID: 9155f0d3d028
 Revises: d5870fd2f2a4
