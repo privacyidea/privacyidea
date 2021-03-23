@@ -123,12 +123,13 @@ class UserCacheTestCase(MyTestCase):
         self.assertEqual(entry.user_id, self.uid)
         self.assertEqual(entry.username, self.username)
         self.assertEqual(entry.resolver, self.resolvername1)
+        ts = entry.timestamp
 
         # delete the resolver, which also purges the cache
         self._delete_realm()
 
         # manually re-add the entry from above
-        UserCache(entry.username, entry.username, entry.resolver, entry.user_id, entry.timestamp).save()
+        UserCache(self.username, self.username, self.resolvername1, self.uid, ts).save()
 
         # the username is fetched from the cache
         u_name = get_username(self.uid, self.resolvername1)
@@ -162,12 +163,13 @@ class UserCacheTestCase(MyTestCase):
         self.assertEqual(entry.user_id, self.uid)
         self.assertEqual(entry.username, self.username)
         self.assertEqual(entry.resolver, self.resolvername1)
-
+        ts = entry.timestamp
+        
         # delete the resolver, which also purges the cache
         self._delete_realm()
 
         # manually re-add the entry from above
-        UserCache(entry.username, entry.username, entry.resolver, entry.user_id, entry.timestamp).save()
+        UserCache(self.username, self.username, self.resolvername1, self.uid, ts).save()
 
         # the username is fetched from the cache
         u_name = get_username(self.uid, self.resolvername1)
