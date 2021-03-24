@@ -135,7 +135,7 @@ def set_resolver(resolver=None):
             * EDITABLE           - True|False
             * START_TLS          - True|False
             * TLS_VERIFY         - True|False
-            * TLS_VERSION        - Defaults to 2
+            * TLS_VERSION
         SQL:
             * Database
             * Driver
