@@ -53,7 +53,7 @@ import traceback
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.api.lib.utils import required, optional
-from privacyidea.lib.utils import is_true,  create_tag_dict
+from privacyidea.lib.utils import is_true, create_tag_dict
 
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
