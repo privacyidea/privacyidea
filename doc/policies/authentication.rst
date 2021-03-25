@@ -144,6 +144,7 @@ If the user does not exist, the authentication request is successful.
 .. warning:: Only use this if you know exactly what you are doing.
 
 
+.. _smstext:
 
 smstext
 ~~~~~~~
