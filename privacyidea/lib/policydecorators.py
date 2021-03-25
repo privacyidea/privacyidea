@@ -174,14 +174,10 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
             if len(auth_times) == 2:
                 if re.match(r"^\d+$", auth_times[1]):
                     max_auths = int(auth_times[1])
-                    last_auth = None
                 else:
                     # Determine last_auth delta from policy
                     last_offset = parse_timedelta(auth_times[1])
                     last_auth = datetime.datetime.utcnow() - last_offset
-            else:
-                # If there is no last_auth, it is equal to first_auth
-                last_auth = datetime.datetime.utcnow() - first_offset
 
             result = verify_in_cache(user_object.login, user_object.realm,
                                      user_object.resolver, passw,
