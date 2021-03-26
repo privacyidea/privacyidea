@@ -57,13 +57,13 @@
         <div class="col-sm-4">
             <select class="form-control"
                     name="tls_version" id="tls_version"
-                    ng-init="selection ='Server Default'"
                     ng-model="params.TLS_VERSION">
-                    <option value="">Server Default</option>
-                    <option value="2">TLSv1.3</option>
-                    <option value="5">TLSv1.2</option>
-                    <option value="4">TLSv1.1</option>
-                    <option value="3">TLSv1</option>
+                    <!--ng-init="selection ='Server Default'"-->
+                    <option ng-repeat="o in tls_version_options"
+                            ng-selected="{{o.name==params.TLS_VERSION}}"
+                            value="{{o.value}}">
+                        {{o.name}}
+                    </option>
             </select>
         </div>
     </div>

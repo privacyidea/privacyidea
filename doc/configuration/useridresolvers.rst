@@ -196,8 +196,8 @@ which a LDAP server from the pool is down for extended periods of time.
 TLS Version
 ~~~~~~~~~~~
 
-When using TLS, you may specify the TLS version to use. Starting from version 3.6, privacyIDEA
-uses TLS v1.3 by default.
+When using TLS, you may specify the TLS version to use. Starting from version 3.6, privacyIDEA offers
+TLS v1.3 by default.
 
 
 TLS certificates

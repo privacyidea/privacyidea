@@ -767,8 +767,9 @@ class IdResolver (UserIdResolver):
         self.resolverId = self.uri
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
         self.tls_verify = is_true(config.get("TLS_VERIFY", False))
-        # Fallback to TLSv1. (int: 3, TLSv1.1: 4, v1.2: 5, TLS negotiation: 2)
+        # Fallback to DEFAULT_TLS_PROTOCOL (TLSv1: 3, TLSv1.1: 4, v1.2: 5, TLS negotiation: 2)
         self.tls_version = int(config.get("TLS_VERSION") or DEFAULT_TLS_PROTOCOL)
+        # If TLS_VERSION is 2, set tls_options to use TLS v1.3
         if self.tls_version:
             tls_version = self.tls_version
             tls_options = TLS_OPTIONS_1_3 if tls_version == int(ssl.PROTOCOL_TLS) else None

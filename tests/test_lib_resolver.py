@@ -25,7 +25,7 @@ from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver,
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
-from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP, TLS_OPTIONS_1_3)
+from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
 from privacyidea.lib.resolvers.HTTPResolver import HTTPResolver
 
 from privacyidea.lib.resolver import (save_resolver,
@@ -1596,7 +1596,7 @@ class LDAPResolverTestCase(MyTestCase):
                                 '"givenname" : "givenName" }',
                   'UIDTYPE': 'unknownType',
                   'CACHE_TIMEOUT': 0,
-                  'TLS_VERIFY': '1',
+                  'TLS_VERIFY': '1'
         }
         start_tls_resolver = LDAPResolver()
         start_tls_resolver.loadConfig(config)
