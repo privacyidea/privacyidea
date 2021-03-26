@@ -183,6 +183,11 @@ message, set with this policy.
 
 Default: *<otp>*
 
+.. note:: The length of an SMS is limited to 140 characters due to the definition of SMS.
+   You should take care, that the *smstext* does not exceed this limit. SMS gateways could
+   reject to long messages or the delivery could fail.
+
+
 smsautosend
 ~~~~~~~~~~~
 
