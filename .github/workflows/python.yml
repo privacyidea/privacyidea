@@ -86,22 +86,14 @@ jobs:
           ${{ runner.os }}-pip-py_${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
 
-    - name: Install venv for Python 2.7
-      # of course Python 2.7 needs some special treatment
-      run: |
-        pip install py2venv
-      if: matrix.python-version == '2.7'
-
     - name: Install dependencies
       # create the virtual environment
       run: |
-        python -m venv ~/venv && . ~/venv/bin/activate
         python -m pip install --upgrade pip setuptools
         pip install -r tests/requirements.txt
 
     - name: Test with pytest
       run: |
-        . ~/venv/bin/activate
         pip freeze
         python -b -m pytest -v --cov=privacyidea tests/
 
@@ -117,6 +109,8 @@ jobs:
   finish:
     # run this job after matrix build is finished
     needs: build
+    # always run this job, regardless of a failing matrix-job
+    if: always()
     runs-on: ubuntu-18.04
     steps:
     - name: Checkout code for coverage
