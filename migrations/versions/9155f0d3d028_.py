@@ -53,11 +53,6 @@ class ResolverConfig(Base):
 
 
 class Realm(Base):
-    """
-    The realm table contains the defined realms. User Resolvers can be
-    grouped to realms. This very table contains just contains the names of
-    the realms. The linking to resolvers is stored in the table "resolverrealm".
-    """
     __tablename__ = 'realm'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = sa.Column(sa.Integer, Sequence("realm_seq"), primary_key=True,
@@ -72,16 +67,10 @@ class Realm(Base):
 
 
 class ResolverRealm(Base):
-    """
-    This table stores which Resolver is located in which realm
-    This is a N:M relation
-    """
     __tablename__ = 'resolverrealm'
     id = sa.Column(sa.Integer, Sequence("resolverrealm_seq"), primary_key=True)
     resolver_id = sa.Column(sa.Integer, sa.ForeignKey("resolver.id"))
     realm_id = sa.Column(sa.Integer, sa.ForeignKey("realm.id"))
-    # If there are several resolvers in a realm, the priority is used the
-    # find a user first in a resolver with a higher priority (i.e. lower number)
     priority = sa.Column(sa.Integer)
     resolver = orm.relationship(Resolver,
                                lazy="joined",
