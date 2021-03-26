@@ -2699,16 +2699,8 @@ class AuthCache(MethodsMixin, db.Model):
         self.realm = realm
         self.resolver = resolver
         self.authentication = authentication
-
-        if first_auth:
-            self.first_auth = first_auth
-        else:
-            self.first_auth = datetime.utcnow()
-
-        if last_auth:
-            self.last_auth = last_auth
-        else:
-            self.last_auth = first_auth
+        self.first_auth = first_auth if first_auth else datetime.utcnow()
+        self.last_auth = last_auth if last_auth else self.first_auth
 
 
 ### Periodic Tasks
