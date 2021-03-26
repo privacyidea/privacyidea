@@ -19,6 +19,7 @@ from sqlalchemy.schema import Sequence
 
 Base = declarative_base()
 
+
 class Resolver(Base):
     __tablename__ = 'resolver'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
