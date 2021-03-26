@@ -356,13 +356,20 @@ type: string
 
 The Authentication Cache caches the credentials of a successful
 authentication and allows to use the same credentials - also with an OTP
-value - for the specified amount of time.
+value - for the specified amount of time and optionally for a specified number
+of authentications.
 
-The time to cache the credentials can be specified like "4h", "5m", "2d"
-(hours, minutes days) or "4h/5m". The notation 4h/5m means, that credentials
-are cached for 4 hours, but only may be used again, if every 5 minutes the
+The time to cache the credentials can be specified like "4h", "5m", "2d", "3s"
+(hours, minutes, days, seconds). The number of allowed authentications can be
+specified as a whole number, greater than zero.
+
+The notation "4h/5m" means, that credentials
+are cached for 4 hours, but may only be used again, if every 5 minutes the
 authentication occurs. If the authentication with the same credentials would
 not occur within 5 minutes, the credentials can not be used anymore.
+
+The notation "2m/3" means, that credentials are cached for 2 minutes, but may only be used 3 times
+in this timeframe.
 
 In future implementations the caching of the credentials could also be
 dependent on the clients IP address and the user agent.
