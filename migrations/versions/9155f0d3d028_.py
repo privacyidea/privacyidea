@@ -1,4 +1,4 @@
-"""v3.6: set TLS v1.0 for existing ldap resolvers as legacy behavior while setting TLS v1.3 as default in v3.6
+"""v3.6: set TLS v1.0 for existing ldap resolvers to keep legacy behavior
 
 Revision ID: 9155f0d3d028
 Revises: d5870fd2f2a4
@@ -32,9 +32,6 @@ class Resolver(Base):
     config_list = orm.relationship('ResolverConfig',
                                   lazy='select',
                                   backref='resolver')
-    realm_list = orm.relationship('ResolverRealm',
-                                 lazy='select',
-                                 foreign_keys='ResolverRealm.resolver_id')
 
 
 class ResolverConfig(Base):
@@ -51,37 +48,6 @@ class ResolverConfig(Base):
                                           name='rcix_2'),
                       {'mysql_row_format': 'DYNAMIC'})
 
-
-class Realm(Base):
-    __tablename__ = 'realm'
-    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
-    id = sa.Column(sa.Integer, Sequence("realm_seq"), primary_key=True,
-                   nullable=False)
-    name = sa.Column(sa.Unicode(255), default=u'',
-                     unique=True, nullable=False)
-    default = sa.Column(sa.Boolean(), default=False)
-    option = sa.Column(sa.Unicode(40), default=u'')
-    resolver_list = orm.relationship('ResolverRealm',
-                                     lazy='select',
-                                     foreign_keys='ResolverRealm.realm_id')
-
-
-class ResolverRealm(Base):
-    __tablename__ = 'resolverrealm'
-    id = sa.Column(sa.Integer, Sequence("resolverrealm_seq"), primary_key=True)
-    resolver_id = sa.Column(sa.Integer, sa.ForeignKey("resolver.id"))
-    realm_id = sa.Column(sa.Integer, sa.ForeignKey("realm.id"))
-    priority = sa.Column(sa.Integer)
-    resolver = orm.relationship(Resolver,
-                               lazy="joined",
-                               foreign_keys="ResolverRealm.resolver_id")
-    realm = orm.relationship(Realm,
-                            lazy="joined",
-                            foreign_keys="ResolverRealm.realm_id")
-    __table_args__ = (sa.UniqueConstraint('resolver_id',
-                                          'realm_id',
-                                          name='rrix_2'),
-                      {'mysql_row_format': 'DYNAMIC'})
 
 
 def upgrade():

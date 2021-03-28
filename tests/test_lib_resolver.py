@@ -1610,7 +1610,8 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertIn("protocol: 2", ldap3_tls_config)
             self.assertIn("CA certificates file: present", ldap3_tls_config)
             self.assertTrue("verify mode: VerifyMode.CERT_REQUIRED" in ldap3_tls_config
-                            or "verify mode: 2" in ldap3_tls_config)
+                            or "verify mode: 2" in ldap3_tls_config
+                            or "verify mode: True" in ldap3_tls_config)
 
     def test_24b_tls_options(self):
         @ldap3mock.activate

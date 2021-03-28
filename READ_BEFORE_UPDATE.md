@@ -1,5 +1,15 @@
 # Update Notes
 
+## Update from 3.5 to 3.6
+
+* The default TLS_VERSION for LDAP resolvers has been changed from 1.0 to 1.3.
+  Existing resolvers should not be changed. However, if an LDAP resolver has not
+  TLS_VERSION configured, up to 3.5 TLS version 1.0 was used.
+  A migration script will take care, that resolvers without a configued TLS_VERSION
+  will have TLS_VERSION 1.0 configured to keep the existing behaviour.
+
+Be sure to run the schema update script!
+
 ## Update from 3.4 to 3.5
 
 * The audit log table now also records the start date and the duration
