@@ -110,6 +110,9 @@ elif os.path.isfile("/etc/ssl/certs/ca-bundle.crt"):
 else:
     DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
 
+DEFAULT_TLS_PROTOCOL = ssl.PROTOCOL_TLS
+
+TLS_OPTIONS_1_3 = (ssl.OP_NO_TLSv1_2, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1, ssl.OP_NO_SSLv3)
 
 class LockingServerPool(ldap3.ServerPool):
     """
@@ -484,6 +487,32 @@ class IdResolver (UserIdResolver):
                 raise Exception("Wrong credentials")
             self.i_am_bound = True
 
+    @staticmethod
+    def _get_tls_context(ldap_uri=None, start_tls=False, tls_version=None, tls_verify=None,
+                         tls_ca_file=None, tls_options=None):
+        """
+        This method creates the Tls object to be used with ldap3.
+
+        """
+        if ldap_uri.lower().startswith("ldaps") or is_true(start_tls):
+            if not tls_version:
+                tls_version = int(DEFAULT_TLS_PROTOCOL)
+            # If TLS_VERSION is 2, set tls_options to use TLS v1.3
+            if not tls_options:
+                tls_options = TLS_OPTIONS_1_3 if tls_version == int(ssl.PROTOCOL_TLS) else None
+            if tls_verify:
+                tls_ca_file = tls_ca_file or DEFAULT_CA_FILE
+            else:
+                tls_verify = ssl.CERT_NONE
+            tls_context = Tls(validate=tls_verify,
+                              version=int(tls_version),
+                              ssl_options=tls_options,
+                              ca_certs_file=tls_ca_file)
+        else:
+            tls_context = None
+
+        return tls_context
+
     @cache
     def getUserInfo(self, userId):
         """
@@ -764,17 +793,13 @@ class IdResolver (UserIdResolver):
         self.resolverId = self.uri
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
         self.tls_verify = is_true(config.get("TLS_VERIFY", False))
-        # Fallback to TLSv1. (int: 3, TLSv1.1: 4, v1.2: 5)
-        self.tls_version = int(config.get("TLS_VERSION") or ssl.PROTOCOL_TLSv1)
-
+        # Fallback to DEFAULT_TLS_PROTOCOL (TLSv1: 3, TLSv1.1: 4, v1.2: 5, TLS negotiation: 2)
+        self.tls_version = int(config.get("TLS_VERSION") or DEFAULT_TLS_PROTOCOL)
         self.tls_ca_file = config.get("TLS_CA_FILE") or DEFAULT_CA_FILE
-        if self.tls_verify and (self.uri.lower().startswith("ldaps") or
-                                    self.start_tls):
-            self.tls_context = Tls(validate=ssl.CERT_REQUIRED,
-                                   version=self.tls_version,
-                                   ca_certs_file=self.tls_ca_file)
-        else:
-            self.tls_context = None
+        self.tls_context = self._get_tls_context(ldap_uri=self.uri, start_tls=self.start_tls,
+                                            tls_version=self.tls_version,
+                                            tls_verify=self.tls_verify,
+                                            tls_ca_file=self.tls_ca_file)
         self.serverpool_persistent = is_true(config.get("SERVERPOOL_PERSISTENT", False))
         self.serverpool_rounds = int(config.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
@@ -983,16 +1008,12 @@ class IdResolver (UserIdResolver):
         size_limit = int(param.get("SIZELIMIT", 500))
         serverpool_rounds = int(param.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         serverpool_skip = int(param.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
-        if is_true(param.get("TLS_VERIFY")) \
-                and (ldap_uri.lower().startswith("ldaps") or
-                                    param.get("START_TLS")):
-            tls_version = int(param.get("TLS_VERSION") or ssl.PROTOCOL_TLSv1)
-            tls_ca_file = param.get("TLS_CA_FILE") or DEFAULT_CA_FILE
-            tls_context = Tls(validate=ssl.CERT_REQUIRED,
-                              version=tls_version,
-                              ca_certs_file=tls_ca_file)
-        else:
-            tls_context = None
+        tls_context = cls._get_tls_context(ldap_uri=ldap_uri,
+                                           start_tls=param.get("START_TLS"),
+                                           tls_version=param.get("TLS_VERSION"),
+                                           tls_verify=param.get("TLS_VERIFY"),
+                                           tls_ca_file=param.get("TLS_CA_FILE"),
+                                           tls_options=None)
         get_info = get_info_configuration(is_true(param.get("NOSCHEMAS")))
         try:
             server_pool = cls.create_serverpool(ldap_uri, timeout,
