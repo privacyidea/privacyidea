@@ -423,7 +423,7 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
                                                          "privacyidea.lib.auditmodules.sqlaudit"],
                             "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
                             "PI_AUDIT_NO_SIGN": True,
-                            "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')},
+                            "PI_AUDIT_SQL_URI": self.app.config['SQLALCHEMY_DATABASE_URI']},
                            startdate=None)
         self.assertFalse(a.has_data)
         a.log({"action": "something_test_30"})
@@ -456,7 +456,7 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
                                                          "privacyidea.lib.auditmodules.sqlaudit"],
                             "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
                             "PI_AUDIT_NO_SIGN": True,
-                            "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')})
+                            "PI_AUDIT_SQL_URI": self.app.config['SQLALCHEMY_DATABASE_URI']})
         a.log({"action": "something_test_35"})
         a.add_to_log({'action_detail': 'some detail'})
         a.add_policy('some policy')
@@ -491,5 +491,5 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
                                          "privacyidea.lib.auditmodules.sqlaudit"],
             "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
             "PI_AUDIT_NO_SIGN": True,
-            "PI_AUDIT_SQL_URI": 'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')}
+            "PI_AUDIT_SQL_URI": self.app.config['SQLALCHEMY_DATABASE_URI']}
         self.assertRaises(ImportError, ContainerAudit, module_config)

@@ -1,5 +1,5 @@
 # coding: utf-8
-from privacyidea.models import MonitoringStats
+from privacyidea.models import MonitoringStats, db
 from privacyidea.lib.monitoringstats import (write_stats, delete_stats,
                                              get_stats_keys, get_values,
                                              get_last_value)
@@ -23,6 +23,10 @@ class TokenModelTestCase(MyTestCase):
 
         # Now we write a new value, but with the parameter to delete old values
         write_stats(key1, 14, reset_values=True)
+        # Since the sqlstats monitoring module handles the db in its own
+        # session, we need to refresh the current session in order to retrieve
+        # the updated (removed) data
+        db.session.commit()
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 1)
 
     def test_02_delete_stats(self):
@@ -31,22 +35,26 @@ class TokenModelTestCase(MyTestCase):
         write_stats(key1, 12, timestamp=now- timedelta(days=1))
         write_stats(key1, 13, timestamp=now)
         write_stats(key1, 14, timestamp=now + timedelta(days=1))
+        db.session.commit()
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 3)
 
         # delete the last two entries
         r = delete_stats(key1, start_timestamp=now - timedelta(minutes=60))
 
         # check there is only one entry
+        db.session.commit()
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 1)
         self.assertEqual(r, 2)
 
         # Again write three entries
         write_stats(key1, 13, timestamp=now)
         write_stats(key1, 14, timestamp=now + timedelta(days=1))
+        db.session.commit()
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 3)
 
         # Delete the first two entries
         r = delete_stats(key1, end_timestamp=now + timedelta(minutes=60))
+        db.session.commit()
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 1)
         self.assertEqual(r, 2)
 
@@ -63,6 +71,7 @@ class TokenModelTestCase(MyTestCase):
         write_stats("key2", 12)
         write_stats("key3", 12)
 
+        db.session.commit()
         keys = get_stats_keys()
         self.assertEqual(len(keys), 3)
         self.assertTrue("key1" in keys)
@@ -87,6 +96,7 @@ class TokenModelTestCase(MyTestCase):
         write_stats("key1", 9, timestamp=ts - timedelta(minutes=2))
         write_stats("key1", 10, timestamp=ts - timedelta(minutes=1))
 
+        db.session.commit()
         r = get_values("key1")
         self.assertEqual(len(r), 10)
         # The third entry is a 3
