@@ -11,10 +11,10 @@ from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               DEFAULT_CHALLENGE_TEXT, strip_key,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
+                                              PUBLIC_KEY_SERVER,
                                               PushAllowPolling, POLLING_ALLOWED)
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.token import get_tokens, remove_token, init_token
-from privacyidea.lib.tokens.pushtoken import PUBLIC_KEY_SERVER
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.crypto import geturandom
 from privacyidea.models import Token, Challenge
@@ -207,21 +207,7 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(parsed_server_pubkey.public_numbers(), parsed_stripped_server_pubkey.public_numbers())
         remove_token(self.serial1)
 
-    def test_02_api_enroll(self):
-        self.authenticate()
-
-        # Failed enrollment due to missing policy
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"type": "push",
-                                                 "genkey": 1},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertNotEqual(res.status_code,  200)
-            error = res.json.get("result").get("error")
-            self.assertEqual(error.get("message"), "Missing enrollment policy for push token: push_firebase_configuration")
-            self.assertEqual(error.get("code"), 303)
-
+    def test_02a_lib_enroll(self):
         r = set_smsgateway(self.firebase_config_name,
                            u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                            "myFB", FB_CONFIG_VALS)
@@ -229,94 +215,7 @@ class PushTokenTestCase(MyTestCase):
         set_policy("push1", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
                                                self.firebase_config_name))
-
-        # 1st step
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"type": "push",
-                                                 "genkey": 1},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code,  200)
-            detail = res.json.get("detail")
-            serial = detail.get("serial")
-            self.assertEqual(detail.get("rollout_state"), "clientwait")
-            self.assertTrue("pushurl" in detail)
-            # check that the new URL contains the serial number
-            self.assertTrue("&serial=PIPU" in detail.get("pushurl").get("value"))
-            self.assertTrue("appid=" in detail.get("pushurl").get("value"))
-            self.assertTrue("appidios=" in detail.get("pushurl").get("value"))
-            self.assertTrue("apikeyios=" in detail.get("pushurl").get("value"))
-            self.assertFalse("otpkey" in detail)
-            enrollment_credential = detail.get("enrollment_credential")
-
-        # 2nd step. Failing with wrong serial number
-        with self.app.test_request_context('/ttype/push',
-                                           method='POST',
-                                           data={"serial": "wrongserial",
-                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
-                                                 "fbtoken": "firebaseT"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 404, res)
-            status = res.json.get("result").get("status")
-            self.assertFalse(status)
-            error = res.json.get("result").get("error")
-            self.assertEqual(error.get("message"),
-                             "No token with this serial number in the rollout state 'clientwait'.")
-
-        # 2nd step. Fails with missing enrollment credential
-        with self.app.test_request_context('/ttype/push',
-                                           method='POST',
-                                           data={"serial": serial,
-                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
-                                                 "fbtoken": "firebaseT",
-                                                 "enrollment_credential": "WRonG"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
-            status = res.json.get("result").get("status")
-            self.assertFalse(status)
-            error = res.json.get("result").get("error")
-            self.assertEqual(error.get("message"),
-                             "ERR905: Invalid enrollment credential. You are not authorized to finalize this token.")
-
-        # 2nd step: as performed by the smartphone
-        with self.app.test_request_context('/ttype/push',
-                                           method='POST',
-                                           data={"enrollment_credential": enrollment_credential,
-                                                 "serial": serial,
-                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
-                                                 "fbtoken": "firebaseT"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            detail = res.json.get("detail")
-            # still the same serial number
-            self.assertEqual(serial, detail.get("serial"))
-            self.assertEqual(detail.get("rollout_state"), "enrolled")
-            # Now the smartphone gets a public key from the server
-            augmented_pubkey = "-----BEGIN RSA PUBLIC KEY-----\n{}\n-----END RSA PUBLIC KEY-----\n".format(
-                detail.get("public_key"))
-            parsed_server_pubkey = serialization.load_pem_public_key(
-                to_bytes(augmented_pubkey),
-                default_backend())
-            self.assertIsInstance(parsed_server_pubkey, RSAPublicKey)
-            pubkey = detail.get("public_key")
-
-            # Now check, what is in the token in the database
-            toks = get_tokens(serial=serial)
-            self.assertEqual(len(toks), 1)
-            token_obj = toks[0]
-            self.assertEqual(token_obj.token.rollout_state, u"enrolled")
-            self.assertTrue(token_obj.token.active)
-            tokeninfo = token_obj.get_tokeninfo()
-            self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
-            self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
-            self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(), pubkey)
-            # The token should also contain the firebase config
-            self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), self.firebase_config_name)
-            remove_token(serial=serial)
-
-        delete_smsgateway(self.firebase_config_name)
-        delete_policy('push1')
+        self._create_push_token()
 
     @responses.activate
     def test_03a_api_authenticate_fail(self):

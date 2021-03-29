@@ -68,30 +68,10 @@
                            ng-keypress="($event.which==13)?get():return"
                 ></pi-filter>
             </th>
-            <th class="pifilter" ng-show="loggedInUser.role == 'admin' &&
-            user_details_in_tokenlist">
-                <button pi-sort-by="resolver"
-                        class="btn btn-default
-                         unsorted"
-                        translate>UserId
-                </button>
-                <pi-filter ng-model="userIdFilter"
-                           ng-change="get('livesearch')"
-                           ng-keypress="($event.which==13)?get():return"
-                ></pi-filter>
-            </th>
-            <th class="pifilter" ng-show="loggedInUser.role == 'admin' &&
-            user_details_in_tokenlist">
-                <button pi-sort-by="user_id"
-                        class="btn btn-default
-                         unsorted"
-                        translate>User Store
-                </button>
-                <pi-filter ng-model="resolverFilter"
-                           ng-change="get('livesearch')"
-                           ng-keypress="($event.which==13)?get():return"
-                ></pi-filter>
-            </th>
+            <th ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist"
+                translate>UserId</th>
+            <th ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist"
+                translate>Resolver</th>
         </tr>
         </thead>
         <tbody>

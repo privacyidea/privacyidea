@@ -9,6 +9,7 @@ from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.models import Audit
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
+from privacyidea.lib.auditmodules.base import Audit as BaseAudit
 
 PWFILE = "tests/testdata/passwords"
 
@@ -45,6 +46,18 @@ class APIAuditTestCase(MyApiTestCase):
             self.assertTrue(json_response.get("result").get("status"), res)
             self.assertTrue(json_response.get("result").get("value").get(
                 "current") == 1, res)
+            # check that we have all available entries in the audit data
+            # create a fake base Audit object to get the available_columns prop
+            a = BaseAudit()
+            self.assertEqual(set(json_response['result']['value']['auditcolumns']),
+                             set(a.available_audit_columns),
+                             json_response['result']['value']['auditcolumns'])
+            self.assertEqual(set(json_response['result']['value']['auditdata'][0].keys()),
+                             set(a.available_audit_columns),
+                             json_response['result']['value']['auditcolumns'])
+
+        # TODO: test audit columns if HIDE_AUDIT_COLUMNS policy is set.
+
         # check for entry in audit log
         aentry = self.find_most_recent_audit_entry(action='GET /audit/')
         self.assertEqual(aentry['action'], 'GET /audit/', aentry)
@@ -61,7 +74,7 @@ class APIAuditTestCase(MyApiTestCase):
             cols = json_response.get("result").get("value").get("auditcolumns")
             self.assertIn("number", cols)
             self.assertIn("serial", cols)
-            self.assertEqual(18, len(cols))
+            self.assertEqual(21, len(cols))
 
     def test_01_get_audit_csv(self):
         @contextmanager

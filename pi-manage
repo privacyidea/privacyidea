@@ -327,7 +327,8 @@ def create(directory="/var/lib/privacyidea/backup/",
 
     if not enckey:
         # Exclude enckey from backup
-        backup_call.append("--exclude={0!s}".format(enc_file))
+        # since tar v1.30 --exclude cannot be appended
+        backup_call.insert(1, "--exclude={0!s}".format(enc_file))
 
     call(backup_call)
     os.unlink(sqlfile)
@@ -1497,6 +1498,8 @@ def _import_conf_policy(config_list, cleanup=False, update=False):
                            "check_all_resolvers", False),
                        client=policy.get("client"),
                        condition=policy.get("condition"),
+                       pinode=policy.get("pinode"),
+                       priority=policy.get("priority"),
                        realm=policy.get("realm"),
                        resolver=policy.get("resolver"),
                        scope=policy.get("scope"),
