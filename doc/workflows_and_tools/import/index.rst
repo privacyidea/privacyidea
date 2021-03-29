@@ -44,6 +44,7 @@ import the GPG encrypted file to privacyIDEA!
 
       gpg -e -a -r <keyid>  import.csv
 
+.. _import_oath_csv:
 
 OATH CSV
 --------
@@ -89,6 +90,9 @@ For TAN tokens it looks like this::
 
 The list of tans is a whitespace separated list.
 
+.. note:: The Hash algorithm (SHA1, SHA256, SHA512) is derived from the length of the **seed**.
+   If the length of the seed does not match any Hash algorithm, the default SHA1 is used.
+
 Import format version 2
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -108,16 +112,16 @@ and the first three colums will be the user:
 Yubikey CSV
 -----------
 
-Here you can import the CSV file that is written by the Yubikey personalization
-tool [#yubipers]_.
+Here you can import the CSV file that is written by the :ref:`ykpersgui` [#yubipers]_.
 privacyIDEA can import all Yubikey modes, either Yubico mode or HOTP mode.
 
 .. figure:: yubikey.png
    :width: 500
 
-.. note:: There is an annoying drawback of the personalization tool: If you a 
-   initializing 
-   several HOTP yubikeys it will not write the serial number to the file.
+.. note:: The Yubikey in HOTP mode defaults to the Hash algorithm SHA1.
+
+For more information about enrolling Yubikeys see :ref:`yubikey_enrollment_tools`.
+
 
 PSKC
 ----
@@ -127,6 +131,10 @@ OATH compliant token vendors provide the token seeds in a PSKC file.
 privacyIDEA lets you import PSKC files.
 All necessary information (OTP length, Hash algorithm, token type) are read
 from the file.
+
+.. note:: In PSKC the Hash algorithm is specified in the ``<Suite>`` tag.
+   If it is not specified, SHA1 is used as the default. The length of the
+   seed is *not* used to determine the Hash algorithm.
 
 PSKC files can be encrypted - either with a password or an AES key. You can
 provide this during the upload.
@@ -157,7 +165,10 @@ This is the format to choose, if you have a file, that looks like this::
         </Token>
      </Tokens>
 
-.. note:: Safenet nowadays might provide you an XML file, which is probably a PKCS file.
+.. note:: The HASH algorithm defaults to SHA1. Unless the length of the seed is 64 characters, then SHA256
+   is assumed.
+
+.. note:: This format is deprecated. Safenet nowadays might provide you an XML file, which is probably a PKCS file.
    Please check the file contents!
 
 

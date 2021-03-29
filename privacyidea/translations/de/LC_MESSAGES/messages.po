@@ -8,16 +8,17 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2020-12-14 12:00+0100\n"
-"PO-Revision-Date: 2020-12-14 12:01+0100\n"
-"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"PO-Revision-Date: 2021-03-02 10:50+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/de/>\n"
 "Language: de\n"
-"Language-Team: de <LL@li.org>\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.5\n"
 "Generated-By: Babel 2.4.0\n"
-"X-Generator: Poedit 2.0.6\n"
 
 #: api/auth.py:220
 msgid "Authentication failure. Unknown realm: {0!s}."
@@ -351,7 +352,7 @@ msgstr ""
 
 #: lib/policy.py:1653
 msgid "The admin is allowed to download the complete auditlog."
-msgstr "Der  Administrator kann das Audit-Log herunterladen."
+msgstr "Der Administrator kann das Audit-Log herunterladen."
 
 #: lib/policy.py:1658
 msgid "Admin is allowed to add users in a userstore/UserIdResolver."
@@ -609,8 +610,8 @@ msgstr ""
 #: lib/policy.py:1961
 msgid "The length of the password in case of temporary token (lost token)."
 msgstr ""
-"Die Länge des Passworts für einen temporären Token (Workflow \"Verlorener Token"
-"\")"
+"Die Länge des Passworts für einen temporären Token (Workflow \"Verlorener "
+"Token\")."
 
 #: lib/policy.py:1965
 msgid ""
@@ -997,7 +998,8 @@ msgid ""
 "action, buttons of disabled actions are hidden."
 msgstr ""
 "Buttons von Funktionen, die ein Benutzer nicht ausführen darf, werden "
-"ausgeblendet. (Das Standardverhalten ist, dass die Buttons deaktiviert werden)"
+"ausgeblendet (Das Standardverhalten ist, dass die Buttons deaktiviert "
+"werden)."
 
 #: lib/policy.py:2281
 msgid "If this is checked, the seed will be displayed as text during enrollment."
@@ -1481,8 +1483,8 @@ msgid ""
 "like +10m, +24h, +7d."
 msgstr ""
 "Der Token wird bis zu dem angegebenen Datum gültig sein. Dies kann ein fixes "
-"Datum oder eine Differenz wie +10m, +24h, +7d sein (10 Minuten, 24 Stunden, 7 "
-"Tage)"
+"Datum oder eine Differenz wie +10m, +24h, +7d sein (10 Minuten, 24 Stunden, "
+"7 Tage)."
 
 #: lib/eventhandler/tokenhandler.py:239
 msgid "Set the new count window of the token."
@@ -1547,7 +1549,8 @@ msgstr "Benachrichtigung an diesen Benutzer senden."
 
 #: lib/eventhandler/usernotification.py:172
 msgid "Any email address, to which the notification should be sent."
-msgstr "Eine EMail-Adresse, an die die Benachrichtigung gesendet werden soll."
+msgstr ""
+"Eine EMail-Adresse, an welche die Benachrichtigung gesendet werden soll."
 
 #: lib/eventhandler/usernotification.py:181
 msgid "Send the user notification via a predefined SMS gateway."
@@ -1683,11 +1686,11 @@ msgstr ""
 
 #: lib/smsprovider/HttpSMSProvider.py:257
 msgid "Username in case of basic authentication."
-msgstr "Benutzername (Basic Authentication)"
+msgstr "Benutzername (Basic Authentication)."
 
 #: lib/smsprovider/HttpSMSProvider.py:261
 msgid "Password in case of basic authentication."
-msgstr "Passwort (Basic Authentication)"
+msgstr "Passwort (Basic Authentication)."
 
 #: lib/smsprovider/HttpSMSProvider.py:265
 msgid "Should the SSL certificate be verified."
@@ -1860,8 +1863,7 @@ msgstr "EMail Token"
 
 #: lib/tokens/emailtoken.py:154
 msgid "EMail: Send a One Time Password to the users email address."
-msgstr ""
-"EMail: Ein Einmalpasswort über Email an die Mail-Adresse des Benutzers versenden."
+msgstr "EMail: Ein Einmalpasswort an die EMail-Adresse des Benutzers versenden."
 
 #: lib/tokens/emailtoken.py:162
 msgid ""
@@ -2497,7 +2499,8 @@ msgstr "Lediglich die angegebenen WebAuthn Token sind autorisiert."
 #: lib/tokens/webauthntoken.py:604
 msgid "A human readable name for the organization rolling out WebAuthn tokens."
 msgstr ""
-"Ein menschenlesbarer Name der Organisation, die die WebAuthn Token ausstellt."
+"Ein menschenlesbarer Name der Organisation, welche die WebAuthn Token "
+"ausstellt."
 
 #: lib/tokens/webauthntoken.py:609
 msgid ""

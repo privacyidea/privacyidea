@@ -23,7 +23,7 @@ AES (:ref:`yubikey_token`),
 :ref:`hotp_token`
 and :ref:`yubico_token` Cloud.
 You can initialize the Yubikey yourself, so that the secret key is not known
-to the vendor.
+to the vendor. The process is described in :ref:`yubikey_enrollment_tools`.
 
 **eToken Pass**. The eToken Pass is a push button token by SafeNet. It can be
 initialized with a special hardware device. Or you get a seed file, that you

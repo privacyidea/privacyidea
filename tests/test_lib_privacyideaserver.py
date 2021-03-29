@@ -132,3 +132,77 @@ class PrivacyIDEAServerTestCase(MyTestCase):
         r = PrivacyIDEAServer.request(pi.config, "user", "password")
         self.assertFalse(r)
 
+    @responses.activate
+    def test_05_privacyidea_validate_check(self):
+        responses.add(responses.POST, "https://privacyidea/pi/validate/check",
+                      body="""{
+            "jsonrpc": "2.0",
+            "signature": "8714492288983608958721372435263469282038130269793819687538718333085851022315074567013564786433032592569773009757668260857150988825993253128403096686276017572870299270974318705442428477018018734211619614135162719525545735285162164985627482472020309913143284756699606758573589339750891246114721488327919685939018812698986042837837048205963507243718362073386749929275433723467277740468538209437683755941724140343215877868596281187733952567488886126455218397004400817126119660003078762499546137083926344365458736163867631154552432520453852071998486914168310985851091111203094188983006153929089352703802214328258347608348",
+            "detail": null,
+            "version": "privacyIDEA 2.20.dev2",
+            "result": {
+              "status": true,
+              "value": true},
+            "time": 1503561105.028947,
+            "id": 1
+                }""",
+                      content_type="application/json")
+
+        responses.add(responses.POST, "https://privacyidea/pi2/validate/check",
+                      body="""{
+        "jsonrpc": "2.0",
+        "signature": "8714492288983608958721372435263469282038130269793819687538718333085851022315074567013564786433032592569773009757668260857150988825993253128403096686276017572870299270974318705442428477018018734211619614135162719525545735285162164985627482472020309913143284756699606758573589339750891246114721488327919685939018812698986042837837048205963507243718362073386749929275433723467277740468538209437683755941724140343215877868596281187733952567488886126455218397004400817126119660003078762499546137083926344365458736163867631154552432520453852071998486914168310985851091111203094188983006153929089352703802214328258347608348",
+        "detail": null,
+        "version": "privacyIDEA 2.20.dev2",
+        "result": {
+          "status": false},
+        "time": 1503561105.028947,
+        "id": 1
+        }""",
+                      content_type="application/json",
+                      status=404)
+
+        responses.add(responses.POST, "https://privacyidea/pi3/validate/check",
+                      body="""{
+                "jsonrpc": "2.0",
+                "signature": "8714492288983608958721372435263469282038130269793819687538718333085851022315074567013564786433032592569773009757668260857150988825993253128403096686276017572870299270974318705442428477018018734211619614135162719525545735285162164985627482472020309913143284756699606758573589339750891246114721488327919685939018812698986042837837048205963507243718362073386749929275433723467277740468538209437683755941724140343215877868596281187733952567488886126455218397004400817126119660003078762499546137083926344365458736163867631154552432520453852071998486914168310985851091111203094188983006153929089352703802214328258347608348",
+                "detail": null,
+                "version": "privacyIDEA 2.20.dev2",
+                "result": {
+                  "status": true,
+                  "value": false},
+                "time": 1503561105.028947,
+                "id": 1
+                }""",
+                      content_type="application/json",
+                      status=404)
+
+        # successful authentication
+        r = add_privacyideaserver(identifier="pi", url="https://privacyidea/pi",
+                                  tls=False)
+        self.assertTrue(r > 0)
+        pi = get_privacyideaserver("pi")
+        r = pi.validate_check("user", "password")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json().get("result").get("value"))
+
+        # failed  authentication 404
+        r = add_privacyideaserver(identifier="pi2",
+                                  url="https://privacyidea/pi2",
+                                  tls=False)
+        self.assertTrue(r > 0)
+        pi = get_privacyideaserver("pi2")
+        r = pi.validate_check("user", "password", realm="realmA")
+        self.assertEqual(r.status_code, 404)
+        self.assertFalse(r.json().get("result").get("value"))
+
+        # failed  authentication value=false
+        r = add_privacyideaserver(identifier="pi3",
+                                  url="https://privacyidea/pi3",
+                                  tls=False)
+        self.assertTrue(r > 0)
+        pi = get_privacyideaserver("pi3")
+        r = pi.validate_check("user", "password", transaction_id=102)
+        self.assertEqual(404, r.status_code)
+        self.assertFalse(r.json().get("result").get("value"))
+

@@ -183,4 +183,5 @@ def single_page_application():
         'page_title': page_title
     }
 
-    return send_html(render_template("index.html", **render_context))
+    index_page = current_app.config.get("PI_INDEX_HTML") or "index.html"
+    return send_html(render_template(index_page, **render_context))

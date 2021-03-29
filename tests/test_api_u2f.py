@@ -1,14 +1,20 @@
+# -*- coding: utf-8 -*-
+
 from .base import MyApiTestCase
-import json
 import binascii
+import struct
+from hashlib import sha256
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import hashes
+
 from privacyidea.lib.token import assign_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.lib.tokens.u2f import (sign_challenge, check_response,
-                                        url_encode)
+from privacyidea.lib.tokens.u2f import (check_response, url_encode)
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.tokens.u2ftoken import U2FACTION
 from privacyidea.models import Challenge
+from privacyidea.lib.utils import hexlify_and_unicode, to_bytes
 from privacyidea.lib.error import ERROR
 from privacyidea.lib import _
 
@@ -20,6 +26,44 @@ YUBICOFILE = "tests/testdata/yubico-oath.csv"
 OTPKEY = "3132333435363738393031323334353637383930"
 OTPKEY2 = "010fe88d31948c0c2e3258a4b0f7b11956a258ef"
 OTPVALUES2 = ["551536", "703671", "316522", "413789"]
+
+
+def sign_challenge(user_priv_key, app_id, client_data, counter,
+                   user_presence_byte=b'\x01'):
+    """
+    This creates a signature for the U2F data.
+    Only used in test scenario
+
+    The calculation of the signature is described here:
+    https://fidoalliance.org/specs/fido-u2f-v1.0-nfc-bt-amendment-20150514/fido-u2f-raw-message-formats.html#authentication-response-message-success
+
+    The input_data is a concatenation of:
+        * AppParameter: sha256(app_id)
+        * The user presence [1byte]
+        * counter [4byte]
+        * ChallengeParameter: sha256(client_data)
+
+    :param user_priv_key: The private key
+    :type user_priv_key: hex string
+    :param app_id: The application id
+    :type app_id: str
+    :param client_data: the stringified JSON
+    :type client_data: str
+    :param counter: the authentication counter
+    :type counter: int
+    :param user_presence_byte: one byte 0x01
+    :type user_presence_byte: char
+    :return: The DER encoded signature
+    :rtype: hex string
+    """
+    app_id_hash = sha256(to_bytes(app_id)).digest()
+    client_data_hash = sha256(to_bytes(client_data)).digest()
+    counter_bin = struct.pack(">L", counter)
+    input_data = app_id_hash + user_presence_byte + counter_bin + client_data_hash
+
+    sk = ec.derive_private_key(int(user_priv_key, 16), ec.SECP256R1())
+    signature = sk.sign(input_data, ec.ECDSA(hashes.SHA256()))
+    return hexlify_and_unicode(signature)
 
 
 class APIU2fTestCase(MyApiTestCase):

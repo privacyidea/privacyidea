@@ -8,14 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2020-12-11 13:42+0100\n"
-"PO-Revision-Date: 2020-09-02 11:30+0200\n"
+"PO-Revision-Date: 2021-02-26 07:50+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
+"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/nl/>\n"
 "Language: nl\n"
-"Language-Team: \n"
-"Plural-Forms: nplurals=2; plural=(n != 1)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.5\n"
 "Generated-By: Babel 2.8.0\n"
 
 #: api/auth.py:220
@@ -152,7 +154,7 @@ msgstr "Admin mag manueel token)info instellen en verwijderen."
 
 #: lib/policy.py:1426
 msgid "Admin is allowed to set the OTP PIN during enrollment."
-msgstr "Admin mag mag manueel de OTP Pin instellen tijdens aanmelding."
+msgstr "Admin mag manueel de OTP-Pin instellen tijdens aanmelding."
 
 #: lib/policy.py:1431
 msgid "Admin is allowed to resync tokens."
@@ -284,7 +286,7 @@ msgstr "Admin mag nieuwe CA connectordefinities maken en bestaande wijzigen."
 
 #: lib/policy.py:1589
 msgid "Admin is allowed to delete CA Connector definitions."
-msgstr "Admin mag mag de CA connectordefinities wijzigen."
+msgstr "Admin mag de CA connectordefinities wijzigen."
 
 #: lib/policy.py:1594
 msgid "Admin is allowed to read CA Connector definitions."
@@ -333,11 +335,11 @@ msgstr "Admin zal enkel audit items zien van de afgelopen 10d, 3m of 2y."
 
 #: lib/policy.py:1648
 msgid "The admin will not see the specified columns in the audit."
-msgstr ""
+msgstr "De beheerder zal de opgegeven kolommen niet zien in de audit."
 
 #: lib/policy.py:1653
 msgid "The admin is allowed to download the complete auditlog."
-msgstr "De admin mag de hele auditlog downloaden."
+msgstr "De admin mag de hele audit-log downloaden."
 
 #: lib/policy.py:1658
 msgid "Admin is allowed to add users in a userstore/UserIdResolver."
@@ -495,7 +497,7 @@ msgstr "De gebruiker zal alleen audit items zien van de laatste 10d, 3m of 2y."
 
 #: lib/policy.py:1870
 msgid "The user will not see the specified columns in the audit."
-msgstr ""
+msgstr "De gebruiker zal de opgegeven kolommen niet zien in de audit."
 
 #: lib/policy.py:1875
 msgid "The user is allowed to view his own user information."
@@ -506,7 +508,7 @@ msgid ""
 "The user is allowed to update his own user information, like changing his"
 " password."
 msgstr ""
-"De gebruiker mag  zijn eigen gebruikersinformatie aanpassen, zoals het "
+"De gebruiker mag zijn eigen gebruikersinformatie aanpassen, zoals het "
 "wijzigen van zijn wachtwoord."
 
 #: lib/policy.py:1884
@@ -607,7 +609,7 @@ msgstr "De geldigheidsduur van het tijdelijke token (in dagen)."
 
 #: lib/policy.py:1975
 msgid "Set the length of registration codes."
-msgstr ""
+msgstr "Stel de lengte van de registratie-codes in."
 
 #: lib/policy.py:1979
 msgid ""
@@ -615,6 +617,9 @@ msgid ""
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
 "[1234567890]"
 msgstr ""
+"Geef de vereiste inhoud van de registratiecode. (c) tekens, (n) getallen, (s)"
+" speciale tekens. Gebruik wijzigingen */- of een lijst met toegestane tekens "
+"[1234567890]"
 
 #: lib/policy.py:1992
 msgid ""
@@ -931,7 +936,7 @@ msgstr "Gebruik je eigen html-sjabloon voor de web UI voettekst."
 
 #: lib/policy.py:2229
 msgid "Link your privacy statement to be displayed in the baseline/footer."
-msgstr ""
+msgstr "Link naar je privacy-beleid om onderaan de pagina te tonen."
 
 #: lib/policy.py:2233
 msgid ""
@@ -1011,6 +1016,8 @@ msgid ""
 "If this is checked, the privacyIDEA Node name will be displayed in the "
 "menu bar."
 msgstr ""
+"Als dit is aangeduid, dan zal de privacyIDEA node-naam getoond worden in de "
+"menubalk."
 
 #: lib/policy.py:2291
 msgid ""
@@ -1205,7 +1212,7 @@ msgid ""
 "'count_auth_success is bigger than 100, less than 99 or exactly 100."
 msgstr ""
 "Dit kan '>100', '<99', of '=100' zijn om de actie te starten als het "
-"verschil tussen het  token-infoveld 'count_auth' en 'count_auth_success' "
+"verschil tussen het token-infoveld 'count_auth' en 'count_auth_success' "
 "groter is dan 100, kleiner is dan 99 of exact 100."
 
 #: lib/eventhandler/base.py:277
@@ -1234,9 +1241,9 @@ msgid ""
 "compare it like 'myCounter == 1000', 'myCounter > 1000' or 'myCounter < "
 "1000'."
 msgstr ""
-"Deze voorwaarde kan de waarde van een  willekeurige gebeurtenisteller "
-"controleren en vergelijken, zoals  'myCounter == 1000', 'myCounter > "
-"1000' or 'myCounter < 1000'."
+"Deze voorwaarde kan de waarde van een willekeurige gebeurtenisteller "
+"controleren en vergelijken, zoals 'myCounter == 1000', 'myCounter > 1000' or "
+"'myCounter < 1000'."
 
 #: lib/eventhandler/base.py:300
 msgid ""
@@ -1458,11 +1465,11 @@ msgstr "Lees het e-mailadres dynamisch van de gebruikersopslag."
 
 #: lib/eventhandler/tokenhandler.py:185
 msgid "Use a specific SMTP server configuration for this token."
-msgstr ""
+msgstr "Gebruik een specifieke SMTP-serverconfiguratie voor dit token."
 
 #: lib/eventhandler/tokenhandler.py:192
 msgid "Use a specific SMS gateway configuration for this token."
-msgstr ""
+msgstr "Gebruik een specifieke SMS-gateway-configuratie voor dit token."
 
 #: lib/eventhandler/tokenhandler.py:197
 msgid "A dictionary of additional init parameters."
@@ -1509,10 +1516,12 @@ msgid ""
 "Increase or decrease the fail counter of the token. Values of +n, -n with"
 " n being an integer are accepted."
 msgstr ""
+"Verhoog of verlaag de mislukte aanmeldingenteller voor het tonen. Waarden "
+"van +n of -n waarbij n een geheel getal is, worden aanvaard."
 
 #: lib/eventhandler/tokenhandler.py:269
 msgid "Set the maximum failcounter of the token."
-msgstr ""
+msgstr "Stel het maximaal aantal mislukte pogingen voor dit token in."
 
 #: lib/eventhandler/tokenhandler.py:277
 msgid "Set this tokeninfo key."
@@ -1616,8 +1625,7 @@ msgid ""
 "The second enrollment step must be completed within this time (in "
 "minutes)."
 msgstr ""
-"De tweede aanmeldingsstap moet voltooid worden binnen deze tijd (in "
-"minuten)"
+"De tweede aanmeldingsstap moet voltooid worden binnen deze tijd (in minuten)."
 
 #: lib/smsprovider/FirebaseProvider.py:227
 msgid ""
@@ -1718,9 +1726,9 @@ msgid ""
 "Regular expression to modify the phone number to make it compatible with "
 "provider. Enter something like '/[\\+/]//' to remove pluses and slashes."
 msgstr ""
-"Reguliere expressie om het telefoonnummer te wijzigen om het compatibel "
-"te maken met de provider. Geef iets in zoals  '/[\\+/]//' om plussen en "
-"schuine strepen te verwijderen."
+"Reguliere expressie om het telefoonnummer te wijzigen om het compatibel te "
+"maken met de provider. Geef iets in zoals '/[\\+/]//' om plussen en schuine "
+"strepen te verwijderen."
 
 #: lib/smsprovider/HttpSMSProvider.py:275
 msgid ""
@@ -1830,7 +1838,7 @@ msgstr "Aantal gebruikers met een toegewezen token"
 
 #: lib/tokens/certificatetoken.py:273
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr "Certificaat. Een x509-certificaat-token aanmelden."
+msgstr "Certificaat: een x509-certificaat-token aanmelden."
 
 #: lib/tokens/certificatetoken.py:284
 msgid "The user may only have this maximum number of certificates assigned."
@@ -1851,10 +1859,12 @@ msgid ""
 "Enrolling a certificate token can require an attestation certificate. "
 "(Default: ignore)"
 msgstr ""
+"Het aanmelden van een certificaat-token kan een attest-certificaat "
+"vereisten. (Standaard: negeer)"
 
 #: lib/tokens/certificatetoken.py:305 lib/tokens/certificatetoken.py:312
 msgid "The directory containing attestation certificate chains."
-msgstr ""
+msgstr "De map waarin de attest certificaat-chain zich bevindt."
 
 #: lib/tokens/daplugtoken.py:121
 msgid "event based OTP token using the HOTP algorithm"
@@ -1888,17 +1898,17 @@ msgid ""
 "<serial> as parameters. You may also specify a filename as email template"
 " starting with \"file:\"."
 msgstr ""
-"De test die verstuurd zal worden via e-mail voor een e-mail token. "
-"Gebruik  <otp> en <serial> als parameters. Je kunt ook een bestandsnaam "
-"opgeven als e-mail sjabloon, te beginnen met \"file\"."
+"De test die verstuurd zal worden via e-mail voor een e-mail token. Gebruik "
+"<otp> en <serial> als parameters. Je kunt ook een bestandsnaam opgeven als e-"
+"mail sjabloon, te beginnen met \"file\"."
 
 #: lib/tokens/emailtoken.py:168
 msgid ""
 "The subject of the EMail for an EMail token. Use <otp> and <serial> as "
 "parameters."
 msgstr ""
-"Het onderwerp van de e-mail voor een e-mail token. Gebruik  <otp> en "
-"<serial> als parameters."
+"Het onderwerp van de e-mail voor een e-mail token. Gebruik <otp> en <serial> "
+"als parameters."
 
 #: lib/tokens/emailtoken.py:173
 msgid ""
@@ -2058,7 +2068,8 @@ msgstr "Aantal vereiste posities die door de gebruiker beantwoord moeten worden.
 
 #: lib/tokens/indexedsecrettoken.py:119
 msgid "Preset the enrollment with the value of the given attribute."
-msgstr "Voorinstelling  van de aanmelding met de waarde van het gegeven attribuut."
+msgstr ""
+"Voorinstelling van de aanmelding met de waarde van het gegeven attribuut."
 
 #: lib/tokens/indexedsecrettoken.py:126 lib/tokens/indexedsecrettoken.py:133
 msgid "The attribute whose value should be force set during enrollment."
@@ -2227,6 +2238,7 @@ msgstr "Enquête: aanmelden met vragen voor de gebruiker."
 #: lib/tokens/questionnairetoken.py:109
 msgid "The user has to answer this number of questions during authentication."
 msgstr ""
+"De gebruiker moet dit aantal vragen beantwoorden tijdens de authenticatie."
 
 #: lib/tokens/questionnairetoken.py:117
 msgid ""
@@ -2298,8 +2310,8 @@ msgstr "Extern token: stuur de authenticatie-vraag door naar een andere server."
 #: lib/tokens/remotetoken.py:122 lib/tokens/totptoken.py:176
 msgid "The user may only have this maximum number of remote tokens assigned."
 msgstr ""
-"De gebruiker mag slechts dit maximaal aantal externe tokens tokens "
-"toegewezen hebben."
+"De gebruiker mag slechts dit maximaal aantal externe tokens toegewezen "
+"hebben."
 
 #: lib/tokens/remotetoken.py:127 lib/tokens/totptoken.py:181
 msgid ""
@@ -2307,7 +2319,7 @@ msgid ""
 "assigned."
 msgstr ""
 "De gebruiker mag slechts dit maximaal aantal actieve externe tokens "
-"tokens toegewezen hebben."
+"toegewezen hebben."
 
 #: lib/tokens/smstoken.py:198
 msgid "SMS Token"
@@ -2718,8 +2730,8 @@ msgstr ""
 #: lib/utils/compare.py:175
 msgid "false if the value of the left attribute equals the right value"
 msgstr ""
-"niet waar als de waarde van het linker attribuut gelijk si aan de de "
-"rechter waarde"
+"niet waar als de waarde van het linker attribuut gelijk is aan de rechter "
+"waarde"
 
 #: lib/utils/compare.py:177
 msgid ""
@@ -2808,4 +2820,3 @@ msgstr ""
 #~ "Node name will be displayed below "
 #~ "the logo."
 #~ msgstr ""
-

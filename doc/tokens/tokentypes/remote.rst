@@ -32,11 +32,15 @@ If checked, the PIN of the token will be checked on the local server. If the
 PIN matches only the remaining part of the issued password will be sent to
 the remote privacyIDEA server.
 
-**Remote Server**
+**Remote Server ID**
 
-The privacyIDEA server, to which the authentication request will be forwarded.
-The path ``/validate/check`` will be added automatically. So a sensible input
-would be ``https://my.other.server/``.
+The other privacyIDEA server, to which the authentication request will be forwarded.
+You need to configure the privacyIDEA Server at :ref:`privacyideaserver_config`.
+
+.. note:: You can define a remote server to be localhost. Thus you can assign
+   one token to several users.
+
+Using the direct URL in the remote token is deprecated.
 
 **Remote Serial**
 

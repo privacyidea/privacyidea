@@ -89,7 +89,7 @@ class GROUP(object):
     TOKEN = "token"
     GENERAL = "general"
     USER = "user"
-    COUNTER = "timer"
+    COUNTER = "counter"
 
 
 class BaseEventHandler(object):
