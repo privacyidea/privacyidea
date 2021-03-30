@@ -6,7 +6,7 @@ importlib-metadata==3.3.0
 packaging==20.8
 Pallets-Sphinx-Themes==1.2.3
 pyenchant==3.2.0
-Pygments==2.7.3
+Pygments==2.7.4
 pyparsing==2.4.7
 snowballstemmer==2.0.0
 Sphinx==3.4.1
