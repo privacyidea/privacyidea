@@ -421,33 +421,41 @@ class SMSTokenTestCase(MyTestCase):
 
     @responses.activate
     def test_19_smstext(self):
-        # create a SMSTEXT policy:
-        p = set_policy(name="smstext",
-                       action="{0!s}={1!s}".format(SMSACTION.SMSTEXT, "'Your <otp>'"),
-                       scope=SCOPE.AUTH)
-        self.assertTrue(p > 0)
+        # The single quotes in the smstext "'Your <otp>'" is legacy and results in
+        # the string without single quotes "Your <otp>".
+        smstext_tests = {"'Your <otp>'": r"Your [0-9]{6}",
+                         "Your <otp>": r"Your [0-9]{6}",
+                         "{user} has the OTP: {otp}": r"Cornelius has the OTP: [0-9]{6}"}
+        for pol_text, result_text in smstext_tests.items():
+            # create a SMSTEXT policy:
+            p = set_policy(name="smstext",
+                           action="{0!s}={1!s}".format(SMSACTION.SMSTEXT, pol_text),
+                           scope=SCOPE.AUTH)
+            self.assertTrue(p > 0)
 
-        g = FakeFlaskG()
-        P = PolicyClass()
-        g.audit_object = FakeAudit()
-        g.policy_object = P
-        options = {"g": g}
+            g = FakeFlaskG()
+            P = PolicyClass()
+            g.audit_object = FakeAudit()
+            g.policy_object = P
+            options = {"g": g,
+                       "user": User("cornelius", self.realm1)}
 
-        responses.add(responses.POST,
-                      self.SMSHttpUrl,
-                      body=self.success_body)
-        set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
-        db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = SmsTokenClass(db_token)
-        c = token.create_challenge(options=options)
-        self.assertTrue(c[0], c)
-        display_message = c[1]
-        self.assertEqual(display_message, _("Enter the OTP from the SMS:"))
-        self.assertEqual(c[3].get("state"), None)
+            responses.add(responses.POST,
+                          self.SMSHttpUrl,
+                          body=self.success_body)
+            set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
+            db_token = Token.query.filter_by(serial=self.serial1).first()
+            token = SmsTokenClass(db_token)
+            c = token.create_challenge(options=options)
+            self.assertTrue(c[0], c)
+            display_message = c[1]
+            self.assertEqual(display_message, _("Enter the OTP from the SMS:"))
+            self.assertEqual(c[3].get("state"), None)
 
-        # check for the challenges response
-        # r = token.check_challenge_response(passw="287922")
-        # self.assertTrue(r, r)
+            smstext = token._get_sms_text(options)
+            self.assertEqual(pol_text.strip("'"), smstext)
+            r, message = token._send_sms(smstext, options)
+            self.assertRegexpMatches(message, result_text)
 
         # Test AUTOSMS
         p = set_policy(name="autosms",
@@ -461,7 +469,7 @@ class SMSTokenTestCase(MyTestCase):
         g.audit_object = FakeAudit()
         options = {"g": g}
 
-        r = token.check_otp("287922", options=options)
+        r = token.check_otp(self.valid_otp_values[5 + len(smstext_tests)], options=options)
         self.assertTrue(r > 0, r)
 
     def test_21_failed_loading(self):
