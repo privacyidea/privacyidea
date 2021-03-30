@@ -20,8 +20,9 @@ from pytz import utc
 from base64 import b32decode, b32encode
 import mock
 import responses
+from google.oauth2 import service_account
+from .test_lib_tokens_push import _create_credential_mock
 
-from .test_lib_tokens_push import myAccessTokenInfo, myCredentials
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
@@ -257,9 +258,10 @@ class TtypePushAPITestCase(MyApiTestCase):
         tokenobj.add_user(User("cornelius", self.realm1))
 
         # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
-        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.ServiceAccountCredentials') as mySA:
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
+                        '.from_service_account_file') as mySA:
             # alternative: side_effect instead of return_value
-            mySA.from_json_keyfile_name.return_value = myCredentials(myAccessTokenInfo("my_bearer_token"))
+            mySA.return_value = _create_credential_mock()
 
             # add responses, to simulate the communication to firebase
             responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',

@@ -215,7 +215,8 @@ class PushTokenTestCase(MyTestCase):
         set_policy("push1", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
                                                self.firebase_config_name))
-        self._create_push_token()
+        token_obj = self._create_push_token()
+        remove_token(token_obj.get_serial())
 
     @responses.activate
     def test_03a_api_authenticate_fail(self):
