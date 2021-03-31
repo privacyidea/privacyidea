@@ -155,7 +155,7 @@ system_status() {
 	log
 	log "SECTION: System Status"
 	log "======================"
-	log "CPU cores: $(grep -c ^processor /proc/cpuinfo | wc -l)"
+	log "CPU cores: $(grep -c ^processor /proc/cpuinfo)"
 	log "========================"
 	top -b -n 1 >> "$tempfile"
 	log
@@ -186,7 +186,7 @@ apache_log() {
 		log
 		log "SECTION: apache configuration"
 		log "============================="
-		tail -n +1 /etc/httpd/conf/httpd.conf /etc/httpd/conf.d/privacyidea.conf/* >>  "$tempfile"
+		tail -n +1 /etc/httpd/conf/httpd.conf /etc/httpd/conf.d/privacyidea.conf >>  "$tempfile"
 	else
 		log
 		log "SECTION: apache2 error_log"
