@@ -31,21 +31,22 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-if [ "$1" == "" ]; then
-	echo
-	echo "Please specify the pi.cfg file!"
-	echo
-	exit 1
-else
+PICFG="/etc/privacyidea/pi.cfg"
+
+if [ "$#" -gt 0 ]; then
 	PICFG=$1
 fi
 
-OS=$(grep "^ID=" /etc/os-release | sed -e 's/^ID=//g' | tr -d '"')
+if [[ ! -r $PICFG ]];then
+	echo "Could not read $PICFG! Please specify the pi.cfg file!"
+	exit 1
+fi
 
+OS=$(grep "^ID=" /etc/os-release | sed -e 's/^ID=//g' | tr -d '"')
 diag_info=$(mktemp -d -t pi_diag_XXXXXXXXXX)
 tempfile="${diag_info}/privacyidea.config"
 timestamp=$(date +"%y-%m-%d")
-location="/tmp/${timestamp}_$(basename "$diag_info").tar.gz"
+diag_file="/tmp/${timestamp}_$(basename "$diag_info").tar.gz"
 
 
 log() {
@@ -58,7 +59,7 @@ call_pi_manage() {
 
 upload_info() {
 	echo
-	echo "Please upload the diagnostics file and $location to your support team."
+	echo "Please upload the diagnostics file $diag_file to your support team."
 	echo
 }
 
@@ -133,31 +134,31 @@ FreeRADIUS_config() {
 	log
 	log "SECTION: FreeRADIUS Configurations"
 	log "=================================="
-if [[ "${OS}" == "centos" ]]; then
-	if (rpm -qa | grep freeradius > /dev/null); then
-		ls -R /etc/raddb  >> "$tempfile";
+	if [[ "${OS}" == "centos" ]]; then
+		if (rpm -qa | grep freeradius > /dev/null); then
+			ls -R /etc/raddb  >> "$tempfile";
+		else
+			log
+			log "FreeRADIUS is not installed"
+		fi
 	else
-		log
-		log "FreeRADIUS is not installed"
+		if (dpkg -l | grep freeradius > /dev/null); then
+			ls -R /etc//freeradius/3.0 >> "$tempfile";
+		else
+			log
+			log "FreeRADIUS is not installed"
+		fi
 	fi
-else
-	if (dpkg -l | grep freeradius > /dev/null); then
-		ls -R /etc//freeradius/3.0 >> "$tempfile";
-	else
-		log
-		log "FreeRADIUS is not installed"
-	fi
-fi
 }
 
 system_status() {
 	log
 	log "SECTION: System Status"
 	log "======================"
-	log "CPU cores: $(grep ^processor /proc/cpuinfo | wc -l)"
+	log "CPU cores: $(grep -c ^processor /proc/cpuinfo | wc -l)"
 	log "========================"
 	top -b -n 1 >> "$tempfile"
-	log "========================"
+	log
 	log "HD"
 	log "========================"
 	df -h >> "$tempfile"
@@ -181,11 +182,11 @@ apache_log() {
 		log
 		log "SECTION: httpd Access_log"
 		log "========================="
-		tail -50 /var/log/httpd/ssl_access_log  >> "$tempfile"
+		tail -100 /var/log/httpd/ssl_access_log  >> "$tempfile"
 		log
 		log "SECTION: apache configuration"
 		log "============================="
-		cat /etc/httpd/conf/httpd.conf  >>  "$tempfile"
+		tail -n +1 /etc/httpd/conf/httpd.conf /etc/httpd/conf.d/privacyidea.conf/* >>  "$tempfile"
 	else
 		log
 		log "SECTION: apache2 error_log"
@@ -198,7 +199,7 @@ apache_log() {
 		log
 		log "SECTION: apache configuration"
 		log "============================="
-		cat /etc/apache2/apache2.conf  >>  "$tempfile"
+		tail -n +1 /etc/apache2/apache2.conf /etc/apache2/sites-enabled/* >> "$tempfile"
 	fi
 }
 
@@ -225,6 +226,7 @@ fi
 apache_log
 pi_logfile
 pi_auditlog
-upload_info
 
-tar -zcf "/tmp/${timestamp}_$(basename "$diag_info").tar.gz" -C /tmp "$(basename "$diag_info")"
+tar -zcf "$diag_file" -C /tmp "$(basename "$diag_info")"
+
+upload_info
