@@ -178,7 +178,7 @@ apache_log() {
 		log
 		log "SECTION: httpd SSL_error_log"
 		log "============================"
-		tail -50 /var/log/httpd/ssl_error_log  >> "$tempfile"
+		tail -100 /var/log/httpd/ssl_error_log  >> "$tempfile"
 		log
 		log "SECTION: httpd Access_log"
 		log "========================="
@@ -191,11 +191,11 @@ apache_log() {
 		log
 		log "SECTION: apache2 error_log"
 		log "=========================="
-		tail -50 /var/log/apache2/error.log >> "$tempfile"
+		tail -100 /var/log/apache2/error.log >> "$tempfile"
 		log
 		log "SECTION: apache2 SSL_access_log"
 		log "==============================="
-		tail -50 /var/log/apache2/ssl_access.log >> "$tempfile"
+		tail -100 /var/log/apache2/ssl_access.log >> "$tempfile"
 		log
 		log "SECTION: apache configuration"
 		log "============================="
