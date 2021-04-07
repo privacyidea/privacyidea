@@ -20,8 +20,8 @@ can leave the Yubico URL blank and privacyidea will use the Yubico servers.
 
 You can use another validation host, e.g. a self hosted validation server.
 If you use privacyidea token type yubikey, you can use the URL
-https://<privacyideaserver>/ttype/yubikey, other validation servers might
-use https://<validationserver>/wsapi/2.0/verify. You'll get the Client ID
+``https://<privacyideaserver>/ttype/yubikey``, other validation servers might
+use ``https://<validationserver>/wsapi/2.0/verify``. You'll get the Client ID
 and API key from the configuration of your validation server.
 
 You can get your own API key at [#yubico]_.
