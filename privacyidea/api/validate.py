@@ -237,6 +237,9 @@ def check():
     400 response. Error responses are the same responses as for the
     ``/validate/check`` endpoint.
 
+    In case ``/validate/samlcheck`` is requested, the user attributes are
+    returned.
+
     :param serial: The serial number of the token, that tries to authenticate.
     :param user: The loginname/username of the user, who tries to authenticate.
     :param realm: The realm of the user, who tries to authenticate. If the
@@ -251,7 +254,13 @@ def check():
         request
     :param state: The state ID for a response to a challenge request
 
-    :return: a json result with a boolean "result": true
+    :return:
+        | Value depends on the endpoint used:
+        | For /validate/samlcheck: a map with the at least the following user
+            attributes: ``username``, ``realm``, ``resolver``, ``email``
+            ``surname``, ``givenname``, ``mobile``, ``phone``
+        | For /validate/radiuscheck: no response body
+        | For /validate/check: a json boolean
 
     **Example Validation Request**:
 
@@ -261,9 +270,7 @@ def check():
            Host: example.com
            Accept: application/json
 
-           user=user
-           realm=realm1
-           pass=s3cret123456
+           user=user&realm=realm1&pass=s3cret123456
 
     **Example response** for a successful authentication:
 
