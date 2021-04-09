@@ -48,6 +48,13 @@ tempfile="${diag_info}/privacyidea.config"
 timestamp=$(date +"%y-%m-%d")
 diag_file="/tmp/${timestamp}_$(basename "$diag_info").tar.gz"
 
+case $OS in
+	centos | rhel | debian | ubuntu)
+	;;
+	*)
+		echo  "Your operating system $OS is not supported!"
+		;;
+esac
 
 log() {
 	echo "$1" >> "$tempfile"
@@ -94,12 +101,12 @@ pi_versions() {
 	log "Installed packages"
 	log "------------------"
 	FileName=$(mktemp)
-	if [[ "${OS}" != "centos" ]]; then
-		# In case it is Ubuntu
-		dpkg -l | sort >> "$FileName";
-	else
+	if [[ "${OS}" == "centos" || "${OS}" == "rhel" ]]; then
 		# In case it is CentOS/RHEL
 		rpm -qa | sort >> "$FileName"
+	elif [[ "${OS}" == "ubuntu" || "${OS}" == "debian" ]]; then
+		# In case it is Ubuntu/Debian
+		dpkg -l | sort >> "$FileName";
 	fi
 	# save all installed packages
 	cat "$FileName" >> "$tempfile"
@@ -134,14 +141,14 @@ FreeRADIUS_config() {
 	log
 	log "SECTION: FreeRADIUS Configurations"
 	log "=================================="
-	if [[ "${OS}" == "centos" ]]; then
+	if [[ "${OS}" == "centos" || "${OS}" == "rhel" ]]; then
 		if (rpm -qa | grep freeradius > /dev/null); then
 			ls -R /etc/raddb  >> "$tempfile";
 		else
 			log
 			log "FreeRADIUS is not installed"
 		fi
-	else
+	elif [[ "${OS}" == "ubuntu" || "${OS}" == "debian" ]]; then
 		if (dpkg -l | grep freeradius > /dev/null); then
 			ls -R /etc//freeradius/3.0 >> "$tempfile";
 		else
@@ -174,7 +181,7 @@ centos_auditlog() {
 }
 
 apache_log() {
-	if [[ "${OS}" == "centos" ]]; then
+	if [[ "${OS}" == "centos" || "${OS}" == "rhel" ]]; then
 		log
 		log "SECTION: httpd SSL_error_log"
 		log "============================"
@@ -187,7 +194,7 @@ apache_log() {
 		log "SECTION: apache configuration"
 		log "============================="
 		tail -n +1 /etc/httpd/conf/httpd.conf /etc/httpd/conf.d/privacyidea.conf >>  "$tempfile"
-	else
+	elif [[ "${OS}" == "ubuntu" || "${OS}" == "debian" ]]; then
 		log
 		log "SECTION: apache2 error_log"
 		log "=========================="
