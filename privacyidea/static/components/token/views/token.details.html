@@ -10,6 +10,7 @@
             <td translate>Type</td>
             <td>{{ token.tokentype }}</td>
             <td>
+                <span>
                 <button class="btn btn-danger" ng-click="deleteTokenAsk()"
                         id="deleteButton"
                         ng-disabled="!checkRight('delete')"
@@ -17,6 +18,16 @@
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
                 </button>
+                </span>
+                <span>
+                <button class="btn btn-danger" ng-click="regenerateTokenAsk(token)"
+                        id="rolloverButton"
+                        ng-disabled="!regenerateTokenAllowed(token)"
+                        ng-hide="!regenerateTokenAllowed(token) && hide_buttons">
+                    <span class="glyphicon glyphicon-refresh"></span>
+                    <span translate>Rollover</span>
+                </button>
+                </span>
             </td>
         </tr>
         <tr>
@@ -647,4 +658,5 @@
 
 <ng-include src="instanceUrl + '/static/components/token/views/dialog.ask_token_delete.html'">
 </ng-include>
-
+<ng-include src="instanceUrl + '/static/components/token/views/dialog.regenerate_token.html'">
+</ng-include>

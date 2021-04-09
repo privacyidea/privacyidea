@@ -72,6 +72,9 @@
                 translate>UserId</th>
             <th ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist"
                 translate>Resolver</th>
+            <th ng-show="!checkPolicyEmpty(token_rollover)" translate>
+                Rollover
+            </th>
         </tr>
         </thead>
         <tbody>
@@ -130,7 +133,20 @@
             user_details_in_tokenlist">
                 <a ui-sref="config.resolvers.list">{{ token.resolver }}</a>
             </td>
+            <td ng-show="!checkPolicyEmpty(token_rollover)">
+                <span>
+                    <button class="glyphicon glyphicon-refresh"
+                      ng-click="regenerateTokenAsk(token)"
+                      ng-disabled="!regenerateTokenAllowed(token)"
+                      ng-hide="!regenerateTokenAllowed(token) && hide_buttons"
+                      title="Rollover Token">
+                </button>
+                </span>
+            </td>
         </tr>
         </tbody>
     </table>
 </div>
+
+<ng-include src="instanceUrl + '/static/components/token/views/dialog.regenerate_token.html'">
+</ng-include>

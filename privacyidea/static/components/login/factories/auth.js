@@ -79,6 +79,10 @@ angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
                 ////debug: console.log("checking right: " + action + ": " + res);
                 return res;
             },
+            checkPolicyEmpty: function (object) {
+                // check if object (e.g. a multi-value policy) is empty
+               return Object.keys(object).length === 0;
+            },
             getRightsValue: function (action) {
                 // return the value of an action like otp_pin_minlength
                 var res = false;
