@@ -120,7 +120,7 @@ def get_users():
 @event("set_custom_user_attribute", request, g)
 def set_user_attribute():
     """
-    Set a custom attribute for an external user.
+    Set a custom attribute for a user.
     The user is specified by the usual parameters user, resolver and realm.
 
     :httpparam key: The name of the attributes
