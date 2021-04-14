@@ -138,6 +138,8 @@ def set_user_attribute():
     attrvalue = getParam(request.all_data, "value", optional=False)
     attrtype = getParam(request.all_data, "type", optional=True)
     r = request.User.set_attribute(attrkey, attrvalue, attrtype)
+    g.audit_object.log({"success": True,
+                        "info": u"{0!s}".format(attrkey)})
     return send_result(r)
 
 
@@ -158,6 +160,8 @@ def get_user_attribute():
     r = request.User.attributes
     if attrkey:
         r = r.get(attrkey)
+    g.audit_object.log({"success": True,
+                        "info": u"{0!s}".format(attrkey)})
     return send_result(r)
 
 
@@ -174,6 +178,7 @@ def get_editable_attributes():
     """
     _user = getParam(request.all_data, "user", optional=False)
     r = get_allowed_custom_attributes(g, request.User)
+    g.audit_object.log({"success": True})
     return send_result(r)
 
 
@@ -192,6 +197,8 @@ def delete_user_attribute(attrkey, username, realm=None):
     """
     user = User(username, realm)
     r = user.delete_attribute(attrkey)
+    g.audit_object.log({"success": True,
+                        "info": u"{0!s}".format(attrkey)})
     return send_result(r)
 
 

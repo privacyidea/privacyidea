@@ -507,7 +507,9 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertIn("hello", setables)
             self.assertIn("hello2", setables)
             self.assertEqual(["on", "off"], setables.get("*"))
-            self.assertEqual(["one", "two", "three"], setables.get("hello"))
+            self.assertIn("one", setables.get("hello"))
+            self.assertIn("two", setables.get("hello"))
+            self.assertIn("three", setables.get("hello"))
             self.assertEqual(["*"], setables.get("hello2"))
 
         set_policy("custom_create_user", scope=SCOPE.ADMIN,
