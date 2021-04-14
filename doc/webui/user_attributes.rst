@@ -19,7 +19,7 @@ could be used to pass additional attributes via the RADIUS protocol.
 The user attributes can also be used as additional conditions in policies
 (see :ref:`policy_conditions`) in the userinfo section.
 This way the additional attributes can be used to
-group users togeather within privacyIDEA and assign destinct policies to these groups,
+group users togeather within privacyIDEA and assign distinct policies to these groups,
 without the need to rely on information from the user store.
 
 The policy condition uses attributes (userinfo) from the user store and additional user

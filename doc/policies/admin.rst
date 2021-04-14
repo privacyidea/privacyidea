@@ -746,7 +746,7 @@ delete_custom_user_attributes
 type: string
 
 This takes a space separated list of attributes that the administrator is allowed to
-delete. You can use the asterisk "*" to indicated, that this policy allows the
+delete. You can use the asterisk "*" to indicate, that this policy allows the
 administrator to delete any additional attribute.
 
 Example:

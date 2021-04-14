@@ -359,7 +359,7 @@ delete_custom_user_attributes
 
 type: string
 
-This defines how a user is allowed to set his own attributes.
+This defines how a user is allowed to delete his own attributes.
 It uses the same setting as the admin policy :ref:`admin_delete_custom_user_attributes`.
 
 New in version 3.6
