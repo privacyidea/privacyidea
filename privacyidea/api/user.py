@@ -149,7 +149,7 @@ def get_user_attribute():
     Return the custom attribute of the given user.
     The user is specified by the usual parameters user, resolver and realm.
 
-    :httpparam key: The optinoal name of the attribute. If it is not specified
+    :httpparam key: The optional name of the attribute. If it is not specified
          all custom attributes of the user are returned.
 
     """
