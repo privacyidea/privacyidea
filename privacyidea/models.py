@@ -695,8 +695,8 @@ class TokenInfo(MethodsMixin, db.Model):
 
 class CustomUserAttribute(MethodsMixin, db.Model):
     """
-    The table "customuserattribute" is used to store additional, internal attributes
-    for also external users.
+    The table "customuserattribute" is used to store additional, custom attributes
+    for users.
 
     A user is identified by the user_id,  the resolver_id and the realm_id.
 
@@ -705,7 +705,7 @@ class CustomUserAttribute(MethodsMixin, db.Model):
 
     Note: Since the users are external, i.e. no objects in this database,
           there is not logic reference on a database level.
-          Since users could be deleted from external user stores
+          Since users could be deleted from user stores
           without privacyIDEA realizing that, this table could pile up
           with remnants of attributes.
     """
