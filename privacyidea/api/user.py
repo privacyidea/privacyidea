@@ -148,7 +148,8 @@ def set_user_attribute():
 @event("get_user_attribute", request, g)
 def get_user_attribute():
     """
-    Return the custom attribute of the given user.
+    Return the *custom* attribute of the given user.
+    This does *not* return the user attributes which are contained in the user store!
     The user is specified by the usual parameters user, resolver and realm.
 
     :httpparam key: The optional name of the attribute. If it is not specified
