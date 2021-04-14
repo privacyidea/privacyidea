@@ -911,7 +911,7 @@ def check_custom_user_attributes(request=None, action=None):
     :param action: An optional action, (would be set/delete)
     :return: Raises a PolicyError, if the wrong attribute is given.
     """
-    ERROR = "You are not allowed to {0!s} this custom user attribute!".format(action)
+    ERROR = "You are not allowed to {0!s} the custom user attribute {1!s}!"
     is_allowed = False
     if action == "delete":
         attr_pol_dict = Match.admin_or_user(g, action=ACTION.DELETE_USER_ATTRIBUTES,
@@ -926,7 +926,7 @@ def check_custom_user_attributes(request=None, action=None):
         if is_allowed:
             g.audit_object.add_policy(attr_pol_dict.get(attr_pol_val))
         else:
-            raise PolicyError(ERROR)
+            raise PolicyError(ERROR.format(action, attr_key))
     elif action == "set":
         attr_pol_dict = Match.admin_or_user(g, action=ACTION.SET_USER_ATTRIBUTES,
                                             user_obj=request.User).action_values(unique=False,
@@ -954,7 +954,7 @@ def check_custom_user_attributes(request=None, action=None):
         if is_allowed:
             g.audit_object.add_policy(attr_pol_dict.get(pol_string))
         else:
-            raise PolicyError(ERROR)
+            raise PolicyError(ERROR.format(action, attr_key))
 
 
 def auditlog_age(request=None, action=None):
