@@ -470,6 +470,18 @@ class APIUsersTestCase(MyApiTestCase):
         remove_token("SPASS1")
         delete_policy("POL1")
 
+        # Try to delete custom user attributes without a policy
+        with self.app.test_request_context('/user/attribute/newattribute/cornelius/realm1',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), res.data)
+            error = result.get("error")
+            self.assertEqual("You are not allowed to delete the custom user attribute newattribute!",
+                             error.get("message"))
+
         # Now we delete the additional user attribute
         set_policy("custom_attr", scope=SCOPE.ADMIN,
                    action="{0!s}=*".format(ACTION.DELETE_USER_ATTRIBUTES))
@@ -492,6 +504,18 @@ class APIUsersTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"), res.data)
             self.assertNotIn("newattribute", result.get("value"))
+
+        # The admin is allowed to delete all attributes. Check what happens
+        # if the admin tries to delete an attribute that does not exist:
+        # Returns a result-value: 0
+        with self.app.test_request_context('/user/attribute/doesnotexist/cornelius/realm1',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            self.assertTrue(result.get("value") == 0)
 
         # Check, which attributes the admin is allowed to set or delete
         set_policy("custom_attr", scope=SCOPE.ADMIN,
