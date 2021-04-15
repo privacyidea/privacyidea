@@ -3037,7 +3037,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # first test without any policy to delete the department. This is not allowed
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "department"}
-        self.assertRaises(PolicyError, check_custom_user_attributes, req, "delete")
+        self.assertRaisesRegexp(PolicyError,
+                                "ERR303: You are not allowed to delete the custom user attribute department!",
+                                check_custom_user_attributes, req, "delete")
 
         # set to allow deleting the department
         set_policy("set_custom_attr", scope=SCOPE.ADMIN,
@@ -3080,7 +3082,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # You are not allowed to set a different department
         req.all_data = {"user": "cornelius", "realm": self.realm1,
                         "key": "department", "value": "different"}
-        self.assertRaises(PolicyError, check_custom_user_attributes, req, "set")
+        self.assertRaisesRegexp(PolicyError,
+                                "ERR303: You are not allowed to set the custom user attribute department!",
+                                check_custom_user_attributes, req, "set")
 
         # You are allowed to set color to any value
         req.all_data = {"user": "cornelius", "realm": self.realm1,
