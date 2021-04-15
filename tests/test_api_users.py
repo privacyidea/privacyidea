@@ -367,11 +367,22 @@ class APIUsersTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertFalse(result.get("status"), res.data)
             self.assertEqual(result.get("error").get("message"),
-                             "You are not allowed to set this custom user attribute!")
+                             "You are not allowed to set the custom user attribute newattribute!")
 
         # Allow to set custom attributes
         set_policy("custom_attr", scope=SCOPE.ADMIN,
                    action="{0!s}=:*:*".format(ACTION.SET_USER_ATTRIBUTES))
+
+        # Check that the user has not attribute
+        with self.app.test_request_context('/user/attribute',
+                                           method='GET',
+                                           data={"user": "cornelius@realm1"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            self.assertNotIn("newattribute", result.get("value"))
 
         with self.app.test_request_context('/user/attribute',
                                            method='POST',
@@ -506,7 +517,7 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertIn("*", setables)
             self.assertIn("hello", setables)
             self.assertIn("hello2", setables)
-            self.assertEqual(["on", "off"], setables.get("*"))
+            self.assertEqual(["off", "on"], sorted(setables.get("*")))
             self.assertIn("one", setables.get("hello"))
             self.assertIn("two", setables.get("hello"))
             self.assertIn("three", setables.get("hello"))
