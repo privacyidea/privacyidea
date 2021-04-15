@@ -577,6 +577,32 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertIn("hello", result.get("value"))
             self.assertEqual("one", result.get("value").get("hello"))
 
+        # The user tries to delete his attribute, but he is not allowed to.
+        with self.app.test_request_context('/user/attribute/hello/wordy/sqlrealm',
+                                           method='DELETE',
+                                           headers={'Authorization': self.wordy_auth_token}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), res.data)
+            error = result.get("error")
+            self.assertEqual("You are not allowed to delete the custom user attribute hello!",
+                             error.get("message"))
+
+        # The user tries to set an attribute, but he is not allowed to.
+        with self.app.test_request_context('/user/attribute',
+                                           method='POST',
+                                           data={"key": "newattr",
+                                                 "value": "newvalue"},
+                                           headers={'Authorization': self.wordy_auth_token}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 403, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), res.data)
+            error = result.get("error")
+            self.assertEqual("You are not allowed to set the custom user attribute newattr!",
+                             error.get("message"))
+
         delete_policy("custom_attr")
         delete_policy("custom_attr2")
         delete_policy("custom_attr3")
