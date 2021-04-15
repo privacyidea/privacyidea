@@ -309,7 +309,7 @@ class User(object):
     @log_with(log)
     def delete_attribute(self, attrkey=None):
         """
-        Delete the given key as user attribute.
+        Delete the given key as custom user attribute.
         If no key is given, then all attributes are deleted
 
         :param attrkey: The key to delete
