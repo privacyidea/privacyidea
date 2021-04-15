@@ -190,7 +190,7 @@ def get_editable_attributes():
 def delete_user_attribute(attrkey, username, realm=None):
     """
     Delete a specified custom attribute from the user.
-    The user is specified by the usual parameters user, resolver and realm.
+    The user is specified by the positional parameters user and realm.
 
     :httpparam key: The name of the attribute that should be deleted from the user.
 
