@@ -2752,11 +2752,9 @@ def get_allowed_custom_attributes(g, user_obj):
         # parse through each policy
         d = parse_string_to_dict(keys)
         for k, vals in d.items():
-            if k not in setables:
-                # initialize with an empty string
-                setables[k] = []
-            for v in vals:
-                setables[k].append(v)
+            setables.setdefault(k, []).extend(vals)
+            # If there are double entries in vals, we reduce them to one
+            setables[k] = list(set(setables[k]))
 
     return {"delete": deleteables, "set": setables}
 

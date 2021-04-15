@@ -1415,13 +1415,17 @@ class PolicyTestCase(MyTestCase):
                    action="{0!s}=:*: on off".format(ACTION.SET_USER_ATTRIBUTES))
         set_policy("custom_attr4", scope=SCOPE.ADMIN,
                    action="{0!s}=*".format(ACTION.DELETE_USER_ATTRIBUTES))
+        # Also check, that a double entry "one" only appears once
+        set_policy("custom_attr5", scope=SCOPE.ADMIN,
+                   action="{0!s}=:hello: one".format(ACTION.SET_USER_ATTRIBUTES))
         g.policy_object = PolicyClass()
 
         d = get_allowed_custom_attributes(g, user)
         self.assertEqual(["*"], d.get("delete"))
-        self.assertEqual({"*": ["on", "off"],
-                          "hello": ["one", "two", "three"],
-                          "hello2": ["*"]}, d.get("set"))
+        self.assertEqual(sorted(d.get("set").keys()), ["*", "hello", "hello2"])
+        self.assertEqual(sorted(d.get("set").get("*")), ["off", "on"])
+        self.assertEqual(sorted(d.get("set").get("hello")), ["one", "three", "two"])
+        self.assertEqual(sorted(d.get("set").get("hello2")), ["*"])
 
 
 class PolicyMatchTestCase(MyTestCase):
