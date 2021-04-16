@@ -1,4 +1,4 @@
-"""Add auth_count column to authcache table
+"""v3.6: Add auth_count column to authcache table
 
 Revision ID: d415d490eb05
 Revises: 9155f0d3d028
