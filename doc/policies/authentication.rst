@@ -187,6 +187,12 @@ Default: *<otp>*
    You should take care, that the *smstext* does not exceed this limit. SMS gateways could
    reject too long messages or the delivery could fail.
 
+.. note:: Some phones expect incoming OTPs as a so called
+   `origin-bound one-time code <https://github.com/wicg/sms-one-time-codes>`_.
+   Such format can be configured by setting the *smstext* policy in the form::
+
+     @privacyidea.mydomain.com #{otp}
+
 
 smsautosend
 ~~~~~~~~~~~
