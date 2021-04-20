@@ -191,7 +191,10 @@ Default: *<otp>*
    `origin-bound one-time code <https://github.com/wicg/sms-one-time-codes>`_.
    Such format can be configured by setting the *smstext* policy in the form::
 
-     @privacyidea.mydomain.com #{otp}
+     Your%20OTP%20is%20{otp}%0A%0A@privacyidea.mydomain.com%20#{otp}
+
+   In this statement %0A and %20 are the URL-encoded equivalents of newline and single space.
+   It depends on the respective SMS gateway if they are processed correctly.
 
 
 smsautosend
