@@ -92,7 +92,6 @@ In most cases there is no need to manage machines and this view is empty.
 
    *The Machines view.*
 
-
 Config
 ------
 
@@ -105,6 +104,7 @@ behavior of the system, manages the :ref:`eventhandler` and lets the user set up
 
    *The Config section is the heart of the privacyIDEA server.*
 
+
 Audit
 -----
 
@@ -114,6 +114,7 @@ In this tab, the :ref:`audit` log is displayed which lists all events the server
    :width: 500
 
    *Events can be displayed in the Audit log.*
+
 
 .. _components:
 
