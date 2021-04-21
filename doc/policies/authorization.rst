@@ -53,7 +53,7 @@ type: string
 
 Users will only be authorized with this very tokentype.
 The string can hold a space separated list of
-case sensitive tokentypes. It should look like:
+case sensitive tokentypes. It should look like::
 
     hotp totp spass
 
@@ -119,11 +119,11 @@ of the token matches this regular expression.
 This is checked after the authentication request, so that a valid
 OTP value can not be used anymore, even if authorization is forbidden.
 
-A valid action could look like
+A valid action could look like::
 
    action = key/regexp/
 
-Example:
+Example::
 
    action = last_auth/^2018.*/
 

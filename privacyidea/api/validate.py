@@ -232,9 +232,9 @@ def check():
     an error occurred during sending of SMS or Email.
 
     In case ``/validate/radiuscheck`` is requested, the responses are
-    modified as follows: A successful authentication returns an empty HTTP
-    204 response. An unsuccessful authentication returns an empty HTTP
-    400 response. Error responses are the same responses as for the
+    modified as follows: A successful authentication returns an empty ``HTTP
+    204`` response. An unsuccessful authentication returns an empty ``HTTP
+    400`` response. Error responses are the same responses as for the
     ``/validate/check`` endpoint.
 
     :param serial: The serial number of the token, that tries to authenticate.
@@ -242,8 +242,8 @@ def check():
     :param realm: The realm of the user, who tries to authenticate. If the
         realm is omitted, the user is looked up in the default realm.
     :param type: The tokentype of the tokens, that are taken into account during
-        authentication. Requires authz policy application_tokentype.
-        Is ignored when a distinct serial is given.
+        authentication. Requires the *authz* policy :ref:`application_tokentype_policy`.
+        It is ignored when a distinct serial is given.
     :param pass: The password, that consists of the OTP PIN and the OTP value.
     :param otponly: If set to 1, only the OTP value is verified. This is used
         in the management UI. Only used with the parameter serial.
@@ -257,20 +257,20 @@ def check():
 
         .. sourcecode:: http
 
-           POST /validate/check HTTP/1.1
-           Host: example.com
-           Accept: application/json
+            POST /validate/check HTTP/1.1
+            Host: example.com
+            Accept: application/json
 
-           user=user
-           realm=realm1
-           pass=s3cret123456
+            user=user
+            realm=realm1
+            pass=s3cret123456
 
     **Example response** for a successful authentication:
 
-       .. sourcecode:: http
+        .. sourcecode:: http
 
-           HTTP/1.1 200 OK
-           Content-Type: application/json
+            HTTP/1.1 200 OK
+            Content-Type: application/json
 
             {
               "detail": {
@@ -287,27 +287,24 @@ def check():
               "version": "privacyIDEA unknown"
             }
 
-    **Example response** for this first part of a challenge response
-    authentication:
+    **Example response** for this first part of a challenge response authentication:
 
-       .. sourcecode:: http
+        .. sourcecode:: http
 
-           HTTP/1.1 200 OK
-           Content-Type: application/json
+            HTTP/1.1 200 OK
+            Content-Type: application/json
 
             {
               "detail": {
                 "serial": "PIEM0000AB00",
                 "type": "email",
                 "transaction_id": "12345678901234567890",
-                "multi_challenge: [ {"serial": "PIEM0000AB00",
-                                     "transaction_id":  "12345678901234567890",
-                                     "message": "Please enter otp from your
-                                     email"},
-                                    {"serial": "PISM12345678",
-                                     "transaction_id": "12345678901234567890",
-                                     "message": "Please enter otp from your
-                                     SMS"}
+                "multi_challenge": [ {"serial": "PIEM0000AB00",
+                                      "transaction_id":  "12345678901234567890",
+                                      "message": "Please enter otp from your email"},
+                                     {"serial": "PISM12345678",
+                                      "transaction_id": "12345678901234567890",
+                                      "message": "Please enter otp from your SMS"}
                 ]
               },
               "id": 1,
@@ -323,11 +320,11 @@ def check():
     with an SMS. The application and thus the user has to decide, which one
     to use. They can use either.
 
-    .. note:: All challenge response tokens have the same transaction_id in
+    .. note:: All challenge response tokens have the same ``transaction_id`` in
        this case.
 
 
-    **Example response** for a successful authentication with /samlcheck:
+    **Example response** for a successful authentication with ``/samlcheck``:
 
        .. sourcecode:: http
 
@@ -359,7 +356,7 @@ def check():
               "version": "privacyIDEA unknown"
             }
 
-    The response in value->attributes can contain additional attributes
+    The response in ``value->attributes`` can contain additional attributes
     (like "myOwn") which you can define in the LDAP resolver in the attribute
     mapping.
     """
@@ -457,49 +454,64 @@ def trigger_challenge():
 
        .. sourcecode:: http
 
-           {"jsonrpc": "2.0",
-            "signature": "1939...146964",
-            "detail": {"transaction_ids": ["03921966357577766962"],
-                       "messages": ["Enter the OTP from the SMS:"],
-                       "threadid": 140422378276608},
-            "versionnumber": "unknown",
-            "version": "privacyIDEA unknown",
-            "result": {"status": true,
-                       "value": 1},
-            "time": 1482223663.517212,
-            "id": 1}
+           HTTP/1.1 200 OK
+           Content-Type: application/json
+
+           {
+             "jsonrpc": "2.0",
+             "signature": "1939...146964",
+             "detail": {"transaction_ids": ["03921966357577766962"],
+                        "messages": ["Enter the OTP from the SMS:"],
+                        "threadid": 140422378276608},
+             "versionnumber": "unknown",
+             "version": "privacyIDEA unknown",
+             "result": {"status": true,
+                        "value": 1},
+             "time": 1482223663.517212,
+             "id": 1
+           }
 
     **Example response** for response, if the user has no challenge token:
 
-       .. sourcecode:: http
+        .. sourcecode:: http
 
-           {"detail": {"messages": [],
-                       "threadid": 140031212377856,
-                       "transaction_ids": []},
-            "id": 1,
-            "jsonrpc": "2.0",
-            "result": {"status": true,
-                       "value": 0},
-            "signature": "205530282...54508",
-            "time": 1484303812.346576,
-            "version": "privacyIDEA 2.17",
-            "versionnumber": "2.17"}
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+
+            {
+              "detail": {"messages": [],
+                         "threadid": 140031212377856,
+                         "transaction_ids": []},
+              "id": 1,
+              "jsonrpc": "2.0",
+              "result": {"status": true,
+                         "value": 0},
+              "signature": "205530282...54508",
+              "time": 1484303812.346576,
+              "version": "privacyIDEA 2.17",
+              "versionnumber": "2.17"
+            }
 
     **Example response** for a failed triggering of a challenge. In this case
-        the ``status`` will be ``false``.
+    the ``status`` will be ``false``.
 
-       .. sourcecode:: http
+        .. sourcecode:: http
 
-           {"detail": null,
-            "id": 1,
-            "jsonrpc": "2.0",
-            "result": {"error": {"code": 905,
-                                 "message": "ERR905: The user can not be
-                                 found in any resolver in this realm!"},
-                       "status": false},
-            "signature": "14468...081555",
-            "time": 1484303933.72481,
-            "version": "privacyIDEA 2.17"}
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+
+            {
+              "detail": null,
+              "id": 1,
+              "jsonrpc": "2.0",
+              "result": {"error": {"code": 905,
+                                   "message": "ERR905: The user can not be
+                                   found in any resolver in this realm!"},
+                         "status": false},
+              "signature": "14468...081555",
+              "time": 1484303933.72481,
+              "version": "privacyIDEA 2.17"
+            }
 
     """
     user = request.User
