@@ -122,7 +122,11 @@ def set_user_attribute():
     """
     Set a custom attribute for a user.
     The user is specified by the usual parameters user, resolver and realm.
+    When a user is calling the endpoint the parameters will be implicitly set.
 
+    :httpparam user: The username of the user, for whom the attribute should be set
+    :httpparam resolver: The resolver of the user (optional)
+    :httpparam realm: The realm of the user (optional)
     :httpparam key: The name of the attributes
     :httpparam value: The value of the attribute
     :httpparam type: an optional type of the attribute
