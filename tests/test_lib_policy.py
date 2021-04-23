@@ -7,7 +7,7 @@ The lib.policy.py only depends on the database model.
 import dateutil
 import mock
 
-from .base import MyTestCase, FakeFlaskG
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.policy import (set_policy, delete_policy,
@@ -16,7 +16,8 @@ from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE, enable_policy,
                                     PolicyError, ACTION, MAIN_MENU,
                                     delete_all_policies,
-                                    get_action_values_from_options, Match, MatchingError)
+                                    get_action_values_from_options, Match, MatchingError,
+                                    get_allowed_custom_attributes)
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
@@ -1451,6 +1452,42 @@ class PolicyTestCase(MyTestCase):
 
         delete_policy("setpin_pol")
         db_token.delete()
+
+    def test_33_get_allowed_attributes(self):
+
+        class MockUser(object):
+            login = 'login'
+            realm = 'realm'
+            resolver = 'resolver'
+
+        user = MockUser()
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        g.logged_in_user = {"role": "admin", "username": "admin", "realm": ""}
+
+        d = get_allowed_custom_attributes(g, user)
+        self.assertEqual({"set": {}, "delete": []}, d)
+
+        set_policy("custom_attr", scope=SCOPE.ADMIN,
+                   action="{0!s}=:hello: one two".format(ACTION.SET_USER_ATTRIBUTES))
+        set_policy("custom_attr2", scope=SCOPE.ADMIN,
+                   action="{0!s}=:hello2: * :hello: three".format(ACTION.SET_USER_ATTRIBUTES))
+        set_policy("custom_attr3", scope=SCOPE.ADMIN,
+                   action="{0!s}=:*: on off".format(ACTION.SET_USER_ATTRIBUTES))
+        set_policy("custom_attr4", scope=SCOPE.ADMIN,
+                   action="{0!s}=*".format(ACTION.DELETE_USER_ATTRIBUTES))
+        # Also check, that a double entry "one" only appears once
+        set_policy("custom_attr5", scope=SCOPE.ADMIN,
+                   action="{0!s}=:hello: one".format(ACTION.SET_USER_ATTRIBUTES))
+        g.policy_object = PolicyClass()
+
+        d = get_allowed_custom_attributes(g, user)
+        self.assertEqual(["*"], d.get("delete"))
+        self.assertEqual(sorted(d.get("set").keys()), ["*", "hello", "hello2"])
+        self.assertEqual(sorted(d.get("set").get("*")), ["off", "on"])
+        self.assertEqual(sorted(d.get("set").get("hello")), ["one", "three", "two"])
+        self.assertEqual(sorted(d.get("set").get("hello2")), ["*"])
 
 
 class PolicyMatchTestCase(MyTestCase):

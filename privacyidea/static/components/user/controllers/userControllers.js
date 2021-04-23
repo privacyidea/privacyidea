@@ -154,6 +154,60 @@ angular.module("privacyideaApp")
             });
         };
 
+        $scope.getEditableAttributes = function () {
+            UserFactory.getEditableAttributes({
+                user: $scope.username,
+                resolver: $scope.resolver,
+                realm: $scope.realmname
+            }, function(data) {
+                $scope.allowed_custom_attributes = data.result.value;
+            });
+        };
+
+        $scope.addCustomAttribute = function() {
+            var key = $scope.selected_attr_key;
+            var value = $scope.selected_attr_value;
+            if ($scope.selected_attr_key === '*') {
+                key = $scope.new_custom_attribute_key;
+            }
+            if ($scope.selected_attr_value === '*') {
+                value = $scope.new_custom_attribute_value;
+            }
+            UserFactory.setCustomAttribute($scope.username, $scope.realmname, key, value,
+                function(data) {
+                    $scope.getUserDetails();
+                    $scope.getCustomAttributes();
+                });
+        };
+
+        $scope.getCustomAttributes = function() {
+            UserFactory.getCustomAttributes($scope.username, $scope.realmname,
+                function(data) {
+                    $scope.custom_attributes = data.result.value;
+                });
+        };
+
+        $scope.deleteCustomAttribute = function(key) {
+            UserFactory.deleteCustomAttribute($scope.username, $scope.realmname, key,
+                function(data) {
+                    $scope.getUserDetails();
+                    $scope.getCustomAttributes();
+                });
+        }
+
+        $scope.onCustomAttributeKeyChange = function() {
+            $scope.new_custom_attribute_value = "";
+            $scope.selected_attr_value = "";
+            $scope.allowed_values = $scope.allowed_custom_attributes['set'][$scope.selected_attr_key]
+            $scope.customAttributeValueSelectVisible = true;
+            if ($scope.allowed_values.length === 1) {
+                // If there is only one value, set it!
+                $scope.selected_attr_value = $scope.allowed_values[0];
+                // if this value is "*", then we hide the
+                $scope.customAttributeValueSelectVisible = false;
+            }
+        }
+
         $scope.updateUser = function () {
             UserFactory.updateUser($scope.resolvername, $scope.User,
             function (data) {
@@ -211,11 +265,14 @@ angular.module("privacyideaApp")
 
         $scope.getUserDetails();
         $scope._getUserToken();
+        $scope.getEditableAttributes();
+        $scope.getCustomAttributes();
 
         // listen to the reload broadcast
         $scope.$on("piReload", function() {
             $scope.getUserDetails();
             $scope._getUserToken();
+            $scope.getCustomAttributes();
         });
     });
 

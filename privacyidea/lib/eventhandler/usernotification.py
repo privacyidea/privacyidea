@@ -47,7 +47,7 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
-from privacyidea.lib.user import User, get_user_list
+from privacyidea.lib.user import User, get_user_list, is_attribute_at_all
 from privacyidea.lib.utils import create_tag_dict, to_unicode
 from privacyidea.lib.crypto import get_alphanum_str
 from privacyidea.lib import _
@@ -256,7 +256,8 @@ class UserNotificationEventHandler(BaseEventHandler):
         elif notify_type == NOTIFY_TYPE.ADMIN_REALM:
             # Send emails to all the users in the specified admin realm
             admin_realm = handler_options.get("To "+NOTIFY_TYPE.ADMIN_REALM)
-            ulist = get_user_list({"realm": admin_realm})
+            attr = is_attribute_at_all()
+            ulist = get_user_list({"realm": admin_realm}, custom_attributes=attr)
             # create a list of all user-emails, if the user has an email
             emails = [u.get("email") for u in ulist if u.get("email")]
             recipient = {

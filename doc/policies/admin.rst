@@ -704,3 +704,59 @@ An additional enrollment policy :ref:`require_attestation`, if an attestation ce
 is required.
 
 New in version 3.5.
+
+.. _admin_set_custom_user_attributes:
+
+set_custom_user_attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+New in version 3.6
+
+This policy defines which additional attributes an administrator is allowed to set.
+It can also define, to which value the admin is allowed to set such attribute.
+For allowing all values, the asterisk ("*") is used.
+
+.. note:: Commas are not allowed in policy actions value, so the setting has to
+   be defined by separating colons (":") and spaces.
+
+Each key is enclosed in colons and followed by a list of values separated by whitespaces,
+thus values are not allowed to contain whitespaces.
+
+Example:
+
+    :department: sales finance :city: * :*: 1 2
+
+``:department: sales finance`` means that the administrator can set an additional
+attribute "department" with the allowed values of "sales" or "finance".
+
+``:city: *`` means that the administrator can set an additional attribute
+"city" to any value.
+
+``:*: 1 2`` means that the administrator can set any other additional attribute
+either to the value "1" or to the value "2".
+
+
+.. _admin_delete_custom_user_attributes:
+
+delete_custom_user_attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This takes a space separated list of attributes that the administrator is allowed to
+delete. You can use the asterisk "*" to indicate, that this policy allows the
+administrator to delete any additional attribute.
+
+Example:
+
+    attr1 attr2 department
+
+The administrator is allowed to delete the attributes "attr1", "attr2" and
+the attributes "department" of the corresponding users.
+
+.. note:: If this policy is not set, the admin is not allowed to delete any
+   custom user attributes.
+
+New in version 3.6

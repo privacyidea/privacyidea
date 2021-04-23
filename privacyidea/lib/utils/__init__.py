@@ -1441,3 +1441,30 @@ def to_list(input):
     if isinstance(input, set):
         return list(input)
     return [input]
+
+
+def parse_string_to_dict(s, split_char=":"):
+    """
+    This function can parse a string that is formatted like:
+
+       :key1: valueA valueB valueC :key2: valueD valueE
+
+    and return a dict:
+
+       {"key1": ["valueA", "valueB", "valueC"],
+        "key2": ["valueD", "valueE"]
+
+    Note: a whitespace is in the string is separating the values.
+    Thus values can not contain a whitespace.
+
+    :param s: The string that should be parsed
+    :param split_char: The character used for splitting the string
+    :return: the dict
+    """
+    # create a list like ["key1", "valueA valueB valueC", "key2", "valueD valueE"]
+    packed_list = [x.strip() for x in s.strip().split(split_char) if x]
+    keys = packed_list[::2]
+    # create a list of the values: [['valueA', 'valueB', 'valueC'], ['valueD', 'valueE']]
+    values = [[x for x in y.split()] for y in packed_list[1::2]]
+    d = {a: b for a, b in zip(keys, values)}
+    return d

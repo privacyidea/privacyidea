@@ -29,10 +29,11 @@ from flask import (Blueprint,
                    request)
 from .lib.utils import (getParam,
                         send_result)
-from ..api.lib.prepolicy import prepolicy, check_base_action, realmadmin
-from ..lib.policy import ACTION
+from ..api.lib.prepolicy import (prepolicy, check_base_action, realmadmin,
+                                 check_custom_user_attributes)
+from ..lib.policy import ACTION, get_allowed_custom_attributes
 from privacyidea.api.auth import admin_required, user_required
-from privacyidea.lib.user import create_user, get_user_from_param, User
+from privacyidea.lib.user import create_user, User, is_attribute_at_all
 from privacyidea.lib.event import event
 
 
@@ -104,12 +105,117 @@ def get_users():
         }
     """
     realm = getParam(request.all_data, "realm")
-    users = get_user_list(request.all_data)
+    attr = is_attribute_at_all()
+    users = get_user_list(request.all_data, custom_attributes=attr)
 
     g.audit_object.log({'success': True,
                         'info': "realm: {0!s}".format(realm)})
     
     return send_result(users)
+
+
+@user_blueprint.route('/attribute', methods=['POST'])
+@prepolicy(check_custom_user_attributes, request, "set")
+@user_required
+@event("set_custom_user_attribute", request, g)
+def set_user_attribute():
+    """
+    Set a custom attribute for a user.
+    The user is specified by the usual parameters user, resolver and realm.
+    When a user is calling the endpoint the parameters will be implicitly set.
+
+    :httpparam user: The username of the user, for whom the attribute should be set
+    :httpparam resolver: The resolver of the user (optional)
+    :httpparam realm: The realm of the user (optional)
+    :httpparam key: The name of the attributes
+    :httpparam value: The value of the attribute
+    :httpparam type: an optional type of the attribute
+
+    The database id of the attribute is returned. The return
+    value thus should be >=0.
+    """
+    # We basically need a user, otherwise we will fail, but the
+    # user object is later simply used from request.User. We only
+    # need to avoid an empty User object.
+    _user = getParam(request.all_data, "user", optional=False)
+    attrkey = getParam(request.all_data, "key", optional=False)
+    attrvalue = getParam(request.all_data, "value", optional=False)
+    attrtype = getParam(request.all_data, "type", optional=True)
+    r = request.User.set_attribute(attrkey, attrvalue, attrtype)
+    g.audit_object.log({"success": True,
+                        "info": u"{0!s}".format(attrkey)})
+    return send_result(r)
+
+
+@user_blueprint.route('/attribute', methods=['GET'])
+@user_required
+@event("get_user_attribute", request, g)
+def get_user_attribute():
+    """
+    Return the *custom* attribute of the given user.
+    This does *not* return the user attributes which are contained in the user store!
+    The user is specified by the usual parameters user, resolver and realm.
+    When a user is calling the endpoint the parameters will be implicitly set.
+
+    :httpparam user: The username of the user, for whom the attribute should be set
+    :httpparam resolver: The resolver of the user (optional)
+    :httpparam realm: The realm of the user (optional)
+    :httpparam key: The optional name of the attribute. If it is not specified
+         all custom attributes of the user are returned.
+
+    """
+    _user = getParam(request.all_data, "user", optional=False)
+    attrkey = getParam(request.all_data, "key", optional=True)
+    r = request.User.attributes
+    if attrkey:
+        r = r.get(attrkey)
+    g.audit_object.log({"success": True,
+                        "info": u"{0!s}".format(attrkey)})
+    return send_result(r)
+
+
+@user_blueprint.route('/editable_attributes/', methods=['GET'])
+@user_required
+@event("get_editable_attributes", request, g)
+def get_editable_attributes():
+    """
+    The resulting editable custom attributes according to the policies
+    are returned. This can be a user specific result.
+    When a user is calling the endpoint the parameters will be implicitly set.
+
+    :httpparam user: The username of the user, for whom the attribute should be set
+    :httpparam resolver: The resolver of the user (optional)
+    :httpparam realm: The realm of the user (optional)
+
+    Works for admins and normal users.
+    :return:
+    """
+    _user = getParam(request.all_data, "user", optional=False)
+    r = get_allowed_custom_attributes(g, request.User)
+    g.audit_object.log({"success": True})
+    return send_result(r)
+
+
+@user_blueprint.route('/attribute/<attrkey>/<username>/<realm>', methods=['DELETE'])
+@prepolicy(check_custom_user_attributes, request, "delete")
+@user_required
+@event("delete_custom_user_attribute", request, g)
+def delete_user_attribute(attrkey, username, realm=None):
+    """
+    Delete a specified custom attribute from the user.
+    The user is specified by the positional parameters user and realm.
+
+    :httpparam user: The username of the user, for whom the attribute should be set
+    :httpparam realm: The realm of the user
+    :httpparam key: The name of the attribute that should be deleted from the user.
+
+    Returns the number of deleted attributes.
+    """
+    user = User(username, realm)
+    r = user.delete_attribute(attrkey)
+    g.audit_object.log({"success": True,
+                        "info": u"{0!s}".format(attrkey)})
+    return send_result(r)
 
 
 @user_blueprint.route('/<resolvername>/<username>', methods=['DELETE'])

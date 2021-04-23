@@ -81,6 +81,15 @@ def get_realm(realmname):
     return r or {}
 
 
+def get_realm_id(realmname):
+    """
+    Returns the realm_id for a realm name
+    :param realmname: The name of the realm
+    :return: The ID of the realm. If the realm does not exist, returns None.
+    """
+    return get_config_object().realm.get(realmname, {}).get("id")
+
+
 @log_with(log)
 def realm_is_defined(realm):
     """

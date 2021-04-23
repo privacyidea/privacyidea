@@ -338,3 +338,39 @@ An additional enrollment policy :ref:`require_attestation`, if an attestation ce
 is required.
 
 New in version 3.5.
+
+
+.. _user_set_custom_user_attributes:
+
+set_custom_user_attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This defines how a user is allowed to set his own attributes.
+It uses the same setting as the admin policy :ref:`admin_set_custom_user_attributes`.
+
+.. note:: Using a '*' in this setting allows the user to set any attribute or any value and thus the user
+   can overwrite existing attributes from the user store. If policies, depending on user attributes
+   are defined, then the user would be able to change the matching of the policies.
+   Use with CAUTION!
+
+New in version 3.6
+
+.. _user_delete_custom_user_attributes:
+
+delete_custom_user_attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This defines how a user is allowed to delete his own attributes.
+It uses the same setting as the admin policy :ref:`admin_delete_custom_user_attributes`.
+
+.. note:: Using a '*' in this setting allows the user to delete any attribute and thus the user
+   can change overwritten attributes and revert to the user store attributes.
+   If policies, depending on user attributes
+   are defined, then the user would be able to change the matching of the policies.
+   Use with CAUTION!
+
+New in version 3.6

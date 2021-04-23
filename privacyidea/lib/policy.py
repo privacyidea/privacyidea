@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2021-02-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add custom user attributes
 #  2020-06-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add privacyIDEA nodes
 #  2019-09-26 Friedrich Weber <friedrich.weber@netknights.it>
@@ -180,7 +182,7 @@ from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
-                                   determine_logged_in_userparams)
+                                   determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.utils.compare import compare_values, CompareError, COMPARATOR_FUNCTIONS, COMPARATORS, \
     COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.user import User
@@ -198,6 +200,7 @@ required = False
 
 DEFAULT_ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=it.netknights.piauthenticator"
 DEFAULT_IOS_APP_URL = "https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301"
+
 
 class SCOPE(object):
     __doc__ = """This is the list of the allowed scopes that can be used in
@@ -364,6 +367,14 @@ class ACTION(object):
     SHOW_CUSTOM_AUTHENTICATOR = "show_custom_authenticator"
     AUTHORIZED = "authorized"
     SHOW_NODE = "show_node"
+    SET_USER_ATTRIBUTES = "set_custom_user_attributes"
+    DELETE_USER_ATTRIBUTES = "delete_custom_user_attributes"
+
+
+class TYPE(object):
+    INT = "int"
+    STRING = "str"
+    BOOL = "bool"
 
 
 class AUTHORIZED(object):
@@ -1831,8 +1842,23 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("The Admin is allowed to trigger a challenge for "
                           "e.g. SMS OTP token."),
                 'mainmenu': [],
-                'group': GROUP.GENERAL
-            }
+                'group': GROUP.GENERAL},
+            ACTION.SET_USER_ATTRIBUTES: {
+                'type': TYPE.STRING,
+                'desc': _("The Admin is allowed to set certain custom user "
+                          "attributes. If the Admin should be allowed to set any "
+                          "attribute, set this to '*:*'. For more details, check "
+                          "the documentation."),
+                'mainmenu': [],
+                'group': GROUP.USER},
+            ACTION.DELETE_USER_ATTRIBUTES: {
+                'type': TYPE.STRING,
+                'desc': _("The Admin is allowed to delete certain custom user "
+                          "attributes. If the Admin should be allowed to delete any "
+                          "attribute, set this to '*'. For more details, check "
+                          "the documentation."),
+                'mainmenu': [],
+                'group': GROUP.USER}
         },
 
         SCOPE.USER: {
@@ -1946,7 +1972,23 @@ def get_static_policy_definitions(scope=None):
                                    'desc': _("The user is allowed to do a "
                                              "password reset in an editable "
                                              "UserIdResolver."),
-                                   'mainmenu': []}
+                                   'mainmenu': []},
+            ACTION.SET_USER_ATTRIBUTES: {
+                'type': TYPE.STRING,
+                'desc': _("The user is allowed to set certain custom user "
+                          "attributes. If the user should be allowed to set any "
+                          "attribute, set this to '*:*'. Use '*' with CAUTION! "
+                          "For more details, check the documentation."),
+                'mainmenu': [],
+                'group': GROUP.USER},
+            ACTION.DELETE_USER_ATTRIBUTES: {
+                'type': TYPE.STRING,
+                'desc': _("The user is allowed to delete certain custom user "
+                          "attributes. If the user should be allowed to delete any "
+                          "attribute, set this to '*'. Use '*' with CAUTION! "
+                          "For more details, check the documentation."),
+                'mainmenu': [],
+                'group': GROUP.USER}
 
         },
         SCOPE.ENROLL: {
@@ -2731,6 +2773,38 @@ class Match(object):
                    client=client, action=action, adminrealm=adminrealm,
                    adminuser=adminuser, time=time, serial=serial,
                    sort_by_priority=sort_by_priority)
+
+
+def get_allowed_custom_attributes(g, user_obj):
+    """
+    Return the list off allowed custom user attributes that can be set
+    and deleted.
+    Returns a dictionary with the two keys "delete" and "set.
+
+    :param g:
+    :param user_obj: The User object to check the allowed attributes for
+    :return: dict
+    """
+    deleteables = []
+    setables = {}
+    del_pol_dict = Match.admin_or_user(g, action=ACTION.DELETE_USER_ATTRIBUTES,
+                                       user_obj=user_obj).action_values(unique=False,
+                                                                        allow_white_space_in_action=True)
+    for keys in del_pol_dict:
+        deleteables.extend([k.strip() for k in keys.strip().split()])
+    deleteables = list(set(deleteables))
+    set_pol_dict = Match.admin_or_user(g, action=ACTION.SET_USER_ATTRIBUTES,
+                                       user_obj=user_obj).action_values(unique=False,
+                                                                        allow_white_space_in_action=True)
+    for keys in set_pol_dict:
+        # parse through each policy
+        d = parse_string_to_dict(keys)
+        for k, vals in d.items():
+            setables.setdefault(k, []).extend(vals)
+            # If there are double entries in vals, we reduce them to one
+            setables[k] = list(set(setables[k]))
+
+    return {"delete": deleteables, "set": setables}
 
 
 def check_pin(g, pin, tokentype, user_obj):
