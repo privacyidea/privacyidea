@@ -1461,13 +1461,10 @@ def parse_string_to_dict(s, split_char=":"):
     :param split_char: The character used for splitting the string
     :return: the dict
     """
-    d = {}
     # create a list like ["key1", "valueA valueB valueC", "key2", "valueD valueE"]
-    li = [x.strip() for x in s.strip().split(split_char) if x]
-    li.reverse()
-    while len(li) >= 2:
-        k = li.pop()
-        v = li.pop()
-        value = [x.strip() for x in v.split(" ") if x]
-        d[k] = value
+    packed_list = [x.strip() for x in s.strip().split(split_char) if x]
+    keys = packed_list[::2]
+    # create a list of the values: [['valueA', 'valueB', 'valueC'], ['valueD', 'valueE']]
+    values = [[x for x in y.split()] for y in packed_list[1::2]]
+    d = {a: b for a, b in zip(keys, values)}
     return d
