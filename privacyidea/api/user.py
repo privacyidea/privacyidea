@@ -155,7 +155,11 @@ def get_user_attribute():
     Return the *custom* attribute of the given user.
     This does *not* return the user attributes which are contained in the user store!
     The user is specified by the usual parameters user, resolver and realm.
+    When a user is calling the endpoint the parameters will be implicitly set.
 
+    :httpparam user: The username of the user, for whom the attribute should be set
+    :httpparam resolver: The resolver of the user (optional)
+    :httpparam realm: The realm of the user (optional)
     :httpparam key: The optional name of the attribute. If it is not specified
          all custom attributes of the user are returned.
 
@@ -177,6 +181,11 @@ def get_editable_attributes():
     """
     The resulting editable custom attributes according to the policies
     are returned. This can be a user specific result.
+    When a user is calling the endpoint the parameters will be implicitly set.
+
+    :httpparam user: The username of the user, for whom the attribute should be set
+    :httpparam resolver: The resolver of the user (optional)
+    :httpparam realm: The realm of the user (optional)
 
     Works for admins and normal users.
     :return:
@@ -196,6 +205,8 @@ def delete_user_attribute(attrkey, username, realm=None):
     Delete a specified custom attribute from the user.
     The user is specified by the positional parameters user and realm.
 
+    :httpparam user: The username of the user, for whom the attribute should be set
+    :httpparam realm: The realm of the user
     :httpparam key: The name of the attribute that should be deleted from the user.
 
     Returns the number of deleted attributes.
