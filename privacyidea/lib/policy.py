@@ -1932,16 +1932,16 @@ def get_static_policy_definitions(scope=None):
                 'type': TYPE.STRING,
                 'desc': _("The user is allowed to set certain custom user "
                           "attributes. If the user should be allowed to set any "
-                          "attribute, set this to '*:*'. For more details, check "
-                          "the documentation."),
+                          "attribute, set this to '*:*'. Use '*' with CAUTION! "
+                          "For more details, check the documentation."),
                 'mainmenu': [],
                 'group': GROUP.USER},
             ACTION.DELETE_USER_ATTRIBUTES: {
                 'type': TYPE.STRING,
                 'desc': _("The user is allowed to delete certain custom user "
                           "attributes. If the user should be allowed to delete any "
-                          "attribute, set this to '*'. For more details, check "
-                          "the documentation."),
+                          "attribute, set this to '*'. Use '*' with CAUTION! "
+                          "For more details, check the documentation."),
                 'mainmenu': [],
                 'group': GROUP.USER}
 
