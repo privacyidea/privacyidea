@@ -148,17 +148,6 @@ He will not see tokens, that are not in his realm.
 So you can assign a token to realm A and realm B, thus the administrator A
 and the administrator B will be able to see the token.
 
-Get OTP
---------
-
-If the corresponding getOTP policy (see :ref:`policies`) is set, the administrator
-can get the OTP values of a token from the server without having the token
-with him.
-
-.. warning:: Of course this is a potential backdoor, since the administrator
-   could login as the user/owner of this very token.
-
-
 .. _enroll_token:
 
 Enroll Token

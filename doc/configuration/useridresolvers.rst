@@ -183,8 +183,10 @@ The *Server pool retry rounds* and *Server pool skip timeout* settings configure
 the LDAP server pool. When establishing a LDAP connection, the resolver uses a round-robin
 strategy to select a LDAP server from the pool. If the current server is not reachable, it is removed
 from the pool and will be re-inserted after the number of seconds specified in the *skip timeout*.
-If no server from the pool is reachable, the servers are queried again from the beginning. If
-a reachable server has not been found after the number of rounds specified in the *retry rounds*,
+If the pool is empty after a round, a timeout is added before the next round is started.
+The ldap3 module defaults system wide to 10 seconds before starting the next round.
+This timeout can be changed by setting ``PI_LDAP_POOLING_LOOP_TIMEOUT`` to an integer in seconds in ``pi.cfg``.
+If no reachable server could be found after the number of rounds specified in the *retry rounds*,
 the request fails.
 
 By default, knowledge about unavailable pool servers is not persisted between requests.
@@ -193,14 +195,18 @@ has not passed yet. If the *Per-process server pool* is enabled, knowledge about
 servers is persisted within each process. This setting may improve performance in situations in
 which a LDAP server from the pool is down for extended periods of time.
 
+TLS Version
+~~~~~~~~~~~
+
+When using TLS, you may specify the TLS version to use. Starting from version 3.6, privacyIDEA offers
+TLS v1.3 by default.
+
+
 TLS certificates
 ~~~~~~~~~~~~~~~~
 
-Starting with privacyIDEA 2.18, in case of encrypted LDAPS
-connections privacyIDEA can verify the TLS
-certificate. (Python >= 2.7.9 required)
-To have privacyIDEA verify the TLS certificate, you need to check the
-according checkbox.
+When using TLS with LDAP, you can tell privacyIDEA to verify the certificate. The according
+checkbox is visible in the WebUI if the target URL starts with *ldaps* or when using STARTTLS.
 
 You can specify a file with the trusted CA certificate, that signed the
 TLS certificate. The default CA filename is */etc/privacyidea/ldap-ca.crt*

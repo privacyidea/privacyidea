@@ -151,8 +151,9 @@ POST request.
    you need an options, that has the same name as a parameter, you must not
    fill in the corresponding parameter.
 
-.. note:: You can use the tags ``{phone}`` and ``{otp}`` to specify the mobile
-   number and the otp value.
+.. note:: You can use the tags ``{phone}`` to specify the phone number. The tag ``{otp}``
+   will be replaced simply with the OTP value or with the contents created
+   by the policy :ref:`smstext`.
 
 Examples
 ........

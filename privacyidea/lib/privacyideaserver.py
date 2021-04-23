@@ -52,6 +52,35 @@ class PrivacyIDEAServer(object):
         """
         self.config = db_privacyideaserver_object
 
+    def validate_check(self, user, password, serial=None, realm=None, transaction_id=None, resolver=None):
+        """
+        Perform an HTTP validate/check request to the remote privacyIDEA
+        Server.
+
+        :param serial: The serial number of a token
+        :param user: The username
+        :param password: The password
+        :param realm: an optional realm, if it is not contained in the username
+        :param transaction_id:  an optional transaction_id.
+        :return: Tuple (HTTP response object, JSON response content)
+        """
+        data = {"pass": password}
+        if user:
+            data["user"] = user
+        if serial:
+            data["serial"] = serial
+        if realm:
+            data["realm"] = realm
+        if transaction_id:
+            data["transaction_id"] = transaction_id
+        if resolver:
+            data["resolver"] = resolver
+        response = requests.post(self.config.url + "/validate/check",
+                                 data=data,
+                                 verify=self.config.tls)
+
+        return response
+
     @staticmethod
     def request(config, user, password):
         """
@@ -85,16 +114,17 @@ class PrivacyIDEAServer(object):
 
 
 @log_with(log)
-def get_privacyideaserver(identifier):
+def get_privacyideaserver(identifier=None, id=None):
     """
-    This returns the RADIUSServer object of the RADIUSServer definition
+    This returns the RADIUSServer object of the privacyIDEA Server definition
     "identifier".
     In case the identifier does not exist, an exception is raised.
 
-    :param identifier: The name of the RADIUSserver definition
-    :return: A RADIUSServer Object
+    :param identifier: The name of the privacyIDEA Server definition
+    :param id: The database ID of the privacyIDEA Server definition
+    :return: A privacyIDEAServer Object
     """
-    server_list = get_privacyideaservers(identifier=identifier)
+    server_list = get_privacyideaservers(identifier=identifier, id=id)
     if not server_list:
         raise ConfigAdminError("The specified privacyIDEA Server configuration "
                                "does not exist.")
@@ -102,7 +132,7 @@ def get_privacyideaserver(identifier):
 
 
 @log_with(log)
-def get_privacyideaservers(identifier=None, url=None):
+def get_privacyideaservers(identifier=None, url=None, id=None):
     """
     This returns a list of all privacyIDEA Servers matching the criterion.
     If no identifier or url is provided, it will return a list of all 
@@ -113,15 +143,19 @@ def get_privacyideaservers(identifier=None, url=None):
         As the identifier is unique, providing an identifier will return a
         list with either one or no RADIUSServer
     :type identifier: basestring
-    :param server: The FQDN or IP address of the RADIUSServer
-    :type server: basestring
+    :param url: The FQDN or IP address of the RADIUSServer
+    :type url: basestring
+    :param id: The database id of the server
+    :type id: integer
     :return: list of RADIUSServer Objects.
     """
     res = []
     sql_query = PrivacyIDEAServerDB.query
-    if identifier:
+    if id is not None:
+        sql_query = sql_query.filter(PrivacyIDEAServerDB.id == id)
+    elif identifier:
         sql_query = sql_query.filter(PrivacyIDEAServerDB.identifier == identifier)
-    if url:
+    elif url:
         sql_query = sql_query.filter(PrivacyIDEAServerDB.server == url)
 
     for row in sql_query.all():

@@ -53,7 +53,7 @@ import traceback
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.api.lib.utils import required, optional
-from privacyidea.lib.utils import is_true
+from privacyidea.lib.utils import is_true, create_tag_dict
 
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
@@ -333,7 +333,7 @@ class SmsTokenClass(HotpTokenClass):
             try:
                 message_template = self._get_sms_text(options)
                 success, sent_message = self._send_sms(
-                    message=message_template)
+                    message=message_template, options=options)
 
                 # Create the challenge in the database
                 if is_true(get_from_config("sms.concurrent_challenges")):
@@ -383,21 +383,24 @@ class SmsTokenClass(HotpTokenClass):
                 # We authenticate from the saved challenge
                 ret = 1
         if ret >= 0 and self._get_auto_sms(options):
+            # get message template from user specific policies
             message = self._get_sms_text(options)
             self.inc_otp_counter(ret, reset=False)
-            success, message = self._send_sms(message=message)
+            success, message = self._send_sms(message=message, options=options)
             log.debug("AutoSMS: send new SMS: {0!s}".format(success))
             log.debug("AutoSMS: {0!r}".format(message))
         return ret
 
     @log_with(log)
-    def _send_sms(self, message="<otp>"):
+    def _send_sms(self, message="<otp>", options=None):
         """
         send sms
 
         :param message: the sms submit message - could contain placeholders
             like <otp> or <serial>
         :type message: string
+        :param options: Additional options from the request
+        :type options: dict
 
         :return: submitted message
         :rtype: string
@@ -413,10 +416,17 @@ class SmsTokenClass(HotpTokenClass):
             log.warning("Token {0!s} does not have a phone number!".format(self.token.serial))
         otp = self.get_otp()[2]
         serial = self.get_serial()
+        User = options.get("user")
 
+        log.debug(r"sending SMS with template text: {0!s}".format(message))
         message = message.replace("<otp>", otp)
         message = message.replace("<serial>", serial)
-        log.debug("sending SMS to phone number {0!s} ".format(phone))
+        tags = create_tag_dict(serial=serial,
+                               tokenowner=User,
+                               tokentype="sms",
+                               recipient={"givenname": User.info.get("givenname") if User else "",
+                                          "surname": User.info.get("surname") if User else ""})
+        message = message.format(otp=otp, challenge=options.get("challenge"), **tags)
 
         # First we try to get the new SMS gateway config style
         # The token specific identifier has priority over the system wide identifier
@@ -516,12 +526,11 @@ class SmsTokenClass(HotpTokenClass):
         user_object = options.get("user")
         if g:
             messages = Match.user(g, scope=SCOPE.AUTH, action=SMSACTION.SMSTEXT,
-                                  user_object=user_object if user_object else None).action_values(unique=True)
+                                  user_object=user_object if user_object else None).action_values(
+                allow_white_space_in_action=True, unique=True)
             if len(messages) == 1:
                 message = list(messages)[0]
 
-        # Replace the {challenge}:
-        message = message.format(challenge=options.get("challenge"))
         return message
 
     @staticmethod

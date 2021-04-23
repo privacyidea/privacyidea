@@ -908,6 +908,7 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
         CACHE_TIMEOUT: 120,
         NOSCHEMAS: false,
         TLS_VERIFY: true,
+        TLS_VERSION: "2",
         START_TLS: true,
         SERVERPOOL_ROUNDS: 2,
         SERVERPOOL_SKIP: 30
@@ -916,6 +917,10 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
     $scope.resolvername = $stateParams.resolvername;
     $scope.authtypes = ["Simple", "SASL Digest-MD5", "NTLM"];
     $scope.scopes = ["SUBTREE", "BASE", "LEVEL"];
+    $scope.tls_version_options = [{value: "3", name: "TLS v1.0"},
+                                  {value: "4", name: "TLS v1.1"},
+                                  {value: "5", name: "TLS v1.2"},
+                                  {value: "2", name: "TLS v1.3"}];
 
     $('html,body').scrollTop(0);
 

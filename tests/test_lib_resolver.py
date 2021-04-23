@@ -1606,6 +1606,52 @@ class LDAPResolverTestCase(MyTestCase):
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertTrue(kwargs['use_ssl'])
+            ldap3_tls_config = kwargs['tls'].__str__()
+            self.assertIn("protocol: 2", ldap3_tls_config)
+            self.assertIn("CA certificates file: present", ldap3_tls_config)
+            self.assertTrue("verify mode: VerifyMode.CERT_REQUIRED" in ldap3_tls_config
+                            or "verify mode: 2" in ldap3_tls_config
+                            or "verify mode: True" in ldap3_tls_config)
+
+    def test_24b_tls_options(self):
+        @ldap3mock.activate
+        def check_tls_version_ldap3(tls_version_pi, tls_version_ldap3):
+
+            # Check that START_TLS and TLS_VERIFY are actually passed to the ldap3 Connection
+            ldap3mock.setLDAPDirectory(LDAPDirectory)
+            config = {'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn"}',
+                      'UIDTYPE': 'unknownType',
+                      'CACHE_TIMEOUT': 0,
+                      'START_TLS': '1',
+                      'TLS_VERIFY': '1'
+        }
+            config.update({"TLS_VERSION": tls_version_pi})
+            start_tls_resolver = LDAPResolver()
+            start_tls_resolver.loadConfig(config)
+            result = start_tls_resolver.getUserList({'username': '*'})
+            self.assertEqual(len(result), len(LDAPDirectory))
+            # We check two things:
+            # 1) start_tls has actually been called!
+            self.assertTrue(start_tls_resolver.l.start_tls_called)
+            # 2) All Server objects were constructed with a non-None TLS context and use_ssl=False
+            for _, kwargs in ldap3mock.get_server_mock().call_args_list:
+                self.assertIsNotNone(kwargs['tls'])
+                self.assertFalse(kwargs['use_ssl'])
+                ldap3_tls_config = kwargs['tls'].__str__()
+                self.assertIn(tls_version_ldap3, ldap3_tls_config)
+
+        tls_versions = {"": "protocol: 2",
+                        "5": "protocol: 5",
+                        "1234": "protocol: 1234"}
+        for tls_version_pi, tls_version_ldap3 in tls_versions.items():
+            check_tls_version_ldap3(tls_version_pi, tls_version_ldap3)
+        self.assertRaises(ValueError, check_tls_version_ldap3, "version is nonsense", "nothing to check")
 
     @ldap3mock.activate
     def test_25_LDAP_DN_with_utf8(self):

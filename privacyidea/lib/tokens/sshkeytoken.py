@@ -19,8 +19,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 __doc__="""The SSHKeyTokenClass provides a TokenClass that stores the public
-SSH key and can give the public SSH key via the getotp function.
-This can be used to manage SSH keys and retrieve the public ssh key
+SSH key. This can be used to manage SSH keys and retrieve the public ssh key
 to import it to authorized keys files.
 
 The code is tested in tests/test_lib_tokens_ssh
@@ -48,8 +47,7 @@ required = False
 class SSHkeyTokenClass(TokenClass):
     """
     The SSHKeyTokenClass provides a TokenClass that stores the public
-    SSH key and can give the public SSH key via the getotp function.
-    This can be used to manage SSH keys and retrieve the public ssh key
+    SSH key. This can be used to manage SSH keys and retrieve the public ssh key
     to import it to authorized keys files.
     """
     mode = ['authenticate']

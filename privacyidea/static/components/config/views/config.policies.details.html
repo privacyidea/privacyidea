@@ -80,7 +80,6 @@
     <div class="form-group">
         <label for="scope" class="col-sm-3 control-label">
             Scope</label>
-
         <div class="col-sm-9">
             <div isteven-multi-select
                  id="selectScope"
@@ -114,7 +113,7 @@
          ng-show="checkRight('policywrite')">
         <button ng-click="createPolicy()"
                 id="createPolicyButton"
-                ng-disabled="formPolicyAdd.$invalid"
+                ng-disabled="formPolicyAdd.$invalid || selectedScope.length === 0"
                 class="btn btn-primary">
             <span class="glyphicon glyphicon-plus"></span>
             <span translate>Create Policy</span>
@@ -395,7 +394,7 @@
          ng-show="checkRight('policywrite')">
         <button ng-click="createPolicy()"
                 id="createPolicyButton"
-                ng-disabled="formPolicyAdd.$invalid"
+                ng-disabled="formPolicyAdd.$invalid || selectedScope.length === 0"
                 class="btn btn-primary">
             <span class="glyphicon glyphicon-plus"></span>
             <span translate>Create Policy</span>

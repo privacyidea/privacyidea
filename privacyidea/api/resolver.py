@@ -117,16 +117,25 @@ def set_resolver(resolver=None):
         LDAP:
             * LDAPURI
             * LDAPBASE
+            * AUTHTYPE
             * BINDDN
             * BINDPW
             * TIMEOUT
+            * CACHE_TIMEOUT
             * SIZELIMIT
             * LOGINNAMEATTRIBUTE
             * LDAPSEARCHFILTER
             * LDAPFILTER
+            * LOGINNAMEATTRIBUTE
+            * MULTIVALUEATTRIBUTES
             * USERINFO
+            * UIDTYPE
             * NOREFERRALS        - True|False
+            * NOSCHEMAS          - True|False
             * EDITABLE           - True|False
+            * START_TLS          - True|False
+            * TLS_VERIFY         - True|False
+            * TLS_VERSION
         SQL:
             * Database
             * Driver

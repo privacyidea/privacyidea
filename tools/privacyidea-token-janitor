@@ -46,7 +46,7 @@ from dateutil.tz import tzlocal, tzutc
 from flask_script.commands import InvalidCommand
 
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.utils import parse_legacy_time
+from privacyidea.lib.utils import parse_legacy_time, to_unicode
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    unassign_token, import_token,
@@ -55,6 +55,9 @@ from privacyidea.app import create_app
 from flask_script import Manager
 import re
 import sys
+from base64 import b32encode
+from binascii import unhexlify
+
 
 __version__ = "0.1"
 
@@ -111,7 +114,6 @@ Actions:
 
 """.format("|".join(ALLOWED_ACTIONS))
 
-
 app = create_app(config_name='production', silent=True)
 manager = Manager(app)
 
@@ -135,6 +137,7 @@ def _compare_greater_than(_key, given_value_string):
             return int(value) > given_value
         except ValueError:
             return False
+
     return comparator
 
 
@@ -150,6 +153,7 @@ def _compare_less_than(_key, given_value_string):
             return int(value) < given_value
         except ValueError:
             return False
+
     return comparator
 
 
@@ -187,6 +191,7 @@ def _compare_after(key, given_value_string):
             return _parse_datetime(key, value) > given_value
         except ValueError:
             return False
+
     return comparator
 
 
@@ -202,12 +207,14 @@ def _compare_before(key, given_value_string):
             return _parse_datetime(key, value) < given_value
         except ValueError:
             return False
+
     return comparator
 
 
 def _compare_regex(_key, given_regex):
     def comparator(value):
         return re.search(given_regex, value)
+
     return comparator
 
 
@@ -304,11 +311,12 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
         yield filtered_list
 
 
-def export_token_data(token_list):
+def export_token_data(token_list, attributes=None):
     """
     Returns a list of tokens. Each token again is a simple list of data
 
     :param token_list:
+    :param attributes: display additional user attributes
     :return:
     """
     tokens = []
@@ -324,6 +332,12 @@ def export_token_data(token_list):
                 token_data.append(u"{0!s}".format(user.uid))
                 token_data.append(u"{0!s}".format(user.resolver))
                 token_data.append(u"{0!s}".format(user.realm))
+
+            if attributes:
+                for att in attributes.split(","):
+                    token_data.append(u"{0!s}".format(
+                        user.info.get(att, ""))
+                    )
         except Exception:
             sys.stderr.write("Failed to determine user for token {0!s}.\n".format(
                 token_obj.token.serial
@@ -333,11 +347,12 @@ def export_token_data(token_list):
     return tokens
 
 
-def export_user_data(token_list):
+def export_user_data(token_list, attributes=None):
     """
     Returns a list of users with the information how many tokens this user has assigned
 
     :param token_list:
+    :param attributes: display additional user attributes
     :return:
     """
     users = {}
@@ -357,6 +372,11 @@ def export_user_data(token_list):
                 user.resolver,
                 user.realm
             )
+            if attributes:
+                for att in attributes.split(","):
+                    uid += ",'{0!s}'".format(
+                        user.info.get(att, "")
+                    )
         else:
             uid = u"N/A" + u", " * 5
 
@@ -366,6 +386,7 @@ def export_user_data(token_list):
             users[uid] = [token_obj.token.serial]
 
     return users
+
 
 @manager.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
 @manager.option('--assigned', help='True|False|None')
@@ -400,26 +421,30 @@ def export_user_data(token_list):
                               'the output should only contain the number of tokens owned '
                               'by the user.',
                 dest='sum_tokens', action='store_true')
+@manager.option('--attributes', help='Extends the "listuser" function to display additional user attributes')
 @manager.option('--tokenrealms', help='A comma separated list of realms, to which the tokens '
                                       'should be assigned.')
 @manager.option('--csv', dest='csv', action='store_true',
                 help='In case of a simple find, the output is written as CSV instead of the '
                      'formatted output.')
+@manager.option('--b32', dest='b32', action='store_true',
+                help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.')
 @manager.option('--chunksize', default=None,
                 help='Read tokens from the database in smaller chunks to perform operations.')
 def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
          tokeninfo_value_greater_than, tokeninfo_value_less_than,
          tokeninfo_value_after, tokeninfo_value_before,
          orphaned, tokentype, serial, description, action, set_description,
-         set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv, chunksize):
+         set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv,
+         chunksize, attributes, b32):
     """
     finds all tokens which match the conditions
     """
     if action and action not in ALLOWED_ACTIONS:
-            sys.stderr.write("Unknown action. Allowed actions are {0!s}\n".format(
-                ", ".join(["'{0!s}'".format(x) for x in ALLOWED_ACTIONS])
-            ))
-            sys.exit(1)
+        sys.stderr.write("Unknown action. Allowed actions are {0!s}\n".format(
+            ", ".join(["'{0!s}'".format(x) for x in ALLOWED_ACTIONS])
+        ))
+        sys.exit(1)
     if chunksize is not None:
         chunksize = int(chunksize)
     tvfilter = build_tokenvalue_filter(tokeninfo_key,
@@ -440,7 +465,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
         if not action:
             if not csv:
                 print("Token serial\tTokeninfo")
-                print("="*42)
+                print("=" * 42)
                 for token_obj in tlist:
                     print("{0!s} ({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
                         token_obj.token.serial,
@@ -458,21 +483,39 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
 
         elif action == "listuser":
             if not sum_tokens:
-                tokens = export_token_data(tlist)
+                tokens = export_token_data(tlist, attributes)
                 for token in tokens:
                     print(u",".join([u"'{0!s}'".format(x) for x in token]))
             else:
-                users = export_user_data(tlist)
+                users = export_user_data(tlist, attributes)
                 for user, tokens in users.items():
                     print(u"{0!s},{1!s}".format(user, len(tokens)))
 
         elif action == "export":
-            key, token_num, soup = export_pskc(tlist)
-            sys.stderr.write("\n{0!s} tokens exported.\n".format(token_num))
-            sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
-                             "You need this key to import the "
-                             "tokens again:\n\n\t{0!s}\n\n".format(key))
-            print("{0!s}".format(soup))
+            if csv:
+                for tokenobj in tlist:
+                    if tokenobj.type.lower() not in ["totp", "hotp"]:
+                        continue
+                    type = tokenobj.type.lower()
+                    owner = u"{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm) if tokenobj.user else "n/a"
+                    serial = tokenobj.token.serial
+                    otplen = tokenobj.token.otplen
+                    otpkey = tokenobj.token.get_otpkey().getKey()
+                    if b32:
+                        otpkey = b32encode(unhexlify(otpkey))
+                    otpkey = to_unicode(otpkey)
+                    if type == "totp":
+                        timestep = tokenobj.get_tokeninfo("timeStep")
+                        print(u"{!s}, {!s}, {!s}, {!s}, {!s}, {!s}".format(owner, serial, otpkey, type, otplen, timestep))
+                    else:
+                        print(u"{!s}, {!s}, {!s}, {!s}, {!s}".format(owner, serial, otpkey, type, otplen))
+            else:
+                key, token_num, soup = export_pskc(tlist)
+                sys.stderr.write("\n{0!s} tokens exported.\n".format(token_num))
+                sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
+                                 "You need this key to import the "
+                                 "tokens again:\n\n\t{0!s}\n\n".format(key))
+                print("{0!s}".format(soup))
         else:
             for token_obj in tlist:
                 try:

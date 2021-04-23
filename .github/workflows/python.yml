@@ -78,34 +78,23 @@ jobs:
 
     - name: Cache pip installation
       uses: actions/cache@v2
-      id: venv-cache
+      id: pip-cache
       with:
-        # we are caching the complete virtual environment here
-        path: |
-          ~/.cache/pip
-          ~/venv
+        path: ~/.cache/pip
         key: ${{ runner.os }}-pip-py_${{ matrix.python-version }}-${{ hashFiles('requirements.txt', 'tests/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-py_${{ matrix.python-version }}-
           ${{ runner.os }}-pip-
 
-    - name: Install venv for Python 2.7
-      # of course Python 2.7 needs some special treatment
-      run: |
-        pip install py2venv
-      if: matrix.python-version == '2.7'
-
     - name: Install dependencies
-      # in order to cache the virtual environment we need to create it first
+      # create the virtual environment
       run: |
-        python -m venv ~/venv && . ~/venv/bin/activate
         python -m pip install --upgrade pip setuptools
         pip install -r tests/requirements.txt
-      if: steps.venv-cache.outputs.cache-hit != 'true'
 
     - name: Test with pytest
       run: |
-        . ~/venv/bin/activate
+        pip freeze
         python -b -m pytest -v --cov=privacyidea tests/
 
     - name: Archive code coverage results
@@ -120,6 +109,8 @@ jobs:
   finish:
     # run this job after matrix build is finished
     needs: build
+    # always run this job, regardless of a failing matrix-job
+    if: always()
     runs-on: ubuntu-18.04
     steps:
     - name: Checkout code for coverage

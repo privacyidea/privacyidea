@@ -144,6 +144,7 @@ If the user does not exist, the authentication request is successful.
 .. warning:: Only use this if you know exactly what you are doing.
 
 
+.. _smstext:
 
 smstext
 ~~~~~~~
@@ -161,10 +162,31 @@ Starting with version 2.20 you can use the tag *{challenge}*. This will add
 the challenge data that was passed in the first authentication request in the
 challenge parameter. This could contain banking transaction data.
 
+Starting with version 3.6 the `smstext` can contain a lot more tags similar to the
+policy :ref:`emailtext`:
+
+  * {otp} or *<otp>* the One-Time-Password
+  * {serial} or *<serial>* the serial number of the token.
+  * {user} the given name of the token owner.
+  * {givenname} the given name of the token owner.
+  * {surname} the surname of the token owner.
+  * {username} the loginname of the token owner.
+  * {userrealm} the realm of the token owner.
+  * {tokentype} the type of the token.
+  * {recipient_givenname} the given name of the recipient.
+  * {recipient_surname} the surname of the recipient.
+  * {time} the current server time in the format HH:MM:SS.
+  * {date} the current server date in the format YYYY-MM-DD
+
 In the :ref:`sms_gateway_config` the tag *{otp}* will be replaced by the custom
 message, set with this policy.
 
 Default: *<otp>*
+
+.. note:: The length of an SMS is limited to 140 characters due to the definition of SMS.
+   You should take care, that the *smstext* does not exceed this limit. SMS gateways could
+   reject too long messages or the delivery could fail.
+
 
 smsautosend
 ~~~~~~~~~~~
@@ -177,6 +199,7 @@ A new OTP value will be sent via SMS if the user authenticated
 successfully with his SMS token. Thus the user does not
 have to trigger a new SMS when he wants to login again.
 
+.. _emailtext:
 
 emailtext
 ~~~~~~~~~
@@ -356,13 +379,20 @@ type: string
 
 The Authentication Cache caches the credentials of a successful
 authentication and allows to use the same credentials - also with an OTP
-value - for the specified amount of time.
+value - for the specified amount of time and optionally for a specified number
+of authentications.
 
-The time to cache the credentials can be specified like "4h", "5m", "2d"
-(hours, minutes days) or "4h/5m". The notation 4h/5m means, that credentials
-are cached for 4 hours, but only may be used again, if every 5 minutes the
+The time to cache the credentials can be specified like "4h", "5m", "2d", "3s"
+(hours, minutes, days, seconds). The number of allowed authentications can be
+specified as a whole number, greater than zero.
+
+The notation "4h/5m" means, that credentials
+are cached for 4 hours, but may only be used again, if every 5 minutes the
 authentication occurs. If the authentication with the same credentials would
 not occur within 5 minutes, the credentials can not be used anymore.
+
+The notation "2m/3" means, that credentials are cached for 2 minutes, but may only be used 3 times
+in this timeframe.
 
 In future implementations the caching of the credentials could also be
 dependent on the clients IP address and the user agent.

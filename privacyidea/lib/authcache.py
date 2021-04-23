@@ -45,10 +45,11 @@ def add_to_cache(username, realm, resolver, password):
     return r
 
 
-def update_cache_last_auth(cache_id):
+def update_cache(cache_id):
     last_auth = datetime.datetime.utcnow()
-    AuthCache.query.filter(
-        AuthCache.id == cache_id).update({"last_auth": last_auth})
+    db.session.query(AuthCache).filter(
+        AuthCache.id == cache_id).update({"last_auth": last_auth,
+                                          AuthCache.auth_count: AuthCache.auth_count + 1})
     db.session.commit()
 
 
@@ -89,7 +90,8 @@ def cleanup(minutes):
     return r
 
 
-def verify_in_cache(username, realm, resolver, password, first_auth=None, last_auth=None):
+def verify_in_cache(username, realm, resolver, password, first_auth=None, last_auth=None,
+                    max_auths=0):
     """
     Verify if the given credentials are cached and if the time is correct.
     
@@ -100,7 +102,11 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
     :param first_auth: The timestamp when the entry was first written to the 
         cache. Only find newer entries 
     :param last_auth: The timestamp when the entry was last successfully 
-        verified. Only find newer entries 
+        verified. Only find newer entries
+    :param max_auths: Maximum number of times the authcache entry can be used to skip
+        authentication, as defined by ACTION.AUTH_CACHE policy. Will return False if the current number of
+        authentications + 1 of the cached authentication exceeds this value.
+    :type max_auths: int
     :return: 
     """
     conditions = []
@@ -123,9 +129,14 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
         except ValueError:
             log.debug("Old authcache entry for user {0!s}@{1!s}.".format(username, realm))
             result = False
+
+        if result and max_auths > 0:
+            # Check if auth_count allows this authentication too
+            result = cached_auth.auth_count < max_auths
+
         if result:
-            # Update the last_auth
-            update_cache_last_auth(cached_auth.id)
+            # Update the last_auth and the auth_count
+            update_cache(cached_auth.id)
             break
 
     if not result:
