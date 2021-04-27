@@ -1,5 +1,4 @@
-"""Add table 'radiusserver' to configure the settings of
-remote RADIUS servers.
+"""Add table 'radiusserver' to configure the settings of remote RADIUS servers.
 
 Revision ID: 449903fb6e35
 Revises: 4023571658f8
