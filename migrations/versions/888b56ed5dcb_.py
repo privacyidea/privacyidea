@@ -1,14 +1,14 @@
 """v3.6: Add table for custom user attributes
 
 Revision ID: 888b56ed5dcb
-Revises: d5870fd2f2a4
+Revises: d415d490eb05
 Create Date: 2021-02-10 12:17:40.880224
 
 """
 
 # revision identifiers, used by Alembic.
 revision = '888b56ed5dcb'
-down_revision = 'd5870fd2f2a4'
+down_revision = 'd415d490eb05'
 
 from alembic import op
 import sqlalchemy as sa
