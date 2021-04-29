@@ -3335,6 +3335,24 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertFalse("user-resolver" in jresult.get("detail"), jresult)
         self.assertFalse("user-realm" in jresult.get("detail"), jresult)
 
+        # check with different realm in policy conditions
+        # if the user-name is evaluated
+        # in add_user_in_response policy
+        res = {"result": {"status": True,
+                          "value": True},
+               "detail": {"message": "matching 1 tokens",
+                          "serial": "HOTP123456",
+                          "type": "hotp"}}
+        resp = jsonify(res)
+        set_policy(name="pol_add_user",
+                   scope=SCOPE.AUTHZ,
+                   action=ACTION.ADDUSERINRESPONSE, client="10.0.0.0/8", realm=self.realm2)
+        g.policy_object = PolicyClass()
+
+        new_response = add_user_detail_to_response(req, resp)
+        jresult = new_response.json
+        self.assertNotIn("user", jresult.get("detail"), jresult)
+
         # set a policy that adds user resolver to detail
         set_policy(name="pol_add_resolver",
                    scope=SCOPE.AUTHZ,
@@ -3350,6 +3368,28 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("pol_add_user")
         delete_policy("pol_add_resolver")
+
+        # check with different realm in policy conditions
+        # if the user-realm is evaluated
+        # in add_resolver_in_response policy
+        res = {
+            "result": {
+                "status": True,
+                "value": True},
+            "detail": {
+                "message": "matching 1 tokens",
+                "serial": "HOTP123456",
+                "type": "hotp"}}
+        resp = jsonify(res)
+        set_policy(name="pol_add_resolver",
+                   scope=SCOPE.AUTHZ,
+                   action=ACTION.ADDRESOLVERINRESPONSE, client="10.0.0.0/8", realm=self.realm2)
+        g.policy_object = PolicyClass()
+
+        new_response = add_user_detail_to_response(req, resp)
+        jresult = new_response.json
+        self.assertNotIn("user-realm", jresult.get("detail"), jresult)
+        self.assertNotIn("user-resolver", jresult.get("detail"), jresult)
 
     def test_05_autoassign_any_pin(self):
         # init a token, that does has no uwser
