@@ -217,6 +217,31 @@ angular.module("privacyideaApp")
             $scope.getUserDetails();
             $scope._getUserToken();
         });
+
+   // ===========================================================
+    // ================= Token Regenerate ========================
+    // ===========================================================
+
+    $scope.regenerateTokenAsk = function(token) {
+        $scope.selectedToken = token;
+        $('#dialogTokenRegenerate').modal("show");
+    };
+
+    $scope.gotoTokenRollover = function(tokenSerial) {
+        $('#dialogTokenRegenerate').modal("hide");
+        $state.go('token.rollover', {tokenSerial: tokenSerial});
+    }
+
+    $scope.regenerateTokenAllowed = function(token) {
+        if ( typeof(token) != 'undefined' ) {
+            if ($scope.checkEnroll() && (token.tokentype in $scope.token_rollover) &&
+                token.info.tokenkind === 'software' && token.rollout_state !== "clientwait") {
+                return true;
+            }
+        }
+        return false;
+    };
+
     });
 
 angular.module("privacyideaApp")

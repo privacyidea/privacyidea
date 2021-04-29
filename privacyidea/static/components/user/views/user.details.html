@@ -86,6 +86,7 @@
                 <th translate>failcounter</th>
                 <th translate>maxfail</th>
                 <th translate>otplen</th>
+                <th translate>actions</th>
             </tr>
             </thead>
             <tbody>
@@ -114,6 +115,17 @@
                 </td>
                 <td>{{ token.maxfail }}</td>
                 <td>{{ token.otplen }}</td>
+                <td>
+                    <span>
+                    <button class="btn btn-danger" ng-click="regenerateTokenAsk(token)"
+                            id="rolloverButton"
+                            ng-disabled="!regenerateTokenAllowed(token)"
+                            ng-hide="!regenerateTokenAllowed(token) && hide_buttons">
+                        <span class="glyphicon glyphicon-refresh"></span>
+                        <span translate>Rollover</span>
+                    </button>
+                    </span>
+                </td>
             </tr>
             </tbody>
         </table>
@@ -143,5 +155,7 @@
 
     <ng-include
             src="instanceUrl + '/static/components/user/views/dialog.ask_user_delete.html'">
+    </ng-include>
+    <ng-include src="instanceUrl + '/static/components/token/views/dialog.regenerate_token.html'">
     </ng-include>
 </div>
