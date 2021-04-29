@@ -386,72 +386,28 @@ myApp.controller("tokenDetailController", function ($scope,
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.get);
 
-
     // ===========================================================
     // ================= Token Regenerate ========================
     // ===========================================================
 
     $scope.regenerateTokenAsk = function(token) {
-        // set QR code size for totp, hotp and push
-        $scope.qrCodeWidth = "100%";
         $scope.selectedToken = token;
-        // always start with the first step
-        $scope.regenerateTokenStep = 0;
         $('#dialogTokenRegenerate').modal("show");
     };
 
+    $scope.gotoTokenRollover = function(tokenSerial) {
+        $('#dialogTokenRegenerate').modal("hide");
+        $state.go('token.rollover', {tokenSerial: tokenSerial});
+    }
+
     $scope.regenerateTokenAllowed = function(token) {
-        if ($scope.checkEnroll() && (token.tokentype in $scope.token_rollover) &&
-            token.info.tokenkind === 'software' && token.rollout_state !== "clientwait") {
-            return true;
-        } else {
-            return false;
-        }
-    };
-
-    $scope.nextRegenerateToken = function() {
-        $scope.regenerateTokenStep += 1;
-        if ($scope.regenerateTokenStep === 1) {
-            $scope.regenerateToken($scope.selectedToken);
-        } else if ($scope.regenerateTokenStep > 1) {
-            $('#dialogTokenRegenerate').modal("hide");
-        };
-    };
-
-    $scope.regenerateToken = function (token) {
-        var params = token;
-        params.type = params.tokentype
-        // force server key generation (HOTP, TOTP)
-        params.genkey = true;
-        // ignore 2stepinit
-        params["2stepinit"] = false;
-        if (!$scope.form) { $scope.form = {}; };
-        $scope.form["2stepinit"] = params["2stepinit"];
-        // enroll token using the current serial, type and options
-        TokenFactory.enroll({}, params, $scope.callback);
-    };
-
-    // enrollment callback supports totp, hotp, push, paper, tan, registration
-    $scope.callback = function (data) {
-        $scope.enrolledToken = data.detail;
-        if ($scope.enrolledToken.otps) {
-            var otps_count = Object.keys($scope.enrolledToken.otps).length;
-            $scope.otp_row_count = parseInt(otps_count/5 + 0.5);
-            $scope.otp_rows = Object.keys($scope.enrolledToken.otps).slice(0, $scope.otp_row_count);
-        }
-        if ($scope.enrolledToken.rollout_state === "clientwait") {
-            $scope.pollTokenInfo();
-        }
-        $('html,body').scrollTop(0);
-    };
-
-    $scope.pollTokenInfo = function () {
-        TokenFactory.getTokenForSerial($scope.enrolledToken.serial, function(data) {
-            $scope.enrolledToken.rollout_state = data.result.value.tokens[0].rollout_state;
-            // Poll the data after 2.5 seconds again
-            if ($scope.enrolledToken.rollout_state === "clientwait") {
-                $timeout($scope.pollTokenInfo, 2500);
+        if ( typeof(token) != 'undefined' ) {
+            if ($scope.checkEnroll() && (token.tokentype in $scope.token_rollover) &&
+                token.info.tokenkind === 'software' && token.rollout_state !== "clientwait") {
+                return true;
             }
-        })
+        }
+        return false;
     };
+
 });

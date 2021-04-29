@@ -42,7 +42,13 @@
         </p>
         <div class="form-group">
             <label for="clientpart" translate>Client Part</label>
-            <input type="text" ng-model="$parent.clientpart"
+            <input ng-show="$state.includes('token.rollover')"
+                   type="text" ng-model="$parent.$parent.clientpart"
+                   autofocus
+                   class="form-control"
+                   name="clientpart">
+            <input ng-show="!($state.includes('token.rollover'))"
+                   type="text" ng-model="$parent.clientpart"
                    autofocus
                    class="form-control"
                    name="clientpart">

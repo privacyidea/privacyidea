@@ -1,0 +1,18 @@
+<h3 translate>Regenerated Token Secret</h3>
+
+<div class="col-sm-12">
+
+    <p translate>The secret for token <a ui-sref="token.details({tokenSerial:enrolledToken.serial})">
+                {{ enrolledToken.serial }}</a> was successfully regenerated. This invalidated the old token.</p>
+
+    <ng-include src="instanceUrl +
+    '/static/components/token/views/token.enrolled.' + token.tokentype + '.html' + fileVersionSuffix">
+    </ng-include>
+    <div class="text-center">
+        <button type="button" class="btn btn-primary"
+                ui-sref="token.details({tokenSerial:tokenSerial})"
+                ng-click="$rootScope.returnTo=token.rollover;"
+                translate>Back to token details
+        </button>
+    </div>
+</div>
