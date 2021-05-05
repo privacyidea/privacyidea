@@ -66,6 +66,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 import flask
 from six.moves import shlex_quote
+import importlib_metadata
 
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.security.default import DefaultSecurityModule
@@ -85,7 +86,7 @@ from privacyidea.app import create_app
 from privacyidea.lib.auth import ROLE
 from flask_script import Manager, Command, Option
 from privacyidea.app import db
-from flask_migrate import MigrateCommand
+from flask_migrate import MigrateCommand, stamp as fm_stamp
 # Wee need to import something, so that the models will be created.
 from privacyidea.models import Audit
 from sqlalchemy import create_engine, desc, MetaData
@@ -93,7 +94,7 @@ from sqlalchemy.orm import sessionmaker
 from privacyidea.lib.auditmodules.sqlaudit import LogEntry
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.authcache import cleanup as authcache_cleanup
-from privacyidea.lib.utils import parse_timedelta
+from privacyidea.lib.utils import parse_timedelta, get_version_number
 from privacyidea.lib.crypto import create_hsm_object
 from privacyidea.lib.importotp import parseOATHcsv
 from privacyidea.lib.token import import_token
@@ -559,14 +560,21 @@ def create_audit_keys(keysize=2048):
     print("Please ensure, that it is owned by the right user.")
 
 
-@manager.command
-def createdb():
+@manager.option('--stamp', '-s', help='Stamp database to current head revision.',
+                default=False, action='store_true')
+def createdb(stamp=False):
     """
-    Initially create the tables in the database. The database must exist.
-    (SQLite database will be created)
+    Initially create the tables in the database. The database must exist
+    (an SQLite database will be created).
     """
     print(db)
     db.create_all()
+    if stamp:
+        # get the path to the migration directory from the distribution
+        p = [p.locate() for p in importlib_metadata.files('privacyidea') if
+             'migrations/env.py' in str(p)]
+        migration_dir = os.path.dirname(os.path.abspath(p[0]))
+        fm_stamp(directory=migration_dir)
     db.session.commit()
 
 
@@ -1595,5 +1603,6 @@ if __name__ == '__main__':
   / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
  / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
 /_/                       /___/
-   """, file=sys.stderr)
+{0!s:>51}
+    """.format('v{0!s}'.format(get_version_number())), file=sys.stderr)
     manager.run()

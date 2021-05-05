@@ -33,6 +33,8 @@ idna==2.10
 importlib-resources==3.3.1; python_version < '3.0'
 importlib-resources==3.2.1; python_version == '3.5'
 importlib-resources==5.0.0; python_version > '3.5'
+importlib_metadata==2.1.1; python_version <= '3.0'
+importlib_metadata==3.4.0; python_version > '3.5'
 ipaddress==1.0.23; python_version < '3.0'
 itsdangerous==1.1.0
 Jinja2==2.11.3
