@@ -76,7 +76,7 @@ db = SQLAlchemy()
 
 # Add fractions to the MySQL DataTime column type
 @compiles(db.DateTime, "mysql")
-def compile_datetime_mysql(type_, compiler, **kw):
+def compile_datetime_mysql(type_, compiler, **kw):  # pragma: no cover
     return "DATETIME(6)"
 
 

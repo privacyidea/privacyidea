@@ -15,7 +15,6 @@ before_install: ./.travis_check.sh; ret=$?; if [ $ret -eq 123 ]; then travis_ter
 # command to install dependencies
 install:
   - "pip install -r tests/requirements.txt"
-  - "pip install ."
   - "pip install codecov"
 
 # split the test run according to

@@ -27,7 +27,7 @@ def upgrade():
                                       existing_type=mysql.DATETIME)
     except Exception as exx:
         print("Could not add fraction to MySQL DateTime Type in audit table.")
-        print (exx)
+        print(exx)
 
 
 def downgrade():
@@ -42,4 +42,4 @@ def downgrade():
                                       existing_type=mysql.DATETIME(fsp=6))
     except Exception as exx:
         print("Could not remove fraction from MySQL DateTime Type in audit table.")
-        print (exx)
+        print(exx)
