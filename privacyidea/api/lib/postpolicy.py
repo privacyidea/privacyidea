@@ -329,7 +329,7 @@ def add_user_detail_to_response(request, response):
     content = response.json
 
     # Check for ADD USER IN RESPONSE
-    detail_pol = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE)\
+    detail_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE, user_object=request.User)\
         .policies(write_to_audit_log=False)
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the user
@@ -343,7 +343,7 @@ def add_user_detail_to_response(request, response):
         g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
     # Check for ADD RESOLVER IN RESPONSE
-    detail_pol = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.ADDRESOLVERINRESPONSE)\
+    detail_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDRESOLVERINRESPONSE, user_object=request.User)\
         .policies(write_to_audit_log=False)
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the resolver and the realm
