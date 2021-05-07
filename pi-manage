@@ -708,11 +708,10 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
         print("Cleaning up with config file.")
     elif age:
         age = int(age)
-        print("Cleaning up with age: %s. %s" % (age, audit_db_uri))
+        print("Cleaning up with age: {0!s}.".format(age))
     else:
-        print("Cleaning up with high: %s, low: %s. %s" % (highwatermark,
-                                                          lowwatermark,
-                                                          audit_db_uri))
+        print("Cleaning up with high: {0!s}, low: {1!s}.".format(highwatermark,
+                                                                 lowwatermark))
 
     engine = create_engine(audit_db_uri)
     # create a configured "Session" class
