@@ -452,6 +452,12 @@ class CONDITION_SECTION(object):
     HTTP_REQUEST_HEADER = "HTTP Request header"
 
 
+class CONDITION_CHECK(object):
+    __doc__ = """The available check methods for extended conditions"""
+    DO_NOT_CHECK_AT_ALL = 1
+    CHECK_AND_RAISE_EXCEPTION_ON_MISSING = None
+
+
 class PolicyClass(object):
     """
     A policy object can be used to query the current set of policies.
@@ -670,7 +676,8 @@ class PolicyClass(object):
     def match_policies(self, name=None, scope=None, realm=None, active=None,
                        resolver=None, user=None, user_object=None, pinode=None,
                        client=None, action=None, adminrealm=None, adminuser=None, time=None,
-                       sort_by_priority=True, audit_data=None, request_headers=None, serial=None):
+                       sort_by_priority=True, audit_data=None, request_headers=None, serial=None,
+                       extended_condition_check=None):
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -739,9 +746,10 @@ class PolicyClass(object):
         log.debug("Policies after matching time: {0!s}".format([p.get("name") for p in reduced_policies]))
 
         # filter policies by the policy conditions
-        reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
-                                                              serial)
-        log.debug("Policies after matching conditions".format([p.get("name") for p in reduced_policies]))
+        if extended_condition_check != CONDITION_CHECK.DO_NOT_CHECK_AT_ALL:
+            reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
+                                                                  serial)
+            log.debug("Policies after matching conditions".format([p.get("name") for p in reduced_policies]))
 
         if audit_data is not None:
             for p in reduced_policies:
@@ -1094,11 +1102,13 @@ class PolicyClass(object):
             admin_user = username
             admin_realm = realm
             user_object = None
+            extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL
         elif scope == SCOPE.USER:
             # If the logged-in user is a user, we pass a user object to allow matching for userinfo attributes
             admin_user = None
             admin_realm = None
             user_object = User(username, realm)
+            extended_condition_check = CONDITION_CHECK.CHECK_AND_RAISE_EXCEPTION_ON_MISSING
         else:
             raise PolicyError(u"Unknown scope: {}".format(scope))
         pols = self.match_policies(scope=scope,
@@ -1106,7 +1116,8 @@ class PolicyClass(object):
                                    adminrealm=admin_realm,
                                    adminuser=admin_user,
                                    active=True,
-                                   client=client)
+                                   client=client,
+                                   extended_condition_check=extended_condition_check)
         for pol in pols:
             for action, action_value in pol.get("action").items():
                 if action_value:
@@ -1171,6 +1182,10 @@ class PolicyClass(object):
                 enroll_types[tokenclass.get_class_type()] = \
                     tokenclass.get_class_info("description")
 
+        if role == SCOPE.ADMIN:
+            extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL
+        else:
+            extended_condition_check = CONDITION_CHECK.CHECK_AND_RAISE_EXCEPTION_ON_MISSING
         if pols:
             # admin policies or user policies are set, so we need to
             # test, which tokens are allowed to be enrolled for this user
@@ -1184,7 +1199,8 @@ class PolicyClass(object):
                                                active=True,
                                                action="enroll"+tokentype.upper(),
                                                adminrealm=adminrealm,
-                                               adminuser=adminuser)
+                                               adminuser=adminuser,
+                                               extended_condition_check=extended_condition_check)
                 if typepols:
                     # If there is no policy allowing the enrollment of this
                     # tokentype, it is deleted.
@@ -2754,7 +2770,7 @@ class Match(object):
     @classmethod
     def generic(cls, g, scope=None, realm=None, resolver=None, user=None, user_object=None,
                 client=None, action=None, adminrealm=None, adminuser=None, time=None,
-                active=True, sort_by_priority=True, serial=None):
+                active=True, sort_by_priority=True, serial=None, extended_condition_check=None):
         """
         Low-level legacy policy matching interface: Search for active policies and return
         them sorted by priority. All parameters that should be used for matching have to
@@ -2772,7 +2788,7 @@ class Match(object):
                    resolver=resolver, user=user, user_object=user_object,
                    client=client, action=action, adminrealm=adminrealm,
                    adminuser=adminuser, time=time, serial=serial,
-                   sort_by_priority=sort_by_priority)
+                   sort_by_priority=sort_by_priority, extended_condition_check=extended_condition_check)
 
 
 def get_allowed_custom_attributes(g, user_obj):
