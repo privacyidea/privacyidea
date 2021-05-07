@@ -72,6 +72,7 @@ INSTANCE_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 PI_ENCFILE = os.path.join(INSTANCE_DIRECTORY, 'encKey')
 PI_AUDIT_KEY_PRIVATE = os.path.join(INSTANCE_DIRECTORY, 'private.pem')
 PI_AUDIT_KEY_PUBLIC = os.path.join(INSTANCE_DIRECTORY, 'public.pem')
+PI_AUDIT_SQL_TRUNCATE = True
 PI_LOGFILE = os.path.join(INSTANCE_DIRECTORY, 'privacyidea.log')
 PI_LOGLEVEL = logging.INFO
 SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(INSTANCE_DIRECTORY, 'privacyidea.sqlite')
