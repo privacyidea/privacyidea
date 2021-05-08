@@ -119,7 +119,7 @@ The tokeninfo condition works the same way as userinfo but matches the tokeninfo
 ^^^^^^^^^
 
 The token condition works on the database columns of the token. This would be
-``description``, ``otplen``, ``count``, ``serial`` but most importantly
+``description``, ``otplen``, ``count``, ``serial``, ``active`` but most importantly
 also ``failcount`` and ``tokentype``.
 
 .. note:: A policy with an active tokeninfo condition will
@@ -130,6 +130,9 @@ also ``failcount`` and ``tokentype``.
 .. note:: The matching is case sensitive. Note, that e.g. token types are
    stored in lower case in the database.
 
+**Example**: The administrator could define a dedicated policy in the scope *user* with the
+action ``delete`` and the token condition ``active``, ``<``, ``0`` (0 or false depending on the database).
+This would allow the user to delete only inactive tokens, but not still active tokens.
 
 ``HTTP Request Header``
 ^^^^^^^^^^^^^^^^^^^^^^^
