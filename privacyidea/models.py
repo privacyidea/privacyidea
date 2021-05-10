@@ -52,6 +52,8 @@ from privacyidea.lib.crypto import (encrypt,
                                     get_rand_digit_str)
 from sqlalchemy import and_
 from sqlalchemy.schema import Sequence
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.expression import ColumnElement
 from .lib.log import log_with
 from privacyidea.lib.utils import (is_true, convert_column_to_unicode,
                                    hexlify_and_unicode)
@@ -70,6 +72,12 @@ implicit_returning = True
 PRIVACYIDEA_TIMESTAMP = "__timestamp__"
 
 db = SQLAlchemy()
+
+
+# Add fractions to the MySQL DataTime column type
+@compiles(db.DateTime, "mysql")
+def compile_datetime_mysql(type_, compiler, **kw):  # pragma: no cover
+    return "DATETIME(6)"
 
 
 class MethodsMixin(object):
@@ -2654,7 +2662,7 @@ class Audit(MethodsMixin, db.Model):
     id = db.Column(db.Integer, Sequence("audit_seq"), primary_key=True)
     date = db.Column(db.DateTime)
     startdate = db.Column(db.DateTime)
-    duration = db.Column(db.Interval)
+    duration = db.Column(db.Interval(second_precision=6))
     signature = db.Column(db.Unicode(audit_column_length.get("signature")))
     action = db.Column(db.Unicode(audit_column_length.get("action")))
     success = db.Column(db.Integer)
