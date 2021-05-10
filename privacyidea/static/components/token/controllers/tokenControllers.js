@@ -471,7 +471,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         $scope.form.validity_period_start = date_object_to_string($scope.form.validity_period_start);
         $scope.form.validity_period_end = date_object_to_string($scope.form.validity_period_end);
         TokenFactory.enroll($scope.newUser,
-            $scope.form, $scope.callback);
+            $scope.form, $scope.callback,
+            function (data) {$scope.enrolling=false;}
+            );
     };
 
     $scope.pollTokenInfo = function () {
