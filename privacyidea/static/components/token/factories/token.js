@@ -204,7 +204,7 @@ angular.module("TokenModule", ["privacyideaAuth"])
                     {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).then(function (response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
             },
-            enroll: function (userObject, formdata, callback) {
+            enroll: function (userObject, formdata, callback, callback_error) {
                 var username = fixUser(userObject.user);
                 // all formdata is passed
                 var params = formdata;
@@ -219,7 +219,12 @@ angular.module("TokenModule", ["privacyideaAuth"])
                 }
                 $http.post(tokenUrl + "/init", params,
                     {headers: {'PI-Authorization': AuthFactory.getAuthToken()}}
-                ).then(function (response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
+                ).then(function (response) { callback(response.data) },
+                       function(error) { AuthFactory.authError(error.data);
+                            if (callback_error) {
+                                callback_error(error.data);
+                            }
+                });
             },
             delete: function (serial, callback) {
                 $http.delete(tokenUrl + "/" + serial,
