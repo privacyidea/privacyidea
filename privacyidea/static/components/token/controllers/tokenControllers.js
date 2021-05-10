@@ -117,7 +117,7 @@ myApp.controller("tokenAssignController", ['$scope', 'TokenFactory',
     };
 }]);
 
-myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
+myApp.controller("tokenEnrollController", ["$scope", "$rootScope", "TokenFactory", "$timeout",
                                            "$stateParams", "AuthFactory",
                                            "UserFactory", "$state",
                                            "ConfigFactory", "instanceUrl",
@@ -125,7 +125,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                                            "inform", "U2fFactory",
                                            "webAuthnToken",
                                            "versioningSuffixProvider",
-    function tokenEnrollController($scope, TokenFactory, $timeout, $stateParams,
+    function tokenEnrollController($scope, $rootScope, TokenFactory, $timeout, $stateParams,
                                    AuthFactory, UserFactory, $state,
                                    ConfigFactory, instanceUrl, $http, hotkeys,
                                    gettextCatalog, inform, U2fFactory,
@@ -472,6 +472,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         $scope.form.validity_period_end = date_object_to_string($scope.form.validity_period_end);
         TokenFactory.enroll($scope.newUser,
             $scope.form, $scope.callback);
+        if (typeof($rootScope.enrolling) !== 'undefined') {
+            $scope.enrolling = $rootScope.enrolling
+        };
     };
 
     $scope.pollTokenInfo = function () {
