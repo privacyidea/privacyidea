@@ -211,7 +211,11 @@ myApp.directive('assignToken', function($http, $rootScope, tokenUrl,
                 serial: "*" + $viewValue + "*"}
             }).then(function ($response) {
                 scope.newTokenObject.loadedSerials = $response.data.result.value.tokens.map(function (item) {
-                    return item.serial + " (" + item.tokentype + ")";
+                serial_string = item.serial + " [" + item.tokentype + "] "
+                if (item.description !=''){
+                    serial_string += "[" + item.description + "] "
+                }
+                    return serial_string;
                 });
                 return scope.newTokenObject.loadedSerials;
             });
@@ -245,7 +249,14 @@ myApp.directive('attachToken', function($http, tokenUrl,
                 params: {serial: "*" + $viewValue + "*"}
             }).then(function ($response) {
                 return $response.data.result.value.tokens.map(function (item) {
-                    return item.serial + " (" + item.tokentype + ")";
+                serial_string = item.serial + " [" + item.tokentype + "] "
+                if (item.username !=''){
+                    serial_string += "[" + item.username +"@"+ item.realms + "] "
+                }
+                if(item.description != '') {
+                    serial_string += "[" + item.description + "] "
+                }
+                return serial_string;
                 });
             });
             };
