@@ -33,6 +33,7 @@ It provides functions to retrieve (get) and and set configuration.
 The code is tested in tests/test_lib_config
 """
 
+import copy
 import sys
 import logging
 import inspect
@@ -44,8 +45,7 @@ from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
                       save_config_timestamp, Policy, EventHandler)
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
 from privacyidea.lib.utils import to_list
-from privacyidea.lib.utils.export import (register_import,
-                                          register_export_name)
+from privacyidea.lib.utils.export import (register_import, register_export)
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
@@ -868,7 +868,6 @@ def set_privacyidea_config(key, value, typ="", desc=""):
         except Exception:
             log.debug("This seems to be no token specific setting")
 
-    ret = 0
     if typ == "password":
         # store value in encrypted way
         value = encryptPassword(value)
@@ -981,7 +980,25 @@ def get_privacyidea_nodes():
     return nodes
 
 
-@register_export_name('config')
+@register_export()
 def export_config():
     """Export the global configuration"""
-    return get_config_object().config
+    c = copy.copy(get_config_object().config)
+    c.pop('__timestamp__')
+    return c
+
+
+@register_import()
+def import_config(data):
+    """Import given server configuration"""
+    log.debug('Import server config: {0!s}'.format(data))
+    res = {}
+    for key, values in data.items():
+        r = set_privacyidea_config(key, values['Value'],
+                                   desc=values['Description'] if 'Description' in values else None,
+                                   typ=values['Type'] if 'Type' in values else None)
+        res[key] = r
+    log.info('Added configuration: {0!s}'.format(
+        ', '.join([k for k, v in res.items() if v == 'insert'])))
+    log.info('Updated configuration: {0!s}'.format(
+        ', '.join([k for k, v in res.items() if v == 'update'])))

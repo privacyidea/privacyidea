@@ -59,8 +59,7 @@ from sqlalchemy import func
 from .crypto import encryptPassword
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params,
                                    is_true)
-from privacyidea.lib.utils.export import (register_import_name,
-                                          register_export_name)
+from privacyidea.lib.utils.export import (register_import, register_export)
 import copy
 
 CENSORED = "__CENSORED__"
@@ -369,17 +368,29 @@ def pretestresolver(resolvertype, params):
     return success, desc
 
 
-@register_export_name('resolver')
+@register_export('resolver')
 def export_resolver(name=None, censor=False):
     """ Export given or all resolver configuration """
     return get_resolver_list(filter_resolver_name=name, censor=censor)
 
 
-@register_import_name('resolver')
+@register_import('resolver')
 def import_resolver(data):
     """Import resolver configuration"""
-    log.debug('Import resolver config {0!s}'.format(data))
+    # TODO: Currently this functions does not check for the plausibility of the
+    #  given data. We could use "pretestresolver() / testconnection()" (which
+    #  doesn't check the input) or "loadConfig()" (which also doesn't check the
+    #  parameter, at least for LDAP/SQL-resolver).
+    log.debug('Import resolver config: {0!s}'.format(data))
     for _res_name, res_data in data.items():
+        # remove the 'censor_keys' entry from data since it is not necessary
+        res_data.pop('censor_keys', None)
         # save_resolver() needs the resolver name at key 'resolver'
         res_data['resolver'] = res_data.pop('resolvername')
-        save_resolver(res_data)
+        # also all the 'data' entries need to be in the first dict level
+        res_data.update(res_data.pop('data'))
+        rid = save_resolver(res_data)
+        # TODO: we have no information if a new resolver was created or an
+        #  existing resolver updated. We would need to enhance "save_resolver()".
+        log.info('Import of resolver "{0!s}" finished,'
+                 ' id: {1!s}'.format(res_data['resolver'], rid))

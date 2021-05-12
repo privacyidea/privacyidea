@@ -61,6 +61,7 @@ from getpass import getpass
 import gnupg
 import yaml
 import contextlib
+import argparse
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
@@ -109,25 +110,23 @@ DEFAULT_CONFTYPE_LIST = ("policy", "resolver", "event")
 
 app = create_app(config_name='production', silent=SILENT)
 manager = Manager(app)
-admin_manager = Manager(description='Create new administrators or modify existing '
+admin_manager = Manager(usage='Create new administrators or modify existing '
                                     'ones.')
-backup_manager = Manager(description='Create database backup and restore')
-realm_manager = Manager(description='Create new realms, delete existing realms '
+backup_manager = Manager(usage='Create database backup and restore')
+realm_manager = Manager(usage='Create new realms, delete existing realms '
                                     'or set the default realm')
-resolver_manager = Manager(description='Create new resolver')
-policy_manager = Manager(description='Manage policies')
-event_manager = Manager(description='Manage events')
-api_manager = Manager(description="Manage API keys")
-ca_manager = Manager(description="Manage Certificate Authorities")
-audit_manager = Manager(description="Manage Audit log")
-authcache_manager = Manager(description="Manage AuthCache")
-hsm_manager = Manager(description="Manage HSM")
-token_manager = Manager(description="Manage tokens")
-config_manager = Manager(description="Manage the privacyIDEA configuration")
-config_import_manager = Manager(description="import configuration",
-                                help="import configuration")
-config_export_manager = Manager(description="export configuration",
-                                help="export configuration")
+resolver_manager = Manager(usage='Create new resolver')
+policy_manager = Manager(usage='Manage policies')
+event_manager = Manager(usage='Manage events')
+api_manager = Manager(usage="Manage API keys")
+ca_manager = Manager(usage="Manage Certificate Authorities")
+audit_manager = Manager(usage="Manage Audit log")
+authcache_manager = Manager(usage="Manage AuthCache")
+hsm_manager = Manager(usage="Manage HSM")
+token_manager = Manager(usage="Manage tokens")
+config_manager = Manager(usage="Manage the privacyIDEA configuration")
+config_import_manager = Manager(usage="import configuration")
+config_export_manager = Manager(usage="export configuration")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
@@ -623,7 +622,7 @@ def profile(length=30, profile_dir=None):
     """
     Start the application in profiling mode.
     """
-    from werkzeug.contrib.profiler import ProfilerMiddleware
+    from werkzeug.middleware.profiler import ProfilerMiddleware
     if flask.has_request_context():
         print("WARNING: The app may behave unrealistically during profiling.")
     app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length],
@@ -1298,119 +1297,67 @@ fmt_dict = {'python': str,
             'yaml': yaml.safe_dump}
 
 
-def exporter_command(func):
-    """ Return a flask_script Command object for exporting data"""
-
-    opts = []
-    # get parameter of function to call
-    arguments, varargs, keywords, defaults = inspect.getargspec(func)
-    if 'name' in arguments:
-        opts.append(Option('-n', '--name',
-                           help='Name of the specific object to export'))
-    if 'id' in arguments:
-        opts.append(Option('-i', '--id',
-                           help='Id of the specific object to export'))
-    if 'censor' in arguments:
-        opts.append(Option("-c", "--censor", action="store_true",
-                           help="Censor sensitive data from the output"))
-
-    opts.append(Option('-o', '--output',
+@config_manager.option('-o', '--output', type=argparse.FileType('w'),
+                       default=sys.stdout,
                        help='The filename to export the data to,'
-                            ' default is <stdout>'))
-    opts.append(Option('-f', '--format', default='python',
-                       help='output format (*python*, json, yaml)'))
+                            ' default is <stdout>')
+@config_manager.option('-f', '--format', default='python', dest='fmt',
+                       choices=['python', 'json', 'yaml'],
+                       help='Output format, default is \'python\'')
+@config_manager.option('-t', '--types', nargs='*', default=['all'],
+                       help='The types of configuration to export. By default create '
+                            'export using all available exporter types. Currently registered '
+                            'exporter types are: {0!s}'.format(', '.join(EXPORT_FUNCTIONS.keys())))
+def exporter(output, fmt, types):
+    """export configuration"""
+    print(output, file=sys.stderr)
+    print(fmt, file=sys.stderr)
+    print(types, file=sys.stderr)
+    exp_types = EXPORT_FUNCTIONS.keys() if 'all' in types else types
 
-    def exporter_wrapper(f):
-        # Add the output routines to the export function
-        @wraps(f)
-        def exp_wrapper(*args, **kwargs):
-            of = kwargs.pop('output', None)
-            fmt = kwargs.pop('format', 'python')
-            res = f(*args, **kwargs)
-            # format output according to the format parameter
-            if fmt not in fmt_dict:
-                print('Format {0!s} is not defined, using "python" instead.'.format(fmt))
-                fmt = 'python'
-            res = fmt_dict.get(fmt)(res) + '\n'
-            if of and not of == '-':
-                with open(of, 'w') as outfile:
-                    outfile.write(res)
-            else:
-                sys.stdout.write(res)
-        return exp_wrapper
+    for typ in exp_types:
+        res = {typ: EXPORT_FUNCTIONS[typ]()}
+        res = fmt_dict.get(fmt)(res) + '\n'
+        output.write(res)
 
-    # now create the command from the wrapper function
-    cmd = Command(exporter_wrapper(func))
-    # and add all the options
-    for o in opts:
-        cmd.add_option(o)
-    return cmd
-
-
-config_exporter_manager = Manager(help='registered exporter commands',
-                                  description='registered exporters')
-for e, f in EXPORT_FUNCTIONS.items():
-    config_exporter_manager.add_command(e, exporter_command(f))
-
-config_manager.add_command('exporter', config_exporter_manager)
 
 inp_fmt_dict = {'python': ast.literal_eval,
                 'json': json.loads,
                 'yaml': yaml.safe_load}
 
 
-def importer_command(func):
-    """ Return a flask_script Command object for importing data"""
-    opts = []
-    # get parameter of function to call
-    arguments, varargs, keywords, defaults = inspect.getargspec(func)
-    opts.append(Option('-i', '--input',
+@config_manager.option('-i', '--input', type=argparse.FileType('r'),
+                       default=sys.stdin, dest='infile',
                        help='The filename to import the data from,'
-                            ' default is <stdin>'))
-    opts.append(Option('-f', '--format', default='python',
-                       help='input format (*python*, json, yaml)'))
+                            ' default is <stdin>')
+@config_manager.option('-t', '--types', nargs='*', default=['all'],
+                       help='The types of configuration to import. By default import all '
+                            'available data if a corresponding importer type exists. '
+                            'Currently registered importer types '
+                            'are: {0!s}'.format(', '.join(IMPORT_FUNCTIONS.keys())))
+def importer(infile, types):
+    """import configuration"""
+    d = None
+    imp_types = IMPORT_FUNCTIONS.keys() if 'all' in types else types
 
-    def importer_wrapper(f):
-        # Add the input routines to the import function
-        @wraps(f)
-        def imp_wrapper(*args, **kwargs):
-            d = None
-            ifname = kwargs.pop('input', None)
-            _fmt = kwargs.pop('format', 'python')
-            if ifname and not ifname == '-':
-                with open(ifname, 'r') as infile:
-                    content = infile.read()
-            else:
-                content = sys.stdin.read()
-            for tp in inp_fmt_dict:
-                try:
-                    print(tp)
-                    d = inp_fmt_dict[tp](content)
-                    break
-                except Exception as e:
-                    print(e)
-                    continue
-            if d:
-                print(d)
-                f(d, *args, **kwargs)
-            else:
-                print('Could not read input!')
-        return imp_wrapper
+    content = infile.read()
 
-    # now create the command from the wrapper function
-    cmd = Command(importer_wrapper(func))
-    # and add all the options
-    for o in opts:
-        cmd.add_option(o)
-    return cmd
+    for tp in inp_fmt_dict:
+        try:
+            d = inp_fmt_dict[tp](content)
+            break
+        except (SyntaxError, json.decoder.JSONDecodeError, yaml.error.YAMLError) as e:
+            continue
+    if not d:
+        print('Could not read input format! Accepting JSON, YAML or native Python.')
+        sys.exit(1)
 
+    for typ, content in d.items():
+        if typ in imp_types or 'all' in imp_types:
+            print('Importing configuration type "{0!s}".'.format(typ))
+            if typ in IMPORT_FUNCTIONS:
+                IMPORT_FUNCTIONS[typ](content)
 
-config_importer_manager = Manager(help='registered importer commands',
-                                  description='registered importer')
-for e, f in IMPORT_FUNCTIONS.items():
-    config_importer_manager.add_command(e, importer_command(f))
-
-config_manager.add_command('importer', config_importer_manager)
 
 # conf export menu
 def _get_conf_event(name=None, print_passwords=None):
