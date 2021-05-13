@@ -268,7 +268,6 @@ class PushAPITestCase(MyApiTestCase):
         self.assertFalse(toks[0].is_active())
         self.assertEqual("hotp", toks[1].type)
 
-
         # authenticate with hotp
         with self.app.test_request_context('/validate/check',
                                            method='POST',
