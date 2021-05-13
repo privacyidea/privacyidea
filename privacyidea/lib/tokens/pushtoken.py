@@ -256,6 +256,8 @@ class PushTokenClass(TokenClass):
     - https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken
     """
     mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE, TOKENMODE.OUTOFBAND]
+    # A disabled PUSH token has to be removed from the list of checked tokens.
+    check_if_disabled = False
 
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)

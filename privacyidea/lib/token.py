@@ -2190,6 +2190,11 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
             raise TokenAdminError(_("This action is not possible, since the "
                                     "token is locked"), id=1007)
 
+    # Remove certain disabled tokens from tokenobject_list
+    if len(tokenobject_list) > 0:
+        tokenobject_list = [token for token in tokenobject_list if (token.is_active()
+                                                                    or token.check_if_disabled)]
+
     for tokenobject in sorted(tokenobject_list, key=weigh_token_type):
         if log.isEnabledFor(logging.DEBUG):
             # Avoid a SQL query triggered by ``tokenobject.user`` in case
