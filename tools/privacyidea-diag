@@ -211,7 +211,7 @@ apache_log() {
 }
 
 pi_logfile() {
-	R=$( grep "^PI_LOGFILE" "$PICFG" | cut -d "=" -f2 | tr -d "\'\"" )
+	R=$( grep "^PI_LOGFILE" "$PICFG" | cut -d "=" -f2 | tr -d "\t \'\"" )
 	[ -f ${R} ] && cp ${R} "${diag_info}/privacyidea.logfile" || echo "Could not read logfile ${R}" >> "$tempfile"
 }
 
