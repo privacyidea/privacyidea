@@ -383,6 +383,31 @@ used depending on the user's realm or the IP address.
 
 This is new in version 3.0.
 
+Starting with version 3.6, if the push token is supposed to run in poll-only mode,
+then the entry "poll only" can be selected instead of a firebase configuration.
+Note, that you also need to set the authentication policy
+:ref:`policy_auth_push_allow_poll` to allow the push token to poll for challenges.
+
+push_registration_url
+~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This is the URL of your privacyIDEA server, which the push App should
+connect to for the second registration step.
+This URL usually ends with ``/ttype/push``. Note, that the FQDN
+of your privacyIDEA server could be different for the smartphone
+App to connect to, than you usually use for connecting via the
+Web interface.
+
+push_ttl
+~~~~~~~~
+
+This is the time (in seconds) how long the privacyIDEA server
+accepts the response of the second registration step.
+The smartphone could have connection issues, so the second step
+could take some time to happen.
+
 .. _policy_webauthn_enroll_relying_party_id:
 
 webauthn_relying_party_id

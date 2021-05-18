@@ -55,23 +55,6 @@ privacyIDEA community website `tagged with push token <https://www.privacyidea.o
    The project number of the Firebase project, that is used to
    connect the app to.
 
-**registration URL**
-
-   This is the URL of your privacyIDEA server, which the push App should
-   connect to for the second registration step.
-   This URL usually ends with ``/ttype/push``. Note, that the FQDN
-   of your privacyIDEA server could be different for the smartphone
-   App to connect to, than you usually use for connecting via the
-   Web interface.
-
-**time to live**
-
-   This is the time (in seconds) how long the privacyIDEA server
-   accepts the response of the second registration step.
-   The smartphone could have connection issues, so the second step
-   could take some time to happen.
-
-
 You can get all the necessary values *JSON config file*,
 *project ID*, *project number*, *app ID* and *API key*
 from your Firebase console.

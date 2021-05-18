@@ -315,7 +315,7 @@ class PushTokenClass(TokenClass):
                        PUSH_ACTION.TTL: {
                            'type': 'int',
                            'group': "PUSH",
-                           'desc': _('The second enrollment step must be completed within this time (in minutes).')
+                           'desc': _('The second enrollment step must be completed within this time (in seconds).')
                        },
                        PUSH_ACTION.SSL_VERIFY: {
                            'type': 'str',
