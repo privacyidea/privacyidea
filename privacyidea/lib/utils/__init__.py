@@ -33,8 +33,7 @@ import binascii
 import base64
 import qrcode
 import sqlalchemy
-from six.moves.urllib.parse import urlunparse, urlparse, urlencode
-from six.moves import zip_longest
+from six.moves.urllib.parse import urlencode
 from io import BytesIO
 import string
 import re
@@ -46,7 +45,7 @@ from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
 import traceback
 import threading
-import pkg_resources
+import importlib_metadata
 import time
 import html
 
@@ -1252,7 +1251,7 @@ def get_version_number():
     """
     version = "unknown"
     try:
-        version = pkg_resources.get_distribution("privacyidea").version
+        version = importlib_metadata.version("privacyidea")
     except:
         log.info("We are not able to determine the privacyidea version number.")
     return version
