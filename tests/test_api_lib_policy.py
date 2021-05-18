@@ -1758,12 +1758,18 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy for the firebase config to use.
         set_policy(name="push_pol",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=some-fb-config".format(PUSH_ACTION.FIREBASE_CONFIG))
+                   action="{0!s}=some-fb-config,"
+                          "{1!s}=https://privacyidea.com/enroll,"
+                          "{2!s}=10".format(PUSH_ACTION.FIREBASE_CONFIG,
+                                            PUSH_ACTION.REGISTRATION_URL,
+                                            PUSH_ACTION.TTL))
         g.policy_object = PolicyClass()
         req.all_data = {
             "type": "push"}
         pushtoken_add_config(req, "init")
         self.assertEqual(req.all_data.get(PUSH_ACTION.FIREBASE_CONFIG), "some-fb-config")
+        self.assertEqual(req.all_data.get(PUSH_ACTION.REGISTRATION_URL), "https://privacyidea.com/enroll")
+        self.assertEqual("10", req.all_data.get(PUSH_ACTION.TTL))
         self.assertEqual("1", req.all_data.get(PUSH_ACTION.SSL_VERIFY))
 
         # the request tries to inject a rogue value, but we assure sslverify=1

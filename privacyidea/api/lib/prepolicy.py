@@ -1423,6 +1423,22 @@ def pushtoken_add_config(request, action):
         else:
             request.all_data[PUSH_ACTION.SSL_VERIFY] = "1"
 
+        # Get the TTL and the registration URL from the policies
+        registration_url = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.REGISTRATION_URL,
+                                      user_object=request.User if request.User else None) \
+            .action_values(unique=True, allow_white_space_in_action=True)
+        if len(registration_url) == 1:
+            request.all_data[PUSH_ACTION.REGISTRATION_URL] = list(registration_url)[0]
+        else:
+            raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.REGISTRATION_URL))
+        ttl = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.TTL,
+                         user_object=request.User if request.User else None) \
+            .action_values(unique=True, allow_white_space_in_action=True)
+        if len(ttl) == 1:
+            request.all_data[PUSH_ACTION.TTL] = list(ttl)[0]
+        else:
+            request.all_data[PUSH_ACTION.TTL] = "10"
+
 
 def u2ftoken_verify_cert(request, action):
     """
