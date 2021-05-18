@@ -209,11 +209,11 @@ class BasePeriodicTaskTestCase(MyTestCase):
         task1 = set_periodic_task("task one", "0 0 1 * *", ["pinode1"], "some.task.module", 3, {
             "key1": 1,
             "key2": False
-        })
+        }, retry_if_failed=False)
         task2 = set_periodic_task("task two", "0 0 * * WED", ["pinode2"], "some.task.module", 1, {
             "key1": "value",
             "key2": "foo"
-        }, active=False)
+        }, active=False, retry_if_failed=True)
         task3 = set_periodic_task("task three", "30 * * * *", ["pinode1", "pinode2"], "some.task.module", 2, {
             "key1": 1234,
             "key2": 5678,
