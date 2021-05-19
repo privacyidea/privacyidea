@@ -49,7 +49,7 @@ def upgrade():
                                active=pol.get("active"),
                                check_all_resolvers=pol.get("check_all_resolvers"),
                                action=action)
-                print("+- Updated policy {0!s}: {1!s}".format(pol.get("name"),r))
+                print("+- Updated policy {0!s}: {1!s}".format(pol.get("name"), r))
                 # 4. Delete push_registration_url and ttl from the Firebase Config
                 #    Note: If we had a firebase config, that would not be used in a policy,
                 #    the url and ttl would not be deleted from the firebase config. But this
