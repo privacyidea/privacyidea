@@ -347,9 +347,10 @@ def _write_mysql_defaults(filename, username, password):
     """
     with open(filename, "w") as f:
         f.write("""[client]
-no-tablespaces=True
 user={0!s}
-password={1!s}""".format(username, password))
+password={1!s}
+[mysqldump]
+no-tablespaces=True""".format(username, password))
 
     os.chmod(filename, 0o600)
     # set correct owner, if possible
