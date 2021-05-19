@@ -24,7 +24,7 @@ def upgrade():
     pols = P.list_policies(scope=SCOPE.ENROLL,
                            action="{0!s}".format(PUSH_ACTION.FIREBASE_CONFIG))
 
-    # interate through all enrollment policies
+    # iterate through all enrollment policies
     for pol in pols:
         # Check for all firebase gateways, if this policy needs to be modified
         for fbgw in fb_gateways:
@@ -35,7 +35,7 @@ def upgrade():
                 registration_url = fbgw.option_dict.get("registration URL")
                 ttl = fbgw.option_dict.get("time to live")
                 # We can leave most of the parameters None, since it will update the policy.
-                # We still need to pass the originial "active" and "check_all_resolvers" params
+                # We still need to pass the original "active" and "check_all_resolvers" params
                 # and we need to update the action
                 action = pol.get("action")
                 # Only add registration_url and ttl to the policy, if these values actually exist,
