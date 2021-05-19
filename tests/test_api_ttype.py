@@ -359,13 +359,14 @@ class TtypePushAPITestCase(MyApiTestCase):
             self.assertNotIn("otpkey", detail)
             enrollment_credential = detail.get("enrollment_credential")
 
-        # 2nd step: as performed by the smartphone
+        # 2nd step: as performed by the smartphone. Also in POLL_ONLY the smartphone needs to send
+        #           an empty "fbtoken"
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
                                            data={"enrollment_credential": enrollment_credential,
                                                  "serial": serial,
                                                  "pubkey": self.smartphone_public_key_pem_urlsafe,
-                                                 "fbtoken": "firebaseT"}):
+                                                 "fbtoken": ""}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             detail = res.json.get("detail")
@@ -389,7 +390,7 @@ class TtypePushAPITestCase(MyApiTestCase):
             self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
             self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
-            self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
+            self.assertEqual(tokeninfo.get("firebase_token"), u"")
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(),
                              pubkey)
             # The token should also contain the firebase config

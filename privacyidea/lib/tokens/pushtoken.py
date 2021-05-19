@@ -819,15 +819,18 @@ class PushTokenClass(TokenClass):
 
         attributes = None
         data = None
+        res = False
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
         if fb_identifier:
             challenge = b32encode_and_unicode(geturandom())
-            fb_gateway = create_sms_instance(fb_identifier)
-            pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
-            smartphone_data = _build_smartphone_data(self.token.serial,
-                                                     challenge, fb_gateway,
-                                                     pem_privkey, options)
-            res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
+            if fb_identifier != POLL_ONLY:
+                # We only push to firebase if this tokens does NOT POLL_ONLY.
+                fb_gateway = create_sms_instance(fb_identifier)
+                pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
+                smartphone_data = _build_smartphone_data(self.token.serial,
+                                                         challenge, fb_gateway,
+                                                         pem_privkey, options)
+                res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
 
             # Create the challenge in the challenge table if either the message
             # was successfully submitted to the Firebase API or if polling is
