@@ -1,4 +1,60 @@
-Version 3.5.2, 2020-03-23
+Version 3.6, 2021-05-31
+
+  Features:
+  * Add custom user attributes that can be managed within privacyIDEA #680
+  * Extended policy conditions can match on any token attribute #2590
+
+  Enhancements:
+  * Allow to use Push tokens without Firebase #2720
+  * privacyidea-cron allow to choose retry if action failed #1179
+  * UI: allow token rollover e.g. for smartphone swap #2613
+  * pi-manage: allow configuration export and import #2467
+  * Allow different PIN policies for different token types #2142
+  * UI: Search in policy description, not only in policy action #2574
+  * UI: Highlight found locations of search term in web UI #2577
+  * UI: Allow configurable entry point for custom web UI #2592
+  * UI: Add more descriptive tooltip to token when assigning to machine #2516
+  * Import AES mode yubikeys created with Yubico Personalization tool #2594
+  * token janitor can export arbitrary user fields #2569
+  * token janitor: CSV token export can either export hex or base32 encoded seeds #2648
+  * token janitor: CSV token export contains token owner #2664
+  * Remote Token can now be configured with a privacyIDEA configuration
+    instead of a distinct URL #2124
+  * Allow additional tags like {username} in SMS token #2677
+  * improve privacyidea-diag #2555
+  * auth_cache can now cache the credentials for a certain number of usages #1059
+  * Policy "add_user_in_response" also checks for user-realms #2642
+  * Stamp the database version automatically during installation #2708
+  * Audit Rotation is automatically added on new installation #1427
+
+  Documentation:
+  * Add note about SMS text formats #2151
+  * Rewrite Yubikey enrollment documentation #2318
+
+  Hardening:
+  * Replace ecdsa module with stable pyca module #2410
+  * LDAP resolver supports TLS 1.3 #2637
+  * Update dependencies / requirements #2570
+  * Choose more secure configuration defaults #2408
+
+  Fixes:
+  * Do not trigger disabled PUSH tokens #2723
+  * Configuration default truncate Audit log #2699
+  * Policy: Fix problems with extended policy conditions #2676
+  * UI: Remove table borders in list views #2585
+  * UI: Do not translate date in audit log #2579
+  * Remove deprecated oauth2client #1990
+  * Fix visibilty of subscription for administrator #2609
+  * Remove non-existing getOTP from documentation #2636
+  * Remove undocumented and unused parameter aladdin_hashlib in token import #2634
+  * Fix visibility of token wizard #2632
+  * Create policy button is disabled if no scope is selected #1888
+  * Re-enable enroll button in case of error during token enrollment #2717
+  * Save fractions of seconds in the audit log #2706
+  * Fix pi-manage restore #2728
+
+
+Version 3.5.2, 2021-03-23
 
   Fixes:
   * Add serial to the request object in /ttype/ endpoint (#2605)
@@ -8,7 +64,7 @@ Version 3.5.2, 2020-03-23
   * Fix DB migrate URI if it contains char % (#2661)
   * Fix long default POOLING_LOOP_TIMEOUT (#2662)
 
-Version 3.5.1, 2020-01-28
+Version 3.5.1, 2021-01-28
 
   Fixes:
   * Fix DB migration script for update from prior of 3.3. (#2582)
