@@ -455,7 +455,7 @@ class CONDITION_SECTION(object):
 class CONDITION_CHECK(object):
     __doc__ = """The available check methods for extended conditions"""
     DO_NOT_CHECK_AT_ALL = 1
-    ONLY_CHECK_USERINFO_AND_HTTPHEADER = [CONDITION_SECTION.USERINFO, CONDITION_SECTION.HTTP_REQUEST_HEADER]
+    ONLY_CHECK_USERINFO = [CONDITION_SECTION.USERINFO]
     CHECK_AND_RAISE_EXCEPTION_ON_MISSING = None
 
 
@@ -1109,13 +1109,19 @@ class PolicyClass(object):
             admin_user = username
             admin_realm = realm
             user_object = None
+            # During login of the admin there is no token, no tokeninfo and no user info available.
+            # Also, the http header is only passed down to the policy Match-class, but not in the get_rights method.
+            # Thus we can not check any extended conditions for admins at this point.
             extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL
         elif scope == SCOPE.USER:
-            # If the logged-in user is a user, we pass a user object to allow matching for userinfo attributes
             admin_user = None
             admin_realm = None
+            # If the logged-in user is a user, we pass a user object to allow matching for userinfo attributes
             user_object = User(username, realm)
-            extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO_AND_HTTPHEADER
+            # During login of the admin there is no token and no tokeninfo available.
+            # Also, the http header is only passed down to the policy Match-class, but not in the get_rights method.
+            # Thus we can only check the extended condition "userinfo" for users at this point.
+            extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO
         else:
             raise PolicyError(u"Unknown scope: {}".format(scope))
         pols = self.match_policies(scope=scope,
@@ -1192,7 +1198,7 @@ class PolicyClass(object):
         if role == SCOPE.ADMIN:
             extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL
         else:
-            extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO_AND_HTTPHEADER
+            extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO
         if pols:
             # admin policies or user policies are set, so we need to
             # test, which tokens are allowed to be enrolled for this user
