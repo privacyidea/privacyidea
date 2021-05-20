@@ -505,7 +505,7 @@ class IdResolver (UserIdResolver):
                 tls_version = int(DEFAULT_TLS_PROTOCOL)
             # If TLS_VERSION is 2, set tls_options to use TLS v1.3
             if not tls_options:
-                tls_options = TLS_OPTIONS_1_3 if tls_version == int(ssl.PROTOCOL_TLS) else None
+                tls_options = TLS_OPTIONS_1_3 if int(tls_version) == int(ssl.PROTOCOL_TLS) else None
             if tls_verify:
                 tls_ca_file = tls_ca_file or DEFAULT_CA_FILE
             else:
