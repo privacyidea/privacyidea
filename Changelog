@@ -44,7 +44,7 @@ Version 3.6, 2021-05-31
   * UI: Remove table borders in list views #2585
   * UI: Do not translate date in audit log #2579
   * Remove deprecated oauth2client #1990
-  * Fix visibilty of subscription for administrator #2609
+  * Fix visibility of subscription for administrator #2609
   * Remove non-existing getOTP from documentation #2636
   * Remove undocumented and unused parameter aladdin_hashlib in token import #2634
   * Fix visibility of token wizard #2632
