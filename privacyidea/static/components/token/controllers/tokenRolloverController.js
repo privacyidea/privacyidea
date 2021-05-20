@@ -92,7 +92,7 @@ myApp.controller("tokenRolloverController", ["$scope", "TokenFactory", "$timeout
             "serial": $scope.token.serial,
             "type": $scope.token.tokentype
         };
-        TokenFactory.enroll($scope.newUser, params, function (data) {
+        TokenFactory.enroll({}, params, function (data) {
             $scope.clientpart = "";
             $scope.callback(data);
         });
