@@ -131,7 +131,8 @@ also ``failcount`` and ``tokentype``.
    stored in lower case in the database.
 
 **Example**: The administrator could define a dedicated policy in the scope *user* with the
-action ``delete`` and the token condition ``active``, ``<``, ``0`` (0 or false depending on the database).
+action ``delete`` and the token condition ``active``, ``<``, ``1``. For an inactive token the attribute ``active``
+would evaluate to ``0`` and thus be smaller than ``1``. An ``active`` token would evaluate to ``1``.
 This would allow the user to delete only inactive tokens, but not still active tokens.
 
 ``HTTP Request Header``
