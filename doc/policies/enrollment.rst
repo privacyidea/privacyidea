@@ -385,6 +385,8 @@ This is new in version 3.0.
 
 Starting with version 3.6, if the push token is supposed to run in poll-only mode,
 then the entry "poll only" can be selected instead of a firebase configuration.
+In this mode, neither the privacyIDEA server nor the smartphone app will connect to Google
+Firebase during enrollment or authentication.
 Note, that you also need to set the authentication policy
 :ref:`policy_auth_push_allow_poll` to allow the push token to poll for challenges.
 
@@ -395,10 +397,8 @@ type: string
 
 This is the URL of your privacyIDEA server, which the push App should
 connect to for the second registration step.
-This URL usually ends with ``/ttype/push``. Note, that the FQDN
-of your privacyIDEA server could be different for the smartphone
-App to connect to, than you usually use for connecting via the
-Web interface.
+This URL usually ends with ``/ttype/push``. Note, that the smartphone app
+may connect to a different privacyIDEA URL than the URL of the privacyIDEA Web UI.
 
 push_ttl
 ~~~~~~~~
