@@ -138,6 +138,8 @@ class TokenClass(object):
     using_pin = True
     hKeyRequired = False
     mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE]
+    # Usually a token will be checked in the lib:check_token_list, even if it is disabled
+    check_if_disabled = True
 
     @log_with(log)
     def __init__(self, db_token):
