@@ -12,7 +12,7 @@ except ImportError:
 SCRIPTS = [
     'creategoogleauthenticator-file',
     'getgooglecodes',
-    'privacyidea-convert-base32.py',
+#    'privacyidea-convert-base32.py',
     'privacyidea-create-ad-users',
     'privacyidea-create-certificate',
     'privacyidea-create-pwidresolver-user',

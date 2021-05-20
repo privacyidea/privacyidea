@@ -174,7 +174,6 @@ import logging
 from ..models import (Policy, db, save_config_timestamp, Token)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node)
-from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
@@ -183,15 +182,14 @@ from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
                                    determine_logged_in_userparams, parse_string_to_dict)
-from privacyidea.lib.utils.compare import compare_values, CompareError, COMPARATOR_FUNCTIONS, COMPARATORS, \
-    COMPARATOR_DESCRIPTIONS
+from privacyidea.lib.utils.compare import compare_values, COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 import datetime
 import re
 import ast
 import traceback
-from six import with_metaclass, string_types
+from six import string_types
 
 log = logging.getLogger(__name__)
 
@@ -850,8 +848,8 @@ class PolicyClass(object):
                 except Exception as exx:
                     log.warning(u"Error during handling the condition on token {!r} "
                                 u"of policy {!r}: {!r}".format(key, policy['name'], exx))
-                    raise PolicyError(
-                        u"Invalid comparison in the {!s} conditions of policy {!r}".format(type, policy['name']))
+                    raise PolicyError(u"Invalid comparison in the 'token' "
+                                      u"conditions of policy {!r}".format(policy['name']))
             else:
                 log.warning(u"Unknown token column referenced in a "
                             u"condition of policy {!r}: {!r}".format(policy['name'], key))
