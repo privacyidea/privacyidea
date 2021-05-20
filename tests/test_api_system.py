@@ -352,7 +352,8 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue(result["value"] == 1, result)
+            self.assertGreaterEqual(result["value"], 1, result)
+            res_id = result["value"]
 
         with self.app.test_request_context('/resolver/',
                                            method='GET',
@@ -441,7 +442,7 @@ class APIConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue(result["value"] == 1, result)
+            self.assertEqual(result["value"], res_id, result)
 
         # delete a non existing resolver
         with self.app.test_request_context('/resolver/xycswwf',
@@ -468,7 +469,8 @@ class APIConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             # The resolver was created. The ID of the resolver is returend.
-            self.assertTrue(result["value"] > 0, result)
+            self.assertGreaterEqual(result["value"], 1, result)
+            res_id = result["value"]
 
         # create a realm
         with self.app.test_request_context('/realm/{0!s}'.format(realmname),
@@ -524,8 +526,9 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
-            # The realm is successfully deleted: value == 1
-            self.assertTrue(result["value"] == 1, result)
+            # The realm is successfully deleted: value is the id in
+            # the db, should be >= 1
+            self.assertGreaterEqual(result["value"], 1, result)
 
         # Now, we can delete the resolver
         with self.app.test_request_context('/resolver/{0!s}'.format(resolvername),
@@ -537,9 +540,7 @@ class APIConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             # The resolver was deleted = 1
-            self.assertTrue(result["value"] == 1, result)
-
-
+            self.assertEqual(result["value"], res_id, result)
 
     def test_10_default_realm(self):
         resolvername = "defresolver"
@@ -552,7 +553,7 @@ class APIConfigTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result["status"] is True, result)
+            self.assertTrue(result["status"], result)
 
         # create a realm
         with self.app.test_request_context('/realm/{0!s}'.format(realmname),
@@ -563,7 +564,7 @@ class APIConfigTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result["status"] is True, result)
+            self.assertTrue(result["status"], result)
 
         # get the default realm
         with self.app.test_request_context('/defaultrealm',

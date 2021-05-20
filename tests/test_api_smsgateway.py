@@ -129,14 +129,14 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
-            self.assertEqual(result.get("value"), 1)
+            self.assertGreaterEqual(result.get("value"), 1, result)
+            smsgw_id = result.get("value")
 
         # add option
         param["option.HTTP_METHOD"] = "POST"
         # add header
         param["header.header2"] = "headervalue2"
-        param["id"] = 1
+        param["id"] = smsgw_id
         with self.app.test_request_context('/smsgateway',
                                            method='POST',
                                            data=param,
@@ -144,7 +144,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
 
         # check options and headers
         with self.app.test_request_context('/smsgateway/',
@@ -162,33 +161,28 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertEqual(sms_gw.get("headers").get("header2"), "headervalue2")
 
         # delete option "URL"
-        with self.app.test_request_context('/smsgateway/option/1/option.URL',
+        with self.app.test_request_context('/smsgateway/option/{0!s}/option.URL'.format(smsgw_id),
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            detail = res.json.get("detail")
 
         # try to delete header "header1" at the wrong endpoint
-        with self.app.test_request_context('/smsgateway/option/1/option.header1',
+        with self.app.test_request_context('/smsgateway/option/{0!s}/option.header1'.format(smsgw_id),
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 404, res)
-            result = res.json.get("result")
 
         # delete header "header1"
-        with self.app.test_request_context('/smsgateway/option/1/header.header1',
+        with self.app.test_request_context('/smsgateway/option/{0!s}/header.header1'.format(smsgw_id),
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            detail = res.json.get("detail")
 
         # check options
         with self.app.test_request_context('/smsgateway/',
