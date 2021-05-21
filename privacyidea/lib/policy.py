@@ -450,6 +450,13 @@ class CONDITION_SECTION(object):
     HTTP_REQUEST_HEADER = "HTTP Request header"
 
 
+class CONDITION_CHECK(object):
+    __doc__ = """The available check methods for extended conditions"""
+    DO_NOT_CHECK_AT_ALL = 1
+    ONLY_CHECK_USERINFO = [CONDITION_SECTION.USERINFO]
+    CHECK_AND_RAISE_EXCEPTION_ON_MISSING = None
+
+
 class PolicyClass(object):
     """
     A policy object can be used to query the current set of policies.
@@ -668,7 +675,8 @@ class PolicyClass(object):
     def match_policies(self, name=None, scope=None, realm=None, active=None,
                        resolver=None, user=None, user_object=None, pinode=None,
                        client=None, action=None, adminrealm=None, adminuser=None, time=None,
-                       sort_by_priority=True, audit_data=None, request_headers=None, serial=None):
+                       sort_by_priority=True, audit_data=None, request_headers=None, serial=None,
+                       extended_condition_check=None):
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -737,9 +745,10 @@ class PolicyClass(object):
         log.debug("Policies after matching time: {0!s}".format([p.get("name") for p in reduced_policies]))
 
         # filter policies by the policy conditions
-        reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
-                                                              serial)
-        log.debug("Policies after matching conditions".format([p.get("name") for p in reduced_policies]))
+        if extended_condition_check != CONDITION_CHECK.DO_NOT_CHECK_AT_ALL:
+            reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
+                                                                  serial, extended_condition_check)
+            log.debug("Policies after matching conditions".format([p.get("name") for p in reduced_policies]))
 
         if audit_data is not None:
             for p in reduced_policies:
@@ -747,7 +756,8 @@ class PolicyClass(object):
 
         return reduced_policies
 
-    def filter_policies_by_conditions(self, policies, user_object=None, request_headers=None, serial=None):
+    def filter_policies_by_conditions(self, policies, user_object=None, request_headers=None, serial=None,
+                                      extended_condition_check=None):
         """
         Given a list of policy dictionaries and a current user object (if any),
         return a list of all policies whose conditions match the given user object.
@@ -756,6 +766,7 @@ class PolicyClass(object):
         :param user_object: a User object, or None if there is no current user
         :param request_headers: The HTTP headers
         :type request_headers: Request object
+        :param extended_condition_check: A list of sections to check or None.
         :return: generates a list of policy dictionaries
         """
         reduced_policies = []
@@ -764,35 +775,39 @@ class PolicyClass(object):
         for policy in policies:
             include_policy = True
             for section, key, comparator, value, active in policy['conditions']:
-                if active:
-                    if section == CONDITION_SECTION.USERINFO:
-                        if not self._policy_matches_info_condition(policy, key, comparator, value,
-                                                                   CONDITION_SECTION.USERINFO,
-                                                                   user_object=user_object):
-                            include_policy = False
-                            break
-                    elif section == CONDITION_SECTION.TOKENINFO:
-                        dbtoken = dbtoken or Token.query.filter(Token.serial == serial).first() if serial else None
-                        if not self._policy_matches_info_condition(policy, key, comparator, value,
-                                                                   CONDITION_SECTION.TOKENINFO,
-                                                                   dbtoken=dbtoken):
-                            include_policy = False
-                            break
-                    elif section == CONDITION_SECTION.TOKEN:
-                        dbtoken = dbtoken or Token.query.filter(Token.serial == serial).first() if serial else None
-                        if not self._policy_matches_token_condition(policy, key, comparator, value, dbtoken):
-                            include_policy = False
-                            break
-                    elif section == CONDITION_SECTION.HTTP_REQUEST_HEADER:
-                        if not self._policy_matches_request_header_condition(policy, key, comparator, value,
-                                                                             request_headers):
-                            include_policy = False
-                            break
-                    else:
-                        log.warning(u"Policy {!r} has condition with unknown section: {!r}".format(
-                            policy['name'], section
-                        ))
-                        raise PolicyError(u"Policy {!r} has condition with unknown section".format(policy['name']))
+                if (extended_condition_check is CONDITION_CHECK.CHECK_AND_RAISE_EXCEPTION_ON_MISSING
+                        or section in extended_condition_check):
+                    # We check conditions, either if we are supposed to check everything or if
+                    # the section is contained in the extended condition check
+                    if active:
+                        if section == CONDITION_SECTION.USERINFO:
+                            if not self._policy_matches_info_condition(policy, key, comparator, value,
+                                                                       CONDITION_SECTION.USERINFO,
+                                                                       user_object=user_object):
+                                include_policy = False
+                                break
+                        elif section == CONDITION_SECTION.TOKENINFO:
+                            dbtoken = dbtoken or Token.query.filter(Token.serial == serial).first() if serial else None
+                            if not self._policy_matches_info_condition(policy, key, comparator, value,
+                                                                       CONDITION_SECTION.TOKENINFO,
+                                                                       dbtoken=dbtoken):
+                                include_policy = False
+                                break
+                        elif section == CONDITION_SECTION.TOKEN:
+                            dbtoken = dbtoken or Token.query.filter(Token.serial == serial).first() if serial else None
+                            if not self._policy_matches_token_condition(policy, key, comparator, value, dbtoken):
+                                include_policy = False
+                                break
+                        elif section == CONDITION_SECTION.HTTP_REQUEST_HEADER:
+                            if not self._policy_matches_request_header_condition(policy, key, comparator, value,
+                                                                                 request_headers):
+                                include_policy = False
+                                break
+                        else:
+                            log.warning(u"Policy {!r} has condition with unknown section: {!r}".format(
+                                policy['name'], section
+                            ))
+                            raise PolicyError(u"Policy {!r} has condition with unknown section".format(policy['name']))
             if include_policy:
                 reduced_policies.append(policy)
         return reduced_policies
@@ -1092,11 +1107,19 @@ class PolicyClass(object):
             admin_user = username
             admin_realm = realm
             user_object = None
+            # During login of the admin there is no token, no tokeninfo and no user info available.
+            # Also, the http header is only passed down to the policy Match-class, but not in the get_rights method.
+            # Thus we can not check any extended conditions for admins at this point.
+            extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL
         elif scope == SCOPE.USER:
-            # If the logged-in user is a user, we pass a user object to allow matching for userinfo attributes
             admin_user = None
             admin_realm = None
+            # If the logged-in user is a user, we pass a user object to allow matching for userinfo attributes
             user_object = User(username, realm)
+            # During login of the admin there is no token and no tokeninfo available.
+            # Also, the http header is only passed down to the policy Match-class, but not in the get_rights method.
+            # Thus we can only check the extended condition "userinfo" for users at this point.
+            extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO
         else:
             raise PolicyError(u"Unknown scope: {}".format(scope))
         pols = self.match_policies(scope=scope,
@@ -1104,7 +1127,8 @@ class PolicyClass(object):
                                    adminrealm=admin_realm,
                                    adminuser=admin_user,
                                    active=True,
-                                   client=client)
+                                   client=client,
+                                   extended_condition_check=extended_condition_check)
         for pol in pols:
             for action, action_value in pol.get("action").items():
                 if action_value:
@@ -1169,6 +1193,10 @@ class PolicyClass(object):
                 enroll_types[tokenclass.get_class_type()] = \
                     tokenclass.get_class_info("description")
 
+        if role == SCOPE.ADMIN:
+            extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL
+        else:
+            extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO
         if pols:
             # admin policies or user policies are set, so we need to
             # test, which tokens are allowed to be enrolled for this user
@@ -1182,7 +1210,8 @@ class PolicyClass(object):
                                                active=True,
                                                action="enroll"+tokentype.upper(),
                                                adminrealm=adminrealm,
-                                               adminuser=adminuser)
+                                               adminuser=adminuser,
+                                               extended_condition_check=extended_condition_check)
                 if typepols:
                     # If there is no policy allowing the enrollment of this
                     # tokentype, it is deleted.
@@ -2752,7 +2781,7 @@ class Match(object):
     @classmethod
     def generic(cls, g, scope=None, realm=None, resolver=None, user=None, user_object=None,
                 client=None, action=None, adminrealm=None, adminuser=None, time=None,
-                active=True, sort_by_priority=True, serial=None):
+                active=True, sort_by_priority=True, serial=None, extended_condition_check=None):
         """
         Low-level legacy policy matching interface: Search for active policies and return
         them sorted by priority. All parameters that should be used for matching have to
@@ -2770,7 +2799,7 @@ class Match(object):
                    resolver=resolver, user=user, user_object=user_object,
                    client=client, action=action, adminrealm=adminrealm,
                    adminuser=adminuser, time=time, serial=serial,
-                   sort_by_priority=sort_by_priority)
+                   sort_by_priority=sort_by_priority, extended_condition_check=extended_condition_check)
 
 
 def get_allowed_custom_attributes(g, user_obj):

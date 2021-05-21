@@ -58,6 +58,7 @@ from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.utils import reduce_realms
 from flask import g
 from privacyidea.lib.auth import ROLE
+from privacyidea.lib.policy import CONDITION_CHECK
 from flask_babel import gettext as _
 import logging
 
@@ -199,7 +200,8 @@ def get_realms_api():
     policies = Match.generic(g, scope=luser.get("role", ROLE.ADMIN),
                              adminrealm=luser.get("realm"),
                              adminuser=luser.get("username"),
-                             active=True).policies()
+                             active=True,
+                             extended_condition_check=CONDITION_CHECK.DO_NOT_CHECK_AT_ALL).policies()
     realms = reduce_realms(all_realms, policies)
 
     return send_result(realms)

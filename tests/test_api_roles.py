@@ -1389,6 +1389,34 @@ class PolicyConditionsTestCase(MyApiTestCase):
             # only HOTP tokens
             self.assertEqual(set(result['value'].keys()), {'hotp'})
 
+        # We set a new policy condition for users (bob), to be allowed to enroll TOTP
+        # tokens only in special cases. This condition will not match for certain tokens.
+        with self.app.test_request_context('/policy/totp_enroll',
+                                           json={'action': "enrollTOTP",
+                                                 'scope': SCOPE.USER,
+                                                 'realm': '',
+                                                 'active': True,
+                                                 'conditions': [
+                                                     ["userinfo", "username", "equals", "bob", True],
+                                                     ["token", "count", "equals", "1", True],
+                                                 ]
+                                                 },
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # check the rights of bob. The TOTP enroll right will basically be there
+        with self.app.test_request_context('/auth/rights',
+                                           method='GET',
+                                           headers={'Authorization': bob_token}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            # HOTP and TOTP tokens
+            self.assertIn('hotp', set(result['value'].keys()))
+            self.assertIn('totp', set(result['value'].keys()))
+
         # check the rights of manager
         with self.app.test_request_context('/auth/rights',
                                            method='GET',
@@ -1412,11 +1440,11 @@ class PolicyConditionsTestCase(MyApiTestCase):
         status_code, result = _try_enroll(bob_token, 'hotp')
         self.assertEqual(status_code, 200)
         self.assertEqual(result, {"status": True, "value": True})
-        # ... but not TOTP ...
+        # ... but not TOTP, since the extended condition does not match
         status_code, result = _try_enroll(bob_token, 'totp')
         self.assertEqual(status_code, 403)
         self.assertFalse(result['status'])
-        self.assertIn("not allowed to enroll this token type", result['error']['message'])
+        self.assertIn("has conditions on tokens, but a token object is not available", result['error']['message'])
         # ... and certainly not SPASS
         status_code, result = _try_enroll(bob_token, 'spass')
         self.assertEqual(status_code, 403)
