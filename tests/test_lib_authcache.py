@@ -56,9 +56,9 @@ class AuthCacheTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Add Entry to cache
-        r = add_to_cache(self.username, self.realm, self.resolver, self.password)
+        ac_id = add_to_cache(self.username, self.realm, self.resolver, self.password)
 
-        auth = AuthCache.query.filter(AuthCache.id == r).first()
+        auth = AuthCache.query.filter(AuthCache.id == ac_id).first()
         last_auth1 = auth.last_auth
         auth_count1 = auth.auth_count
         self.assertEqual(0, auth_count1)
@@ -72,7 +72,7 @@ class AuthCacheTestCase(MyTestCase):
         self.assertTrue(r)
 
         # The last_auth was increased!
-        auth = AuthCache.query.filter(AuthCache.id == r).first()
+        auth = AuthCache.query.filter(AuthCache.id == ac_id).first()
         last_auth2 = auth.last_auth
         auth_count2 = auth.auth_count
         self.assertTrue(last_auth2 > last_auth1)

@@ -6,6 +6,7 @@ This tests the files
 from privacyidea.lib.user import User
 from privacyidea.lib.tokenclass import TOKENKIND
 from privacyidea.lib.token import init_token
+from privacyidea.models import db
 from .base import MyTestCase
 from privacyidea.lib.monitoringstats import get_values
 from flask import current_app
@@ -40,6 +41,7 @@ class TaskSimpleStatsTestCase(MyTestCase):
         init_token({"type": "totp", "otpkey": self.otpkey, "serial": self.serials[0]})
 
         sst.do(params)
+        db.session.commit()
         for o in sst.options.keys():
             self.assertEqual(simple_results[o][0], get_values(o)[0][1],
                              msg="Current option: {0}".format(o))
@@ -49,6 +51,7 @@ class TaskSimpleStatsTestCase(MyTestCase):
                    tokenkind=TOKENKIND.HARDWARE)
 
         sst.do(params)
+        db.session.commit()
         for o in sst.options.keys():
             self.assertEqual(simple_results[o][1], get_values(o)[1][1],
                              msg="Current option: {0}".format(o))
@@ -62,6 +65,7 @@ class TaskSimpleStatsTestCase(MyTestCase):
         self.assertEqual(TOKENKIND.HARDWARE, token.get_tokeninfo('tokenkind'))
 
         sst.do(params)
+        db.session.commit()
         for o in sst.options.keys():
             self.assertEqual(simple_results[o][2], get_values(o)[2][1],
                              msg="Current option: {0}".format(o))
@@ -76,6 +80,7 @@ class TaskSimpleStatsTestCase(MyTestCase):
         # check if getting only certain stats works
         params['assigned_tokens'] = False
         sst.do(params)
+        db.session.commit()
         self.assertEqual(3, len(get_values('assigned_tokens')))
         self.assertEqual(4, len(get_values('user_with_token')))
         for o in sst.options.keys():

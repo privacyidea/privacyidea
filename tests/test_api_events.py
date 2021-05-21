@@ -195,7 +195,8 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
-            self.assertEqual(result.get("value"), 1)
+            self.assertGreaterEqual(result.get("value"), 1, result)
+            ev1_id = result.get('value')
 
         # list event with options
         with self.app.test_request_context('/event/',
@@ -214,7 +215,7 @@ class APIEventsTestCase(MyApiTestCase):
                              "themis")
 
         # delete event
-        with self.app.test_request_context('/event/1',
+        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
@@ -222,7 +223,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
-            self.assertEqual(result.get("value"), 1)
+            self.assertEqual(result.get("value"), ev1_id)
 
         # list empty events
         with self.app.test_request_context('/event/',
@@ -310,7 +311,8 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
-            self.assertEqual(result.get("value"), 1)
+            self.assertGreaterEqual(result.get("value"), 1, result)
+            ev1_id = result.get('value')
 
         # list event with options
         with self.app.test_request_context('/event/',
@@ -325,7 +327,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(event_list[0].get("active"), True)
 
         # disable event
-        with self.app.test_request_context('/event/disable/1',
+        with self.app.test_request_context('/event/disable/{0!s}'.format(ev1_id),
                                            method='POST',
                                            headers={
                                                'Authorization': self.at}):
@@ -344,7 +346,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(event_list[0].get("active"), False)
 
         # Enable event
-        with self.app.test_request_context('/event/enable/1',
+        with self.app.test_request_context('/event/enable/{0!s}'.format(ev1_id),
                                            method='POST',
                                            headers={
                                                'Authorization': self.at}):
@@ -363,7 +365,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(event_list[0].get("active"), True)
 
         # delete event
-        with self.app.test_request_context('/event/1',
+        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
@@ -371,7 +373,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
-            self.assertEqual(result.get("value"), 1)
+            self.assertEqual(result.get("value"), ev1_id, result)
 
         # list empty events
         with self.app.test_request_context('/event/',
@@ -412,10 +414,11 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
-            self.assertEqual(result.get("value"), 1)
+            self.assertGreaterEqual(result.get("value"), 1, result)
+            ev1_id = result.get('value')
 
         # check the event
-        with self.app.test_request_context('/event/1',
+        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -425,7 +428,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(result.get("value")[0].get("position"), "post")
 
         # Update event with the position=pre
-        param["id"] = 1
+        param["id"] = ev1_id
         param["position"] = "pre"
         with self.app.test_request_context('/event',
                                            data=param,
@@ -435,10 +438,10 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
-            self.assertEqual(result.get("value"), 1)
+            self.assertEqual(result.get("value"), ev1_id, result)
 
         # check the event
-        with self.app.test_request_context('/event/1',
+        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -448,7 +451,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(result.get("value")[0].get("position"), "pre")
 
         # delete event
-        with self.app.test_request_context('/event/1',
+        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
@@ -456,7 +459,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
-            self.assertEqual(result.get("value"), 1)
+            self.assertEqual(result.get("value"), ev1_id, result)
 
         # list empty events
         with self.app.test_request_context('/event/',
@@ -499,7 +502,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
-            self.assertEqual(result.get("value"), 1)
+            self.assertGreaterEqual(result.get("value"), 1, result)
 
         self.setUp_user_realm2()
         # usernotoken, self.realm2
