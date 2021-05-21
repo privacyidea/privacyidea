@@ -403,7 +403,7 @@ may connect to a different privacyIDEA URL than the URL of the privacyIDEA Web U
 push_ttl
 ~~~~~~~~
 
-This is the time (in seconds) how long the privacyIDEA server
+This is the time (in minutes) how long the privacyIDEA server
 accepts the response of the second registration step.
 The smartphone could have connection issues, so the second step
 could take some time to happen.
