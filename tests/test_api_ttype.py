@@ -3,8 +3,8 @@ from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.config import (set_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token)
-from privacyidea.lib.policy import (SCOPE, set_policy)
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy)
+from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
@@ -13,7 +13,8 @@ from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.lib.tokens.pushtoken import (PUSH_ACTION,
                                               strip_key,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
-                                              PUBLIC_KEY_SERVER)
+                                              PUBLIC_KEY_SERVER,
+                                              POLL_ONLY)
 from privacyidea.lib.utils import b32encode_and_unicode
 from datetime import datetime, timedelta
 from pytz import utc
@@ -30,13 +31,13 @@ DICT_FILE = "tests/testdata/dictionary"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
 CLIENT_FILE = "tests/testdata/google-services.json"
 FB_CONFIG_VALS = {
-    FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-    FIREBASE_CONFIG.TTL: 10,
     FIREBASE_CONFIG.API_KEY: "1",
     FIREBASE_CONFIG.APP_ID: "2",
     FIREBASE_CONFIG.PROJECT_NUMBER: "3",
     FIREBASE_CONFIG.PROJECT_ID: "test-123456",
     FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE}
+REGISTRATION_URL = "http://test/ttype/push"
+TTL = "10"
 
 
 class TtypeAPITestCase(MyApiTestCase):
@@ -153,8 +154,10 @@ class TtypePushAPITestCase(MyApiTestCase):
                            "myFB", FB_CONFIG_VALS)
         self.assertTrue(r > 0)
         set_policy("push1", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
-                                               self.firebase_config_name))
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
+                       PUSH_ACTION.FIREBASE_CONFIG, self.firebase_config_name,
+                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL,
+                       PUSH_ACTION.TTL, TTL))
 
         # 1st step
         with self.app.test_request_context('/token/init',
@@ -323,3 +326,77 @@ class TtypePushAPITestCase(MyApiTestCase):
                 self.assertTrue(res.status_code == 200, res)
                 self.assertTrue(res.json['result']['status'])
                 self.assertTrue(res.json['result']['value'])
+
+    def test_03_api_enroll_push_poll_only(self):
+        """Enroll a poll-only push token"""
+        self.authenticate()
+        # Set policy for poll only
+        set_policy("push1", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
+                       PUSH_ACTION.FIREBASE_CONFIG, POLL_ONLY,
+                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL,
+                       PUSH_ACTION.TTL, TTL))
+
+        # 1st step
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "push",
+                                                 "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            detail = res.json.get("detail")
+            serial = detail.get("serial")
+            self.assertEqual(detail.get("rollout_state"), "clientwait")
+            self.assertIn("pushurl", detail)
+            # check that the new URL contains the serial number
+            self.assertIn("&serial=PIPU", detail.get("pushurl").get("value"))
+            # The firebase settings are NOT contained in the QR Code, since we do poll_only
+            # poll_only
+            self.assertNotIn("appid=", detail.get("pushurl").get("value"))
+            self.assertNotIn("appidios=", detail.get("pushurl").get("value"))
+            self.assertNotIn("apikeyios=", detail.get("pushurl").get("value"))
+            self.assertNotIn("otpkey", detail)
+            enrollment_credential = detail.get("enrollment_credential")
+
+        # 2nd step: as performed by the smartphone. Also in POLL_ONLY the smartphone needs to send
+        #           an empty "fbtoken"
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": serial,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": ""}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            detail = res.json.get("detail")
+            # still the same serial number
+            self.assertEqual(serial, detail.get("serial"))
+            self.assertEqual(detail.get("rollout_state"), "enrolled")
+            # Now the smartphone gets a public key from the server
+            augmented_pubkey = "-----BEGIN RSA PUBLIC KEY-----\n{}\n-----END RSA PUBLIC KEY-----\n".format(
+                detail.get("public_key"))
+            parsed_server_pubkey = serialization.load_pem_public_key(
+                to_bytes(augmented_pubkey),
+                default_backend())
+            self.assertIsInstance(parsed_server_pubkey, rsa.RSAPublicKey)
+            pubkey = detail.get("public_key")
+
+            # Now check, what is in the token in the database
+            toks = get_tokens(serial=serial)
+            self.assertEqual(len(toks), 1)
+            token_obj = toks[0]
+            self.assertEqual(token_obj.token.rollout_state, u"enrolled")
+            self.assertTrue(token_obj.token.active)
+            tokeninfo = token_obj.get_tokeninfo()
+            self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
+            self.assertEqual(tokeninfo.get("firebase_token"), u"")
+            self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(),
+                             pubkey)
+            # The token should also contain the firebase config
+            self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), POLL_ONLY)
+
+        # remove the token
+        remove_token(serial)
+        # remove the policy
+        delete_policy("push1")

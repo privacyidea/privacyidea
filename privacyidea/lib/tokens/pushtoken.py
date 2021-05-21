@@ -80,10 +80,13 @@ DELAY = 1.0
 # Timedelta in minutes
 POLL_TIME_WINDOW = 1
 UPDATE_FB_TOKEN_WINDOW = 5
+POLL_ONLY = "poll only"
 
 
 class PUSH_ACTION(object):
     FIREBASE_CONFIG = "push_firebase_configuration"
+    REGISTRATION_URL = "push_registration_url"
+    TTL = "push_ttl"
     MOBILE_TEXT = "push_text_on_mobile"
     MOBILE_TITLE = "push_title_on_mobile"
     SSL_VERIFY = "push_ssl_verify"
@@ -265,7 +268,6 @@ class PushTokenClass(TokenClass):
         self.mode = ['challenge', 'authenticate']
         self.hKeyRequired = False
 
-
     @staticmethod
     def get_class_type():
         """
@@ -303,7 +305,19 @@ class PushTokenClass(TokenClass):
                            'type': 'str',
                            'desc': _('The configuration of your Firebase application.'),
                            'group': "PUSH",
-                           'value': [gw.identifier for gw in gws]
+                           'value': [POLL_ONLY] + [gw.identifier for gw in gws]
+                       },
+                       PUSH_ACTION.REGISTRATION_URL: {
+                            "required": True,
+                            'type': 'str',
+                            'group': "PUSH",
+                            'desc': _('The URL the Push App should contact in the second enrollment step.'
+                                      ' Usually it is the endpoint /ttype/push of the privacyIDEA server.')
+                       },
+                       PUSH_ACTION.TTL: {
+                           'type': 'int',
+                           'group': "PUSH",
+                           'desc': _('The second enrollment step must be completed within this time (in minutes).')
                        },
                        PUSH_ACTION.SSL_VERIFY: {
                            'type': 'str',
@@ -448,22 +462,28 @@ class PushTokenClass(TokenClass):
         if imageurl:
             extra_data.update({"image": imageurl})
         if self.token.rollout_state == "clientwait":
+            # Get enrollment values from the policy
+            registration_url = getParam(params, PUSH_ACTION.REGISTRATION_URL, optional=False)
+            ttl = getParam(params, PUSH_ACTION.TTL, default="10")
             # Get the values from the configured PUSH config
             fb_identifier = params.get(PUSH_ACTION.FIREBASE_CONFIG)
-            firebase_configs = get_smsgateway(identifier=fb_identifier, gwtype=GWTYPE)
-            if len(firebase_configs) != 1:
-                raise ParameterError("Unknown Firebase configuration!")
-            fb_options = firebase_configs[0].option_dict
-            for k in [FIREBASE_CONFIG.PROJECT_NUMBER, FIREBASE_CONFIG.PROJECT_ID,
-                      FIREBASE_CONFIG.APP_ID, FIREBASE_CONFIG.API_KEY,
-                      FIREBASE_CONFIG.APP_ID_IOS, FIREBASE_CONFIG.API_KEY_IOS]:
-                extra_data[k] = fb_options.get(k)
+            if fb_identifier != POLL_ONLY:
+                # If do not do poll_only, then we load all the firebase configuration
+                firebase_configs = get_smsgateway(identifier=fb_identifier, gwtype=GWTYPE)
+                if len(firebase_configs) != 1:
+                    raise ParameterError("Unknown Firebase configuration!")
+                fb_options = firebase_configs[0].option_dict
+                for k in [FIREBASE_CONFIG.PROJECT_NUMBER, FIREBASE_CONFIG.PROJECT_ID,
+                          FIREBASE_CONFIG.APP_ID, FIREBASE_CONFIG.API_KEY,
+                          FIREBASE_CONFIG.APP_ID_IOS, FIREBASE_CONFIG.API_KEY_IOS]:
+                    extra_data[k] = fb_options.get(k)
+                self.add_tokeninfo(FIREBASE_CONFIG.PROJECT_ID, fb_options.get(FIREBASE_CONFIG.PROJECT_ID))
             # this allows to upgrade our crypto
             extra_data["v"] = 1
             extra_data["serial"] = self.get_serial()
             extra_data["sslverify"] = sslverify
             # We display this during the first enrollment step!
-            qr_url = create_push_token_url(url=fb_options.get(FIREBASE_CONFIG.REGISTRATION_URL),
+            qr_url = create_push_token_url(url=registration_url,
                                            user=user.login,
                                            realm=user.realm,
                                            serial=self.get_serial(),
@@ -471,12 +491,11 @@ class PushTokenClass(TokenClass):
                                            issuer=tokenissuer,
                                            user_obj=user,
                                            extra_data=extra_data,
-                                           ttl=fb_options.get(FIREBASE_CONFIG.TTL))
+                                           ttl=ttl)
             response_detail["pushurl"] = {"description": _("URL for privacyIDEA Push Token"),
                                           "value": qr_url,
                                           "img": create_img(qr_url, width=250)
                                           }
-            self.add_tokeninfo(FIREBASE_CONFIG.PROJECT_ID, fb_options.get(FIREBASE_CONFIG.PROJECT_ID))
 
             response_detail["enrollment_credential"] = self.get_tokeninfo("enrollment_credential")
 
@@ -802,15 +821,18 @@ class PushTokenClass(TokenClass):
 
         attributes = None
         data = None
+        res = False
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
         if fb_identifier:
             challenge = b32encode_and_unicode(geturandom())
-            fb_gateway = create_sms_instance(fb_identifier)
-            pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
-            smartphone_data = _build_smartphone_data(self.token.serial,
-                                                     challenge, fb_gateway,
-                                                     pem_privkey, options)
-            res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
+            if fb_identifier != POLL_ONLY:
+                # We only push to firebase if this tokens does NOT POLL_ONLY.
+                fb_gateway = create_sms_instance(fb_identifier)
+                pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
+                smartphone_data = _build_smartphone_data(self.token.serial,
+                                                         challenge, fb_gateway,
+                                                         pem_privkey, options)
+                res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
 
             # Create the challenge in the challenge table if either the message
             # was successfully submitted to the Firebase API or if polling is

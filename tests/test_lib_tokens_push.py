@@ -169,7 +169,8 @@ class PushTokenTestCase(MyTestCase):
                            fb_config)
         self.assertTrue(r > 0)
 
-        detail = token.get_init_detail(params={"firebase_config": self.firebase_config_name})
+        detail = token.get_init_detail(params={"firebase_config": self.firebase_config_name,
+                                               "push_registration_url": "https://privacyidea.com/enroll"})
         self.assertEqual(detail.get("serial"), self.serial1)
         self.assertEqual(detail.get("rollout_state"), "clientwait")
         enrollment_credential = detail.get("enrollment_credential")

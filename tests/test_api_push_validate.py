@@ -19,13 +19,13 @@ DICT_FILE = "tests/testdata/dictionary"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
 CLIENT_FILE = "tests/testdata/google-services.json"
 FB_CONFIG_VALS = {
-    FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-    FIREBASE_CONFIG.TTL: 10,
     FIREBASE_CONFIG.API_KEY: "1",
     FIREBASE_CONFIG.APP_ID: "2",
     FIREBASE_CONFIG.PROJECT_NUMBER: "3",
     FIREBASE_CONFIG.PROJECT_ID: "test-123456",
     FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE}
+REGISTRATION_URL = "http://test/ttype/push"
+TTL = "10"
 
 
 class PushAPITestCase(MyApiTestCase):
@@ -74,8 +74,10 @@ class PushAPITestCase(MyApiTestCase):
         # set policy
         set_policy("push1", action="{0!s}=20".format(PUSH_ACTION.WAIT), scope=SCOPE.AUTH)
         set_policy("push2", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
-                                               self.firebase_config_name))
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
+                       PUSH_ACTION.FIREBASE_CONFIG, self.firebase_config_name,
+                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL,
+                       PUSH_ACTION.TTL, TTL))
         # Create push config
         r = set_smsgateway(self.firebase_config_name,
                            u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
