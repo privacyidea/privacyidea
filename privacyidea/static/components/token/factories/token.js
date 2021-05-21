@@ -23,7 +23,7 @@
 function fixUser(user) {
     //debug: console.log("User In: " + user);
     if (user) {
-        var stripUser = user.match(/^\[.*\] (.*) \(.*\)$/);
+        var stripUser = user.match(/^\[.*\] (.*) \(.*\).*$/);
         if (stripUser != undefined) {
             user = stripUser[1];
         }
@@ -37,7 +37,7 @@ function fixUser(user) {
 function fixSerial(serial) {
     //debug: console.log("Serial In: " + serial);
     if (serial) {
-        var stripSerial = serial.match(/^(.*) \(.*\)$/);
+        var stripSerial = serial.match(/^(.*) \(.*\).*$/);
         if (stripSerial != undefined) {
             serial = stripSerial[1];
         }
