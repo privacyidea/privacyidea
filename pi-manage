@@ -1288,75 +1288,82 @@ def import_tokens(file, tokenrealm=None):
 token_manager.add_command('import', Command(import_tokens))
 
 
-from functools import wraps, partial
-import inspect
+from functools import partial
 import json
 
-fmt_dict = {'python': str,
-            'json': partial(json.dumps, indent=2),
-            'yaml': yaml.safe_dump}
+exp_fmt_dict = {'python': str,
+                'json': partial(json.dumps, indent=2),
+                'yaml': yaml.safe_dump}
 
 
 @config_manager.option('-o', '--output', type=argparse.FileType('w'),
                        default=sys.stdout,
-                       help='The filename to export the data to,'
-                            ' default is <stdout>')
+                       help='The filename to export the data to. Write to '
+                            '<stdout> if this argument is not given.')
 @config_manager.option('-f', '--format', default='python', dest='fmt',
-                       choices=['python', 'json', 'yaml'],
+                       choices=exp_fmt_dict.keys(),
                        help='Output format, default is \'python\'')
+# TODO: we need to have an eye on the help output, it might get less readable
+#  when more exporter functions are added
 @config_manager.option('-t', '--types', nargs='*', default=['all'],
+                       choices=['all'] + list(EXPORT_FUNCTIONS.keys()),
                        help='The types of configuration to export. By default create '
                             'export using all available exporter types. Currently registered '
-                            'exporter types are: {0!s}'.format(', '.join(EXPORT_FUNCTIONS.keys())))
+                            'exporter types are: '
+                            '{0!s}'.format(', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))))
 def exporter(output, fmt, types):
     """export configuration"""
-    print(output, file=sys.stderr)
-    print(fmt, file=sys.stderr)
-    print(types, file=sys.stderr)
     exp_types = EXPORT_FUNCTIONS.keys() if 'all' in types else types
 
+    out = {}
     for typ in exp_types:
-        res = {typ: EXPORT_FUNCTIONS[typ]()}
-        res = fmt_dict.get(fmt)(res) + '\n'
+        out.update({typ: EXPORT_FUNCTIONS[typ]()})
+
+    if out:
+        res = exp_fmt_dict.get(fmt.lower())(out) + '\n'
         output.write(res)
 
 
-inp_fmt_dict = {'python': ast.literal_eval,
+imp_fmt_dict = {'python': ast.literal_eval,
                 'json': json.loads,
                 'yaml': yaml.safe_load}
 
 
 @config_manager.option('-i', '--input', type=argparse.FileType('r'),
                        default=sys.stdin, dest='infile',
-                       help='The filename to import the data from,'
-                            ' default is <stdin>')
+                       help='The filename to import the data from. Try to read '
+                            'from <stdin> if this argument is not given.')
 @config_manager.option('-t', '--types', nargs='*', default=['all'],
+                       choices=['all'] + list(IMPORT_FUNCTIONS.keys()),
                        help='The types of configuration to import. By default import all '
                             'available data if a corresponding importer type exists. '
-                            'Currently registered importer types '
-                            'are: {0!s}'.format(', '.join(IMPORT_FUNCTIONS.keys())))
+                            'Currently registered importer types are: '
+                            '{0!s}'.format(', '.join(['all'] + list(IMPORT_FUNCTIONS.keys()))))
 def importer(infile, types):
     """import configuration"""
-    d = None
+    data = None
     imp_types = IMPORT_FUNCTIONS.keys() if 'all' in types else types
 
     content = infile.read()
 
-    for tp in inp_fmt_dict:
+    for fmt in imp_fmt_dict:
         try:
-            d = inp_fmt_dict[tp](content)
+            data = imp_fmt_dict[fmt](content)
             break
-        except (SyntaxError, json.decoder.JSONDecodeError, yaml.error.YAMLError) as e:
+        except (SyntaxError, json.decoder.JSONDecodeError, yaml.error.YAMLError) as _e:
             continue
-    if not d:
-        print('Could not read input format! Accepting JSON, YAML or native Python.')
+    if not data:
+        print('Could not read input format! '
+              'Accepting: {0!s}.'.format(', '.join(imp_fmt_dict.keys())),
+              file=sys.stderr)
         sys.exit(1)
 
-    for typ, content in d.items():
+    # we need to go through the importer functions based on priority
+    for typ, value in sorted(IMPORT_FUNCTIONS.items(), key=lambda x: x[1]['prio']):
         if typ in imp_types or 'all' in imp_types:
-            print('Importing configuration type "{0!s}".'.format(typ))
-            if typ in IMPORT_FUNCTIONS:
-                IMPORT_FUNCTIONS[typ](content)
+            if typ in data:
+                print('Importing configuration type "{0!s}".'.format(typ))
+                value['func'](data[typ])
 
 
 # conf export menu

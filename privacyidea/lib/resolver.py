@@ -374,7 +374,7 @@ def export_resolver(name=None, censor=False):
     return get_resolver_list(filter_resolver_name=name, censor=censor)
 
 
-@register_import('resolver')
+@register_import('resolver', prio=10)
 def import_resolver(data):
     """Import resolver configuration"""
     # TODO: Currently this functions does not check for the plausibility of the
