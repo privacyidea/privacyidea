@@ -52,24 +52,52 @@ To do so run::
 .. note:: If the security module is not operational yet, you might get an
    error message "HSM not ready.".
 
-PKCS11 Security Module
------------------------
+YubiHSM2 Security Module
+------------------------
 
-The PKCS11 Security Module can be used to encrypt data with an hardware
-security module, that is connected via the PKCS11 interface. To encrypt and
-decrypt data you can use an RSA key pair that is stored on the HSM.
+The YubiHSM2 Security Module can be used to encrypt and decrypt data with a
+YubiHSM2. The YubiHSM2 is a USB device. privacyIDEA communicates to the YubiHSM
+via the YubiHSM connector, that tunnels communication via HTTP.
 
-To activate this module add the following to the configuration file
-(:ref:`cfgfile`)
+Data is encrypted and decrypted using RSA 4096, which can be slow due to
+the performance of the USB device and using an asymmetric algorithm.
 
-   PI_HSM_MODULE = "privacyidea.lib.security.pkcs11.PKCS11SecurityModule"
+To activate this module add the following to the configuration file (:ref:`cfgfile`)
+
+   PI_HSM_MODULE = "privacyidea.lib.security.yubihsm2.YubiHSMSecurityModule"
 
 Additional attributes are
 
-``PI_HSM_MODULE_MODULE`` which takes the pkcs11 library. This is the full
-specified path to the shared object file in the file system.
+``PI_HSM_MODULE_URL`` which takes the URL to connect to the YubiHSM connector.
+This can be something like `"http://localhost:12345/"`.
 
-``PI_HSM_MODULE_KEY_ID`` is the key id (integer) on the HSM.
+``PI_HSM_MODULE_DOMAIN`` The YubiHSM knows up to 16 domains, which are kind of
+virtual HSMs in the hardware. (default: ``1``).
+
+``PI_HSM_MODULE_PASSWORD`` is the password to access the HSM.
+
+``PI_HSM_MODULE_MAX_RETRIES`` is the number privacyIDEA tries to perform a cryptographic
+operation like *decrypt*, *encrypt* or *random* if the first attempt with the HSM fails.
+The default value is 5.
+
+``PI_HSM_MODULE_KEY_LABEL`` is the label prefix for the keys on the
+HSM (default: ``privacyidea``). In order to locate the keys, the
+module will search for key with a label equal to the concatenation of
+this prefix, ``_`` and the key identifier (respectively ``token``,
+``config`` and ``value``).
+
+``PI_HSM_MODULE_KEY_LABEL_TOKEN`` is the label for ``token`` key
+(defaults to value based on ``PI_HSM_MODULE_KEY_LABEL`` setting).
+
+``PI_HSM_MODULE_KEY_LABEL_CONFIG`` is the label for ``config`` key
+(defaults to value based on ``PI_HSM_MODULE_KEY_LABEL`` setting).
+
+``PI_HSM_MODULE_KEY_LABEL_VALUE`` is the label for ``value`` key
+(defaults to value based on ``PI_HSM_MODULE_KEY_LABEL`` setting).
+
+The yubihsm requires additional Python modules. Install these modules via:
+
+    pip install yubihsm[usb,http]
 
 AES HSM Security Module
 -----------------------
