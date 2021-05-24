@@ -309,9 +309,11 @@ def get_auth_token():
                                                     superuser_realms=
                                                     superuser_realms)
         details = details or {}
-        if db_admin_exist(loginname) and realm == get_default_realm():
+        if db_admin_exist(loginname) and user_auth and realm == get_default_realm():
             # If there is a local admin with the same login name as the user
             # in the default realm, we inform about this in the log file.
+            # This condition can only be checked if the user was authenticated as it
+            # is the only way to verify if such a user exists.
             log.warning("A user '{0!s}' exists as local admin and as user in "
                         "your default realm!".format(loginname))
         if role == ROLE.ADMIN:
