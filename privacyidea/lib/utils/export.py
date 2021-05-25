@@ -23,6 +23,7 @@
 This module provides the functionality to register export or import functions
 for separate parts of the privacyIDEA server configuration.
 """
+from __future__ import print_function
 import sys
 
 EXPORT_FUNCTIONS = {}
