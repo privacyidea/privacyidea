@@ -1312,7 +1312,9 @@ exp_fmt_dict = {'python': str,
                             'exporter types are: '
                             '{0!s}'.format(', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))))
 def exporter(output, fmt, types):
-    """export configuration"""
+    """
+    Export server configuration using specific or all registered exporter types.
+    """
     exp_types = EXPORT_FUNCTIONS.keys() if 'all' in types else types
 
     out = {}
@@ -1340,7 +1342,9 @@ imp_fmt_dict = {'python': ast.literal_eval,
                             'Currently registered importer types are: '
                             '{0!s}'.format(', '.join(['all'] + list(IMPORT_FUNCTIONS.keys()))))
 def importer(infile, types):
-    """import configuration"""
+    """
+    Import server configuration using specific or all registered importer types.
+    """
     data = None
     imp_types = IMPORT_FUNCTIONS.keys() if 'all' in types else types
 
@@ -1360,7 +1364,7 @@ def importer(infile, types):
 
     # we need to go through the importer functions based on priority
     for typ, value in sorted(IMPORT_FUNCTIONS.items(), key=lambda x: x[1]['prio']):
-        if typ in imp_types or 'all' in imp_types:
+        if typ in imp_types:
             if typ in data:
                 print('Importing configuration type "{0!s}".'.format(typ))
                 value['func'](data[typ])
