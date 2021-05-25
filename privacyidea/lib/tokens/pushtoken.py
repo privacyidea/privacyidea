@@ -821,7 +821,8 @@ class PushTokenClass(TokenClass):
 
         attributes = None
         data = None
-        res = False
+        # Initially we assume there is no error from Firebase
+        res = True
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
         if fb_identifier:
             challenge = b32encode_and_unicode(geturandom())
