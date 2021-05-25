@@ -559,7 +559,7 @@ class AuthApiTestCase(MyApiTestCase):
 class DuplicateUserApiTestCase(MyApiTestCase):
 
     def test_01_admin_and_user_same_name(self):
-        # Test the logging, if admin and user have the same name (testamdin/testpw)
+        # Test the logging, if admin and user have the same name (testadmin/testpw)
         # Now create a default realm, that contains the used "testadmin"
         rid = save_resolver({"resolver": self.resolvername1,
                              "type": "passwdresolver",
@@ -604,6 +604,22 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             # check if we have this log entry
             mock_log.assert_called_with("A user 'testadmin' exists as local admin and as user "
                                         "in your default realm!")
+
+        # Check that a wrong/missing password doesn't trigger the warning in the log
+        with mock.patch("logging.Logger.warning") as mock_log:
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "testadmin",
+                                                     "password": "unknown"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res)
+                result = res.json.get("result")
+                self.assertFalse(result.get("status"), result)
+                self.assertEqual(result.get("error").get('code'), 4031, result)
+                self.assertEqual(result.get("error").get('message'),
+                                 'Authentication failure. Wrong credentials', result)
+            # check if we have the correct log entry
+            mock_log.assert_called_with("user uid 1004 failed to authenticate")
 
 
 class AAPreEventHandlerTest(MyApiTestCase):
