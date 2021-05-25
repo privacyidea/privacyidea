@@ -61,6 +61,7 @@ from getpass import getpass
 import gnupg
 import yaml
 import contextlib
+import argparse
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
@@ -98,6 +99,7 @@ from privacyidea.lib.utils import parse_timedelta, get_version_number
 from privacyidea.lib.crypto import create_hsm_object
 from privacyidea.lib.importotp import parseOATHcsv
 from privacyidea.lib.token import import_token
+from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
 import jwt
 import ast
 import base64
@@ -110,10 +112,10 @@ DEFAULT_CONFTYPE_LIST = ("policy", "resolver", "event")
 app = create_app(config_name='production', silent=SILENT)
 manager = Manager(app)
 admin_manager = Manager(usage='Create new administrators or modify existing '
-                              'ones.')
+                                    'ones.')
 backup_manager = Manager(usage='Create database backup and restore')
 realm_manager = Manager(usage='Create new realms, delete existing realms '
-                              'or set the default realm')
+                                    'or set the default realm')
 resolver_manager = Manager(usage='Create new resolver')
 policy_manager = Manager(usage='Manage policies')
 event_manager = Manager(usage='Manage events')
@@ -629,7 +631,7 @@ def profile(length=30, profile_dir=None):
     """
     Start the application in profiling mode.
     """
-    from werkzeug.contrib.profiler import ProfilerMiddleware
+    from werkzeug.middleware.profiler import ProfilerMiddleware
     if flask.has_request_context():
         print("WARNING: The app may behave unrealistically during profiling.")
     app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length],
@@ -1294,8 +1296,89 @@ def import_tokens(file, tokenrealm=None):
 token_manager.add_command('import', Command(import_tokens))
 
 
-# conf export menu
+from functools import partial
+import json
 
+exp_fmt_dict = {'python': str,
+                'json': partial(json.dumps, indent=2),
+                'yaml': yaml.safe_dump}
+
+
+@config_manager.option('-o', '--output', type=argparse.FileType('w'),
+                       default=sys.stdout,
+                       help='The filename to export the data to. Write to '
+                            '<stdout> if this argument is not given.')
+@config_manager.option('-f', '--format', default='python', dest='fmt',
+                       choices=exp_fmt_dict.keys(),
+                       help='Output format, default is \'python\'')
+# TODO: we need to have an eye on the help output, it might get less readable
+#  when more exporter functions are added
+@config_manager.option('-t', '--types', nargs='*', default=['all'],
+                       choices=['all'] + list(EXPORT_FUNCTIONS.keys()),
+                       help='The types of configuration to export. By default create '
+                            'export using all available exporter types. Currently registered '
+                            'exporter types are: '
+                            '{0!s}'.format(', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))))
+def exporter(output, fmt, types):
+    """
+    Export server configuration using specific or all registered exporter types.
+    """
+    exp_types = EXPORT_FUNCTIONS.keys() if 'all' in types else types
+
+    out = {}
+    for typ in exp_types:
+        out.update({typ: EXPORT_FUNCTIONS[typ]()})
+
+    if out:
+        res = exp_fmt_dict.get(fmt.lower())(out) + '\n'
+        output.write(res)
+
+
+imp_fmt_dict = {'python': ast.literal_eval,
+                'json': json.loads,
+                'yaml': yaml.safe_load}
+
+
+@config_manager.option('-i', '--input', type=argparse.FileType('r'),
+                       default=sys.stdin, dest='infile',
+                       help='The filename to import the data from. Try to read '
+                            'from <stdin> if this argument is not given.')
+@config_manager.option('-t', '--types', nargs='*', default=['all'],
+                       choices=['all'] + list(IMPORT_FUNCTIONS.keys()),
+                       help='The types of configuration to import. By default import all '
+                            'available data if a corresponding importer type exists. '
+                            'Currently registered importer types are: '
+                            '{0!s}'.format(', '.join(['all'] + list(IMPORT_FUNCTIONS.keys()))))
+def importer(infile, types):
+    """
+    Import server configuration using specific or all registered importer types.
+    """
+    data = None
+    imp_types = IMPORT_FUNCTIONS.keys() if 'all' in types else types
+
+    content = infile.read()
+
+    for fmt in imp_fmt_dict:
+        try:
+            data = imp_fmt_dict[fmt](content)
+            break
+        except (SyntaxError, json.decoder.JSONDecodeError, yaml.error.YAMLError) as _e:
+            continue
+    if not data:
+        print('Could not read input format! '
+              'Accepting: {0!s}.'.format(', '.join(imp_fmt_dict.keys())),
+              file=sys.stderr)
+        sys.exit(1)
+
+    # we need to go through the importer functions based on priority
+    for typ, value in sorted(IMPORT_FUNCTIONS.items(), key=lambda x: x[1]['prio']):
+        if typ in imp_types:
+            if typ in data:
+                print('Importing configuration type "{0!s}".'.format(typ))
+                value['func'](data[typ])
+
+
+# conf export menu
 def _get_conf_event(name=None, print_passwords=None):
     """ helper function for conf_export """
     event_cls = EventConfiguration()
@@ -1389,6 +1472,7 @@ class FullExport(Command):
                     os.remove(config_backup_file)
         else:
             conf_export(filename=None, print_passwords=print_passwords)
+
 
 config_export_manager.add_command('full', FullExport)
 config_export_manager.add_command('policy', Command(p_export))
