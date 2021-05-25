@@ -116,7 +116,7 @@ class YubiHSMSecurityModule(DefaultSecurityModule):  # pragma: no cover
 
     def setup_module(self, params):
         """
-        callback, which is called during the runtime to initialze the
+        callback, which is called during the runtime to initialize the
         security module.
 
         Here the password for the PKCS11 HSM can be provided
