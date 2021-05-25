@@ -96,6 +96,9 @@ jobs:
       run: |
         pip freeze
         python -b -m pytest -v --cov=privacyidea tests/
+      env:
+        # silence some deprecation warnings
+        PYTHONWARNINGS: "ignore:the imp module is deprecated in favour of importlib:DeprecationWarning,ignore:Please use assertRegex instead:DeprecationWarning"
 
     - name: Archive code coverage results
       # save the code coverage results as artifacts in order to merge them
@@ -136,12 +139,15 @@ jobs:
         path: ./cov_reports
 
     - name: Combine coverage reports
+      id: combine_cov
       working-directory: ./cov_reports
+      continue-on-error: true
       run: |
         coverage combine coverage-*/.coverage
         coverage xml
 
     - name: Codecov upload
+      if: ${{ step.combine_cov.outcome == 'success' }}
       uses: codecov/codecov-action@v1
       with:
         file: ./cov_reports/coverage.xml

@@ -41,14 +41,6 @@ jobs:
       - checkout
       - run: git submodule sync
       - run: git submodule update --init
-      - run:
-          # Cancel workflow if there were no changes for one day
-          # (https://discuss.circleci.com/t/how-to-programmatically-end-or-cancel-the-workflow-build/37742)
-          command: |
-            if [[ -z $(git log --since=1.day) ]] ; then
-              circleci-agent step halt
-            fi
-          name: Check for changes
       - restore_cache:
           key: v1-deps-{{ checksum "requirements.txt" }}
       - run: pip install -r tests/requirements.txt

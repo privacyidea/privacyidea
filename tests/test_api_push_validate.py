@@ -185,8 +185,9 @@ class PushAPITestCase(MyApiTestCase):
         # set policy
         set_policy("push1", action="{0!s}=20".format(PUSH_ACTION.WAIT), scope=SCOPE.AUTH)
         set_policy("push2", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
-                                               self.firebase_config_name))
+                   action="{0!s}={1!s},{2!s}={3!s}".format(
+                       PUSH_ACTION.FIREBASE_CONFIG, self.firebase_config_name,
+                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL))
         set_policy("chalresp", action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE), scope=SCOPE.AUTH)
         # Create push config
         r = set_smsgateway(self.firebase_config_name,
