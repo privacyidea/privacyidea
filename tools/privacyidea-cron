@@ -95,7 +95,7 @@ def run_task_on_node(ptask, node):
         print_stderr(u'Task {!r} on node {!r} did not run '
                      u'successfully.'.format(ptask["name"], node))
         print_stderr(u'This unsuccessful run is not recorded in the database.')
-        if not ptask["retry_if_failed"]:
+        if not ptask.get("retry_if_failed"):
             current_time = datetime.now(dateutil.tz.tzlocal())
             set_periodic_task_last_run(ptask["id"], node, current_time)
     return result

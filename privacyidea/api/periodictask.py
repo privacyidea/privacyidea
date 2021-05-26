@@ -129,7 +129,7 @@ def set_periodic_task_api():
     :param id: ID of an existing periodic task definition that should be updated
     :param name: Name of the periodic task
     :param active: true if the periodic task should be active
-    :param retry_if_failed: true if a cron job will be retryed by failing
+    :param retry_if_failed: privacyIDEA will retry to execute the task if failed
     :param interval: Interval at which the periodic task should run (in cron syntax)
     :param nodes: Comma-separated list of nodes on which the periodic task should run
     :param taskmodule: Task module name of the task

@@ -167,7 +167,7 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         self.assertEqual(result_dict['nodes'], ['pinode1', 'pinode2'])
         self.assertEqual(result_dict['last_runs'], {})
         last_update = parse_timestamp(result_dict['last_update'])
-        self.assertEquel(result_dict['retry_if_failed'], False)
+        self.assertEqual(result_dict['retry_if_failed'], False)
         self.assertIsNotNone(last_update)
         self.assertEqual(result_dict['options'], {'something': '123', 'else': 'True'})
 

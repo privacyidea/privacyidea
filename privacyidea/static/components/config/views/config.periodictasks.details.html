@@ -80,15 +80,15 @@
         </div>
     </div>
 
-    <div class="form-group" ng-show="ptaskid">
+    <div class="form-group">
         <label for="retry_if_failed" class="col-sm-3 control-label"
-        translate>Retry If Faild</label>
+        translate>Retry If Failed</label>
         <div class="col-sm-6">
             <input type="checkbox" id="retry_if_failed" name="retry-periodic-task"
             ng-model = "form.retry_if_failed">
             <p class="help help-block" translate>
-                If retry if failed is true, the task will be retry by failing,
-                else the task will be tried only one time.
+                true if privacyidea should retry to execute this periodic task if it fails
+                false if privacyidea should just try onetime regardless the failing of the task
             </p>
         </div>
     </div>

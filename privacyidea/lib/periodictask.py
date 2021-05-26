@@ -112,7 +112,8 @@ def set_periodic_task(name, interval, nodes, taskmodule, ordering=0, options=Non
     :type options: Dictionary mapping unicodes to values that can be converted to unicode or None
     :param active: Flag determining whether the periodic task is active
     :type active: bool
-    :param retry_if_failed: true if a cron job will be retryed by failing
+    :param retry_if_failed: true if privacyidea should retry to execute this periodic task if it fails
+                            false if privacyidea should just try onetime regardless the failing of the task
     :type retry_if_failed: bool
     :param id: ID of the existing entry, or None
     :type id: int or None
