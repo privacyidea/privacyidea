@@ -17,6 +17,13 @@
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
                 </button>
+                <button class="btn btn-danger"
+                        ng-show="!rolloverTokenAllowed(token)"
+                        ui-sref="token.rollover({tokenSerial:token.serial, tokenType:token.tokentype})"
+                        id="rolloverButton">
+                    <span class="glyphicon glyphicon-refresh"></span>
+                    <span translate>Rollover</span>
+                </button>
             </td>
         </tr>
         <tr>

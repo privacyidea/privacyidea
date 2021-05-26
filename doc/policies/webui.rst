@@ -300,6 +300,20 @@ being disabled.
 
 (Since privacyIDEA 3.0)
 
+token_rollover
+~~~~~~~~~~~~~~
+
+type: str
+
+This is a whitespace separated list of tokentypes, for which a rollover button is
+displayed in the token details and in the token list. This button will generate a
+new token secret for the displayed token.
+
+This e.g. enables a user to transfer a softtoken to a new device while keeping the
+token number restricted to 1.
+
+(Since privacyIDEA 3.6)
+
 login_text
 ~~~~~~~~~~
 
