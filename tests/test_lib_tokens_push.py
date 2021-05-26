@@ -42,9 +42,9 @@ PWFILE = "tests/testdata/passwords"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
 CLIENT_FILE = "tests/testdata/google-services.json"
 
+REGISTRATION_URL = "http://test/ttype/push"
+TTL = 10
 FB_CONFIG_VALS = {
-    FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-    FIREBASE_CONFIG.TTL: 10,
     FIREBASE_CONFIG.API_KEY: "1",
     FIREBASE_CONFIG.APP_ID: "2",
     FIREBASE_CONFIG.PROJECT_NUMBER: "3",
@@ -228,8 +228,11 @@ class PushTokenTestCase(MyTestCase):
                        u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         set_policy("push1", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
-                                               self.firebase_config_name))
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
+                       PUSH_ACTION.FIREBASE_CONFIG,
+                       self.firebase_config_name,
+                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL,
+                       PUSH_ACTION.TTL, TTL))
         # create push token
         tokenobj = self._create_push_token()
         serial = tokenobj.get_serial()
@@ -996,6 +999,12 @@ class PushTokenTestCase(MyTestCase):
 
     def test_15_poll_endpoint(self):
         g = FakeFlaskG()
+        set_policy("push1", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
+                       PUSH_ACTION.FIREBASE_CONFIG,
+                       self.firebase_config_name,
+                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL,
+                       PUSH_ACTION.TTL, TTL))
         g.policy_object = PolicyClass()
         # set up the Firebase Gateway
         r = set_smsgateway(self.firebase_config_name,
@@ -1122,7 +1131,7 @@ class PushTokenTestCase(MyTestCase):
         self.assertTrue(res[1]['result']['status'], res)
         self.assertEqual(res[1]['result']['value'], [], res[1]['result']['value'])
 
-        # If ppolling for this token is denied but the overall configuration
+        # If polling for this token is denied but the overall configuration
         # allows polling, the tokeninfo is ignored
         tok.add_tokeninfo(POLLING_ALLOWED, 'False')
         set_policy('push_poll', SCOPE.AUTH,
@@ -1207,6 +1216,8 @@ class PushTokenTestCase(MyTestCase):
 
         # wrongly configured push token (no firebase config)
         tok.del_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
+        # We are missing a registration URL, thus polling of challenges fails
+        delete_policy("push1")
         req.all_data = {'serial': serial,
                         'timestamp': ts,
                         'signature': b32encode(sig)}
