@@ -166,14 +166,14 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
                                        extra=_construct_extra_parameters(extra_data)))
 
 
-def _build_smartphone_data(serial, challenge, fb_gateway, pem_privkey, options):
+def _build_smartphone_data(serial, challenge, registration_url, pem_privkey, options):
     """
     Create the dictionary to be send to the smartphone as challenge
 
     :param challenge: base32 encoded random data string
     :type challenge: str
-    :param fb_gateway: the gateway object containing the firebase configuration
-    :type fb_gateway: privacyidea.lib.smsprovider.SMSProvider.ISMSProvider
+    :param registration_url: The privacyIDEA URL, to which the Push token communicates
+    :type registration_url: str
     :param options: the options dictionary
     :type options: dict
     :return: the created smartphone_data dictionary
@@ -183,8 +183,6 @@ def _build_smartphone_data(serial, challenge, fb_gateway, pem_privkey, options):
                                                options) or "1"
     sslverify = getParam({"sslverify": sslverify}, "sslverify",
                          allowed_values=["0", "1"], default="1")
-    # We send the challenge to the Firebase service
-    url = fb_gateway.smsgateway.option_dict.get(FIREBASE_CONFIG.REGISTRATION_URL)
     message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
                                                        PUSH_ACTION.MOBILE_TEXT,
                                                        options) or DEFAULT_MOBILE_TEXT
@@ -195,7 +193,7 @@ def _build_smartphone_data(serial, challenge, fb_gateway, pem_privkey, options):
                        "serial": serial,
                        "title": title,
                        "sslverify": sslverify,
-                       "url": url}
+                       "url": registration_url}
     # Create the signature.
     # value to string
     sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**smartphone_data)
@@ -667,12 +665,13 @@ class PushTokenClass(TokenClass):
             # The signature was valid now check for an open challenge
             # we need the private server key to sign the smartphone data
             pem_privkey = tok.get_tokeninfo(PRIVATE_KEY_SERVER)
-            # we also need the FirebaseGateway for this token
-            fb_identifier = tok.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
-            if not fb_identifier:
-                raise ResourceNotFoundError('The pushtoken {0!s} has no Firebase configuration '
-                                            'assigned.'.format(serial))
-            fb_gateway = create_sms_instance(fb_identifier)
+            # We need the registration URL for the challenge
+            registration_url = get_action_values_from_options(
+                SCOPE.ENROLL, PUSH_ACTION.REGISTRATION_URL, options={'g': g})
+            if not registration_url:
+                raise ResourceNotFoundError('There is no registration_url defined for the '
+                                            ' pushtoken {0!s}. You need to define a push_registration_url '
+                                            'in an enrollment policy.'.format(serial))
             options = {'g': g}
             challenges = []
             challengeobject_list = get_challenges(serial=serial)
@@ -683,7 +682,7 @@ class PushTokenClass(TokenClass):
                     # then return the necessary smartphone data to answer
                     # the challenge
                     sp_data = _build_smartphone_data(serial, chal.challenge,
-                                                     fb_gateway, pem_privkey, options)
+                                                     registration_url, pem_privkey, options)
                     challenges.append(sp_data)
             # return the challenges as a list in the result value
             result = challenges
@@ -829,9 +828,11 @@ class PushTokenClass(TokenClass):
             if fb_identifier != POLL_ONLY:
                 # We only push to firebase if this tokens does NOT POLL_ONLY.
                 fb_gateway = create_sms_instance(fb_identifier)
+                registration_url = get_action_values_from_options(
+                    SCOPE.ENROLL, PUSH_ACTION.REGISTRATION_URL, options=options)
                 pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
                 smartphone_data = _build_smartphone_data(self.token.serial,
-                                                         challenge, fb_gateway,
+                                                         challenge, registration_url,
                                                          pem_privkey, options)
                 res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
 
