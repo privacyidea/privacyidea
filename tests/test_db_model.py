@@ -871,6 +871,7 @@ class TokenModelTestCase(MyTestCase):
                 "foo": "bar"
             })
 
+
         self.assertEqual(PeriodicTask.query.filter_by(name="task1").one(), task1)
         self.assertEqual(PeriodicTask.query.filter_by(name="some other task").one(), task2)
         self.assertEqual(PeriodicTaskOption.query.filter_by(periodictask_id=task1.id, key="KEY2").one().value,
@@ -891,6 +892,7 @@ class TokenModelTestCase(MyTestCase):
                 "KEY2": "True",
                 "key3": u"öfføff",
             },
+            "retry_if_failed": True,
             "last_runs": {}})
 
         # register a run
@@ -919,6 +921,7 @@ class TokenModelTestCase(MyTestCase):
                              "ordering": 3,
                              "options": {"KEY2": "value number 2",
                                          "key 4": "1234"},
+                             'retry_if_failed': True,
                              "last_runs": {
                                  "localhost": datetime(2018, 3, 4, 5, 6, 7, tzinfo=tzutc()),
                                  "otherhost": datetime(2018, 8, 9, 10, 11, 12, tzinfo=tzutc()),
@@ -941,6 +944,7 @@ class TokenModelTestCase(MyTestCase):
                              "ordering": 3,
                              "options": {"KEY2": "value number 2",
                                          "key 4": "1234"},
+                             'retry_if_failed': True,
                              "last_runs": {
                                  "localhost": datetime(2018, 3, 4, 5, 6, 8, tzinfo=tzutc()),
                                  "otherhost": datetime(2018, 8, 9, 10, 11, 12, tzinfo=tzutc()),

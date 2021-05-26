@@ -129,6 +129,7 @@ def set_periodic_task_api():
     :param id: ID of an existing periodic task definition that should be updated
     :param name: Name of the periodic task
     :param active: true if the periodic task should be active
+    :param retry_if_failed: privacyIDEA will retry to execute the task if failed
     :param interval: Interval at which the periodic task should run (in cron syntax)
     :param nodes: Comma-separated list of nodes on which the periodic task should run
     :param taskmodule: Task module name of the task
@@ -142,6 +143,7 @@ def set_periodic_task_api():
         ptask_id = int(ptask_id)
     name = getParam(param, "name", optional=False)
     active = is_true(getParam(param, "active", default=True))
+    retry_if_failed = is_true(getParam(param, "retry_if_failed", default=True))
     interval = getParam(param, "interval", optional=False)
     node_string = getParam(param, "nodes", optional=False)
     if node_string.strip():
@@ -159,7 +161,8 @@ def set_periodic_task_api():
         options = json.loads(options)
         if not isinstance(options, dict):
             raise ParameterError(u"options: expected dictionary, got {!r}".format(options))
-    result = set_periodic_task(name, interval, node_list, taskmodule, ordering, options, active, ptask_id)
+    result = set_periodic_task(name, interval, node_list, taskmodule, ordering, options, active, ptask_id,
+                               retry_if_failed)
     g.audit_object.log({"success": True, "info": result})
     return send_result(result)
 

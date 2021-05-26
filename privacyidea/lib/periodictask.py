@@ -88,7 +88,8 @@ def calculate_next_timestamp(ptask, node, interval_tzinfo=None):
     return next_timestamp.astimezone(tzutc())
 
 
-def set_periodic_task(name, interval, nodes, taskmodule, ordering=0, options=None, active=True, id=None):
+def set_periodic_task(name, interval, nodes, taskmodule, ordering=0, options=None, active=True, id=None,
+                      retry_if_failed=True):
     """
     Set a periodic task configuration. If ``id`` is None, this creates a new database entry.
     Otherwise, an existing entry is overwritten. We actually ensure that such
@@ -111,6 +112,9 @@ def set_periodic_task(name, interval, nodes, taskmodule, ordering=0, options=Non
     :type options: Dictionary mapping unicodes to values that can be converted to unicode or None
     :param active: Flag determining whether the periodic task is active
     :type active: bool
+    :param retry_if_failed: true if privacyidea should retry to execute this periodic task if it fails
+                            false if privacyidea should just try onetime regardless the failing of the task
+    :type retry_if_failed: bool
     :param id: ID of the existing entry, or None
     :type id: int or None
     :return: ID of the entry
@@ -124,7 +128,7 @@ def set_periodic_task(name, interval, nodes, taskmodule, ordering=0, options=Non
     if id is not None:
         # This will throw a ParameterError if there is no such entry
         get_periodic_task_by_id(id)
-    periodic_task = PeriodicTask(name, active, interval, nodes, taskmodule, ordering, options, id)
+    periodic_task = PeriodicTask(name, active, interval, nodes, taskmodule, ordering, options, id, retry_if_failed)
     return periodic_task.id
 
 

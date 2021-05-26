@@ -2781,6 +2781,7 @@ class PeriodicTask(MethodsMixin, db.Model):
     id = db.Column(db.Integer, Sequence("periodictask_seq"), primary_key=True)
     name = db.Column(db.Unicode(64), unique=True, nullable=False)
     active = db.Column(db.Boolean, default=True, nullable=False)
+    retry_if_failed = db.Column(db.Boolean, default=True, nullable=False)
     interval = db.Column(db.Unicode(256), nullable=False)
     nodes = db.Column(db.Unicode(256), nullable=False)
     taskmodule = db.Column(db.Unicode(256), nullable=False)
@@ -2793,10 +2794,12 @@ class PeriodicTask(MethodsMixin, db.Model):
                                 lazy='dynamic',
                                 backref='periodictask')
 
-    def __init__(self, name, active, interval, node_list, taskmodule, ordering, options=None, id=None):
+    def __init__(self, name, active, interval, node_list, taskmodule, ordering, options=None, id=None,
+                 retry_if_failed=True):
         """
         :param name: Unique name of the periodic task as unicode
         :param active: a boolean
+        :param retry_if_failed: a boalean
         :param interval: a unicode specifying the periodicity of the task
         :param node_list: a list of unicodes, denoting the node names that should execute that task.
                           If we update an existing PeriodicTask entry, PeriodicTaskLastRun entries
@@ -2811,6 +2814,7 @@ class PeriodicTask(MethodsMixin, db.Model):
         self.id = id
         self.name = name
         self.active = active
+        self.retry_if_failed = retry_if_failed
         self.interval = interval
         self.nodes = u", ".join(node_list)
         self.taskmodule = taskmodule
@@ -2852,6 +2856,7 @@ class PeriodicTask(MethodsMixin, db.Model):
                 "interval": self.interval,
                 "nodes": [node.strip() for node in self.nodes.split(",")],
                 "taskmodule": self.taskmodule,
+                "retry_if_failed": self.retry_if_failed,
                 "last_update": self.aware_last_update,
                 "ordering": self.ordering,
                 "options": dict((option.key, option.value) for option in self.options),
@@ -2876,6 +2881,7 @@ class PeriodicTask(MethodsMixin, db.Model):
                 "nodes": self.nodes,
                 "taskmodule": self.taskmodule,
                 "ordering": self.ordering,
+                "retry_if_failed": self.retry_if_failed,
                 "last_update": self.last_update,
             })
         db.session.commit()
