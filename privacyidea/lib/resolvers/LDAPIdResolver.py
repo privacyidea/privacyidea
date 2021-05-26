@@ -426,7 +426,18 @@ class IdResolver (UserIdResolver):
                 # In order to ensure backwards compatibility for user mappings,
                 # we strip the curly braces from objectGUID values.
                 # If we are using ldap3 <= 2.4.1, there are no curly braces and we leave the value unchanged.
-                uid = uid.strip("{").strip("}")
+                try:
+                    uid = convert_column_to_unicode(uid).strip("{").strip("}")
+                except UnicodeDecodeError as e:
+                    # in some weird cases we sometimes get a byte-array here
+                    # which resembles a uuid. So we just convert it to one...
+                    # We might run into endian-issues here depending on what
+                    # ldap3/AD returns.
+                    log.debug('Found a byte-array as uid ({0!s}), trying to '
+                              'convert it to a UUID. ({1!s})'.format(binascii.hexlify(uid),
+                                                                     e))
+                    log.debug(traceback.format_exc())
+                    uid = str(uuid.UUID(bytes=uid))
         return convert_column_to_unicode(uid)
 
     def _trim_user_id(self, userId):
