@@ -147,7 +147,7 @@ jobs:
         coverage xml
 
     - name: Codecov upload
-      if: ${{ step.combine_cov.outcome == 'success' }}
+      if: ${{ steps.combine_cov.outcome == 'success' }}
       uses: codecov/codecov-action@v1
       with:
         file: ./cov_reports/coverage.xml
