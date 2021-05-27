@@ -433,9 +433,9 @@ class IdResolver (UserIdResolver):
                     # which resembles a uuid. So we just convert it to one...
                     # We might run into endian-issues here depending on what
                     # ldap3/AD returns.
-                    log.debug('Found a byte-array as uid ({0!s}), trying to '
-                              'convert it to a UUID. ({1!s})'.format(binascii.hexlify(uid),
-                                                                     e))
+                    log.warning('Found a byte-array as uid ({0!s}), trying to '
+                                'convert it to a UUID. ({1!s})'.format(binascii.hexlify(uid),
+                                                                       e))
                     log.debug(traceback.format_exc())
                     uid = str(uuid.UUID(bytes=uid))
         return convert_column_to_unicode(uid)
