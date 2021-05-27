@@ -34,22 +34,13 @@ Now you are within the python virtual environment and you can run::
 in order to install the latest privacyIDEA version from
 `PyPI <https://pypi.org/project/privacyIDEA>`_.
 
-.. note::
-    The `setup.py` of version 3.3.3 is missing the package `cbor2`. privacyIDEA
-    won't work until the `cbor2`-package is installed in the virtual environment.
+If you want to achieve a deterministic installation, you can now install the pinned and tested
+versions of the dependencies::
 
-To achieve a deterministic installation, you can install and pin the installed
-versions like this::
-
-  export PI_VERSION=3.3.3
-  pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v${PI_VERSION}/requirements.txt
-  pip install git+https://github.com/privacyidea/privacyidea.git@v${PI_VERSION}
+  pip install -r lib/privacyidea/requirements.txt
 
 .. note::
-    The requirements file for version 3.3.3 pins a version of the
-    `cbor2` package which requires to rebuild some components. In order to
-    install the pinned version, the system packages `gcc` and `python-dev` must
-    be installed.
+    Newer versions of the dependencies could lead to untested and unexpected behaviour.
 
 .. _pip_configuration:
 
