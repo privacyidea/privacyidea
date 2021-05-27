@@ -34,13 +34,21 @@ Now you are within the python virtual environment and you can run::
 in order to install the latest privacyIDEA version from
 `PyPI <https://pypi.org/project/privacyIDEA>`_.
 
+Deterministic Installation
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The privacyIDEA package contains dependencies with a minimal required version. However, newest
+versions of dependencies are not always tested and might cause problems.
 If you want to achieve a deterministic installation, you can now install the pinned and tested
 versions of the dependencies::
 
   pip install -r lib/privacyidea/requirements.txt
 
-.. note::
-    Newer versions of the dependencies could lead to untested and unexpected behaviour.
+It would even be safer to install the pinned dependencies *before* installing privacyIDEA.
+So if you e.g. know that you are going to install version 3.6 you can run::
+
+    pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v3.6/requirements.txt
+    pip install privacyidea==3.6
 
 .. _pip_configuration:
 
