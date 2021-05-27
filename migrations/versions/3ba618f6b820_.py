@@ -1,14 +1,14 @@
-"""v3.6 add fraction to MySQL DateTime type in audit table
+"""v3.6: add fraction to MySQL DateTime type in audit table
 
 Revision ID: 3ba618f6b820
-Revises: 888b56ed5dcb
+Revises: 59ef3e03bc62
 Create Date: 2021-05-05 11:27:13.705851
 
 """
 
 # revision identifiers, used by Alembic.
 revision = '3ba618f6b820'
-down_revision = '888b56ed5dcb'
+down_revision = '59ef3e03bc62'
 
 from alembic import op
 import sqlalchemy as sa
