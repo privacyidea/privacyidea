@@ -386,5 +386,15 @@ myApp.controller("tokenDetailController", function ($scope,
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.get);
 
+    $scope.rolloverTokenAllowed = function(token) {
+        if ( typeof(token) != 'undefined' ) {
+            if ($scope.checkEnroll() && (token.tokentype in $scope.token_rollover) &&
+                token.info.tokenkind === 'software') {
+                return true;
+            }
+        }
+        return false;
+    };
+
 
 });

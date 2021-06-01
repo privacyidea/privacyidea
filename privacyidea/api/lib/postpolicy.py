@@ -502,7 +502,9 @@ def get_webui_settings(request, response):
                                                   user=loginname, realm=realm).policies())
         admin_dashboard = (role == ROLE.ADMIN
                            and Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.ADMIN_DASHBOARD,
-                                         user=loginname, realm=realm).any())
+                                             user=loginname, realm=realm).any())
+        token_rollover = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TOKENROLLOVER,
+                                       user=loginname, realm=realm).action_values(unique=False)
         token_wizard = False
         dialog_no_token = False
         if role == ROLE.USER:
@@ -586,6 +588,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["dialog_no_token"] = dialog_no_token
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
+        content["result"]["value"]["token_rollover"] = token_rollover
         content["result"]["value"]["hide_welcome"] = hide_welcome
         content["result"]["value"]["hide_buttons"] = hide_buttons
         content["result"]["value"]["show_seed"] = show_seed

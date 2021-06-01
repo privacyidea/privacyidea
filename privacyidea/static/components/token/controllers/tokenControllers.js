@@ -176,6 +176,10 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         hashlib: "sha1",
         'radius.system_settings': true
     };
+    if ($state.includes('token.rollover')) {
+        $scope.form.serial = $stateParams.tokenSerial;
+        $scope.form.type = $stateParams.tokenType;
+    }
     $scope.vasco = {
         // Note: A primitive does not work in the ng-model of the checkbox!
         useIt: false

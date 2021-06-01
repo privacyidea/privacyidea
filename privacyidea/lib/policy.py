@@ -316,6 +316,7 @@ class ACTION(object):
     TOKENINFO = "tokeninfo"
     TOKENWIZARD = "tokenwizard"
     TOKENWIZARD2ND = "tokenwizard_2nd_token"
+    TOKENROLLOVER = "token_rollover"
     TRIGGERCHALLENGE = "triggerchallenge"
     UNASSIGN = "unassign"
     USERLIST = "userlist"
@@ -2380,6 +2381,13 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("The tokenwizard will be displayed in the token "
                           "menu, even if the user already has a token.")
+            },
+            ACTION.TOKENROLLOVER: {
+                'type': 'str',
+                'desc': _('This is a whitespace separated list of tokentypes, '
+                          'for which a rollover button is displayed in the token '
+                          'details.'),
+                'group': GROUP.TOKEN
             },
             ACTION.DIALOG_NO_TOKEN: {
                 'type': 'bool',
