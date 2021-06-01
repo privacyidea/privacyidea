@@ -2386,7 +2386,7 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _('This is a whitespace separated list of tokentypes, '
                           'for which a rollover button is displayed in the token '
-                          'details and in the token list.'),
+                          'details.'),
                 'group': GROUP.TOKEN
             },
             ACTION.DIALOG_NO_TOKEN: {

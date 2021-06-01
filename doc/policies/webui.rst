@@ -306,7 +306,7 @@ token_rollover
 type: str
 
 This is a whitespace separated list of tokentypes, for which a rollover button is
-displayed in the token details and in the token list. This button will generate a
+displayed in the token details. This button will generate a
 new token secret for the displayed token.
 
 This e.g. enables a user to transfer a softtoken to a new device while keeping the
