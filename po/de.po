@@ -1,10 +1,11 @@
 # Paul Lettich <paul.lettich@netknights.it>, 2023, 2024.
+# Cornelius Kölbel <cornelius.koelbel@netknights.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
@@ -5061,8 +5062,8 @@ msgid ""
 msgstr ""
 "Ihre Subskription ist nicht mehr gültig. Entweder haben Sie die Anzahl der "
 "erlaubten Token überschritten oder Ihre Subskription ist abgelaufen. Bitte "
-"überprüfen Sie, ob Sie Ihre <a ui-sref=\"component.subscriptions"
-"\">Subskription</a> erneuern müssen."
+"überprüfen Sie, ob Sie Ihre <a ui-sref=\"component.subscriptions\""
+">Subskription</a> erneuern müssen."
 
 #: privacyidea/static/components/login/views/pinchange.html:5
 msgid ""
