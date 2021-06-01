@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2020-12-12 11:29+0000\n"
+"PO-Revision-Date: 2021-06-01 20:22+0000\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.4-dev\n"
+"X-Generator: Weblate 4.7-dev\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -301,9 +301,8 @@ msgid "Add a new user"
 msgstr "Benutzer hinzufügen"
 
 #: privacyidea/static/components/user/views/user.details.html:96
-#, fuzzy
 msgid "Add custom attribute"
-msgstr "Attribut für IP-Adresse"
+msgstr "Benutzerdefiniertes Attribut hinzufügen"
 
 #: privacyidea/static/components/config/views/config.token.question.html:56
 msgid "Add new question"
@@ -866,9 +865,8 @@ msgid "Create realm"
 msgstr "Realm anlegen"
 
 #: privacyidea/static/components/user/views/user.details.html:79
-#, fuzzy
 msgid "Custom attributes for user {{ username }}"
-msgstr "Token des Benutzers {{ username }}"
+msgstr "Benutzerdefinierte Attribute für Benutzer {{ username }}"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:238
 msgid "DN of a new created user object"
@@ -2076,7 +2074,7 @@ msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:165
 msgid "Okay"
-msgstr ""
+msgstr "Okay"
 
 #: privacyidea/static/templates/baseline.html:26
 #: privacyidea/static/templates/menu.html:136
@@ -2234,15 +2232,15 @@ msgid "Please provide the base URL of the privacyIDEA server."
 msgstr "Geben Sie die Basis-URL des privacyIDEA Servers an."
 
 #: privacyidea/static/components/token/views/token.enrolled.push.html:9
-#, fuzzy
 msgid ""
 "Please scan the QR code with the privacyIDEA Authenticator App\n"
 "            or click <a href=\"{{ enrolledToken.pushurl.value }}\">this "
 "link</a> on your\n"
 "            smartphone."
 msgstr ""
-"Bitte scannen Sie den QR-Code mit der privacyIDEA Authenticator-App und "
-"geben Sie den angezeigten Code unten ein."
+"Bitte scannen Sie den QR-Code mit der privacyIDEA Authenticator-App oder "
+"klicken Sie <a href=\"{{ enrolledToken.pushurl.value }}\">den Link</a> auf "
+"Ihrem Smartphone."
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:39
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:39
@@ -2343,13 +2341,12 @@ msgid "Priority"
 msgstr "Priorität"
 
 #: privacyidea/static/templates/baseline.html:32
-#, fuzzy
 msgid "Privacy Statement"
-msgstr "WHERE-Ausdruck"
+msgstr "Datenschutzhinweis"
 
 #: privacyidea/static/components/token/views/token.import.html:134
 msgid "Progress"
-msgstr ""
+msgstr "Fortschritt"
 
 #: privacyidea/static/components/config/views/config.token.sms.html:47
 msgid "Provider Config"
@@ -2617,7 +2614,7 @@ msgstr "Wiederholungen"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:84
 msgid "Retry If Failed"
-msgstr ""
+msgstr "Bei Fehler erneut versuchen"
 
 #: privacyidea/static/components/token/views/token.details.html:62
 msgid "Revoke"
@@ -2633,17 +2630,15 @@ msgstr "Rollout Status"
 
 #: privacyidea/static/components/token/views/token.details.html:25
 msgid "Rollover"
-msgstr ""
+msgstr "Rollover"
 
 #: privacyidea/static/components/token/views/token.enroll.html:131
-#, fuzzy
 msgid "Rollover Token"
-msgstr "Token ausrollen"
+msgstr "Rollover Token"
 
 #: privacyidea/static/components/token/views/token.enroll.html:5
-#, fuzzy
 msgid "Rollover token {{ form.serial }}"
-msgstr "Einen neuen Token {{ newToken.serial }} zuweisen"
+msgstr "Rollover Token {{ form.serial }}"
 
 #: privacyidea/static/components/token/views/token.getserial.html:79
 msgid "Run search"
@@ -2668,7 +2663,7 @@ msgstr "SMS-Token Einstellungen"
 #: privacyidea/static/components/token/controllers/tokenControllers.js:205
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
-"SMS: Einmal-Passwort wird per SMS an das Mobiltelefon des Benutzers gesendet."
+"SMS: Ein Einmalpasswort per SMS an das Mobiltelefon des Benutzers senden."
 
 #: privacyidea/static/components/config/controllers/smtpServerController.js:82
 msgid "SMTP Config saved."
@@ -2934,9 +2929,8 @@ msgid "Show all actions"
 msgstr "Zeige alle Aktionen"
 
 #: privacyidea/static/components/config/views/config.events.details.html:133
-#, fuzzy
 msgid "Show all conditions"
-msgstr "Zeige alle Aktionen"
+msgstr "Alle Bedingungen anzeigen"
 
 #: privacyidea/static/components/token/views/token.details.html:401
 msgid "Show password"
@@ -2947,9 +2941,8 @@ msgid "Show selected actions only"
 msgstr "Zeige nur aktivierte Aktionen"
 
 #: privacyidea/static/components/config/views/config.events.details.html:128
-#, fuzzy
 msgid "Show selected conditions only"
-msgstr "Zeige nur aktivierte Aktionen"
+msgstr "Nur ausgewählte Bedingungen anzeigen"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:134
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:177
@@ -2957,9 +2950,8 @@ msgid "Size Limit"
 msgstr "Größenbeschränkung"
 
 #: privacyidea/static/components/token/views/token.import.html:143
-#, fuzzy
 msgid "Skipped Tokens"
-msgstr "Token"
+msgstr "Ausgelassene Token"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:22
 msgid "Software"
@@ -3039,7 +3031,6 @@ msgid "TLS"
 msgstr "TLS"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:53
-#, fuzzy
 msgid "TLS Version"
 msgstr "TLS Protokollversion"
 
@@ -4337,12 +4328,11 @@ msgstr "Subskriptionsdatei hochladen"
 
 #: privacyidea/static/components/token/views/token.import.html:137
 msgid "Uploaded File"
-msgstr ""
+msgstr "Hochgeladene Datei"
 
 #: privacyidea/static/components/token/views/token.import.html:140
-#, fuzzy
 msgid "Uploaded Tokens"
-msgstr "Token importieren"
+msgstr "Hochgeladene Token"
 
 #: privacyidea/static/components/config/views/config.system.html:74
 msgid ""
@@ -4536,6 +4526,9 @@ msgid ""
 "token\n"
 "        and create a new token with a new secret key!"
 msgstr ""
+"Sie sind gerade dabei, ein Rollover für Ihren Token durchzuführen! Dies "
+"führt dazu, dass Ihr aktueller Token ungültig wird\n"
+"und ein neuer Token mit einem neuen geheimen Schlüssel erzeugt wird!"
 
 #: privacyidea/static/components/login/views/login.html:12
 msgid ""
@@ -4570,6 +4563,8 @@ msgid ""
 "You can choose how the authenticity of the tokens to be imported should be "
 "verified."
 msgstr ""
+"Sie können auswählen, wie die Authentizität der importierten Token überprüft "
+"wird."
 
 #: privacyidea/static/components/user/views/user.add.html:54
 msgid ""
@@ -4661,18 +4656,16 @@ msgid "Your secret phrase."
 msgstr "Ihre geheime Zeichenkette oder Satz."
 
 #: privacyidea/static/templates/menu.html:167
-#, fuzzy
 msgid ""
 "Your subscription is not valid anymore. Either you exceeded the number of "
 "tokens or the\n"
 "        subscription expired. Please check, if you need to renew your <a ui-"
 "sref=\"component.subscriptions\">subscription</a>."
 msgstr ""
-"<p>\n"
 "Ihre Subskription ist nicht mehr gültig. Entweder haben Sie die Anzahl der "
 "erlaubten Token überschritten oder Ihre Subskription ist abgelaufen. Bitte "
-"überprüfen Sie, ob Sie Ihre Subskription erneuern müssen.\n"
-"</p>"
+"überprüfen Sie, ob Sie Ihre <a ui-sref=\"component.subscriptions\""
+">Subskription</a> erneuern müssen."
 
 #: privacyidea/static/components/login/views/pinchange.html:5
 msgid ""
@@ -4772,18 +4765,16 @@ msgid "distinct users with active tokens"
 msgstr "eindeutige Benutzer mit aktiven Token"
 
 #: privacyidea/static/components/audit/views/audit.log.html:39
-#, fuzzy
 msgid "duration"
-msgstr "Aktion"
+msgstr "Dauer"
 
 #: privacyidea/static/components/user/views/user.list.html:29
 msgid "email"
 msgstr "EMail"
 
 #: privacyidea/static/components/audit/views/audit.log.html:33
-#, fuzzy
 msgid "enddate"
-msgstr "Datum"
+msgstr "Enddatum"
 
 #: privacyidea/static/components/token/views/token.getserial.html:18
 msgid "enter some OTP value"
@@ -4799,18 +4790,16 @@ msgid "failed"
 msgstr "fehlgeschlagen"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:55
-#, fuzzy
 msgid "failed users / tokens"
-msgstr "Durchwinken, wenn der Benutzer keinen Token hat"
+msgstr "Fehler Benutzer / Token"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:289
 msgid "filter action..."
 msgstr "Aktion filtern..."
 
 #: privacyidea/static/components/config/views/config.events.details.html:140
-#, fuzzy
 msgid "filter condition..."
-msgstr "Aktion filtern..."
+msgstr "Bedingungen filtern..."
 
 #: privacyidea/static/components/user/views/user.list.html:23
 msgid "givenname"
@@ -4987,9 +4976,8 @@ msgid "start typing a username"
 msgstr "Fangen Sie an, einen Benutzernamen zu tippen."
 
 #: privacyidea/static/components/audit/views/audit.log.html:27
-#, fuzzy
 msgid "startdate"
-msgstr "Datum"
+msgstr "Startdatum"
 
 #: privacyidea/static/components/audit/views/audit.log.html:51
 #: privacyidea/static/components/dashboard/views/dashboard.html:47
@@ -5022,6 +5010,9 @@ msgid ""
 "                false if privacyidea should just try onetime regardless the "
 "failing of the task"
 msgstr ""
+"privacyIDEA soll versuchen, die wiederkehrende Aufgabe im Fehlerfall erneut "
+"auszuführen. Wenn die Checkbox nicht angehakt ist, wird privacyIDEA nur "
+"einmal versuchen, die wiederkehrende Aufgabe auszuführen."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:9
 msgid "trust_anchor_dir"
