@@ -1,5 +1,9 @@
 <h3 ng-if="$state.includes('token.enroll')" translate>Enroll a new token</h3>
-<h3 ng-if="$state.includes('token.rollover')" translate>Rollover token {{ form.serial }}</h3>
+<div ng-if="$state.includes('token.rollover')">
+    <div class="alert alert-danger" role="alert">You are about to rollover your token! This will invalidate your existing token
+        and create a new token with a new secret key!</div>
+    <h3 translate>Rollover token {{ form.serial }}</h3>
+</div>
 
 <!-- hide the form, after the token was enrolled -->
 <div ng-hide="enrolledToken">
