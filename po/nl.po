@@ -1,10 +1,11 @@
 # Koen Roggemans <koen@roggemans.net>, 2024.
+# Cornelius Kölbel <cornelius.koelbel@netknights.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
+"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/nl/>\n"
 "Language: nl\n"
