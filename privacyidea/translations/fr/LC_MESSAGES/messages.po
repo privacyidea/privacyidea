@@ -7,16 +7,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2021-06-01 21:59+0200\n"
-"PO-Revision-Date: 2021-05-01 11:32+0000\n"
+"POT-Creation-Date: 2021-06-01 20:42+0200\n"
+"PO-Revision-Date: 2021-06-01 20:00+0000\n"
 "Last-Translator: Nicolas Baudrand <nbaudrand@lozere.fr>\n"
+"Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/fr/>\n"
 "Language: fr\n"
-"Language-Team: French <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/fr/>\n"
-"Plural-Forms: nplurals=2; plural=n > 1\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.7-dev\n"
 "Generated-By: Babel 2.8.0\n"
 
 #: api/auth.py:222
@@ -508,6 +509,10 @@ msgid ""
 "should be allowed to set any attribute, set this to '*:*'. For more "
 "details, check the documentation."
 msgstr ""
+"L'administrateur est autorisé à positionner certains attributs utilisateurs "
+"personnalisés. Si l'administrateur doit être autorisé à positionner "
+"n'importe quel attribut, positionnez la valeur à '*:*'. Pour plus de "
+"détails, regardez la documentation."
 
 #: lib/policy.py:1884
 msgid ""
@@ -515,6 +520,10 @@ msgid ""
 "Admin should be allowed to delete any attribute, set this to '*'. For "
 "more details, check the documentation."
 msgstr ""
+"L'administrateur est autorisé à supprimer certains attributs utilisateurs "
+"personnalisés. Si l'administrateur doit être autorisé à supprimer n'importe "
+"quel attribut, positionnez la valeur à '*:*'. Pour plus de détails, regardez "
+"la documentation."
 
 #: lib/policy.py:1895
 msgid ""
@@ -614,6 +623,10 @@ msgid ""
 "should be allowed to set any attribute, set this to '*:*'. Use '*' with "
 "CAUTION! For more details, check the documentation."
 msgstr ""
+"L'utilisateur est autorisé à positionner certains attributs utilisateurs "
+"personnalisés. Si l'utilisateur doit être autorisé à positionner n'importe "
+"quel attribut, positionner la valeur à '*:*'. Utilisez '*' avec PRéCAUTION ! "
+"Pour plus de détails, regardez la documentation."
 
 #: lib/policy.py:2014
 msgid ""
@@ -621,6 +634,10 @@ msgid ""
 " should be allowed to delete any attribute, set this to '*'. Use '*' with"
 " CAUTION! For more details, check the documentation."
 msgstr ""
+"L'utilisateur est autorisé à supprimer certains attributs utilisateurs "
+"personnalisés. Si l'utilisateur doit être autorisé à supprimer n'importe "
+"quel attribut, positionner la valeur à '*:*'. Utilisez '*' avec PRéCAUTION ! "
+"Pour plus de détails, regardez la documentation."
 
 #: lib/policy.py:2025
 msgid "Limit the number of allowed tokens in a realm."
@@ -1043,8 +1060,10 @@ msgstr ""
 "l'interface WEB."
 
 #: lib/policy.py:2361
+#, fuzzy
 msgid "Link your privacy statement to be displayed in the baseline/footer."
 msgstr ""
+"Lier votre politique de confidentialité à afficher en entête/pied de de page."
 
 #: lib/policy.py:2365
 msgid ""
@@ -1083,6 +1102,8 @@ msgid ""
 "This is a whitespace separated list of tokentypes, for which a rollover "
 "button is displayed in the token details."
 msgstr ""
+"Liste de type de jetons séparés par des espaces, qui sera affichée dans une "
+"liste déroulante dans les détails du jeton."
 
 #: lib/policy.py:2394
 msgid "The welcome dialog will be displayed if the user has no tokens assigned."
@@ -1168,12 +1189,16 @@ msgid ""
 "The policy only matches if certain conditions of the token attributes are"
 " fulfilled."
 msgstr ""
+"La politique ne s'applique que si certaines conditions des attributs du "
+"jeton sont remplies."
 
 #: lib/policy.py:2495
 msgid ""
 "The policy only matches if certain conditions on the token info are "
 "fulfilled."
 msgstr ""
+"La politique ne s'applique que si certaines conditions des infos du jeton "
+"sont remplies."
 
 #: lib/policy.py:2498
 msgid ""
@@ -1404,78 +1429,96 @@ msgstr "Le serveur distant/enfant privacyIDEA."
 #: lib/eventhandler/federationhandler.py:80
 msgid "Change the realm name to a realm on the child privacyIDEA system."
 msgstr ""
+"Change le nom du royaume en un royaume sur le système privacyIDEA enfant."
 
 #: lib/eventhandler/federationhandler.py:86
+#, fuzzy
 msgid "Change the resolver name to a resolver on the child privacyIDEA system."
 msgstr ""
+"Change le nom de la source d'authentification en une source "
+"d'authentification sur le système privacyIDEA enfant."
 
 #: lib/eventhandler/federationhandler.py:92
 msgid ""
 "Forward the client IP to the child privacyIDEA server. Otherwise this "
 "server will be the client."
 msgstr ""
+"Fait suivre l'IP du client au serveur privacyIDEA enfant. Autrement le "
+"serveur sera le client."
 
 #: lib/eventhandler/federationhandler.py:99
 msgid ""
 "Forward the authorization header. This allows to also forward request "
 "like token- and system-requests."
 msgstr ""
+"Fait suivre l'entête authorization. Cela permet de transmettre assi les "
+"requêtes comme token- et system-requests."
 
 #: lib/eventhandler/logginghandler.py:87
+#, fuzzy
 msgid "The name of the logging facility"
-msgstr ""
+msgstr "Le nom de la catégorie de journalisation (logging facility)"
 
 #: lib/eventhandler/logginghandler.py:93
 msgid "The string to write to the log"
-msgstr ""
+msgstr "La chaîne à écrire dans le log"
 
 #: lib/eventhandler/logginghandler.py:99
+#, fuzzy
 msgid "The logging level for this logging notification"
-msgstr ""
+msgstr "Le niveau de log pour cette notification"
 
 #: lib/eventhandler/requestmangler.py:100
 msgid "The parameter that should be deleted."
-msgstr ""
+msgstr "Le paramètre qui doit être supprimé."
 
 #: lib/eventhandler/requestmangler.py:106
 msgid "The parameter that should be added or modified."
-msgstr ""
+msgstr "Le paramètre qui doit être ajouté ou modifié."
 
 #: lib/eventhandler/requestmangler.py:111
 msgid ""
 "The new value of the parameter. Can contain tags like {0}, {1} for the "
 "matched sub strings."
 msgstr ""
+"La nouvelle valeur du paramètre. Peut contenir des tags tels que {0}, {1} "
+"qui correspondent aux sous chaines de caractères correspondantes."
 
 #: lib/eventhandler/requestmangler.py:116
 msgid "The parameter, that should match some values."
-msgstr ""
+msgstr "Le paramètre, qui doit correspondre à certaines valeurs."
 
 #: lib/eventhandler/requestmangler.py:120
 msgid ""
 "The value of the match_parameter. It can contain a regular expression and"
 " '()' to transfer values to the new parameter."
 msgstr ""
+"La valeur du match_parameter. Il peut contenir une expression régulière et "
+"'()' afin de transférer des valeurs au nouveau paramètre."
 
 #: lib/eventhandler/responsemangler.py:81
 msgid ""
 "The JSON pointer (key) that should be deleted. Please specify in the "
 "format '/detail/message'."
 msgstr ""
+"Le pointeur JSON (key) qui doit être supprimé. Merci de le spécifier au "
+"format '/detail/message'."
 
 #: lib/eventhandler/responsemangler.py:88
 msgid ""
 "The JSON pointer (key) that should be set. Please specify in the format "
 "'/detail/message'."
 msgstr ""
+"Le pointeur JSON (key) qui doit être positionné. Merci de le spécifier au "
+"format '/detail/message'."
 
 #: lib/eventhandler/responsemangler.py:94
 msgid "The type of the value."
-msgstr ""
+msgstr "Le type de la valeur."
 
 #: lib/eventhandler/responsemangler.py:100
 msgid "The value of the JSON key that should be set."
-msgstr ""
+msgstr "La valeur du la clé JSON qui doit être positionnée."
 
 #: lib/eventhandler/scripthandler.py:96
 #: lib/smsprovider/ScriptSMSProvider.py:117
@@ -1483,10 +1526,12 @@ msgid ""
 "Wait for script to complete or run script in background. This will either"
 " return the HTTP request early or could also block the request."
 msgstr ""
+"Attend que le script se termine ou lance le script en arrière plan. Cela va "
+"soit libérer la requête HTTP plus tôt ou peut aussi bloquer la requête."
 
 #: lib/eventhandler/scripthandler.py:104
 msgid "On script error raise exception in HTTP request."
-msgstr ""
+msgstr "En cas d'erreur de script, renvoie une exception dans la requête HTTP."
 
 #: lib/eventhandler/scripthandler.py:108
 msgid ""
@@ -1494,34 +1539,41 @@ msgid ""
 "changes to the database should be made available to the script or the "
 "running request."
 msgstr ""
+"Termine la transaction actuelle avant de lancer le script. Ceci est utile si "
+"les changements dans la base de donnée doivent être rendus disponibles pour "
+"le script ou la requête en cours."
 
 #: lib/eventhandler/scripthandler.py:115
 msgid "Add '--serial <serial number>' as script parameter."
-msgstr ""
+msgstr "Ajoute '--serial <serial number>' comme paramètre de script."
 
 #: lib/eventhandler/scripthandler.py:120
 msgid "Add '--user <username>' as script parameter."
-msgstr ""
+msgstr "Ajoute '--user <username>' comme paramètre de script."
 
 #: lib/eventhandler/scripthandler.py:125
 msgid "Add '--realm <realm>' as script parameter."
-msgstr ""
+msgstr "Ajoute '--realm <realm>' comme paramètre de script."
 
 #: lib/eventhandler/scripthandler.py:130
 msgid ""
 "Add the username of the logged in user as script parameter like '--"
 "logged_in_user <username>'."
 msgstr ""
+"Ajoute le nom d'utilisateur de l'utilisateur connecté comme paramètre de "
+"script tel que '--logged_in_user <username>'."
 
 #: lib/eventhandler/scripthandler.py:136
 msgid ""
 "Add the role (either admin or user) of the logged in user as script "
 "parameter like '--logged_in_role <role>'."
 msgstr ""
+"Ajoute le rôle (soit admin, soit user) de l'utilisateur connecté, comme "
+"paramètre de script tel que '--logged_in_role <role>'."
 
 #: lib/eventhandler/tokenhandler.py:128
 msgid "set a new realm of the token"
-msgstr ""
+msgstr "Positionne un nouveau royaume au jeton"
 
 #: lib/eventhandler/tokenhandler.py:132
 msgid ""
@@ -1529,22 +1581,27 @@ msgid ""
 "will be removed from this token. Otherwise the realm will be added to the"
 " token."
 msgstr ""
+"Le nouveau royaume sera le seul royaume du jeton. Tous les autres royaumes "
+"seront supprimés du jeton. Dans le cas contraire, le royaume sera ajouté au "
+"jeton."
 
 #: lib/eventhandler/tokenhandler.py:147
 msgid "set the PIN of the token to a random PIN of this length."
-msgstr ""
+msgstr "Positionne le PIN du jeton à un PIN aléatoire de cette longueur."
 
 #: lib/eventhandler/tokenhandler.py:154
 msgid "Token type to create"
-msgstr ""
+msgstr "Type de jeton à créer"
 
 #: lib/eventhandler/tokenhandler.py:159
 msgid "Assign token to user in request or to tokenowner."
 msgstr ""
+"Assigner le jeton à l'utilisateur indiqué dans la requête ou au propriétaire "
+"du jeton."
 
 #: lib/eventhandler/tokenhandler.py:164
 msgid "Set the realm of the newly created token."
-msgstr ""
+msgstr "Positionne le royaume du jeton nouvellement crée."
 
 #: lib/eventhandler/tokenhandler.py:171
 msgid "Dynamically read the mobile number from the user store."
@@ -1558,21 +1615,23 @@ msgstr ""
 
 #: lib/eventhandler/tokenhandler.py:185
 msgid "Use a specific SMTP server configuration for this token."
-msgstr ""
+msgstr "Utilise une configuration de serveur SMTP spécifique pour ce jeton."
 
 #: lib/eventhandler/tokenhandler.py:192
 msgid "Use a specific SMS gateway configuration for this token."
-msgstr ""
+msgstr "Utilise une passerelle SMS spécifique pour ce jeton."
 
 #: lib/eventhandler/tokenhandler.py:197
 msgid "A dictionary of additional init parameters."
-msgstr ""
+msgstr "Un dictionnaire de paramètres d'initialisation additionnels."
 
 #: lib/eventhandler/tokenhandler.py:203
 msgid ""
 "Set the MOTP PIN of the MOTP token during enrollment. This is a required "
 "value for enrolling MOTP tokens."
 msgstr ""
+"Positionne le PIN MOTP du jeton MOTP durant l'enrollement. C'est une valeur "
+"requise pour enroller des jetons MOTP."
 
 #: lib/eventhandler/tokenhandler.py:212
 msgid "The new description of the token."
@@ -1583,30 +1642,36 @@ msgid ""
 "The token will be valid starting at the given date. Can be a fixed date "
 "or an offset like +10m, +24h, +7d."
 msgstr ""
+"Le jeton sera valide à partir de la date indiquée. Peut être une date fixe "
+"ou un décalage tel que +10m, +24h, +7d."
 
 #: lib/eventhandler/tokenhandler.py:226
 msgid ""
 "The token will be valid until the given date. Can be a fixed date or an "
 "offset like +10m, +24h, +7d."
 msgstr ""
+"Le jeton sera valide jusqu'à la date indiquée. Peut être une date fixe ou un "
+"décalage tel que +10m, +24h, +7d."
 
 #: lib/eventhandler/tokenhandler.py:239
 msgid "Set the new count window of the token."
-msgstr ""
+msgstr "Positionner le nouveau compteur du jeton."
 
 #: lib/eventhandler/tokenhandler.py:249
 msgid "Set the failcounter of the token."
-msgstr ""
+msgstr "Positionne le compteur d'échec du jeton."
 
 #: lib/eventhandler/tokenhandler.py:259
 msgid ""
 "Increase or decrease the fail counter of the token. Values of +n, -n with"
 " n being an integer are accepted."
 msgstr ""
+"Augmente ou diminue le compteur d'erreur du jeton. Les valeurs de +n, -n "
+"avec n étant un entier sont acceptées."
 
 #: lib/eventhandler/tokenhandler.py:269
 msgid "Set the maximum failcounter of the token."
-msgstr ""
+msgstr "Indiquer la valeur maximale du compteur d'erreur du jeton."
 
 #: lib/eventhandler/tokenhandler.py:277
 msgid "Set this tokeninfo key."
@@ -2652,4 +2717,3 @@ msgstr ""
 #~ "Node name will be displayed below "
 #~ "the logo."
 #~ msgstr ""
-
