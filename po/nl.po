@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2021-06-02 08:54+0000\n"
-"Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
+"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/nl/>\n"
 "Language: nl\n"
@@ -323,9 +323,8 @@ msgid "Add a new user"
 msgstr "Voeg een nieuwe gebruiker toe"
 
 #: privacyidea/static/components/user/views/user.details.html:96
-#, fuzzy
 msgid "Add custom attribute"
-msgstr "IP-adres attribuut"
+msgstr "Aangepast kenmerk toevoegen"
 
 #: privacyidea/static/components/config/views/config.token.question.html:56
 msgid "Add new question"
@@ -900,9 +899,8 @@ msgid "Create realm"
 msgstr "Maak een realm"
 
 #: privacyidea/static/components/user/views/user.details.html:79
-#, fuzzy
 msgid "Custom attributes for user {{ username }}"
-msgstr "Tokens voor gebruiker {{ username }}"
+msgstr "Aangepast kenmerk voor gebruiker {{ username }}"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:238
 msgid "DN of a new created user object"
@@ -2128,7 +2126,7 @@ msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:165
 msgid "Okay"
-msgstr ""
+msgstr "Okay"
 
 #: privacyidea/static/templates/baseline.html:26
 #: privacyidea/static/templates/menu.html:136
@@ -2287,15 +2285,16 @@ msgid "Please provide the base URL of the privacyIDEA server."
 msgstr "Geef de basis-URL van de privacyIDEA-server."
 
 #: privacyidea/static/components/token/views/token.enrolled.push.html:9
-#, fuzzy
 msgid ""
 "Please scan the QR code with the privacyIDEA Authenticator App\n"
 "            or click <a href=\"{{ enrolledToken.pushurl.value }}\">this "
 "link</a> on your\n"
 "            smartphone."
 msgstr ""
-"San de QR-code met de privacyIDEA authenticator app en geef de\n"
-"         gegenereerde code hieronder in."
+"San de QR-code met de privacyIDEA authenticator app \n"
+"of klik op <a href=\"{{ enrolledToken.pushurl.value }}\">deze link</a> op uw "
+"\n"
+"smartphone"
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:39
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:39
@@ -2396,13 +2395,12 @@ msgid "Priority"
 msgstr "Prioriteit"
 
 #: privacyidea/static/templates/baseline.html:32
-#, fuzzy
 msgid "Privacy Statement"
-msgstr "Where statement"
+msgstr "Privacyverklaring"
 
 #: privacyidea/static/components/token/views/token.import.html:134
 msgid "Progress"
-msgstr ""
+msgstr "Voortgang"
 
 #: privacyidea/static/components/config/views/config.token.sms.html:47
 msgid "Provider Config"
@@ -2662,7 +2660,7 @@ msgstr "Pogingen"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:84
 msgid "Retry If Failed"
-msgstr ""
+msgstr "Opnieuw proberen indien mislukt"
 
 #: privacyidea/static/components/token/views/token.details.html:62
 msgid "Revoke"
@@ -2678,16 +2676,15 @@ msgstr "Uitrolstatus"
 
 #: privacyidea/static/components/token/views/token.details.html:25
 msgid "Rollover"
-msgstr ""
+msgstr "Roteer"
 
 #: privacyidea/static/components/token/views/token.enroll.html:131
 msgid "Rollover Token"
 msgstr "Overgangstoken"
 
 #: privacyidea/static/components/token/views/token.enroll.html:5
-#, fuzzy
 msgid "Rollover token {{ form.serial }}"
-msgstr "Een nieuw token toewijzen {{ newToken.serial }}"
+msgstr "Roteer token {{ newToken.serial }}"
 
 #: privacyidea/static/components/token/views/token.getserial.html:79
 msgid "Run search"
@@ -2975,9 +2972,8 @@ msgid "Show all actions"
 msgstr "Toon alle acties"
 
 #: privacyidea/static/components/config/views/config.events.details.html:133
-#, fuzzy
 msgid "Show all conditions"
-msgstr "Toon alle acties"
+msgstr "Alle voorwaarden tonen"
 
 #: privacyidea/static/components/token/views/token.details.html:401
 msgid "Show password"
@@ -2988,9 +2984,8 @@ msgid "Show selected actions only"
 msgstr "Toon enkel geselecteerde acties"
 
 #: privacyidea/static/components/config/views/config.events.details.html:128
-#, fuzzy
 msgid "Show selected conditions only"
-msgstr "Toon enkel geselecteerde acties"
+msgstr "Toon alleen geselecteerde voorwaarden"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:134
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:177
@@ -2998,9 +2993,8 @@ msgid "Size Limit"
 msgstr "Limiet grootte"
 
 #: privacyidea/static/components/token/views/token.import.html:143
-#, fuzzy
 msgid "Skipped Tokens"
-msgstr "Tokens"
+msgstr "Overgeslagen Tokens"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:22
 msgid "Software"
@@ -4445,7 +4439,7 @@ msgstr "Upload inschrijvingsbestand"
 
 #: privacyidea/static/components/token/views/token.import.html:137
 msgid "Uploaded File"
-msgstr ""
+msgstr "Geüpload bestand"
 
 #: privacyidea/static/components/token/views/token.import.html:140
 msgid "Uploaded Tokens"
@@ -4646,6 +4640,8 @@ msgid ""
 "token\n"
 "        and create a new token with a new secret key!"
 msgstr ""
+"U staat op het punt om uw token te vernieuwen! Dit zal uw bestaande token "
+"ongeldig maken en een nieuw token aanmaken met een nieuwe geheime sleutel!"
 
 #: privacyidea/static/components/login/views/login.html:12
 msgid ""
@@ -4682,6 +4678,8 @@ msgid ""
 "You can choose how the authenticity of the tokens to be imported should be "
 "verified."
 msgstr ""
+"U kunt kiezen hoe de authenticiteit van de te importeren tokens moet worden "
+"geverifieerd."
 
 #: privacyidea/static/components/user/views/user.add.html:54
 msgid ""
@@ -4885,18 +4883,16 @@ msgid "distinct users with active tokens"
 msgstr "gebruikers onderscheiden met actieve tokens"
 
 #: privacyidea/static/components/audit/views/audit.log.html:39
-#, fuzzy
 msgid "duration"
-msgstr "acitie"
+msgstr "duur"
 
 #: privacyidea/static/components/user/views/user.list.html:29
 msgid "email"
 msgstr "e-mail"
 
 #: privacyidea/static/components/audit/views/audit.log.html:33
-#, fuzzy
 msgid "enddate"
-msgstr "datum"
+msgstr "einddatum"
 
 #: privacyidea/static/components/token/views/token.getserial.html:18
 msgid "enter some OTP value"
@@ -4913,16 +4909,15 @@ msgstr "mislukt"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:55
 msgid "failed users / tokens"
-msgstr ""
+msgstr "mislukte gebruikers / tokens"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:289
 msgid "filter action..."
 msgstr "filter actie..."
 
 #: privacyidea/static/components/config/views/config.events.details.html:140
-#, fuzzy
 msgid "filter condition..."
-msgstr "filter actie..."
+msgstr "filter conditie..."
 
 #: privacyidea/static/components/user/views/user.list.html:23
 msgid "givenname"
@@ -5101,9 +5096,8 @@ msgid "start typing a username"
 msgstr "begin met het typen van een gebruikersnaam"
 
 #: privacyidea/static/components/audit/views/audit.log.html:27
-#, fuzzy
 msgid "startdate"
-msgstr "datum"
+msgstr "startdatum"
 
 #: privacyidea/static/components/audit/views/audit.log.html:51
 #: privacyidea/static/components/dashboard/views/dashboard.html:47
@@ -5136,6 +5130,9 @@ msgid ""
 "                false if privacyidea should just try onetime regardless the "
 "failing of the task"
 msgstr ""
+"Waar als privacyidea opnieuw moet proberen deze periodieke taak uit te "
+"voeren als het mislukt, false indien privacyidea gewoon eenmalig moet "
+"proberen ongeacht het falen van de taak."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:9
 msgid "trust_anchor_dir"
