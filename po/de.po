@@ -235,14 +235,6 @@ msgstr ""
 "<p>Bitte laden Sie die Seite neu. Ansonsten wenden Sie sich an Ihren "
 "Systemadministrator!</p>"
 
-#: privacyidea/static/components/token/views/token.enroll.html:127
-msgid ""
-"<span ng-if=\"$state.includes('token.rollover') == false\">Enroll Token</"
-"span>\n"
-"                <span ng-if=\"$state.includes('token.rollover')\">Rollover "
-"Token</span>"
-msgstr ""
-
 #: privacyidea/static/components/token/views/token.enroll.sms.html:36
 msgid "A token specific SMS gateway"
 msgstr "Ein Token-spezifisches SMS-Gateway"
@@ -1212,6 +1204,7 @@ msgstr "Endpunkt (URL)"
 msgid "Enroll New Token"
 msgstr "Neuen Token ausrollen"
 
+#: privacyidea/static/components/token/views/token.enroll.html:130
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:49
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:49
 #: privacyidea/static/components/token/views/token.html:25
@@ -2641,6 +2634,11 @@ msgstr "Rollout Status"
 #: privacyidea/static/components/token/views/token.details.html:25
 msgid "Rollover"
 msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.html:131
+#, fuzzy
+msgid "Rollover Token"
+msgstr "Token ausrollen"
 
 #: privacyidea/static/components/token/views/token.enroll.html:5
 #, fuzzy
@@ -4531,6 +4529,13 @@ msgstr "Wordpress"
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:82
 msgid "Working Directory"
 msgstr "Arbeitsverzeichnis"
+
+#: privacyidea/static/components/token/views/token.enroll.html:3
+msgid ""
+"You are about to rollover your token! This will invalidate your existing "
+"token\n"
+"        and create a new token with a new secret key!"
+msgstr ""
 
 #: privacyidea/static/components/login/views/login.html:12
 msgid ""
