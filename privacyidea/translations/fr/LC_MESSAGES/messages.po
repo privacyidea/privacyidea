@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2021-06-01 20:42+0200\n"
-"PO-Revision-Date: 2021-06-01 20:00+0000\n"
+"PO-Revision-Date: 2021-06-01 20:20+0000\n"
 "Last-Translator: Nicolas Baudrand <nbaudrand@lozere.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/fr/>\n"
@@ -1605,13 +1605,11 @@ msgstr "Positionne le royaume du jeton nouvellement crée."
 
 #: lib/eventhandler/tokenhandler.py:171
 msgid "Dynamically read the mobile number from the user store."
-msgstr ""
+msgstr "Lire dynamiquement le numéro de mobile depuis la base utilisateur."
 
 #: lib/eventhandler/tokenhandler.py:178
 msgid "Dynamically read the email address from the user store."
-msgstr ""
-"Lisez dynamiquement l'adresse électronique depuis le magasin de "
-"l'utilisateur."
+msgstr "Lire dynamiquement l'adresse mail depuis la base utilisateur."
 
 #: lib/eventhandler/tokenhandler.py:185
 msgid "Use a specific SMTP server configuration for this token."
@@ -1635,7 +1633,7 @@ msgstr ""
 
 #: lib/eventhandler/tokenhandler.py:212
 msgid "The new description of the token."
-msgstr ""
+msgstr "La nouvelle description du jeton."
 
 #: lib/eventhandler/tokenhandler.py:219
 msgid ""
@@ -1675,15 +1673,15 @@ msgstr "Indiquer la valeur maximale du compteur d'erreur du jeton."
 
 #: lib/eventhandler/tokenhandler.py:277
 msgid "Set this tokeninfo key."
-msgstr ""
+msgstr "Positionne cette clé tokeninfo."
 
 #: lib/eventhandler/tokenhandler.py:282
 msgid "Set the above key the this value."
-msgstr ""
+msgstr "Donner à la clé ci-dessous cette valeur."
 
 #: lib/eventhandler/tokenhandler.py:291
 msgid "Delete this tokeninfo key."
-msgstr ""
+msgstr "Supprimer cette clé tokeninfo."
 
 #: lib/eventhandler/usernotification.py:126
 msgid "Send notification email via this email server."
@@ -1695,7 +1693,7 @@ msgstr "Envoyez un courriel sous forme de texte brut ou HTML."
 
 #: lib/eventhandler/usernotification.py:134
 msgid "Send QR-Code image as an attachment (cid URL: token_image)"
-msgstr ""
+msgstr "Envoyer l'image QR-Code comme une pièce jointe (cid URL: token_image)"
 
 #: lib/eventhandler/usernotification.py:139
 msgid "The subject of the mail that is sent."
@@ -1720,7 +1718,7 @@ msgstr "Toute adresse électronique à laquelle la notification doit être envoy
 
 #: lib/eventhandler/usernotification.py:181
 msgid "Send the user notification via a predefined SMS gateway."
-msgstr ""
+msgstr "Envoyer la notification utilisateur via une passerelle SMS prédéfinie."
 
 #: lib/eventhandler/usernotification.py:186
 msgid "The text of the SMS."
