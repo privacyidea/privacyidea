@@ -862,7 +862,7 @@ class PushTokenClass(TokenClass):
 
             # If sending the Push message failed, we still raise an error.
             if not res:
-                raise ValidateError("Failed to submit message to firebase service.")
+                log.info("Failed to submit message to firebase service.")
         else:
             log.warning(u"The token {0!s} has no tokeninfo {1!s}. "
                         u"The message could not be sent.".format(self.token.serial,
