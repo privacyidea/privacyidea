@@ -27,18 +27,15 @@ setversion:
 
 translate:
 	grunt nggettext_extract
-	for language in de nl ; do \
+	for language in de nl fr ; do \
 		(cd po; msgmerge $$language.po template.pot > tmp.po; mv tmp.po $$language.po) ; \
 	done
-	# Especially edit German language
-	poedit po/de.po
 	grunt nggettext_compile
 
 translate-server:
 	(cd privacyidea; pybabel extract -F babel.cfg -o messages.pot .)
 	# pybabel init -i messages.pot -d translations -l de
 	(cd privacyidea; pybabel update -i messages.pot -d translations)
-	(poedit privacyidea/translations/de/LC_MESSAGES/messages.po)
 	# create the .mo file
 	(cd privacyidea; pybabel compile -d translations)
 
