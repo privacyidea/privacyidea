@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2021-06-01 20:42+0200\n"
-"PO-Revision-Date: 2021-06-01 20:20+0000\n"
+"PO-Revision-Date: 2021-06-02 10:32+0000\n"
 "Last-Translator: Nicolas Baudrand <nbaudrand@lozere.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/fr/>\n"
@@ -1432,11 +1432,10 @@ msgstr ""
 "Change le nom du royaume en un royaume sur le système privacyIDEA enfant."
 
 #: lib/eventhandler/federationhandler.py:86
-#, fuzzy
 msgid "Change the resolver name to a resolver on the child privacyIDEA system."
 msgstr ""
 "Change le nom de la source d'authentification en une source "
-"d'authentification sur le système privacyIDEA enfant."
+"d'authentification du système privacyIDEA enfant."
 
 #: lib/eventhandler/federationhandler.py:92
 msgid ""
@@ -1482,7 +1481,7 @@ msgid ""
 "matched sub strings."
 msgstr ""
 "La nouvelle valeur du paramètre. Peut contenir des tags tels que {0}, {1} "
-"qui correspondent aux sous chaines de caractères correspondantes."
+"qui correspondent aux sous chaînes de caractères correspondantes."
 
 #: lib/eventhandler/requestmangler.py:116
 msgid "The parameter, that should match some values."
