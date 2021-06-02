@@ -2,14 +2,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: \n"
+"PO-Revision-Date: 2021-06-02 08:54+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
-"Language-Team: \n"
+"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-server/nl/>\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 2.4.1\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.7-dev\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -39,7 +41,9 @@ msgid ""
 "                        Ask for the privacyIDEA Enterprise Edition, now!</a>"
 msgstr ""
 "<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/"
-"\">Vraag nu naar de privacyIDEA Enterprise Editie!</a>"
+"\">\n"
+"                               Vraag nu naar de privacyIDEA Enterprise "
+"Editie!</a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
@@ -507,7 +511,7 @@ msgstr "Fout U2F verzoek"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:28
 msgid "Base Config"
-msgstr "Base Config"
+msgstr "Basisconfiguratie"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:82
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:99
@@ -698,7 +702,8 @@ msgid ""
 "            the QR Code, if you\n"
 "            want to add the Token to your TiQR App."
 msgstr ""
-"Klik <a href=\"{{ enrolledToken.tiqrenroll.value }}\">hier</a> of scan\n"
+"Klik <a href=\"{{ enrolledToken.tiqrenroll.value }}\">hier</a> of \n"
+"            scan\n"
 "            de QR Code, als je\n"
 "            het token wil toevoegen aan je TiQR App."
 
@@ -737,7 +742,7 @@ msgstr "Sluit"
 
 #: privacyidea/static/templates/menu.html:140
 msgid "Community"
-msgstr "Community"
+msgstr "Gemeenschap"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:8
 msgid "Comparator"
@@ -1610,7 +1615,7 @@ msgstr "Id"
 #: privacyidea/static/components/config/views/config.smtp.edit.html:13
 #: privacyidea/static/components/config/views/config.smtp.list.html:5
 msgid "Identifier"
-msgstr "Identifier"
+msgstr "Identificatie"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:79
 msgid ""
@@ -2134,7 +2139,9 @@ msgstr "Online documentatie"
 msgid ""
 "Open new tab to create certificate\n"
 "                    request"
-msgstr "Open nieuwe tab om een certificaat te maken"
+msgstr ""
+"Open nieuwe tab om een certificaat \n"
+"                          te maken"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:56
 msgid "OpenSSL config file"
@@ -2253,7 +2260,7 @@ msgstr "Telefoonnummer"
 
 #: privacyidea/static/components/token/views/token.enroll.question.html:8
 msgid "Please answer at least {{ num_answers }} of the following questions."
-msgstr "Beantwoord minstens  {{ num_answers }} van volgende vragen."
+msgstr "Beantwoord minstens {{ num_answers }} van volgende vragen."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:244
 msgid "Please confirm with one of these tokens:"
@@ -2674,9 +2681,8 @@ msgid "Rollover"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:131
-#, fuzzy
 msgid "Rollover Token"
-msgstr "Roteer het token"
+msgstr "Overgangstoken"
 
 #: privacyidea/static/components/token/views/token.enroll.html:5
 #, fuzzy
@@ -3078,9 +3084,8 @@ msgid "TLS"
 msgstr "TLS"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:53
-#, fuzzy
 msgid "TLS Version"
-msgstr "TLS protocolversie"
+msgstr "TLS - versie"
 
 #: privacyidea/static/components/config/views/config.token.totp.html:1
 msgid "TOTP Token settings"
@@ -3531,7 +3536,6 @@ msgstr ""
 "gebruiker."
 
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:1
-#, fuzzy
 msgid ""
 "The Yubikey Token is an USB device that emits an event based One Time\n"
 "    Password. You can initialize the Yubikey using the YubiKey "
@@ -3550,17 +3554,20 @@ msgid ""
 "    determined by inserting it in the test field."
 msgstr ""
 "Het Yubikey-token is een USB-toestel dat een gebeurtenis gebaseerd\n"
-"    One Time Password uitstuurt. Je kunt de Yubikey initialiseren met de "
-"tool\n"
-"    ykpersonalize. Plak de geheime hexadecimale sleutel hier.\n"
-"    Voor tokens die compatibel zijn met de Yubico Cloud Service zet je een "
-"vinkje bij\n"
-"    \"Stuur een publieke ID\". Bij het programmeren van het token moet je "
-"een prefix geven\n"
-"    van 6 tekens, wat een UID van 12 tekens zal opleveren.\n"
-"    Je moet ook kiezen of de Yubikey een bijkomende UID uitstuurt, die ofwel "
-"12\n"
-"    ofwel 16 tekens lang is. Je kunt dit controleren in het testveld."
+"    One Time Password uitstuurt. Je kunt de Yubikey personalization\n"
+"    tools.\n"
+"   \n"
+"   De geheime hexadecimale sleutel en de OTP-lengte zijn hier nodig.\n"
+"    Voor tokens die compatibel zijn met de Yubico Cloud Service moet de OTP-"
+"lengte\n"
+"    op 44 gezet worden (12 tekens UID en 32 tekens OTP). \n"
+"    Bij het programmeren van het token voor de Yubico cloud service moet  de "
+"publieke \n"
+"    identiteitlengte 6 bytes zijn, wat  een UID van 12 tekens zal opleveren."
+"\n"
+"    \n"
+"    De huidige OTP-lengte van een geprogrammeerde Yubikey kan automatisch\n"
+"    bepaald worden door dat in te geven in het testveld."
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:77
 msgid "The added value of privacyIDEA Enterprise Edition"
@@ -4441,9 +4448,8 @@ msgid "Uploaded File"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.import.html:140
-#, fuzzy
 msgid "Uploaded Tokens"
-msgstr "Importeer tokens"
+msgstr "Geïmporteerde tokens"
 
 #: privacyidea/static/components/config/views/config.system.html:74
 msgid ""
@@ -4772,18 +4778,16 @@ msgid "Your secret phrase."
 msgstr "Jouw geheime zin."
 
 #: privacyidea/static/templates/menu.html:167
-#, fuzzy
 msgid ""
 "Your subscription is not valid anymore. Either you exceeded the number of "
 "tokens or the\n"
 "        subscription expired. Please check, if you need to renew your <a ui-"
 "sref=\"component.subscriptions\">subscription</a>."
 msgstr ""
-"<p>Je abonnement is niet meer geldig. Ofwel heb je het aantal tokens "
+"Je abonnement is niet meer geldig. Ofwel heb je het aantal tokens "
 "overschreden of je\n"
-"                    abonnement is vervallen. Controleer of je een nieuw "
-"abonnement nodig hebt.\n"
-"                </p>"
+"                    abonnement is vervallen. Controleer of je een nieuw <a "
+"ui-sref=\"component.subscriptions\">abonnement</a> nodig hebt."
 
 #: privacyidea/static/components/login/views/pinchange.html:5
 msgid ""
