@@ -2220,7 +2220,6 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                 # pass the length of the valid_token_list to ``authenticate`` so that
                 # the push token can react accordingly
                 options["valid_token_num"] = len(valid_token_list)
-                # TODO This should not break if one fails.
                 pin_match, otp_count, repl = \
                     tokenobject.authenticate(passw, user, options=options)
             except TokenAdminError as tae:
