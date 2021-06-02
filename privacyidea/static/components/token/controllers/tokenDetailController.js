@@ -389,7 +389,7 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.rolloverTokenAllowed = function(token) {
         if ( typeof(token) != 'undefined' ) {
             if ($scope.checkEnroll() && (token.tokentype in $scope.token_rollover) &&
-                token.info.tokenkind === 'software') {
+                token.info.tokenkind === 'software' && token.rollout_state !== 'clientwait' ) {
                 return true;
             }
         }
