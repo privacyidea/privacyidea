@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2021-06-02 10:32+0000\n"
+"PO-Revision-Date: 2021-06-02 14:49+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/nl/>\n"
@@ -2748,7 +2748,7 @@ msgstr "STARTTLS"
 #: privacyidea/static/components/config/views/config.tokens.html:74
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:62
 msgid "Save"
-msgstr "Save"
+msgstr "Bewaar"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:171
 msgid "Save CA"
@@ -3273,9 +3273,9 @@ msgid ""
 "            regenerate the QR Code, when no one else is watching.</b>"
 msgstr ""
 "De QR-code bevat de geheime sleutel van je token. Je moet die\n"
-"            beschermen.<b>Als je twijfelt of iemand anders die gezien "
-"heeft,\n"
-"             maak dan een nieuwe QR-code wanneer niemand kijkt.<b>"
+"            beschermen.<b>Als je twijfelt of iemand anders die gezien heeft,"
+"\n"
+"             maak dan een nieuwe QR-code wanneer niemand kijkt.</b>"
 
 #: privacyidea/static/components/token/views/token.enroll.question.html:1
 msgid ""
@@ -3321,7 +3321,7 @@ msgstr ""
 "blijft\n"
 "                in je browser en je zult het certificaat in je browser "
 "kunnen\n"
-"                kunnen installeren."
+"                installeren."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:9
 msgid ""
@@ -3806,7 +3806,7 @@ msgid ""
 "The resource name must consist of letters, numbers and '_', '-', '.' and "
 "must not be the word 'test'"
 msgstr ""
-"De bron-naam moet bestaan uit letters, cijfers en  '_', '-', '.' en moet "
+"De bron-naam moet bestaan uit letters, cijfers en '_', '-', '.' en moet "
 "anders zijn dan het woord 'test'"
 
 #: privacyidea/static/app.js:92
@@ -3848,7 +3848,8 @@ msgid ""
 "            displayed to you to be scanned."
 msgstr ""
 "De server zal de OTP-sleutel maken\n"
-"          en zal een QR-code tonen\n"
+"          en zal een \n"
+"          QR-code tonen\n"
 "          die je kunt scannen."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:74
@@ -3892,7 +3893,9 @@ msgstr ""
 msgid ""
 "The time in seconds for which the sent OTP value is valid for\n"
 "        authentication."
-msgstr "De geldigheidsduur voor authenticatie in seconden van de OTP-waarde."
+msgstr ""
+"De geldigheidsduur voor authenticatie in seconden van de\n"
+"           OTP-waarde."
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:34
 #: privacyidea/static/components/token/views/token.enrolled.webauthn.html:32
@@ -4241,7 +4244,9 @@ msgstr "TiQR registratieserver"
 msgid ""
 "TiQR Service\n"
 "        Identifier"
-msgstr "TiQR Service Identifier"
+msgstr ""
+"TiQR Service\n"
+"          Identifier"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:32
 msgid "TiQR Service Displayname"
@@ -4327,7 +4332,9 @@ msgstr "Token aangemeld"
 msgid ""
 "Token enrollment\n"
 "                                wizard"
-msgstr "Token aanmeldingswizard"
+msgstr ""
+"Token\n"
+"             aanmeldingswizard"
 
 #: privacyidea/static/components/token/views/token.list.html:65
 msgid "Token realms"
@@ -4729,7 +4736,7 @@ msgstr ""
 "dialoogvenster\n"
 "    van je besturingssysteem. As je niets ziet, controleer dan of je "
 "authenticator\n"
-"   WebAuthn ondersteunt."
+"    WebAuthn ondersteunt."
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:28
 msgid ""
@@ -4807,7 +4814,7 @@ msgstr "Yubico token-instellingen"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:34
 msgid "Yubico URL"
-msgstr "Yubico URL"
+msgstr "Yubico-URL"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:195
 msgid "Yubikey AES mode: One Time Passwords with Yubikey"
@@ -4819,7 +4826,7 @@ msgstr "Yubikey Cloud modus: Stuur authenticatievragen door naan YubiCloud"
 
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:14
 msgid "Yubikey Identifier"
-msgstr "Yubikey Identifier"
+msgstr "Yubikey-Identifier"
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:1
 msgid "Yubikey Token settings"
@@ -4945,7 +4952,7 @@ msgstr "logniveau"
 
 #: privacyidea/static/components/token/views/token.enroll.motp.html:32
 msgid "mOTP PIN"
-msgstr "mOTP PIN"
+msgstr "mOTP-PIN"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:193
 msgid "mOTP: classical mobile One Time Passwords"
