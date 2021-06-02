@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2021-06-01 21:59+0200\n"
-"PO-Revision-Date: 2021-02-26 07:50+0000\n"
+"PO-Revision-Date: 2021-06-02 10:32+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
+"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/nl/>\n"
 "Language: nl\n"
-"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/nl/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.7-dev\n"
 "Generated-By: Babel 2.8.0\n"
 
 #: api/auth.py:222
@@ -434,6 +435,9 @@ msgid ""
 "should be allowed to set any attribute, set this to '*:*'. For more "
 "details, check the documentation."
 msgstr ""
+"De beheerder mag een aantal aangepaste gebruikersattributen instellen. Als "
+"de beheerder alle attributen mag instellen, zet dit dan op '*:*'. Meer "
+"details in de documentatie."
 
 #: lib/policy.py:1884
 msgid ""
@@ -441,6 +445,9 @@ msgid ""
 "Admin should be allowed to delete any attribute, set this to '*'. For "
 "more details, check the documentation."
 msgstr ""
+"De beheerder mag een aantal aangepaste gebruikersattributen verwijderen. Als "
+"de beheerder alle attributen mag verwijderen, zet dit dan op '*:*'. Meer "
+"details in de documentatie."
 
 #: lib/policy.py:1895
 msgid ""
@@ -536,6 +543,9 @@ msgid ""
 "should be allowed to set any attribute, set this to '*:*'. Use '*' with "
 "CAUTION! For more details, check the documentation."
 msgstr ""
+"De gebruiker mag een aantal aangepaste gebruikersattributen instellen. Als "
+"de gebruiker alle attributen mag instellen, zet dit dan op '*:*'. Wees "
+"voorzichtig met het gebruiken van \"*\"! Meer details in de documentatie."
 
 #: lib/policy.py:2014
 msgid ""
@@ -543,6 +553,9 @@ msgid ""
 " should be allowed to delete any attribute, set this to '*'. Use '*' with"
 " CAUTION! For more details, check the documentation."
 msgstr ""
+"De gebruiker mag een aantal aangepaste gebruikersattributen verwijderen. Als "
+"de gebruiker alle attributen mag verwijderen, zet dit dan op '*:*'. Wees "
+"voorzichtig met het gebruiken van \"*\"! Meer details in de documentatie."
 
 #: lib/policy.py:2025
 msgid "Limit the number of allowed tokens in a realm."
@@ -1002,6 +1015,8 @@ msgid ""
 "This is a whitespace separated list of tokentypes, for which a rollover "
 "button is displayed in the token details."
 msgstr ""
+"Dit is een lijst met token-types, door witruimte gescheiden, waarvoor een "
+"overgangsknop getoond wordt in de token details."
 
 #: lib/policy.py:2394
 msgid "The welcome dialog will be displayed if the user has no tokens assigned."
@@ -1093,9 +1108,10 @@ msgid ""
 "The policy only matches if certain conditions of the token attributes are"
 " fulfilled."
 msgstr ""
+"Het belied komt enkel overeen als aan bepaalde voorwaarden van de token-"
+"attributen voldaan zijn."
 
 #: lib/policy.py:2495
-#, fuzzy
 msgid ""
 "The policy only matches if certain conditions on the token info are "
 "fulfilled."
@@ -2374,7 +2390,8 @@ msgstr "SMS token"
 
 #: lib/tokens/smstoken.py:200
 msgid "SMS: Send a One Time Password to the users mobile phone."
-msgstr "SMS: stuur een One Time Password naar de mobiele telefoon van gebruikers."
+msgstr ""
+"SMS: stuur een one time password naar de mobiele telefoon van de gebruikers."
 
 #: lib/tokens/smstoken.py:209
 msgid ""
@@ -2817,12 +2834,16 @@ msgid ""
 "true if the integer value of the left attribute is smaller than the right"
 " integer value"
 msgstr ""
+"waar als de gehele waarde van het linker attribuut kleiner is dan de rechter "
+"gehele waarde"
 
 #: lib/utils/compare.py:204
 msgid ""
 "true if the integer value of the left attribute is bigger than the right "
 "integer value"
 msgstr ""
+"waar als de gehele waarde van het linker attribuut groter is dan de rechter "
+"gehele waarde"
 
 #~ msgid ""
 #~ "If set to \"privacyIDEA\" the users "
@@ -2914,4 +2935,3 @@ msgstr ""
 #~ "'*'. For more details, check the "
 #~ "documentation."
 #~ msgstr ""
-
