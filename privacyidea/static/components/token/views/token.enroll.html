@@ -1,4 +1,9 @@
-<h3 translate>Enroll a new token</h3>
+<h3 ng-if="$state.includes('token.enroll')" translate>Enroll a new token</h3>
+<div ng-if="$state.includes('token.rollover')">
+    <div class="alert alert-danger" role="alert" translate>You are about to rollover your token! This will invalidate your existing token
+        and create a new token with a new secret key!</div>
+    <h3 translate>Rollover token {{ form.serial }}</h3>
+</div>
 
 <!-- hide the form, after the token was enrolled -->
 <div ng-hide="enrolledToken">
@@ -8,7 +13,8 @@
          '/views/includes/token.enroll.pre.top.html'"></div>
 
     <form name="formEnrollToken" role="form" validate>
-        <div class="form-group">
+        <!-- Do not display Type dropdown in case of rollover -->
+        <div ng-if="$state.includes('token.rollover') == false" class="form-group">
             <select class="form-control"
                     ng-hide="$state.includes('token.wizard')"
                     id="tokentype"
@@ -34,7 +40,7 @@
         </div>
 
         <!-- User Assignment -->
-        <div ng-if="loggedInUser.role == 'admin'">
+        <div ng-if="loggedInUser.role == 'admin' && $state.includes('token.rollover') == false">
             <h4 translate>Assign token to user</h4>
 
             <div assign-user new-user-object="newUser" realms="realms"
@@ -120,7 +126,9 @@
         <div class="text-center">
             <button type="button" ng-click="enrollToken()"
                     ng-disabled="!checkEnroll() || formEnrollToken.$invalid || enrolling"
-                    class="btn btn-primary" translate>Enroll Token
+                    class="btn btn-primary">
+                <span ng-if="$state.includes('token.rollover') == false" translate>Enroll Token</span>
+                <span ng-if="$state.includes('token.rollover')" translate>Rollover Token</span>
             </button>
         </div>
     </form>

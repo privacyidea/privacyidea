@@ -424,6 +424,7 @@ angular.module("privacyideaApp")
             $scope.hide_buttons = data.result.value.hide_buttons;
             $scope.show_seed = data.result.value.show_seed;
             $scope.show_node = data.result.value.show_node;
+            $scope.token_rollover = data.result.value.token_rollover;
             $scope.subscription_state = data.result.value.subscription_status;
             $rootScope.search_on_enter = data.result.value.search_on_enter;
             // Token specific settings
