@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2021-06-02 08:54+0000\n"
-"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/nl/>\n"
 "Language: nl\n"
@@ -2294,7 +2294,7 @@ msgstr ""
 "San de QR-code met de privacyIDEA authenticator app \n"
 "of klik op <a href=\"{{ enrolledToken.pushurl.value }}\">deze link</a> op uw "
 "\n"
-"smartphone"
+"smartphone."
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:39
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:39
