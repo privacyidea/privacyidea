@@ -8,6 +8,10 @@
   A migration script will take care, that resolvers without a configured TLS_VERSION
   will have TLS_VERSION 1.0 configured to keep the existing behaviour.
 
+  **WARNING**: On Ubuntu 20.04 using TLS 1.0 will fail and users will not be found.
+  Either change to TLS 1.2 before running the update or use a local admin to change 
+  the TLS version after the update.
+
 Be sure to run the schema update script!
 
 ## Update from 3.4 to 3.5
