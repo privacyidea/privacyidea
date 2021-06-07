@@ -678,7 +678,9 @@ class TokenInfo(MethodsMixin, db.Model):
             # create a new one
             db.session.add(self)
             db.session.commit()
-            ret = self.id
+            ti = TokenInfo.query.filter_by(token_id=self.token_id,
+                                           Key=self.Key).first()
+            ret = ti.id
         else:
             # update
             TokenInfo.query.filter_by(token_id=self.token_id,
@@ -1107,7 +1109,11 @@ class TokenOwner(MethodsMixin, db.Model):
             # This very assignment does not exist, yet:
             db.session.add(self)
             db.session.commit()
-            ret = self.id
+            to = TokenOwner.query.filter_by(token_id=self.token_id,
+                                            user_id=self.user_id,
+                                            realm_id=self.realm_id,
+                                            resolver=self.resolver).first()
+            ret = to.id
         else:
             ret = to.id
             # There is nothing to update
@@ -1167,8 +1173,10 @@ class TokenRealm(MethodsMixin, db.Model):
             # create a new one
             db.session.add(self)
             db.session.commit()
+            tr = TokenRealm.query.filter_by(realm_id=self.realm_id,
+                                            token_id=self.token_id).first()
 
-        ret = self.id
+        ret = tr.id
         return ret
 
 
