@@ -36,6 +36,8 @@ The file should contain the following contents::
    PI_AUDIT_KEY_PUBLIC = '/home/cornelius/src/privacyidea/public.pem'
    # PI_AUDIT_MODULE = <python audit module>
    # PI_AUDIT_SQL_URI = <special audit log DB uri>
+   # Truncate Audit entries to fit into DB columns
+   PI_AUDIT_SQL_TRUNCATE = True
    # PI_LOGFILE = '....'
    # PI_LOGLEVEL = 20
    # PI_INIT_CHECK_HOOK = 'your.module.function'
