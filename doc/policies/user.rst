@@ -42,12 +42,12 @@ There are ``enroll`` actions per token type. Thus you can
 create policies that allow the user to enroll
 SMS tokens but not to enroll HMAC tokens.
 
-assgin
+assign
 ~~~~~~
 
 type: bool
 
-The user is allowed to assgin an existing token, that is
+The user is allowed to assign an existing token, that is
 located in his realm and that does not belong to any other user,
 by entering the serial number.
 

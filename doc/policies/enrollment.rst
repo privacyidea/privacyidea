@@ -205,8 +205,8 @@ The date, when the PIN needs to be changed, is returned in the API response
 of */validate/check*. For more information see :ref:`change_pin_first_use`.
 To specify the contents of the PIN see :ref:`user_policies`.
 
-otp_pin_encrypt
-~~~~~~~~~~~~~~~
+encrypt_pin
+~~~~~~~~~~~
 
 type: bool
 
@@ -214,7 +214,7 @@ If set the OTP PIN of a token will be encrypted. The default
 behaviour is to hash the OTP PIN, which is safer.
 
 registration.length
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 .. index:: registration token
 
@@ -223,7 +223,7 @@ type: int
 This is the length of the generated registration codes.
 
 registration.contents
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 type: string
 
@@ -233,8 +233,8 @@ This defines what characters the registrationcodes should contain.
 
 This takes the same values like the admin policy :ref:`admin_policies_otp_pin_contents`.
 
-lostTokenPWLen
-~~~~~~~~~~~~~~
+losttoken_PW_length
+~~~~~~~~~~~~~~~~~~~
 
 .. index:: lost token
 
@@ -242,8 +242,8 @@ type: int
 
 This is the length of the generated password for the lost token process.
  
-lostTokenPWContents
-~~~~~~~~~~~~~~~~~~~
+losttoken_PW_contents
+~~~~~~~~~~~~~~~~~~~~~
 
 type: string
 
@@ -266,8 +266,8 @@ password like *AC#!49MK))*.
    part of the password. Also ``C`` would again add the character "I", which is
    not part of Base58.
 
-lostTokenValid
-~~~~~~~~~~~~~~
+losttoken_valid
+~~~~~~~~~~~~~~~
 
 type: int
 
