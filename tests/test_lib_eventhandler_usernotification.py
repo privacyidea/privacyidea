@@ -723,6 +723,9 @@ class UserNotificationTestCase(MyTestCase):
                                    "emailconfig": "myserver",
                                    "To": NOTIFY_TYPE.EMAIL,
                                    "To " + NOTIFY_TYPE.EMAIL:
+                                       "recp@example.com",
+                                   "reply_to": NOTIFY_TYPE.EMAIL,
+                                   "reply_to" + NOTIFY_TYPE.EMAIL:
                                        "recp@example.com"}}}
 
         un_handler = UserNotificationEventHandler()
@@ -777,6 +780,9 @@ class UserNotificationTestCase(MyTestCase):
                                    "emailconfig": "myserver",
                                    "To": NOTIFY_TYPE.INTERNAL_ADMIN,
                                    "To " + NOTIFY_TYPE.INTERNAL_ADMIN:
+                                       "super",
+                                   "reply_to": NOTIFY_TYPE.INTERNAL_ADMIN,
+                                   "reply_to" + NOTIFY_TYPE.INTERNAL_ADMIN:
                                        "super"}}}
 
         un_handler = UserNotificationEventHandler()
@@ -793,6 +799,9 @@ class UserNotificationTestCase(MyTestCase):
                                    "emailconfig": "myserver",
                                    "To": NOTIFY_TYPE.INTERNAL_ADMIN,
                                    "To " + NOTIFY_TYPE.INTERNAL_ADMIN:
+                                       "testadmin",
+                                   "reply_to": NOTIFY_TYPE.INTERNAL_ADMIN,
+                                   "reply_to" + NOTIFY_TYPE.INTERNAL_ADMIN:
                                        "testadmin"}}}
 
         un_handler = UserNotificationEventHandler()
@@ -845,6 +854,7 @@ class UserNotificationTestCase(MyTestCase):
                        "conditions": {"serial": "123.*"},
                        "options": {"body": "your {registrationcode}",
                                    "emailconfig": "myserver",
+                                   "reply_to": NOTIFY_TYPE.LOGGED_IN_USER,
                                    "To": NOTIFY_TYPE.LOGGED_IN_USER}}}
 
         un_handler = UserNotificationEventHandler()
@@ -862,6 +872,7 @@ class UserNotificationTestCase(MyTestCase):
                        "conditions": {"serial": "123.*"},
                        "options": {"body": "your {registrationcode}",
                                    "emailconfig": "myserver",
+                                   "reply_to": NOTIFY_TYPE.LOGGED_IN_USER,
                                    "To": NOTIFY_TYPE.LOGGED_IN_USER}}}
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
@@ -917,6 +928,9 @@ class UserNotificationTestCase(MyTestCase):
                                    "emailconfig": "myserver",
                                    "To": NOTIFY_TYPE.ADMIN_REALM,
                                    "To " + NOTIFY_TYPE.ADMIN_REALM:
+                                       "realm1",
+                                   "reply_to": NOTIFY_TYPE.ADMIN_REALM,
+                                   "reply_to" + NOTIFY_TYPE.ADMIN_REALM:
                                        "realm1"}}}
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)

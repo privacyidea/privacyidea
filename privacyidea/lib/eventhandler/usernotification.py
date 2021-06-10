@@ -140,7 +140,31 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "reply_to": {
                     "type": "str",
                     "required": False,
-                    "description": _("The Reply-To header in the sent email.")},
+                    "description": _("The Reply-To header in the sent email."),
+                    "value": [
+                        NOTIFY_TYPE.TOKENOWNER,
+                        NOTIFY_TYPE.LOGGED_IN_USER,
+                        NOTIFY_TYPE.INTERNAL_ADMIN,
+                        NOTIFY_TYPE.ADMIN_REALM,
+                        NOTIFY_TYPE.EMAIL]},
+                "reply_to " + NOTIFY_TYPE.ADMIN_REALM: {
+                    "type": "str",
+                    "value": get_app_config_value("SUPERUSER_REALM", []),
+                    "visibleIf": "reply_to",
+                    "visibleValue": NOTIFY_TYPE.ADMIN_REALM},
+                "reply_to " + NOTIFY_TYPE.INTERNAL_ADMIN: {
+                    "type": "str",
+                    "value": [a.username for a in
+                              get_db_admins()],
+                    "visibleIf": "reply_to",
+                    "visibleValue":
+                        NOTIFY_TYPE.INTERNAL_ADMIN},
+                "reply_to " + NOTIFY_TYPE.EMAIL: {
+                    "type": "str",
+                    "description": _("Any email address, to which the notification "
+                                     "should be sent."),
+                    "visibleIf": "reply_to",
+                    "visibleValue": NOTIFY_TYPE.EMAIL},
                 "body": {
                     "type": "text",
                     "required": False,
@@ -224,6 +248,7 @@ class UserNotificationEventHandler(BaseEventHandler):
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
         notify_type = handler_options.get("To", NOTIFY_TYPE.TOKENOWNER)
+        reply_to_type = handler_options.get("reply_to", NOTIFY_TYPE.TOKENOWNER)
         try:
             logged_in_user = g.logged_in_user
         except Exception:
@@ -236,6 +261,48 @@ class UserNotificationEventHandler(BaseEventHandler):
 
         # Determine recipient
         recipient = None
+        reply_to = None
+
+        if reply_to_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
+            reply_to = tokenowner.info.get("email")
+
+        elif reply_to_type == NOTIFY_TYPE.INTERNAL_ADMIN:
+            username = handler_options.get("reply_to "+NOTIFY_TYPE.INTERNAL_ADMIN)
+            internal_admin = get_db_admin(username)
+            reply_to = internal_admin.email if internal_admin else ""
+
+        elif reply_to_type == NOTIFY_TYPE.ADMIN_REALM:
+            # Adds all email addresses from a specific admin realm to the reply-to-header
+            admin_realm = handler_options.get("reply_to "+NOTIFY_TYPE.ADMIN_REALM)
+            attr = is_attribute_at_all()
+            ulist = get_user_list({"realm": admin_realm}, custom_attributes=attr)
+            # create a list of all user-emails, if the user has an email
+            emails = [u.get("email") for u in ulist if u.get("email")]
+            reply_to = ",".join(emails)
+
+        elif reply_to_type == NOTIFY_TYPE.LOGGED_IN_USER:
+            # Add email address from the logged in user into the reply-to header
+            if logged_in_user.get("username") and not logged_in_user.get(
+                    "realm"):
+                # internal admins have no realm
+                internal_admin = get_db_admin(logged_in_user.get("username"))
+                if internal_admin:
+                    reply_to = internal_admin.email if internal_admin else ""
+
+            else:
+                # Try to find the user in the specified realm
+                user_obj = User(logged_in_user.get("username"),
+                                logged_in_user.get("realm"))
+                if user_obj:
+                    reply_to = user_obj.info.get("email") if user_obj else ""
+
+        elif reply_to_type == NOTIFY_TYPE.EMAIL:
+            email = handler_options.get("reply_to "+NOTIFY_TYPE.EMAIL, "").split(",")
+            reply_to = email[0]
+
+        else:
+            log.warning("Was not able to determine the email for the user "
+                        "notification: {0!s}".format(handler_def))
 
         if notify_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
             recipient = {
@@ -247,7 +314,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "mobile": tokenowner.info.get("mobile")
             }
         elif notify_type == NOTIFY_TYPE.INTERNAL_ADMIN:
-            username = handler_options.get("To "+NOTIFY_TYPE.INTERNAL_ADMIN)
+            username = handler_options.get("To " + NOTIFY_TYPE.INTERNAL_ADMIN)
             internal_admin = get_db_admin(username)
             recipient = {
                 "givenname": username,
@@ -255,7 +322,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             }
         elif notify_type == NOTIFY_TYPE.ADMIN_REALM:
             # Send emails to all the users in the specified admin realm
-            admin_realm = handler_options.get("To "+NOTIFY_TYPE.ADMIN_REALM)
+            admin_realm = handler_options.get("To " + NOTIFY_TYPE.ADMIN_REALM)
             attr = is_attribute_at_all()
             ulist = get_user_list({"realm": admin_realm}, custom_attributes=attr)
             # create a list of all user-emails, if the user has an email
@@ -288,7 +355,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                     }
 
         elif notify_type == NOTIFY_TYPE.EMAIL:
-            email = handler_options.get("To "+NOTIFY_TYPE.EMAIL, "").split(",")
+            email = handler_options.get("To " + NOTIFY_TYPE.EMAIL, "").split(",")
             recipient = {
                 "email": email
             }
@@ -350,7 +417,6 @@ class UserNotificationEventHandler(BaseEventHandler):
                 emailconfig = handler_options.get("emailconfig")
                 mimetype = handler_options.get("mimetype", "plain")
                 useremail = recipient.get("email")
-                reply_to = handler_options.get("reply_to")
                 attach_qrcode = handler_options.get("attach_qrcode", False)
 
                 if attach_qrcode and googleurl_img:
