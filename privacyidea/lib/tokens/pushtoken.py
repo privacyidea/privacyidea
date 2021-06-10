@@ -860,8 +860,10 @@ class PushTokenClass(TokenClass):
                 db_challenge.save()
                 self.challenge_janitor()
 
-            # If sending the Push message failed, we still raise an error.
+            # If sending the Push message failed, we still raise an error and a warning.
             if not res:
+                log.warning(u"Failed to submit message to firebase service for token {0!s}."
+                            .format(self.token.serial))
                 raise ValidateError("Failed to submit message to firebase service.")
         else:
             log.warning(u"The token {0!s} has no tokeninfo {1!s}. "
