@@ -1161,6 +1161,16 @@ def check_base_action(request=None, action=None, anonymous=False):
             realm = get_realms_of_token(request.view_args.get("serial"),
                                         only_first_realm=True)
 
+        # if the resolver was not given in the request,
+        # get the resolver by the serial either from request or from view_args
+        if not resolver:
+            if params.get("serial"):
+                user_object = get_token_owner(params.get("serial"))
+                resolver = user_object.resolver if user_object.resolver else None
+            elif request.view_args and request.view_args.get("serial"):
+                user_object = get_token_owner(request.view_args.get("serial"))
+                resolver = user_object.resolver if user_object.resolver else None
+
     # In this case we do not pass the user_object, since the realm is also determined
     # by the pure serial number given.
     action_allowed = Match.generic(g, scope=role,
