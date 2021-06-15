@@ -2096,6 +2096,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 challenge_info["attributes"] = attributes
                 challenge_info["serial"] = token_obj.token.serial
                 challenge_info["type"] = token_obj.get_tokentype()
+                challenge_info["client_mode"] = token_obj.client_mode
                 challenge_info["message"] = message
                 # If exist, add next pin and next password change
                 next_pin = token_obj.get_tokeninfo(

@@ -29,7 +29,7 @@
 #
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.log import log_with
 import logging
@@ -208,6 +208,8 @@ class U2fTokenClass(TokenClass):
     """
     The U2F Token implementation.
     """
+
+    client_mode = CLIENTMODE.U2F
 
     @staticmethod
     def get_class_type():

@@ -33,7 +33,7 @@ from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError, RegistrationError, PolicyError
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
                                              ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
@@ -504,6 +504,8 @@ class WebAuthnTokenClass(TokenClass):
     """
     The WebAuthn Token implementation.
     """
+
+    client_mode = CLIENTMODE.WEBAUTHN
 
     @staticmethod
     def _get_challenge_validity_time():

@@ -286,6 +286,7 @@ class PushAPITestCase(MyApiTestCase):
             multi_challenge = detail.get("multi_challenge")
             self.assertEqual(multi_challenge[0].get("type"), "hotp")
             self.assertEqual(multi_challenge[0].get("serial"), "hotp01")
+            self.assertEqual("interactive", multi_challenge[0].get("client_mode"))
 
         remove_token(self.serial_push)
         remove_token("hotp01")

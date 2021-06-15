@@ -132,12 +132,24 @@ class TOKENMODE(object):
     OUTOFBAND = 'outofband'
 
 
+class CLIENTMODE(object):
+    """
+    This informs privacyIDEA clients how to
+    handle challege-responses
+    """
+    INTERACTIVE = 'interactive'
+    POLL = 'poll'
+    U2F = 'u2f'
+    WEBAUTHN = 'webauthn'
+
+
 class TokenClass(object):
 
     # Class properties
     using_pin = True
     hKeyRequired = False
     mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE]
+    client_mode = CLIENTMODE.INTERACTIVE
     # Usually a token will be checked in the lib:check_token_list, even if it is disabled
     check_if_disabled = True
 

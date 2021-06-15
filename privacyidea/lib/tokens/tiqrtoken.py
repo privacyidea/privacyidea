@@ -84,7 +84,7 @@ from six.moves.urllib.parse import quote_plus
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass, TOKENMODE
+from privacyidea.lib.tokenclass import TokenClass, TOKENMODE, CLIENTMODE
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import generate_otpkey
 from privacyidea.lib.utils import create_img
@@ -121,6 +121,7 @@ class TiqrTokenClass(OcraTokenClass):
     The TiQR Token implementation.
     """
     mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE, TOKENMODE.OUTOFBAND]
+    client_mode = CLIENTMODE.POLL
 
     @staticmethod
     def get_class_type():

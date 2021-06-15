@@ -2205,9 +2205,11 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(multi_challenge[0].get("serial"), "CR2A")
             self.assertEqual(transaction_id,
                              multi_challenge[0].get("transaction_id"))
+            self.assertEqual("interactive", multi_challenge[0].get("client_mode"))
             self.assertEqual(transaction_id,
                              multi_challenge[1].get("transaction_id"))
             self.assertEqual(multi_challenge[1].get("serial"), "CR2B")
+            self.assertEqual("interactive", multi_challenge[1].get("client_mode"))
 
         # There are two challenges in the database
         r = Challenge.query.filter(Challenge.transaction_id ==
