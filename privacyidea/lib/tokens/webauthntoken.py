@@ -1114,10 +1114,10 @@ class WebAuthnTokenClass(TokenClass):
                              required)
         ).assertion_dict
 
-        reply_dict = {"attributes": { "webAuthnSignRequest": public_key_credential_request_options,
-                                      "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
-                                      "img": user.icon_url},
-                      "image": user.icon_url }
+        reply_dict = {"attributes": {"webAuthnSignRequest": public_key_credential_request_options,
+                                     "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
+                                     "img": user.icon_url},
+                      "image": user.icon_url}
 
         return True, message, db_challenge.transaction_id, reply_dict
     
