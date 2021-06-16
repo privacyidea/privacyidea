@@ -1292,6 +1292,19 @@ def prepare_result(obj, rid=1, details=None):
         details["threadid"] = threading.current_thread().ident
         res["detail"] = details
 
+    # Fix for sending an information about challenge response
+    # TODO: Make this default, when we move from the binary result->value to
+    #       more states in version 4.0
+    if rid > 1:
+        if obj:
+            r_authentication = "ACCEPT"
+        if not obj and details.get("multi_challenge"):
+            # We have a challenge authentication
+            r_authentication = "CHALLENGE"
+        else:
+            r_authentication = "REJECT"
+        res["result"]["authentication"] = r_authentication
+
     return res
 
 

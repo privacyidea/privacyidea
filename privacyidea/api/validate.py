@@ -425,7 +425,7 @@ def check():
                         "success": success,
                         "serial": serial or details.get("serial"),
                         "token_type": details.get("type")})
-    return send_result(result, details=details)
+    return send_result(result, rid=2, details=details)
 
 
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])
@@ -566,7 +566,7 @@ def trigger_challenge():
         "serial": ",".join(challenge_serials),
     })
 
-    return send_result(result_obj, details=details)
+    return send_result(result_obj, rid=2, details=details)
 
 
 @validate_blueprint.route('/polltransaction', methods=['GET'])
