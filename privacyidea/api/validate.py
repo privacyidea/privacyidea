@@ -464,17 +464,45 @@ def trigger_challenge():
 
        .. sourcecode:: http
 
-           {"jsonrpc": "2.0",
-            "signature": "1939...146964",
-            "detail": {"transaction_ids": ["03921966357577766962"],
-                       "messages": ["Enter the OTP from the SMS:"],
-                       "threadid": 140422378276608},
-            "versionnumber": "unknown",
-            "version": "privacyIDEA unknown",
-            "result": {"status": true,
-                       "value": 1},
-            "time": 1482223663.517212,
-            "id": 1}
+            {
+               "detail": {
+                    "client_mode": "interactive",
+                    "message": "please enter otp: , please enter otp: ",
+                    "messages":     [
+                        "please enter otp: ",
+                        "please enter otp: "
+                    ],
+                    "multi_challenge": [
+                        {
+                            "client_mode": "interactive",
+                            "message": "please enter otp: ",
+                            "serial": "TOTP000026CB",
+                            "transaction_id": "11451135673179897001",
+                            "type": "totp"
+                        },
+                        {
+                            "client_mode": "interactive",
+                            "message": "please enter otp: ",
+                            "serial": "OATH0062752C",
+                            "transaction_id": "11451135673179897001",
+                            "type": "hotp"
+                        }
+                    ],
+                    "serial": "OATH0062752C",
+                    "threadid": 140329819764480,
+                    "transaction_id": "11451135673179897001",
+                    "transaction_ids": [
+                        "11451135673179897001",
+                        "11451135673179897001"
+                    ],
+                    "type": "hotp"
+               },
+               "id": 1,
+               "jsonrpc": "2.0",
+               "result": {
+                   "status": true,
+                   "value": 2
+               }
 
     **Example response** for response, if the user has no challenge token:
 
