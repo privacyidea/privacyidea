@@ -812,14 +812,14 @@ class PushTokenClass(TokenClass):
         The return tuple builds up like this:
         ``bool`` if submit was successful;
         ``message`` which is displayed in the JSON response;
-        additional ``attributes``, which are displayed in the JSON response.
+        additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  ACTION.CHALLENGETEXT,
                                                  options) or DEFAULT_CHALLENGE_TEXT
 
-        attributes = None
+        reply_dict = {}
         data = None
         # Initially we assume there is no error from Firebase
         res = True
@@ -872,7 +872,7 @@ class PushTokenClass(TokenClass):
                                                                  PUSH_ACTION.FIREBASE_CONFIG))
             raise ValidateError("The token has no tokeninfo. Can not send via firebase service.")
 
-        return True, message, db_challenge.transaction_id, attributes
+        return True, message, db_challenge.transaction_id, reply_dict
 
     @check_token_locked
     def authenticate(self, passw, user=None, options=None):

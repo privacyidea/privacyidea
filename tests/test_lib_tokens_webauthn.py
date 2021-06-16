@@ -274,7 +274,9 @@ class WebAuthnTokenTestCase(MyTestCase):
         self.assertEqual(PUB_KEY, self.token.get_tokeninfo(WEBAUTHNINFO.PUB_KEY))
 
     def test_04_authentication(self):
-        web_authn_sign_request = self._create_challenge().get("webAuthnSignRequest")
+        reply_dict = self._create_challenge()
+        attributes = reply_dict.get("attributes")
+        web_authn_sign_request = attributes.get("webAuthnSignRequest")
 
         self.assertEqual(RP_ID, web_authn_sign_request.get('rpId'))
         self.assertEqual(1, len(web_authn_sign_request.get('allowCredentials') or []))

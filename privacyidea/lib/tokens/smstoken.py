@@ -320,7 +320,7 @@ class SmsTokenClass(HotpTokenClass):
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
                                                                              ACTION.CHALLENGETEXT),
                                                         options) or _("Enter the OTP from the SMS:")
-        attributes = {'state': transactionid}
+        attributes = {'attributes': {'state': transactionid}}
         validity = self._get_sms_timeout()
 
         if self.is_active() is True:
@@ -359,7 +359,7 @@ class SmsTokenClass(HotpTokenClass):
 
         expiry_date = datetime.datetime.now() + \
                                     datetime.timedelta(seconds=validity)
-        attributes['valid_until'] = "{0!s}".format(expiry_date)
+        attributes['attributes']['valid_until'] = "{0!s}".format(expiry_date)
 
         return success, return_message, transactionid, attributes
 

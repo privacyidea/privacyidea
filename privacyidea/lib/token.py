@@ -2085,17 +2085,14 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     for token_obj in token_list:
         # Check if the max auth is succeeded
         if token_obj.check_all(message_list):
-            r_chal, message, transaction_id, attributes = \
+            r_chal, message, transaction_id, challenge_info = \
                 token_obj.create_challenge(
                     transactionid=transaction_id, options=options)
             # Add the reply to the response
             message_list.append(message)
             if r_chal:
-                challenge_info = {}
+                challenge_info = challenge_info or {}
                 challenge_info["transaction_id"] = transaction_id
-                challenge_info["attributes"] = attributes
-                if attributes:
-                    challenge_info["image"] = attributes.get("img")
                 challenge_info["serial"] = token_obj.token.serial
                 challenge_info["type"] = token_obj.get_tokentype()
                 challenge_info["client_mode"] = token_obj.client_mode
@@ -2114,6 +2111,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                     challenge_info["password_change"] = \
                         token_obj.is_pin_change(
                             password=True)
+                # FIXME: This is deprecated and should be remove one day
                 reply_dict.update(challenge_info)
                 reply_dict["multi_challenge"].append(challenge_info)
     if message_list:

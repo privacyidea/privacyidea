@@ -188,7 +188,7 @@ class IndexedSecretTokenClass(TokenClass):
         The return tuple builds up like this:
         ``bool`` if submit was successful;
         ``message`` which is displayed in the JSON response;
-        additional ``attributes``, which are displayed in the JSON response.
+        additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
         return_message = get_action_values_from_options(SCOPE.AUTH,
@@ -231,8 +231,9 @@ class IndexedSecretTokenClass(TokenClass):
         expiry_date = datetime.datetime.now() + \
                                     datetime.timedelta(seconds=validity)
         attributes['valid_until'] = "{0!s}".format(expiry_date)
+        reply_dict = {"attributes": attributes}
 
-        return True, return_message, transactionid, attributes
+        return True, return_message, transactionid, reply_dict
 
     @check_token_locked
     def check_challenge_response(self, user=None, passw=None, options=None):

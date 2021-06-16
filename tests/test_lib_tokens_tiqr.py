@@ -428,8 +428,9 @@ class TiQRTokenTestCase(MyApiTestCase):
         r = token.create_challenge()
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], _("Please scan the QR Code"))
-        self.assertTrue("img" in r[3], r[3])
-        self.assertTrue("value" in r[3], r[3])
+        self.assertTrue("img" in r[3]["attributes"], r[3])
+        self.assertTrue("image" in r[3], r[3])
+        self.assertTrue("value" in r[3]["attributes"], r[3])
 
     def _test_api_endpoint(self, user, expected_netloc):
         pin = "tiqr"

@@ -268,7 +268,7 @@ class EmailTokenClass(HotpTokenClass):
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
                                                                              ACTION.CHALLENGETEXT),
                                                         options) or _("Enter the OTP from the Email:")
-        attributes = {'state': transactionid}
+        attributes = {'attributes': {'state': transactionid}}
         validity = int(get_from_config("email.validtime", 120))
 
         if self.is_active() is True:
@@ -314,7 +314,7 @@ class EmailTokenClass(HotpTokenClass):
 
         expiry_date = datetime.datetime.now() + \
                                     datetime.timedelta(seconds=validity)
-        attributes['valid_until'] = "{0!s}".format(expiry_date)
+        attributes['attributes']['valid_until'] = "{0!s}".format(expiry_date)
 
         return success, return_message, transactionid, attributes
 

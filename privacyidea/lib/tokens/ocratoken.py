@@ -184,13 +184,13 @@ class OcraTokenClass(TokenClass):
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
         :type options: dict
-        :return: tuple of (bool, message, transactionid, attributes)
+        :return: tuple of (bool, message, transactionid, reply_dict)
         :rtype: tuple
 
         The return tuple builds up like this:
         ``bool`` if submit was successful;
         ``message`` which is displayed in the JSON response;
-        additional ``attributes``, which are displayed in the JSON response.
+        additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
         message = 'Please answer the challenge'
@@ -238,8 +238,9 @@ class OcraTokenClass(TokenClass):
         db_challenge.save()
 
         attributes["challenge"] = challenge
+        reply_dict = {"attributes": attributes}
 
-        return True, message, db_challenge.transaction_id, attributes
+        return True, message, db_challenge.transaction_id, reply_dict
 
     def verify_response(self, passw=None, challenge=None):
         """

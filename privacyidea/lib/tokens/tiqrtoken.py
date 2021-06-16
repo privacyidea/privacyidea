@@ -385,13 +385,13 @@ class TiqrTokenClass(OcraTokenClass):
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
         :type options: dict
-        :return: tuple of (bool, message, transactionid, attributes)
+        :return: tuple of (bool, message, transactionid, reply_dict)
         :rtype: tuple
 
         The return tuple builds up like this:
         ``bool`` if submit was successful;
         ``message`` which is displayed in the JSON response;
-        additional ``attributes``, which are displayed in the JSON response.
+        additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
         message = _('Please scan the QR Code')
@@ -434,12 +434,15 @@ class TiqrTokenClass(OcraTokenClass):
                                               challenge,
                                               service_displayname
                                               )
-        attributes = {"img": create_img(authurl, width=250),
+        image = create_img(authurl, width=250)
+        attributes = {"img": image,
                       "value": authurl,
                       "poll": self.client_mode == CLIENTMODE.POLL,
                       "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE}
+        reply_dict = {"attributes": attributes,
+                      "image": image}
 
-        return True, message, db_challenge.transaction_id, attributes
+        return True, message, db_challenge.transaction_id, reply_dict
 
     @check_token_locked
     def check_challenge_response(self, user=None, passw=None, options=None):
