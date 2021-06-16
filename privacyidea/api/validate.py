@@ -303,11 +303,13 @@ def check():
                 "multi_challenge: [ {"serial": "PIEM0000AB00",
                                      "transaction_id":  "12345678901234567890",
                                      "message": "Please enter otp from your
-                                     email"},
+                                     email",
+                                     "client_mode": "interactive"},
                                     {"serial": "PISM12345678",
                                      "transaction_id": "12345678901234567890",
                                      "message": "Please enter otp from your
-                                     SMS"}
+                                     SMS",
+                                     "client_mode": "interactive"}
                 ]
               },
               "id": 1,
@@ -322,6 +324,11 @@ def check():
     In this example two challenges are triggered, one with an email and one
     with an SMS. The application and thus the user has to decide, which one
     to use. They can use either.
+
+    The challenges also contain the information of the "client_mode". This
+    tells the plugin, whether it should display an input field to ask for the
+    OTP value or e.g. to poll for an answered authentication.
+    Read more at :ref:`client_modes`.
 
     .. note:: All challenge response tokens have the same transaction_id in
        this case.
