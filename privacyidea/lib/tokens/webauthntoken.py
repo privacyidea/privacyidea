@@ -1116,7 +1116,7 @@ class WebAuthnTokenClass(TokenClass):
 
         response_details = {
             "webAuthnSignRequest": public_key_credential_request_options,
-            "hideResponseInput": True,
+            "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
             "img": user.icon_url
         }
 

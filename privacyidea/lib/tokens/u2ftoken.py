@@ -477,7 +477,7 @@ class U2fTokenClass(TokenClass):
 
         image_url = IMAGES.get(self.token.description.lower().split()[0], "")
         response_details = {"u2fSignRequest": u2f_sign_request,
-                            "hideResponseInput": True,
+                            "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
                             "img": image_url}
 
         return True, message, db_challenge.transaction_id, response_details

@@ -436,8 +436,8 @@ class TiqrTokenClass(OcraTokenClass):
                                               )
         attributes = {"img": create_img(authurl, width=250),
                       "value": authurl,
-                      "poll": True,
-                      "hideResponseInput": True}
+                      "poll": self.client_mode == CLIENTMODE.POLL,
+                      "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE}
 
         return True, message, db_challenge.transaction_id, attributes
 

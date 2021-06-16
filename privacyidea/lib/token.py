@@ -2094,6 +2094,8 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 challenge_info = {}
                 challenge_info["transaction_id"] = transaction_id
                 challenge_info["attributes"] = attributes
+                if attributes:
+                    challenge_info["image"] = attributes.get("img")
                 challenge_info["serial"] = token_obj.token.serial
                 challenge_info["type"] = token_obj.get_tokentype()
                 challenge_info["client_mode"] = token_obj.client_mode
