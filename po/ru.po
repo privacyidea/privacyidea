@@ -1,10 +1,11 @@
 # Konstantin Burov <sad.2.shade@gmail.com>, 2024.
+# yumpo55 <egor.alin@yandex.com>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Konstantin Burov <sad.2.shade@gmail.com>\n"
+"Last-Translator: yumpo55 <egor.alin@yandex.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/ru/>\n"
 "Language: ru\n"
