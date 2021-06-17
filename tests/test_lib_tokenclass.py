@@ -798,6 +798,13 @@ class TokenBaseTestCase(MyTestCase):
         r = token_obj.check_last_auth_newer("10h")
         self.assertFalse(r)
         r = token_obj.check_last_auth_newer("2d")
+        self.assertTrue(r)
+
+        # Test a fault last_auth entry does not computer to True
+        token_obj.add_tokeninfo(ACTION.LASTAUTH, "faulty format")
+        r = token_obj.check_last_auth_newer("10h")
+        self.assertFalse(r)
+
         token_obj.delete_token()
 
     def test_39_generate_sym_key(self):
