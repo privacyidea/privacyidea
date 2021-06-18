@@ -1,9 +1,16 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
+"PO-Revision-Date: 2021-06-18 11:15+0000\n"
+"Last-Translator: yumpo55 <egor.alin@yandex.com>\n"
+"Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-server/ru/>\n"
 "Language: ru\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 4.7\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -144,22 +151,22 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:36
 msgid "A token specific SMS gateway"
-msgstr ""
+msgstr "СМС шлюз для Токена"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
 #: privacyidea/static/components/config/views/config.token.yubikey.html:20
 #: privacyidea/static/components/config/views/config.token.yubikey.html:43
 msgid "API Key"
-msgstr ""
+msgstr "Ключ API"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:16
 msgid "API client ID"
-msgstr ""
+msgstr "ID клиента API"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
-msgstr ""
+msgstr "О веб-клиенте privacyIDEA"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:106
 msgid ""
@@ -177,7 +184,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.list.html:19
 #: privacyidea/static/components/dashboard/views/dashboard.html:66
 msgid "Action"
-msgstr ""
+msgstr "Действие"
 
 #: privacyidea/static/components/config/views/config.events.list.html:9
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:6
@@ -186,118 +193,118 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:23
 #: privacyidea/static/components/user/views/user.details.html:83
 msgid "Active"
-msgstr ""
+msgstr "Активировать"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:128
 msgid "Active Events"
-msgstr ""
+msgstr "Активные события"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:92
 msgid "Active Policies"
-msgstr ""
+msgstr "Активные политики"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:74
 msgid "Add a condition"
-msgstr ""
+msgstr "Добавить условие"
 
 #: privacyidea/static/components/user/views/user.add.html:3
 msgid "Add a new user"
-msgstr ""
+msgstr "Добавить нового пользователя"
 
 #: privacyidea/static/components/config/views/config.token.question.html:56
 msgid "Add new question"
-msgstr ""
+msgstr "Добавить новый вопрос"
 
 #: privacyidea/static/components/user/views/user.html:40
 msgid "Add user"
-msgstr ""
+msgstr "Добавить пользователя"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:260
 msgid "Additional conditions"
-msgstr ""
+msgstr "Дополнительные условия"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:156
 msgid "Admin"
-msgstr ""
+msgstr "Администратор"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:140
 msgid "Admin-Realm"
-msgstr ""
+msgstr "Область управления"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:59
 msgid "Administration"
-msgstr ""
+msgstr "Управление"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:65
 msgid "Administrator"
-msgstr ""
+msgstr "Администратор"
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:8
 msgid "All CA Connectors"
-msgstr ""
+msgstr "Все CA коннекторы"
 
 #: privacyidea/static/components/config/views/config.events.html:8
 msgid "All Event Handlers"
-msgstr ""
+msgstr "Все Обработчики Событий"
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:7
 msgid "All Machine Resolvers"
-msgstr ""
+msgstr "Все Резолверы Компьютеров"
 
 #: privacyidea/static/components/machine/views/machine.html:8
 msgid "All Machines"
-msgstr ""
+msgstr "Все Компьютеры"
 
 #: privacyidea/static/components/config/views/config.periodictasks.html:8
 msgid "All Periodic Tasks"
-msgstr ""
+msgstr "Все Периодические Задачи"
 
 #: privacyidea/static/components/config/views/config.policies.html:8
 msgid "All Policies"
-msgstr ""
+msgstr "Все Политики"
 
 #: privacyidea/static/components/config/views/config.realms.html:7
 msgid "All Realms"
-msgstr ""
+msgstr "Все Области"
 
 #: privacyidea/static/components/config/views/config.resolvers.html:7
 msgid "All Resolvers"
-msgstr ""
+msgstr "Все Резолверы"
 
 #: privacyidea/static/components/config/views/config.smsgateway.html:7
 msgid "All SMS Gateways"
-msgstr ""
+msgstr "Все СМС Шлюзы"
 
 #: privacyidea/static/components/token/views/token.html:11
 msgid "All tokens"
-msgstr ""
+msgstr "Все Токены"
 
 #: privacyidea/static/components/user/views/user.html:19
 msgid "All users"
-msgstr ""
+msgstr "Все пользователи"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:163
 msgid "An Attribute or the DN to identify the machine"
-msgstr ""
+msgstr "Атрибут или LDAP DN для идентификации компьютера"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:197
 msgid "An Attribute that contains the IP address."
-msgstr ""
+msgstr "Атрибут содержащий IP адрес."
 
 #: privacyidea/static/components/recovery/controllers/recoveryControllers.js:19
 msgid "An Email to reset the password has been sent to you."
-msgstr ""
+msgstr "Адрес Электронной почты, для сброса пароля."
 
 #: privacyidea/static/components/machine/views/machine.details.html:127
 #: privacyidea/static/components/machine/views/machine.details.html:51
 #: privacyidea/static/components/token/views/token.details.html:522
 #: privacyidea/static/components/token/views/token.details.html:608
 msgid "Application"
-msgstr ""
+msgstr "Приложение"
 
 #: privacyidea/static/components/components/views/component.clienttype.html:7
 msgid "Application Type"
-msgstr ""
+msgstr "Тип приложения"
 
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
@@ -453,19 +460,19 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.getserial.html:83
 #: privacyidea/static/components/user/views/user.details.html:56
 msgid "Cancel"
-msgstr ""
+msgstr "Отмена"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:45
 msgid "Certificate (PEM)"
-msgstr ""
+msgstr "Сертификат (PEM)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:107
 msgid "Certificate Directory"
-msgstr ""
+msgstr "Каталог Сертификатов"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:123
 msgid "Certificate Revocation List"
-msgstr ""
+msgstr "Лист отозванных Сертификатов"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:94
 msgid ""
@@ -475,15 +482,15 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:56
 msgid "Certificate Signing Request (PEM)"
-msgstr ""
+msgstr "CSR Сертификата (PEM)"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:33
 msgid "Certificate Template"
-msgstr ""
+msgstr "Шаблон Сертификата"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:235
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr ""
+msgstr "Сертификат: Выпустить Сертификат x.509."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:69
 msgid "Certificates Templates file"
