@@ -514,7 +514,7 @@ The default is to ``allow`` polling
 
 .. _policy_challenge_text:
 
-challenge_text, challenge_text_header, challenge_test_footer
+challenge_text, challenge_text_header, challenge_text_footer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: Challenge Text Policy
