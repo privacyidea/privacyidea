@@ -267,13 +267,13 @@ class UserNotificationEventHandler(BaseEventHandler):
             reply_to = tokenowner.info.get("email")
 
         elif reply_to_type == NOTIFY_TYPE.INTERNAL_ADMIN:
-            username = handler_options.get("reply_to "+NOTIFY_TYPE.INTERNAL_ADMIN)
+            username = handler_options.get("reply_to " + NOTIFY_TYPE.INTERNAL_ADMIN)
             internal_admin = get_db_admin(username)
             reply_to = internal_admin.email if internal_admin else ""
 
         elif reply_to_type == NOTIFY_TYPE.ADMIN_REALM:
             # Adds all email addresses from a specific admin realm to the reply-to-header
-            admin_realm = handler_options.get("reply_to "+NOTIFY_TYPE.ADMIN_REALM)
+            admin_realm = handler_options.get("reply_to " + NOTIFY_TYPE.ADMIN_REALM)
             attr = is_attribute_at_all()
             ulist = get_user_list({"realm": admin_realm}, custom_attributes=attr)
             # create a list of all user-emails, if the user has an email
@@ -297,7 +297,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                     reply_to = user_obj.info.get("email") if user_obj else ""
 
         elif reply_to_type == NOTIFY_TYPE.EMAIL:
-            email = handler_options.get("reply_to "+NOTIFY_TYPE.EMAIL, "").split(",")
+            email = handler_options.get("reply_to " + NOTIFY_TYPE.EMAIL, "").split(",")
             reply_to = email[0]
 
         else:
