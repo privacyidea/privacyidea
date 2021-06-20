@@ -62,7 +62,7 @@ install_requires = ["beautifulsoup4[lxml]>=4.3.2",
                     "qrcode>=6.1",
                     "requests>=2.7.0",
                     "smpplib>=2.0",
-                    "SQLAlchemy>=1.3.0",
+                    "SQLAlchemy>=1.3.0,<1.4",
                     "sqlsoup>=0.9.0"]
 
 
