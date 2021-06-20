@@ -51,6 +51,7 @@ from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    unassign_token, import_token,
                                    get_tokens_paginated_generator)
+from privacyidea.models import Token
 from privacyidea.app import create_app
 from flask_script import Manager
 import re
@@ -253,7 +254,8 @@ def build_tokenvalue_filter(key,
 
 
 def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
-                   tokeninfo_value_filter, orphaned, tokentype, serial, description, chunksize):
+                   tokeninfo_value_filter, tokenattribute, tokenattribute_filter,
+                   orphaned, tokentype, serial, description, chunksize):
     filter_active = None
     filter_assigned = None
 
@@ -297,6 +299,12 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
                 # => at least one user-supplied criterion does not match
                 # => the token object does not match the user-supplied criteria
                 if not all(comparator(value) for comparator in tokeninfo_value_filter):
+                    continue
+            if tokenattribute_filter and tokenattribute:
+                value = token_obj.token.get(tokenattribute)
+                if value is None:
+                    continue
+                if not all(comparator(value) for comparator in tokenattribute_filter):
                     continue
             if orphaned and not token_obj.is_orphaned():
                 continue
@@ -424,6 +432,13 @@ def export_user_data(token_list, attributes=None):
 @manager.option('--attributes', help='Extends the "listuser" function to display additional user attributes')
 @manager.option('--tokenrealms', help='A comma separated list of realms, to which the tokens '
                                       'should be assigned.')
+@manager.option('--tokenattribute', help='Match for a certain token attribute from the database.')
+@manager.option('--tokenattribute-value-less-than', metavar='INTEGER',
+                help="Match if the value of the token attribute is less than the given value.")
+@manager.option('--tokenattribute-value-greater-than', metavar='INTEGER',
+                help="Match if the value of the token attribute is greater than the given value.")
+@manager.option('--tokenattribute-value', metavar='REGEX',
+                help='The value of the token attribute which should match.')
 @manager.option('--csv', dest='csv', action='store_true',
                 help='In case of a simple find, the output is written as CSV instead of the '
                      'formatted output.')
@@ -436,10 +451,18 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
          tokeninfo_value_after, tokeninfo_value_before,
          orphaned, tokentype, serial, description, action, set_description,
          set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv,
-         chunksize, attributes, b32):
+         chunksize, attributes, b32,
+         tokenattribute, tokenattribute_value, tokenattribute_value_greater_than,
+         tokenattribute_value_less_than):
     """
     finds all tokens which match the conditions
     """
+    tokenattributes = [col.key for col in Token.__table__.columns]
+    if tokenattribute and tokenattribute not in tokenattributes:
+        sys.stderr.write("Unknown token attribute. Allowed attributes are {0!s}\n".format(
+            ", ".join(tokenattributes)
+        ))
+        sys.exit(1)
     if action and action not in ALLOWED_ACTIONS:
         sys.stderr.write("Unknown action. Allowed actions are {0!s}\n".format(
             ", ".join(["'{0!s}'".format(x) for x in ALLOWED_ACTIONS])
@@ -447,14 +470,23 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
         sys.exit(1)
     if chunksize is not None:
         chunksize = int(chunksize)
+    # filter for tokeninfo values
     tvfilter = build_tokenvalue_filter(tokeninfo_key,
                                        tokeninfo_value,
                                        tokeninfo_value_greater_than,
                                        tokeninfo_value_less_than,
                                        tokeninfo_value_after,
                                        tokeninfo_value_before)
-    generator = _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
-                               tvfilter, orphaned, tokentype, serial,
+    # filter for token attribute
+    tafilter = build_tokenvalue_filter(tokenattribute,
+                                       tokenattribute_value,
+                                       tokenattribute_value_greater_than,
+                                       tokenattribute_value_less_than,
+                                       None, None)
+    generator = _get_tokenlist(last_auth, assigned, active,
+                               tokeninfo_key, tvfilter,
+                               tokenattribute, tafilter,
+                               orphaned, tokentype, serial,
                                description, chunksize)
     if chunksize is not None:
         sys.stderr.write("+ Reading tokens from database in chunks of {}...\n".format(chunksize))
