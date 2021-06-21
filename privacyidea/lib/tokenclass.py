@@ -134,7 +134,7 @@ class TOKENMODE(object):
 
 class ROLLOUTSTATE(object):
     CLIENTWAIT = 'clientwait'
-    PENDING = 'pending' # TODO: to be used, if the server needs to take action
+    PENDING = 'pending'  # TODO: to be used, if the server needs to take action
 
 
 class TokenClass(object):

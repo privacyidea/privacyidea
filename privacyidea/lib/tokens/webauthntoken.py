@@ -797,13 +797,16 @@ class WebAuthnTokenClass(TokenClass):
         transaction_id = getParam(param, "transaction_id", optional)
         reg_data = getParam(param, "regdata", optional)
         client_data = getParam(param, "clientdata", optional)
+        automatic_description = DEFAULT_DESCRIPTION
 
         if not (reg_data and client_data):
             self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+            # Set the description in the first enrollment step
+            if "description" in param:
+                self.set_description(getParam(param, "description", default=""))
         elif reg_data and client_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             serial = self.token.serial
             registration_client_extensions = getParam(param, "registrationclientextensions", optional)
-            description = getParam(param, "description", optional)
 
             rp_id = getParam(param, WEBAUTHNACTION.RELYING_PARTY_ID, required)
             uv_req = getParam(param, WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT, optional)
@@ -881,11 +884,13 @@ class WebAuthnTokenClass(TokenClass):
                 self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_SERIAL,
                                    attestation_cert.get_serial_number())
 
-                if not description:
-                    cn = web_authn_credential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
-                    description = cn[0].value if len(cn) else None
+                cn = web_authn_credential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+                automatic_description = cn[0].value if len(cn) else None
 
-            self.set_description(description or DEFAULT_DESCRIPTION)
+            # If no description has already been set, set the automatic description or the
+            # description given in the 2nd request
+            if not self.token.description:
+                self.set_description(getParam(param, "description", default=automatic_description))
 
             # Delete all challenges. We are still in enrollment, so there
             # *should* be only one, but it can't hurt to be thorough here.

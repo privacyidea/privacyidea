@@ -322,14 +322,17 @@ class U2fTokenClass(TokenClass):
         :return: None
         """
         TokenClass.update(self, param)
-        description = "U2F initialization"
+        automatic_description = "U2F initialization"
         reg_data = getParam(param, "regdata")
         verify_cert = is_true(getParam(param, "u2f.verify_cert", default=True))
         if not reg_data:
             self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+            # Set the description in the first enrollment step
+            if "description" in param:
+                self.set_description(getParam(param, "description", default=""))
         elif reg_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             attestation_cert, user_pub_key, key_handle, \
-                signature, description = parse_registration_data(reg_data,
+                signature, automatic_description = parse_registration_data(reg_data,
                                                                  verify_cert=verify_cert)
             client_data = getParam(param, "clientdata", required)
             client_data_str = url_decode(client_data)
@@ -350,12 +353,12 @@ class U2fTokenClass(TokenClass):
             self.add_tokeninfo("attestation_subject", subject)
             # Reset rollout state
             self.token.rollout_state = ""
+            # If no description has already been set, set the automatic description or the
+            # description given in the 2nd request
+            if not self.token.description:
+                self.set_description(getParam(param, "description", default=automatic_description))
         else:
             raise ParameterError("regdata provided but token not in clientwait rollout_state.")
-
-        # If a description is given we use the given description
-        description = getParam(param, "description", default=description)
-        self.set_description(description)
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
