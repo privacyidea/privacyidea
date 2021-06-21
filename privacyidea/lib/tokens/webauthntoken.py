@@ -33,7 +33,7 @@ from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError, RegistrationError, PolicyError
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
                                              ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
@@ -747,7 +747,6 @@ class WebAuthnTokenClass(TokenClass):
         TokenClass.__init__(self, db_token)
         self.set_type(self.get_class_type())
         self.hKeyRequired = False
-        self.init_step = 1
 
     def _get_message(self, options):
         challengetext = getParam(options, "{0!s}_{1!s}".format(self.get_class_type(), ACTION.CHALLENGETEXT), optional)
@@ -758,7 +757,7 @@ class WebAuthnTokenClass(TokenClass):
             user_id=self.token.serial,
             user_name=user.login,
             user_display_name=str(user),
-            icon_url=IMAGES.get(self.token.description.lower().split()[0], ""),
+            icon_url=IMAGES.get(self.token.description.lower().split()[0], "") if self.token.description else "",
             credential_id=self.decrypt_otpkey(),
             public_key=webauthn_b64_encode(binascii.unhexlify(self.get_tokeninfo(WEBAUTHNINFO.PUB_KEY))),
             sign_count=self.get_otp_count(),
@@ -799,9 +798,9 @@ class WebAuthnTokenClass(TokenClass):
         reg_data = getParam(param, "regdata", optional)
         client_data = getParam(param, "clientdata", optional)
 
-        if reg_data and client_data:
-            self.init_step = 2
-
+        if not (reg_data and client_data):
+            self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+        elif reg_data and client_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             serial = self.token.serial
             registration_client_extensions = getParam(param, "registrationclientextensions", optional)
             description = getParam(param, "description", optional)
@@ -893,8 +892,10 @@ class WebAuthnTokenClass(TokenClass):
             for challengeobject in challengeobject_list:
                 challengeobject.delete()
             self.challenge_janitor()
+            # Reset clientwait rollout_state
+            self.token.rollout_state = ""
         else:
-            self.set_description("WebAuthn initialization")
+            raise ParameterError("regdata and or clientdata provided but token not in clientwait rollout_state.")
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
@@ -914,8 +915,8 @@ class WebAuthnTokenClass(TokenClass):
         :return: The response detail returned to the client.
         :rtype: dict
         """
-
-        if self.init_step == 1:
+        # get_init_details runs after "update" method. So in the first step clientwait has already been set
+        if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             response_detail = TokenClass.get_init_detail(self, params, user)
 
             if not params:
@@ -997,7 +998,7 @@ class WebAuthnTokenClass(TokenClass):
             self.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_NAME,
                                public_key_credential_creation_options["rp"]["name"])
 
-        elif self.init_step == 2:
+        elif self.token.rollout_state == "":
             # This is the second step of the init request. The registration
             # ceremony has been successfully performed.
             response_detail = {

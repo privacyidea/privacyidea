@@ -29,7 +29,7 @@
 #
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.log import log_with
 import logging
@@ -312,7 +312,6 @@ class U2fTokenClass(TokenClass):
         TokenClass.__init__(self, db_token)
         self.set_type(u"u2f")
         self.hKeyRequired = False
-        self.init_step = 1
 
     def update(self, param, reset_failcount=True):
         """
@@ -326,8 +325,9 @@ class U2fTokenClass(TokenClass):
         description = "U2F initialization"
         reg_data = getParam(param, "regdata")
         verify_cert = is_true(getParam(param, "u2f.verify_cert", default=True))
-        if reg_data:
-            self.init_step = 2
+        if not reg_data:
+            self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+        elif reg_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             attestation_cert, user_pub_key, key_handle, \
                 signature, description = parse_registration_data(reg_data,
                                                                  verify_cert=verify_cert)
@@ -348,6 +348,10 @@ class U2fTokenClass(TokenClass):
             self.add_tokeninfo("attestation_issuer", issuer)
             self.add_tokeninfo("attestation_serial", serial)
             self.add_tokeninfo("attestation_subject", subject)
+            # Reset rollout state
+            self.token.rollout_state = ""
+        else:
+            raise ParameterError("regdata provided but token not in clientwait rollout_state.")
 
         # If a description is given we use the given description
         description = getParam(param, "description", default=description)
@@ -359,7 +363,8 @@ class U2fTokenClass(TokenClass):
         At the end of the initialization we ask the user to press the button
         """
         response_detail = {}
-        if self.init_step == 1:
+        # get_init_details runs after "update" method. So in the first step clientwait has already been set
+        if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             # This is the first step of the init request
             app_id = get_from_config("u2f.appId", "").strip("/")
             from privacyidea.lib.error import TokenAdminError
@@ -374,8 +379,8 @@ class U2fTokenClass(TokenClass):
             response_detail["u2fRegisterRequest"] = register_request
             self.add_tokeninfo("appId", app_id)
 
-        elif self.init_step == 2:
-            # This is the second step of the init request
+        elif self.token.rollout_state == "":
+            # This is the second step of the init request, the clientwait rollout state has been reset
             response_detail["u2fRegisterResponse"] = {"subject":
                                                           self.token.description}
 

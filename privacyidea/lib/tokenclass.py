@@ -132,6 +132,11 @@ class TOKENMODE(object):
     OUTOFBAND = 'outofband'
 
 
+class ROLLOUTSTATE(object):
+    CLIENTWAIT = 'clientwait'
+    PENDING = 'pending' # TODO: to be used, if the server needs to take action
+
+
 class TokenClass(object):
 
     # Class properties
@@ -517,7 +522,7 @@ class TokenClass(object):
             otpKey = self.decode_otpkey(otpKey, otpkeyformat)
 
         if twostep_init:
-            if self.token.rollout_state == "clientwait":
+            if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
                 # We do not do 2stepinit in the second step
                 raise ParameterError("2stepinit is only to be used in the "
                                      "first initialization step.")
@@ -543,7 +548,7 @@ class TokenClass(object):
             otpKey = getParam(param, "otpkey", required)
 
         if otpKey is not None:
-            if self.token.rollout_state == "clientwait":
+            if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
                 # If we have otpkey and the token is in the enrollment-state
                 # generate the new key
                 server_component = to_unicode(self.token.get_otpkey().getKey())
@@ -558,7 +563,7 @@ class TokenClass(object):
 
         if twostep_init:
             # After the key is generated, we set "waiting for the client".
-            self.token.rollout_state = "clientwait"
+            self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
 
         pin = getParam(param, "pin", optional)
         if pin is not None:

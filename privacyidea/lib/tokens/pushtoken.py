@@ -46,7 +46,7 @@ from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 
-from privacyidea.lib.tokenclass import TokenClass, TOKENMODE
+from privacyidea.lib.tokenclass import TokenClass, TOKENMODE, ROLLOUTSTATE
 from privacyidea.models import Challenge, db
 from privacyidea.lib.decorators import check_token_locked
 import logging
@@ -411,7 +411,7 @@ class PushTokenClass(TokenClass):
 
         if "serial" in upd_param and "fbtoken" in upd_param and "pubkey" in upd_param:
             # We are in step 2:
-            if self.token.rollout_state != "clientwait":
+            if self.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
                 raise ParameterError("Invalid state! The token you want to enroll is not in the state 'clientwait'.")
             enrollment_credential = getParam(upd_param, "enrollment_credential", optional=False)
             if enrollment_credential != self.get_tokeninfo("enrollment_credential"):
@@ -459,7 +459,7 @@ class PushTokenClass(TokenClass):
         imageurl = params.get("appimageurl")
         if imageurl:
             extra_data.update({"image": imageurl})
-        if self.token.rollout_state == "clientwait":
+        if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             # Get enrollment values from the policy
             registration_url = getParam(params, PUSH_ACTION.REGISTRATION_URL, optional=False)
             ttl = getParam(params, PUSH_ACTION.TTL, default="10")
@@ -551,7 +551,7 @@ class PushTokenClass(TokenClass):
             try:
                 token_obj = get_one_token(serial=serial,
                                           tokentype="push",
-                                          rollout_state="clientwait")
+                                          rollout_state=ROLLOUTSTATE.CLIENTWAIT)
                 token_obj.update(request_data)
             except ResourceNotFoundError:
                 raise ResourceNotFoundError("No token with this serial number "
