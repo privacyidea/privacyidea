@@ -2,6 +2,7 @@
 
 import unittest
 import mock
+from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
@@ -172,8 +173,9 @@ class MyTestCase(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         call_finalizers()
-        db.session.remove()
+        close_all_sessions()
         db.drop_all()
+        db.engine.dispose()
         cls.app_context.pop()
 
     def authenticate(self):

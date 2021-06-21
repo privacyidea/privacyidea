@@ -11,6 +11,7 @@ jobs:
       - run: git submodule sync
       - run: git submodule update --init
       - run: mkdir -p test-results/generic
+      - run: pip install -U pip
       # We do not want any caching (always the latest packages) therefore we
       # install the packages directly (not using the python orb)
       - run: pip install pytest pytest-cov mock responses testfixtures
@@ -43,6 +44,7 @@ jobs:
       - run: git submodule update --init
       - restore_cache:
           key: v1-deps-{{ checksum "requirements.txt" }}
+      - run: pip install -U pip
       - run: pip install -r tests/requirements.txt
       - run: mkdir -p test-results/mysql
       - run:
