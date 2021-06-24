@@ -58,7 +58,7 @@ from .lib.log import log_with
 from privacyidea.lib.utils import (is_true, convert_column_to_unicode,
                                    hexlify_and_unicode)
 from privacyidea.lib.crypto import pass_hash, verify_pass_hash
-
+from privacyidea.lib.framework import get_app_config_value
 
 log = logging.getLogger(__name__)
 
@@ -70,6 +70,7 @@ log = logging.getLogger(__name__)
 
 implicit_returning = True
 PRIVACYIDEA_TIMESTAMP = "__timestamp__"
+SAFE_STORE = "PI_DB_SAFE_STORE"
 
 db = SQLAlchemy()
 
@@ -680,21 +681,24 @@ class TokenInfo(MethodsMixin, db.Model):
         self.Description = Description
 
     def save(self, persistent=True):
-        ti = TokenInfo.query.filter_by(token_id=self.token_id,
-                                           Key=self.Key).first()
+        ti_func = TokenInfo.query.filter_by(token_id=self.token_id,
+                                            Key=self.Key).first
+        ti = ti_func()
         if ti is None:
             # create a new one
             db.session.add(self)
             db.session.commit()
-            ret = self.id
+            if get_app_config_value(SAFE_STORE, False):
+                ti = ti_func()
+                ret = ti.id
+            else:
+                ret = self.id
         else:
             # update
             TokenInfo.query.filter_by(token_id=self.token_id,
-                                           Key=self.Key
-                                           ).update({'Value': self.Value,
-                                                     'Descrip'
-                                                     'tion': self.Description,
-                                                     'Type': self.Type})
+                                      Key=self.Key).update({'Value': self.Value,
+                                                            'Description': self.Description,
+                                                            'Type': self.Type})
             ret = ti.id
         if persistent:
             db.session.commit()
@@ -1166,15 +1170,20 @@ class TokenOwner(MethodsMixin, db.Model):
         self. user_id = user_id
 
     def save(self, persistent=True):
-        to = TokenOwner.query.filter_by(token_id=self.token_id,
-                                        user_id=self.user_id,
-                                        realm_id=self.realm_id,
-                                        resolver=self.resolver).first()
+        to_func = TokenOwner.query.filter_by(token_id=self.token_id,
+                                             user_id=self.user_id,
+                                             realm_id=self.realm_id,
+                                             resolver=self.resolver).first
+        to = to_func()
         if to is None:
             # This very assignment does not exist, yet:
             db.session.add(self)
             db.session.commit()
-            ret = self.id
+            if get_app_config_value(SAFE_STORE, False):
+                to = to_func()
+                ret = to.id
+            else:
+                ret = self.id
         else:
             ret = to.id
             # There is nothing to update
@@ -1228,14 +1237,20 @@ class TokenRealm(MethodsMixin, db.Model):
         """
         We only save this, if it does not exist, yet.
         """
-        tr = TokenRealm.query.filter_by(realm_id=self.realm_id,
-                                        token_id=self.token_id).first()
+        tr_func = TokenRealm.query.filter_by(realm_id=self.realm_id,
+                                             token_id=self.token_id).first
+        tr = tr_func()
         if tr is None:
             # create a new one
             db.session.add(self)
             db.session.commit()
-
-        ret = self.id
+            if get_app_config_value(SAFE_STORE, False):
+                tr = tr_func()
+                ret = tr.id
+            else:
+                ret = self.id
+        else:
+            ret = self.id
         return ret
 
 
@@ -3042,3 +3057,4 @@ class MonitoringStats(MethodsMixin, db.Model):
         self.stats_key = key
         self.stats_value = value
         #self.save()
+
