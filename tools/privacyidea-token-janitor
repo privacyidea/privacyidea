@@ -212,9 +212,15 @@ def _compare_before(key, given_value_string):
     return comparator
 
 
-def _compare_regex(_key, given_regex):
+def _compare_regex_or_equal(_key, given_regex):
     def comparator(value):
-        return re.search(given_regex, value)
+        if type(value) == int:
+            # If the value from the database is an integer, we compare "euqals integer"
+            given_value = _try_convert_to_integer(given_regex)
+            return given_value == value
+        else:
+            # if the value from the database is a string, we compare regex
+            return re.search(given_regex, value)
 
     return comparator
 
@@ -241,7 +247,7 @@ def build_tokenvalue_filter(key,
     """
     tvfilter = []
     if tokeninfo_value:
-        tvfilter.append(_compare_regex(key, tokeninfo_value))
+        tvfilter.append(_compare_regex_or_equal(key, tokeninfo_value))
     if tokeninfo_value_greater_than:
         tvfilter.append(_compare_greater_than(key, tokeninfo_value_greater_than))
     if tokeninfo_value_less_than:
@@ -437,7 +443,7 @@ def export_user_data(token_list, attributes=None):
                 help="Match if the value of the token attribute is less than the given value.")
 @manager.option('--tokenattribute-value-greater-than', metavar='INTEGER',
                 help="Match if the value of the token attribute is greater than the given value.")
-@manager.option('--tokenattribute-value', metavar='REGEX',
+@manager.option('--tokenattribute-value', metavar='REGEX|INTEGER',
                 help='The value of the token attribute which should match.')
 @manager.option('--csv', dest='csv', action='store_true',
                 help='In case of a simple find, the output is written as CSV instead of the '
