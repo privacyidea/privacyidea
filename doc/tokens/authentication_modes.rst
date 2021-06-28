@@ -14,10 +14,15 @@ separately, as the modes differ in their user experience. To help the plugins
 identify the flow, the JSON response of an authentication request
 contains additional information in the section
 
-    "detail": "multi_challenge": [
+.. code-block:: json
+
+    {
+      "detail": "multi_challenge": [
             {
                 "client_mode": "poll",
-            }]
+            }
+      ]
+    }
 
 The "client_mode" can be set to ``interactive``, ``poll``, ``webauthn`` or ``u2f``.
 
