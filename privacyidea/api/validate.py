@@ -312,7 +312,7 @@ def check():
                                      "client_mode": "interactive"}
                 ]
               },
-              "id": 1,
+              "id": 2,
               "jsonrpc": "2.0",
               "result": {
                 "status": true,
@@ -497,7 +497,7 @@ def trigger_challenge():
                     ],
                     "type": "hotp"
                },
-               "id": 1,
+               "id": 2,
                "jsonrpc": "2.0",
                "result": {
                    "status": true,
