@@ -135,7 +135,7 @@ class TOKENMODE(object):
 class CLIENTMODE(object):
     """
     This informs privacyIDEA clients how to
-    handle challege-responses
+    handle challenge-responses
     """
     INTERACTIVE = 'interactive'
     POLL = 'poll'
