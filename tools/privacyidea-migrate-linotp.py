@@ -241,7 +241,7 @@ def migrate(config_obj):
 
     resolver_config_table = Table("resolverconfig", metadata,
                                   Column("id", Integer,
-                                         Sequence('resolverconfig_seq'),
+                                         Sequence('resolverconf_seq'),
                                          primary_key=True),
                                   Column("resolver_id", Integer),
                                   Column("Key", Unicode(255), default=u""),
