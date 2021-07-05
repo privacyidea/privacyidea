@@ -37,6 +37,7 @@ import jwt
 import threading
 import six
 import re
+from six.moves.urllib.parse import unquote
 from flask import (jsonify,
                    current_app)
 
@@ -243,7 +244,7 @@ def get_all_params(param, body):
     """
     return_param = {}
     for key in param.keys():
-        return_param[key] = param[key]
+        return_param[key] = unquote(param[key])
 
     # In case of serialized JSON data in the body, add these to the values.
     try:
