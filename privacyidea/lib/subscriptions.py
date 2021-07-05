@@ -69,7 +69,8 @@ SIGN_FORMAT = u"""{application}
 APPLICATIONS = {"demo_application": 0,
                 "owncloud": 50,
                 "privacyidea-ldap-proxy": 50,
-                "privacyidea-cp": 0,
+                "privacyidea-cp": 50,
+                "privacyidea-adfs": 50,
                 "privacyidea": 50}
 
 log = logging.getLogger(__name__)
