@@ -1609,6 +1609,17 @@ class ValidateAPITestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("value"))
 
+        # Also test url-encoded parameters
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user":
+                                                    "cornelius%40"+self.realm2,
+                                                 "pass": serial2}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"))
+
         # The default behaviour - if the config entry does not exist,
         # is to split the @Sign
         delete_privacyidea_config("splitAtSign")
