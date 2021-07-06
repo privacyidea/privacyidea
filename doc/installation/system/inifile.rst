@@ -61,12 +61,13 @@ request being handled.
 
 If you set ``PI_DB_SAFE_STORE`` to *True* the database layer will in the cases
 of ``tokenowner``, ``tokeinfo`` and ``tokenrealm`` read the id of the newly created
-database object in an additional request and not return it directly.
+database object in an additional SELECT statement and not return it directly. This is
+slower but more robust and can be necessary in large redundant setups.
 
 .. Note:: In certain cases (e.g. with Galera Cluster) it can happen that the database
    node has no information about the object id directly during the write-process.
    The database might respond with an error like "object has been deleted or its
-   row is otherwise not present". In this case setting ``PI_DB_SAFE_STORE`  to *True*
+   row is otherwise not present". In this case setting ``PI_DB_SAFE_STORE``  to *True*
    might help.
 
 Logging
