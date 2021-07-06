@@ -8,26 +8,29 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2021-06-06 09:14+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2021-07-07 17:32+0000\n"
+"Last-Translator: ToldYouThat <itoldyouthat@protonmail.com>\n"
+"Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/tr/>\n"
 "Language: tr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.8-dev\n"
 "Generated-By: Babel 2.6.0\n"
 
 #: api/auth.py:222
 msgid "Authentication failure. Unknown realm: {0!s}."
-msgstr ""
+msgstr "Kimlik doğrulama hatası. Bilinmeyen bölge: {0!s}."
 
 #: api/auth.py:226
 msgid "Authentication failure. Missing Username"
-msgstr ""
+msgstr "Kimlik doğrulama hatası. Kullanıcı Adı Eksik"
 
 #: api/auth.py:336
 msgid "Authentication failure. Wrong credentials"
-msgstr ""
+msgstr "Kimlik doğrulama hatası. Yanlış kimlik bilgileri"
 
 #: api/lib/utils.py:289
 msgid "Authentication failure. Missing Authorization header."
