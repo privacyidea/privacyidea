@@ -46,7 +46,7 @@ from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 
-from privacyidea.lib.tokenclass import TokenClass, TOKENMODE, CLIENTMODE
+from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE, CLIENTMODE
 from privacyidea.models import Challenge, db
 from privacyidea.lib.decorators import check_token_locked
 import logging
@@ -256,7 +256,7 @@ class PushTokenClass(TokenClass):
     - https://github.com/privacyidea/privacyidea/issues/1342
     - https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken
     """
-    mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE, TOKENMODE.OUTOFBAND]
+    mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE, AUTHENTICATIONMODE.OUTOFBAND]
     client_mode = CLIENTMODE.POLL
     # A disabled PUSH token has to be removed from the list of checked tokens.
     check_if_disabled = False

@@ -125,7 +125,7 @@ class TOKENKIND(object):
     VIRTUAL = "virtual"
 
 
-class TOKENMODE(object):
+class AUTHENTICATIONMODE(object):
     AUTHENTICATE = 'authenticate'
     CHALLENGE = 'challenge'
     # If the challenge is answered out of band
@@ -148,7 +148,7 @@ class TokenClass(object):
     # Class properties
     using_pin = True
     hKeyRequired = False
-    mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE]
+    mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE]
     client_mode = CLIENTMODE.INTERACTIVE
     # Usually a token will be checked in the lib:check_token_list, even if it is disabled
     check_if_disabled = True
@@ -187,7 +187,7 @@ class TokenClass(object):
 
     @classmethod
     def is_outofband(cls):
-        return TOKENMODE.OUTOFBAND in cls.mode
+        return AUTHENTICATIONMODE.OUTOFBAND in cls.mode
 
     @staticmethod
     def get_class_type():
