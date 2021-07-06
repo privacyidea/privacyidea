@@ -322,7 +322,6 @@ class U2fTokenClass(TokenClass):
         :return: None
         """
         TokenClass.update(self, param)
-        automatic_description = "U2F initialization"
         reg_data = getParam(param, "regdata")
         verify_cert = is_true(getParam(param, "u2f.verify_cert", default=True))
         if not reg_data:
@@ -343,7 +342,7 @@ class U2fTokenClass(TokenClass):
                                     user_pub_key, key_handle, signature)
             self.set_otpkey(key_handle)
             self.add_tokeninfo("pubKey", user_pub_key)
-            # add attestation certificat info
+            # add attestation certificate info
             issuer = x509name_to_string(attestation_cert.get_issuer())
             serial = "{!s}".format(attestation_cert.get_serial_number())
             subject = x509name_to_string(attestation_cert.get_subject())
