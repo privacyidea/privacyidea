@@ -55,9 +55,23 @@ of an administrator.
 
 ``PI_INIT_CHECK_HOOK`` is a function in an external module, that will be
 called as decorator to ``token/init`` and ``token/assign``. This function
-takes the ``request`` and ``action`` (either "init" or "assing") as an
+takes the ``request`` and ``action`` (either "init" or "assign") as
 arguments and can modify the request or raise an exception to avoid the
 request being handled.
+
+If you set ``PI_DB_SAFE_STORE`` to *True* the database layer will in the cases
+of ``tokenowner``, ``tokeinfo`` and ``tokenrealm`` read the id of the newly created
+database object in an additional SELECT statement and not return it directly. This is
+slower but more robust and can be necessary in large redundant setups.
+
+.. Note:: In certain cases (e.g. with Galera Cluster) it can happen that the database
+   node has no information about the object id directly during the write-process.
+   The database might respond with an error like "object has been deleted or its
+   row is otherwise not present". In this case setting ``PI_DB_SAFE_STORE``  to *True*
+   might help.
+
+Logging
+-------
 
 There are three config entries, that can be used to define the logging. These
 are ``PI_LOGLEVEL``, ``PI_LOGFILE``, ``PI_LOGCONFIG``. These are described in
