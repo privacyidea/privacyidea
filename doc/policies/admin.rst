@@ -724,7 +724,7 @@ For allowing all values, the asterisk ("*") is used.
 Each key is enclosed in colons and followed by a list of values separated by whitespaces,
 thus values are not allowed to contain whitespaces.
 
-Example:
+Example::
 
     :department: sales finance :city: * :*: 1 2
 
