@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2021-06-06 09:14+0200\n"
-"PO-Revision-Date: 2021-07-07 17:32+0000\n"
+"PO-Revision-Date: 2021-07-07 19:02+0000\n"
 "Last-Translator: ToldYouThat <itoldyouthat@protonmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/tr/>\n"
@@ -34,15 +34,15 @@ msgstr "Kimlik doğrulama hatası. Yanlış kimlik bilgileri"
 
 #: api/lib/utils.py:289
 msgid "Authentication failure. Missing Authorization header."
-msgstr ""
+msgstr "Kimlik doğrulama hatası. Doğrulama bağlantısı eksik."
 
 #: api/lib/utils.py:317 api/lib/utils.py:327
 msgid "Authentication failure. Your token has expired: {0!s}"
-msgstr ""
+msgstr "Kimlik doğrulama hatası. Tokeninizin süresi doldu: {0!s}"
 
 #: api/lib/utils.py:324
 msgid "Authentication failure. Error during decoding your token: {0!s}"
-msgstr ""
+msgstr "Kimlik doğrulama hatası. Tokeniniz çözülürken hata oluştu. {0!s}"
 
 #: api/lib/utils.py:331
 msgid ""
