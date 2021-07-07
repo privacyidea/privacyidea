@@ -95,7 +95,7 @@ from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
                                     generate_otpkey)
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .decorators import check_token_locked
-from dateutil.parser import parse as parse_date_string
+from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
@@ -1659,7 +1659,10 @@ class TokenClass(object):
         than the specified time delta which is passed as 10h, 7d or 1y.
 
         It returns True, if the last authentication with this token is
-        **newer*** than the specified delta.
+        **newer** than the specified delta or by any chance exactly the same.
+
+        It returns False, if the last authentication is older or
+        if the data in the token can not be parsed.
 
         :param last_auth: 10h, 7d or 1y
         :type last_auth: basestring
@@ -1678,7 +1681,12 @@ class TokenClass(object):
                       "tdelta %s: %s" % (self.token.serial, tdelta,
                                          date_s))
             # parse the string from the database
-            last_success_auth = parse_date_string(date_s)
+            try:
+                last_success_auth = parse_date_string(date_s)
+            except ParserError:
+                log.info("Failed to parse the date in 'last_auth' of token {0!s}.".format(self.token.serial))
+                return False
+
             if not last_success_auth.tzinfo:
                 # the date string has no timezone, default timezone is UTC
                 # We need to set the timezone manually
