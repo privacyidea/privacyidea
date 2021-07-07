@@ -1659,9 +1659,10 @@ class TokenClass(object):
         than the specified time delta which is passed as 10h, 7d or 1y.
 
         It returns True, if the last authentication with this token is
-        **newer*** than the specified delta.
+        **newer** than the specified delta or by any chance exactly the same.
 
-        It returns False, if the data in the token can not be parsed
+        It returns False, if the last authentication is older or
+        if the data in the token can not be parsed.
 
         :param last_auth: 10h, 7d or 1y
         :type last_auth: basestring
