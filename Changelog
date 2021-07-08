@@ -1,3 +1,11 @@
+Version 3.6.1dev1, 2021-07-xx
+
+  Fixes:
+  * Remove importlib-metadata from doc requirements
+  * Add a safe_store feature #2794
+  * Decode URL parameters for forms #2800
+  * Prepare ADFS subscription #2801
+
 Version 3.6, 2021-06-07
 
   Features:
