@@ -1475,6 +1475,7 @@ class UserNotificationTestCase(MyTestCase):
         os.chmod("tests/testdata/testOATH123456.txt", 0o400)
         un_handler = UserNotificationEventHandler()
         # Check that an error is written to the logfile
+        # Note: this does not work when tests are run as root
         with mock.patch("logging.Logger.error") as mock_log:
             un_handler.do("savefile", options=options)
             call_args = mock_log.call_args
