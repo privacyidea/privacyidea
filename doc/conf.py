@@ -47,7 +47,6 @@ functools.wraps = no_op_wraps
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('..'))
-sys.path.append(os.path.abspath('_themes/flask-sphinx-themes'))
 sys.path.insert(0, os.path.abspath('../privacyidea'))
 
 # -- General configuration -----------------------------------------------------
@@ -64,7 +63,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.imgmath', 'sphinx.ext.viewcode',
 http_index_ignore_prefixes = ['/token']
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+#templates_path = ['_templates']
 
 # The suffix of source filenames.
 source_suffix = '.rst'
