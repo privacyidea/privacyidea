@@ -2104,3 +2104,24 @@ def required_piv_attestation(request, action=None):
         # Add parameter verify_attestation
         request.all_data["verify_attestation"] = REQUIRE_ACTIONS.VERIFY in list(require_att) or \
                                                  REQUIRE_ACTIONS.REQUIRE_AND_VERIFY in list(require_att)
+
+
+def check_excluded_tokeninfo_fields(request=None, action=None):
+    user_object = request.User
+    role = g.logged_in_user.get("role")
+    if role == ROLE.USER:
+        return True
+
+    pols = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.TOKENINFO_UI_EXCLUDE, user_object=user_object).action_values(
+        unique=True)
+
+    # when there is a policy
+    if pols:
+        # get the excluded fields
+        action_string = list(pols)[0]
+        # create a list
+        action_list = action_string.split(';')
+        # set the fields as a list to the request-data
+        request.all_data['excluded_tokeninfo_fields'] = action_list if len(action_list) > 0 else None
+
+    return True
