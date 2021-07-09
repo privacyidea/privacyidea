@@ -2448,7 +2448,7 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.TOKENINFO_UI_EXCLUDE: {
                 'type': 'str',
-                'desc': 'Test'
+                'desc': 'A comma-seperated list of token-info fields that get excluded in the web-ui'
             }
         }
 
