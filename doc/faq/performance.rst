@@ -47,7 +47,7 @@ DEBUG will produce much log output and lead to a decrease in performance.
 Response
 ~~~~~~~~
 
-You can strip the authentication response, to get a slight increase in performace,
+You can strip the authentication response, to get a slight increase in performance,
 using the policy ``no_details_on_success``.
 
 

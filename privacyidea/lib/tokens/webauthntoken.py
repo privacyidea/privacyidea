@@ -63,7 +63,7 @@ WebAuthn tokens can be either
  * registered by administrators for users or
  * registered by the users themselves.
 
-Beware the WebAuthn tokens can only be used if the privacyIDEA server and
+Be aware that WebAuthn tokens can only be used if the privacyIDEA server and
 the applications and services the user needs to access all reside under the
 same domain or subdomains thereof.
 
@@ -78,8 +78,8 @@ The enrollment/registering can be completely performed within privacyIDEA.
 But if you want to enroll the WebAuthn token via the REST API you need to do
 it in two steps:
 
-1. Step
-~~~~~~~
+Step 1
+~~~~~~
 
 .. sourcecode:: http
 
@@ -95,8 +95,8 @@ and a message to display to the user. It will also pass some additional options
 regarding timeout, which authenticators are acceptable, and what key types are
 acceptable to the server.
 
-2. Step
-~~~~~~~
+Step 2
+~~~~~~
 
 .. sourcecode:: http
 
@@ -116,6 +116,8 @@ WebAuthn authenticator. *description* is an optional description string for
 the new token.
 
 You need to call the javascript function
+
+.. sourcecode:: javascript
 
     navigator
         .credentials
@@ -347,6 +349,8 @@ and *timeout* from the server.  The timeout is optional and may be omitted, if
 not provided, the client may also pick a sensible default. Please note that the
 nonce will be a binary, encoded using the web-safe base64 algorithm specified by
 WebAuthn, and needs to be decoded and passed as Uint8Array.
+
+.. sourcecode:: javascript
 
     const publicKeyCredentialRequestOptions = {
         challenge: <nonce>,

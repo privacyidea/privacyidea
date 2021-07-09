@@ -13,7 +13,7 @@ privacyIDEA:
 2. integrate OpenVPN directly with RADIUS
 3. use the PAM module for RADIUS in OpenVPN
 
-Each of the methods has its andvantages as well as drawbacks.
+Each of the methods has its advantages as well as drawbacks.
 
 On the client side, you need to add::
 

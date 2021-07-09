@@ -109,7 +109,7 @@ the same conditions.
    can not be checked. I.e. if a request does not contain a *serial* or if the serial
    can not be determined, this condition will be evaluated as fulfilled.
 
-   Event Handlers are a mighty and complex tool to tweek the functioning of your
+   Event Handlers are a mighty and complex tool to tweak the functioning of your
    privacyIDEA system. We recommend to test your definitions thoroughly to assure
    your expected outcome.
 
@@ -282,7 +282,7 @@ Checks if the token is in the current validity period or not. Can be set to
 *True* or *False*.
 
 .. note:: ``token_validity_period==False`` will trigger an action if either the
-   validitiy period is either *over* or has not *started*, yet.
+   validity period is either *over* or has not *started*, yet.
 
 **tokeninfo**
 
@@ -330,7 +330,7 @@ The resolver of the token, for which this event should apply.
 **tokentype**
 
 The action is only triggered if the token in this event is of the given type.
-This way the administrator can design workflows for enrolling and reenrolling
+This way the administrator can design workflows for enrolling and re-enrolling
 tokens. E.g. the tokentype can be a registration token and the registration
 code can be easily and automatically sent to the user.
 

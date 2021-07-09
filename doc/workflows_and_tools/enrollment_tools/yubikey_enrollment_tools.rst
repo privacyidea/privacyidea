@@ -18,10 +18,10 @@ privacyIDEA ships tools to (mass-)enroll Yubikeys in AES mode (Yubikey Token) or
 
 .. _privacyideaadm_enrollment:
 
-.. index:: privacyideaadm, admin tool
-
 privacyidea CLI tool
 ~~~~~~~~~~~~~~~~~~~~
+
+.. index:: privacyideaadm, admin tool
 
 For Linux Clients, there is the ``privacyidea`` command line
 client [#privacyideaadm]_, to initialize the Yubikeys. You can use the mass enrollment, which
@@ -46,10 +46,10 @@ There, select :ref:`import_oath_csv` and the file you just created.
 
 .. _ykpersgui:
 
-.. index:: Yubikey, Yubikey personalization GUI, Yubikey personalization tool
-
 Yubikey Personalization GUI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: Yubikey, Yubikey personalization GUI, Yubikey personalization tool
 
 You can also initialize the Yubikey with the official Yubico personalization GUI
 [#ykpers]_ and use the obtained secret to enroll the Yubikey with privacyIDEA.

@@ -1,4 +1,4 @@
-.. _radiusserver:
+.. _radiusserver_config:
 
 RADIUS server configuration
 ---------------------------

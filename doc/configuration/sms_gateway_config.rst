@@ -158,7 +158,7 @@ Set the additional **options** to be passed as HTTP GET parameters:
  * text: "Your OTP value is {otp}"
  * to: {phone}
 
-This will consturct an HTTP GET request like this::
+This will construct an HTTP GET request like this::
 
    http://api.clickatell.com/http/sendmsg?user=YOU&password=YOU&\
         api_id=YOUR API ID&text=....&to=....
@@ -304,5 +304,5 @@ This is the file name of the script without the directory part.
 
 **BACKGROUND**
 
-Here you can choose, whether the sript should be started and run in the background or if the
+Here you can choose, whether the script should be started and run in the background or if the
 HTTP requests waits for the script to finish.

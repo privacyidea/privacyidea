@@ -102,6 +102,8 @@ This step returns a serial number.
 
 You need to call the javascript function
 
+.. sourcecode:: javascript
+
     u2f.register([registerRequest], [], function(u2fData) {} );
 
 and the responseHandler needs to send the *clientdata* and *regdata* back to
@@ -397,13 +399,11 @@ class U2fTokenClass(TokenClass):
 
         At the moment we do not think of other ways to trigger a challenge.
 
-        This function is not decorated with
-            @challenge_response_allowed
+        This function is not decorated with ``@challenge_response_allowed``
         as the U2F token is always a challenge response token!
 
         :param passw: The PIN of the token.
         :param options: dictionary of additional request parameters
-
         :return: returns true or false
         """
         trigger_challenge = False
@@ -491,6 +491,7 @@ class U2fTokenClass(TokenClass):
     def check_otp(self, otpval, counter=None, window=None, options=None):
         """
         This checks the response of a previous challenge.
+
         :param otpval: N/A
         :param counter: The authentication counter
         :param window: N/A

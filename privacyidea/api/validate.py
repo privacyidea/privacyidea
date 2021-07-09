@@ -57,7 +57,7 @@ In case of authenticating a user:
  * :func:`privacyidea.lib.tokenclass.TokenClass.check_pin`
  * :func:`privacyidea.lib.tokenclass.TokenClass.check_otp`
 
-In case if authenitcating a serial number:
+In case if authenticating a serial number:
 
  * :func:`privacyidea.lib.token.check_serial_pass`
  * :func:`privacyidea.lib.token.check_token_list`

@@ -3,7 +3,7 @@
 What happens in the tokenview?
 ------------------------------
 
-A question which comes up often is why you can not view hundrets of tokens in
+A question which comes up often is why you can not view hundreds of tokens in
 the tokenview. Well - you are doing - you are just paging through the list ;-)
 
 Ok, here it what happens in the tokenview.

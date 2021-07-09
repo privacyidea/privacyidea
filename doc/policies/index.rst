@@ -98,7 +98,7 @@ Each policy can contain the following attributes:
 
      If you also want to match a policy with ``resolver=resolver2``, you need
      to select *Check all possible resolvers* in this policy. Thus this
-     policy will match for all users, which are als contained in *resolver2*
+     policy will match for all users, which are also contained in *resolver2*
      as a secondary resolver.
 
 **realm**

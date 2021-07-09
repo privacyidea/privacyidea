@@ -32,7 +32,7 @@ The default behaviour is to grant access, if and after the user has authenticate
 Using ``authorized=deny_access`` specific authentication requests can be denied, even if the user has provided
 the correct credentials.
 
-In combination with different IP addresses and policy priorities the adminitator can generically *deny_access* with the
+In combination with different IP addresses and policy priorities the administrator can generically *deny_access* with the
 lowest policy priority and *grant_access* for specific requests e.g. originating from specific IP addresses to certain
 users by defining higher policy priorities.
 

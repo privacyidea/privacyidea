@@ -17,7 +17,7 @@ present, when authenticating:
 
    *Enroll a 4 eyes token*
 
-In this example authentication will only be possbile if at least two tokens
+In this example authentication will only be possible if at least two tokens
 from *realm2* and one token from realm *sqlite* are present.
 
 Authentication is done by concatenating the OTP PINs and the OTP values of
@@ -88,5 +88,5 @@ Every one of the required tokens is entered separately.
    token twice.
 
 .. warning:: But it does not verify, if these two unique tokens belong to
-   the same user. Thus you should create a poliy, that in such a realm a user
+   the same user. Thus you should create a policy, that in such a realm a user
    may only have on token.

@@ -115,7 +115,7 @@ You need to authenticate to gain access to these token
 functions.
 If you are authenticated as administrator, you can manage all tokens.
 If you are authenticated as normal user, you can only manage your own tokens.
-Some API calls are only allowed to be accessed by adminitrators.
+Some API calls are only allowed to be accessed by administrators.
 
 To see how to authenticate read :ref:`rest_auth`.
 """

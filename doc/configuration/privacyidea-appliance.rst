@@ -10,7 +10,7 @@ also setup MySQL master-master replication.
 It can be found in a Github repository [#applianceGithub]_.
 
 This tool is supposed to run on Ubuntu 16.04 LTS or 18.04 LTS.
-You can find a ready install ISO at another Github reposity [#applianceISO]_.
+You can find a ready install ISO at another Github repository [#applianceISO]_.
 
 .. note:: The ready made Ubuntu package for the appliance tool is only available with a Service Level Agreement from
    the company NetKnights [#applianceNetKnights]_.
@@ -75,8 +75,8 @@ the `/etc/freeradius/clients.conf` file.
 .. figure:: images/appliance/backup1.png
    :width: 400px
 
-Schedulded backup
-~~~~~~~~~~~~~~~~~
+Scheduled backup
+~~~~~~~~~~~~~~~~
 
 At the configuration point *Configure Backup* you can define times
 when a scheduled backup should be performed. This information is
@@ -126,7 +126,7 @@ Database: Setup Redundancy
 ..........................
 
 The appliance-tool is also capable of setting up a redundant setup between
-two privacyIDEA nodes in master-master replicatoin. The administrator sets
+two privacyIDEA nodes in master-master replication. The administrator sets
 up redundancy on the first configured node. On the second node the same version
 of privacyIDEA needs to be installed. No configuration needs to be done on the 
 second node. The configuration and the token database is completely copied from the
