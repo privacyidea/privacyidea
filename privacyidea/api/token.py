@@ -99,7 +99,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            verify_enrollment,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
-                                           webauthntoken_request, required_piv_attestation, check_excluded_tokeninfo_fields)
+                                           webauthntoken_request, required_piv_attestation,
+                                           check_excluded_tokeninfo_fields)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
