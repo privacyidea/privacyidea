@@ -44,7 +44,7 @@ Here are examples for the flows:
   respective OTP value in the plugin's login form. The plugin sends the
   challenge response to privacyIDEA, which decides whether the authentication
   is valid or not.
-  The "client_mode" is set to ``interactive``". This indicates that
+  The "client_mode" is set to ``interactive``. This indicates that
   the plugin should display an input field, so that the user can enter the response
   interactively.
 * WebAuthn tokens and U2F tokens also implement the ``challenge`` mode. However,
