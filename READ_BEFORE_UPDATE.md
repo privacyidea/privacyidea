@@ -2,11 +2,9 @@
 
 ## Update from 3.5 to 3.6
 
-* The default TLS_VERSION for LDAP resolvers has been changed from 1.0 to 1.3.
-  Existing resolvers should not be changed. However, if an LDAP resolver has not
-  TLS_VERSION configured, up to 3.5 TLS version 1.0 was used.
-  A migration script will take care, that resolvers without a configured TLS_VERSION
-  will have TLS_VERSION 1.0 configured to keep the existing behaviour.
+* Up to version 3.5 TLS autonegotiation was used for LDAP resolvers, if no specific
+  TLS_VERSION was specified. For security reasons this is not supported anymore, thus the
+  migration script sets resolvers without a configured TLS_VERSION to 1.2.
 
   **WARNING**: On Ubuntu 20.04 using TLS 1.0 will fail and users will not be found.
   Either change to TLS 1.2 before running the update or use a local admin to change 
