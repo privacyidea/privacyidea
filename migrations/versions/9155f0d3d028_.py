@@ -19,6 +19,9 @@ from sqlalchemy.schema import Sequence
 
 Base = declarative_base()
 
+# Set default TLS version to TLS 1.2 if it is not set
+DEFAULT_TLS_VERSION = "5"
+
 
 class Resolver(Base):
     __tablename__ = 'resolver'
@@ -49,7 +52,6 @@ class ResolverConfig(Base):
                       {'mysql_row_format': 'DYNAMIC'})
 
 
-
 def upgrade():
     try:
         bind = op.get_bind()
@@ -58,7 +60,7 @@ def upgrade():
         # get all ldap resolvers
         for row in session.query(Resolver).filter(Resolver.rtype == 'ldapresolver'):
             ldapresolvers_list.append(row.id)
-        # set the legacy TLS Version to v1.0 (=3) for all existing ldap resolvers
+        # set the legacy TLS Version to v1.2 (=5) for all existing ldap resolvers
         for resolver_id in ldapresolvers_list:
             base_query = session.query(ResolverConfig).filter(ResolverConfig.resolver_id == resolver_id)
             # check for LDAPS
@@ -73,19 +75,19 @@ def upgrade():
                 START_TLS = True if START_TLS_qry.Value.lower() == 'true' else False
             else:
                 START_TLS = False
-            # check if TLS_VERSION is already set. If not, we will use TLS v1.0 as a robust default
+            # check if TLS_VERSION is already set. If not, we will use TLS v1.2 as a robust default
             TLS_VERSION_qry = base_query.filter(ResolverConfig.Key == "TLS_VERSION").first()
             if TLS_VERSION_qry:
                 TLS_VERSION = TLS_VERSION_qry.Value
             else:
                 TLS_VERSION = None
-            # For resolvers that had TLS_VERSION set but empty or not set at all use TLS v1.0
+            # For resolvers that had TLS_VERSION set but empty or not set at all use TLS v1.2
             if (LDAPS or START_TLS):
                 if TLS_VERSION_qry is None:
-                    session.add(ResolverConfig(resolver_id=resolver_id, Key="TLS_VERSION", Value="3",
+                    session.add(ResolverConfig(resolver_id=resolver_id, Key="TLS_VERSION", Value=DEFAULT_TLS_VERSION,
                                                Type=u'int'))
                 elif TLS_VERSION == "":
-                    base_query.filter(ResolverConfig.Key == "TLS_VERSION").update({"Value": "3"})
+                    base_query.filter(ResolverConfig.Key == "TLS_VERSION").update({"Value": DEFAULT_TLS_VERSION})
         session.commit()
 
     except Exception as exx:
