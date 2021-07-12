@@ -1,4 +1,4 @@
-Version 3.6.1dev1, 2021-07-xx
+Version 3.6.1dev2, 2021-07-xx
 
   Fixes:
   * Remove importlib-metadata from doc requirements
