@@ -247,22 +247,32 @@ def get_all_params(request):
     """
     param = request.values
     body = request.data
-    view_args = request.view_args
     return_param = {}
-    for key in param.keys():
-        return_param[key] = unquote(param[key])
+    if param:
+        log.debug(u"Update params in request {0!s} {1!s} with values.".format(request.method,
+                                                                              request.base_url))
+        # Add the unquoted HTML and form parameters
+        return_param = {key:unquote(value) for (key, value) in param.items()}
 
-    # In case of serialized JSON data in the body, add these to the values.
-    try:
-        json_data = json.loads(to_unicode(body))
-        for k, v in json_data.items():
-            return_param[k] = v
-    except Exception as exx:
-        log.debug("Can not get param: {0!s}".format(exx))
+    if request.json:
+        log.debug(u"Update params in request {0!s} {1!s} with JSON data.".format(request.method,
+                                                                                 request.base_url))
+        # Add the original JSON data
+        return_param.update(request.json)
+    elif body:
+        # In case of serialized JSON data in the body, add these to the values.
+        try:
+            json_data = json.loads(to_unicode(body))
+            for k, v in json_data.items():
+                return_param[k] = v
+        except Exception as exx:
+            log.debug("Can not get param: {0!s}".format(exx))
 
-    # We maybe need to unquote the view_args
-    #return_param.update(request.view_args)
-    #return_param.update(request.json)
+    if request.view_args:
+        log.debug(u"Update params in request {0!s} {1!s} with view_args.".format(request.method,
+                                                                                 request.base_url))
+        # We add the unquoted view_args
+        return_param.update({key:unquote(value) for (key, value) in request.view_args.items()})
 
     return return_param
 

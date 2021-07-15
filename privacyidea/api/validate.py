@@ -123,9 +123,6 @@ def before_request():
     """
     ensure_no_config_object()
     request.all_data = get_all_params(request)
-    # get additional request information such as parameters in the
-    # call path from the view_args
-    request.all_data.update(request.view_args)
     request.User = get_user_from_param(request.all_data)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host

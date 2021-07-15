@@ -213,6 +213,39 @@ class UtilsTestCase(MyApiTestCase):
         self.assertEqual(priority, {'resolver1': 1})
 
     def test_08_get_all_params(self):
-        req = Request()
-        params = get_all_params(req)
-        pass
+        from privacyidea.lib.token import init_token, remove_token
+        serial = "TTEST"
+        params = {"serial": serial, "type": "spass", "genkey": "1"}
+        init_token(params)
+        # Test viewargs
+        with mock.patch("logging.Logger.debug") as mock_log:
+            with self.app.test_request_context('/token/{0!s}'.format(serial),
+                                               method='DELETE',
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+            # We see the message in the log, that the viewargs was read
+            mock_log.assert_any_call(u"Update params in request DELETE http://localhost/token/TTEST with view_args.")
+
+        # test json data
+        with mock.patch("logging.Logger.debug") as mock_log:
+            with self.app.test_request_context('/token/init',
+                                               method='POST', json=params,
+                                               headers={"Authorization": self.at,
+                                                        "Content-Type": "application/json"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+            # We see the message in the log, that the JSON data was read
+            mock_log.assert_any_call(u"Update params in request POST http://localhost/token/init with JSON data.")
+
+        remove_token(serial)
+        # test raw body, which defaults to x-www-form-encoded
+        with mock.patch("logging.Logger.debug") as mock_log:
+            with self.app.test_request_context('/token/init',
+                                               method='POST', data=params,
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+            # We see the message in the log, that the JSON data was read
+            mock_log.assert_any_call(u"Update params in request POST http://localhost/token/init with values.")
+        remove_token(serial)
