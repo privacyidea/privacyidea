@@ -84,7 +84,7 @@ class NOTIFY_TYPE(object):
     INTERNAL_ADMIN = "internal admin"
     ADMIN_REALM = "admin realm"
     EMAIL = "email"
-
+    NO_REPLY_TO = ""
 
 class UserNotificationEventHandler(BaseEventHandler):
     """
@@ -142,6 +142,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                     "required": False,
                     "description": _("The Reply-To header in the sent email."),
                     "value": [
+                        NOTIFY_TYPE.NO_REPLY_TO,
                         NOTIFY_TYPE.TOKENOWNER,
                         NOTIFY_TYPE.LOGGED_IN_USER,
                         NOTIFY_TYPE.INTERNAL_ADMIN,
@@ -248,7 +249,7 @@ class UserNotificationEventHandler(BaseEventHandler):
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
         notify_type = handler_options.get("To", NOTIFY_TYPE.TOKENOWNER)
-        reply_to_type = handler_options.get("reply_to", NOTIFY_TYPE.TOKENOWNER)
+        reply_to_type = handler_options.get("reply_to")
         try:
             logged_in_user = g.logged_in_user
         except Exception:
@@ -263,7 +264,10 @@ class UserNotificationEventHandler(BaseEventHandler):
         recipient = None
         reply_to = None
 
-        if reply_to_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
+        if reply_to_type == NOTIFY_TYPE.NO_REPLY_TO:
+            reply_to = ""
+
+        elif reply_to_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
             reply_to = tokenowner.info.get("email")
 
         elif reply_to_type == NOTIFY_TYPE.INTERNAL_ADMIN:
@@ -301,8 +305,8 @@ class UserNotificationEventHandler(BaseEventHandler):
             reply_to = email[0]
 
         else:
-            log.warning("Was not able to determine the email for the user "
-                        "notification: {0!s}".format(handler_def))
+            log.warning("Was not able to determine the email for the reply-to "
+                        "header: {0!s}".format(handler_def))
 
         if notify_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
             recipient = {

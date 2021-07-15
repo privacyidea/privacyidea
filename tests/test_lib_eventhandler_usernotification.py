@@ -733,6 +733,61 @@ class UserNotificationTestCase(MyTestCase):
         self.assertTrue(res)
 
     @smtpmock.activate
+    def test_12_send_to_tokenowner(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true},
+        "detail": {"registrationcode": "12345678910"}
+        }
+        """
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "conditions": {"serial": "123.*"},
+                       "options": {"body": "your {registrationcode}",
+                                   "emailconfig": "myserver",
+                                   "To": NOTIFY_TYPE.TOKENOWNER,
+                                   "To " + NOTIFY_TYPE.TOKENOWNER:
+                                       "recp@example.com",
+                                   "reply_to": NOTIFY_TYPE.TOKENOWNER,
+                                   "reply_to" + NOTIFY_TYPE.TOKENOWNER:
+                                       "recp@example.com"}}}
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options)
+        self.assertTrue(res)
+
+    @smtpmock.activate
     def test_12_send_to_internal_admin(self):
         # setup realms
         self.setUp_user_realms()
