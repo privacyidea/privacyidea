@@ -982,18 +982,23 @@ def get_privacyidea_nodes():
 
 
 @register_export()
-def export_config():
+def export_config(name=None):
     """Export the global configuration"""
     c = copy.copy(get_config_object().config)
-    c.pop('__timestamp__')
+    if name:
+        c = {name: c[name]} if name in c.keys() else {}
     return c
 
 
 @register_import()
-def import_config(data):
+def import_config(data, name=None):
     """Import given server configuration"""
     log.debug('Import server config: {0!s}'.format(data))
     res = {}
+    if '__timestamp__' in data.keys():
+        data.pop('__timestamp__')
+    if name:
+        data = {name: data[name]} if name in data.keys() else {}
     for key, values in data.items():
         r = set_privacyidea_config(key, values['Value'],
                                    desc=values['Description'] if 'Description' in values else None,

@@ -308,10 +308,12 @@ def export_policy(name=None):
 
 
 @register_import('event')
-def import_event(data):
+def import_event(data, name=None):
     """Import policy configuration"""
     log.debug('Import event config: {0!s}'.format(data))
     for res_data in data:
+        if name and name != res_data.get('name'):
+            continue
         # condition is apparently not used anymore
         del res_data["condition"]
         rid = set_event(**res_data)

@@ -2897,10 +2897,12 @@ def export_policy(name=None):
 
 
 @register_import('policy')
-def import_policy(data):
+def import_policy(data, name=None):
     """Import policy configuration"""
     log.debug('Import policy config: {0!s}'.format(data))
     for res_data in data:
+        if name and name != res_data.get('name'):
+            continue
         rid = set_policy(**res_data)
         # TODO: we have no information if a new policy was created or an
         #  existing policy updated. We would need to enhance "set_policy()"
