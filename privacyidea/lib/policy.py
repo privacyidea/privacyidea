@@ -319,7 +319,7 @@ class ACTION(object):
     TOKENREALMS = "tokenrealms"
     TOKENTYPE = "tokentype"
     TOKENINFO = "tokeninfo"
-    TOKENINFO_UI_EXCLUDE = "tokeninfo_ui_exclude"
+    TOKENINFO_API_EXCLUDE = "tokeninfo_api_exclude"
     TOKENWIZARD = "tokenwizard"
     TOKENWIZARD2ND = "tokenwizard_2nd_token"
     TOKENROLLOVER = "token_rollover"
@@ -2069,7 +2069,11 @@ def get_static_policy_definitions(scope=None):
                           "attribute, set this to '*'. Use '*' with CAUTION! "
                           "For more details, check the documentation."),
                 'mainmenu': [],
-                'group': GROUP.USER}
+                'group': GROUP.USER},
+            ACTION.TOKENINFO_API_EXCLUDE: {
+                'type': TYPE.STRING,
+                'desc': 'A comma-seperated list of token-info fields that get excluded in the web-ui'
+            }
 
         },
         SCOPE.ENROLL: {
@@ -2506,10 +2510,6 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("This action adds a QR code in the enrollment page for "
                           "HOTP, TOTP and Push tokens, that lead to this given URL."),
                 'group': 'QR Codes'
-            },
-            ACTION.TOKENINFO_UI_EXCLUDE: {
-                'type': 'str',
-                'desc': 'A comma-seperated list of token-info fields that get excluded in the web-ui'
             }
         }
 

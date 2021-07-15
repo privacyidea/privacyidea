@@ -2135,8 +2135,8 @@ def check_excluded_tokeninfo_fields(request=None, action=None):
     if role == ROLE.USER:
         return True
 
-    pols = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.TOKENINFO_UI_EXCLUDE, user_object=user_object).action_values(
-        unique=True)
+    pols = Match.user(g, scope=SCOPE.USER, action=ACTION.TOKENINFO_API_EXCLUDE, user_object=user_object)\
+        .action_values(unique=True)
 
     # when there is a policy
     if pols:
