@@ -1318,8 +1318,11 @@ exp_fmt_dict = {'python': str,
                        help='The types of configuration to export. By default create '
                             'export using all available exporter types. Currently registered '
                             'exporter types are: '
-                            '{0!s}'.format(', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))))
-def exporter(output, fmt, types):
+                            '{0!s}'.format(', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))),
+                       )
+@config_manager.option('-n', '--name',
+                       help = 'The name of the configuration object to export (default: export all)')
+def exporter(output, fmt, types, name=None):
     """
     Export server configuration using specific or all registered exporter types.
     """
@@ -1327,7 +1330,7 @@ def exporter(output, fmt, types):
 
     out = {}
     for typ in exp_types:
-        out.update({typ: EXPORT_FUNCTIONS[typ]()})
+        out.update({typ: EXPORT_FUNCTIONS[typ](name=name)})
 
     if out:
         res = exp_fmt_dict.get(fmt.lower())(out) + '\n'
