@@ -2896,7 +2896,7 @@ def export_policy(name=None):
     return pol_cls.list_policies(name=name)
 
 
-@register_import('policy', prio=10)
+@register_import('policy')
 def import_policy(data):
     """Import policy configuration"""
     log.debug('Import policy config: {0!s}'.format(data))

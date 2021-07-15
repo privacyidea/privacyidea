@@ -307,22 +307,13 @@ def export_policy(name=None):
         return event_cls.events
 
 
-@register_import('event', prio=20)
+@register_import('event')
 def import_event(data):
     """Import policy configuration"""
     log.debug('Import event config: {0!s}'.format(data))
     for res_data in data:
         # condition is apparently not used anymore
         del res_data["condition"]
-        rid = set_event(res_data.get("name"), res_data.get("event"),
-                        res_data.get("handlermodule"), res_data.get("action"),
-                        conditions=res_data.get("conditions"),
-                        ordering=res_data.get("ordering"),
-                        options=res_data.get("options"),
-                        active=res_data.get("active"),
-                        position=res_data.get("position"),
-                        id=res_data.get("id"))
         rid = set_event(**res_data)
-        #rid = set_event(**res_data)
         log.info('Import of event "{0!s}" finished,'
                  ' id: {1!s}'.format(res_data['name'], rid))

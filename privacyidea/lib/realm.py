@@ -248,7 +248,7 @@ def export_realms(name=None):
     return get_realms(realmname=name)
 
 
-@register_import('realm', prio=100)
+@register_import('realm')
 def import_realms(data):
     """
     Import given realm configurations
