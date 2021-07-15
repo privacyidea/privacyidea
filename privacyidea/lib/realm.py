@@ -240,15 +240,15 @@ def set_realm(realm, resolvers=None, priority=None):
     return added, failed
 
 
-@register_export('realms')
-def export_realm(name=None):
+@register_export('realm')
+def export_realms(name=None):
     """
     Export given realm configuration or all realms
     """
     return get_realms(realmname=name)
 
 
-@register_import('realms')
+@register_import('realm', prio=100)
 def import_realms(data):
     """
     Import given realm configurations
