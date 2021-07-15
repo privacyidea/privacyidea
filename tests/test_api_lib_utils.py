@@ -14,7 +14,7 @@ import mock
 import datetime
 import warnings
 from privacyidea.lib.error import AuthError
-from flask import Request
+from privacyidea.lib.token import init_token, remove_token
 
 
 class UtilsTestCase(MyApiTestCase):
@@ -213,7 +213,6 @@ class UtilsTestCase(MyApiTestCase):
         self.assertEqual(priority, {'resolver1': 1})
 
     def test_08_get_all_params(self):
-        from privacyidea.lib.token import init_token, remove_token
         serial = "TTEST"
         params = {"serial": serial, "type": "spass", "genkey": "1"}
         init_token(params)

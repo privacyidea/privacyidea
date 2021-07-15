@@ -252,7 +252,7 @@ def get_all_params(request):
         log.debug(u"Update params in request {0!s} {1!s} with values.".format(request.method,
                                                                               request.base_url))
         # Add the unquoted HTML and form parameters
-        return_param = {key:unquote(value) for (key, value) in param.items()}
+        return_param = {key: unquote(value) for (key, value) in param.items()}
 
     if request.json:
         log.debug(u"Update params in request {0!s} {1!s} with JSON data.".format(request.method,
@@ -272,7 +272,7 @@ def get_all_params(request):
         log.debug(u"Update params in request {0!s} {1!s} with view_args.".format(request.method,
                                                                                  request.base_url))
         # We add the unquoted view_args
-        return_param.update({key:unquote(value) for (key, value) in request.view_args.items()})
+        return_param.update({key: unquote(value) for (key, value) in request.view_args.items()})
 
     return return_param
 
