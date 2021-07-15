@@ -40,7 +40,7 @@ def before_request():
     """
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
-    request.all_data = get_all_params(request.values, request.data)
+    request.all_data = get_all_params(request)
     # Verify the authtoken!
     authtoken = request.all_data.get("authtoken")
     r = verify_auth_token(authtoken, ["user", "admin"])

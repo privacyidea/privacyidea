@@ -238,10 +238,16 @@ def getLowerParams(param):
     return ret
 
 
-def get_all_params(param, body):
+def get_all_params(request):
     """
-    Combine parameters from GET and POST requests
+    Retrieve all parameters from a request, no matter if these are GET or POST requests
+    or parameters are contained as viewargs like the serial in DELETE /token/<serial>
+
+    :param request: The flask request object
     """
+    param = request.values
+    body = request.data
+    view_args = request.view_args
     return_param = {}
     for key in param.keys():
         return_param[key] = unquote(param[key])
@@ -253,6 +259,10 @@ def get_all_params(param, body):
             return_param[k] = v
     except Exception as exx:
         log.debug("Can not get param: {0!s}".format(exx))
+
+    # We maybe need to unquote the view_args
+    #return_param.update(request.view_args)
+    #return_param.update(request.json)
 
     return return_param
 

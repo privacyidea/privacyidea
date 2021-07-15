@@ -142,7 +142,7 @@ def before_request():
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
     ensure_no_config_object()
-    request.all_data = get_all_params(request.values, request.data)
+    request.all_data = get_all_params(request)
     # get additional request information such as parameters in the
     # call path from the view_args
     request.all_data.update(request.view_args)

@@ -122,7 +122,7 @@ def before_request():
     This is executed before the request
     """
     ensure_no_config_object()
-    request.all_data = get_all_params(request.values, request.data)
+    request.all_data = get_all_params(request)
     # get additional request information such as parameters in the
     # call path from the view_args
     request.all_data.update(request.view_args)

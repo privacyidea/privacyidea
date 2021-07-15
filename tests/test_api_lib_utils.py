@@ -7,13 +7,14 @@ from .base import MyApiTestCase
 from privacyidea.api.lib.utils import (getParam,
                                        check_policy_name,
                                        verify_auth_token, is_fqdn, attestation_certificate_allowed,
-                                       get_priority_from_param)
+                                       get_priority_from_param, get_all_params)
 from privacyidea.lib.error import ParameterError
 import jwt
 import mock
 import datetime
 import warnings
 from privacyidea.lib.error import AuthError
+from flask import Request
 
 
 class UtilsTestCase(MyApiTestCase):
@@ -210,3 +211,8 @@ class UtilsTestCase(MyApiTestCase):
                  'resolvers': 'resolver1,resolver2,resolver3'}
         priority = get_priority_from_param(param)
         self.assertEqual(priority, {'resolver1': 1})
+
+    def test_08_get_all_params(self):
+        req = Request()
+        params = get_all_params(req)
+        pass
