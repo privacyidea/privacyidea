@@ -183,6 +183,7 @@ from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
                                    determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.utils.compare import compare_values, COMPARATOR_DESCRIPTIONS
+from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.lib.user import User
 from privacyidea.lib import _
 import datetime
@@ -2886,3 +2887,24 @@ def check_pin(g, pin, tokentype, user_obj):
         r, comment = check_pin_contents(pin, list(pol_contents)[0])
         if r is False:
             raise PolicyError(comment)
+
+
+@register_export('policy')
+def export_policy(name=None):
+    """ Export given or all policy configuration """
+    pol_cls = PolicyClass()
+    return pol_cls.list_policies(name=name)
+
+
+@register_import('policy', prio=10)
+def import_policy(data):
+    """Import policy configuration"""
+    log.debug('Import policy config: {0!s}'.format(data))
+    for res_data in data:
+        rid = set_policy(**res_data)
+        # TODO: we have no information if a new policy was created or an
+        #  existing policy updated. We would need to enhance "set_policy()"
+        #  to either force overwriting or not and also return if the policy
+        #  existed before.
+        log.info('Import of policy "{0!s}" finished,'
+                 ' id: {1!s}'.format(res_data['name'], rid))
