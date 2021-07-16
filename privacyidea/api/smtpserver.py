@@ -43,7 +43,6 @@ from flask_babel import gettext as _
 import logging
 from privacyidea.lib.smtpserver import (add_smtpserver, list_smtpservers,
                                         delete_smtpserver, send_or_enqueue_email)
-from privacyidea.models import SMTPServer as SMTPServerDB
 
 log = logging.getLogger(__name__)
 
@@ -92,7 +91,6 @@ def list_smtpservers_api():
     """
     This call gets the list of SMTP server definitions
     """
-    res = {}
     res = list_smtpservers()
     g.audit_object.log({'success': True})
     return send_result(res)

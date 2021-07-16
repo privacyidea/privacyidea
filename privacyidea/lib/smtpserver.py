@@ -271,16 +271,10 @@ def list_smtpservers(identifier=None, server=None):
         # If the database contains garbage, use the empty password as fallback
         if decrypted_password == FAILED_TO_DECRYPT_PASSWORD:
             decrypted_password = ""
-        res[server_obj.config.identifier] = {"server": server_obj.config.server,
-                                         "tls": server_obj.config.tls,
-                                         "username": server_obj.config.username,
-                                         "password": decrypted_password,
-                                         "port": server_obj.config.port,
-                                         "description":
-                                             server_obj.config.description,
-                                         "sender": server_obj.config.sender,
-                                         "timeout": server_obj.config.timeout,
-                                         "enqueue_job": server_obj.config.enqueue_job}
+        res[server_obj.config.identifier] = server_obj.config.get()
+        res[server_obj.config.identifier].pop('id')
+        res[server_obj.config.identifier].pop('identifier')
+        res[server_obj.config.identifier].update({"password": decrypted_password})
 
     return res
 
