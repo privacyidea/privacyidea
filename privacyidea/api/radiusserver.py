@@ -35,7 +35,7 @@ from ..lib.policy import ACTION
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
 import logging
-from privacyidea.lib.radiusserver import (add_radius, list_radiusserver,
+from privacyidea.lib.radiusserver import (add_radius, list_radiusservers,
                                           delete_radius, test_radius)
 
 
@@ -84,7 +84,7 @@ def list_radius():
     """
     This call gets the list of RADIUS server definitions
     """
-    res = list_radiusserver()
+    res = list_radiusservers()
     # We do not add the secret!
     for identifier, data in res.items():
         data.pop("password")

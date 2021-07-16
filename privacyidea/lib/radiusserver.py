@@ -177,7 +177,7 @@ def get_radiusservers(identifier=None, server=None):
     return res
 
 @log_with(log)
-def list_radiusserver(identifier=None, server=None):
+def list_radiusservers(identifier=None, server=None):
     res = {}
     server_list = get_radiusservers(identifier=identifier, server=server)
     for server in server_list:
@@ -277,7 +277,7 @@ def delete_radius(identifier):
 @register_export('radiusserver')
 def export_radiusserver(name=None):
     """ Export given or all radiusserver configuration """
-    return list_radiusserver(identifier=name)
+    return list_radiusservers(identifier=name)
 
 
 @register_import('radiusserver')
