@@ -38,7 +38,7 @@ import logging
 from privacyidea.lib.privacyideaserver import (add_privacyideaserver,
                                                PrivacyIDEAServer,
                                                delete_privacyideaserver,
-                                               get_privacyideaservers)
+                                               list_privacyideaservers)
 from privacyidea.models import PrivacyIDEAServer as PrivacyIDEAServerDB
 
 
@@ -66,7 +66,7 @@ def create(identifier=None):
     description = getParam(param, "description", default="")
 
     r = add_privacyideaserver(identifier, url=url, tls=tls,
-                              description=description,)
+                              description=description)
 
     g.audit_object.log({'success': r > 0,
                         'info':  r})
@@ -81,20 +81,13 @@ def list_privacyidea():
     This call gets the list of privacyIDEA server definitions
     """
     res = {}
-    server_list = get_privacyideaservers()
-    for server in server_list:
-        if g.logged_in_user.get("role") == "admin":
-            res[server.config.identifier] = {"id": server.config.id,
-                                             "url": server.config.url,
-                                             "tls": server.config.tls,
-                                             "description":
-                                                 server.config.description}
-        else:
-            # We only pass limited information to the user
-            res[server.config.identifier] = {"id": server.config.id,
-                                             "url": "",
-                                             "tls": "",
-                                             "description": ""}
+    server_list = list_privacyideaservers()
+    # We only pass limited information to the user
+    if g.logged_in_user.get("role") != "admin":
+        for server in server_list:
+            res[server.config.identifier].update({"url": "",
+                                                  "tls": "",
+                                                  "description": ""})
 
     g.audit_object.log({'success': True})
     return send_result(res)
