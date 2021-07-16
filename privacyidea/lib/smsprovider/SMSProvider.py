@@ -326,7 +326,7 @@ def export_smsgateway(name=None):
 
 @register_import('smsgateway')
 def import_smsgateway(data, name=None):
-    """Import policy configuration"""
+    """Import sms gateway configuration"""
     log.debug('Import smsgateway config: {0!s}'.format(data))
     if name:
         data = {name: data[name]} if name in data.keys() else {}
