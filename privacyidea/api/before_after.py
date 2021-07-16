@@ -40,7 +40,7 @@ from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.api.auth import (user_required, admin_required, jwtauth)
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object
-from privacyidea.lib.token import get_token_type
+from privacyidea.lib.token import get_token_type, get_token_owner
 from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.validate import validate_blueprint
 from .resolver import resolver_blueprint
@@ -175,9 +175,17 @@ def before_request():
                          request.host
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
-    if serial and not serial.startswith("*"):
+    if serial and not "*" in serial:
         g.serial = serial
         tokentype = get_token_type(serial)
+        if not request.User:
+            # We determine the user object by the given serial number
+            try:
+                request.User = get_token_owner(serial) or User()
+            except ResourceNotFoundError:
+                # The serial might not exist! This would raise an exception
+                pass
+
     else:
         g.serial = None
         tokentype = None
