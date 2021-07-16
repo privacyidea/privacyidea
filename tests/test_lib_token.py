@@ -683,8 +683,8 @@ class TokenTestCase(MyTestCase):
         res, reply = check_token_list(tokenobject_list, "hotppin40123456")
         self.assertFalse(res)
         failcount = hotp_tokenobject.token.failcount
-        self.assertTrue(failcount == old_failcount + 1, (old_failcount,
-                                                         failcount))
+        self.assertEqual(failcount, old_failcount + 1, (old_failcount,
+                                                        failcount))
 
         # if there is no token with at least a correct pin, we increase all
         # failcounters
@@ -693,8 +693,8 @@ class TokenTestCase(MyTestCase):
         res, reply = check_token_list(tokenobject_list, "everythingiswrong")
         self.assertFalse(res)
         failcount = hotp_tokenobject.token.failcount
-        self.assertTrue(failcount == old_failcount + 1, (old_failcount,
-                                                         failcount))
+        self.assertEqual(failcount, old_failcount + 1, (old_failcount,
+                                                        failcount))
 
         # Now we do some successful auth with the HOTP token
         tokenobject_list = get_tokens(serial="hotptoken")
@@ -954,15 +954,21 @@ class TokenTestCase(MyTestCase):
 
         self.assertTrue(tokens[0].get("serial") == "A8",
                         tokens[0])
-        self.assertTrue(tokens[-1].get("serial") == "hotptoken",
-                        tokens[-1])
+        # SQLite does not sort like other DBs
+        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+            self.assertEqual('hotptoken', tokens[-1].get("serial"), tokens[-1])
+        else:
+            self.assertEqual('X', tokens[-1].get("serial"), tokens[-1])
 
         # Reverse sorting
         tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=100,
                                         sortdir="desc")
         tokens = tokendata.get("tokens")
 
-        self.assertTrue(tokens[0].get("serial") == "hotptoken")
+        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+            self.assertEqual('hotptoken', tokens[0].get("serial"), tokens[0])
+        else:
+            self.assertEqual('X', tokens[0].get("serial"), tokens[0])
         self.assertTrue(tokens[-1].get("serial") == "A8")
 
         # sort with string column
@@ -970,15 +976,34 @@ class TokenTestCase(MyTestCase):
                                         sortdir="asc")
         tokens = tokendata.get("tokens")
 
-        self.assertTrue(tokens[-1].get("serial") == "hotptoken")
+        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+            self.assertEqual('hotptoken', tokens[-1].get("serial"), tokens[-1])
+        else:
+            self.assertEqual('X', tokens[-1].get("serial"), tokens[-1])
         self.assertTrue(tokens[0].get("serial") == "A8")
 
         tokendata = get_tokens_paginate(sortby="serial", page=1, psize=100,
                                         sortdir="desc")
         tokens = tokendata.get("tokens")
 
-        self.assertTrue(tokens[0].get("serial") == "hotptoken")
+        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+            self.assertEqual('hotptoken', tokens[0].get("serial"), tokens[0])
+        else:
+            self.assertEqual('X', tokens[0].get("serial"), tokens[0])
         self.assertTrue(tokens[-1].get("serial") == "A8")
+
+        # try a different sort key
+        tokendata = get_tokens_paginate(sortby="id", page=1, psize=100)
+        tokens = tokendata.get("tokens")
+
+        self.assertEqual(1, tokens[0].get("id"), tokens[0])
+        self.assertGreaterEqual(tokens[-1].get("id"), len(tokens), tokens[-1])
+
+        # unknown sort key results in sorting by serial
+        tokendata = get_tokens_paginate(sortby="unknown", page=1, psize=100)
+        tokens = tokendata.get("tokens")
+
+        self.assertEqual('A8', tokens[0].get("serial"), tokens[0])
 
     def test_43_encryptpin(self):
         serial = "ENC01"

@@ -491,9 +491,14 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                                 allowed_realms=allowed_realms)
 
     if isinstance(sortby, string_types):
-        # convert the string to a Token column
+        # check that the sort column exists and convert it to a Token column
         cols = Token.__table__.columns
-        sortby = cols.get(sortby)
+        if sortby in cols:
+            sortby = cols.get(sortby)
+        else:
+            log.warning('Unknown sort column "{0!s}". Using "serial" '
+                        'instead.'.format(sortby))
+            sortby = Token.serial
 
     if sortdir == "desc":
         sql_query = sql_query.order_by(sortby.desc())
