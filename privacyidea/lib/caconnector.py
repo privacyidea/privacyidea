@@ -41,6 +41,7 @@ from .error import ConfigAdminError
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
+from privacyidea.lib.utils.export import (register_import, register_export)
 #from privacyidea.lib.cache import cache
 
 log = logging.getLogger(__name__)
@@ -290,3 +291,25 @@ def get_caconnector_object(connector_name):
                 c_obj.set_config(connector_config)
 
     return c_obj
+
+
+@register_export('caconnector')
+def export_caconnector(name=None):
+    """ Export given or all caconnector configuration """
+    return get_caconnector_list(filter_caconnector_name=name)
+
+
+@register_import('caconnector')
+def import_caconnector(data, name=None):
+    """Import caconnector configuration"""
+    log.debug('Import caconnector config: {0!s}'.format(data))
+    for res_data in data:
+        if name and name != res_data.get('connectorname'):
+            continue
+        # Todo: unfortunately privacyidea delivers 'connectorname' on reading,
+        #  but requires 'caconnector' in save_caconnector.
+        res_data['caconnector'] = res_data.get('connectorname')
+        res_data.pop('connectorname')
+        rid = save_caconnector(res_data)
+        log.info('Import of caconnector "{0!s}" finished,'
+                 ' id: {1!s}'.format(res_data['caconnector'], rid))

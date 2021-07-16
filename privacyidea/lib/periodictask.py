@@ -22,16 +22,18 @@ to determine their next scheduled running time and to run them."""
 
 import logging
 from datetime import datetime
+from privacyidea.lib.tokenclass import DATE_FORMAT
 
 from croniter import croniter
 from dateutil.tz import tzutc, tzlocal
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
-from privacyidea.lib.utils import fetch_one_resource
+from privacyidea.lib.utils import fetch_one_resource, parse_date
 from privacyidea.lib.task.eventcounter import EventCounterTask
 from privacyidea.lib.task.simplestats import SimpleStatsTask
 from privacyidea.models import PeriodicTask
 from privacyidea.lib.framework import get_app_config
+from privacyidea.lib.utils.export import (register_import, register_export)
 
 log = logging.getLogger(__name__)
 
@@ -88,7 +90,8 @@ def calculate_next_timestamp(ptask, node, interval_tzinfo=None):
     return next_timestamp.astimezone(tzutc())
 
 
-def set_periodic_task(name, interval, nodes, taskmodule, ordering=0, options=None, active=True, id=None,
+def set_periodic_task(name=None, interval=None, nodes=None, taskmodule=None,
+                      ordering=0, options=None, active=True, id=None,
                       retry_if_failed=True):
     """
     Set a periodic task configuration. If ``id`` is None, this creates a new database entry.
@@ -128,7 +131,8 @@ def set_periodic_task(name, interval, nodes, taskmodule, ordering=0, options=Non
     if id is not None:
         # This will throw a ParameterError if there is no such entry
         get_periodic_task_by_id(id)
-    periodic_task = PeriodicTask(name, active, interval, nodes, taskmodule, ordering, options, id, retry_if_failed)
+    periodic_task = PeriodicTask(name, active, interval, nodes, taskmodule,
+                                 ordering, options, id, retry_if_failed)
     return periodic_task.id
 
 
@@ -276,3 +280,29 @@ def execute_task(taskmodule, params):
     module = get_taskmodule(taskmodule)
     log.info(u"Running taskmodule {!r} with parameters {!r}".format(module, params))
     return module.do(params)
+
+
+@register_export('periodictask')
+def export_periodictask(name=None):
+    """ Export given or all machineresolver configuration """
+    periodictask_list = get_periodic_tasks(name=name)
+    # last_update is not required for import, but used here for completeness
+    for task in periodictask_list:
+        last_update = task.get('last_update')
+        task['last_update'] = last_update.strftime(DATE_FORMAT)
+
+    return periodictask_list
+
+
+@register_import('periodictask')
+def import_periodictask(data, name=None):
+    """Import periodictask configuration"""
+    log.debug('Import periodictask config: {0!s}'.format(data))
+    for res_data in data:
+        if name and name != res_data.get('name'):
+            continue
+        res_data.pop('last_update')
+        res_data.pop('last_runs')
+        rid = set_periodic_task(**res_data)
+        log.info('Import of periodictask "{0!s}" finished,'
+                 ' id: {1!s}'.format(res_data['name'], rid))
