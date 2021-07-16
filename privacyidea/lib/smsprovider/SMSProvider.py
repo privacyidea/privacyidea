@@ -37,6 +37,7 @@ The code is tested in tests/test_lib_smsprovider
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.models import SMSGateway, SMSGatewayOption
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
+from privacyidea.lib.utils.export import (register_import, register_export)
 import logging
 log = logging.getLogger(__name__)
 
@@ -162,7 +163,7 @@ def get_sms_provider_class(packageName, className):
     return get_module_class(packageName, className, "submit_message")
 
 
-def set_smsgateway(identifier, providermodule, description=None,
+def set_smsgateway(identifier, providermodule=None, description=None,
                    options=None, headers=None):
 
     """
@@ -290,3 +291,46 @@ def send_sms_identifier(identifier, phone, message):
     """
     sms = create_sms_instance(identifier)
     return sms.submit_message(phone, message)
+
+
+def list_smsgateways(identifier=None, id=None, gwtype=None):
+    """
+    This returns a list of all sms gateways matching the criterion.
+    If no identifier or server is provided, it will return a list of all sms
+    gateway definitions.
+
+    :param identifier: The identifier or the name of the SMSGateway definition.
+        As the identifier is unique, providing an identifier will return a
+        list with either one or no sms gateway
+    :type identifier: basestring
+    :param id: The id of the sms gateway in the database
+    :type id: basestring
+    :return: dict of SMSGateway configurations with gateway identifiers as keys.
+    """
+    res = {}
+    for gw in get_smsgateway(identifier=identifier, id=id, gwtype=gwtype):
+        res[gw.identifier] = gw.as_dict()
+        res[gw.identifier].pop('name')
+        res[gw.identifier].pop('id')
+
+    return res
+
+
+@register_export('smsgateway')
+def export_smsgateway(name=None):
+    """ Export given or all sms gateway configuration """
+    res = list_smsgateways(identifier=name)
+
+    return res
+
+
+@register_import('smsgateway')
+def import_smsgateway(data, name=None):
+    """Import policy configuration"""
+    log.debug('Import smsgateway config: {0!s}'.format(data))
+    if name:
+        data = {name: data[name]} if name in data.keys() else {}
+    for _res_name, res_data in data.items():
+        rid = set_smsgateway(_res_name, **res_data)
+        log.info('Import of smsgateway "{0!s}" finished,'
+                 ' id: {1!s}'.format(res_data.get('name'), rid))
