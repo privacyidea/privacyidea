@@ -343,6 +343,7 @@ class ACTION(object):
     CHANGE_PIN_FIRST_USE = "change_pin_on_first_use"
     CHANGE_PIN_EVERY = "change_pin_every"
     CHANGE_PIN_VIA_VALIDATE = "change_pin_via_validate"
+    RESYNC_VIA_MULTICHALLENGE = "resync_via_multichallenge"
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
@@ -2148,6 +2149,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("If the PIN of a token is to be changed, this will allow the user to change the "
                           "PIN during a validate/check request via challenge / response."),
+            },
+            ACTION.RESYNC_VIA_MULTICHALLENGE: {
+                'type': 'bool',
+                'desc': _("The autoresync of a token can be done via a challenge response message."
+                          "You need to activate autoresync in the general settings!"),
             },
             ACTION.PASSTHRU: {
                 'type': 'str',

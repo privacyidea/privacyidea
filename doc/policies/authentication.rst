@@ -345,6 +345,23 @@ successfully. E.g. if the user enters two different new PINs, the authentication
 
 .. note:: The application must support several consecutive challenge response requests.
 
+.. _policy_resync_via_multichallenge:
+
+resync_via_multichallenge
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This policy is based on the global settin :ref:`autosync`.
+If *autosync* is enabled and this policy is configured, a user can synchronize
+his token during authentication via challenge response.
+
+If privacyIDEA realizes, that the first given OTP value is within the syncwindow,
+a challenge will be presented to the user saying "To resync your token, please enter the next OTP value".
+In contrast to the generic autosync a user has to enter the token PIN only once.
+
+.. note:: The application must support several consecutive challenge response requests.
+
 
 .. _policy_u2f_facets:
 
