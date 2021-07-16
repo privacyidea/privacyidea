@@ -35,9 +35,8 @@ from ..lib.policy import ACTION
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
 import logging
-from privacyidea.lib.radiusserver import (add_radius, RADIUSServer,
-                                          delete_radius, get_radiusservers, test_radius)
-from privacyidea.models import RADIUSServer as RADIUSServerDB
+from privacyidea.lib.radiusserver import (add_radius, list_radiusserver,
+                                          delete_radius, test_radius)
 
 
 log = logging.getLogger(__name__)
@@ -85,17 +84,10 @@ def list_radius():
     """
     This call gets the list of RADIUS server definitions
     """
-    res = {}
-    server_list = get_radiusservers()
-    for server in server_list:
-        # We do not add the secret!
-        res[server.config.identifier] = {"server": server.config.server,
-                                         "port": server.config.port,
-                                         "dictionary": server.config.dictionary,
-                                         "description":
-                                             server.config.description,
-                                         "timeout": server.config.timeout,
-                                         "retries": server.config.retries}
+    res = list_radiusserver()
+    # We do not add the secret!
+    for identifier, data in res.items():
+        data.pop("password")
     g.audit_object.log({'success': True})
     return send_result(res)
 
