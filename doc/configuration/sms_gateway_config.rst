@@ -86,6 +86,10 @@ behaviour of the SMS Gateway definition.
 
    Regular expression to modify the phone number to make it compatible with provider.
 
+   *Example*: If you want to replace the leading zero with your country code like
+   0123456789 -> 0049123456789, then you need to enter ``/^0/0049/``.
+
+
 **HTTP_METHOD**
 
    Can be GET or POST.
