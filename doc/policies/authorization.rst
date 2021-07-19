@@ -32,7 +32,7 @@ The default behaviour is to grant access, if and after the user has authenticate
 Using ``authorized=deny_access`` specific authentication requests can be denied, even if the user has provided
 the correct credentials.
 
-In combination with different IP addresses and policy priorities the adminitator can generically *deny_access* with the
+In combination with different IP addresses and policy priorities the administrator can generically *deny_access* with the
 lowest policy priority and *grant_access* for specific requests e.g. originating from specific IP addresses to certain
 users by defining higher policy priorities.
 
@@ -53,7 +53,7 @@ type: string
 
 Users will only be authorized with this very tokentype.
 The string can hold a space separated list of
-case sensitive tokentypes. It should look like:
+case sensitive tokentypes. It should look like::
 
     hotp totp spass
 
@@ -119,11 +119,11 @@ of the token matches this regular expression.
 This is checked after the authentication request, so that a valid
 OTP value can not be used anymore, even if authorization is forbidden.
 
-A valid action could look like
+A valid action could look like::
 
    action = key/regexp/
 
-Example:
+Example::
 
    action = last_auth/^2018.*/
 

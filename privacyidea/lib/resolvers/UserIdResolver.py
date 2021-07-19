@@ -122,7 +122,7 @@ class UserIdResolver(object):
         be an ID (like in /etc/passwd) or a string (like
         the DN in LDAP)
 
-        It needs to return an emptry string, if the user does
+        It needs to return an empty string, if the user does
         not exist.
 
         :param loginName: The login name of the user

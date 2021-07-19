@@ -1260,7 +1260,7 @@ class PasswordReset(MethodsMixin, db.Model):
     This table stores the recoverycodes sent to a given user
 
     The application should save the HASH of the recovery code. Just like the
-    password for the Admins the appliaction shall salt and pepper the hash of
+    password for the Admins the application shall salt and pepper the hash of
     the recoverycode. A database admin will not be able to inject a rogue
     recovery code.
 

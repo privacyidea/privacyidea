@@ -57,7 +57,7 @@ of an administrator.
 
 ``PI_INIT_CHECK_HOOK`` is a function in an external module, that will be
 called as decorator to ``token/init`` and ``token/assign``. This function
-takes the ``request`` and ``action`` (either "init" or "assign") as
+takes the ``request`` and ``action`` (either "init" or "assign") as an
 arguments and can modify the request or raise an exception to avoid the
 request being handled.
 

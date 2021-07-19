@@ -40,7 +40,7 @@ You just created your first connection to a user source.
 Create a Realm
 --------------
 
-User sources are grouped togeather to a so called "realm". For more
+User sources are grouped together to a so called "realm". For more
 information see :ref:`realms`.
 
 * Go to `Config -> Realms`

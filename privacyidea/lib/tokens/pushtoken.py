@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """The pushtoken sends a push notification via firebase
+__doc__ = """The pushtoken sends a push notification via Firebase service
 to the registered smartphone.
 The token is a challenge response token. The smartphone will sign the challenge
 and send it back to the authentication endpoint. 
@@ -227,7 +227,7 @@ def _build_verify_object(pubkey_pem):
 
 class PushTokenClass(TokenClass):
     """
-    The :ref:`push_token` uses the firebase service to send challenges to the
+    The :ref:`push_token` uses the Firebase service to send challenges to the
     user's smartphone. The user confirms on the smartphone, signs the
     challenge and sends it back to privacyIDEA.
 
@@ -248,7 +248,7 @@ class PushTokenClass(TokenClass):
 
             enrollment_credential=<hex nonce>
             serial=<token serial>
-            fbtoken=<firebase token>
+            fbtoken=<Firebase token>
             pubkey=<public key>
 
     For more information see:
@@ -430,7 +430,7 @@ class PushTokenClass(TokenClass):
             # We are in step 1:
             upd_param["2stepinit"] = 1
             self.add_tokeninfo("enrollment_credential", geturandom(20, hex=True))
-            # We also store the firebase config, that was used during the enrollment.
+            # We also store the Firebase config, that was used during the enrollment.
             self.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, param.get(PUSH_ACTION.FIREBASE_CONFIG))
         else:
             raise ParameterError("Invalid Parameters. Either provide (genkey) or (serial, fbtoken, pubkey).")
@@ -466,7 +466,7 @@ class PushTokenClass(TokenClass):
             # Get the values from the configured PUSH config
             fb_identifier = params.get(PUSH_ACTION.FIREBASE_CONFIG)
             if fb_identifier != POLL_ONLY:
-                # If do not do poll_only, then we load all the firebase configuration
+                # If do not do poll_only, then we load all the Firebase configuration
                 firebase_configs = get_smsgateway(identifier=fb_identifier, gwtype=GWTYPE)
                 if len(firebase_configs) != 1:
                     raise ParameterError("Unknown Firebase configuration!")
@@ -716,11 +716,11 @@ class PushTokenClass(TokenClass):
               Host: https://yourprivacyideaserver
 
               serial=<token serial>
-              fbtoken=<firebase token>
+              fbtoken=<Firebase token>
               pubkey=<public key>
 
         - It is also used when the smartphone sends the signed response
-          to the challenge during authentication. The following parameters ar accepted:
+          to the challenge during authentication. The following parameters are accepted:
 
             .. sourcecode:: http
 
@@ -741,7 +741,7 @@ class PushTokenClass(TokenClass):
               POST /ttype/push HTTP/1.1
               Host: https://yourprivacyideaserver
 
-              new_fb_token=<new firebase token>
+              new_fb_token=<new Firebase token>
               serial=<token serial>
               timestamp=<timestamp>
               signature=SIGNATURE(<new_fb_token>|<serial>|<timestamp>)
@@ -826,7 +826,7 @@ class PushTokenClass(TokenClass):
         if fb_identifier:
             challenge = b32encode_and_unicode(geturandom())
             if fb_identifier != POLL_ONLY:
-                # We only push to firebase if this tokens does NOT POLL_ONLY.
+                # We only push to Firebase if this tokens does NOT POLL_ONLY.
                 fb_gateway = create_sms_instance(fb_identifier)
                 registration_url = get_action_values_from_options(
                     SCOPE.ENROLL, PUSH_ACTION.REGISTRATION_URL, options=options)
@@ -862,14 +862,14 @@ class PushTokenClass(TokenClass):
 
             # If sending the Push message failed, we still raise an error and a warning.
             if not res:
-                log.warning(u"Failed to submit message to firebase service for token {0!s}."
+                log.warning(u"Failed to submit message to Firebase service for token {0!s}."
                             .format(self.token.serial))
-                raise ValidateError("Failed to submit message to firebase service.")
+                raise ValidateError("Failed to submit message to Firebase service.")
         else:
             log.warning(u"The token {0!s} has no tokeninfo {1!s}. "
                         u"The message could not be sent.".format(self.token.serial,
                                                                  PUSH_ACTION.FIREBASE_CONFIG))
-            raise ValidateError("The token has no tokeninfo. Can not send via firebase service.")
+            raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")
 
         return True, message, db_challenge.transaction_id, attributes
 

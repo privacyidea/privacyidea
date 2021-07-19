@@ -141,7 +141,7 @@ You can exclude users from matching this policy, by prepending a '-' or a '!'.
 You can also use regular expressions to match the user like ``customer_.*``
 to match any user, starting with *customer_*.
 
-.. note:: Regular expression will only work for exact machtes.
+.. note:: Regular expression will only work for exact matches.
    *user1234* will not match *user1* but only *user1...*
 
 client

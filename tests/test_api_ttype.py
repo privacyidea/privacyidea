@@ -284,7 +284,7 @@ class TtypePushAPITestCase(MyApiTestCase):
                 self.assertFalse(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
                 self.assertEqual(jsonresp.get("result").get("error").get("message"),
-                                 "ERR401: Failed to submit message to firebase service.")
+                                 "ERR401: Failed to submit message to Firebase service.")
 
         # first create a signature
         ts = datetime.utcnow().isoformat()

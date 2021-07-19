@@ -95,15 +95,15 @@ Using pam_yubico
 
 .. index:: pam_yubico, PAM
 
-If you are using yubikey tokens you might also use ``pam_yubico``.
+If you are using Yubikey tokens you might also use ``pam_yubico``.
 You can use Yubikey tokens for two more or less distinct applications.
 The first is using privacyideas PAM module as described above.
 In this case privacyidea handles the policies
 for user access and password validation. This works fine, when you only use
 privacyidea for token validation.
 
-The second mode is using the standard PAM module for yubikeys from Yubico
-``pam_yubico`` to handle the token validation. The upside ist that you can
+The second mode is using the standard PAM module for Yubikeys from Yubico
+``pam_yubico`` to handle the token validation. The upside is that you can
 use the PAM module included with you distribution, but there are downsides as
 well.
 
@@ -118,9 +118,9 @@ well.
   not check any kind of policy.
 
 You can work around the restrictions by using a clever combination
-of tokentype yubikey and yubico as follows:
+of tokentype *Yubikey* and *Yubico* as follows:
 
-* enroll a yubikey token with ``yubikey_mass_enroll --mode YUBICO``.
+* enroll a Yubikey token with ``yubikey_mass_enroll --mode YUBICO``.
 
 * do not set a token password.
 
@@ -154,7 +154,7 @@ to the UBAM token, but this is right now not possible with the WebUI.
 
 In the WebUI, test the UBAM token without a Token PIN, test the UBCM token
 with the stored Token PIN, and check the token info afterwards.
-Check the yubikey token via ``/ttype/yubikey``, for example with::
+Check the Yubikey token via ``/ttype/yubikey``, for example with::
 
    ykclient --debug --url https://<privacyidea>/ttype/yubikey --apikey "<API key>" "apiid" <otp>
 
@@ -248,7 +248,7 @@ A usual configuration will look like this::
 Keycloak
 --------
 
-With the privacyIDEA keycloak-provider, there is a plugin available for the Keycloak identity manager.
+With the privacyIDEA Keycloak-provider, there is a plugin available for the Keycloak identity manager.
 It is available from the GitHub repository `keycloak-provider <https://github.com/privacyidea/keycloak-
 provider>`_.
 

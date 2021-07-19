@@ -43,7 +43,7 @@ listed, disabled, marked or deleted.
 
 You can specify how old the last authentication of such a token has to be.
 You can use the tags *h* (hours), *d* (day) and *y* (year).
-Sepcifying *180d* will find tokens, that were not used for authentication for
+Specifying *180d* will find tokens, that were not used for authentication for
 the last 180 days.
 
 The command::

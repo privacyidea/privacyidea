@@ -1098,7 +1098,7 @@ class TokenClass(object):
         Checks if we should reset the failcounter due to the
         FAILCOUNTER_CLEAR_TIMEOUT
 
-        :return: True, if the failcounter was resetted
+        :return: True, if the failcounter was reset
         """
         timeout = 0
         try:
@@ -1320,7 +1320,7 @@ class TokenClass(object):
 
     def get_init_detail(self, params=None, user=None):
         """
-        to complete the token initialization, the response of the initialisation
+        to complete the token initialization, the response of the initialization
         should be build by this token specific method.
         This method is called from api/token after the token is enrolled
 

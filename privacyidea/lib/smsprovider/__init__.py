@@ -25,7 +25,7 @@
 
 """
 SMSProvider is the base class for submitting SMS.
-It provides 3 different imlementations:
+It provides 3 different implementations:
 
  * HTTP: submitting SMS via an HTTP gateway of an SMS provider
  * SMTP: submitting SMS via an SMTP gateway of an SMS provider

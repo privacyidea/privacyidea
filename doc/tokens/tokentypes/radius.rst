@@ -47,4 +47,4 @@ The RADIUS secret for this RADIUS client.
    authentication request with the proprietary token in the audit log of
    privacyIDEA. This way you can have a scenario, where users are still using
    old tokens and other users are already using new (privacyIDEA) tokens. You
-   will see all authentication requests in the pricacyIDEA system.
+   will see all authentication requests in the privacyIDEA system.

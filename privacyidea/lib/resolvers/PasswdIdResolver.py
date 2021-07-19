@@ -182,7 +182,7 @@ class IdResolver (UserIdResolver):
         false if password does not match
 
         We do not support shadow passwords. so the seconds column
-        of the passwd file needs to contain the crypted password
+        of the passwd file needs to contain the encrypted password
 
         If the password is a unicode object, it is encoded according
         to ENCODING first.
@@ -199,14 +199,14 @@ class IdResolver (UserIdResolver):
             # crypt needs bytes in python 2
             password = to_bytes(password)
         cryptedpasswd = self.passDict[uid]
-        log.debug("We found the crypted pass {0!s} for uid {1!s}".format(cryptedpasswd, uid))
+        log.debug("We found the encrypted pass {0!s} for uid {1!s}".format(cryptedpasswd, uid))
         if cryptedpasswd:
             if cryptedpasswd in ['x', '*']:
                 err = "Sorry, currently no support for shadow passwords"
                 log.error("{0!s}".format(err))
                 raise NotImplementedError(err)
             cp = crypt.crypt(password, cryptedpasswd)
-            log.debug("crypted pass is {0!s}".format(cp))
+            log.debug("encrypted pass is {0!s}".format(cp))
             if crypt.crypt(password, cryptedpasswd) == cryptedpasswd:
                 log.info("successfully authenticated user uid {0!s}".format(uid))
                 return True
@@ -214,7 +214,7 @@ class IdResolver (UserIdResolver):
                 log.warning("user uid {0!s} failed to authenticate".format(uid))
                 return False
         else:
-            log.warning("Failed to verify password. No crypted password "
+            log.warning("Failed to verify password. No encrypted password "
                         "found in file")
             return False
 
@@ -224,7 +224,7 @@ class IdResolver (UserIdResolver):
         as we only have the loginId, we have to traverse the dict for the value
 
         :param userId: the to be searched user
-        :param no_passwd: retrun no password
+        :param no_passwd: return no password
         :return: dict of user info
         """
         ret = {}

@@ -146,7 +146,7 @@ Logo
 ~~~~
 
 The default logo is located at ``privacyidea/static/css/privacyIDEA1.png``.
-If you want to use your own logo, you can put youf file "mylogo.png" just
+If you want to use your own logo, you can put your file "mylogo.png" just
 in the same folder and set
 
    PI_LOGO = "mylogo.png"
