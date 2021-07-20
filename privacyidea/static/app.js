@@ -20,7 +20,7 @@
  */
 myApp = angular.module("privacyideaApp",
     ['ui.router', 'ui.bootstrap', 'TokenModule',
-        'ngIdle', 'ngSanitize',
+        'ngIdle', 'ui.highlight', 'ngSanitize',
         'privacyideaAuth',
         'privacyideaApp.auditStates',
         'privacyideaApp.configStates',

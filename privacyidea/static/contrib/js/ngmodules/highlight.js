@@ -9,13 +9,20 @@
 angular.module('ui.highlight',[]).filter('highlight', function () {
   return function (text, search, caseSensitive) {
     if (text && (search || angular.isNumber(search))) {
-      text = text.toString();
+      // replace html special characters in so that won't get interpreted by ng-bind-html
+      text = text.toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
       search = search.toString();
       if (caseSensitive) {
-        return text.split(search).join('<span class="ui-match">' + search + '</span>');
+        var search_modifier = 'gi';
       } else {
-        return text.replace(new RegExp(search, 'gi'), '<span class="ui-match">$&</span>');
+        var search_modifier = 'g';
       }
+      return text.replace(new RegExp(search, 'gi'), '<span class="ui-match">$&</span>');
     } else {
       return text;
     }
