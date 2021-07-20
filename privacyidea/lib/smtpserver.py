@@ -103,9 +103,15 @@ class SMTPServer(object):
         msg['To'] = ",".join(recipient)
         msg['Date'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
         msg['Reply-To'] = reply_to
-
-        mail = smtplib.SMTP(config['server'], port=int(config['port']),
-                            timeout=config.get('timeout', TIMEOUT))
+        if config['server'].startswith('smtps://'):
+            mail = smtplib.SMTP_SSL(config['server'][8:], port=int(config['port']),
+                                timeout=config.get('timeout', TIMEOUT))
+        elif config['server'].startswith('smtp://'):
+            mail = smtplib.SMTP(config['server'][7:], port=int(config['port']),
+                                timeout=config.get('timeout', TIMEOUT))
+        else:
+            mail = smtplib.SMTP(config['server'], port=int(config['port']),
+                                timeout=config.get('timeout', TIMEOUT))
         log.debug(u"submitting message to {0!s}".format(msg["To"]))
         log.debug("Saying EHLO to mailserver {0!s}".format(config['server']))
         r = mail.ehlo()
