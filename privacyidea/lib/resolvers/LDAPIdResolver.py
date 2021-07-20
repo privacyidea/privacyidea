@@ -111,9 +111,16 @@ elif os.path.isfile("/etc/ssl/certs/ca-bundle.crt"):
 else:
     DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
 
-DEFAULT_TLS_PROTOCOL = ssl.PROTOCOL_TLS
+try:
+    TLS_NEGOTIATE_PROTOCOL = ssl.PROTOCOL_TLS
+except AttributeError as _e:
+    # this is Python < 2.7.13, it does not provide ssl.PROTOCOL_TLS
+    TLS_NEGOTIATE_PROTOCOL = ssl.PROTOCOL_SSLv23
+
+DEFAULT_TLS_PROTOCOL = TLS_NEGOTIATE_PROTOCOL
 
 TLS_OPTIONS_1_3 = (ssl.OP_NO_TLSv1_2, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1, ssl.OP_NO_SSLv3)
+
 
 class LockingServerPool(ldap3.ServerPool):
     """
@@ -516,7 +523,7 @@ class IdResolver (UserIdResolver):
                 tls_version = int(DEFAULT_TLS_PROTOCOL)
             # If TLS_VERSION is 2, set tls_options to use TLS v1.3
             if not tls_options:
-                tls_options = TLS_OPTIONS_1_3 if int(tls_version) == int(ssl.PROTOCOL_TLS) else None
+                tls_options = TLS_OPTIONS_1_3 if int(tls_version) == int(TLS_NEGOTIATE_PROTOCOL) else None
             if tls_verify:
                 tls_ca_file = tls_ca_file or DEFAULT_CA_FILE
             else:
