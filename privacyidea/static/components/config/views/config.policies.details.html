@@ -319,7 +319,7 @@
                                                    ng-model="actionCheckBox[action.name]"
                                                    id="cb_{{ action.name }}">
                                             <label for="cb_{{ action.name }}"
-                                                   ng-bind-html="action.name | highlight: action_filter">
+                                                   ng-bind-html="action.name | escape_text | highlight: action_filter">
                                             </label>
                                         </td>
 
@@ -378,7 +378,7 @@
                                             <!-- This is the description of the policy action
                                              -->
                                             <p class="help help-block"
-                                               ng-bind-html="action.desc | highlight: action_filter">
+                                               ng-bind-html="action.desc | escape_text | highlight: action_filter">
                                             </p>
                                         </td>
                                     </tr>
