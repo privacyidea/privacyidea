@@ -400,9 +400,9 @@ class TokenEventHandler(BaseEventHandler):
                         start_date = handler_options.get(VALIDITY.START)
                         end_date = handler_options.get(VALIDITY.END)
                         if start_date:
-                             d = parse_date(start_date)
-                             set_validity_period_start(serial, None,
-                                                       d.strftime(DATE_FORMAT))
+                            d = parse_date(start_date)
+                            set_validity_period_start(serial, None,
+                                                      d.strftime(DATE_FORMAT))
                         if end_date:
                             d = parse_date(end_date)
                             set_validity_period_end(serial, None,
