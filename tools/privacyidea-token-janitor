@@ -425,7 +425,7 @@ def export_user_data(token_list, attributes=None):
                      ' ISO 8601 datetime')
 @manager.option('--tokeninfo-key', help='The tokeninfo key to match')
 @manager.option('--orphaned',
-                help='Whether the token is an orphaned token. Set to 1')
+                help='Whether the token is an orphaned token or not. Set to 1 (True) or 0 (False)')
 @manager.option('--tokentype', help='The tokentype to search.')
 @manager.option('--serial', help='A regular expression on the serial')
 @manager.option('--description', help='A regular expression on the description')
