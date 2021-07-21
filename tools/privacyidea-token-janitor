@@ -264,6 +264,7 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
                    orphaned, tokentype, serial, description, chunksize):
     filter_active = None
     filter_assigned = None
+    orphaned = orphaned or ""
 
     if assigned is not None:
         filter_assigned = assigned.lower() == "true"
@@ -312,7 +313,9 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
                     continue
                 if not all(comparator(value) for comparator in tokenattribute_filter):
                     continue
-            if orphaned and not token_obj.is_orphaned():
+            if orphaned.upper() in ["1", "TRUE"] and not token_obj.is_orphaned():
+                continue
+            if orphaned.upper() in ["0", "FALSE"] and token_obj.is_orphaned():
                 continue
 
             tok_found += 1
