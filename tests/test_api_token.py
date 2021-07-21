@@ -1114,7 +1114,7 @@ class APITokenTestCase(MyApiTestCase):
         r = set_event("token_disable", ["token_load"], "Token",
                       "disable", position="post")
         events = EventConfiguration()
-        event_id = [ event['id'] for event in events.events if event['name'] == 'token_disable' ][0]
+        event_id = [event['id'] for event in events.events if event['name'] == 'token_disable'][0]
 
         # Load yubico.csv
         with self.app.test_request_context('/token/load/yubico.csv',
