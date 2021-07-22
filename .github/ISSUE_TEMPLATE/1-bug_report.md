@@ -2,7 +2,7 @@
 name: Bug report
 about: File a bug report to help us improve future versions of privacyIDEA
 title: ''
-labels: possible bug
+labels: 'Type: Possible bug'
 assignees: ''
 
 ---

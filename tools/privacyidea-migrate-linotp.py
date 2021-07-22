@@ -52,7 +52,7 @@ migrated tokens.
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import select
-from sqlalchemy.schema import ForeignKey
+from sqlalchemy.schema import ForeignKey, Sequence
 from sqlalchemy import (Table, MetaData, Column, Integer, Unicode, Boolean,
                         UnicodeText)
 import sys
@@ -175,7 +175,8 @@ def migrate(config_obj):
     metadata = MetaData()
 
     token_table = Table("token", metadata,
-                        Column("id", Integer, primary_key=True, nullable=False),
+                        Column("id", Integer, Sequence('token_seq'),
+                               primary_key=True, nullable=False),
                         Column("description", Unicode(80), default=u''),
                         Column("serial", Unicode(40), default=u'', unique=True,
                                nullable=False, index=True),
@@ -201,7 +202,8 @@ def migrate(config_obj):
                         Column("rollout_state", Unicode(10), default=u''))
 
     tokenowner_table = Table("tokenowner", metadata,
-                             Column("id", Integer, primary_key=True, nullable=False),
+                             Column("id", Integer, Sequence('tokenowner_seq'),
+                                    primary_key=True, nullable=False),
                              Column("token_id", Integer, ForeignKey("token.id"), nullable=False),
                              Column("resolver", Unicode(120), default=u"", index=True),
                              Column("user_id", Unicode(320), default=u"", index=True),
@@ -209,7 +211,8 @@ def migrate(config_obj):
                              )
 
     tokeninfo_table = Table("tokeninfo", metadata,
-                            Column("id", Integer, primary_key=True),
+                            Column("id", Integer, Sequence('tokeninfo_seq'),
+                                   primary_key=True),
                             Column("Key", Unicode(255), nullable=False),
                             Column("Value", UnicodeText(), default=u''),
                             Column("Type", Unicode(100), default=u''),
@@ -217,23 +220,29 @@ def migrate(config_obj):
                             Column("token_id", Integer()))
 
     tokenrealm_table = Table("tokenrealm", metadata,
-                             Column("id", Integer(), primary_key=True),
+                             Column("id", Integer(),
+                                    Sequence('tokenrealm_seq'),
+                                    primary_key=True),
                              Column("token_id", Integer()),
                              Column("realm_id", Integer()))
 
     realm_table = Table("realm", metadata,
-                        Column("id", Integer, primary_key=True),
+                        Column("id", Integer, Sequence('realm_seq'),
+                               primary_key=True),
                         Column("name", Unicode(255), default=u''),
                         Column("default",  Boolean(), default=False),
                         Column("option", Unicode(40), default=u''))
 
     resolver_table = Table("resolver", metadata,
-                           Column("id", Integer, primary_key=True),
+                           Column("id", Integer, Sequence('resolver_seq'),
+                                  primary_key=True),
                            Column("name", Unicode(255), default=u""),
                            Column("rtype", Unicode(255), default=u""))
 
     resolver_config_table = Table("resolverconfig", metadata,
-                                  Column("id", Integer, primary_key=True),
+                                  Column("id", Integer,
+                                         Sequence('resolverconf_seq'),
+                                         primary_key=True),
                                   Column("resolver_id", Integer),
                                   Column("Key", Unicode(255), default=u""),
                                   Column("Value", Unicode(2000), default=u""),
@@ -242,7 +251,9 @@ def migrate(config_obj):
                                   )
 
     resolverrealm_table = Table("resolverrealm", metadata,
-                                Column("id", Integer, primary_key=True),
+                                Column("id", Integer,
+                                       Sequence('resolverrealm_seq'),
+                                       primary_key=True),
                                 Column("resolver_id", Integer),
                                 Column("realm_id", Integer),
                                 Column("priority", Integer))

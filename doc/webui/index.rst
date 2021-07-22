@@ -1,9 +1,9 @@
 .. _webui:
 
-.. index:: ! webui, ! WebUI
-
 WebUI
 =====
+
+.. index:: ! webui, ! WebUI
 
 privacyIDEA comes with a web-based user interface which is used to manage and configure
 the privacyIDEA server. It is also used a self-service portal for the average user, who
@@ -91,7 +91,6 @@ In most cases there is no need to manage machines and this view is empty.
    :width: 500
 
    *The Machines view.*
-
 
 
 Config

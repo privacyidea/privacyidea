@@ -95,7 +95,7 @@ from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
                                     generate_otpkey)
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .decorators import check_token_locked
-from dateutil.parser import parse as parse_date_string
+from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
@@ -141,6 +141,11 @@ class CLIENTMODE(object):
     POLL = 'poll'
     U2F = 'u2f'
     WEBAUTHN = 'webauthn'
+
+    
+class ROLLOUTSTATE(object):
+    CLIENTWAIT = 'clientwait'
+    PENDING = 'pending'
 
 
 class TokenClass(object):
@@ -529,7 +534,7 @@ class TokenClass(object):
             otpKey = self.decode_otpkey(otpKey, otpkeyformat)
 
         if twostep_init:
-            if self.token.rollout_state == "clientwait":
+            if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
                 # We do not do 2stepinit in the second step
                 raise ParameterError("2stepinit is only to be used in the "
                                      "first initialization step.")
@@ -555,7 +560,7 @@ class TokenClass(object):
             otpKey = getParam(param, "otpkey", required)
 
         if otpKey is not None:
-            if self.token.rollout_state == "clientwait":
+            if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
                 # If we have otpkey and the token is in the enrollment-state
                 # generate the new key
                 server_component = to_unicode(self.token.get_otpkey().getKey())
@@ -570,7 +575,7 @@ class TokenClass(object):
 
         if twostep_init:
             # After the key is generated, we set "waiting for the client".
-            self.token.rollout_state = "clientwait"
+            self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
 
         pin = getParam(param, "pin", optional)
         if pin is not None:
@@ -1105,7 +1110,7 @@ class TokenClass(object):
         Checks if we should reset the failcounter due to the
         FAILCOUNTER_CLEAR_TIMEOUT
 
-        :return: True, if the failcounter was resetted
+        :return: True, if the failcounter was reset
         """
         timeout = 0
         try:
@@ -1327,7 +1332,7 @@ class TokenClass(object):
 
     def get_init_detail(self, params=None, user=None):
         """
-        to complete the token initialization, the response of the initialisation
+        to complete the token initialization, the response of the initialization
         should be build by this token specific method.
         This method is called from api/token after the token is enrolled
 
@@ -1671,7 +1676,10 @@ class TokenClass(object):
         than the specified time delta which is passed as 10h, 7d or 1y.
 
         It returns True, if the last authentication with this token is
-        **newer*** than the specified delta.
+        **newer** than the specified delta or by any chance exactly the same.
+
+        It returns False, if the last authentication is older or
+        if the data in the token can not be parsed.
 
         :param last_auth: 10h, 7d or 1y
         :type last_auth: basestring
@@ -1690,7 +1698,12 @@ class TokenClass(object):
                       "tdelta %s: %s" % (self.token.serial, tdelta,
                                          date_s))
             # parse the string from the database
-            last_success_auth = parse_date_string(date_s)
+            try:
+                last_success_auth = parse_date_string(date_s)
+            except ParserError:
+                log.info("Failed to parse the date in 'last_auth' of token {0!s}.".format(self.token.serial))
+                return False
+
             if not last_success_auth.tzinfo:
                 # the date string has no timezone, default timezone is UTC
                 # We need to set the timezone manually

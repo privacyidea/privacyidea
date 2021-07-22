@@ -46,14 +46,17 @@ pypi:
 	gpg --detach-sign -a --default-key ${SIGNING_KEY} dist/*.tar.gz
 	twine upload dist/*.tar.gz dist/*.tar.gz.asc
 
-
-depdoc:
-	#sfood privacyidea | sfood-graph | dot -Tpng -o graph.png	
-	dot -Tpng dependencies.dot -o dependencies.png
-
 doc-man:
 	(cd doc; make man)
 
 doc-html:
 	(cd doc; make html)
 
+NPM_VERSION := $(shell npm --version 2>/dev/null)
+
+update-contrib:
+ifdef NPM_VERSION
+	(cd privacyidea/static && npm install && ./update_contrib.sh)
+else
+	@echo "Command 'npm' not found! It is needed to install the JS contrib libraries."
+endif

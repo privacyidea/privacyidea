@@ -26,7 +26,7 @@ the API key, but then the request and answer can't be verify against
 the key. It is useful to use HTTPS for your validation requests, but
 this is another kind of protection.
 
-OTP validation can either use the privacyidea API /validate/check or
-the Yubikey validation protocol /ttype/yubikey or - if enabled in
-your webserver configuration - /wsapi/2.0/verify.
+OTP validation can either use the privacyidea API ``/validate/check`` or
+the Yubikey validation protocol ``/ttype/yubikey`` or - if enabled in
+your webserver configuration - ``/wsapi/2.0/verify``.
 

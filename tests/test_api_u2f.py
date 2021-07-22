@@ -7,7 +7,7 @@ from hashlib import sha256
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 
-from privacyidea.lib.token import assign_token, remove_token
+from privacyidea.lib.token import assign_token, remove_token, get_tokens
 from privacyidea.lib.user import User
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.tokens.u2f import (check_response, url_encode)
@@ -142,6 +142,53 @@ class APIU2fTestCase(MyApiTestCase):
             response = res.json
             result = response.get("result")
             self.assertEqual(result.get("value"), True)
+
+        # In this case we get the automatic description
+        self.assertEqual(get_tokens(serial=serial)[0].token.description, "Yubico U2F EE Serial 13831167861")
+        remove_token(self.serial)
+
+    def test_01a_register_u2f_with_custom_description(self):
+        # step 1
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "u2f",
+                                                 "serial": self.serial,
+                                                 "description": "my description"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            response = res.json
+            result = response.get("result")
+            details = response.get("detail")
+            self.assertEqual(result.get("value"), True)
+
+            serial = details.get("serial")
+            self.assertEqual(serial[:3], "U2F")
+            self.assertEqual(details.get("u2fRegisterRequest").get(
+                "version"), "U2F_V2")
+            challenge = details.get("u2fRegisterRequest").get("challenge")
+            self.assertTrue(len(challenge) > 20)
+
+        # step 2
+        # We need to send back regData and clientData.
+        # from the registration example
+        reg_data = "BQRFnd8XtfZzsTK68VPK64Bcjiog_ZzyYNuzjaaGwpPnSpifxaqQV4_4IMxVlGS3CLoQmNAR41MSMxZHG0dENLRmQGnk4OqRxGRHmUOOLmDkGgdIJycQe79JCERV1gqGnWAOFBg_bH4WFSxZwnX-IMRcl3zW_X442QNrrdFySvXrba4wggIcMIIBBqADAgECAgQ4Zt91MAsGCSqGSIb3DQEBCzAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJvb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwMDAwMFowKzEpMCcGA1UEAwwgWXViaWNvIFUyRiBFRSBTZXJpYWwgMTM4MzExNjc4NjEwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQ3jfx0DHOblHJO09Ujubh2gQZWwT3ob6-uzzjZD1XiyAob_gsw3FOzXefQRblty48r-U-o4LkDFjx_btwuSHtxoxIwEDAOBgorBgEEAYLECgEBBAAwCwYJKoZIhvcNAQELA4IBAQIaR2TKAInPkq24f6hIU45yzD79uzR5KUMEe4IWqTm69METVio0W2FHWXlpeUe85nGqanwGeW7U67G4_WAnGbcd6zz2QumNsdlmb_AebbdPRa95Z8BG1ub_S04JoxQYNLaa8WRlzN7POgqAnAqkmnsZQ_W9Tj2uO9zP3mpxOkkmnqz7P5zt4Lp5xrv7p15hGOIPD5V-ph7tUmiCJsq0LfeRA36X7aXi32Ap0rt_wyfnRef59YYr7SmwaMuXKjbIZSLesscZZTMzXd-uuLb6DbUCasqEVBkGGqTRfAcOmPov1nHUrNDCkOR0obR4PsJG4PiamIfApNeoXGYpGbok6nucMEYCIQC_yerJqB3mnuAJGfbdKuOIx-Flxr-VSQ2nAkUUE_50dQIhAJE2NL1Xs2oVEG4bFzEM86TfS7nkHxad89aYmUrII49V"
+        client_data = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZmluaXNoRW5yb2xsbWVudCIsImNoYWxsZW5nZSI6ImdXbndtYnFSMl9YOE91RFhId0dyQWNmUTBUajN4YTVfZ2RJMjBYcVlsdTg9Iiwib3JpZ2luIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiY2lkX3B1YmtleSI6IiJ9"
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "type": "u2f",
+                                                 "regdata": reg_data,
+                                                 "clientdata": client_data},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            response = res.json
+            result = response.get("result")
+            self.assertEqual(result.get("value"), True)
+
+        # In this case we get the automatic description
+        self.assertEqual(get_tokens(serial=serial)[0].token.description, "my description")
 
     def test_02_validate(self):
         # assign token to user

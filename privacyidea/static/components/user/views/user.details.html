@@ -104,9 +104,12 @@
                     ng-options = "attribute_key as attribute_key for (attribute_key, attribute_values) in allowed_custom_attributes['set']"
                 >
                 </select>
+                <label class="sr-only" for="new_custom_attribute_key" translate="Custom attribute name"></label>
                 <input class="form-control"
                        ng-show="selected_attr_key==='*'"
-                       ng-model="new_custom_attribute_key">
+                       ng-model="new_custom_attribute_key"
+                       id="new_custom_attribute_key"
+                       placeholder="Custom attribute name">
             </td>
             <td class="col-sm-4">
                 <select class="form-control"

@@ -84,7 +84,7 @@ request will be set.
 You can use the tag ``{current_time}`` or ``{now}`` to set the current
 timestamp. In addition you can append an offset to *current_time* or *now*
 like ``{now}-12d`` or ``{now}+10m``. This would write a timestamp which is 12
-days in the passt or 10 minutes in the future. The plus or minus must follow
+days in the past or 10 minutes in the future. The plus or minus must follow
 without blank, allowed time identifiers are s (seconds), m (minutes), h
 (hours) and d (days).
 

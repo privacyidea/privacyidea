@@ -143,7 +143,7 @@ version 3.4 the smartphone can also poll for active challenges.
 Login to application
 ....................
 
-The application can check with the orignial transaction ID
+The application can check with the original transaction ID
 with the privacyIDEA server, if the challenge has been successfully
 answered and automatically login the user.
 

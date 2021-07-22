@@ -198,15 +198,15 @@ change_pin_every
 type: string
 
 This policy requires the user to change the PIN of his token on a regular
-basis. Enter a value follewed by "d", e.g. change the PIN every 180 days will
+basis. Enter a value followed by "d", e.g. change the PIN every 180 days will
 be "180d".
 
 The date, when the PIN needs to be changed, is returned in the API response
-of */validate/check*. For more information see :ref:`change_pin_first_use`.
+of */validate/check*. For more information see :ref:`policy_change_pin_first_use`.
 To specify the contents of the PIN see :ref:`user_policies`.
 
-otp_pin_encrypt
-~~~~~~~~~~~~~~~
+encrypt_pin
+~~~~~~~~~~~
 
 type: bool
 
@@ -214,7 +214,7 @@ If set the OTP PIN of a token will be encrypted. The default
 behaviour is to hash the OTP PIN, which is safer.
 
 registration.length
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 .. index:: registration token
 
@@ -223,7 +223,7 @@ type: int
 This is the length of the generated registration codes.
 
 registration.contents
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 type: string
 
@@ -233,8 +233,8 @@ This defines what characters the registrationcodes should contain.
 
 This takes the same values like the admin policy :ref:`admin_policies_otp_pin_contents`.
 
-lostTokenPWLen
-~~~~~~~~~~~~~~
+losttoken_PW_length
+~~~~~~~~~~~~~~~~~~~
 
 .. index:: lost token
 
@@ -242,8 +242,8 @@ type: int
 
 This is the length of the generated password for the lost token process.
  
-lostTokenPWContents
-~~~~~~~~~~~~~~~~~~~
+losttoken_PW_contents
+~~~~~~~~~~~~~~~~~~~~~
 
 type: string
 
@@ -266,8 +266,8 @@ password like *AC#!49MK))*.
    part of the password. Also ``C`` would again add the character "I", which is
    not part of Base58.
 
-lostTokenValid
-~~~~~~~~~~~~~~
+losttoken_valid
+~~~~~~~~~~~~~~~
 
 type: int
 
@@ -279,8 +279,8 @@ yubikey_access_code
 
 type: string
 
-This is a 12 character long access code in hex format to be used to initialize yubikeys. If
-no access code is set, yubikeys can be re-initialized by everybody. You can choose
+This is a 12 character long access code in hex format to be used to initialize Yubikeys. If
+no access code is set, Yubikeys can be re-initialized by everybody. You can choose
 a company wide access code, so that Yubikeys can only be re-initialized by your own system.
 
 You can add two access codes separated by a colon to change from one access code to the other.
@@ -353,8 +353,8 @@ This is new in version 2.21.
 
 .. _force_app_pin:
 
-.. hotp_force_app_pin, totp_force_app_pin
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+hotp_force_app_pin, totp_force_app_pin
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: bool
 
@@ -675,13 +675,13 @@ certificate is passed along to verify, if the key pair was generated on a (PIV) 
 This policy can be set to:
 
 * ``ignore`` (default): Ignore any existence of an attestation certificate
-* ``verify``: If an attestation certificate is passed along during enrollment, the attestation
-  ceritificate gets verified.
+* ``verify``: If an attestation certificate is passed along during enrollment,
+  the attestation certificate gets verified.
 * ``require_and_verify``: An attestation certificate is required and verified. If no attestation certificate
   is provided, the enrollment will fail.
 
 The trusted root certificate authorities and intermediate certificate authorities can be configured via
-the policies :ref:`admin_trusted_attestation_CA` and :ref:`user_trusted_attestation_CA
+the policies :ref:`admin_trusted_attestation_CA` and :ref:`user_trusted_attestation_CA`
 
 
 

@@ -21,7 +21,7 @@ Installation
 ............
 
 Install a package *libmysqlclient-dev* from your distribution. The name may
-vary depending on which distritubtion you are running::
+vary depending on which distribution you are running::
 
    pip install MySQL-python
 

@@ -264,7 +264,7 @@ class PushTokenTestCase(MyTestCase):
                 self.assertFalse(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
                 self.assertEqual(jsonresp.get("result").get("error").get("message"),
-                                 "ERR401: Failed to submit message to firebase service.")
+                                 "ERR401: Failed to submit message to Firebase service.")
 
             # Our ServiceAccountCredentials mock has been called once, because
             # no access token has been fetched before
@@ -294,7 +294,7 @@ class PushTokenTestCase(MyTestCase):
                 self.assertFalse(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
                 self.assertEqual(jsonresp.get("result").get("error").get("message"),
-                                 "ERR401: Failed to submit message to firebase service.")
+                                 "ERR401: Failed to submit message to Firebase service.")
             self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 0)
             # disallow polling the specific token through a policy
             set_policy('push_poll', SCOPE.AUTH,
@@ -312,7 +312,7 @@ class PushTokenTestCase(MyTestCase):
                 self.assertFalse(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
                 self.assertEqual(jsonresp.get("result").get("error").get("message"),
-                                 "ERR401: Failed to submit message to firebase service.")
+                                 "ERR401: Failed to submit message to Firebase service.")
             self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 0)
             # Check that the challenge is created if the request to firebase
             # succeeded even though polling is disabled

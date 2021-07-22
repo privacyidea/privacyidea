@@ -78,7 +78,7 @@ for the RADIUS server.
 
 .. note:: The passthru policy overrides the authorization policy
    for :ref:`tokentype_policy`. I.e. a user may authenticate due
-   to the passthru    policy (since he has no token)
+   to the passthru policy (since he has no token)
    although a tokentype policy is active!
 
 .. warning:: If the user has the right to delete his
@@ -514,7 +514,7 @@ The default is to ``allow`` polling
 
 .. _policy_challenge_text:
 
-challenge_text, challenge_text_header, challenge_test_footer
+challenge_text, challenge_text_header, challenge_text_footer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: Challenge Text Policy

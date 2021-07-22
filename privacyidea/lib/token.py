@@ -491,9 +491,14 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                                 allowed_realms=allowed_realms)
 
     if isinstance(sortby, string_types):
-        # convert the string to a Token column
+        # check that the sort column exists and convert it to a Token column
         cols = Token.__table__.columns
-        sortby = cols.get(sortby)
+        if sortby in cols:
+            sortby = cols.get(sortby)
+        else:
+            log.warning('Unknown sort column "{0!s}". Using "serial" '
+                        'instead.'.format(sortby))
+            sortby = Token.serial
 
     if sortdir == "desc":
         sql_query = sql_query.order_by(sortby.desc())
@@ -579,7 +584,7 @@ def get_tokens_from_serial_or_user(serial, user, **kwargs):
 def get_token_type(serial):
     """
     Returns the tokentype of a given serial number. If the token does
-    not exist or can not be deterimined, an empty string is returned.
+    not exist or can not be determined, an empty string is returned.
 
     :param serial: the serial number of the to be searched token
     :type serial: string
@@ -1270,7 +1275,7 @@ def unassign_token(serial, user=None):
 @log_with(log)
 def resync_token(serial, otp1, otp2, options=None, user=None):
     """
-    Resyncronize the token of the given serial number and user by searching the
+    Resynchronize the token of the given serial number and user by searching the
     otp1 and otp2 in the future otp values.
 
     :param serial: token serial number (exact)
@@ -1303,7 +1308,7 @@ def reset_token(serial, user=None):
 
     :param serial: serial number (exact)
     :param user:
-    :return: The number of tokens, that were resetted
+    :return: The number of tokens, that were reset
     :rtype: int
     """
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)

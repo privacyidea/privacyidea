@@ -24,7 +24,7 @@ DisplayTAN token
 privacyIDEA supports the DisplayTAN [#displaytan]_, which can be used for
 securing banking
 transactions. The OCRA Algorithm is used to digitally sign transaction data.
-The transcation data can be verified by the user on an external banking card.
+The transaction data can be verified by the user on an external banking card.
 All cryptographical processes are running on the external card, so that an
 attacker can not interfere with the user's component.
 
@@ -104,7 +104,7 @@ will issue this request::
     transaction_id=05221757445370623976
     pass=54006635
 
-privcyIDEA will respond with a usual authentication response::
+privacyIDEA will respond with a usual authentication response::
 
     {
      "jsonrpc": "2.0",

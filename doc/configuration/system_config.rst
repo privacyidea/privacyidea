@@ -1,9 +1,9 @@
+.. index:: system config, token default settings,
+
 .. _system_config:
 
 System Config
 -------------
-
-.. index:: system config, token default settings,
 
 The system configuration has three logical topics: Settings,
 token default settings and GUI settings.
@@ -93,12 +93,12 @@ Defines if the OTP PIN should be given in front ("pin123456")
 or in the back ("123456pin") of the OTP value.
 
 
+.. index:: SAML attributes
+
 .. _return_saml_attributes:
 
 Include SAML attributes in the authentication response.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. index:: SAML attributes
 
 ``Return SAML attributes`` defines if during an SAML authentication request
 additional SAML attributes should be returned.
@@ -157,14 +157,12 @@ cache expire. For more information read :ref:`usercache`.
 .. note:: If the user cache is already enabled and you increase the expiration timeout,
    expired entries that still exist in the user cache could be considered active again!
 
-.. _override_client:
+.. index:: Override client, map client, proxies, RADIUS server, authenticating client, client
 
-.. index:: authenticating client, client, override client
+.. _override_client:
 
 Override Authorization Client
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. index:: Override client, map client, proxies, RADIUS server
 
 ``Override Authorization client`` is important with client specific
 policies (see :ref:`policies`) and RADIUS servers or other proxies. In
@@ -220,7 +218,7 @@ Reset Fail Counter
 ~~~~~~~~~~~~~~~~~~
 ``DefaultResetFailCount`` will reset the failcounter of a token if this token was
 used for a successful authentication. If not checked, the failcounter will not
-be resetted and must be resetted manually.
+be reset and must be reset manually.
 
 .. note:: The following settings are token specific value which are 
    set during enrollment.
@@ -233,7 +231,7 @@ Maximum Fail Counter
 
 ``DefaultMaxFailCount`` is the maximum failcounter a token may get. If the
 failcounter exceeds this number the token can not be used unless the failcounter
-is resetted.
+is reset.
 
 .. note:: In fact the failcounter will only increase till this maxfailcount.
    Even if more failed authentication request occur, the failcounter will 
@@ -273,7 +271,7 @@ The default length of generated serial numbers is an 8 digit hex string.
 If you need another length, it can be configured in the database table ``Config``
 with the key word ``SerialLength``.
 
-No Authenitcation Counter
+No Authentication Counter
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Usually privacyIDEA keeps track of how often a token is used for authentication and

@@ -5,7 +5,7 @@ Yubico
 
 .. index:: Yubikey, Yubico Cloud mode
 
-The token type *yubico* authenticates against the Yubico Cloud mode. You need
+The token type *Yubico* authenticates against the Yubico Cloud mode. You need
 to configure this at :ref:`yubico_token_config`.
 
 .. figure:: images/enroll_yubico.png

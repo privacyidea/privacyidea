@@ -269,12 +269,12 @@ is allowed to unassign tokens from a user. I.e. the
 administrator can remove the link between the token 
 and the user. The token still continues to exist in the system.
 
-import
-~~~~~~
+importtokens
+~~~~~~~~~~~~
 
 type: bool
 
-If the ``import`` action is defined, the administrator is 
+If the ``importtokens`` action is defined, the administrator is
 allowed to import token seeds from a token file, thus
 creating many new token objects in the systems database.
 
@@ -306,12 +306,12 @@ he should only work with tokens, but not see all users at once.
 .. note:: If an administrator has any right in a realm, the administrator
    is also allowed to view the token list.
 
-checkstatus
-~~~~~~~~~~~
+getchallenges
+~~~~~~~~~~~~~
 
 type: bool
 
-If the ``checkstatus`` action is defined, the administrator is 
+If the ``getchallenges`` action is defined, the administrator is
 allowed to check the status of open challenge requests.
 
 manageToken
@@ -590,7 +590,7 @@ For example a value ``sig_check log_level`` will hide these two columns.
 The list of available columns can be checked by examining the response of the
 request to the :ref:`rest_audit`.
 
-trigger_challenge
+triggerchallenge
 ~~~~~~~~~~~~~~~~~
 
 type: bool
@@ -724,7 +724,7 @@ For allowing all values, the asterisk ("*") is used.
 Each key is enclosed in colons and followed by a list of values separated by whitespaces,
 thus values are not allowed to contain whitespaces.
 
-Example:
+Example::
 
     :department: sales finance :city: * :*: 1 2
 

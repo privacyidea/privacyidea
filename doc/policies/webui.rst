@@ -111,7 +111,7 @@ logout_time
 
 type: int
 
-Set the timeout, after which a user in th WebUI will be logged out.
+Set the timeout, after which a user in the WebUI will be logged out.
 The default timeout is 120 seconds.
 
 Being a policy this time can be set based on clients, realms and users.
@@ -225,7 +225,7 @@ Of course this policy can not filter for users or realms, since the
 user is not known at this moment.
 
 The type of this action was changed to "string" in version 2.16. You can set
-a space separated list of realm names. Only these realmnames are displayed in
+a space separated list of realm names. Only these realm names are displayed in
 the dropdown box.
 
 .. note:: The realm names in the policy are not checked, if they really exist!
@@ -241,7 +241,7 @@ The searching in the user list is performed as live search. Each time a key
 is pressed, the new substring is searched in the user store.
 
 Sometimes this can be too time consuming. You can use this policy to change
-the bahaviour that the administrator needs to press *enter* to trigger the
+the behaviour that the administrator needs to press *enter* to trigger the
 search.
 
 (Since privacyIDEA 2.17)
@@ -377,7 +377,7 @@ If this policy is activated the UI will display the name of the privacyIDEA node
 corner next to the logo.
 
 This is useful, if you have a lot of different privacyIDEA nodes in a redundant setup or if you have
-test instances and prodcutive instances. This way you can easily distinguish the different instances.
+test instances and productive instances. This way you can easily distinguish the different instances.
 
 (Since privacyIDEA 3.5)
 

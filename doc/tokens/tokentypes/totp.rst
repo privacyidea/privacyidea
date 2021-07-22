@@ -11,7 +11,7 @@ Roughly speaking the TOTP algorithm is the same algorithm like the HOTP,
 where the event based counter is replaced by the unix timestamp.
 
 The TOTP algorithm has some parameter, like if the generated OTP value will
-be 6 digits or 8 digits or if the SHA1 oder the SHA256 hashing algorithm is
+be 6 digits or 8 digits or if the SHA1 or the SHA256 hashing algorithm is
 used and the timestep being 30 or 60 seconds.
 
 The TOTP token implements the :ref:`authenticate mode <authentication_mode_authenticate>`.
@@ -26,7 +26,7 @@ described in the section about :ref:`hotp_token`.
 
 The only available seedable pushbutton TOTP token is the *SafeNet eToken Pass*.
 The Yubikey can be used as a TOTP token, but only in conjunction with a
-smartphone app, since the yubikey has not its own clock.
+smartphone app, since the Yubikey does not have an internal clock.
 
 Software tokens
 ~~~~~~~~~~~~~~~

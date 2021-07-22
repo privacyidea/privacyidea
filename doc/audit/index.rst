@@ -43,21 +43,22 @@ Cleaning based on the age takes precedence:
 
 You can specify a *highwatermark* and a *lowwatermark*. To clean
 up the audit log table, you can call ``pi-manage`` at command line::
-   
+
    pi-manage rotate_audit --highwatermark 20000 --lowwatermark 18000
 
 This will, if there are more than 20.000 log entries, clean all old
 log entries, so that only 18000 log entries remain.
 
 Cleaning based on the age:
-
-You can specify the number of days, how old an audit entry may be at a max.
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+You can specify the number of days, how old an audit entry may be at a max::
 
    pi-manage rotate_audit --age 365
 
 will delete all audit entries that are older than one year.
 
 Cleaning based on the config file:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. index:: retention time
 
@@ -107,7 +108,7 @@ If is a good idea to have a *catch-all* rule at the end.
    "user", "realm"... for a complete list see the model definition.
    You may use Python regular expressions for matching.
 
-You can the add a call like
+You can the add a call like::
 
    pi-manage rotate_audit --config /etc/privacyidea/audit.yaml
 
@@ -137,7 +138,7 @@ Table size
 ~~~~~~~~~~
 
 Sometimes the entries to be written to the database may be longer than the
-column in the database. You should set
+column in the database. You should set::
 
    PI_AUDIT_SQL_TRUNCATE = True
 
@@ -149,7 +150,7 @@ However, privacyIDEA does not know about this, and will still truncate the entri
 to the originally defined length.
 
 To avoid this, you need to tell privacyIDEA about the changes. In :ref:cfgfile pi.cfg add the setting
-like:
+like::
 
     PI_AUDIT_SQL_COLUMN_LENGTH = {"user": 100,
                                   "policies": 1000}
