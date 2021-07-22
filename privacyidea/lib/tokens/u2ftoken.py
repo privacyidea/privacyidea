@@ -29,7 +29,7 @@
 #
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
+from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.log import log_with
 import logging
@@ -210,6 +210,8 @@ class U2fTokenClass(TokenClass):
     """
     The U2F Token implementation.
     """
+
+    client_mode = CLIENTMODE.U2F
 
     @staticmethod
     def get_class_type():
@@ -432,7 +434,7 @@ class U2fTokenClass(TokenClass):
         The return tuple builds up like this:
         ``bool`` if submit was successful;
         ``message`` which is displayed in the JSON response;
-        additional ``attributes``, which are displayed in the JSON response.
+        additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
@@ -481,11 +483,12 @@ class U2fTokenClass(TokenClass):
                             "keyHandle": key_handle_url}
 
         image_url = IMAGES.get(self.token.description.lower().split()[0], "")
-        response_details = {"u2fSignRequest": u2f_sign_request,
-                            "hideResponseInput": True,
-                            "img": image_url}
+        reply_dict = {"attributes": {"u2fSignRequest": u2f_sign_request,
+                                     "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
+                                     "img": image_url},
+                      "image": image_url}
 
-        return True, message, db_challenge.transaction_id, response_details
+        return True, message, db_challenge.transaction_id, reply_dict
 
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):

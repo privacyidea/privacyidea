@@ -370,7 +370,7 @@ class SMSTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid)
         self.assertTrue(c[0], c)
         otp = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertTrue(c[3]["attributes"]["state"], transactionid)
 
         # check for the challenges response
         r = token.check_challenge_response(passw=otp,
@@ -392,7 +392,7 @@ class SMSTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid)
         self.assertTrue(c[0], c)
         otp = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertTrue(c[3]["attributes"]["state"], transactionid)
 
         # check for the challenges response
         r = token.check_challenge_response(passw=otp,

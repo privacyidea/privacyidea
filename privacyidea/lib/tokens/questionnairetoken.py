@@ -205,17 +205,16 @@ class QuestionnaireTokenClass(TokenClass):
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
         :type options: dict
-        :return: tuple of (bool, message, transactionid, attributes)
+        :return: tuple of (bool, message, transactionid, reply_dict)
         :rtype: tuple
 
         The return tuple builds up like this:
         ``bool`` if submit was successful;
         ``message`` which is displayed in the JSON response;
-        additional ``attributes``, which are displayed in the JSON response.
+        additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
         questions = {}
-        attributes = {}
 
         # Get an integer list of the already used questions
         used_questions = [int(x) for x in options.get("data", "").split(",") if options.get("data")]
@@ -250,8 +249,8 @@ class QuestionnaireTokenClass(TokenClass):
         db_challenge.save()
         expiry_date = datetime.datetime.now() + \
                       datetime.timedelta(seconds=validity)
-        attributes['valid_until'] = "{0!s}".format(expiry_date)
-        return True, message, db_challenge.transaction_id, attributes
+        reply_dict = {'attributes': {'valid_until': "{0!s}".format(expiry_date)}}
+        return True, message, db_challenge.transaction_id, reply_dict
 
     def check_answer(self, given_answer, challenge_object):
         """

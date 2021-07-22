@@ -299,15 +299,19 @@ def check():
                 "serial": "PIEM0000AB00",
                 "type": "email",
                 "transaction_id": "12345678901234567890",
-                "multi_challenge": [ {"serial": "PIEM0000AB00",
-                                      "transaction_id":  "12345678901234567890",
-                                      "message": "Please enter otp from your email"},
-                                     {"serial": "PISM12345678",
-                                      "transaction_id": "12345678901234567890",
-                                      "message": "Please enter otp from your SMS"}
+                "multi_challenge: [ {"serial": "PIEM0000AB00",
+                                     "transaction_id":  "12345678901234567890",
+                                     "message": "Please enter otp from your
+                                     email",
+                                     "client_mode": "interactive"},
+                                    {"serial": "PISM12345678",
+                                     "transaction_id": "12345678901234567890",
+                                     "message": "Please enter otp from your
+                                     SMS",
+                                     "client_mode": "interactive"}
                 ]
               },
-              "id": 1,
+              "id": 2,
               "jsonrpc": "2.0",
               "result": {
                 "status": true,
@@ -319,6 +323,11 @@ def check():
     In this example two challenges are triggered, one with an email and one
     with an SMS. The application and thus the user has to decide, which one
     to use. They can use either.
+
+    The challenges also contain the information of the "client_mode". This
+    tells the plugin, whether it should display an input field to ask for the
+    OTP value or e.g. to poll for an answered authentication.
+    Read more at :ref:`client_modes`.
 
     .. note:: All challenge response tokens have the same ``transaction_id`` in
        this case.
@@ -415,7 +424,7 @@ def check():
                         "success": success,
                         "serial": serial or details.get("serial"),
                         "token_type": details.get("type")})
-    return send_result(result, details=details)
+    return send_result(result, rid=2, details=details)
 
 
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])
@@ -453,23 +462,49 @@ def trigger_challenge():
     **Example response** for a successful triggering of challenge:
 
        .. sourcecode:: http
+       
+            HTTP/1.1 200 OK
+            Content-Type: application/json
 
-           HTTP/1.1 200 OK
-           Content-Type: application/json
-
-           {
-             "jsonrpc": "2.0",
-             "signature": "1939...146964",
-             "detail": {"transaction_ids": ["03921966357577766962"],
-                        "messages": ["Enter the OTP from the SMS:"],
-                        "threadid": 140422378276608},
-             "versionnumber": "unknown",
-             "version": "privacyIDEA unknown",
-             "result": {"status": true,
-                        "value": 1},
-             "time": 1482223663.517212,
-             "id": 1
-           }
+            {
+               "detail": {
+                    "client_mode": "interactive",
+                    "message": "please enter otp: , please enter otp: ",
+                    "messages":     [
+                        "please enter otp: ",
+                        "please enter otp: "
+                    ],
+                    "multi_challenge": [
+                        {
+                            "client_mode": "interactive",
+                            "message": "please enter otp: ",
+                            "serial": "TOTP000026CB",
+                            "transaction_id": "11451135673179897001",
+                            "type": "totp"
+                        },
+                        {
+                            "client_mode": "interactive",
+                            "message": "please enter otp: ",
+                            "serial": "OATH0062752C",
+                            "transaction_id": "11451135673179897001",
+                            "type": "hotp"
+                        }
+                    ],
+                    "serial": "OATH0062752C",
+                    "threadid": 140329819764480,
+                    "transaction_id": "11451135673179897001",
+                    "transaction_ids": [
+                        "11451135673179897001",
+                        "11451135673179897001"
+                    ],
+                    "type": "hotp"
+               },
+               "id": 2,
+               "jsonrpc": "2.0",
+               "result": {
+                   "status": true,
+                   "value": 2
+               }
 
     **Example response** for response, if the user has no challenge token:
 
@@ -543,7 +578,7 @@ def trigger_challenge():
         "serial": ",".join(challenge_serials),
     })
 
-    return send_result(result_obj, details=details)
+    return send_result(result_obj, rid=2, details=details)
 
 
 @validate_blueprint.route('/polltransaction', methods=['GET'])

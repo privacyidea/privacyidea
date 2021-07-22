@@ -179,12 +179,13 @@ class U2FTokenTestCase(MyTestCase):
         self.assertEqual(is_chalrequest, True)
 
         # create challenge
-        res, message, t_id, response = token.create_challenge()
+        res, message, t_id, reply_dict = token.create_challenge()
+        attributes = reply_dict.get("attributes")
         self.assertTrue(res)
         expected_text = _("Please confirm with your U2F token ({0!s})").format("Yubico U2F EE Serial 13831167861")
         self.assertEqual(message, expected_text)
         self.assertEqual(len(t_id), 20)
-        u2f_sign_request = response.get("u2fSignRequest")
+        u2f_sign_request = attributes.get("u2fSignRequest")
         version = u2f_sign_request.get("version")
         self.assertEqual(version, "U2F_V2")
         key_handle = u2f_sign_request.get("keyHandle")

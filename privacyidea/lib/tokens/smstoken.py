@@ -311,8 +311,7 @@ class SmsTokenClass(HotpTokenClass):
                  bool, if submit was successful
                  message is submitted to the user
                  data is preserved in the challenge
-                 attributes - additional attributes, which are displayed in the
-                    output
+                 reply_dict - additional reply_dict, which is added to the response
         """
         success = False
         options = options or {}
@@ -320,7 +319,7 @@ class SmsTokenClass(HotpTokenClass):
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
                                                                              ACTION.CHALLENGETEXT),
                                                         options) or _("Enter the OTP from the SMS:")
-        attributes = {'state': transactionid}
+        reply_dict = {'attributes': {'state': transactionid}}
         validity = self._get_sms_timeout()
 
         if self.is_active() is True:
@@ -359,9 +358,9 @@ class SmsTokenClass(HotpTokenClass):
 
         expiry_date = datetime.datetime.now() + \
                                     datetime.timedelta(seconds=validity)
-        attributes['valid_until'] = "{0!s}".format(expiry_date)
+        reply_dict['attributes']['valid_until'] = "{0!s}".format(expiry_date)
 
-        return success, return_message, transactionid, attributes
+        return success, return_message, transactionid, reply_dict
 
     @log_with(log)
     @check_token_locked

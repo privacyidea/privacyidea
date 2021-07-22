@@ -46,7 +46,7 @@ from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 
-from privacyidea.lib.tokenclass import TokenClass, TOKENMODE, ROLLOUTSTATE
+from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE, CLIENTMODE, ROLLOUTSTATE
 from privacyidea.models import Challenge, db
 from privacyidea.lib.decorators import check_token_locked
 import logging
@@ -256,7 +256,8 @@ class PushTokenClass(TokenClass):
     - https://github.com/privacyidea/privacyidea/issues/1342
     - https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken
     """
-    mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE, TOKENMODE.OUTOFBAND]
+    mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE, AUTHENTICATIONMODE.OUTOFBAND]
+    client_mode = CLIENTMODE.POLL
     # A disabled PUSH token has to be removed from the list of checked tokens.
     check_if_disabled = False
 
@@ -811,14 +812,14 @@ class PushTokenClass(TokenClass):
         The return tuple builds up like this:
         ``bool`` if submit was successful;
         ``message`` which is displayed in the JSON response;
-        additional ``attributes``, which are displayed in the JSON response.
+        additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  ACTION.CHALLENGETEXT,
                                                  options) or DEFAULT_CHALLENGE_TEXT
 
-        attributes = None
+        reply_dict = {}
         data = None
         # Initially we assume there is no error from Firebase
         res = True
@@ -871,7 +872,7 @@ class PushTokenClass(TokenClass):
                                                                  PUSH_ACTION.FIREBASE_CONFIG))
             raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")
 
-        return True, message, db_challenge.transaction_id, attributes
+        return True, message, db_challenge.transaction_id, reply_dict
 
     @check_token_locked
     def authenticate(self, passw, user=None, options=None):

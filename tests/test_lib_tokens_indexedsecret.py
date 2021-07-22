@@ -72,7 +72,8 @@ class IndexedSecretTokenTestCase(MyTestCase):
         self.assertTrue(token.get_class_type() == "indexedsecret", token)
 
         # Create a challenge
-        r, message, transaction_id, attribute = token.create_challenge()
+        r, message, transaction_id, reply_dict = token.create_challenge()
+        attribute = reply_dict.get("attributes")
         self.assertTrue(r)
         self.assertIn("Please enter the position", message)
 
@@ -122,7 +123,8 @@ class IndexedSecretTokenTestCase(MyTestCase):
         g.policy_object = PolicyClass()
 
         # Create a challenge
-        r, message, transaction_id, attribute = t.create_challenge(options={"g": g})
+        r, message, transaction_id, reply_dict = t.create_challenge(options={"g": g})
+        attribute = reply_dict.get("attributes")
         # The challenge text from the policy is used.
         self.assertIn("Hier sind die Positionen:", message)
         password_list = [my_secret[x - 1] for x in attribute.get("random_positions")]

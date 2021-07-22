@@ -1,7 +1,8 @@
 .. _authentication_modes:
+.. _client_modes:
 
-Authentication Modes
-====================
+Authentication Modes and Client Modes
+=====================================
 
 privacyIDEA supports a variety of tokens that implement different
 authentication flows. We call these flows *authentication modes*. Currently,
@@ -9,7 +10,26 @@ tokens may implement three authentication modes, namely ``authenticate``,
 ``challenge`` and ``outofband``.
 
 Application plugins need to implement the three authentication modes
-separately, as the modes differ in their user experience. For example:
+separately, as the modes differ in their user experience. To help the plugins
+identify the flow, the JSON response of an authentication request
+contains additional information in the section
+
+.. code-block:: json
+
+    {
+      "detail": "multi_challenge": [
+            {
+                "client_mode": "poll",
+            }
+      ]
+    }
+
+The "client_mode" gives the plugin even more information how to respond.
+The authentication mode ``challenge`` can either result in client_mode ``interactive``,
+``webauthn`` of ``u2f`` and the authentication mode ``outofband`` can currently result in
+client mode ``poll``.
+
+Here are examples for the flows:
 
 * The HOTP token type implements the ``authenticate`` mode, which is a
   single-shot authentication flow. For each authentication request, the user
@@ -24,6 +44,14 @@ separately, as the modes differ in their user experience. For example:
   respective OTP value in the plugin's login form. The plugin sends the
   challenge response to privacyIDEA, which decides whether the authentication
   is valid or not.
+  The "client_mode" is set to ``interactive``. This indicates that
+  the plugin should display an input field, so that the user can enter the response
+  interactively.
+* WebAuthn tokens and U2F tokens also implement the ``challenge`` mode. However,
+  the plugin needs to handle these challenges differently, since the user does
+  not need to enter the response to the challenge manually.
+  The "client_mode" is either set to ``webauthn`` or ``u2f`` so that the plugin
+  can handle the cryptographic challenge accordingly.
 * The PUSH and TiQR token types implement the ``outofband`` mode.
   With a PUSH token, the authentication step also consists of two steps:
   In a first step, the user triggers a challenge. privacyIDEA pushes the
@@ -32,6 +60,8 @@ separately, as the modes differ in their user experience. For example:
   communicating with the privacyIDEA server on behalf of the user.
   The plugin periodically queries privacyIDEA to check if
   the challenge has been answered correctly and the authentication is valid.
+  In this case the "client_mode" is set to ``poll``, so that the plugin knows, that
+  it needs to poll for the response to the challenge.
 
 The following describes the authentication flows of the three authentication
 modes in more detail.

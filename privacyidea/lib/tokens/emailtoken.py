@@ -259,7 +259,7 @@ class EmailTokenClass(HotpTokenClass):
                 * success: if submit was successful
                 * message: the text submitted to the user
                 * transactionid: the given or generated transactionid
-                * attributes: additional attributes, which are displayed in the output
+                * reply_dict: additional dictionary, which is added to the response
         :rtype: tuple(bool, str, str, dict)
         """
         success = False
@@ -268,7 +268,7 @@ class EmailTokenClass(HotpTokenClass):
                                                         "{0!s}_{1!s}".format(self.get_class_type(),
                                                                              ACTION.CHALLENGETEXT),
                                                         options) or _("Enter the OTP from the Email:")
-        attributes = {'state': transactionid}
+        reply_dict = {'attributes': {'state': transactionid}}
         validity = int(get_from_config("email.validtime", 120))
 
         if self.is_active() is True:
@@ -314,9 +314,9 @@ class EmailTokenClass(HotpTokenClass):
 
         expiry_date = datetime.datetime.now() + \
                                     datetime.timedelta(seconds=validity)
-        attributes['valid_until'] = "{0!s}".format(expiry_date)
+        reply_dict['attributes']['valid_until'] = "{0!s}".format(expiry_date)
 
-        return success, return_message, transactionid, attributes
+        return success, return_message, transactionid, reply_dict
 
     @log_with(log)
     @check_token_locked

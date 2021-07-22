@@ -125,13 +125,24 @@ class TOKENKIND(object):
     VIRTUAL = "virtual"
 
 
-class TOKENMODE(object):
+class AUTHENTICATIONMODE(object):
     AUTHENTICATE = 'authenticate'
     CHALLENGE = 'challenge'
     # If the challenge is answered out of band
     OUTOFBAND = 'outofband'
 
 
+class CLIENTMODE(object):
+    """
+    This informs privacyIDEA clients how to
+    handle challenge-responses
+    """
+    INTERACTIVE = 'interactive'
+    POLL = 'poll'
+    U2F = 'u2f'
+    WEBAUTHN = 'webauthn'
+
+    
 class ROLLOUTSTATE(object):
     CLIENTWAIT = 'clientwait'
     PENDING = 'pending'
@@ -142,7 +153,8 @@ class TokenClass(object):
     # Class properties
     using_pin = True
     hKeyRequired = False
-    mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE]
+    mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE]
+    client_mode = CLIENTMODE.INTERACTIVE
     # Usually a token will be checked in the lib:check_token_list, even if it is disabled
     check_if_disabled = True
 
@@ -180,7 +192,7 @@ class TokenClass(object):
 
     @classmethod
     def is_outofband(cls):
-        return TOKENMODE.OUTOFBAND in cls.mode
+        return AUTHENTICATIONMODE.OUTOFBAND in cls.mode
 
     @staticmethod
     def get_class_type():
@@ -1546,20 +1558,20 @@ class TokenClass(object):
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
         :type options: dict
-        :return: tuple of (bool, message, transactionid, attributes)
+        :return: tuple of (bool, message, transactionid, reply_dict)
         :rtype: tuple
 
         The return tuple builds up like this:
         ``bool`` if submit was successful;
         ``message`` which is displayed in the JSON response;
-        additional ``attributes``, which are displayed in the JSON response.
+        additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  ACTION.CHALLENGETEXT,
                                                  options) or _('please enter otp: ')
         data = None
-        attributes = None
+        reply_dict = {}
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
         tokentype = self.get_tokentype().lower()
@@ -1576,7 +1588,7 @@ class TokenClass(object):
                                  validitytime=validity)
         db_challenge.save()
         self.challenge_janitor()
-        return True, message, db_challenge.transaction_id, attributes
+        return True, message, db_challenge.transaction_id, reply_dict
 
     def get_as_dict(self):
         """

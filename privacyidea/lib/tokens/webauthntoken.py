@@ -33,7 +33,7 @@ from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError, RegistrationError, PolicyError
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
+from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
                                              ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
@@ -508,6 +508,8 @@ class WebAuthnTokenClass(TokenClass):
     """
     The WebAuthn Token implementation.
     """
+
+    client_mode = CLIENTMODE.WEBAUTHN
 
     @staticmethod
     def _get_challenge_validity_time():
@@ -1065,7 +1067,7 @@ class WebAuthnTokenClass(TokenClass):
         :type transactionid: basestring
         :param options: The request context parameters and data
         :type options: dict
-        :return: Success status, message, transaction id and response details
+        :return: Success status, message, transaction id and reply_dict
         :rtype: (bool, basestring, basestring, dict)
         """
 
@@ -1122,13 +1124,12 @@ class WebAuthnTokenClass(TokenClass):
                              required)
         ).assertion_dict
 
-        response_details = {
-            "webAuthnSignRequest": public_key_credential_request_options,
-            "hideResponseInput": True,
-            "img": user.icon_url
-        }
+        reply_dict = {"attributes": {"webAuthnSignRequest": public_key_credential_request_options,
+                                     "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
+                                     "img": user.icon_url},
+                      "image": user.icon_url}
 
-        return True, message, db_challenge.transaction_id, response_details
+        return True, message, db_challenge.transaction_id, reply_dict
     
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):

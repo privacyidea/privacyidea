@@ -208,6 +208,8 @@ class APIU2fTestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertEqual(result.get("value"), False)
             transaction_id = detail.get("transaction_id")
+            multi_challenge = detail.get("multi_challenge")
+            self.assertEqual("u2f", multi_challenge[0].get("client_mode"))
             self.assertEqual(len(transaction_id), len('01350277175811850842'))
             self.assertEqual(detail.get("message"), detail.get("message"),
                             _("Please confirm with your U2F token ({0!s})").format("Yubico U2F EE Serial 13831167861"))

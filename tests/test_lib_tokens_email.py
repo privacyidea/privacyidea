@@ -343,7 +343,7 @@ class EmailTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid)
         self.assertTrue(c[0], c)
         otp = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertTrue(c[3].get('attributes').get("state"), transactionid)
 
         # check for the challenges response
         r = token.check_challenge_response(passw=otp)
@@ -364,7 +364,7 @@ class EmailTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid)
         self.assertTrue(c[0], c)
         otp = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertTrue(c[3]['attributes']["state"], transactionid)
 
         # check for the challenges response
         r = token.check_challenge_response(passw=otp)
@@ -401,7 +401,7 @@ class EmailTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid, options=options)
         self.assertTrue(c[0], c)
         display_message = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertTrue(c[3]["attributes"]["state"], transactionid)
         self.assertEqual(display_message, _("Enter the OTP from the Email:"))
         _n, mimetype = token._get_email_text_or_subject(options, EMAILACTION.EMAILTEXT)
         self.assertEqual(mimetype, "plain")
@@ -442,7 +442,7 @@ class EmailTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid, options=options)
         self.assertTrue(c[0], c)
         display_message = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertTrue(c[3]["attributes"]["state"], transactionid)
         self.assertEqual(display_message, _("Enter the OTP from the Email:"))
 
     @smtpmock.activate
@@ -481,7 +481,7 @@ class EmailTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid)
         self.assertTrue(c[0], c)
         otp = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertTrue(c[3]["attributes"]["state"], transactionid)
 
         # check for the challenges response
         r = token.check_challenge_response(passw=otp)
@@ -504,7 +504,7 @@ class EmailTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid)
         self.assertTrue(c[0], c)
         otp = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertTrue(c[3]["attributes"]["state"], transactionid)
 
         # check for the challenges response
         r = token.check_challenge_response(passw=otp)

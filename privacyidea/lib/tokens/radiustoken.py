@@ -220,14 +220,14 @@ class RadiusTokenClass(RemoteTokenClass):
                  bool, if submit was successful
                  message is submitted to the user
                  data is preserved in the challenge
-                 attributes - additional attributes, which are displayed in the
+                 reply_dict - additional attributes, which are displayed in the
                     output
         """
         if options is None:
             options = {}
         message = options.get('radius_message') or "Enter your RADIUS tokencode:"
         state = hexlify_and_unicode(options.get('radius_state') or b'')
-        attributes = {'state': transactionid}
+        reply_dict = {'attributes': {'state': transactionid}}
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
 
         db_challenge = Challenge(self.token.serial,
@@ -237,7 +237,7 @@ class RadiusTokenClass(RemoteTokenClass):
                                  validitytime=validity)
         db_challenge.save()
         self.challenge_janitor()
-        return True, message, db_challenge.transaction_id, attributes
+        return True, message, db_challenge.transaction_id, reply_dict
 
     @log_with(log)
     def is_challenge_response(self, passw, user=None, options=None):
