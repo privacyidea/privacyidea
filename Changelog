@@ -1,4 +1,4 @@
-Version 3.6.2, 2021-07-XX
+Version 3.6.2, 2021-07-22
 
   Fixes:
   * Fix LDAP Resolver for old Python versions like in CentOS 7 #2835
