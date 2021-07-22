@@ -330,7 +330,7 @@ class TokenEventHandler(BaseEventHandler):
                               ACTION_TYPE.DELETE_TOKENINFO]:
             if serial:
                 if ',' in serial:
-                    serials = serial.split(', ')
+                    serials = [t.strip() for t in serial.split(',')]
                 else:
                     serials = [serial]
                 for serial in serials:
