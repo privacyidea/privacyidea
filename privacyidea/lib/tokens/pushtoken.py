@@ -47,7 +47,6 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 
 from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE, CLIENTMODE, ROLLOUTSTATE
-from privacyidea.lib.tokenclass import TokenClass, TOKENMODE
 from privacyidea.models import Challenge, db
 from privacyidea.lib.decorators import check_token_locked
 import logging
