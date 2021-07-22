@@ -12,6 +12,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
 from privacyidea.lib.token import (get_tokens, init_token, remove_token, get_tokens_from_serial_or_user, enable_token,
                                    check_serial_pass, get_realms_of_token)
 from privacyidea.lib.user import User
+from privacyidea.lib.event import set_event, delete_event, EventConfiguration
 from privacyidea.lib.caconnector import save_caconnector
 from six.moves.urllib.parse import urlencode
 from privacyidea.lib.tokenclass import DATE_FORMAT
@@ -26,6 +27,7 @@ IMPORTPSKC = "tests/testdata/pskc-aes.xml"
 IMPORTPSKC_PASS = "tests/testdata/pskc-password.xml"
 PSK_HEX = "12345678901234567890123456789012"
 YUBICOFILE = "tests/testdata/yubico-oath.csv"
+YUBICOFILE_LONG = "tests/testdata/yubico-oath-long.csv"
 OTPKEY = "3132333435363738393031323334353637383930"
 OTPKEY2 = "010fe88d31948c0c2e3258a4b0f7b11956a258ef"
 CAKEY = "cakey.pem"
@@ -1105,6 +1107,38 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             value = result.get("value")['n_imported']
             self.assertTrue(value == 1, result)
+
+    def test_11_load_tokens_tokenhandler(self):
+
+        # create a new event to disable tokens after import
+        r = set_event("token_disable", ["token_load"], "Token",
+                      "disable", position="post")
+        events = EventConfiguration()
+        event_id = [event['id'] for event in events.events if event['name'] == 'token_disable'][0]
+
+        # Load yubico.csv
+        with self.app.test_request_context('/token/load/yubico.csv',
+                                            method="POST",
+                                            data={"type": "yubikeycsv",
+                                                  "tokenrealms": self.realm1,
+                                                  "file": (YUBICOFILE_LONG,
+                                                           "yubico.csv")},
+                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            value = result.get("value")['n_imported']
+            self.assertTrue(value == 100, result)
+
+        # check if imported tokens were disabled by event handler
+        tokenobject_list = get_tokens(serial_wildcard="UBOM*", active=False)
+        self.assertEqual(len(tokenobject_list), 100)
+
+        # remove tokens
+        for tok in tokenobject_list:
+            remove_token(serial=tok.token.serial)
+        # remove event
+        delete_event(event_id)
 
     def test_11_load_tokens_only_to_specific_realm(self):
         # Load token to a realm
