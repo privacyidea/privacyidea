@@ -12,9 +12,9 @@ login_mode
 
 .. index:: login mode
 
-type: string
+type: ``string``
 
-allowed values: "userstore", "privacyIDEA", "disable"
+allowed values: ``userstore``, ``privacyIDEA``, ``disable``
 
 If set to *userstore* (default), users and administrators need to
 authenticate with the password of their userstore, being an LDAP service or
@@ -50,13 +50,13 @@ remote_user
 
 .. index:: remote_user
 
-type: string
+type: ``string``
 
 This policy defines, if the login to the privacyIDEA using the web servers
 integrated authentication (like basic authentication or digest
 authentication) should be allowed.
 
-Possible values are "disable", "allowed" and "force".
+Possible values are ``disable``, ``allowed`` and ``force``.
 
 If set to "allowed" a user can choose to use the REMOTE_USER or login with
 credentials. If set to "force", the user can not switch to login with credentials but
@@ -109,7 +109,7 @@ logout_time
 
 .. index:: logout time
 
-type: int
+type: ``int``
 
 Set the timeout, after which a user in the WebUI will be logged out.
 The default timeout is 120 seconds.
@@ -122,7 +122,7 @@ token_page_size
 
 .. index:: Token view page size
 
-type: int
+type: ``int``
 
 By default 15 tokens are displayed on one page in the token view.
 On big screens you might want to display more tokens. Thus you can define in
@@ -134,7 +134,7 @@ user_page_size
 
 .. index:: User view page size
 
-type: int
+type: ``int``
 
 By default 15 users are displayed on one page in the user view.
 On big screens you might want to display more users. Thus you can define in
@@ -150,7 +150,7 @@ policy_template_url
 
 .. index:: policy template URL
 
-type: str
+type: ``string``
 
 Here you can define a URL from where the policies should be fetched. The
 default URL is a Github repository [#defaulturl]_.
@@ -168,7 +168,7 @@ default_tokentype
 
 .. index:: Default tokentype
 
-type: str
+type: ``string``
 
 You can define which is the default tokentype when enrolling a new token in
 the Web UI. This is the token, which will be selected, when entering the
@@ -182,7 +182,7 @@ tokenwizard
 
 .. index:: Wizard, Token wizard
 
-type: bool
+type: ``bool``
 
 If this policy is set and the user has no token, then the user will only see
 an easy token wizard to enroll his first token. If the user has enrolled his
@@ -196,12 +196,12 @@ length, the TOTP timestep and the HASH-lib.
 You can add a prologue and epilog to the enrollment wizard in the greeting
 and after the token is enrolled and e.g. the QR code is displayed.
 
-Create the files
+Create the files::
 
- * static/customize/views/includes/token.enroll.pre.top.html
- * static/customize/views/includes/token.enroll.pre.bottom.html
- * static/customize/views/includes/token.enroll.post.top.html
- * static/customize/views/includes/token.enroll.post.bottom.html
+    static/customize/views/includes/token.enroll.pre.top.html
+    static/customize/views/includes/token.enroll.pre.bottom.html
+    static/customize/views/includes/token.enroll.post.top.html
+    static/customize/views/includes/token.enroll.post.bottom.html
 
 to display the contents in the first step (pre) or in the second step (post).
 
@@ -218,7 +218,7 @@ realm_dropdown
 
 .. index:: Realmbox
 
-type: str
+type: ``string``
 
 If this policy is activated the web UI will display a realm dropdown box.
 Of course this policy can not filter for users or realms, since the
@@ -235,7 +235,7 @@ search_on_enter
 
 .. index:: Search on Enter
 
-type: bool
+type: ``bool``
 
 The searching in the user list is performed as live search. Each time a key
 is pressed, the new substring is searched in the user store.
@@ -253,7 +253,7 @@ custom_baseline
 
 .. index:: Customize baseline, customize footer
 
-type: str
+type: ``string``
 
 The administrator can replace the file ``templates/baseline.html`` with another template.
 This way he can change the links to e.g. internal documentation or ticketing systems.
@@ -275,7 +275,7 @@ custom_menu
 
 .. index:: Customize menu
 
-type: str
+type: ``string``
 
 The administrator can replace the file ``templates/menu.html`` with another template.
 This way he can change the links to e.g. internal documentation or ticketing systems.
@@ -293,7 +293,7 @@ If you want to adapt the privacyIDEA look and feel even more, read :ref:`customi
 hide_buttons
 ~~~~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 Buttons for actions that a user is not allowed to perform, are hidden instead of
 being disabled.
@@ -303,7 +303,7 @@ being disabled.
 token_rollover
 ~~~~~~~~~~~~~~
 
-type: str
+type: ``string``
 
 This is a whitespace separated list of tokentypes, for which a rollover button is
 displayed in the token details. This button will generate a
@@ -317,7 +317,7 @@ token number restricted to 1.
 login_text
 ~~~~~~~~~~
 
-type: str
+type: ``string``
 
 This way the text "Please sign in" on the login dialog can be changed. Since the policy can
 also depend on the IP address of the client, you can also choose different login texts depending
@@ -328,7 +328,7 @@ on from where a user tries to log in.
 show_android_privacyidea_authenticator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 If this policy is activated, the enrollment page for HOTP, TOTP and Push tokens
 will contain a QR code, that leads the user to the Google Play Store where he can
@@ -339,18 +339,18 @@ directly install the privacyIDEA Authenticator App for Android devices.
 show_ios_privacyidea_authenticator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+type: ``bool``
+
 If this policy is activated, the enrollment page for HOTP, TOTP and Push tokens
 will contain a QR code, that leads the user to the Apple App Store where he can
 directly install the privacyIDEA Authenticator App for iOS devices.
-
-type: bool
 
 (Since privacyIDEA 3.3)
 
 show_custom_authenticator
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: str
+type: ``string``
 
 If this policy is activated, the enrollment page for HOTP, TOTP and Push tokens
 will contain a QR code, that leads the user to the given URL.
@@ -371,7 +371,7 @@ Other scenarios are possible.
 show_node
 ~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 If this policy is activated the UI will display the name of the privacyIDEA node in the top left
 corner next to the logo.
@@ -384,7 +384,7 @@ test instances and productive instances. This way you can easily distinguish the
 indexedsecret_preset_attribute
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: str
+type: ``string``
 
 The secret in the enrollment dialog of the tokentype *indexedsecret* is preset
 with the value of the given user attribute.
@@ -400,7 +400,7 @@ For more details of this token type see :ref:`indexedsecret_token`.
 admin_dashboard
 ~~~~~~~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 If this policy is activated, the static dashboard can be accessed by administrators.
 It is displayed as a starting page in the WebUI and contains information about

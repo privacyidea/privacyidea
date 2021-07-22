@@ -23,8 +23,8 @@ All HTML views are contained in::
 
     static/components/<component>/views/<view>.html
 
-You can find them on `GitHub <https://github.com/privacyidea/privacyidea/tree/master/privacyidea/static>` or
-at the according location in your installation.
+You can find them on `GitHub <https://github.com/privacyidea/privacyidea/tree/master/privacyidea/static>`_
+or at the according location in your installation.
 
 Follow these basic steps:
 
@@ -104,7 +104,7 @@ You can create a simple CSS file *[..]/privacyidea/static/custom/css/testing.css
 
 and then set in the pi.cfg::
 
-    PI_CSS = /static/custom/css/testing.css
+    PI_CSS = "/static/custom/css/testing.css"
 
 This way your testing instance will be immediately distinguishable due to the green background.
 

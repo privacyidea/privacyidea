@@ -1,11 +1,10 @@
+.. index:: Audit
 .. _audit:
 
 Audit
 =====
 
-.. index:: Audit
-
-The systems provides a sophisticated audit log, that can be viewed in the 
+The systems provides a sophisticated audit log, that can be viewed in the
 WebUI.
 
 .. figure:: auditlog.png
@@ -24,12 +23,11 @@ to services like splunk or logstash.
 SQL Audit
 ---------
 
+.. index:: Audit Log Rotate
 .. _audit_rotate:
 
 Cleaning up entries
 ~~~~~~~~~~~~~~~~~~~
-
-.. index:: Audit Log Rotate
 
 The ``sqlaudit`` module writes audit entries to an SQL database.
 For performance reasons the audit module does no log rotation during
@@ -37,9 +35,10 @@ the logging process.
 
 But you can set up a cron job to clean up old audit entries. Since version
 2.19 audit entries can be either cleaned up based on the number of entries or
-based on on the age.
+based on on the age. Cleaning based on the age takes precedence.
 
-Cleaning based on the age takes precedence:
+Cleaning based on the number of entries:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can specify a *highwatermark* and a *lowwatermark*. To clean
 up the audit log table, you can call ``pi-manage`` at command line::
@@ -51,16 +50,17 @@ log entries, so that only 18000 log entries remain.
 
 Cleaning based on the age:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 You can specify the number of days, how old an audit entry may be at a max::
 
    pi-manage rotate_audit --age 365
 
 will delete all audit entries that are older than one year.
 
+.. index:: retention time
+
 Cleaning based on the config file:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. index:: retention time
 
 Using a config file you can define different retention times for the audit data.
 E.g. this way you can define, that audit entries about token listings can be deleted after
@@ -149,8 +149,8 @@ increase the column length directly in the database by the usual database means.
 However, privacyIDEA does not know about this, and will still truncate the entries
 to the originally defined length.
 
-To avoid this, you need to tell privacyIDEA about the changes. In :ref:cfgfile pi.cfg add the setting
-like::
+To avoid this, you need to tell privacyIDEA about the changes.
+In Your :ref:`config file <cfgfile>` add the setting like::
 
     PI_AUDIT_SQL_COLUMN_LENGTH = {"user": 100,
                                   "policies": 1000}
@@ -172,7 +172,7 @@ facility is a JSON-encoded string of the fields of the audit entry.
 You can find more information about this in :ref:`advanced_logging`.
 
 To activate the *Logger Audit* module you need to configure the following
-settings in your ``pi.cfg`` file::
+settings in your :ref:`pi.cfg <cfgfile>` file::
 
    PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.loggeraudit"
    PI_AUDIT_SERVERNAME = "your choice"
