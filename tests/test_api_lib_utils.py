@@ -7,13 +7,14 @@ from .base import MyApiTestCase
 from privacyidea.api.lib.utils import (getParam,
                                        check_policy_name,
                                        verify_auth_token, is_fqdn, attestation_certificate_allowed,
-                                       get_priority_from_param)
+                                       get_priority_from_param, get_all_params)
 from privacyidea.lib.error import ParameterError
 import jwt
 import mock
 import datetime
 import warnings
 from privacyidea.lib.error import AuthError
+from privacyidea.lib.token import init_token, remove_token
 
 
 class UtilsTestCase(MyApiTestCase):
@@ -210,3 +211,40 @@ class UtilsTestCase(MyApiTestCase):
                  'resolvers': 'resolver1,resolver2,resolver3'}
         priority = get_priority_from_param(param)
         self.assertEqual(priority, {'resolver1': 1})
+
+    def test_08_get_all_params(self):
+        serial = "TTEST"
+        params = {"serial": serial, "type": "spass", "genkey": "1"}
+        init_token(params)
+        # Test viewargs
+        with mock.patch("logging.Logger.debug") as mock_log:
+            with self.app.test_request_context('/token/{0!s}'.format(serial),
+                                               method='DELETE',
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+            # We see the message in the log, that the viewargs was read
+            mock_log.assert_any_call(u"Update params in request DELETE http://localhost/token/TTEST with view_args.")
+
+        # test json data
+        with mock.patch("logging.Logger.debug") as mock_log:
+            with self.app.test_request_context('/token/init',
+                                               method='POST', json=params,
+                                               headers={"Authorization": self.at,
+                                                        "Content-Type": "application/json"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+            # We see the message in the log, that the JSON data was read
+            mock_log.assert_any_call(u"Update params in request POST http://localhost/token/init with JSON data.")
+
+        remove_token(serial)
+        # test raw body, which defaults to x-www-form-encoded
+        with mock.patch("logging.Logger.debug") as mock_log:
+            with self.app.test_request_context('/token/init',
+                                               method='POST', data=params,
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+            # We see the message in the log, that the JSON data was read
+            mock_log.assert_any_call(u"Update params in request POST http://localhost/token/init with values.")
+        remove_token(serial)

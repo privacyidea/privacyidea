@@ -10,7 +10,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     enable_policy,
                                     PolicyClass)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token, get_tokens_from_serial_or_user, enable_token,
-                                   check_serial_pass, get_realms_of_token)
+                                   check_serial_pass, get_realms_of_token, assign_token)
 from privacyidea.lib.user import User
 from privacyidea.lib.event import set_event, delete_event, EventConfiguration
 from privacyidea.lib.caconnector import save_caconnector
@@ -640,7 +640,9 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
 
-        # disable token
+        # disable an assigned token
+        r = assign_token("EToken", User("hans", self.realm1))
+        self.assertTrue(r)
         with self.app.test_request_context('/token/disable/EToken',
                                            method='POST',
                                            data={},
@@ -649,6 +651,16 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("value") == 1, result)
+
+        # Check for the disabled token in the audit log, that also the user object is added
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           data={'action': "*disable*", "serial": "EToken"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            jres = res.json
+            self.assertEqual(jres['result']['value']['auditdata'][0]['user'], "hans")
 
         # disable a disabled token will not count, so the value will be 0
         with self.app.test_request_context('/token/disable',

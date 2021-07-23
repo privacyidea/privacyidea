@@ -1155,12 +1155,6 @@ def check_base_action(request=None, action=None, anonymous=False):
             realm = get_realms_of_token(params.get("serial"),
                                         only_first_realm=True)
 
-        # get the realm by the serial, while the serial is part of the URL like
-        # DELETE /token/serial
-        if not realm and request.view_args and request.view_args.get("serial"):
-            realm = get_realms_of_token(request.view_args.get("serial"),
-                                        only_first_realm=True)
-
     # In this case we do not pass the user_object, since the realm is also determined
     # by the pure serial number given.
     action_allowed = Match.generic(g, scope=role,

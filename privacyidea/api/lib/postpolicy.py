@@ -165,7 +165,7 @@ def sign_response(request, response):
         log.debug(traceback.format_exc())
         return response
 
-    request.all_data = get_all_params(request.values, request.data)
+    request.all_data = get_all_params(request)
     # response can be either a Response object or a Tuple (Response, ErrorID)
     response_value = 200
     response_is_tuple = False
