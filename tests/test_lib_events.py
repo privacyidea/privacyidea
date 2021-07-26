@@ -11,6 +11,7 @@ import responses
 import os
 import mock
 
+from privacyidea.lib.eventhandler.customuserattributeshandler import CustomUserAttributesHandler
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.config import get_config_object
@@ -40,6 +41,7 @@ from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 from privacyidea.app import PiResponseClass as Response
 from collections import OrderedDict
+
 
 class EventHandlerLibTestCase(MyTestCase):
 
@@ -1226,7 +1228,7 @@ class RequestManglerTestCase(MyTestCase):
 
         # The request does not contain the match_parameter, thus the
         # parameter in question will not be modified
-        req.all_data = {"user": "givenname.surname@company.com" }
+        req.all_data = {"user": "givenname.surname@company.com"}
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -1382,7 +1384,6 @@ class ResponseManglerTestCase(MyTestCase):
         self.assertEqual(resp.data, csv)
 
     def test_02_set_response(self):
-
         g = FakeFlaskG()
         audit_object = FakeAudit()
         builder = EnvironBuilder(method='POST',
@@ -2358,3 +2359,56 @@ class TokenEventTestCase(MyTestCase):
         self.assertEqual(fc, 123)
 
         remove_token("SPASS01")
+
+
+class CustomUserAttributesTestCase(MyTestCase):
+
+    def test_01_event_set_attributes(self):
+
+        # Setup realm and user
+        self.setUp_user_realms()
+        g = FakeFlaskG
+        audit_object = FakeAudit()
+        g.logged_in_user = User("hans", self.realm1)
+        g.audit_object = audit_object
+
+        # The attributekey will be set as "test" and the attributevalue as "check"
+        options = {"g": g,
+                   "attrkey": "test",
+                   "attrvalue": "check"
+                   }
+        t_handler = CustomUserAttributesHandler()
+        res = t_handler.do("set_custom_user_attributes", options=options)
+        self.assertTrue(res)
+
+        # Check if the the user has the ready attribute
+        user = g.logged_in_user
+        a = user.attributes
+        self.assertEqual({'test': 'check'}, a)
+
+    def test_02_event_delete_attributes(self):
+
+        # Setup realm and user
+        self.setUp_user_realms()
+        g = FakeFlaskG
+        audit_object = FakeAudit()
+        g.logged_in_user = User("hans", self.realm1)
+        g.audit_object = audit_object
+
+        # Setup user attribute
+        user = g.logged_in_user
+        ret = user.set_attribute('test', 'check')
+        self.assertTrue(ret)
+        a = user.attributes
+        self.assertEqual({'test': 'check'}, a)
+
+        # The eventhandler will delete the user-attribute
+        options = {"g": g
+                   }
+        t_handler = CustomUserAttributesHandler()
+        res = t_handler.do("delete_custom_user_attributes", options)
+        self.assertTrue(res)
+
+        # Check if the user attribute is deletet
+        b = user.attributes
+        self.assertEqual({}, b)
