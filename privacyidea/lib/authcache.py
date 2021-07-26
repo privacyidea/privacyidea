@@ -65,7 +65,6 @@ def delete_from_cache(username, realm, resolver, password, last_valid_cache_time
     :param last_valid_cache_time: Oldest valid time for a cache entry to be still valid. I.e., if the first
     authentication of the entry is before this time point, it is not valid anymore.
     :param max_auths: Maximum number of allowed authentications.
-    
     """
     cached_auths = db.session.query(AuthCache).filter(AuthCache.username == username,
                                                       AuthCache.realm == realm,

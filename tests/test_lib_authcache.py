@@ -151,8 +151,7 @@ class AuthCacheTestCase(MyTestCase):
         delete_from_cache(self.username, self.realm, self.resolver, self.password,
                           last_valid_cache_time=last_valid_cache_time)
 
-        auth = AuthCache.query.filter(AuthCache.username ==
-                                      self.username).first()
+        auth = AuthCache.query.filter(AuthCache.username == self.username).first()
         self.assertEqual(auth, None)
 
         # Test deletion if max_auths is reached
@@ -168,6 +167,5 @@ class AuthCacheTestCase(MyTestCase):
 
         delete_from_cache(self.username, self.realm, self.resolver, self.password, max_auths=2)
 
-        auth = AuthCache.query.filter(AuthCache.username ==
-                                      self.username).first()
+        auth = AuthCache.query.filter(AuthCache.username == self.username).first()
         self.assertEqual(auth, None)
