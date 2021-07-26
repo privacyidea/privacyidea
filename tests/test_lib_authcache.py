@@ -83,7 +83,6 @@ class AuthCacheTestCase(MyTestCase):
                             last_auth=last_auth, max_auths=1)
         self.assertFalse(r)
 
-
     def test_03_delete_old_entries(self):
         # Create a VERY old authcache entry
         AuthCache("grandpa", self.realm, self.resolver, _hash_password(self.password),
@@ -137,3 +136,38 @@ class AuthCacheTestCase(MyTestCase):
 
         r = verify_in_cache("grandpa", self.realm, self.resolver, "old password")
         self.assertFalse(r)
+
+    def test_06_delete_other_invalid_entries(self):
+        # Test deletion of expired entries
+        r1 = add_to_cache(self.username, self.realm, self.resolver, self.password)
+        r2 = add_to_cache(self.username, self.realm, self.resolver, u"somethingDifferent")
+
+        auth1 = AuthCache.query.filter(AuthCache.id == r1).first()
+        auth2 = AuthCache.query.filter(AuthCache.id == r2).first()
+        last_valid_cache_time = auth1.first_auth
+
+        self.assertFalse(auth1.first_auth == auth2.first_auth)
+
+        delete_from_cache(self.username, self.realm, self.resolver, self.password,
+                          last_valid_cache_time=last_valid_cache_time)
+
+        auth = AuthCache.query.filter(AuthCache.username ==
+                                      self.username).first()
+        self.assertEqual(auth, None)
+
+        # Test deletion if max_auths is reached
+        r1 = add_to_cache(self.username, self.realm, self.resolver, self.password)
+        r2 = add_to_cache(self.username, self.realm, self.resolver, u"somethingDifferent")
+
+        update_cache(r2)
+        update_cache(r2)
+
+        auth2 = AuthCache.query.filter(AuthCache.id == r2).first()
+
+        self.assertEqual(2, auth2.auth_count)
+
+        delete_from_cache(self.username, self.realm, self.resolver, self.password, max_auths=2)
+
+        auth = AuthCache.query.filter(AuthCache.username ==
+                                      self.username).first()
+        self.assertEqual(auth, None)
