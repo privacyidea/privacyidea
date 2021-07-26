@@ -53,7 +53,20 @@ def update_cache(cache_id):
     db.session.commit()
 
 
-def delete_from_cache(username, realm, resolver, password):
+def delete_from_cache(username, realm, resolver, password, last_valid_cache_time=None, max_auths=0):
+    """
+    Deletes all authcache entries that match the user and either match the password, are expired, or have reached the
+    maximum number of allowed authentications.
+
+    :param username:
+    :param realm:
+    :param resolver:
+    :param password:
+    :param last_valid_cache_time: Oldest valid time for a cache entry to be still valid. I.e., if the first
+    authentication of the entry is before this time point, it is not valid anymore.
+    :param max_auths: Maximum number of allowed authentications.
+    
+    """
     cached_auths = db.session.query(AuthCache).filter(AuthCache.username == username,
                                                       AuthCache.realm == realm,
                                                       AuthCache.resolver == resolver).all()
@@ -64,6 +77,11 @@ def delete_from_cache(username, realm, resolver, password):
         try:
             if argon2.verify(password, cached_auth.authentication):
                 delete_entry = True
+            elif max_auths > 0:
+                delete_entry = cached_auth.auth_count >= max_auths
+            elif last_valid_cache_time is not None:
+                delete_entry = cached_auth.first_auth > last_valid_cache_time
+
         except ValueError:
             log.debug("Old (non-argon2) authcache entry for user {0!s}@{1!s}.".format(username, realm))
             # Also delete old entries
@@ -141,6 +159,6 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
 
     if not result:
         # Delete older entries
-        delete_from_cache(username, realm, resolver, password)
+        delete_from_cache(username, realm, resolver, password, first_auth, max_auths)
 
     return result
