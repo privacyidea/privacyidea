@@ -314,7 +314,7 @@ class ACTION(object):
     TOKENREALMS = "tokenrealms"
     TOKENTYPE = "tokentype"
     TOKENINFO = "tokeninfo"
-    TOKENINFO_API_EXCLUDE = "tokeninfo_api_exclude"
+    HIDE_TOKENINFO = "hide_tokeninfo"
     TOKENWIZARD = "tokenwizard"
     TOKENWIZARD2ND = "tokenwizard_2nd_token"
     TOKENROLLOVER = "token_rollover"
@@ -1887,7 +1887,12 @@ def get_static_policy_definitions(scope=None):
                           "attribute, set this to '*'. For more details, check "
                           "the documentation."),
                 'mainmenu': [],
-                'group': GROUP.USER}
+                'group': GROUP.USER},
+            ACTION.HIDE_TOKENINFO: {
+                'type': TYPE.STRING,
+                'desc': 'A whitespace-separated list of tokeninfo fields which are not displayed to the user.',
+                'group': GROUP.SYSTEM
+            }
         },
 
         SCOPE.USER: {
@@ -2018,11 +2023,11 @@ def get_static_policy_definitions(scope=None):
                           "For more details, check the documentation."),
                 'mainmenu': [],
                 'group': GROUP.USER},
-            ACTION.TOKENINFO_API_EXCLUDE: {
+            ACTION.HIDE_TOKENINFO: {
                 'type': TYPE.STRING,
-                'desc': 'A comma-seperated list of token-info fields that get excluded in the web-ui'
+                'desc': 'A whitespace-separated list of tokeninfo fields which are not displayed to the user.',
+                'group': GROUP.SYSTEM
             }
-
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {
