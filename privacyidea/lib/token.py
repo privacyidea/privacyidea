@@ -447,7 +447,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 serial=None, active=None, resolver=None, rollout_state=None,
                 sortby=Token.serial, sortdir="asc", psize=15,
                 page=1, description=None, userid=None, allowed_realms=None, tokeninfo=None,
-                excluded_tokeninfo_fields=None):
+                hidden_tokeninfo_fields=None):
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -538,18 +538,11 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 log.debug(traceback.format_exc())
                 token_dict["username"] = "**resolver error**"
 
-            if excluded_tokeninfo_fields:
-                # we cant simply delete the key-value pair because than we would change the size of the dict during
-                # the iteration
-                tmp = {}
-                # Loop over all the key-value pairs and check if they are not excluded. if there are not in the
-                # exclusion-list we add them to the temp-dict.
-                for key in token_dict['info'].keys():
-                    if key not in excluded_tokeninfo_fields:
-                        tmp[key] = token_dict['info'][key]
+            if hidden_tokeninfo_fields:
+                for key in list(token_dict['info']):
+                    if key in hidden_tokeninfo_fields:
+                        token_dict['info'].pop(key)
 
-                # now we just replace the old info-dict with the newly created one.
-                token_dict['info'] = tmp
             token_list.append(token_dict)
 
     ret = {"tokens": token_list,
