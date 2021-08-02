@@ -172,13 +172,11 @@ With ``token/init`` you could get:
 This condition checks a regular expression against the ``detail`` section in
 the API response. The field ``detail->message`` is evaluated.
 
-Those messages can be manyfold like:
+Those messages can be manyfold like::
 
-"wrong otp pin"
-
-"wrong otp value"
-
-"Only 2 failed authentications per 1:00:00"
+    "wrong otp pin"
+    "wrong otp value"
+    "Only 2 failed authentications per 1:00:00"
 
 .. note:: The field ``detail->message`` is available in case of status ``True``,
    like an authentication request that was handled successfully but failed.
@@ -186,13 +184,13 @@ Those messages can be manyfold like:
 **detail_message**
 
 Here you can enter a regular expression. The condition only applies if the regular
-expression matches the detail->message in the response.
+expression matches the ``detail->message`` in the response.
 
 **last_auth**
 
 This condition checks if the last authentication is older than the specified
 time delta. The timedelta is specified with "h" (hours), "d" (days) or "y"
-(years). Specifying *180d* would mean, that the action is triggered if the
+(years). Specifying ``180d`` would mean, that the action is triggered if the
 last successful authentication with the token was performed more than 180
 days ago.
 
@@ -247,7 +245,7 @@ This can be the trigger to notify either the token owner or the administrator.
 
 This is the rollout_state of a token. A token can be rolled out in several steps
 like the 2step HOTP/TOTP token. In this case the attribute "rollout_state" of the
-token contains certain values like 'clientwait' or 'enrolled'.
+token contains certain values like ``clientwait`` or ``enrolled``.
 This way actions can be triggered, depending on the step during an enrollment
 process.
 
@@ -288,7 +286,7 @@ Checks if the token is in the current validity period or not. Can be set to
 
 The tokeninfo condition can compare any arbitrary tokeninfo field against a
 fixed value. You can compare strings and integers. Integers are converted
-automatically. Valid compares are:
+automatically. Valid compares are::
 
     myValue == 1000
     myValue > 1000
@@ -300,13 +298,13 @@ automatically. Valid compares are:
 "myValue" and "myTokenInfoField" being any possible tokeninfo fields.
 
 Starting with version 2.20 you can also compare dates in the isoformat like
-that:
+that::
 
     myValue > 2017-10-12T10:00+0200
     myValue < 2020-01-01T00:00+0000
 
-In addition you can also use the tag *{now}* to compare to the curren time
-*and* you can add offsets to *{now}* in seconds, minutes, hours or days:
+In addition you can also use the tag ``{now}`` to compare to the curren time
+*and* you can add offsets to ``{now}`` in seconds, minutes, hours or days::
 
     myValue < {now}
     myValue > {now}+10d
@@ -340,13 +338,13 @@ The action is only triggered, if the user in the event has the given number
 of tokens assigned.
 
 This can be used to e.g. automatically enroll a token for the user if the
-user has no tokens left (token_number == 0) of to notify the administrator if
+user has no tokens left (``token_number == 0``) of to notify the administrator if
 the user has to many tokens assigned.
 
 **counter**
 
 The counter condition can compare the value of any arbitrary event counter against a fixed
-value. Valid compares are:
+value. Valid compares are::
 
     myCounter == 1000
     myCounter > 1000
