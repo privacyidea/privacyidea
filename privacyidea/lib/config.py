@@ -144,7 +144,7 @@ class SharedConfigClass(object):
                                                      "type": x.resolver.rtype})
                     realmconfig[realm.name] = realmdef
                 # Load all policies
-                for pol in Policy.query.all():
+                for pol in Policy.query.order_by(Policy.name.asc()).all():
                     policies.append(pol.get())
                 # Load all events
                 for event in EventHandler.query.order_by(EventHandler.ordering):
