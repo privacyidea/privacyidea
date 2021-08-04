@@ -34,14 +34,16 @@ Customization
 There are two dialog windows in the wizard. You can configure the text in the
 wizard in your html templates defined in these files:
 
-Before the token is enrolled you can add your custom text in these two files
+Before the token is enrolled you can add your custom text in these two files::
+
    static/customize/views/includes/token.enroll.pre.top.html
    static/customize/views/includes/token.enroll.pre.bottom.html
 
-When it is enrolled and the user needs to do something (e.g. scanning the qr-code), you can modify the text here:
+When it is enrolled and the user needs to do something (e.g. scanning the qr-code),
+you can modify the text here::
+
    static/customize/views/includes/token.enroll.post.top.html
    static/customize/views/includes/token.enroll.post.bottom.html
-
 
 .. note:: You can change the directory static/customize to a URL that fits
    your needs the best by defining a variable PI_CUSTOMIZATION in the file
@@ -55,11 +57,11 @@ Your privacyIDEA system is running in the URL sub path ``/pi``.
 The files could be addressed via a path component ``mydesign`` (in this case ``pi/mydesign``).
 Thus the WebUI will look for the files in the URL path ``/pi/mydesign/views/includes/``.
 
-So you set in ``pi.cfg``:
+So you set in ``pi.cfg``::
 
     PI_CUSTOMIZATION = "/mydesign"
 
 Your customized files are located in ``/etc/privacyidea/customize/views/includes/``.
-In the Apache webserver you need to map ``/pi/mydesign`` to ``/etc/privacyidea/customize``:
+In the Apache webserver you need to map ``/pi/mydesign`` to ``/etc/privacyidea/customize``::
 
     Alias /pi/mydesign /etc/privacyidea/customize

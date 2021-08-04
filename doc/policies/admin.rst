@@ -206,7 +206,7 @@ characters ``+`` and ``-``.
 ``-s`` (denial)
 
    The PIN must not contain a special character.
-   **test1234* would be a valid PIN. *test12$$* would not.
+   *test1234* would be a valid PIN. *test12$$* would not.
 
 ``+cn`` (grouping)
 
@@ -724,9 +724,9 @@ For allowing all values, the asterisk ("*") is used.
 Each key is enclosed in colons and followed by a list of values separated by whitespaces,
 thus values are not allowed to contain whitespaces.
 
-Example::
+Example:
 
-    :department: sales finance :city: * :*: 1 2
+    ``:department: sales finance :city: * :*: 1 2``
 
 ``:department: sales finance`` means that the administrator can set an additional
 attribute "department" with the allowed values of "sales" or "finance".
@@ -751,7 +751,7 @@ administrator to delete any additional attribute.
 
 Example:
 
-    attr1 attr2 department
+    ``attr1 attr2 department``
 
 The administrator is allowed to delete the attributes "attr1", "attr2" and
 the attributes "department" of the corresponding users.
