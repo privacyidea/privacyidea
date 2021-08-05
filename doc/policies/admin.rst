@@ -64,15 +64,6 @@ is not allowed to list any tokens.
    the admin will have list rights on all mentioned realms
    independent on the priority of the policies.
 
-init
-~~~~
-
-type: bool
-
-There are ``init`` actions per token type. Thus you can 
-create policy that allow an administrator to enroll 
-SMS tokens but not to enroll HMAC tokens.
-
 enable
 ~~~~~~
 
@@ -281,15 +272,15 @@ creating many new token objects in the systems database.
 The right to upload tokens can be limited to certain realms.
 Thus the administrator could only upload tokens into realm he is allowed to manage.
 
-remove
+delete
 ~~~~~~
 
 type: bool
 
-If the ``remove`` action is defined, the administrator is
+If the ``delete`` action is defined, the administrator is
 allowed to delete a token from the system. 
 
-.. note:: If a token is removed, it can not be recovered.
+.. note:: If a token is deleted, it can not be recovered.
 
 .. note:: All audit entries of this token still exist in the audit log.
 
@@ -314,15 +305,13 @@ type: bool
 If the ``getchallenges`` action is defined, the administrator is
 allowed to check the status of open challenge requests.
 
-manageToken
+tokenrealms
 ~~~~~~~~~~~
 
 type: bool
 
-If the ``manageToken`` action is defined, the administrator is allowed
+If the ``tokenrealms`` action is defined, the administrator is allowed
 to manage the realms of a token.
-
-.. index:: realm administrator
 
 A token may be located in multiple realms. This can be interesting if
 you have a pool of spare tokens and several realms but want to 
