@@ -14,6 +14,7 @@ from alembic import op
 from sqlalchemy import orm
 from privacyidea.models import EventHandlerOption
 from privacyidea.lib.eventhandler.usernotification import NOTIFY_TYPE
+from sqlalchemy import and_
 
 
 def upgrade():
@@ -21,11 +22,16 @@ def upgrade():
     session = orm.Session(bind=bind)
     try:
         for row in session.query(EventHandlerOption).filter(EventHandlerOption.Key == 'reply_to'):
-            reply_email = row.Value
             evh_id = row.eventhandler_id
-            row.Value = NOTIFY_TYPE.EMAIL
-            row.save()
-            EventHandlerOption(evh_id, 'reply_to email', reply_email).save()
+            check = session.query(EventHandlerOption).filter(and_(EventHandlerOption.Key.like('reply_to %'),
+                                                                  EventHandlerOption.eventhandler_id == evh_id)).first()
+            if not check:
+                reply_email = row.Value
+                row.Value = NOTIFY_TYPE.EMAIL
+                row.save()
+                EventHandlerOption(evh_id, 'reply_to email', reply_email).save()
+            else:
+                continue
 
     except Exception as e:
         session.rollback()
