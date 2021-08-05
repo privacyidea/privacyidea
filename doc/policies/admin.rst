@@ -64,6 +64,15 @@ is not allowed to list any tokens.
    the admin will have list rights on all mentioned realms
    independent on the priority of the policies.
 
+enroll
+~~~~~~
+
+type: bool
+
+There are enrollment actions per token type, e.g. ``enrollHOTP``. Only those token
+types are selectable in the WebUI during enrollment which are allowed by their
+corresponding enroll policy action.
+
 enable
 ~~~~~~
 
@@ -118,6 +127,13 @@ type: bool
 
 If the ``setrandompin`` action is defined, the administrator
 is allowed to call the endpoint, that sets a random token PIN.
+
+settokeninfo
+~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to manually set and delete token info.
 
 enrollpin
 ~~~~~~~~~
@@ -228,6 +244,12 @@ This policy is needed to define how long the PIN will be.
 
 .. note:: The PIN will consist of digits and letters.
 
+reset
+~~~~~
+
+type: bool
+
+The administrator is allowed to reset the fail counter of a token.
 
 resync
 ~~~~~~
@@ -283,6 +305,21 @@ allowed to delete a token from the system.
 .. note:: If a token is deleted, it can not be recovered.
 
 .. note:: All audit entries of this token still exist in the audit log.
+
+spass_otp_pin_contents
+~~~~~~~~~~~~~~~~~~~~~~
+
+type: str
+
+
+
+spass_otp_pin_minlength and spass_otp_pin_maxlength
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: int
+
+These policy actions define the required minimal and allowed maximal pin length
+for :ref:`spass_token`.
 
 userlist
 ~~~~~~~~
@@ -494,6 +531,34 @@ Allow the administrator to read :ref:`eventhandler`.
    or realms. Having the right to read event handlers, will allow the
    administrator to see all event handler definitions.
 
+radiusserver_write
+~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write or delete :ref:`radiusserver_config` definitions.
+
+radiusserver_read
+~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to read the :ref:`radiusserver_config` definitions.
+
+privacyideaserver_write
+~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write or delete :ref:`privacyideaserver_config` definitions.
+
+privacyideaserver_read
+~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to read the :ref:`privacyideaserver_config` definitions.
+
 
 policywrite, policyread, policydelete
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -531,6 +596,30 @@ configwrite, configread, configdelete
 type: bool
 
 Allow the administrator to write, read or delete system configuration.
+
+
+caconnectorwrite, caconnectorread, caconnectordelete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write, read or delete CA connectors.
+
+
+statistics_read
+~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows the reading of the statistics at the :ref:`rest_monitoring`.
+
+
+statistics_delete
+~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows to delete statistics at the :ref:`rest_monitoring`.
 
 
 auditlog
@@ -749,3 +838,50 @@ the attributes "department" of the corresponding users.
    custom user attributes.
 
 New in version 3.6
+
+.. _admin_machinelist:
+
+machinelist
+~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to list the machines.
+
+manage_machine_tokens
+~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to attach and detach tokens to machines to enable the use with
+one of the available appliactions. See :ref:`machines`.
+
+fetch_authentication_items
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to fetch authentication items of tokens assigned to machines.
+It grants access to the ``/machine/authitem`` endpoints (see :ref:`rest_machine`).
+
+clienttype
+~~~~~~~~~~
+
+type: bool
+
+This policy action allows the admin to view the list of clients which authenticate to privacyIDEA
+at the :ref:`rest_client`.
+
+managesubscription
+~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is able to view and change the subscriptions.
+It grants access to the :ref:`rest_subscriptions`.
+
+set_hsm_password
+~~~~~~~~~~~~~~~~
+
+The administrator is able to set the password of the hardware security module.
+It grants access to the `/system/hsm` endpoint (see :ref:`rest_system`).

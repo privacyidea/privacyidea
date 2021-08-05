@@ -38,9 +38,9 @@ enroll
 
 type: bool
 
-There are ``enroll`` actions per token type. Thus you can 
-create policies that allow the user to enroll
-SMS tokens but not to enroll HMAC tokens.
+There are enrollment actions per token type, e.g. ``enrollHOTP``. Only those token
+types are selectable in the WebUI during enrollment which are allowed by their
+corresponding enroll policy action.
 
 assign
 ~~~~~~

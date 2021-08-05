@@ -38,3 +38,4 @@ Now you can take a look at the several REST endpoints.
    api/smsgateway
    api/radiusserver
    api/subscriptions
+   api/client
