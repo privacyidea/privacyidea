@@ -548,14 +548,14 @@ type: bool
 Allow the administrator to read the :ref:`radiusserver_config` definitions.
 
 privacyideaserver_write
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 type: bool
 
 Allow the administrator to write or delete :ref:`privacyideaserver_config` definitions.
 
 privacyideaserver_read
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 type: bool
 
@@ -601,7 +601,7 @@ Allow the administrator to write, read or delete system configuration.
 
 
 caconnectorwrite, caconnectorread, caconnectordelete
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: bool
 
@@ -617,7 +617,7 @@ This action allows the reading of the statistics at the :ref:`rest_monitoring`.
 
 
 statistics_delete
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 type: bool
 
