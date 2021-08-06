@@ -512,6 +512,17 @@ The following options are available:
 
 The default is to ``allow`` polling
 
+.. _policy_push_ssl_verify_auth:
+
+push_ssl_verify
+~~~~~~~~~~~~~~~
+
+type: int
+
+The smartphone needs to verify the SSL certificate of the privacyIDEA server during
+the authentication with push tokens. By default, the verification is enabled. To disable
+verification during enrollment, see :ref:`policy_push_ssl_verify_enrollment`.
+
 .. _policy_challenge_text:
 
 challenge_text, challenge_text_header, challenge_text_footer
@@ -551,6 +562,29 @@ The text needs to contain the python formatting tag *{0!s}* which will
 be replaced with the list of the requested positions.
 
 For more details of this token type see :ref:`indexedsecret_token`.
+
+
+.. _policy_webauthn_challenge_text_auth:
+
+webauthn_challenge_text
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: str
+
+Use an alternate challenge text for requesting the user to confirm with
+his WebAuthn token during authentication. This might be different from the
+challenge text received during enrollment
+(see :ref:`policy_webauthn_challenge_text_enrollment`).
+
+
+email_challenge_text, sms_challenge_text, u2f_challenge_text
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: str
+
+With these actions you may set alternative challenge texts for email, SMS
+and U2F tokens.
+
 
 indexedsecret_count
 ~~~~~~~~~~~~~~~~~~~
