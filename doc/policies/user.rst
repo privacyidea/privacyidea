@@ -171,6 +171,13 @@ sets it.
 
 This takes the same values like the admin policy :ref:`admin_policies_otp_pin_contents`.
 
+otp_pin_set_random
+~~~~~~~~~~~~~~~~~~
+
+type: int
+
+The length of a random PIN set by the user.
+
 auditlog
 ~~~~~~~~
 type: bool
@@ -216,6 +223,13 @@ attributes in the user store.
 .. note:: To be able to edit the attributes, the resolver must be defined as
    editable.
 
+userlist
+~~~~~~~~
+
+type: bool
+
+If the ``userlist`` action is defined, the user is
+allowed to view his own user information.
 
 revoke
 ~~~~~~
