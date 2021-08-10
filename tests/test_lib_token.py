@@ -318,6 +318,13 @@ class TokenTestCase(MyTestCase):
                                                         "serial": "NEW001",
                                                         "type": "totp"})
 
+        # try to update the same token with another user assignment
+        self.assertRaises(TokenAdminError, init_token, {"otpkey": "1234",
+                                                        "serial": "NEW001"},
+                          user=User(login="hans", realm=self.realm1))
+        # test that token was not assigned to the other user
+        self.assertTrue(tokenobject.user == User(login="cornelius", realm=self.realm1))
+
         # update the existing token
         self.assertTrue(tokenobject.token.otplen == 6, tokenobject.token.otplen)
         tokenobject = init_token({"serial": "NEW001", "type": "hotp",

@@ -1052,6 +1052,16 @@ def init_token(param, user=None, tokenrealms=None,
                                                                   tokentype))
             log.error(msg)
             raise TokenAdminError("initToken failed: {0!s}".format(msg))
+        # prevent to init update a token changing the token owner
+        if user:
+            old_tokenowner = get_token_owner(serial)
+            if old_tokenowner is not None and old_tokenowner != user:
+                msg = ("The token with serial {0!s} is already assigned "
+                            "to a user other than {1!s}@{2!s}.".format(serial,
+                                                                       user.login,
+                                                                       user.realm))
+                log.error(msg)
+                raise TokenAdminError("initToken failed: {0!s}".format(msg))
 
     # if there is a realm as parameter (and the realm is not empty), but no
     # user, we assign the token to this realm.
