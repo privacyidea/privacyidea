@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2021-06-06 09:14+0200\n"
-"PO-Revision-Date: 2021-07-31 19:52+0000\n"
+"PO-Revision-Date: 2021-08-12 16:34+0000\n"
 "Last-Translator: Rodrigo Rocha <rodrigorocha.info@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "privacyidea/privacyidea-ui/pt_BR/>\n"
@@ -363,7 +363,7 @@ msgstr "Admin é autorizado a excluir o usuário de um userstore."
 
 #: lib/policy.py:1774
 msgid "Admin is allowed to set the password of the HSM/Security Module."
-msgstr ""
+msgstr "Admin está autorizado a definir a senha do módulo HSM/Security."
 
 #: lib/policy.py:1778
 msgid "Admin is allowed to retrieve the list of active challenges."
