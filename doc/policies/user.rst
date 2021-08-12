@@ -38,9 +38,8 @@ enroll
 
 type: bool
 
-There are enrollment actions per token type, e.g. ``enrollHOTP``. Only those token
-types are selectable in the WebUI during enrollment which are allowed by their
-corresponding enroll policy action.
+There are enrollment actions per token type, e.g. ``enrollHOTP``.
+The user is only allowed to enroll such specified token types.
 
 assign
 ~~~~~~

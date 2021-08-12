@@ -112,7 +112,7 @@ appimageurl
 
 type: string
 
-With this action you may specify the URL to a token image which is included in the
+With this action the administrator may specify the URL to a token image which is included in the
 QR code during enrollment (key in otpauth URL: ``image``). It is used by some smartphone
 apps like FreeOTP.
 

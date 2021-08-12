@@ -26,7 +26,7 @@ type: string
 
 This action defines how the fixed password part during
 authentication should be validated.
-Each token has its own OTP PIN, but you can choose
+Each token has its own OTP PIN, but the administrator can choose
 how the authentication should be processed:
 
 ``otppin=tokenpin``
@@ -154,8 +154,7 @@ smstext
 type: string
 
 This is the text that is sent via SMS to the user trying to
-authenticate with an SMS token.
-You can use the tags *<otp>* and *<serial>*.
+authenticate with an SMS token. This can contain the tags *<otp>* and *<serial>*.
 Texts containing whitespaces must be enclosed in single quotes.
 
 Starting with version 2.20 you can use the tag *{challenge}*. This will add
@@ -582,7 +581,7 @@ email_challenge_text, sms_challenge_text, u2f_challenge_text
 
 type: str
 
-With these actions you may set alternative challenge texts for email, SMS
+With these actions the administrator may set alternative challenge texts for email, SMS
 and U2F tokens.
 
 
