@@ -105,6 +105,16 @@ The default behaviour is to use the serial number.
    You should rather use a label like "{user}@{realm}",
    which would result in "@".
 
+appimageurl
+~~~~~~~~~~~
+
+.. index:: Token Image, FreeOTP
+
+type: string
+
+With this action the administrator may specify the URL to a token image which is included in the
+QR code during enrollment (key in otpauth URL: ``image``). It is used by some smartphone
+apps like FreeOTP.
 
 .. _autoassignment:
 
@@ -408,6 +418,17 @@ accepts the response of the second registration step.
 The smartphone could have connection issues, so the second step
 could take some time to happen.
 
+.. _policy_push_ssl_verify_enrollment:
+
+push_ssl_verify
+~~~~~~~~~~~~~~~
+
+type: int
+
+The smartphone needs to verify the SSL certificate of the privacyIDEA server during
+the enrollment of push tokens. By default, the verification is enabled. To disable
+verification during authentication, see :ref:`policy_push_ssl_verify_auth`.
+
 .. _policy_webauthn_enroll_relying_party_id:
 
 webauthn_relying_party_id
@@ -660,6 +681,19 @@ in the attestation certificate matches accordingly the token can be enrolled.
 
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_authz_req`.
+
+
+.. _policy_webauthn_challenge_text_enrollment:
+
+webauthn_challenge_text
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: str
+
+Use an alternate challenge text for requesting the user to confirm with
+his WebAuthn token during enrollment. This might be different from the
+challenge text received during authentication
+(see :ref:`policy_webauthn_challenge_text_auth`).
 
 
 .. _require_attestation:

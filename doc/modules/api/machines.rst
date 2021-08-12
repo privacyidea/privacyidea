@@ -1,9 +1,9 @@
 .. _rest_machine:
 
-.. automodule:: privacyidea.api.machine
+Machine endpoints
+~~~~~~~~~~~~~~~~~
 
-Machine  endpoints
-~~~~~~~~~~~~~~~~~~
+.. automodule:: privacyidea.api.machine
 
 .. autoflask:: privacyidea.app:create_app()
    :endpoints:

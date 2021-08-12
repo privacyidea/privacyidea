@@ -26,7 +26,7 @@ type: string
 
 This action defines how the fixed password part during
 authentication should be validated.
-Each token has its own OTP PIN, but you can choose
+Each token has its own OTP PIN, but the administrator can choose
 how the authentication should be processed:
 
 ``otppin=tokenpin``
@@ -154,8 +154,7 @@ smstext
 type: string
 
 This is the text that is sent via SMS to the user trying to
-authenticate with an SMS token.
-You can use the tags *<otp>* and *<serial>*.
+authenticate with an SMS token. This can contain the tags *<otp>* and *<serial>*.
 Texts containing whitespaces must be enclosed in single quotes.
 
 Starting with version 2.20 you can use the tag *{challenge}*. This will add
@@ -512,6 +511,17 @@ The following options are available:
 
 The default is to ``allow`` polling
 
+.. _policy_push_ssl_verify_auth:
+
+push_ssl_verify
+~~~~~~~~~~~~~~~
+
+type: int
+
+The smartphone needs to verify the SSL certificate of the privacyIDEA server during
+the authentication with push tokens. By default, the verification is enabled. To disable
+verification during enrollment, see :ref:`policy_push_ssl_verify_enrollment`.
+
 .. _policy_challenge_text:
 
 challenge_text, challenge_text_header, challenge_text_footer
@@ -551,6 +561,29 @@ The text needs to contain the python formatting tag *{0!s}* which will
 be replaced with the list of the requested positions.
 
 For more details of this token type see :ref:`indexedsecret_token`.
+
+
+.. _policy_webauthn_challenge_text_auth:
+
+webauthn_challenge_text
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: str
+
+Use an alternate challenge text for requesting the user to confirm with
+his WebAuthn token during authentication. This might be different from the
+challenge text received during enrollment
+(see :ref:`policy_webauthn_challenge_text_enrollment`).
+
+
+email_challenge_text, sms_challenge_text, u2f_challenge_text
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: str
+
+With these actions the administrator may set alternative challenge texts for email, SMS
+and U2F tokens.
+
 
 indexedsecret_count
 ~~~~~~~~~~~~~~~~~~~

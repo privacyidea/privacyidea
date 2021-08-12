@@ -38,9 +38,8 @@ enroll
 
 type: bool
 
-There are ``enroll`` actions per token type. Thus you can 
-create policies that allow the user to enroll
-SMS tokens but not to enroll HMAC tokens.
+There are enrollment actions per token type, e.g. ``enrollHOTP``.
+The user is only allowed to enroll such specified token types.
 
 assign
 ~~~~~~
@@ -171,6 +170,13 @@ sets it.
 
 This takes the same values like the admin policy :ref:`admin_policies_otp_pin_contents`.
 
+otp_pin_set_random
+~~~~~~~~~~~~~~~~~~
+
+type: int
+
+The length of a random PIN set by the user.
+
 auditlog
 ~~~~~~~~
 type: bool
@@ -216,6 +222,13 @@ attributes in the user store.
 .. note:: To be able to edit the attributes, the resolver must be defined as
    editable.
 
+userlist
+~~~~~~~~
+
+type: bool
+
+If the ``userlist`` action is defined, the user is
+allowed to view his own user information.
 
 revoke
 ~~~~~~

@@ -116,6 +116,14 @@ The default timeout is 120 seconds.
 
 Being a policy this time can be set based on clients, realms and users.
 
+timeout_action
+~~~~~~~~~~~~~~
+
+.. index:: logout time, timeout, timeout action
+
+type: ``str``
+
+The action taken when a user is idle beyond the ``logout_time`` limit. Defaults to `lockscreen`.
 
 token_page_size
 ~~~~~~~~~~~~~~~
@@ -212,6 +220,14 @@ to display the contents in the first step (pre) or in the second step (post).
 
 If you want to adapt the privacyIDEA look and feel even more, read :ref:`customize`.
 
+tokenwizard_2nd_token
+~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: Wizard, Token wizard
+
+type: ``bool``
+
+The tokenwizard will be displayed in the token menu, even if the user already has a token.
 
 realm_dropdown
 ~~~~~~~~~~~~~~
@@ -245,6 +261,13 @@ the behaviour that the administrator needs to press *enter* to trigger the
 search.
 
 (Since privacyIDEA 2.17)
+
+user_details
+~~~~~~~~~~~~
+
+type: ``bool``
+
+This action adds the user ID and the resolver name to the token list.
 
 .. _webui_custom_baseline:
 
@@ -381,6 +404,13 @@ test instances and productive instances. This way you can easily distinguish the
 
 (Since privacyIDEA 3.5)
 
+show_seed
+~~~~~~~~~
+
+type: ``bool``
+
+If this is checked, the token seed will be additionally displayed as text during enrollment.
+
 indexedsecret_preset_attribute
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -408,3 +438,26 @@ token numbers, authentication requests, recent administrative changes, policies,
 event handlers and subscriptions.
 
 (Since privacyIDEA 3.4)
+
+dialog_no_token
+~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+When activated, a welcome dialog will be displayed if a user, who has no token assigned, logs in to the Web UI.
+The dialog is contained in the template ``dialog.no.token.html``.
+
+hide_welcome_info
+~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+If this is checked, the administrator will not see the default welcome dialog anymore.
+
+privacy_statement_link
+~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``str``
+
+With this policy you may specify a custom privacy statement link which is displayed
+in the WebUI baseline.

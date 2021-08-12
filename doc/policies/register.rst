@@ -105,5 +105,13 @@ This will allow all email addresses from the domains *mydomain.com*,
 *mydomain.net*
 etc...
 
+registration_body
+~~~~~~~~~~~~~~~~~
+
+type: str
+
+The body of the registration email. Use the ``{regkey}`` as tag for the
+registration key.
+
 
 .. [#pythonre] https://docs.python.org/2/library/re.html
