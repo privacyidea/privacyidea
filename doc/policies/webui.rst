@@ -444,15 +444,15 @@ dialog_no_token
 
 type: ``bool``
 
-When activated, the welcome dialog will be displayed after login if the user has
-no tokens assigned.
+When activated, a welcome dialog will be displayed if a user, who has no token assigned, logs in to the Web UI.
+The dialog is contained in the template ``dialog.no.token.html``.
 
 hide_welcome_info
 ~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
-If this checked, the administrator will not see the default welcome dialog anymore.
+If this is checked, the administrator will not see the default welcome dialog anymore.
 
 privacy_statement_link
 ~~~~~~~~~~~~~~~~~~~~~~
