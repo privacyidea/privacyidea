@@ -109,9 +109,9 @@ type: bool
 Tokens can have additional token information, which can be
 viewed in the :ref:`token_details`.
 
-If the ``set`` action is defined, the administrator allowed
-to set those token properties like description, max_failcount
-and validity_period_start at the ``/token/set`` endpoints
+If the ``set`` action is defined, the is administrator allowed
+to set those token properties like ``description``, ``max_failcount``
+or ``validity_period_start`` at the ``/token/set`` endpoints
 (see :ref:`rest_token`).
 
 setpin
