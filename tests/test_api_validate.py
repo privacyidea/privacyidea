@@ -1665,6 +1665,61 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
 
         delete_privacyidea_config("AutoResync")
+        remove_token(serial)
+
+    def test_16_autoresync_hotp_via_multichallenge(self):
+        serial = "autosync1"
+        token = init_token({"serial": serial,
+                            "otpkey": self.otpkey,
+                            "pin": "async"}, User("cornelius", self.realm2))
+        set_privacyidea_config("AutoResync", True)
+        set_policy(name="mcr_resync", scope=SCOPE.AUTH, action=ACTION.RESYNC_VIA_MULTICHALLENGE)
+        token.set_sync_window(10)
+        token.set_count_window(5)
+        # counter = 8, is out of sync
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user":
+                                                    "cornelius@" + self.realm2,
+                                                 "pass": "async399871"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertEqual(detail.get('multi_challenge')[0].get("message"),
+                             u'To resync your token, please enter the next OTP value')
+            self.assertEqual(result.get("value"), False)
+            transaction_id = res.json.get("detail").get("transaction_id")
+            self.assertTrue(transaction_id)
+
+        # A false response will fail
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user":
+                                                     "cornelius@" + self.realm2,
+                                                 "transaction_id": transaction_id,
+                                                 "pass": "520111"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertFalse(result.get("value"))
+
+        # counter = 9, will be autosynced.
+        # Authentication is successful
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user":
+                                                    "cornelius@" + self.realm2,
+                                                 "transaction_id": transaction_id,
+                                                 "pass": "520489"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertEqual(result.get("value"), True)
+
+        delete_privacyidea_config("AutoResync")
+        remove_token(serial)
+        delete_policy("mcr_resync")
 
     def test_17_auth_timelimit_success(self):
         user = User("timelimituser", realm=self.realm2)

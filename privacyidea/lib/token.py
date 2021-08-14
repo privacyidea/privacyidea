@@ -98,7 +98,8 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_cache,
                                               config_lost_token,
                                               reset_all_user_tokens)
-from privacyidea.lib.challengeresponsedecorators import generic_challenge_response_reset_pin
+from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
+                                                         generic_challenge_response_resync)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenclass import TOKENKIND
 from dateutil.tz import tzlocal
@@ -2147,6 +2148,7 @@ def weigh_token_type(token_obj):
 @log_with(log)
 @libpolicy(reset_all_user_tokens)
 @libpolicy(generic_challenge_response_reset_pin)
+@libpolicy(generic_challenge_response_resync)
 def check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=False):
     """
     this takes a list of token objects and tries to find the matching token
