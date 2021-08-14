@@ -168,11 +168,11 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
 
 def generic_challenge_response_resync(wrapped_function, *args, **kwds):
     """
-    Check if the authentication request resulted an autosync
+    Check if the authentication request results in an autosync
 
     Conditions: To do so we check for "otp1c" in the tokeninfo data.
 
-    Policies: A policy defines, the token resync should be allowed this way.
+    Policies: A policy defines that the token resync should be allowed this way.
     Note: The general config "autoresync" needs to be set anyways.
 
     args are:
@@ -193,7 +193,7 @@ def generic_challenge_response_resync(wrapped_function, *args, **kwds):
         g = options.get("g")
         # The tokenlist can contain more than one token. So we get the matching token object
         token_obj = next(t for t in args[0] if t.token.serial == serial)
-        if token_obj.get_tokeninfo("otp1c"):
+        if token_obj and token_obj.get_tokeninfo("otp1c"):
             # We have an entry for resync
             if g and Match.token(g, scope=SCOPE.AUTH, action=ACTION.RESYNC_VIA_MULTICHALLENGE,
                                  token_obj=token_obj).any():

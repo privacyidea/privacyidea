@@ -2153,7 +2153,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.RESYNC_VIA_MULTICHALLENGE: {
                 'type': 'bool',
                 'desc': _("The autoresync of a token can be done via a challenge response message."
-                          "You need to activate autoresync in the general settings!"),
+                          "You need to activate 'Automatic resync' in the general settings!"),
             },
             ACTION.PASSTHRU: {
                 'type': 'str',
