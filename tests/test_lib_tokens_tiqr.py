@@ -397,6 +397,11 @@ class TiQRTokenTestCase(MyApiTestCase):
         self.setUp_user_realms()
 
     def _test_create_token(self, user):
+        try:
+            # Try to remove the token, if it exists
+            remove_token("TIQR1")
+        except Exception:
+            pass
         pin = "test"
         token = init_token({"type": "tiqr",
                             "pin": pin,
