@@ -1,3 +1,17 @@
+Version 3.6.2, 2021-07-22
+
+  Fixes:
+  * Fix LDAP Resolver for old Python versions like in CentOS 7 #2835
+  * Fix typo in pi-manage that breaks config restore #2829
+
+Version 3.6.1, 2021-07-19
+
+  Fixes:
+  * Remove importlib-metadata from doc requirements
+  * Add a safe_store feature #2794
+  * Decode URL parameters for forms #2800
+  * Prepare ADFS subscription #2801
+
 Version 3.6, 2021-06-07
 
   Features:
