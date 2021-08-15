@@ -7,7 +7,7 @@ The HOTP token is - together with the :ref:`totp_token` - the most common token.
 The HOTP Algorithm is defined in
 `RFC4225 <https://tools.ietf.org/html/rfc4226>`_. The HOTP token is an event
 base token.
-The HOTP algorithm has some parameter, like if the generated OTP value will
+The HOTP algorithm has some parameter, like if the generated :term:`OTP` value will
 be 6 digits or 8 digits or if the SHA1 or the SHA256 hashing algorithm is
 used.
 

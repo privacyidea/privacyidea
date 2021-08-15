@@ -53,6 +53,7 @@ Table of Contents
    application_plugins/index
    modules/index
    faq/index
+   glossary/index
 
 
 If you are missing any information or descriptions
