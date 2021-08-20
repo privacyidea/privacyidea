@@ -718,7 +718,7 @@ class PolicyClass(object):
             # if a user_object is passed, we check, if it differs from potentially passed user, resolver, realm:
             if (user and user.lower() != user_object.login.lower()) \
                     or (resolver and resolver.lower() != user_object.resolver.lower()) \
-                    or (realm and realm != user_object.realm):
+                    or (realm and realm.lower() != user_object.realm):
                 tb_str = ''.join(traceback.format_stack())
                 log.warning("Cannot pass user_object as well as user, resolver, realm "
                             "in policy {0!s}. "
