@@ -219,9 +219,18 @@ class TokenClass(object):
         :return: None
         """
         (uid, resolvertype, resolvername) = user.get_user_identifiers()
-        r = TokenOwner(token_id=self.token.id,
-                       user_id=uid, resolver=resolvername,
-                       realmname=user.realm).save()
+        # prevent to init update a token changing the token owner
+        # FIXME: We need to remove this, if we one day want to assign several users to one token
+        if self.user and self.user != user:
+            log.info(u"The token with serial {0!s} is already assigned "
+                     u"to user {1!s}. Can not assign to {2!s}.".format(self.token.serial, self.user, user))
+            raise TokenAdminError("This token is already assigned to another user.")
+
+        if not self.user:
+            # If the tokenowner is not set yet, set it / avoid setting the same tokenowner multiple times
+            r = TokenOwner(token_id=self.token.id,
+                           user_id=uid, resolver=resolvername,
+                           realmname=user.realm).save()
         # set the tokenrealm
         self.set_realms([user.realm])
 

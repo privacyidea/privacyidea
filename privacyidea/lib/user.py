@@ -143,6 +143,15 @@ class User(object):
         return isinstance(other, type(self)) and (self.login == other.login) and (
                 self.resolver == other.resolver) and (self.realm == other.realm)
 
+    def __ne__(self, other):
+        """
+        Compare two user objects and return true, if they are not equal
+
+        :param other: The other User objkect
+        :return: True or False
+        """
+        return not self.__eq__(other)
+
     def __hash__(self):
         return hash((type(self), self.login, self.resolver, self.realm))
 
