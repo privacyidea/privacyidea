@@ -1,3 +1,28 @@
+Version 3.7dev1, 2021-08-25
+
+  Features:
+  Enhancements:
+  * Allow resyncing of a token via Multi-Challenge (#2349)
+  * Token Handler can use the serial numbers of the tokens
+    during token import (#2698)
+  * Notification Handler now allows placeholders like "tokenowner" in reply-to. (#2711)
+  * LinOTP miration script now also works with PostgreSQL (#2770)
+  * consolidate client_wait in token enrollment. All tokens now
+    get the rollout_state "clientwait" or "enrolled" which can
+    be used in Token Handlers and in the token-janitor (#2784)
+  * The "orphaned" parameter of the token-janitor allows to use
+    0/False or 1/True to also search for non-orphaned tokens (#2838)
+
+  Fixes:
+  * Make token-janitor robust against unknown chars in last_auth check (#2780)
+  * Fix the manual setting of U2F tokens, which was overwritten by an
+    automatic description (#2793)
+  * Improve parameter parsing and decoding (#2810)
+  * Fix policy import with missing "condition" keyword (#2829)
+  * Add failsafe to raise an exception on the lib level when trying to assign a token 
+    to a user, if the token is already assigned. (#2860)
+
+
 Version 3.6.2, 2021-07-22
 
   Fixes:
