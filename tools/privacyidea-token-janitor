@@ -88,6 +88,7 @@ Actions:
     privacyidea-token-janitor find 
         --last_auth=10h|7d|2y
         --tokeninfo-key=<key>
+        --has-not-tokeninfo-key<key>
         --tokeninfo-value=<value>
         --tokeninfo-value-greater-than=<value>
         --tokeninfo-value-less-than=<value>
@@ -220,6 +221,7 @@ def _compare_regex(_key, given_regex):
 
 def build_tokenvalue_filter(key,
                             tokeninfo_value,
+                            has_not_tokeninfo_key,
                             tokeninfo_value_greater_than,
                             tokeninfo_value_less_than,
                             tokeninfo_value_after,
@@ -230,7 +232,9 @@ def build_tokenvalue_filter(key,
     user-defined criterion matches.
     The filter matches a record if *all* comparator functions return True, i.e.
     if the conjunction of all comparators returns True.
+
     :param key: user-supplied --tokeninfo-key= value
+    :param has_not_tokeninfo_key: user-supplied --has_not_tokeninfo_key= value
     :param tokeninfo_value: user-supplied --tokeninfo-value= value
     :param tokeninfo_value_greater_than: user-supplied --tokeninfo-value-greater-than= value
     :param tokeninfo_value_less_than: user-supplied --tokeninfo-value-less-than= value
@@ -241,6 +245,8 @@ def build_tokenvalue_filter(key,
     tvfilter = []
     if tokeninfo_value:
         tvfilter.append(_compare_regex(key, tokeninfo_value))
+    if has_not_tokeninfo_key:
+        tvfilter.append(has_not_tokeninfo_key)
     if tokeninfo_value_greater_than:
         tvfilter.append(_compare_greater_than(key, tokeninfo_value_greater_than))
     if tokeninfo_value_less_than:
@@ -253,7 +259,7 @@ def build_tokenvalue_filter(key,
 
 
 def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
-                   tokeninfo_value_filter, orphaned, tokentype, serial, description, chunksize):
+                   tokeninfo_value_filter, orphaned, tokentype, serial, description, chunksize, has_not_tokeninfo_key):
     filter_active = None
     filter_assigned = None
 
@@ -287,6 +293,9 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
             if description and not re.search(description,
                                              token_obj.token.description):
                 continue
+            if has_not_tokeninfo_key:
+                if token_obj.get_tokeninfo(has_not_tokeninfo_key) is not None:
+                    continue
             if tokeninfo_value_filter and tokeninfo_key:
                 value = token_obj.get_tokeninfo(tokeninfo_key)
                 # if the tokeninfo key is not even set, it does not match the filter
@@ -417,6 +426,7 @@ def export_user_data(token_list, attributes=None):
 @manager.option('--set-description', help='')
 @manager.option('--set-tokeninfo-key', help='')
 @manager.option('--set-tokeninfo-value', help='')
+@manager.option('--has-not-tokeninfo-key', help='')
 @manager.option('--sum', help='In case of the action "listuser", this switch specifies if '
                               'the output should only contain the number of tokens owned '
                               'by the user.',
@@ -436,7 +446,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
          tokeninfo_value_after, tokeninfo_value_before,
          orphaned, tokentype, serial, description, action, set_description,
          set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv,
-         chunksize, attributes, b32):
+         chunksize, attributes, b32, has_not_tokeninfo_key):
     """
     finds all tokens which match the conditions
     """
@@ -448,6 +458,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
     if chunksize is not None:
         chunksize = int(chunksize)
     tvfilter = build_tokenvalue_filter(tokeninfo_key,
+                                       has_not_tokeninfo_key,
                                        tokeninfo_value,
                                        tokeninfo_value_greater_than,
                                        tokeninfo_value_less_than,
@@ -455,7 +466,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                                        tokeninfo_value_before)
     generator = _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
                                tvfilter, orphaned, tokentype, serial,
-                               description, chunksize)
+                               description, chunksize, has_not_tokeninfo_key)
     if chunksize is not None:
         sys.stderr.write("+ Reading tokens from database in chunks of {}...\n".format(chunksize))
     else:
