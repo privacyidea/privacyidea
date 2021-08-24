@@ -72,14 +72,14 @@ def delete_from_cache(username, realm, resolver, password, last_valid_cache_time
     r = 0
     for cached_auth in cached_auths:
         delete_entry = False
-        # if the password does match, we deleted it.
+        # if the password matches or the entry is otherwise invalid, we deleted it.
         try:
-            if argon2.verify(password, cached_auth.authentication):
-                delete_entry = True
-            elif max_auths > 0:
+            if max_auths > 0:
                 delete_entry = cached_auth.auth_count >= max_auths
             elif last_valid_cache_time is not None:
                 delete_entry = cached_auth.first_auth > last_valid_cache_time
+            elif argon2.verify(password, cached_auth.authentication):
+                delete_entry = True
 
         except ValueError:
             log.debug("Old (non-argon2) authcache entry for user {0!s}@{1!s}.".format(username, realm))
