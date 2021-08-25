@@ -308,8 +308,9 @@ def import_caconnector(data, name=None):
             continue
         # Todo: unfortunately privacyidea delivers 'connectorname' on reading,
         #  but requires 'caconnector' in save_caconnector.
-        res_data['caconnector'] = res_data.get('connectorname')
-        res_data.pop('connectorname')
+        res_data['caconnector'] = res_data.pop('connectorname')
+        # also the export saves the caconnector configuration in a data dict
+        res_data.update(res_data.pop('data'))
         rid = save_caconnector(res_data)
         log.info('Import of caconnector "{0!s}" finished,'
                  ' id: {1!s}'.format(res_data['caconnector'], rid))

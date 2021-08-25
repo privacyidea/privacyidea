@@ -995,11 +995,10 @@ def import_config(data, name=None):
     """Import given server configuration"""
     log.debug('Import server config: {0!s}'.format(data))
     res = {}
-    if '__timestamp__' in data.keys():
-        data.pop('__timestamp__')
-    if name:
-        data = {name: data[name]} if name in data.keys() else {}
+    data.pop('__timestamp__', None)
     for key, values in data.items():
+        if name and name != key:
+            continue
         r = set_privacyidea_config(key, values['Value'],
                                    desc=values['Description'] if 'Description' in values else None,
                                    typ=values['Type'] if 'Type' in values else None)

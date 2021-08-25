@@ -257,9 +257,9 @@ def import_realms(data, name=None):
     #  the associated resolver are not available. So the realms must be imported
     #  *after* the resolver.
     log.debug('Import realm config: {0!s}'.format(data))
-    if name:
-        data = {name: data[name]}
     for realm, r_config in data.items():
+        if name and name != realm:
+            continue
         added, failed = set_realm(
             realm, resolvers=[r['name'] for r in r_config['resolver']],
             priority={r['name']: r['priority'] for r in r_config['resolver']})

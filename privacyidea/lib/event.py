@@ -291,14 +291,14 @@ class EventConfiguration(object):
         :return: list with one element
         """
         if eventid is not None:
-            eventlist = [e for e in self.events if e.get("id") == eventid]
+            eventlist = [e for e in self.events if e.get("id") == int(eventid)]
             return eventlist
         else:
             return self.events
 
 
 @register_export('event')
-def export_policy(name=None):
+def export_event(name=None):
     """ Export given or all event configuration """
     event_cls = EventConfiguration()
     if name:

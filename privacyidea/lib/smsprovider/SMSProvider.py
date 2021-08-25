@@ -328,9 +328,9 @@ def export_smsgateway(name=None):
 def import_smsgateway(data, name=None):
     """Import sms gateway configuration"""
     log.debug('Import smsgateway config: {0!s}'.format(data))
-    if name:
-        data = {name: data[name]} if name in data.keys() else {}
-    for _res_name, res_data in data.items():
-        rid = set_smsgateway(_res_name, **res_data)
+    for res_name, res_data in data.items():
+        if name and name != res_name:
+            continue
+        rid = set_smsgateway(res_name, **res_data)
         log.info('Import of smsgateway "{0!s}" finished,'
-                 ' id: {1!s}'.format(res_data.get('name'), rid))
+                 ' id: {1!s}'.format(res_name, rid))

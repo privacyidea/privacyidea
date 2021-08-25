@@ -80,14 +80,7 @@ def list_privacyidea():
     """
     This call gets the list of privacyIDEA server definitions
     """
-    res = {}
-    server_list = list_privacyideaservers()
-    # We only pass limited information to the user
-    if g.logged_in_user.get("role") != "admin":
-        for server in server_list:
-            res[server.config.identifier].update({"url": "",
-                                                  "tls": "",
-                                                  "description": ""})
+    res = list_privacyideaservers()
 
     g.audit_object.log({'success': True})
     return send_result(res)

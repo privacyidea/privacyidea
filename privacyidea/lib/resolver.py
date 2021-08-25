@@ -382,9 +382,9 @@ def import_resolver(data, name=None):
     #  doesn't check the input) or "loadConfig()" (which also doesn't check the
     #  parameter, at least for LDAP/SQL-resolver).
     log.debug('Import resolver config: {0!s}'.format(data))
-    if name:
-        data = {name: data[name]} if name in data.keys() else {}
-    for _res_name, res_data in data.items():
+    for res_name, res_data in data.items():
+        if name and name != res_name:
+            continue
         # remove the 'censor_keys' entry from data since it is not necessary
         res_data.pop('censor_keys', None)
         # save_resolver() needs the resolver name at key 'resolver'

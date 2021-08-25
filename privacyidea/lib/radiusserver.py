@@ -284,11 +284,10 @@ def export_radiusserver(name=None):
 def import_radiusserver(data, name=None):
     """Import radiusserver configuration"""
     log.debug('Import radiusserver config: {0!s}'.format(data))
-    if name:
-        data = {name: data[name]} if name in data.keys() else {}
-    for _res_name, res_data in data.items():
-        res_data['secret'] = res_data['password']
-        res_data.pop('password')
-        rid = add_radius(_res_name, **res_data)
+    for res_name, res_data in data.items():
+        if name and name != res_name:
+            continue
+        res_data['secret'] = res_data.pop('password')
+        rid = add_radius(res_name, **res_data)
         log.info('Import of smtpserver "{0!s}" finished,'
-                 ' id: {1!s}'.format(_res_name, rid))
+                 ' id: {1!s}'.format(res_name, rid))

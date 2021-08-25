@@ -290,13 +290,13 @@ def export_machineresolver(name=None):
 def import_machineresolver(data, name=None):
     """Import machineresolver configuration"""
     log.debug('Import caconnector config: {0!s}'.format(data))
-    if name:
-        data = {name: data[name]} if name in data.keys() else {}
     for _res_name, res_data in data.items():
+        if name and name != res_data.get('resolvername'):
+            continue
         # Todo: unfortunately privacyidea delivers 'resolvername' on reading,
         #  but requires 'name' in save_resolver.
-        res_data['name'] = res_data.get('resolvername')
-        res_data.pop('resolvername')
+        res_data['name'] = res_data.pop('resolvername')
+        res_data.update(res_data.pop('data'))
         rid = save_resolver(res_data)
         log.info('Import of caconnector "{0!s}" finished,'
                  ' id: {1!s}'.format(res_data['name'], rid))

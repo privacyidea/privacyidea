@@ -119,7 +119,8 @@ def list_privacyideaservers(identifier=None, id=None):
     res = {}
     server_list = get_privacyideaservers(identifier=identifier, id=id)
     for server in server_list:
-        res[server.config.identifier] = {"url": server.config.url,
+        res[server.config.identifier] = {"id": server.config.id,
+                                         "url": server.config.url,
                                          "tls": server.config.tls,
                                          "description": server.config.description}
     return res
@@ -215,16 +216,20 @@ def delete_privacyideaserver(identifier):
 @register_export('privacyideaserver')
 def export_privacyideaservers(name=None):
     """ Export given or all privacyideaservers configuration """
-    return list_privacyideaservers(identifier=name)
+    # remove the id from the resulting objects
+    pids_list = list_privacyideaservers(identifier=name)
+    for _, pids in pids_list.items():
+        pids.pop('id')
+    return pids_list
 
 
 @register_import('privacyideaserver')
 def import_privacyideaservers(data, name=None):
     """Import privacyideaservers configuration"""
     log.debug('Import privacyideaservers config: {0!s}'.format(data))
-    if name:
-        data = {name: data[name]} if name in data.keys() else {}
-    for _res_name, res_data in data.items():
-        rid = add_privacyideaserver(_res_name, **res_data)
+    for res_name, res_data in data.items():
+        if name and name != res_name:
+            continue
+        rid = add_privacyideaserver(res_name, **res_data)
         log.info('Import of privacyideaservers "{0!s}" finished,'
-                 ' id: {1!s}'.format(_res_name, rid))
+                 ' id: {1!s}'.format(res_name, rid))

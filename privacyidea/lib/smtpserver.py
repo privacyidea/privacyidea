@@ -325,10 +325,10 @@ def export_smtpserver(name=None):
 def import_smtpserver(data, name=None):
     """Import policy configuration"""
     log.debug('Import smtpserver config: {0!s}'.format(data))
-    if name:
-        data = {name: data[name]} if name in data.keys() else {}
-    for _res_name, res_data in data.items():
+    for res_name, res_data in data.items():
+        if name and name != res_name:
+            continue
         # condition is apparently not used anymore
-        rid = add_smtpserver(_res_name, **res_data)
+        rid = add_smtpserver(res_name, **res_data)
         log.info('Import of smtpserver "{0!s}" finished,'
-                 ' id: {1!s}'.format(_res_name, rid))
+                 ' id: {1!s}'.format(res_name, rid))
