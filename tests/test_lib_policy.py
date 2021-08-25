@@ -1107,6 +1107,20 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH, user_object=None),
                          {"userstore": ["act1", "act2"], "none": ["act3", "act4", "act5"]})
 
+        # if we pass user_obj ornelius, we only get 4 policies
+        self.assertEqual(set(p['name'] for p in P.match_policies(user_object=cornelius)),
+                         {"act1", "act2", "act3", "act5"})
+        # Provide a user object and parameters
+        self.assertEqual(set(p['name'] for p in P.match_policies(user_object=cornelius,
+                                                                 user="cornelius",
+                                                                 realm="realm1")),
+                         {"act1", "act2", "act3", "act5"})
+        # For some reason pass the same user_obj and parameters, but realm in upper case
+        self.assertEqual(set(p['name'] for p in P.match_policies(user_object=cornelius,
+                                                                 user="cornelius",
+                                                                 realm="REALM1")),
+                         {"act1", "act2", "act3", "act5"})
+
         delete_policy("act1")
         delete_policy("act2")
         delete_policy("act3")
