@@ -12,6 +12,7 @@ Version 3.7dev1, 2021-08-25
     be used in Token Handlers and in the token-janitor (#2784)
   * The "orphaned" parameter of the token-janitor allows to use
     0/False or 1/True to also search for non-orphaned tokens (#2838)
+  * Add more export/import functions to pi-manage (#2455)
 
   Fixes:
   * Make token-janitor robust against unknown chars in last_auth check (#2780)
@@ -19,8 +20,11 @@ Version 3.7dev1, 2021-08-25
     automatic description (#2793)
   * Improve parameter parsing and decoding (#2810)
   * Fix policy import with missing "condition" keyword (#2829)
-  * Add failsafe to raise an exception on the lib level when trying to assign a token 
+  * Add failsafe to raise an exception on the lib level when trying to assign a token
     to a user, if the token is already assigned. (#2860)
+  * Fix AD little endian in objectGUID
+  * Fix upper case realm names in policy check (#2869)
+  * Fix deleting expired auth_cache entries (#2481)
 
 
 Version 3.6.2, 2021-07-22
