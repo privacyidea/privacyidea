@@ -41,6 +41,7 @@ from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.config import get_machine_resolver_class_dict
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
+from privacyidea.lib.utils.export import (register_import, register_export)
 
 
 log = logging.getLogger(__name__)
@@ -277,3 +278,25 @@ def pretestresolver(resolvertype, params):
     r_obj_class = get_resolver_class(resolvertype)
     (success, desc) = r_obj_class.testconnection(params)
     return success, desc
+
+
+@register_export('machineresolver')
+def export_machineresolver(name=None):
+    """ Export given or all machineresolver configuration """
+    return get_resolver_list(filter_resolver_name=name)
+
+
+@register_import('machineresolver')
+def import_machineresolver(data, name=None):
+    """Import machineresolver configuration"""
+    log.debug('Import caconnector config: {0!s}'.format(data))
+    for _res_name, res_data in data.items():
+        if name and name != res_data.get('resolvername'):
+            continue
+        # Todo: unfortunately privacyidea delivers 'resolvername' on reading,
+        #  but requires 'name' in save_resolver.
+        res_data['name'] = res_data.pop('resolvername')
+        res_data.update(res_data.pop('data'))
+        rid = save_resolver(res_data)
+        log.info('Import of caconnector "{0!s}" finished,'
+                 ' id: {1!s}'.format(res_data['name'], rid))

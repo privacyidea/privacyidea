@@ -26,6 +26,7 @@ from privacyidea.lib.config import get_config_object
 from privacyidea.lib.utils import fetch_one_resource
 from privacyidea.models import EventHandler, EventHandlerOption, db
 from privacyidea.lib.audit import getAudit
+from privacyidea.lib.utils.export import (register_import, register_export)
 import functools
 import logging
 log = logging.getLogger(__name__)
@@ -195,7 +196,7 @@ def enable_event(event_id, enable=True):
     return r
 
 
-def set_event(name, event, handlermodule, action, conditions=None,
+def set_event(name=None, event=None, handlermodule=None, action=None, conditions=None,
               ordering=0, options=None, id=None, active=True, position="post"):
 
     """
@@ -290,8 +291,31 @@ class EventConfiguration(object):
         :return: list with one element
         """
         if eventid is not None:
-            eventid = int(eventid)
-            eventlist = [e for e in self.events if e.get("id") == eventid]
+            eventlist = [e for e in self.events if e.get("id") == int(eventid)]
             return eventlist
         else:
             return self.events
+
+
+@register_export('event')
+def export_event(name=None):
+    """ Export given or all event configuration """
+    event_cls = EventConfiguration()
+    if name:
+        return [e for e in event_cls.events if (e.get("name") == name)]
+    else:
+        return event_cls.events
+
+
+@register_import('event')
+def import_event(data, name=None):
+    """Import policy configuration"""
+    log.debug('Import event config: {0!s}'.format(data))
+    for res_data in data:
+        if name and name != res_data.get('name'):
+            continue
+        # condition is apparently not used anymore
+        del res_data["condition"]
+        rid = set_event(**res_data)
+        log.info('Import of event "{0!s}" finished,'
+                 ' id: {1!s}'.format(res_data['name'], rid))

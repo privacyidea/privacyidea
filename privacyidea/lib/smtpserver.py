@@ -25,6 +25,7 @@ from privacyidea.models import SMTPServer as SMTPServerDB
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
 from privacyidea.lib.utils import fetch_one_resource, to_bytes, to_unicode
+from privacyidea.lib.utils.export import (register_import, register_export)
 import logging
 from privacyidea.lib.log import log_with
 from time import gmtime, strftime
@@ -247,7 +248,39 @@ def get_smtpservers(identifier=None, server=None):
 
 
 @log_with(log)
-def add_smtpserver(identifier, server, port=25, username="", password="",
+def list_smtpservers(identifier=None, server=None):
+    """
+    This returns a list of all smtpservers matching the criterion.
+    If no identifier or server is provided, it will return a list of all smtp
+    server definitions.
+
+    :param identifier: The identifier or the name of the SMTPServer definition.
+        As the identifier is unique, providing an identifier will return a
+        list with either one or no smtpserver
+    :type identifier: basestring
+    :param server: The FQDN or IP address of the smtpserver
+    :type server: basestring
+    :return: list of SMTPServer configuration dicts.
+    """
+    res = {}
+    # get list of smtpserver objects
+    server_obj_list = get_smtpservers(identifier=identifier, server=server)
+    # transfer the definitions to a dictionary
+    for server_obj in server_obj_list:
+        decrypted_password = decryptPassword(server_obj.config.password)
+        # If the database contains garbage, use the empty password as fallback
+        if decrypted_password == FAILED_TO_DECRYPT_PASSWORD:
+            decrypted_password = ""
+        res[server_obj.config.identifier] = server_obj.config.get()
+        res[server_obj.config.identifier].pop('id')
+        res[server_obj.config.identifier].pop('identifier')
+        res[server_obj.config.identifier].update({"password": decrypted_password})
+
+    return res
+
+
+@log_with(log)
+def add_smtpserver(identifier, server=None, port=25, username="", password="",
                    sender="", description="", tls=False, timeout=TIMEOUT,
                    enqueue_job=False):
     """
@@ -280,3 +313,22 @@ def delete_smtpserver(identifier):
     :return: The ID of the database entry, that was deleted
     """
     return fetch_one_resource(SMTPServerDB, identifier=identifier).delete()
+
+
+@register_export('smtpserver')
+def export_smtpserver(name=None):
+    """ Export given or all smtpserver configuration """
+    return list_smtpservers(identifier=name)
+
+
+@register_import('smtpserver')
+def import_smtpserver(data, name=None):
+    """Import policy configuration"""
+    log.debug('Import smtpserver config: {0!s}'.format(data))
+    for res_name, res_data in data.items():
+        if name and name != res_name:
+            continue
+        # condition is apparently not used anymore
+        rid = add_smtpserver(res_name, **res_data)
+        log.info('Import of smtpserver "{0!s}" finished,'
+                 ' id: {1!s}'.format(res_name, rid))

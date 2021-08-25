@@ -1318,8 +1318,11 @@ exp_fmt_dict = {'python': str,
                        help='The types of configuration to export. By default create '
                             'export using all available exporter types. Currently registered '
                             'exporter types are: '
-                            '{0!s}'.format(', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))))
-def exporter(output, fmt, types):
+                            '{0!s}'.format(', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))),
+                       )
+@config_manager.option('-n', '--name',
+                       help = 'The name of the configuration object to export (default: export all)')
+def exporter(output, fmt, types, name=None):
     """
     Export server configuration using specific or all registered exporter types.
     """
@@ -1327,7 +1330,7 @@ def exporter(output, fmt, types):
 
     out = {}
     for typ in exp_types:
-        out.update({typ: EXPORT_FUNCTIONS[typ]()})
+        out.update({typ: EXPORT_FUNCTIONS[typ](name=name)})
 
     if out:
         res = exp_fmt_dict.get(fmt.lower())(out) + '\n'
@@ -1349,7 +1352,9 @@ imp_fmt_dict = {'python': ast.literal_eval,
                             'available data if a corresponding importer type exists. '
                             'Currently registered importer types are: '
                             '{0!s}'.format(', '.join(['all'] + list(IMPORT_FUNCTIONS.keys()))))
-def importer(infile, types):
+@config_manager.option('-n', '--name',
+                       help = 'The name of the configuration object to import (default: import all)')
+def importer(infile, types, name=None):
     """
     Import server configuration using specific or all registered importer types.
     """
@@ -1375,7 +1380,7 @@ def importer(infile, types):
         if typ in imp_types:
             if typ in data:
                 print('Importing configuration type "{0!s}".'.format(typ))
-                value['func'](data[typ])
+                value['func'](data[typ], name=name)
 
 
 # conf export menu

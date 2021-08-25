@@ -240,16 +240,16 @@ def set_realm(realm, resolvers=None, priority=None):
     return added, failed
 
 
-@register_export('realms')
-def export_realm(name=None):
+@register_export('realm')
+def export_realms(name=None):
     """
     Export given realm configuration or all realms
     """
     return get_realms(realmname=name)
 
 
-@register_import('realms')
-def import_realms(data):
+@register_import('realm')
+def import_realms(data, name=None):
     """
     Import given realm configurations
     """
@@ -258,6 +258,8 @@ def import_realms(data):
     #  *after* the resolver.
     log.debug('Import realm config: {0!s}'.format(data))
     for realm, r_config in data.items():
+        if name and name != realm:
+            continue
         added, failed = set_realm(
             realm, resolvers=[r['name'] for r in r_config['resolver']],
             priority={r['name']: r['priority'] for r in r_config['resolver']})

@@ -375,14 +375,16 @@ def export_resolver(name=None, censor=False):
 
 
 @register_import('resolver', prio=10)
-def import_resolver(data):
+def import_resolver(data, name=None):
     """Import resolver configuration"""
     # TODO: Currently this functions does not check for the plausibility of the
     #  given data. We could use "pretestresolver() / testconnection()" (which
     #  doesn't check the input) or "loadConfig()" (which also doesn't check the
     #  parameter, at least for LDAP/SQL-resolver).
     log.debug('Import resolver config: {0!s}'.format(data))
-    for _res_name, res_data in data.items():
+    for res_name, res_data in data.items():
+        if name and name != res_name:
+            continue
         # remove the 'censor_keys' entry from data since it is not necessary
         res_data.pop('censor_keys', None)
         # save_resolver() needs the resolver name at key 'resolver'

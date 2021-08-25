@@ -41,9 +41,8 @@ from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
 from flask_babel import gettext as _
 import logging
-from privacyidea.lib.smtpserver import (add_smtpserver, SMTPServer,
-                                        get_smtpservers, delete_smtpserver, send_or_enqueue_email)
-from privacyidea.models import SMTPServer as SMTPServerDB
+from privacyidea.lib.smtpserver import (add_smtpserver, list_smtpservers,
+                                        delete_smtpserver, send_or_enqueue_email)
 
 log = logging.getLogger(__name__)
 
@@ -88,27 +87,11 @@ def create(identifier=None):
 @smtpserver_blueprint.route('/', methods=['GET'])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.SMTPSERVERREAD)
-def list_smtpservers():
+def list_smtpservers_api():
     """
     This call gets the list of SMTP server definitions
     """
-    res = {}
-    server_list = get_smtpservers()
-    for server in server_list:
-        decrypted_password = decryptPassword(server.config.password)
-        # If the database contains garbage, use the empty password as fallback
-        if decrypted_password == FAILED_TO_DECRYPT_PASSWORD:
-            decrypted_password = ""
-        res[server.config.identifier] = {"server": server.config.server,
-                                         "tls": server.config.tls,
-                                         "username": server.config.username,
-                                         "password": decrypted_password,
-                                         "port": server.config.port,
-                                         "description":
-                                             server.config.description,
-                                         "sender": server.config.sender,
-                                         "timeout": server.config.timeout,
-                                         "enqueue_job": server.config.enqueue_job}
+    res = list_smtpservers()
     g.audit_object.log({'success': True})
     return send_result(res)
 

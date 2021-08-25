@@ -20,7 +20,8 @@
 #
 #
 from privacyidea.models import RADIUSServer as RADIUSServerDB
-from privacyidea.lib.crypto import decryptPassword, encryptPassword
+from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
+                                    FAILED_TO_DECRYPT_PASSWORD)
 from privacyidea.lib.config import get_from_config
 import logging
 from privacyidea.lib.log import log_with
@@ -31,6 +32,7 @@ from pyrad.client import Timeout
 from pyrad.dictionary import Dictionary
 from privacyidea.lib import _
 from privacyidea.lib.utils import fetch_one_resource, to_bytes
+from privacyidea.lib.utils.export import (register_import, register_export)
 
 __doc__ = """
 This is the library for creating, listing and deleting RADIUS server objects in
@@ -174,9 +176,28 @@ def get_radiusservers(identifier=None, server=None):
 
     return res
 
+@log_with(log)
+def list_radiusservers(identifier=None, server=None):
+    res = {}
+    server_list = get_radiusservers(identifier=identifier, server=server)
+    for server in server_list:
+        decrypted_password = decryptPassword(server.config.secret)
+        # If the database contains garbage, use the empty password as fallback
+        if decrypted_password == FAILED_TO_DECRYPT_PASSWORD:
+            decrypted_password = ""
+        res[server.config.identifier] = {"server": server.config.server,
+                                         "port": server.config.port,
+                                         "dictionary": server.config.dictionary,
+                                         "description": server.config.description,
+                                         "password": decrypted_password,
+                                         "timeout": server.config.timeout,
+                                         "retries": server.config.retries}
+
+    return res
+
 
 @log_with(log)
-def add_radius(identifier, server, secret, port=1812, description="",
+def add_radius(identifier, server=None, secret=None, port=1812, description="",
                dictionary='/etc/privacyidea/dictionary', retries=3, timeout=5):
     """
     This adds a RADIUS server to the RADIUSServer database table.
@@ -252,3 +273,21 @@ def delete_radius(identifier):
     """
     return fetch_one_resource(RADIUSServerDB, identifier=identifier).delete()
 
+
+@register_export('radiusserver')
+def export_radiusserver(name=None):
+    """ Export given or all radiusserver configuration """
+    return list_radiusservers(identifier=name)
+
+
+@register_import('radiusserver')
+def import_radiusserver(data, name=None):
+    """Import radiusserver configuration"""
+    log.debug('Import radiusserver config: {0!s}'.format(data))
+    for res_name, res_data in data.items():
+        if name and name != res_name:
+            continue
+        res_data['secret'] = res_data.pop('password')
+        rid = add_radius(res_name, **res_data)
+        log.info('Import of smtpserver "{0!s}" finished,'
+                 ' id: {1!s}'.format(res_name, rid))
