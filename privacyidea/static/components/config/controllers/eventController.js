@@ -54,6 +54,7 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
             $scope.getEvents();
         });
     };
+
     $scope.orderChanged = function (event) {
         //debug: console.log(event);
         ConfigFactory.setEvent(event, function() {

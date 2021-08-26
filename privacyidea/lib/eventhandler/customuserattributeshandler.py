@@ -28,7 +28,7 @@ class CustomUserAttributesHandler(BaseEventHandler):
     It returns an identifier, which can be used in the eventhandlig definitions
     """
 
-    identifier = "Custom_User_Attributes"
+    identifier = "CustomUserAttributes"
     description = "This event handler can set and delete custom_user_attributes"
 
     @property
@@ -47,23 +47,20 @@ class CustomUserAttributesHandler(BaseEventHandler):
 
         :return: dict with actions
         """
-        actions = {"set_custom_user_attributes":
-            {"attrkey": {
-                'type': 'str',
-                'discription': _('The key of the attribute')
-            },
+        actions = {
+            "set_custom_user_attributes":{
+                "attrkey": {
+                    'type': 'str',
+                    'discription': _('The key of the attribute')},
                 "attrvalue": {
                     'type': 'str',
-                    'discription': _('The value of the attribute')
-                }
+                    'discription': _('The value of the attribute')}
             },
-            "delete_custom_user_attributes":
-                {"user": {
+            "delete_custom_user_attributes":{
+                "user": {
                     'type': 'user',
-                    'discription': _('An object from the class user')
-                }
-                }
-        }
+                    'discription': _('An object from the class user')}
+        }}
         return actions
 
     def do(self, action, options=None):
