@@ -103,21 +103,21 @@ class SMTPServer(object):
         msg['To'] = ",".join(recipient)
         msg['Date'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
         msg['Reply-To'] = reply_to
-        if config['server'].startswith('smtps://'):
+        if config['server'].lower().startswith('smtps://'):
+            smtps = True
             mail = smtplib.SMTP_SSL(config['server'][8:], port=int(config['port']),
-                                timeout=config.get('timeout', TIMEOUT))
-        elif config['server'].startswith('smtp://'):
-            mail = smtplib.SMTP(config['server'][7:], port=int(config['port']),
-                                timeout=config.get('timeout', TIMEOUT))
+                                    timeout=config.get('timeout', TIMEOUT))
         else:
-            mail = smtplib.SMTP(config['server'], port=int(config['port']),
+            smtps = False
+            server = config['server'][7:] if config['server'].lower().startswith('smtp://') else config['server']
+            mail = smtplib.SMTP(server, port=int(config['port']),
                                 timeout=config.get('timeout', TIMEOUT))
         log.debug(u"submitting message to {0!s}".format(msg["To"]))
         log.debug("Saying EHLO to mailserver {0!s}".format(config['server']))
         r = mail.ehlo()
         log.debug("mailserver responded with {0!s}".format(r))
         # Start TLS if required
-        if config.get('tls', False):
+        if not smtps and config.get('tls', False):
             log.debug("Trying to STARTTLS: {0!s}".format(config['tls']))
             mail.starttls()
         # Authenticate, if a username is given.
