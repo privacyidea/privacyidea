@@ -104,7 +104,7 @@ class SMTPServerTestCase(MyTestCase):
         port = 25
         username = "mailsender"
         password = "secret"
-        sender = "mailsender@exmaple.com"
+        sender = "mailsender@example.com"
         tls = True
         recipient = "user@example.com"
 
@@ -142,7 +142,7 @@ class SMTPServerTestCase(MyTestCase):
         port = 25
         username = "mailsender"
         password = "secret"
-        sender = "mailsender@exmaple.com"
+        sender = "mailsender@example.com"
         tls = False
         recipient = "user@example.com"
 
