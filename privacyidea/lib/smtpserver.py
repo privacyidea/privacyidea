@@ -18,7 +18,7 @@
 #
 #
 import six
-
+from six.moves.urllib.parse import urlparse
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.models import SMTPServer as SMTPServerDB
@@ -103,21 +103,26 @@ class SMTPServer(object):
         msg['To'] = ",".join(recipient)
         msg['Date'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
         msg['Reply-To'] = reply_to
-        if config['server'].lower().startswith('smtps://'):
-            smtps = True
-            mail = smtplib.SMTP_SSL(config['server'][8:], port=int(config['port']),
+
+        srv = config['server']
+        # urllib looks for a '//' to identify the host in the string. If it is
+        # missing we add one. 
+        smtp_server = ''.join(['//', srv]) if srv.find('//') < 0 else srv
+        smtp_url = urlparse(smtp_server, scheme='smtp')
+        if smtp_url.scheme == 'smtps':
+            mail = smtplib.SMTP_SSL(smtp_url.hostname,
+                                    port=smtp_url.port or int(config['port']),
                                     timeout=config.get('timeout', TIMEOUT))
         else:
-            smtps = False
-            server = config['server'][7:] if config['server'].lower().startswith('smtp://') else config['server']
-            mail = smtplib.SMTP(server, port=int(config['port']),
+            mail = smtplib.SMTP(smtp_url.hostname,
+                                port=smtp_url.port or int(config['port']),
                                 timeout=config.get('timeout', TIMEOUT))
         log.debug(u"submitting message to {0!s}".format(msg["To"]))
         log.debug("Saying EHLO to mailserver {0!s}".format(config['server']))
         r = mail.ehlo()
         log.debug("mailserver responded with {0!s}".format(r))
         # Start TLS if required
-        if not smtps and config.get('tls', False):
+        if not smtp_url.scheme == 'smtps' and config.get('tls', False):
             log.debug("Trying to STARTTLS: {0!s}".format(config['tls']))
             mail.starttls()
         # Authenticate, if a username is given.
@@ -142,8 +147,8 @@ class SMTPServer(object):
             if res_id != 200 and res_text != "OK":
                 success = False
                 log.error("Failed to send email to {0!r}: {1!r}, {2!r}".format(one_recipient,
-                                                                  res_id,
-                                                                  res_text))
+                                                                               res_id,
+                                                                               res_text))
         mail.quit()
         log.debug("I am done sending your email.")
         return success
