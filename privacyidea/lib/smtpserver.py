@@ -106,7 +106,7 @@ class SMTPServer(object):
 
         srv = config['server']
         # urllib looks for a '//' to identify the host in the string. If it is
-        # missing we add one. 
+        # missing we add one.
         smtp_server = ''.join(['//', srv]) if srv.find('//') < 0 else srv
         smtp_url = urlparse(smtp_server, scheme='smtp')
         if smtp_url.scheme == 'smtps':
