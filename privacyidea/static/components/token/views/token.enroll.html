@@ -123,6 +123,11 @@
             </div>
         </uib-accordion>
 
+        <!-- pass the rollover info in the form -->
+        <input type="checkbox" ng-show="false" name="rollover"
+               ng-init="form.rollover = $state.includes('token.rollover')"
+               ng-model="form.rollover" />
+
         <div class="text-center">
             <button type="button" ng-click="enrollToken()"
                     ng-disabled="!checkEnroll() || formEnrollToken.$invalid || enrolling"

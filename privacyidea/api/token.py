@@ -174,6 +174,8 @@ def init():
                     see :ref:`2step_enrollment`.
     :jsonparam otpkeyformat: used to supply the OTP key in alternate formats, currently
                             hex or base32check (see :ref:`2step_enrollment`)
+    :jsonparam rollover: Set this to 1 or true to indicate, that you want to rollover a token.
+                    This is mandatory to rollover tokens, that are in the clientwait state.
 
     :return: a json result with a boolean "result": true
 
