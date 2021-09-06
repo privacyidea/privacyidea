@@ -518,6 +518,7 @@ class TokenClass(object):
         :type: param: dict
         """
         tdesc = getParam(param, "description", optional)
+        rollover = getParam(param, "rollover", optional)
         if tdesc is not None:
             self.token.set_description(tdesc)
 
@@ -543,6 +544,9 @@ class TokenClass(object):
             otpKey = self.decode_otpkey(otpKey, otpkeyformat)
 
         if twostep_init:
+            if is_true(rollover):
+                # We reset the rollout state
+                self.token.rollout_state = None
             if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
                 # We do not do 2stepinit in the second step
                 raise ParameterError("2stepinit is only to be used in the "
