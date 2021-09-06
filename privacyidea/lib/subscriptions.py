@@ -71,6 +71,10 @@ APPLICATIONS = {"demo_application": 0,
                 "privacyidea-ldap-proxy": 50,
                 "privacyidea-cp": 50,
                 "privacyidea-adfs": 50,
+                "privacyidea-keycloak": 10000,
+                "simplesamlphp": 10000,
+                "privacyidea-simplesamlphp": 10000,
+                "privacyidea authenticator": 10,
                 "privacyidea": 50}
 
 log = logging.getLogger(__name__)
@@ -89,7 +93,7 @@ def get_users_with_active_tokens():
     return sql_query.count()
 
 
-def subscription_status():
+def subscription_status(component="privacyidea", tokentype=None):
     """
     Return the status of the subscription
 
@@ -100,16 +104,16 @@ def subscription_status():
 
     :return: subscription state
     """
-    token_count = get_tokens(assigned=True, active=True, count=True)
-    if token_count <= APPLICATIONS.get("privacyidea", 50):
+    token_count = get_tokens(assigned=True, active=True, count=True, tokentype=tokentype)
+    if token_count <= APPLICATIONS.get(component, 50):
         return 0
 
-    subscriptions = get_subscription("privacyidea")
+    subscriptions = get_subscription(component)
     if len(subscriptions) == 0:
         return 1
 
     try:
-        check_subscription("privacyidea")
+        check_subscription(component)
     except SubscriptionError as exx:
         log.warning(u"{0}".format(exx))
         return 2
@@ -262,7 +266,7 @@ def check_subscription(application, max_free_subscriptions=None):
                     raise SubscriptionError(description="Too many users "
                                                         "with assigned tokens. "
                                                         "Subscription exceeded.",
-                                            application="privacyIDEA")
+                                            application=application)
 
     return True
 

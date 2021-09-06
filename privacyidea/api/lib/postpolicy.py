@@ -594,6 +594,8 @@ def get_webui_settings(request, response):
         content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["show_node"] = get_privacyidea_node() if show_node else ""
         content["result"]["value"]["subscription_status"] = subscription_status()
+        content["result"]["value"]["subscription_status_push"] = subscription_status("privacyidea authenticator",
+                                                                                     tokentype="push")
         content["result"]["value"]["qr_image_android"] = qr_image_android
         content["result"]["value"]["qr_image_ios"] = qr_image_ios
         content["result"]["value"]["qr_image_custom"] = qr_image_custom
