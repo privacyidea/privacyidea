@@ -672,6 +672,10 @@ class TokenClass(object):
     def is_active(self):
         return self.token.active
 
+    @property
+    def rollout_state(self):
+        return self.token.rollout_state
+
     def is_fit_for_challenge(self, messages, options=None):
         """
         This method is called if a cryptographically matching response to a challenge was found.
@@ -1220,6 +1224,8 @@ class TokenClass(object):
             message_list.append("Failcounter exceeded")
         elif not self.check_validity_period():
             message_list.append("Outside validity period")
+        elif self.rollout_state in [ROLLOUTSTATE.CLIENTWAIT]:
+            message_list.append("Token is not yet enrolled")
         else:
             r = True
         if not r:
