@@ -426,6 +426,7 @@ angular.module("privacyideaApp")
             $scope.show_node = data.result.value.show_node;
             $scope.token_rollover = data.result.value.token_rollover;
             $scope.subscription_state = data.result.value.subscription_status;
+            $scope.subscription_state_push = data.result.value.subscription_status_push;
             $rootScope.search_on_enter = data.result.value.search_on_enter;
             // Token specific settings
             $scope.tokensettings = {indexedsecret:
@@ -474,6 +475,20 @@ angular.module("privacyideaApp")
                 }
                 var $random_number = Math.floor(Math.random() * (9999 + 1000 + 1)) + 1000;
                 $scope.class_subscription_expired = "subscriptionExpired" + $random_number;
+                // Show info about privacyIDEA Authenticator App and push
+                if ($scope.subscription_state_push === 1 && !$scope.hide_welcome) {
+                    // no subscription at all
+                     inform.add(gettextCatalog.getString("You are using a certain amount of Push tokens. " +
+                         "Note, that you need a valid subscription, to use Push tokens in push mode. Otherwise" +
+                         " Push tokens will only work in poll only mode. "),
+                            {type: "danger", ttl: 30000});
+                }
+                if ($scope.subscription_state_push === 2) {
+                    // Subscription expired
+                    inform.add(gettextCatalog.getString("Your subscription for the privacyIDEA Authenticator" +
+                        " has expired."),
+                        {type: "danger", ttl: 20000});
+                }
             }
             if ( $scope.unlocking ) {
                 $('#dialogLock').modal('hide');
