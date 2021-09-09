@@ -30,7 +30,7 @@ consists of five parts:
 Sections
 ~~~~~~~~
 
-privacyIDEA implements three sections ``userinfo``, ``token``, ``tokeninfo``, ``HTTP Request Headers``
+privacyIDEA implements the sections ``userinfo``, ``token``, ``tokeninfo``, ``HTTP Request Headers``
 and ``HTTP Environment``.
 
 ``userinfo``
