@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2021-09-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add extended condition for HTTP environment
 #  2021-02-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add custom user attributes
 #  2020-06-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -451,6 +453,7 @@ class CONDITION_SECTION(object):
     TOKENINFO = "tokeninfo"
     TOKEN = "token"
     HTTP_REQUEST_HEADER = "HTTP Request header"
+    HTTP_ENVIRONMENT = "HTTP Environment"
 
 
 class CONDITION_CHECK(object):
@@ -806,6 +809,11 @@ class PolicyClass(object):
                                                                                  request_headers):
                                 include_policy = False
                                 break
+                        elif section == CONDITION_SECTION.HTTP_ENVIRONMENT:
+                            if not self._policy_matches_request_environ_condition(policy, key, comparator, value,
+                                                                                 request_headers):
+                                include_policy = False
+                                break
                         else:
                             log.warning(u"Policy {!r} has condition with unknown section: {!r}".format(
                                 policy['name'], section
@@ -814,6 +822,38 @@ class PolicyClass(object):
             if include_policy:
                 reduced_policies.append(policy)
         return reduced_policies
+
+    @staticmethod
+    def _policy_matches_request_environ_condition(policy, key, comparator, value, request_headers):
+        """
+        :param request_headers: Request Header object
+        :type request_headers: Can be accessed using .get()
+        """
+        # Now we check the HTTP request headers
+        if request_headers is not None:
+            request_environ = request_headers.environ
+            if request_environ.get(key):
+                try:
+                    environ_value = request_environ.get(key)
+                    return compare_values(environ_value, comparator, value)
+                except Exception as exx:
+                    log.warning(u"Error during handling the condition on HTTP environment {!r} "
+                                u"of policy {!r}: {!r}".format(key, policy['name'], exx))
+                    raise PolicyError(
+                        u"Invalid comparison in the HTTP environment conditions of policy {!r}".format(policy['name']))
+            else:
+                log.warning(u"Unknown HTTP environment key referenced in condition of policy "
+                            u"{!r}: {!r}".format(policy["name"], key))
+                log.warning(u"Available HTTP environment: {!r}".format(request_environ))
+                raise PolicyError(u"Unknown HTTP environment key referenced in condition of policy "
+                                  u"{!r}: {!r}".format(policy["name"], key))
+        else:  # pragma: no cover
+            log.error(u"Policy {!r} has conditions on HTTP environment, but HTTP environment"
+                      u" is not available. This should not happen - possible "
+                      u"programming error {!s}.".format(policy["name"],
+                                                        ''.join(traceback.format_stack())))
+            raise PolicyError(u"Policy {!r} has conditions on environment {!r}, but HTTP environment"
+                              u" is not available".format(policy["name"], key))
 
     @staticmethod
     def _policy_matches_request_header_condition(policy, key, comparator, value, request_headers):
@@ -836,6 +876,7 @@ class PolicyClass(object):
             else:
                 log.warning(u"Unknown HTTP header key referenced in condition of policy "
                             u"{!r}: {!r}".format(policy["name"], key))
+                log.warning(u"Available HTTP headers: {!r}".format(request_headers))
                 raise PolicyError(u"Unknown HTTP header key referenced in condition of policy "
                                   u"{!r}: {!r}".format(policy["name"], key))
         else:  # pragma: no cover
@@ -2503,6 +2544,9 @@ def get_policy_condition_sections():
         },
         CONDITION_SECTION.HTTP_REQUEST_HEADER: {
             "description": _("The policy only matches if certain conditions on the HTTP Request header are fulfilled.")
+        },
+        CONDITION_SECTION.HTTP_ENVIRONMENT: {
+            "description": _("The policy only matches if certain conditions on the HTTP Environment are fulfilled.")
         }
     }
 

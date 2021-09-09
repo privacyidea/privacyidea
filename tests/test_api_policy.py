@@ -2,6 +2,7 @@
 
 from .base import MyApiTestCase
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy, CONDITION_SECTION
+from privacyidea.lib.token import remove_token
 
 
 class APIPolicyTestCase(MyApiTestCase):
@@ -388,6 +389,7 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertIn("Node1", value)
             self.assertIn("Node2", value)
 
+
 class APIPolicyConditionTestCase(MyApiTestCase):
 
     def test_01_check_httpheader_condition(self):
@@ -520,3 +522,85 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             # so we only match for a substring
             self.assertIn("has condition with unknown section",
                           result["result"]["error"]["message"], result)
+
+        delete_policy("cond1")
+        remove_token("sp1")
+
+    def test_02_check_httpenvironment_condition(self):
+        self.setUp_user_realms()
+        # enroll a simple pass token
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           json={"type": "spass", "pin": "1234",
+                                                 "serial": "sp1", "user": "cornelius", "realm": "realm1"},
+                                           headers={'PI-Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # test an auth request
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json
+            self.assertTrue("detail" in result)
+            self.assertEqual(result.get("detail").get("message"), u"matching 1 tokens")
+
+        # set a policy with conditions
+        # Request with a certain request method will not see the user details
+        with self.app.test_request_context('/policy/cond1',
+                                           method='POST',
+                                           json={"action": ACTION.NODETAILSUCCESS,
+                                                 "realm": "realm1",
+                                                 "conditions": [[CONDITION_SECTION.HTTP_ENVIRONMENT,
+                                                                 "REQUEST_METHOD", "equals", "POST", True]],
+                                                 "scope": SCOPE.AUTHZ},
+                                           headers={'PI-Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # A GET request will contain the details!
+        with self.app.test_request_context('/validate/check',
+                                           method='GET',
+                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json
+            self.assertTrue("detail" in result)
+            self.assertEqual(result.get("detail").get("message"), u"matching 1 tokens")
+
+        # A POST request will NOT contain the details!
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json
+            self.assertFalse("detail" in result)
+
+        delete_policy("cond1")
+        # Now we run a test with a non-existing environment key
+        with self.app.test_request_context('/policy/cond1',
+                                           method='POST',
+                                           json={"action": ACTION.NODETAILSUCCESS,
+                                                 "realm": "realm1",
+                                                 "conditions": [[CONDITION_SECTION.HTTP_ENVIRONMENT,
+                                                                 "NON_EXISTING", "equals", "POST", True]],
+                                                 "scope": SCOPE.AUTHZ},
+                                           headers={'PI-Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 403)
+            result = res.json
+            self.assertIn(u"Unknown HTTP environment key referenced in condition of policy",
+                          result["result"]["error"]["message"])
+            self.assertIn(u"NON_EXISTING", result["result"]["error"]["message"])
+
+        delete_policy("cond1")
+        remove_token("sp1")
