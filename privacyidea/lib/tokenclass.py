@@ -518,6 +518,7 @@ class TokenClass(object):
         :type: param: dict
         """
         tdesc = getParam(param, "description", optional)
+        rollover = getParam(param, "rollover", optional)
         if tdesc is not None:
             self.token.set_description(tdesc)
 
@@ -543,6 +544,9 @@ class TokenClass(object):
             otpKey = self.decode_otpkey(otpKey, otpkeyformat)
 
         if twostep_init:
+            if is_true(rollover):
+                # We reset the rollout state
+                self.token.rollout_state = None
             if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
                 # We do not do 2stepinit in the second step
                 raise ParameterError("2stepinit is only to be used in the "
@@ -667,6 +671,10 @@ class TokenClass(object):
 
     def is_active(self):
         return self.token.active
+
+    @property
+    def rollout_state(self):
+        return self.token.rollout_state
 
     def is_fit_for_challenge(self, messages, options=None):
         """
@@ -1216,6 +1224,8 @@ class TokenClass(object):
             message_list.append("Failcounter exceeded")
         elif not self.check_validity_period():
             message_list.append("Outside validity period")
+        elif self.rollout_state in [ROLLOUTSTATE.CLIENTWAIT]:
+            message_list.append("Token is not yet enrolled")
         else:
             r = True
         if not r:

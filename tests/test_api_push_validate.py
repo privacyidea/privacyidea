@@ -12,6 +12,7 @@ from cryptography.hazmat.backends import default_backend
 from privacyidea.lib.utils import to_bytes, to_unicode
 from cryptography.hazmat.primitives.asymmetric import rsa
 from privacyidea.lib.policy import ACTION
+from privacyidea.lib.token import enable_token
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
@@ -261,7 +262,6 @@ class PushAPITestCase(MyApiTestCase):
                     "otpkey": self.otpkey},
                    user=User("selfservice", self.realm1))
 
-        from privacyidea.lib.token import enable_token
         # disable the push token
         enable_token(self.serial_push, False)
         # check, if the user has two tokens, now
@@ -293,3 +293,65 @@ class PushAPITestCase(MyApiTestCase):
         delete_policy("push1")
         delete_policy("push2")
         delete_policy("chalresp")
+
+    def test_03_unfinished_enrolled_push_token(self):
+        """
+        * The user has a push token where the enrollment process was not completed
+
+        A /validate/check request is sent with this PIN.
+        """
+        # set policy
+        set_policy("push2", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s},{2!s}={3!s}".format(
+                       PUSH_ACTION.FIREBASE_CONFIG, self.firebase_config_name,
+                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL))
+        # Create push config
+        r = set_smsgateway(self.firebase_config_name,
+                           u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           "myFB", FB_CONFIG_VALS)
+        self.assertTrue(r > 0)
+
+        # create push token for user
+        # 1st step
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "push",
+                                                 "pin": "otppin",
+                                                 "user": "selfservice",
+                                                 "realm": self.realm1,
+                                                 "serial": self.serial_push,
+                                                 "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            detail = res.json.get("detail")
+            serial = detail.get("serial")
+            self.assertEqual(detail.get("rollout_state"), "clientwait")
+            self.assertTrue("pushurl" in detail)
+            # check that the new URL contains the serial number
+            self.assertTrue("&serial=PIPU" in detail.get("pushurl").get("value"))
+            self.assertTrue("appid=" in detail.get("pushurl").get("value"))
+            self.assertTrue("appidios=" in detail.get("pushurl").get("value"))
+            self.assertTrue("apikeyios=" in detail.get("pushurl").get("value"))
+            self.assertFalse("otpkey" in detail)
+            enrollment_credential = detail.get("enrollment_credential")
+
+        # We skip the 2nd step of the enrollment!
+        # But we activate the token on purpose!
+        enable_token(self.serial_push)
+
+        # authenticate with push
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "realm": self.realm1,
+                                                 "pass": "otppin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            data = res.json
+            self.assertFalse(data.get("result").get("value"))
+            detail = data.get("detail")
+            self.assertEqual(detail.get("message"), "Token is not yet enrolled")
+
+        remove_token(self.serial_push)
+        delete_policy("push2")
