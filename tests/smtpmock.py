@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-2016-01-20 Cornelus Kölbel <cornelius@privacyidea.org>
+2016-01-20 Cornelius Kölbel <cornelius@privacyidea.org>
            Support STARTTLS mock
 
 2015-01-30 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -28,6 +28,7 @@ from __future__ import (
 )
 
 import six
+import smtplib
 
 try:
     from inspect import formatargspec, getfullargspec as getargspec
@@ -95,11 +96,15 @@ class SmtpMock(object):
     def __init__(self):
         self._calls = CallList()
         self.sent_message = None
+        self.smtp_ssl = False
         self.reset()
 
     def reset(self):
         self._request_data = {}
         self._calls.reset()
+
+    def get_smtp_ssl(self):
+        return self.smtp_ssl
 
     def setdata(self, response=None, authenticated=True,
                 config=None, exception=False, support_tls=True):
@@ -149,9 +154,16 @@ class SmtpMock(object):
             response = (535, "authentication failed (#5.7.1)")
         return {self._request_data.get("recipient"): response}
 
-    def _on_init(self, SMTP_instance, host, port=25, timeout=3):
+#    def _on_init(self, SMTP_instance, host, port=25, timeout=3):
+    def _on_init(self, *args, **kwargs):
+        SMTP_instance = args[0]
+        host = args[1]
+        if isinstance(SMTP_instance, smtplib.SMTP_SSL):
+            # in case we need sth. to do with SMTL_SSL
+            self.smtp_ssl = True
         # mangle request packet
-        self.timeout = timeout
+        self.timeout = kwargs.get("timeout", 10)
+        self.port = kwargs.get("port", 25)
         self.esmtp_features = {}
         return None
 
