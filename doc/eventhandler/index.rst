@@ -303,7 +303,7 @@ that::
     myValue > 2017-10-12T10:00+0200
     myValue < 2020-01-01T00:00+0000
 
-In addition you can also use the tag ``{now}`` to compare to the curren time
+In addition you can also use the tag ``{now}`` to compare to the current time
 *and* you can add offsets to ``{now}`` in seconds, minutes, hours or days::
 
     myValue < {now}
