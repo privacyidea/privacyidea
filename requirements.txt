@@ -60,7 +60,7 @@ pyasn1-modules==0.2.8
 pycparser==2.20
 pydash==4.9.3; python_version <= '3.5'
 pydash==5.0.1; python_version > '3.5'
-PyJWT==1.7.1; python_version < '3.0'
+PyJWT==1.7.1; python_version <= '3.5'
 PyJWT==2.1.0; python_version > '3.5'
 PyMySQL==0.10.1; python_version <= '3.5'
 PyMySQL==1.0.2; python_version > '3.5'
