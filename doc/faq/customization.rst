@@ -43,6 +43,12 @@ Follow these basic steps:
 
    .. note:: In this case you need to create a ``RewriteRule`` for each file, you
        want to modify.
+       Alternatively the following configuration only rewrites the URL if the
+       template file exists in the customization tree::
+
+        RewriteEngine on
+        RewriteCond /etc/privacyidea/customization/%{REQUEST_URI} -f
+        RewriteRule "^(.*)$" "/etc/privacyidea/customization/%{REQUEST_URI}"
 
 3. Now activate ``mod_rewrite`` and reload apache2.
 
