@@ -1,10 +1,13 @@
 
-myApp.controller("tokenChallengesController", function ($scope,
-                                                    TokenFactory, UserFactory,
-                                                    $stateParams,
-                                                    $state, $rootScope,
-                                                    ValidateFactory,
-                                                    AuthFactory) {
+myApp.controller("tokenChallengesController", ['$scope', 'TokenFactory',
+                                               'UserFactory', '$stateParams',
+                                               '$state', '$rootScope',
+                                               'ValidateFactory', 'AuthFactory',
+                                               function ($scope, TokenFactory,
+                                                         UserFactory, $stateParams,
+                                                         $state, $rootScope,
+                                                         ValidateFactory,
+                                                         AuthFactory) {
     $scope.tokenSerial = "";
     // This is the parents object
     $scope.loggedInUser = AuthFactory.getUser();
@@ -48,4 +51,4 @@ myApp.controller("tokenChallengesController", function ($scope,
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.get);
 
-});
+}]);

@@ -45,15 +45,19 @@ function string_to_date_object(s) {
     return date_obj;
 }
 
-myApp.controller("tokenDetailController", function ($scope,
-                                                    TokenFactory, UserFactory,
-                                                    $stateParams,
-                                                    $state, $rootScope,
-                                                    ValidateFactory,
-                                                    AuthFactory,
-                                                    ConfigFactory,
-                                                    MachineFactory, inform,
-                                                    gettextCatalog) {
+myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
+                                           'UserFactory', '$stateParams',
+                                           '$state', '$rootScope',
+                                           'ValidateFactory', 'AuthFactory',
+                                           'ConfigFactory', 'MachineFactory',
+                                           'inform', 'gettextCatalog',
+                                           function ($scope, TokenFactory,
+                                                     UserFactory, $stateParams,
+                                                     $state, $rootScope,
+                                                     ValidateFactory,
+                                                     AuthFactory, ConfigFactory,
+                                                     MachineFactory, inform,
+                                                     gettextCatalog) {
     $scope.tokenSerial = $stateParams.tokenSerial;
     // This is the parents object
     $scope.selectedToken.serial = $scope.tokenSerial;
@@ -397,4 +401,4 @@ myApp.controller("tokenDetailController", function ($scope,
     };
 
 
-});
+}]);

@@ -18,9 +18,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("smtpServerController", function($scope, $stateParams, inform,
-                                                  gettextCatalog, $state,
-                                                  $location, ConfigFactory) {
+myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
+                                          "gettextCatalog", "$state",
+                                          "$location", "ConfigFactory",
+                                          function($scope, $stateParams, inform,
+                                                   gettextCatalog, $state,
+                                                   $location, ConfigFactory) {
     if ($location.path() === "/config/smtp") {
         $location.path("/config/smtp/list");
     }
@@ -88,4 +91,4 @@ myApp.controller("smtpServerController", function($scope, $stateParams, inform,
 
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.getSmtpServers);
-});
+}]);

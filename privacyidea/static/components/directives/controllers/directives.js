@@ -18,7 +18,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.directive('tokenDataEdit', function(AuthFactory, instanceUrl, versioningSuffixProvider) {
+myApp.directive('tokenDataEdit', ["AuthFactory", "instanceUrl",
+                                  "versioningSuffixProvider",
+                                  function(AuthFactory, instanceUrl,
+                                           versioningSuffixProvider) {
     return {
         scope: {
             text: '@',
@@ -43,9 +46,10 @@ myApp.directive('tokenDataEdit', function(AuthFactory, instanceUrl, versioningSu
             //debug: console.log(scope.loggedInUser);
         }
     };
-});
+}]);
 
-myApp.directive("piFilter", function (instanceUrl, versioningSuffixProvider) {
+myApp.directive("piFilter", ["instanceUrl", "versioningSuffixProvider",
+                             function (instanceUrl, versioningSuffixProvider) {
     return {
         require: 'ngModel',
         restrict: 'E',
@@ -62,9 +66,9 @@ myApp.directive("piFilter", function (instanceUrl, versioningSuffixProvider) {
             });
         }
     };
-});
+}]);
 
-myApp.directive('focusMe', function($timeout) {
+myApp.directive('focusMe', ["$timeout", function($timeout) {
   return {
     link: function(scope, element, attrs) {
       scope.$watch(attrs.focusMe, function(value) {
@@ -77,7 +81,7 @@ myApp.directive('focusMe', function($timeout) {
       });
     }
   };
-});
+}]);
 
 myApp.directive("piSortBy", function(){
     return {
@@ -107,7 +111,10 @@ myApp.directive("piSortBy", function(){
 });
 
 
-myApp.directive('assignUser', function($http, $rootScope, userUrl, AuthFactory, instanceUrl, versioningSuffixProvider) {
+myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory",
+                               "instanceUrl", "versioningSuffixProvider",
+                               function($http, $rootScope, userUrl, AuthFactory,
+                                        instanceUrl, versioningSuffixProvider) {
     /*
     This directive is used to select a user from a realm
 
@@ -165,10 +172,12 @@ myApp.directive('assignUser', function($http, $rootScope, userUrl, AuthFactory, 
             };
         }
     };
-});
+}]);
 
-myApp.directive('assignToken', function($http, $rootScope, tokenUrl,
-                                        AuthFactory, instanceUrl, versioningSuffixProvider) {
+myApp.directive('assignToken', ["$http", "$rootScope", "tokenUrl", "AuthFactory",
+                                "instanceUrl", "versioningSuffixProvider",
+                                function($http, $rootScope, tokenUrl, AuthFactory,
+                                         instanceUrl, versioningSuffixProvider) {
     /*
     This directive is used to select a serial number and assign it
     to the user.
@@ -222,11 +231,13 @@ myApp.directive('assignToken', function($http, $rootScope, tokenUrl,
             };
         }
     };
-});
+}]);
 
 
-myApp.directive('attachToken', function($http, tokenUrl,
-                                        AuthFactory, instanceUrl, versioningSuffixProvider) {
+myApp.directive('attachToken', ["$http", "tokenUrl", "AuthFactory",
+                                "instanceUrl", "versioningSuffixProvider",
+                                function($http, tokenUrl, AuthFactory,
+                                         instanceUrl, versioningSuffixProvider) {
     /*
     This directive is used to select a serial number and attach it to a machine
 
@@ -262,11 +273,13 @@ myApp.directive('attachToken', function($http, tokenUrl,
             };
         }
     };
-});
+}]);
 
 
-myApp.directive('attachMachine', function($http, machineUrl,
-                                          AuthFactory, instanceUrl, versioningSuffixProvider) {
+myApp.directive('attachMachine', ["$http", "machineUrl", "AuthFactory",
+                                  "instanceUrl", "versioningSuffixProvider",
+                                  function($http, machineUrl, AuthFactory,
+                                           instanceUrl, versioningSuffixProvider) {
     /*
     This directive is used to select a machine.
      */
@@ -295,7 +308,7 @@ myApp.directive('attachMachine', function($http, machineUrl,
             };
         }
     };
-});
+}]);
 
 
 myApp.directive('equals', function() {
@@ -344,7 +357,10 @@ myApp.directive('statusClass', function() {
 });
 
 // See http://blog.techdev.de/an-angularjs-directive-to-download-pdf-files/
-myApp.directive('csvDownload', function(AuthFactory, $http, instanceUrl, versioningSuffixProvider) {
+myApp.directive('csvDownload', ["AuthFactory", "$http", "instanceUrl",
+                                "versioningSuffixProvider",
+                                function(AuthFactory, $http, instanceUrl,
+                                         versioningSuffixProvider) {
     return {
         restrict: 'E',
         templateUrl: instanceUrl
@@ -392,7 +408,7 @@ myApp.directive('csvDownload', function(AuthFactory, $http, instanceUrl, version
             };
         }]
     }
-});
+}]);
 
 myApp.directive('spinner', function() {
     return {
@@ -442,7 +458,9 @@ myApp.directive('autofocus', ['$timeout',
     }
 ]);
 
-myApp.directive("piPolicyConditions", function (instanceUrl, versioningSuffixProvider) {
+myApp.directive("piPolicyConditions", ["instanceUrl", "versioningSuffixProvider",
+                                       function (instanceUrl,
+                                                 versioningSuffixProvider) {
     /* This directive is used to set the conditions of a policy.
        It supports adding, removing and editing conditions. */
     return {
@@ -486,4 +504,4 @@ myApp.directive("piPolicyConditions", function (instanceUrl, versioningSuffixPro
             };
         },
     };
-});
+}]);

@@ -22,10 +22,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("auditController", function (AuditFactory, $scope, $rootScope,
-                                              $stateParams, $http,
-                                              AuthFactory, instanceUrl,
-                                              $location, gettextCatalog) {
+myApp.controller("auditController", ["AuditFactory", "$scope", "$rootScope",
+                                     "$stateParams", "$http", "AuthFactory",
+                                     "instanceUrl", "$location", "gettextCatalog",
+                                     function (AuditFactory, $scope, $rootScope,
+                                               $stateParams, $http, AuthFactory,
+                                               instanceUrl, $location, gettextCatalog) {
     $scope.params = {sortorder: "desc",
                      page_size: 10,
                      page: 1};
@@ -117,4 +119,4 @@ myApp.controller("auditController", function (AuditFactory, $scope, $rootScope,
         }
     });
 
-});
+}]);

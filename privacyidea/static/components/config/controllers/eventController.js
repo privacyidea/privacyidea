@@ -18,8 +18,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("eventController", function($scope, $stateParams, $state,
-                                             $location, ConfigFactory) {
+myApp.controller("eventController", ["$scope", "$stateParams", "$state",
+                                     "$location", "ConfigFactory",
+                                     function($scope, $stateParams, $state,
+                                              $location, ConfigFactory) {
     if ($location.path() === "/config/events") {
         $location.path("/config/events/list");
     }
@@ -67,9 +69,11 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
 
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.getEvents);
-});
+}]);
 
-myApp.controller("eventDetailController", function($scope, $stateParams,
+myApp.controller("eventDetailController", ["$scope", "$stateParams",
+                                           "ConfigFactory", "$state",
+                                           function($scope, $stateParams,
                                                     ConfigFactory, $state) {
     // init
     $scope.form = {};
@@ -267,4 +271,4 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
     $scope.getAvailableEvents();
     $scope.getHandlerModules();
 
-});
+}]);

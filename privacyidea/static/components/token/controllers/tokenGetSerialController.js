@@ -1,5 +1,5 @@
-myApp.controller("tokenGetSerialController", function ($scope,
-                                                  TokenFactory) {
+myApp.controller("tokenGetSerialController", ['$scope', 'TokenFactory',
+                                              function ($scope, TokenFactory) {
     $scope.params = {};
     // possible steps: init, count, searching, found
     $scope.step = "init";
@@ -45,4 +45,4 @@ myApp.controller("tokenGetSerialController", function ($scope,
             $scope.newOtp = false;
         });
     };
-});
+}]);

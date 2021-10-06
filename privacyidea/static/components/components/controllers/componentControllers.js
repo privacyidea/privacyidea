@@ -18,11 +18,17 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("componentController", function (ComponentFactory, $scope,
-                                              $stateParams, $http,
-                                              AuthFactory, instanceUrl,
-                                              SubscriptionFactory, subscriptionsUrl,
-                                              $location, Upload, inform) {
+myApp.controller("componentController", ["ComponentFactory", "$scope",
+                                         "$stateParams", "$http", "AuthFactory",
+                                         "instanceUrl", "SubscriptionFactory",
+                                         "subscriptionsUrl", "$location",
+                                         "Upload", "inform",
+                                         function (ComponentFactory, $scope,
+                                                   $stateParams, $http,
+                                                   AuthFactory, instanceUrl,
+                                                   SubscriptionFactory,
+                                                   subscriptionsUrl, $location,
+                                                   Upload, inform) {
     $scope.instanceUrl = instanceUrl;
 
     $scope.getClientType = function () {
@@ -94,4 +100,4 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
         $scope.getSubscriptions();
         ComponentFactory.getClientType();
     });
-});
+}]);

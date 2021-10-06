@@ -19,9 +19,11 @@
  *
  */
 
-myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
-                                          $rootScope, machineUrl,
-                                          applicationUrl, inform) {
+myApp.factory("MachineFactory", ['AuthFactory', '$http', '$state', '$rootScope',
+                                 'machineUrl', 'applicationUrl',
+                                 function (AuthFactory, $http, $state,
+                                           $rootScope, machineUrl,
+                                           applicationUrl) {
         return {
             getMachines: function(params, callback) {
                 $http.get(machineUrl + "/", {
@@ -66,4 +68,4 @@ myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
             }
         };
 
-});
+}]);

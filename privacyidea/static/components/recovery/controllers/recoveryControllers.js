@@ -1,12 +1,14 @@
 angular.module("privacyideaApp")
-    .controller("recoveryController",
-                            function (Idle,
-                                      $scope, $http, $location,
-                                      authUrl, $rootScope,
-                                      $state, inform, gettextCatalog,
-                                      hotkeys, $stateParams,
-                                      RecoveryFactory,
-                                      instanceUrl) {
+    .controller("recoveryController", ['Idle', '$scope', '$http', '$location',
+                                       'authUrl', '$rootScope', '$state',
+                                       'inform', 'gettextCatalog', 'hotkeys',
+                                       '$stateParams', 'RecoveryFactory',
+                                       'instanceUrl',
+                                       function (Idle, $scope, $http, $location,
+                                                 authUrl, $rootScope, $state,
+                                                 inform, gettextCatalog, hotkeys,
+                                                 $stateParams, RecoveryFactory,
+                                                 instanceUrl) {
 
     $scope.instanceUrl = instanceUrl;
     $scope.newUser = {};
@@ -34,4 +36,4 @@ angular.module("privacyideaApp")
             $state.go("login");
         })
     };
-});
+}]);

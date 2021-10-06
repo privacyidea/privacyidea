@@ -18,7 +18,8 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.factory("PolicyTemplateFactory", function($http, inform, gettextCatalog){
+myApp.factory("PolicyTemplateFactory", ["$http", "inform", "gettextCatalog",
+                                        function($http, inform, gettextCatalog){
     var URL = "https://raw.githubusercontent.com/privacyidea/policy-templates/master/templates/";
     return {
         setUrl: function(url) {
@@ -47,16 +48,21 @@ myApp.factory("PolicyTemplateFactory", function($http, inform, gettextCatalog){
             });
         }
     };
-});
-myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
-                                         resolverUrl, realmUrl,
-                                         machineResolverUrl,
-                                         policyUrl, eventUrl, smtpServerUrl,
-                                         radiusServerUrl, smsgatewayUrl,
-                                         defaultRealmUrl, systemUrl,
-                                         periodicTaskUrl,
-                                         privacyideaServerUrl,
-                                         CAConnectorUrl, inform) {
+}]);
+
+myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
+                                "resolverUrl", "realmUrl", "machineResolverUrl",
+                                "policyUrl", "eventUrl", "smtpServerUrl",
+                                "radiusServerUrl", "smsgatewayUrl",
+                                "defaultRealmUrl", "systemUrl", "periodicTaskUrl",
+                                "privacyideaServerUrl", "CAConnectorUrl",
+                                function (AuthFactory, $http, $state, $rootScope,
+                                          resolverUrl, realmUrl, machineResolverUrl,
+                                          policyUrl, eventUrl, smtpServerUrl,
+                                          radiusServerUrl, smsgatewayUrl,
+                                          defaultRealmUrl, systemUrl,
+                                          periodicTaskUrl, privacyideaServerUrl,
+                                          CAConnectorUrl) {
     /**
      Each service - just like this service factory - is a singleton.
      */
@@ -481,4 +487,4 @@ myApp.factory("ConfigFactory", function (AuthFactory, $http, $state, $rootScope,
             }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
         }
     };
-});
+}]);

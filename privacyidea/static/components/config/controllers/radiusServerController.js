@@ -18,10 +18,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("radiusServerController", function($scope, $stateParams,
-                                                    inform, gettextCatalog,
-                                                    $state, $location,
-                                                    ConfigFactory) {
+myApp.controller("radiusServerController", ["$scope", "$stateParams", "inform",
+                                            "gettextCatalog", "$state",
+                                            "$location", "ConfigFactory",
+                                            function($scope, $stateParams,
+                                                     inform, gettextCatalog,
+                                                     $state, $location,
+                                                     ConfigFactory) {
     if ($location.path() === "/config/radius") {
         $location.path("/config/radius/list");
     }
@@ -85,4 +88,4 @@ myApp.controller("radiusServerController", function($scope, $stateParams,
 
         // listen to the reload broadcast
     $scope.$on("piReload", $scope.getRadiusServers);
-});
+}]);

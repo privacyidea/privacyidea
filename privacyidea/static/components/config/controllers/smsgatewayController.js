@@ -21,9 +21,10 @@
 
 // TODO: We can not delete an optional value!
 
-myApp.controller("smsgatewayController", function($scope, $stateParams,
-                                                  $state,
-                                                  $location, ConfigFactory) {
+myApp.controller("smsgatewayController", ["$scope", "$stateParams", "$state",
+                                          "$location", "ConfigFactory",
+                                          function($scope, $stateParams, $state,
+                                                   $location, ConfigFactory) {
     if ($location.path() === "/config/smsgateway") {
         $location.path("/config/smsgateway/list");
     }
@@ -126,4 +127,4 @@ myApp.controller("smsgatewayController", function($scope, $stateParams,
 
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.getSMSGateways);
-});
+}]);

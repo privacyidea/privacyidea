@@ -20,7 +20,8 @@
  *
  */
 angular.module("privacyideaApp")
-    .controller("machineDetailsController", function ($scope, MachineFactory) {
+    .controller("machineDetailsController", ['$scope', 'MachineFactory',
+                                             function ($scope, MachineFactory) {
         $scope.tokensPerPage = 5;
         $scope.newToken = {"serial": "", pin: ""};
         $scope.params = {page: 1};
@@ -103,4 +104,4 @@ angular.module("privacyideaApp")
                 //debug: console.log(data);
             });
         };
-    });
+    }]);
