@@ -12,6 +12,7 @@ import os
 import mock
 
 from privacyidea.lib.eventhandler.customuserattributeshandler import CustomUserAttributesHandler
+from privacyidea.lib.eventhandler.customuserattributeshandler import USER_TYPE
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.config import get_config_object
@@ -2363,25 +2364,29 @@ class TokenEventTestCase(MyTestCase):
 
 class CustomUserAttributesTestCase(MyTestCase):
 
-    def test_01_event_set_attributes(self):
+    def test_01_event_set_attributes_logged_in_user(self):
 
         # Setup realm and user
         self.setUp_user_realms()
-        g = FakeFlaskG
+
+        g = FakeFlaskG()
         audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
         g.logged_in_user = User("hans", self.realm1)
         g.audit_object = audit_object
 
         # The attributekey will be set as "test" and the attributevalue as "check"
         options = {"g": g,
                    "attrkey": "test",
-                   "attrvalue": "check"
+                   "attrvalue": "check",
+                   "handler_def": {
+                        "options": {"user": USER_TYPE.LOGGED_IN_USER}}
                    }
         t_handler = CustomUserAttributesHandler()
         res = t_handler.do("set_custom_user_attributes", options=options)
         self.assertTrue(res)
 
-        # Check if the the user has the ready attribute
+        # Check that the user has the correct attribute
         user = g.logged_in_user
         a = user.attributes
         self.assertEqual({'test': 'check'}, a)
@@ -2390,25 +2395,70 @@ class CustomUserAttributesTestCase(MyTestCase):
 
         # Setup realm and user
         self.setUp_user_realms()
-        g = FakeFlaskG
+
+        g = FakeFlaskG()
         audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
         g.logged_in_user = User("hans", self.realm1)
         g.audit_object = audit_object
-
+        user = User("hans", self.realm1)
         # Setup user attribute
-        user = g.logged_in_user
         ret = user.set_attribute('test', 'check')
         self.assertTrue(ret)
         a = user.attributes
         self.assertEqual({'test': 'check'}, a)
 
         # The eventhandler will delete the user-attribute
-        options = {"g": g
+        options = {"g": g,
+                   "attrkey": "test",
+                   "attrvalue": "check",
+                   "handler_def": {
+                       "options": {"user": USER_TYPE.LOGGED_IN_USER}}
                    }
         t_handler = CustomUserAttributesHandler()
         res = t_handler.do("delete_custom_user_attributes", options)
         self.assertTrue(res)
 
-        # Check if the user attribute is deletet
+        # Check that the user attribute is deleted
         b = user.attributes
         self.assertEqual({}, b)
+
+    def test_03_event_set_attributes_tokenowner(self):
+
+        # Setup realm and user
+        self.setUp_user_realms()
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+        g.logged_in_user = User("cornelius", self.realm1)
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+
+        # The attributekey will be set as "test" and the attributevalue as "check"
+        options = {"g": g,
+                   "attrkey": "test",
+                   "request": req,
+                   "attrvalue": "check",
+                   "handler_def": {"conditions": {"tokentype": "totp,spass,oath,"}}
+                   }
+        t_handler = CustomUserAttributesHandler()
+        res = t_handler.do("set_custom_user_attributes", options=options)
+        self.assertTrue(res)
+
+        # Check that the user has the correct attribute
+        user = g.logged_in_user
+        a = user.attributes
+        self.assertEqual({'test': 'check'}, a)

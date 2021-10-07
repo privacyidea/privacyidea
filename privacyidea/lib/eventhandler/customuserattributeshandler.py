@@ -10,13 +10,12 @@ import logging
 
 log = logging.getLogger(__name__)
 
-
-class VALIDITY(object):
+class USER_TYPE(object):
     """
-    Allowed validity options
+    Allowed token owner
     """
-    START = "valid from"
-    END = "valid till"
+    TOKENOWNER = "tokenowner"
+    LOGGED_IN_USER = "logged_in_user"
 
 
 class CustomUserAttributesHandler(BaseEventHandler):
@@ -48,18 +47,26 @@ class CustomUserAttributesHandler(BaseEventHandler):
         :return: dict with actions
         """
         actions = {
-            "set_custom_user_attributes":{
+            "set_custom_user_attributes": {
+                "user" : {
+                    'type': 'str',
+                    'required': True,
+                    'description': ["logged in user", "tokenowner"],
+                    "value": [
+                        USER_TYPE.TOKENOWNER,
+                        USER_TYPE.LOGGED_IN_USER,
+                    ]},
                 "attrkey": {
                     'type': 'str',
-                    'discription': _('The key of the attribute')},
+                    'description': _('The key of the custom user attribute that should be set.')},
                 "attrvalue": {
                     'type': 'str',
-                    'discription': _('The value of the attribute')}
+                    'description': _('The value of the attribute')}
             },
-            "delete_custom_user_attributes":{
+            "delete_custom_user_attributes": {
                 "user": {
                     'type': 'user',
-                    'discription': _('An object from the class user')}
+                    'description': _('Delete the specified attribute of the user.')}
         }}
         return actions
 
@@ -74,14 +81,30 @@ class CustomUserAttributesHandler(BaseEventHandler):
         """
         ret = True
         g = options.get("g")
+        request = options.get("request")
+        handler_def = options.get("handler_def")
+        handler_options = handler_def.get("options", {})
+        user_type = handler_options.get("user", USER_TYPE.TOKENOWNER)
+        try:
+            logged_in_user = g.logged_in_user
+        except Exception:
+            logged_in_user = {}
+        tokenowner = self._get_tokenowner(request)
+        if user_type == USER_TYPE.TOKENOWNER and not tokenowner.is_empty():
+            user = tokenowner
+        elif user_type == USER_TYPE.LOGGED_IN_USER:
+            user = logged_in_user
+        else:
+            log.warning("Was not able to determine the recipient for the user "
+                        "notification: {0!s}".format(handler_def))
+
         attrkey = options.get("attrkey")
         attrvalue = options.get("attrvalue")
-        logged_in_user = g.logged_in_user
         if action.lower() in ["set_custom_user_attributes",
                               "delete_custom_user_attributes"]:
             if action.lower() == "set_custom_user_attributes":
-                ret = logged_in_user.set_attribute(attrkey, attrvalue)
+                ret = user.set_attribute(attrkey, attrvalue)
             elif action.lower() == "delete_custom_user_attributes":
-                ret = User.delete_attribute(logged_in_user)
+                ret = user.delete_attribute(attrkey)
 
         return ret
