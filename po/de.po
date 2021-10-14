@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2021-08-17 02:30+0000\n"
-"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"PO-Revision-Date: 2021-10-15 22:34+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.8-dev\n"
+"X-Generator: Weblate 4.9-dev\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -1495,7 +1495,7 @@ msgid ""
 "Here you can select how many tokens of which realm are required to\n"
 "        perform a successful authentication."
 msgstr ""
-"Hier können Sie auswählen, wieviele Token aus dem jeweiligen Realm nötig "
+"Hier können Sie auswählen, wie viele Token aus dem jeweiligen Realm nötig "
 "sind, um einen erfolgreiche Authentifizierung durchzuführen."
 
 #: privacyidea/static/components/token/views/token.import.html:20
@@ -1716,7 +1716,7 @@ msgstr "Letzte Aktualisierung der Definition"
 
 #: privacyidea/static/components/components/views/component.clienttype.html:19
 msgid "Last seen:"
-msgstr "Zuletzt gesehen: "
+msgstr "Zuletzt gesehen:"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:128
 msgid "Leave the Bind DN empty if you want to do anonymous binding."
@@ -1859,7 +1859,7 @@ msgstr "Maximale Fehlerzähler für neu ausgerollte Token"
 
 #: privacyidea/static/components/token/views/token.details.html:76
 msgid "Maxfail"
-msgstr "Max. Fehlerzähler "
+msgstr "Max. Fehlerzähler"
 
 #: privacyidea/static/components/token/views/token.details.html:192
 msgid "Maximum Authentication Count"
@@ -2038,7 +2038,7 @@ msgstr "OTP-Wert"
 #: privacyidea/static/components/token/views/token.enroll.totp.html:47
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:41
 msgid "OTP length"
-msgstr "OTP-Länge "
+msgstr "OTP-Länge"
 
 #: privacyidea/static/components/config/views/config.system.html:208
 msgid ""
@@ -2445,7 +2445,7 @@ msgstr ""
 #: privacyidea/static/components/login/views/login.html:61
 #: privacyidea/static/components/token/views/token.details.html:462
 msgid "Realm"
-msgstr "Realm "
+msgstr "Realm"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:566
 msgid "Realm defrealm created."
@@ -2500,7 +2500,7 @@ msgstr "Remote-Resolver"
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:26
 msgid "Remote Serial"
-msgstr "Remote Seriennummer "
+msgstr "Remote Seriennummer"
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:16
 msgid "Remote Server"
@@ -2540,7 +2540,7 @@ msgstr "Anfrage Mapping (JSON Format)"
 #: privacyidea/static/components/config/controllers/privacyideaServerController.js:71
 msgid "Request to remote privacyIDEA server successful."
 msgstr ""
-"Der HTTP Request  an den remote privacyIDEA Server wurde erfolgreich "
+"Die HTTP Anfrage an den entfernten privacyIDEA Server wurde erfolgreich "
 "beantwortet."
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:22
@@ -2549,7 +2549,7 @@ msgstr "Erforderliche Realms"
 
 #: privacyidea/static/components/token/views/token.list.html:100
 msgid "Reset Failcounter"
-msgstr "Fehlerzähler zurücksetzen "
+msgstr "Fehlerzähler zurücksetzen"
 
 #: privacyidea/static/components/login/views/login.html:84
 #: privacyidea/static/components/recovery/views/recovery.html:14
@@ -2870,7 +2870,7 @@ msgstr "Trennzeichen"
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:5
 #: privacyidea/static/components/machine/views/machine.details.html:50
 msgid "Serial"
-msgstr "Seriennummer "
+msgstr "Seriennummer"
 
 #: privacyidea/static/components/token/views/token.getserial.html:44
 msgid "Serial Substring"
@@ -3090,7 +3090,7 @@ msgstr "Yubikey testen"
 
 #: privacyidea/static/components/token/views/token.details.html:424
 msgid "Test token"
-msgstr " Token testen"
+msgstr "Token testen"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:128
 msgid "Thank you for improving your security!"
@@ -3574,7 +3574,8 @@ msgid ""
 "The file containing the CA certificate which signed the\n"
 "                    LDAP TLS certificate."
 msgstr ""
-"Die Datei mit dem CA-Zertifikat, das das LDAP TLS-Zertifikat signiert hat."
+"Die Datei mit dem CA-Zertifikat, mit welchem das LDAP TLS-Zertifikat "
+"signiert wurde."
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:114
 msgid ""
@@ -3819,7 +3820,7 @@ msgstr "Der Token wurde ausgerollt."
 
 #: privacyidea/static/components/token/views/token.lost.html:52
 msgid "The token is valid till {{ lostResult.end_date }}."
-msgstr "Der Token ist bis   {{ lostResult.end_date }} gültig."
+msgstr "Der Token ist bis {{ lostResult.end_date }} gültig."
 
 #: privacyidea/static/components/token/views/token.lost.html:34
 msgid "The token was marked lost successfully."
@@ -3987,9 +3988,9 @@ msgid ""
 "            password."
 msgstr ""
 "Dies ist eine RFC6030 konformes PSKC-Datei. Die Werte in der PSKC Datei sind "
-"unverschlüsselt oder   aber entweder mit einem <em>Pre Shared Key</em> oder "
-"<em>Passwort</em> verschlüsselt. Bitte geben Sie in diesem Fall den Pre "
-"Shared Key im Hexformat oder das Passwort an."
+"unverschlüsselt oder   aber <em>entweder</em> mit einem <em>Pre Shared Key</"
+"em> oder <em>Passwort</em> verschlüsselt. Bitte geben Sie in diesem Fall den "
+"Pre Shared Key im Hexformat oder das Passwort an."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:132
 msgid ""
@@ -4184,7 +4185,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:22
 msgid "Token Type"
-msgstr "Tokentyp "
+msgstr "Tokentyp"
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:7
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:6
@@ -4361,7 +4362,7 @@ msgstr "Ausrollen mit Zwei-Schritt und der privacyIDEA Authenticator App"
 #: privacyidea/static/components/config/views/config.radius.edit.html:99
 #: privacyidea/static/templates/menu.html:62
 msgid "User"
-msgstr "Benutzer "
+msgstr "Benutzer"
 
 #: privacyidea/static/components/config/views/config.system.html:160
 msgid ""
@@ -4556,7 +4557,7 @@ msgid ""
 "            You can also change the realms of each token later."
 msgstr ""
 "Hier wählen Sie den Realm, in den die Token importiert werden. Sie können "
-"später die die Realms der Token ändern."
+"später den Realm jedes Token ändern."
 
 #: privacyidea/static/components/token/views/token.import.html:80
 msgid ""
@@ -4630,7 +4631,7 @@ msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:373
 msgid "Your OTP pin expires on"
-msgstr "Ihre OTP PIN läuft ab: "
+msgstr "Ihre OTP PIN läuft ab am"
 
 #: privacyidea/static/components/user/views/user.html:12
 #: privacyidea/static/components/user/views/user.password.html:2
