@@ -52,25 +52,6 @@ To do so run::
 .. note:: If the security module is not operational yet, you might get an
    error message "HSM not ready.".
 
-PKCS11 Security Module
------------------------
-
-The PKCS11 Security Module can be used to encrypt data with an hardware
-security module, that is connected via the PKCS11 interface. To encrypt and
-decrypt data you can use an RSA key pair that is stored on the HSM.
-
-To activate this module add the following to the configuration file
-(:ref:`cfgfile`)
-
-   PI_HSM_MODULE = "privacyidea.lib.security.pkcs11.PKCS11SecurityModule"
-
-Additional attributes are
-
-``PI_HSM_MODULE_MODULE`` which takes the pkcs11 library. This is the full
-specified path to the shared object file in the file system.
-
-``PI_HSM_MODULE_KEY_ID`` is the key id (integer) on the HSM.
-
 AES HSM Security Module
 -----------------------
 
@@ -94,6 +75,11 @@ specified path to the shared object file in the file system.
 
 ``PI_HSM_MODULE_SLOT`` is the slot on the HSM where the keys are
 located (default: ``1``).
+
+You can set the slot number to -1 if there is only one slot available and you do
+not know the slot number. Then privacyIDEA will determine the one and only slot number and
+use this one.
+
 
 ``PI_HSM_MODULE_PASSWORD`` is the password to access the slot.
 
