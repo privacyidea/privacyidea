@@ -72,12 +72,12 @@ tokenissuer
 
 type: string
 
-This sets the issuer label for a newly enrolled Google Authenticator.
+This sets the issuer label for a newly enrolled soft token.
 This policy takes a fixed string, to add additional information about the
 issuer of the soft token.
 
 Starting with version 2.20 you can use the tags ``{user}``, ``{realm}``, ``{serial}``
-and as new tags ``{givenname}`` and ``{surname}`` in the field issuer.
+as well as ``{givenname}`` and ``{surname}`` in the field issuer.
 
 .. note:: A good idea is to set this to the instance name of your privacyIDEA
    installation or the name of your company.
@@ -87,9 +87,9 @@ tokenlabel
 
 type: string
 
-This sets the label for a newly enrolled Google Authenticator.
-Possible tags to be replaces are <u> for user, <r> for realm an
-<s> for the serial number.
+This sets the label for a newly enrolled soft token.
+Possible tags to be replaces are ``{user}``, ``{realm}`` and ``{serial}`` as
+well as ``{givenname}`` and ``{surname}``.
 
 The default behaviour is to use the serial number.
 
@@ -97,13 +97,13 @@ The default behaviour is to use the serial number.
 
 .. note:: Starting with version 2.19 the usage of ``<u>``, ``<s>`` and ``<r>``
    is deprecated. Instead you should use ``{user}``, ``{realm}``,
-   ``{serial}`` and as new tags ``{givenname}`` and ``{surname}``.
+   ``{serial}`` as well as ``{givenname}`` and ``{surname}``.
 
 .. warning:: If you are only using ``<u>`` or ``{user}`` as tokenlabel and you
    enroll the token without a user, this will result in an invalid QR code,
    since it will have an empty label.
-   You should rather use a label like "{user}@{realm}",
-   which would result in "@".
+   You should rather use a label like ``"{user}@{realm}"``,
+   which would result in ``"@"``.
 
 appimageurl
 ~~~~~~~~~~~

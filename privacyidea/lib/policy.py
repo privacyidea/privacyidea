@@ -2189,14 +2189,13 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.PIN},
             ACTION.TOKENLABEL: {
                 'type': 'str',
-                'desc': _("Set label for a new enrolled Google Authenticator. "
-                          "Possible tags are &lt;u&gt; (user), &lt;r&gt; ("
-                          "realm), &lt;s&gt; (serial)."),
+                'desc': _("Set label for a new enrolled soft token. "
+                          "Possible tags are \"{user}\", \"{realm}\", "
+                          "\"{serial}\", \"{givenname}\" and \"{surname}\"."),
                 'group': GROUP.TOKEN},
             ACTION.TOKENISSUER: {
                 'type': 'str',
-                'desc': _("This is the issuer label for new enrolled Google "
-                          "Authenticators."),
+                'desc': _("This is the issuer label for new enrolled soft token."),
                 'group': GROUP.TOKEN
             },
             ACTION.APPIMAGEURL: {
