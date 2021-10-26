@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2021-06-18 11:15+0000\n"
-"Last-Translator: yumpo55 <egor.alin@yandex.com>\n"
+"PO-Revision-Date: 2021-09-29 09:38+0000\n"
+"Last-Translator: Konstantin Burov <sad.2.shade@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/ru/>\n"
 "Language: ru\n"
@@ -10,7 +10,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 4.7\n"
+"X-Generator: Weblate 4.9-dev\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -23,25 +23,30 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:21
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:23
 msgid "#"
-msgstr ""
+msgstr "#"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:94
 msgid "(none)"
-msgstr ""
+msgstr "(пусто)"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:8
 msgid "45% Complete"
-msgstr ""
+msgstr "45% Завершено"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:139
 msgid ""
 "<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/\">\n"
 "                        Ask for the privacyIDEA Enterprise Edition, now!</a>"
 msgstr ""
+"<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/"
+"\">\n"
+"                        Запросите privacyIDEA Enterprise Edition прямо "
+"сейчас!</a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:109
+#, fuzzy
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
-msgstr ""
+msgstr "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:57
 msgid ""
@@ -49,6 +54,11 @@ msgid ""
 "                        <li><b>\"*/10 * * * *\"</b> runs the task every ten minutes.</li>\n"
 "                        <li><b>\"1 23 * * 7\"</b> runs the task at 11:01pm on Sundays.</li>"
 msgstr ""
+"<li><b>\"5 10 * * *\"</b> запускает задачу каждый день в 10:05.</li>\n"
+"                        <li><b>\"*/10 * * * *\"</b> запускает задачу каждые "
+"десять минут.</li>\n"
+"                        <li><b>\"1 23 * * 7\"</b> запускает задачу в 23:01 "
+"по воскресеньям.</li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:116
 msgid ""
@@ -141,6 +151,9 @@ msgid ""
 "<p>The privacyIDEA API seems to be offline!</p>\n"
 "    <p>Please try to reload and otherwise contact your system administrator!</p>"
 msgstr ""
+"<p>API privacyIDEA не работает!</p>\n"
+"    <p>Пожалуйста, попробуйте перезагрузить или свяжитесь с вашим системным "
+"администратором!</p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:51
 msgid ""
@@ -169,10 +182,14 @@ msgid "About privacyIDEA Web Client"
 msgstr "О веб-клиенте privacyIDEA"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:106
+#, fuzzy
 msgid ""
 "According to the\n"
 "                    <a target=\"license\" href=\"https://github.com/privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
 msgstr ""
+"According to the\n"
+"                    <a target=\"license\" href=\"https://github.com/"
+"privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
 
 #: privacyidea/static/components/config/views/config.events.details.html:101
 #: privacyidea/static/components/config/views/config.events.details.html:160
@@ -311,109 +328,111 @@ msgid ""
 "As the values are encrypted with AES128-CBC, you need to give a\n"
 "            32 characters long hex string."
 msgstr ""
+"Поскольку значения зашифрованы с помощью AES128-CBC, вам необходимо указать\n"
+"             32-символьная шестнадцатеричную строку."
 
 #: privacyidea/static/components/token/views/token.assign.html:12
 #: privacyidea/static/components/token/views/token.html:44
 #: privacyidea/static/components/user/views/user.details.html:134
 msgid "Assign Token"
-msgstr ""
+msgstr "Назначить токен"
 
 #: privacyidea/static/components/token/views/token.details.html:480
 #: privacyidea/static/components/token/views/token.details.html:493
 msgid "Assign User"
-msgstr ""
+msgstr "Назначить пользователя"
 
 #: privacyidea/static/components/user/views/user.details.html:129
 msgid "Assign a new token {{ newToken.serial }}"
-msgstr ""
+msgstr "Назначить новый токен {{ newToken.serial }}"
 
 #: privacyidea/static/components/token/views/token.assign.html:1
 msgid "Assign a new token {{ newTokenObject.serial }}"
-msgstr ""
+msgstr "Назначьте новый токен {{ newTokenObject.serial }}"
 
 #: privacyidea/static/components/token/views/token.enroll.html:37
 msgid "Assign token to user"
-msgstr ""
+msgstr "Назначить токен пользователю"
 
 #: privacyidea/static/components/token/views/token.details.html:430
 msgid "Assigned User"
-msgstr ""
+msgstr "Назначенный пользователь"
 
 #: privacyidea/static/components/token/views/token.getserial.html:33
 msgid "Assignment State"
-msgstr ""
+msgstr "Состояние присвоения"
 
 #: privacyidea/static/components/token/views/token.details.html:636
 msgid "Attach Machine"
-msgstr ""
+msgstr "Присоединить машину"
 
 #: privacyidea/static/components/machine/views/machine.details.html:154
 msgid "Attach Token"
-msgstr ""
+msgstr "Прикрепить токен"
 
 #: privacyidea/static/components/token/views/token.details.html:600
 msgid "Attach to a new Machine"
-msgstr ""
+msgstr "Присоединить к новой машине"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:271
 msgid "Attribute mapping"
-msgstr ""
+msgstr "Сопоставление атрибутов"
 
 #: privacyidea/static/templates/menu.html:86
 msgid "Audit"
-msgstr ""
+msgstr "Аудит"
 
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:26
 msgid "Authentication Server URI"
-msgstr ""
+msgstr "URI сервера аутентификации"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:329
 msgid "Authentication failed."
-msgstr ""
+msgstr "Ошибка аутентификации."
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:39
 msgid "Authentications"
-msgstr ""
+msgstr "Аутентификации"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:41
 msgid "Authentications in the last 24 hours"
-msgstr ""
+msgstr "Аутентификации за последние 24 часа"
 
 #: privacyidea/static/components/config/views/config.system.html:147
 msgid "Auto resync timeout"
-msgstr ""
+msgstr "Тайм-аут автоматической повторной синхронизации"
 
 #: privacyidea/static/components/config/views/config.system.html:143
 msgid "Automatic resync during authentication"
-msgstr ""
+msgstr "Автоматическая повторная синхронизация во время аутентификации"
 
 #: privacyidea/static/components/login/factories/u2f.js:27
 msgid "Bad U2F Request"
-msgstr ""
+msgstr "Неверный запрос U2F"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:28
 msgid "Base Config"
-msgstr ""
+msgstr "Базовая конфигурация"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:82
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:90
 msgid "Base DN"
-msgstr ""
+msgstr "Базовый DN"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:92
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:113
 msgid "Bind DN"
-msgstr ""
+msgstr "DN Пользователя"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:102
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:125
 msgid "Bind Password"
-msgstr ""
+msgstr "Пароль пользователя"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:113
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:136
 msgid "Bind Type"
-msgstr ""
+msgstr "Тип привязки"
 
 #: privacyidea/static/components/token/views/token.getserial.html:3
 msgid ""
@@ -422,34 +441,40 @@ msgid ""
 "    search for the token. So you can only search within certain token types\n"
 "    or in assigned or unassigned tokens."
 msgstr ""
+"Введя значение OTP, вы можете получить серийный номер токена.\n"
+"     Вы также можете ввести дополнительные необязательные параметры, чтобы "
+"сузить круг\n"
+"     ищите токен. Таким образом, вы можете выполнять поиск только по "
+"определенным типам токенов.\n"
+"     или в назначенных или неназначенных токенах."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:31
 msgid "CA Certificate"
-msgstr ""
+msgstr "Сертификат УЦ"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:28
 msgid "CA Connector"
-msgstr ""
+msgstr "Соеденитель УЦ"
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:5
 msgid "CA Connector name"
-msgstr ""
+msgstr "Имя соеденителя УЦ"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:44
 msgid "CA Key"
-msgstr ""
+msgstr "Ключ УЦ"
 
 #: privacyidea/static/components/config/views/config.html:73
 msgid "CAs"
-msgstr ""
+msgstr "УЦ-ры"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:121
 msgid "CRL Configuration"
-msgstr ""
+msgstr "Концигуряция списков отозванных сертификатов (CRL)"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:156
 msgid "Cache Timeout (seconds)"
-msgstr ""
+msgstr "Тайм-аут кеша (секунды)"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:77
 #: privacyidea/static/components/directives/views/directive.tokendata.html:23
@@ -479,6 +504,8 @@ msgid ""
 "Certificate Signing\n"
 "                Request Directory"
 msgstr ""
+"Подпись сертификата\n"
+"                 Каталог запросов"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:56
 msgid "Certificate Signing Request (PEM)"
@@ -494,53 +521,59 @@ msgstr "Сертификат: Выпустить Сертификат x.509."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:69
 msgid "Certificates Templates file"
-msgstr ""
+msgstr "Файл шаблонов сертификатов"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:226
 msgid "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr ""
+"Проверка подлинности ответа на запрос. Вы еще не полностью аутентифицированы."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:301
 msgid "Challenge Response Authentication. Your response was not valid!"
-msgstr ""
+msgstr "Проверка подлинности ответа на запрос. Ваш ответ недействителен!"
 
 #: privacyidea/static/components/login/views/pinchange.html:23
 #: privacyidea/static/components/login/views/pinchange.html:4
 msgid "Change PIN"
-msgstr ""
+msgstr "Изменить PIN-код"
 
 #: privacyidea/static/components/token/views/token.details.html:418
 msgid "Check OTP only."
-msgstr ""
+msgstr "Проверить только OTP."
 
 #: privacyidea/static/components/config/views/config.policies.details.html:200
 msgid ""
 "Check all possible resolvers of a user to match the resolver\n"
 "                in this policy."
 msgstr ""
+"Проверить все возможные распознаватели пользователя на соответствие "
+"распознавателю\n"
+"                 в этой политике."
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:18
 #: privacyidea/static/components/token/views/token.enroll.remote.html:12
 msgid "Check the PIN locally"
-msgstr ""
+msgstr "Проверять PIN-код локально"
 
 #: privacyidea/static/components/token/views/token.details.html:411
 msgid "Check with OTP PIN."
-msgstr ""
+msgstr "Проверьте с помощью OTP PIN."
 
 #: privacyidea/static/components/login/views/login.html:69
 msgid "Choose a realm..."
-msgstr ""
+msgstr "Выберите область..."
 
 #: privacyidea/static/components/config/views/config.realms.html:9
 msgid "Clear default realm"
-msgstr ""
+msgstr "Очистить область по умолчанию"
 
 #: privacyidea/static/components/config/views/config.system.html:87
 msgid ""
 "Clear failcounter\n"
 "                after minutes"
 msgstr ""
+"Очистить счетчик сбоев\n"
+"                 через несколько минут"
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:20
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:20
@@ -1126,6 +1159,8 @@ msgid ""
 "Enter your username and password and click Log In to\n"
 "                authenticate."
 msgstr ""
+"Введите свое имя пользователя и пароль и нажмите «Войти», чтобы\n"
+"                 аутентифицировать."
 
 #: privacyidea/static/components/config/factories/config.js:43
 msgid "Error fetching policy template"
@@ -2043,7 +2078,7 @@ msgstr ""
 
 #: privacyidea/static/components/login/views/login.html:50
 msgid "Please sign in"
-msgstr ""
+msgstr "Пожалуйста войдите"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:49
 msgid ""

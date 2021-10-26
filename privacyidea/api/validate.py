@@ -298,13 +298,11 @@ def check():
                 "transaction_id": "12345678901234567890",
                 "multi_challenge: [ {"serial": "PIEM0000AB00",
                                      "transaction_id":  "12345678901234567890",
-                                     "message": "Please enter otp from your
-                                     email",
+                                     "message": "Please enter otp from your email",
                                      "client_mode": "interactive"},
                                     {"serial": "PISM12345678",
                                      "transaction_id": "12345678901234567890",
-                                     "message": "Please enter otp from your
-                                     SMS",
+                                     "message": "Please enter otp from your SMS",
                                      "client_mode": "interactive"}
                 ]
               },
@@ -459,7 +457,7 @@ def trigger_challenge():
     **Example response** for a successful triggering of challenge:
 
        .. sourcecode:: http
-       
+
             HTTP/1.1 200 OK
             Content-Type: application/json
 

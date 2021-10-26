@@ -30,7 +30,7 @@
         <div class="col-sm-9">
             <input name="server" class="form-control"
                    ng-model="params.server" required
-                   placeholder="mail.example.com"/>
+                   placeholder="smtp://mail.example.com"/>
         </div>
     </div>
     <div class="form-group">
@@ -101,7 +101,8 @@
                    placeholder="some wise words"/>
         </div>
     </div>
-    <div class="form-group">
+    <div class="form-group"
+        ng_show="params.server.toLowerCase().substring(0,6) !== 'smtps:'">
         <div class="col-sm-3 control-label"></div>
         <div class="col-sm-9">
         <input type="checkbox"
@@ -109,7 +110,7 @@
                ng-checked="isChecked(params.tls)"
                name="tls"
                id="tls">
-        <label for="tls" translate>Use TLS</label>
+        <label for="tls" translate>Use StartTLS</label>
         </div>
     </div>
     <div class="form-group" ng-if="hasJobQueue">

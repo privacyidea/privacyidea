@@ -59,7 +59,7 @@ The following parameters are allowed:
 
 ``-s`` or ``--skipstamp`` skips the version stamping during schema update.
 
-``-n`` or ``--noshema`` completely skips the schema update and only updates the code.
+``-n`` or ``--noschema`` completely skips the schema update and only updates the code.
 
 
 Manual upgrade

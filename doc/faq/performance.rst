@@ -6,7 +6,7 @@ Performance considerations
 You can test performace using the apache bench from the apache utils.
 Creating a simple pass token for a user, eases the performance testing.
 
-Then you can run
+Then you can run::
 
    ab -l -n 200 -c 8 -s 30 'https://localhost/validate/check?user=yourUser&pass=yourPassword'
 
@@ -41,14 +41,15 @@ which might lead to unexpected behaviour.
 Logging
 ~~~~~~~
 
-Choose a logging level like WARNING or ERROR. Setting the logging level to INFO or
-DEBUG will produce much log output and lead to a decrease in performance.
+Choose a logging level like ``WARNING`` or ``ERROR``. Setting the logging level
+to ``INFO`` or ``DEBUG`` will produce much log output and lead to a decrease in
+performance.
 
 Response
 ~~~~~~~~
 
-You can strip the authentication response, to get a slight increase in performance,
-using the policy ``no_details_on_success``.
+You can strip the authentication response to get a slight increase in performance
+by using the policy ``no_details_on_success``.
 
 
 Clean configuration

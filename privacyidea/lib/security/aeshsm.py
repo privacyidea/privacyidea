@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2021-10-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Allow to set a default slot number
 #  2017-09-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add reinitialization of the PKCS11 module
 #  2016-09-01 Mathias Brossard <mathias@axiadids.com>
@@ -133,8 +135,12 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
 
     def _login(self):
         slotlist = self.pkcs11.getSlotList()
+        log.debug("Found the slots: {0!s}".format(slotlist))
         if not len(slotlist):
-            raise HSMException("No HSM connected")
+            raise HSMException("No HSM connected. No slots found.")
+        if self.slot == -1 and len(slotlist) == 1:
+            # Use the first and only slot
+            self.slot = slotlist[0]
         if self.slot not in slotlist:
             raise HSMException("Slot {0:d} not present".format(self.slot))
 
@@ -188,7 +194,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         :rtype: bytes
         """
         if len(data) == 0:
-            return bytes("")
+            return bytes()
         log.debug("Encrypting {} bytes with key {}".format(len(data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
         retries = 0

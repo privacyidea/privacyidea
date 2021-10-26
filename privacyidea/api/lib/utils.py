@@ -333,7 +333,7 @@ def verify_auth_token(auth_token, required_role=None):
                     log.warning(u"Unsupported JWT algorithm in PI_TRUSTED_JWT.")
             except jwt.DecodeError as err:
                 log.info(u"A given JWT definition does not match.")
-            except jwt.ExpiredSignature as err:
+            except jwt.ExpiredSignatureError as err:
                 # We have the correct token. It expired, so we raise an error
                 raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
                                 id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)

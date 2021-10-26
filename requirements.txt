@@ -13,6 +13,7 @@ cbor2==5.4.0; python_version > '3.5'
 certifi==2021.5.30
 cffi==1.14.5
 chardet==4.0.0
+charset-normalizer==2.0.6; python_version > '3.0'
 click==7.1.2
 configobj==5.0.6
 configparser==4.0.2; python_version < '3.0'
@@ -30,10 +31,12 @@ Flask-Script==2.0.6
 Flask-SQLAlchemy==2.5.1
 Flask-Versioned==0.9.4.post20101221
 future==0.18.2; python_version < '3.0'
+google-auth==1.35.0; python_version < '3.0'
 google-auth==1.23.0; python_version == '3.5'
-google-auth==1.32.1; python_version != '3.5'
+google-auth==2.1.0; python_version > '3.5'
 huey==2.3.2
-idna==2.10
+idna==2.10; python_version <= '3.5'
+idna==3.2; python_version > '3.5'
 importlib_metadata==2.1.1; python_version <= '3.5'
 importlib_metadata==4.6.0; python_version > '3.5'
 importlib-resources==3.3.1; python_version < '3.0'
@@ -51,13 +54,14 @@ passlib==1.7.4
 pathlib2==2.3.6; python_version <= '3.5'
 Pillow==6.2.2; python_version < '3.0'
 Pillow==7.2.0; python_version == '3.5'
-Pillow==8.3.0; python_version > '3.5'
+Pillow==8.3.2; python_version > '3.5'
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycparser==2.20
 pydash==4.9.3; python_version <= '3.5'
 pydash==5.0.1; python_version > '3.5'
-PyJWT==1.7.1
+PyJWT==1.7.1; python_version <= '3.5'
+PyJWT==2.1.0; python_version > '3.5'
 PyMySQL==0.10.1; python_version <= '3.5'
 PyMySQL==1.0.2; python_version > '3.5'
 pyOpenSSL==20.0.1
@@ -71,7 +75,8 @@ PyYAML==5.4.1; python_version != '3.5'
 qrcode==6.1; python_version <= '3.5'
 qrcode==7.1; python_version > '3.5'
 redis==3.5.3
-requests==2.25.1
+requests==2.25.1; python_version == '3.5'
+requests==2.26.0; python_version != '3.5'
 rsa==4.5; python_version < '3.0'
 rsa==4.7.2; python_version > '3.0'
 scandir==1.10.0; python_version < '3.0'
