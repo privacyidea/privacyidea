@@ -228,6 +228,8 @@ With **export** single or multiple tokens can be exported as csv or pskc.
 
 Please note that without a previous selection of a certain token, all found tokens will be exported.
 
+Export only possible with HOTP and TOTP token.
+
 Example::
 
     privacyidea-token-janitor find --serial OATH0004C934 --action export > OAUTH0004C934.xml
