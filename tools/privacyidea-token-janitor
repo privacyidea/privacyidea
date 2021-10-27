@@ -617,7 +617,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 help='Import this PSKC file.')
 @manager.option('--preshared_key_hex', dest='preshared_key_hex',
                 help='The AES encryption key.')
-@manager.option('--validate_mac', dest='validate_mac',
+@manager.option('--validate_mac', dest='validate_mac', default='check_fail_hard',
                 help="How the file should be validated.\n"
                      "'no_check' : Every token is parsed, ignoring HMAC\n"
                      "'check_fail_soft' : Skip tokens with invalid HMAC\n"
@@ -628,7 +628,9 @@ def loadtokens(pskc, preshared_key_hex, validate_mac):
     with open(pskc, 'r') as pskcfile:
         file_contents = pskcfile.read()
 
-    tokens, not_parsed_tokens = parsePSKCdata(file_contents, preshared_key_hex, validate_mac)
+    tokens, not_parsed_tokens = parsePSKCdata(file_contents,
+                                              preshared_key_hex=preshared_key_hex,
+                                              validate_mac=validate_mac)
     success = 0
     failed = 0
     failed_tokens = []
