@@ -68,6 +68,7 @@ from cryptography.hazmat.primitives import serialization
 import flask
 from six.moves import shlex_quote
 import importlib_metadata
+from sqlalchemy.ext.declarative import declarative_base
 
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.security.default import DefaultSecurityModule
@@ -584,7 +585,7 @@ def createdb(stamp=False):
 @manager.command
 def dropdb(dropit=None):
     """
-    This drops all the privacyIDEA database tables (except audit table).
+    This drops all the privacyIDEA database tables.
     Use with caution! All data will be lost!
 
     For safety reason you need to pass
@@ -592,8 +593,16 @@ def dropdb(dropit=None):
     Otherwise the command will not drop anything.
     """
     if dropit == "yes":
+        engine = db.session.get_bind()
+        table_name = "alembic_version"
+        Base = declarative_base()
+        metadata = MetaData()
+        metadata.reflect(bind=engine)
+        table = metadata.tables[table_name]
         print("Dropping all database tables!")
         db.drop_all()
+        if table is not None:
+            Base.metadata.drop_all(engine, [table], checkfirst=True)
     else:
         print("Not dropping anything!")
 
