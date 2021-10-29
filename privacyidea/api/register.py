@@ -168,7 +168,7 @@ def register_post():
     if not email_sent:
         log.warning("Failed to send registration email to {0!r}".format(email))
         # delete registration token
-        token.delete()
+        token.delete_token()
         # delete user
         user.delete()
         raise RegistrationError("Failed to send email!")
