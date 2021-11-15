@@ -337,7 +337,13 @@ angular.module("privacyideaApp")
         $scope.getRealms = function () {
             ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
+                num_realms = Object.keys($scope.realms).length;
                 angular.forEach($scope.realms, function (realm, realmname) {
+                    if (num_realms === 1) {
+                        // If the admin is allowed to see only one realm, we make this the
+                        // default realm in the UI
+                        realm.default = true;
+                    }
                     if (realm.default) {
                         $scope.defaultRealm = realmname;
                         if (!$scope.selectedRealm) {
