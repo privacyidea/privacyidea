@@ -571,6 +571,23 @@ class TOTPTokenTestCase(MyTestCase):
                             options={"initTime": 47251645 * 30 })
         self.assertTrue(r == 47251650, r)
 
+        # counter = 47251640 => otp = 166325 is an old OTP value
+        # counter = 47251641 => otp = 432730 is an old OTP value
+        # Autoresync with two times the same old OTP value must not work out!
+        r = token.check_otp(anOtpVal="166325", window=30,
+                            options={"initTime": 47251644 * 30})
+        self.assertTrue(r == -1, r)
+        r = token.check_otp(anOtpVal="166325", window=30,
+                            options={"initTime": 47251645 * 30})
+        self.assertTrue(r == -1, r)
+        # Autoresync with two consecutive old OTP values must not work out!
+        r = token.check_otp(anOtpVal="166325", window=30,
+                            options={"initTime": 47251644 * 30})
+        self.assertTrue(r == -1, r)
+        r = token.check_otp(anOtpVal="432730", window=30,
+                            options={"initTime": 47251645 * 30})
+        self.assertTrue(r == -1, r)
+
         # Autosync with a gap in the next otp value will fail
         token.token.count = 47251640
         # Just try some bullshit config value
