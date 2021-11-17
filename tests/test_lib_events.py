@@ -2369,51 +2369,49 @@ class CustomUserAttributesTestCase(MyTestCase):
         # Setup realm and user
         self.setUp_user_realms()
 
+        user = User("hans", self.realm1)
         g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "SPASS01"
-        g.logged_in_user = User("hans", self.realm1)
-        g.audit_object = audit_object
+        g.logged_in_user = user
 
         # The attributekey will be set as "test" and the attributevalue as "check"
         options = {"g": g,
                    "attrkey": "test",
                    "attrvalue": "check",
                    "handler_def": {
-                        "options": {"user": USER_TYPE.LOGGED_IN_USER}}
+                        "options": {"user": "logged_in_user"}}
                    }
         t_handler = CustomUserAttributesHandler()
         res = t_handler.do("set_custom_user_attributes", options=options)
         self.assertTrue(res)
 
         # Check that the user has the correct attribute
-        user = g.logged_in_user
         a = user.attributes
-        self.assertEqual({'test': 'check'}, a)
+        if "test" in a:
+            b = a.get("test")
+            self.assertEqual('check', b)
 
     def test_02_event_delete_attributes(self):
 
         # Setup realm and user
         self.setUp_user_realms()
 
-        g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "SPASS01"
-        g.logged_in_user = User("hans", self.realm1)
-        g.audit_object = audit_object
         user = User("hans", self.realm1)
+        g = FakeFlaskG()
+        g.logged_in_user = user
         # Setup user attribute
         ret = user.set_attribute('test', 'check')
         self.assertTrue(ret)
         a = user.attributes
-        self.assertEqual({'test': 'check'}, a)
+        if "test" in a:
+            b = a.get("test")
+            self.assertEqual('check', b)
 
         # The eventhandler will delete the user-attribute
         options = {"g": g,
                    "attrkey": "test",
                    "attrvalue": "check",
                    "handler_def": {
-                       "options": {"user": USER_TYPE.LOGGED_IN_USER}}
+                       "options": {"user": "logged_in_user"}}
                    }
         t_handler = CustomUserAttributesHandler()
         res = t_handler.do("delete_custom_user_attributes", options)
@@ -2421,7 +2419,10 @@ class CustomUserAttributesTestCase(MyTestCase):
 
         # Check that the user attribute is deleted
         b = user.attributes
-        self.assertEqual({}, b)
+        if not "test" in b:
+            self.assertTrue(True)
+        else:
+            self.assertTrue(False)
 
     def test_03_event_set_attributes_tokenowner(self):
 
@@ -2429,17 +2430,11 @@ class CustomUserAttributesTestCase(MyTestCase):
         self.setUp_user_realms()
 
         g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "SPASS01"
-        g.logged_in_user = User("cornelius", self.realm1)
-        g.audit_object = audit_object
-
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "SPASS01"},
                                  headers={})
 
         env = builder.get_environ()
-        # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
@@ -2459,6 +2454,107 @@ class CustomUserAttributesTestCase(MyTestCase):
         self.assertTrue(res)
 
         # Check that the user has the correct attribute
+        user = req.User
+        a = user.attributes
+        if "test" in a:
+            b = a.get("test")
+            self.assertEqual('check', b)
+
+    def test_04_delete_not_existing_attribute(self):
+
+        # Setup realm and user
+        self.setUp_user_realms()
+
+        user = User("hans", self.realm1)
+        g = FakeFlaskG()
+        g.logged_in_user = user
+        # Check that the attribute does not exist
+        a = user.attributes
+        if not "test" in a:
+            self.assertTrue(True)
+
+        # The eventhandler will delete the user-attribute
+        options = {"g": g,
+                   "attrkey": "test",
+                   "attrvalue": "check",
+                   "handler_def": {
+                       "options": {"user": "logged_in_user"}}
+                   }
+        t_handler = CustomUserAttributesHandler()
+        res = t_handler.do("delete_custom_user_attributes", options)
+        self.assertFalse(res)
+
+        # Check that the user attribute is deleted
+        b = user.attributes
+        if not "test" in b:
+            self.assertTrue(True)
+        else:
+            self.assertTrue(False)
+
+    def test_05_set_already_existing_attribute(self):
+
+        # Setup realm and user
+        self.setUp_user_realms()
+
+        user = User("hans", self.realm1)
+        g = FakeFlaskG()
+        g.logged_in_user = user
+        # Setup user attribute
+        ret = user.set_attribute('test', 'check')
+        self.assertTrue(ret)
+        a = user.attributes
+        if "test" in a:
+            b = a.get("test")
+            self.assertEqual('check', b)
+
+        # The attributekey will be set as "test" and the attributevalue as "check"
+        options = {"g": g,
+                   "attrkey": "test",
+                   "attrvalue": "check",
+                   "handler_def": {
+                       "options": {"user": "logged_in_user"}}
+                   }
+        t_handler = CustomUserAttributesHandler()
+        res = t_handler.do("set_custom_user_attributes", options=options)
+        self.assertTrue(res)
+
+        # Check that the user has the correct attribute
         user = g.logged_in_user
         a = user.attributes
-        self.assertEqual({'test': 'check'}, a)
+        if "test" in a:
+            b = a.get("test")
+            self.assertEqual('check', b)
+
+    def test_06_overwrite_existing_attribute(self):
+
+        # Setup realm and user
+        self.setUp_user_realms()
+
+        user = User("hans", self.realm1)
+        g = FakeFlaskG()
+        g.logged_in_user = user
+        # Setup user attribute
+        ret = user.set_attribute('test', 'old')
+        self.assertTrue(ret)
+        a = user.attributes
+        if "test" in a:
+            b = a.get("test")
+            self.assertEqual('old', b)
+
+        # The attributekey will be set as "test" and the attributevalue as "check"
+        options = {"g": g,
+                   "attrkey": "test",
+                   "attrvalue": "new",
+                   "handler_def": {
+                       "options": {"user": "logged_in_user"}}
+                   }
+        t_handler = CustomUserAttributesHandler()
+        res = t_handler.do("set_custom_user_attributes", options=options)
+        self.assertTrue(res)
+
+        # Check that the user has the correct attribute
+        user = g.logged_in_user
+        a = user.attributes
+        if "test" in a:
+            b = a.get("test")
+            self.assertEqual('new', b)

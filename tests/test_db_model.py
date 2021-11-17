@@ -859,7 +859,6 @@ class TokenModelTestCase(MyTestCase):
                 "foo": "bar"
             })
 
-
         self.assertEqual(PeriodicTask.query.filter_by(name="task1").one(), task1)
         self.assertEqual(PeriodicTask.query.filter_by(name="some other task").one(), task2)
         self.assertEqual(PeriodicTaskOption.query.filter_by(periodictask_id=task1.id, key="KEY2").one().value,

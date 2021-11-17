@@ -10,9 +10,18 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
+class ACTION_TYPE(object):
+    """
+    Allowd actions
+    """
+    SET_CUSTOM_USER_ATTRIBUTES = "set_custom_user_attributes"
+    DELETE_CUSTOM_USER_ATTRIBUTES = "delete_custom_user_attributes"
+
+
 class USER_TYPE(object):
     """
-    Allowed token owner
+    Allowed user types
     """
     TOKENOWNER = "tokenowner"
     LOGGED_IN_USER = "logged_in_user"
@@ -20,15 +29,11 @@ class USER_TYPE(object):
 
 class CustomUserAttributesHandler(BaseEventHandler):
     """
-    An Eventhandler needs to return a list of actions, which it can handle.
-
-    It also returns a list of allowed action and conditions
-
-    It returns an identifier, which can be used in the eventhandlig definitions
+    The CustomUserAttributesHandler is an EventHandler which can set/change/delete custom User-Attributes.
     """
 
     identifier = "CustomUserAttributes"
-    description = "This event handler can set and delete custom_user_attributes"
+    description = "This eventhandler can set and delete custom_user_attributes"
 
     @property
     def allowed_positions(cls):
@@ -47,8 +52,8 @@ class CustomUserAttributesHandler(BaseEventHandler):
         :return: dict with actions
         """
         actions = {
-            "set_custom_user_attributes": {
-                "user" : {
+            ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES: {
+                "user": {
                     'type': 'str',
                     'required': True,
                     'description': ["logged in user", "tokenowner"],
@@ -63,10 +68,15 @@ class CustomUserAttributesHandler(BaseEventHandler):
                     'type': 'str',
                     'description': _('The value of the attribute')}
             },
-            "delete_custom_user_attributes": {
-                "user": {
-                    'type': 'user',
-                    'description': _('Delete the specified attribute of the user.')}
+            ACTION_TYPE.DELETE_CUSTOM_USER_ATTRIBUTES: {
+                "user" : {
+                    'type': 'str',
+                    'required': True,
+                    'description': ["logged in user", "tokenowner"],
+                    "value": [
+                        USER_TYPE.TOKENOWNER,
+                        USER_TYPE.LOGGED_IN_USER,
+                    ]}
         }}
         return actions
 
@@ -97,6 +107,8 @@ class CustomUserAttributesHandler(BaseEventHandler):
         else:
             log.warning("Was not able to determine the recipient for the user "
                         "notification: {0!s}".format(handler_def))
+            ret = False
+            return ret
 
         attrkey = options.get("attrkey")
         attrvalue = options.get("attrvalue")
