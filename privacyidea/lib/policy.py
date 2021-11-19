@@ -720,7 +720,7 @@ class PolicyClass(object):
         """
         if user_object is not None:
             # if a user_object is passed, we check, if it differs from potentially passed user, resolver, realm:
-            if (user and user.lower() != user_object.login.lower()) \
+            if (user and user.lower() not in {user_object.login.lower(), user_object.used_login.lower()}) \
                     or (resolver and resolver.lower() != user_object.resolver.lower()) \
                     or (realm and realm.lower() != user_object.realm):
                 tb_str = ''.join(traceback.format_stack())
