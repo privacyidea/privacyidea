@@ -68,7 +68,6 @@ from cryptography.hazmat.primitives import serialization
 import flask
 from six.moves import shlex_quote
 import importlib_metadata
-from sqlalchemy.ext.declarative import declarative_base
 
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.security.default import DefaultSecurityModule
@@ -113,10 +112,10 @@ DEFAULT_CONFTYPE_LIST = ("policy", "resolver", "event")
 app = create_app(config_name='production', silent=SILENT)
 manager = Manager(app)
 admin_manager = Manager(usage='Create new administrators or modify existing '
-                                    'ones.')
+                              'ones.')
 backup_manager = Manager(usage='Create database backup and restore')
 realm_manager = Manager(usage='Create new realms, delete existing realms '
-                                    'or set the default realm')
+                              'or set the default realm')
 resolver_manager = Manager(usage='Create new resolver')
 policy_manager = Manager(usage='Manage policies')
 event_manager = Manager(usage='Manage events')
@@ -396,7 +395,7 @@ def restore(backup_file):
                                                            sqlfile))
 
     call(["tar", "-zxf", backup_file, "-C", "/"])
-    print(60*"=")
+    print(60 * "=")
     with open(config_file, "r") as f:
         # Determine the SQLAlchemy URI
         for line in f:
@@ -519,8 +518,8 @@ def create_pgp_keys(keysize=2048, force=False):
                                    name_comment="Import")
     inputs = input_data.split("\n")
     if inputs[-2] == "%commit":
-        del(inputs[-1])
-        del(inputs[-1])
+        del (inputs[-1])
+        del (inputs[-1])
         inputs.append("%no-protection")
         inputs.append("%commit")
         inputs.append("")
@@ -593,16 +592,15 @@ def dropdb(dropit=None):
     Otherwise the command will not drop anything.
     """
     if dropit == "yes":
-        engine = db.session.get_bind()
-        table_name = "alembic_version"
-        Base = declarative_base()
-        metadata = MetaData()
-        metadata.reflect(bind=engine)
-        table = metadata.tables[table_name]
         print("Dropping all database tables!")
         db.drop_all()
-        if table is not None:
-            Base.metadata.drop_all(engine, [table], checkfirst=True)
+        table_name = "alembic_version"
+        db.reflect()
+        table = db.Model.metadata.tables.get(table_name, None)
+        if table:
+            db.Model.metadata.drop_all(bind=db.engine,
+                                       tables=[table],
+                                       checkfirst=True)
     else:
         print("Not dropping anything!")
 
@@ -629,6 +627,7 @@ class CommandOutsideRequestContext(Command):
     In contrast to flask_script's `Command`, this command class does
     not push a request context before running the command.
     """
+
     def __call__(self, app=None, *args, **kwargs):
         return self.run(*args, **kwargs)
 
@@ -903,20 +902,21 @@ def create_internal(name):
             print("Invalid username and password in database URI: %s" % sqluri)
             sys.exit(3)
     # now we can create the resolver
-    params = {'resolver': name,
-              'type': "sqlresolver",
-              'Server': host,
-              'Driver': sql_driver,
-              'User': username,
-              'Password': password,
-              'Database': database,
-              'Table': 'users_' + name,
-              'Limit': '500',
-              'Editable': '1',
-              'Map': '{"userid": "id", "username": "username", '
-                     '"email":"email", "password": "password", '
-                     '"phone":"phone", "mobile":"mobile", "surname":"surname", '
-                     '"givenname":"givenname", "description": "description"}'}
+    params = {
+        'resolver': name,
+        'type': "sqlresolver",
+        'Server': host,
+        'Driver': sql_driver,
+        'User': username,
+        'Password': password,
+        'Database': database,
+        'Table': 'users_' + name,
+        'Limit': '500',
+        'Editable': '1',
+        'Map': '{"userid": "id", "username": "username", '
+               '"email":"email", "password": "password", '
+               '"phone":"phone", "mobile":"mobile", "surname":"surname", '
+               '"givenname":"givenname", "description": "description"}'}
     save_resolver(params)
 
     # Now we create the database table
@@ -982,7 +982,7 @@ class ListResolver(Command):
         else:
             for (name, resolver) in resolver_list.items():
                 print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
-                print("."*32)
+                print("." * 32)
                 data = resolver.get("data", {})
                 for (k, v) in data.items():
                     if k.lower() in ["bindpw", "password"]:
@@ -1058,12 +1058,12 @@ def list_events():
     conf = EventConfiguration()
     events = conf.events
     print("{0:7} {4:4} {1:30}\t{2:20}\t{3}".format("Active", "Name", "Module", "Action", "ID"))
-    print(90*"=")
+    print(90 * "=")
     for event in events:
         print("[{0!s:>5}] {4:4} {1:30}\t{2:20}\t{3}".format(event.get("active"),
                                                             event.get("name")[0:30],
                                                             event.get("handlermodule"),
-                                                            event.get("action"), event.get("id"),))
+                                                            event.get("action"), event.get("id"), ))
 
 
 event_manager.add_command('list', Command(list_events))
@@ -1124,7 +1124,7 @@ def list_policies():
     pol_cls = PolicyClass()
     policies = pol_cls.list_policies()
     print("Active \t Name \t Scope")
-    print(40*"=")
+    print(40 * "=")
     for policy in policies:
         print("%s \t %s \t %s" % (policy.get("active"), policy.get("name"),
                                   policy.get("scope")))
@@ -1270,14 +1270,15 @@ def createtoken(role, days, realm, username):
     secret = app.config.get("SECRET_KEY")
     authtype = "API"
     validity = timedelta(days=int(days))
-    token = jwt.encode({"username": username,
-                        "realm": realm,
-                        "nonce": geturandom(hex=True),
-                        "role": role,
-                        "authtype": authtype,
-                        "exp": datetime.datetime.utcnow() + validity,
-                        "rights": "TODO"},
-                       secret)
+    token = jwt.encode({
+        "username": username,
+        "realm": realm,
+        "nonce": geturandom(hex=True),
+        "role": role,
+        "authtype": authtype,
+        "exp": datetime.datetime.utcnow() + validity,
+        "rights": "TODO"},
+        secret)
     print("Username:   {0!s}".format(username))
     print("Realm:      {0!s}".format(realm))
     print("Role:       {0!s}".format(role))
@@ -1304,13 +1305,13 @@ def import_tokens(file, tokenrealm=None):
 
 token_manager.add_command('import', Command(import_tokens))
 
-
 from functools import partial
 import json
 
-exp_fmt_dict = {'python': str,
-                'json': partial(json.dumps, indent=2),
-                'yaml': yaml.safe_dump}
+exp_fmt_dict = {
+    'python': str,
+    'json': partial(json.dumps, indent=2),
+    'yaml': yaml.safe_dump}
 
 
 @config_manager.option('-o', '--output', type=argparse.FileType('w'),
@@ -1343,9 +1344,10 @@ def exporter(output, fmt, types):
         output.write(res)
 
 
-imp_fmt_dict = {'python': ast.literal_eval,
-                'json': json.loads,
-                'yaml': yaml.safe_load}
+imp_fmt_dict = {
+    'python': ast.literal_eval,
+    'json': json.loads,
+    'yaml': yaml.safe_load}
 
 
 @config_manager.option('-i', '--input', type=argparse.FileType('r'),
@@ -1448,13 +1450,13 @@ class FullExport(Command):
     """
     option_list = (
         Option("--print_passwords", "-p", action="store_true",
-                              help="Print the passwords used in the resolver configuration. "
-                                   "This will overwrite existing passwords on import."),
+               help="Print the passwords used in the resolver configuration. "
+                    "This will overwrite existing passwords on import."),
         Option("--archive", "-a", action="store_true",
-                              help="Compress the created config-backup as tar.gz archive instead "
-                                   "of printing to standard out."),
+               help="Compress the created config-backup as tar.gz archive instead "
+                    "of printing to standard out."),
         Option("--directory", "-d", action="store_true",
-                              help="Directory where the backup will be stored.")
+               help="Directory where the backup will be stored.")
     )
 
     def run(self, directory=None, archive=False, print_passwords=False):
@@ -1650,16 +1652,16 @@ class FullImport(Command):
     """
     option_list = (
         Option("--file", "-f", dest="file",
-                              help="The file to import. It can be a plain python file or a tar.gz archive "
-                                   "containing a configuration backup file with a name containing "
-                                   "'privacyidea-config-backup'."),
+               help="The file to import. It can be a plain python file or a tar.gz archive "
+                    "containing a configuration backup file with a name containing "
+                    "'privacyidea-config-backup'."),
         Option("--update", "-u", action="store_true",
-                              help="Update the existing configuration. New policies, resolvers and events will also "
-                                   "be added."),
+               help="Update the existing configuration. New policies, resolvers and events will also "
+                    "be added."),
         Option("--cleanup", "-c", action="store_true",
-                              help="The configuration on the target machine will be wiped before the import."),
+               help="The configuration on the target machine will be wiped before the import."),
         Option("--wipe", "-w", action="store_true", dest="cleanup",
-                              help="Wipe is an alias for cleanup."),
+               help="Wipe is an alias for cleanup."),
     )
 
     def run(self, file=None, cleanup=False, update=False):
@@ -1682,11 +1684,11 @@ class FullImport(Command):
         else:
             conf_import(cleanup=cleanup, update=update)
 
+
 config_import_manager.add_command('full', FullImport)
 config_import_manager.add_command('policy', Command(p_import))
 config_import_manager.add_command('resolver', Command(r_import))
 config_import_manager.add_command('event', Command(e_import))
-
 
 if __name__ == '__main__':
     # We add one blank line, to separate the messages from the initialization
