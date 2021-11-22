@@ -37,7 +37,6 @@ TOTP is defined in https://tools.ietf.org/html/rfc6238
 from __future__ import division
 import logging
 import time
-import math
 import datetime
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.config import get_from_config
@@ -56,9 +55,6 @@ log = logging.getLogger(__name__)
 
 
 class TotpTokenClass(HotpTokenClass):
-
-    # When resyncing we need to do two directly consecutive values.
-    resyncDiffLimit = 1
 
     @log_with(log)
     def __init__(self, db_token):
@@ -434,10 +430,15 @@ class TotpTokenClass(HotpTokenClass):
                 otp1c = int(info.get("otp1c"))
                 otp2c = res
                 log.debug("otp1c: {0!r}, otp2c: {1!r}".format(otp1c, otp2c))
-                diff = math.fabs(otp2c - otp1c)
-                if diff > self.resyncDiffLimit:
+                if (otp1c + 1) != otp2c:
+                    log.debug("Autoresync failed for token {0!s}. OTP values too far apart.".format(self.token.serial))
+                    res = -1
+                elif otp2c <= self.token.count:
+                    # The resync was done with previous (old) OTP values
+                    log.debug("Autoresync failed for token {0!s}. Previous OTP values used.".format(self.token.serial))
                     res = -1
                 else:
+                    log.info("Autoresync successful for token {0!s}.".format(self.token.serial))
                     server_time = time.time()
                     counter = int((server_time / self.timestep) + 0.5)
 
