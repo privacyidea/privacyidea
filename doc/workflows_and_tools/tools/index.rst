@@ -47,9 +47,9 @@ Searches through all tokens and returns the ones with the selected description.
 
 Example::
 
-    privacyidea-token-janitor find --description example
+    privacyidea-token-janitor find --description ^fo.*
 
-Return all tokens with the description ``example``.
+Return all tokens where the description begins with "fo".
 
 Serial
 ******
@@ -61,6 +61,13 @@ Example::
     privacyidea-token-janitor find --serial OATH0013B2B4
 
 Return all tokens with the serial ``OATH0013B2B4``.
+
+You can also search for regular expressions. This is interesting, e.g. if finding yubikeys, which might be a tokentype "HOTP", but where the serial starts with UBOM.
+
+Example::
+
+    privacyidea-token-janitor find --serial ^UBOM.*
+
 
 Tokentype
 *********
@@ -82,6 +89,7 @@ There are different ways of filtering here.
 
 tokenattribute-value REGEX|INTEGER
 ..................................
+
 The value of the token-attribute which should match.
 
 Example::
@@ -89,6 +97,8 @@ Example::
     privacyidea-token-janitor find --tokenattribute rollout_state --tokenattribute-value clientwait
 
 Search for all tokens with the tokenattribute-key ``rollout_state`` and the associated tokenattribute-value ``clientwait``.
+
+**Note that it is also possible to work with regular expressions here.**
 
 tokenattribute-value-less-than INTEGER
 ......................................
@@ -129,6 +139,8 @@ Example::
     privacyidea-token-janitor find --has-tokeninfo-key import_time
 
 Searches for all tokens that have stored the tokeninfo-key ``import_time``.
+
+**Note, that it is not important, what value the "import_time" actually has!**
 
 has-not-tokeninfo-key
 .....................
@@ -228,7 +240,7 @@ With **export** single or multiple tokens can be exported as csv or pskc.
 
 Please note that without a previous selection of a certain token, all found tokens will be exported.
 
-Export only possible with HOTP and TOTP token.
+Export is only possible with HOTP and TOTP token.
 
 Example::
 
@@ -241,18 +253,22 @@ Note that you need your encryption key for re-import.
 listuser
 ........
 
-With **listuser** the various users and their tokens are listed in a summarized view.
+With **listuser** the various tokens are listed in a summarized view.
 
 Example::
 
     privacyidea-token-janitor find --action listuser
 
-lists all users and their tokens together.
+lists all tokens in a summarized view.
 
 sum
 ___
 
-**Sum** and **listuser** together list all users with their information and show how many tokens each user has assigned.
+**Sum** and **listuser** together
+
+For all found tokens the token janitor aggregate's the users and lists how many tokens this user has.
+
+A user without any assigned token is not listed here!
 
 Example::
 
@@ -272,6 +288,12 @@ Example::
     privacyidea-token-janitor find --serial OATH0005B88E --action tokenrealms --tokenrealms defrealm
 
 Setting realms of token ``OATH0005B88E`` to ``defrealm``.
+
+You can also assign a list of realms by comma separating.
+
+Example::
+
+    privacyidea-token-janitor find --serial OATH0005B88E --action tokenrealms --tokenrealms defrealm,realmA,realmB
 
 Set
 ***
