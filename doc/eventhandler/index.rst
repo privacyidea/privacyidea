@@ -25,7 +25,13 @@ Events
 ------
 
 Each **API call** is an **event** and you can bind arbitrary actions to each
-event as you like.
+event as you like. You can bind several actions to one event. These actions are executed
+in the order of the priority one after another.
+
+.. Note:: An action, that is triggered by an event can not trigger a new action. Only **events** (API calls)
+   can trigger actions. E.g. if you are using the :ref:`tokenhandler` to create a new token, the creation
+   of the token is an *action*, not an *event*. This means this creation of the token can *not* trigger a new
+   action. For more complex actions, you might need to look into the :ref:`scripthandler`.
 
 Internally events are marked by a decorator "event" with an *event identifier*.
 At the moment not all events might be tagged. Please drop us a note to tag
