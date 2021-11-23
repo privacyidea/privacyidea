@@ -62,7 +62,7 @@ applications to privacyIDEA.
     :scale: 50 %
 
 privacyIDEA does not bind you to any decision of the authentication
-protocol or it does not dictate you where your user information should be
+protocol, nor does it dictate you where your user information should be
 stored. This is achieved by its totally modular architecture.
 privacyIDEA is not only open as far as its modular architecture is
 concerned. But privacyIDEA is completely licensed under the AGPLv3.
