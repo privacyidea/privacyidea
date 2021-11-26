@@ -1,12 +1,13 @@
 # Nathan <bonnemainsnathan@gmail.com>, 2024.
 # Thierry Gaulupeau <thierry.gaulupeau@chu-nimes.fr>, 2024.
 # "J. Lavoie" <j.lavoie@net-c.ca>, 2024.
+# nicolas hahang <nicolas.hahang@gmail.com>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: \"J. Lavoie\" <j.lavoie@net-c.ca>\n"
+"Last-Translator: nicolas hahang <nicolas.hahang@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
 "Language: fr\n"
