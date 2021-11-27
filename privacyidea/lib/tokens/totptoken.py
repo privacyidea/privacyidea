@@ -56,6 +56,10 @@ log = logging.getLogger(__name__)
 
 class TotpTokenClass(HotpTokenClass):
 
+    # In contrast to the HOTP the counter does not contain the next OTP value,
+    # but the last used OTP value, so we need to set this to 0.
+    previous_otp_offset = 0
+
     @log_with(log)
     def __init__(self, db_token):
         """
