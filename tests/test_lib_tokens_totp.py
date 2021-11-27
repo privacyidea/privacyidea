@@ -746,7 +746,7 @@ class TOTPTokenTestCase(MyTestCase):
         ts0 = float(token.get_tokeninfo("timeShift"))
         self.assertTrue(-31 < ts0 < 31)
         # Too old
-        r = token.is_previous_otp(token._calc_otp(counter-3))
+        r = token.is_previous_otp(token._calc_otp(counter - 3))
         self.assertEqual(r, False)
         ts = float(token.get_tokeninfo("timeShift"))
         self.assertEqual(ts, ts0)
@@ -756,7 +756,7 @@ class TOTPTokenTestCase(MyTestCase):
         ts = float(token.get_tokeninfo("timeShift"))
         self.assertEqual(ts, ts0)
         # Future value
-        r = token.is_previous_otp(token._calc_otp(counter+8))
+        r = token.is_previous_otp(token._calc_otp(counter + 8))
         self.assertEqual(r, False)
         ts = float(token.get_tokeninfo("timeShift"))
         self.assertEqual(ts, ts0)
