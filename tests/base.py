@@ -222,6 +222,7 @@ class MyTestCase(unittest.TestCase):
                                            data=sorted_filter,
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.data)
             self.assertTrue(res.is_json, res)
             result = res.json['result']
             self.assertIn('auditdata', result['value'])

@@ -10,7 +10,8 @@ from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     PolicyClass)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    get_tokens_from_serial_or_user, enable_token,
-                                   check_serial_pass, get_realms_of_token, assign_token)
+                                   check_serial_pass, get_realms_of_token,
+                                   assign_token, token_exist)
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
@@ -134,16 +135,16 @@ class API000TokenAdminRealmList(MyApiTestCase):
                        "type": "passwdresolver",
                        "fileName": PWFILE2})
         added, failed = set_realm(self.realm1,
-                                  [self.resolvername2])
+                                  [self.resolvername1, self.resolvername2])
         self.assertEquals(len(failed), 0)
-        self.assertEquals(len(added), 1)
+        self.assertEquals(len(added), 2)
 
         # create token delete policy for "testadmin" on resolver1
         set_policy(name="pol-reso1",
                    scope=SCOPE.ADMIN,
                    action=','.join([ACTION.DELETE, ACTION.ASSIGN, ACTION.UNASSIGN,
-                                    ACTION.DISABLE, ACTION.ENABLE]),
-                   user=self.testadmin,
+                                    ACTION.DISABLE, ACTION.ENABLE, ACTION.AUDIT]),
+                   adminuser=self.testadmin,
                    realm=self.realm1,
                    resolver=self.resolvername1)
 
@@ -161,9 +162,33 @@ class API000TokenAdminRealmList(MyApiTestCase):
                                                  "realm": self.realm1},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 403, res)
+            self.assertEqual(403, res.status_code, res.data)
             result = res.json.get("result")
-            self.assertEqual(result.get('error').get('code'), 303, result)
+            self.assertEqual(303, result.get('error').get('code'), result)
+            self.assertIsNone(t2.token.first_owner, t2.token.first_owner)
+        # check the audit log for a failed entry
+        entry = self.find_most_recent_audit_entry(action='*/token/assign')
+        self.assertFalse(entry['success'], entry)
+        self.assertIn('Admin actions are defined, but the action assign', entry['info'], entry)
+
+        # assigning the same token to a user from resolver1 should work
+        with self.app.test_request_context('/token/assign',
+                                           method='POST',
+                                           data={"serial": t2.token.serial,
+                                                 "user": "nönäscii",
+                                                 "realm": self.realm1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.data)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"), result)
+            self.assertIsNotNone(t2.token.first_owner)
+        # check the audit log for a  successful entry
+        entry = self.find_most_recent_audit_entry(action='*/token/assign')
+        self.assertTrue(entry['success'], entry)
+        self.assertIn('pol-reso1', entry['policies'], entry)
+
+        remove_token(t2.token.serial)
 
         # unassign a token from a user in resolver2 should fail
         with self.app.test_request_context('/token/unassign',
@@ -175,7 +200,23 @@ class API000TokenAdminRealmList(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result.get('error').get('code'), 303, result)
 
-        # disable an active token from a user from resolver2 should fail
+        t2 = init_token({'type': 'spass'}, user=User(login='nönäscii',
+                                                     resolver=self.resolvername1,
+                                                     realm=self.realm1))
+        # unassign a token from a user in resolver1 should work
+        with self.app.test_request_context('/token/unassign',
+                                           method='POST',
+                                           data={"serial": t2.token.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"), result)
+            self.assertIsNone(t2.token.first_owner)
+
+        remove_token(t2.token.serial)
+
+        # disabling an active token from a user from resolver2 should fail
         with self.app.test_request_context('/token/disable/{0!s}'.format(t1.token.serial),
                                            method='POST',
                                            data={},
@@ -185,8 +226,24 @@ class API000TokenAdminRealmList(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result.get('error').get('code'), 303, result)
 
-        # enable an inactive token from a user from resolver2 shoud fail
-        t1.token.active = False
+        # disableing an active token from a user from resolver1 should work
+        t2 = init_token({'type': 'spass'}, user=User(login='nönäscii',
+                                                     resolver=self.resolvername1,
+                                                     realm=self.realm1))
+        with self.app.test_request_context('/token/disable/{0!s}'.format(t2.token.serial),
+                                           method='POST',
+                                           data={},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get('value'), result)
+            self.assertFalse(t2.is_active())
+
+        remove_token(t2.token.serial)
+
+        # enable an inactive token from a user from resolver2 should fail
+        t1.enable(enable=False)
         with self.app.test_request_context('/token/enable/{0!s}'.format(t1.token.serial),
                                            method='POST',
                                            data={},
@@ -196,7 +253,22 @@ class API000TokenAdminRealmList(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result.get('error').get('code'), 303, result)
 
-        # token delete should fail for a token assigned to a user from resolver 2
+        # enable an inactive token from a user from resolver1 should work
+        t2 = init_token({'type': 'spass'}, user=User(login='nönäscii',
+                                                     resolver=self.resolvername1,
+                                                     realm=self.realm1))
+        t2.enable(enable=False)
+        with self.app.test_request_context('/token/enable/{0!s}'.format(t2.token.serial),
+                                           method='POST',
+                                           data={},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get('value'), result)
+            self.assertTrue(t2.is_active())
+
+        # token delete should fail for a token assigned to a user from resolver2
         with self.app.test_request_context('/token/{0!s}'.format(t1.token.serial),
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
@@ -205,9 +277,18 @@ class API000TokenAdminRealmList(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result.get('error').get('code'), 303, result)
 
+        # token delete should work for a token assigned to a user from resolver1
+        with self.app.test_request_context('/token/{0!s}'.format(t2.token.serial),
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get('value'), result)
+            self.assertFalse(token_exist(t2.token.serial))
+
         # cleanup
         remove_token(t1.token.serial)
-        remove_token(t2.token.serial)
         delete_policy("pol-reso1")
 
 class APIAttestationTestCase(MyApiTestCase):
