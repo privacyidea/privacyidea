@@ -7,7 +7,7 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.models import (Token, Policy, Challenge, AuthCache, db)
+from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner)
 from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
@@ -1164,7 +1164,7 @@ class ValidateAPITestCase(MyApiTestCase):
         serial = "CHALRESP1"
         pin = "chalresp1"
         # create a token and assign to the user
-        db_token = Token(serial, tokentype="registration")
+        db_token = Token(serial, tokentype="registration", otpkey="regcode")
         db_token.save()
         token = RegistrationTokenClass(db_token)
         token.add_user(User("cornelius", self.realm1))
@@ -1211,8 +1211,22 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(detail.get("message"), _("please enter otp: "))
             transaction_id = detail.get("transaction_id")
 
-        # delete the token
-        remove_token(serial=serial)
+        # use the regcode to authenticate
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id": transaction_id,
+                                                 "pass": "regcode"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"))
+
+        # check, that the tokenowner table does not contain a NULL entry
+        r = db.session.query(TokenOwner).filter(TokenOwner.token_id == None).first()
+        self.assertIsNone(r)
+
+        # delete the policy
         delete_policy("pol_chal_resp")
 
     def test_11b_challenge_response_multiple_hotp_failcounters(self):

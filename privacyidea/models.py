@@ -260,6 +260,15 @@ class Token(MethodsMixin, db.Model):
         db.session.query(TokenRealm)\
                   .filter(TokenRealm.token_id == self.id)\
                   .delete()
+        db.session.query(TokenOwner)\
+                  .filter(TokenOwner.token_id == self.id)\
+                  .delete()
+        db.session.query(MachineToken)\
+                  .filter(MachineToken.token_id == self.id)\
+                  .delete()
+        db.session.query(Challenge)\
+                  .filter(Challenge.serial == self.serial)\
+                  .delete()
         db.session.query(TokenInfo)\
                   .filter(TokenInfo.token_id == self.id)\
                   .delete()

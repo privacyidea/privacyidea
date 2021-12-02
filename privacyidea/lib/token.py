@@ -1130,24 +1130,7 @@ def remove_token(serial=None, user=None):
 
     # Delete challenges of such a token
     for tokenobject in tokenobject_list:
-        # delete the challenge
-        Challenge.query.filter(Challenge.serial == tokenobject.get_serial(
-
-        )).delete()
-
-        # due to legacy SQLAlchemy it could happen that the
-        # foreign key relation could not be deleted
-        # so we do this manualy
-
-        # delete references to client machines
-        MachineToken.query.filter(MachineToken.token_id ==
-                                  tokenobject.token.id).delete()
-        TokenRealm.query.filter(TokenRealm.token_id ==
-                                tokenobject.token.id).delete()
-        TokenOwner.query.filter(TokenOwner.token_id ==
-                                tokenobject.token.id).delete()
-
-        tokenobject.token.delete()
+        tokenobject.delete_token()
 
     return token_count
 
