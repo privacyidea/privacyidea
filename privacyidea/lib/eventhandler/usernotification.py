@@ -50,6 +50,7 @@ from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.user import User, get_user_list, is_attribute_at_all
 from privacyidea.lib.utils import create_tag_dict, to_unicode
 from privacyidea.lib.crypto import get_alphanum_str
+from privacyidea.lib.utils import is_true
 from privacyidea.lib import _
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -130,7 +131,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                     "description": _("Either send email as plain text or HTML."),
                     "value": ["plain", "html"]},
                 "attach_qrcode": {
-                    "type": "bool",
+                    "type": "str",
                     "description": _("Send QR-Code image as an attachment "
                                      "(cid URL: token_image)")},
                 "subject": {
@@ -351,7 +352,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 mimetype = handler_options.get("mimetype", "plain")
                 useremail = recipient.get("email")
                 reply_to = handler_options.get("reply_to")
-                attach_qrcode = handler_options.get("attach_qrcode", False)
+                attach_qrcode = is_true(handler_options.get("attach_qrcode", False))
 
                 if attach_qrcode and googleurl_img:
                     # get the image part of the googleurl
