@@ -41,6 +41,9 @@ class MyTestCase(unittest.TestCase):
     realm1 = "realm1"
     realm2 = "realm2"
     realm3 = "realm3"
+    testadmin = 'testadmin'
+    testadminpw = 'testpw'
+    testadminmail = "admin@test.tld"
     serials = ["SE1", "SE2", "SE3"]
     otpkey = "3132333435363738393031323334353637383930"
     valid_otp_values = ["755224",
@@ -66,7 +69,7 @@ class MyTestCase(unittest.TestCase):
         save_config_timestamp()
         db.session.commit()
         # Create an admin for tests.
-        create_db_admin(cls.app, "testadmin", "admin@test.tld", "testpw")
+        create_db_admin(cls.app, cls.testadmin, cls.testadminmail, cls.testadminpw)
 
     def setUp_user_realms(self):
         # create user realm
@@ -180,8 +183,8 @@ class MyTestCase(unittest.TestCase):
 
     def authenticate(self):
         with self.app.test_request_context('/auth',
-                                           data={"username": "testadmin",
-                                                 "password": "testpw"},
+                                           data={"username": self.testadmin,
+                                                 "password": self.testadminpw},
                                            method='POST'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -219,6 +222,7 @@ class MyTestCase(unittest.TestCase):
                                            data=sorted_filter,
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.data)
             self.assertTrue(res.is_json, res)
             result = res.json['result']
             self.assertIn('auditdata', result['value'])
@@ -245,8 +249,8 @@ class OverrideConfigTestCase(MyTestCase):
 class MyApiTestCase(MyTestCase):
     @classmethod
     def cls_auth(cls, app):
-        with app.test_request_context('/auth', data={"username": "testadmin",
-                                                     "password": "testpw"},
+        with app.test_request_context('/auth', data={"username": cls.testadmin,
+                                                     "password": cls.testadminpw},
                                       method='POST'):
             res = app.full_dispatch_request()
             assert res.status_code == 200
