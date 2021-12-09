@@ -1,15 +1,15 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2020-12-08 18:29+0000\n"
-"Last-Translator: J. Lavoie <j.lavoie@net-c.ca>\n"
+"PO-Revision-Date: 2021-11-27 11:51+0000\n"
+"Last-Translator: nicolas hahang <nicolas.hahang@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/fr/>\n"
 "Language: fr\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.4-dev\n"
+"X-Generator: Weblate 4.10-dev\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -81,6 +81,37 @@ msgid ""
 "                        like code audits.\n"
 "                    </li>"
 msgstr ""
+"<li>Support et\n"
+"                        <a target=\"netknights\" href=\"https://netknights."
+"it/en/leistungen/service-level-agreements/\">\n"
+"                            accords de niveau de service par NetKnights</a>, "
+"Allemagne.\n"
+"                    </li>\n"
+"                    <li>Nos paquets en version stable entreprise pour "
+"Debian, Ubuntu, RHEL permettent des mises à jours faciles et\n"
+" sécurisées.\n"
+"                    </li>\n"
+"                    <li>Un outil exclusif de type <b>Appliance</b> vous "
+"facilitera vos installations RADIUS clients, \n"
+"réplications master-master MySQL, \n"
+"sauvegarde/restauration...\n"
+"                    </li>\n"
+"                    <li>Accès exclusif aux dernières informations et aux "
+"rapports d'erreurs.</li>\n"
+"                    <li>Dépendant de votre niveau de support, vous aurez "
+"droit à une aide pour les mises à jours et une prestation annuelle de "
+"conseils.</li>\n"
+"                    <li>En achetant \n"
+"                        <a target=\"netknights\" href=\"https://netknights."
+"it/en/produkte/privacyidea/\">privacyIDEA Edition Entreprise</a>\n"
+"                        vous assurez l'emploi à plein temps de développeurs "
+"professionnels\n"
+"                        sur privacyIDEA, l'ajout de nouvelles "
+"fonctionnalités et la correction d'erreurs à temps. De plus, vous permettez "
+"l'appel à des \n"
+"services externes\n"
+"                        comme de l'audit de code. \n"
+"                    </li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:70
 msgid ""
@@ -106,6 +137,36 @@ msgid ""
 "                        your own system! Forever!</b>\n"
 "                </p>"
 msgstr ""
+"<p>\n"
+"                    Aujourd'hui, vous lisez des livres qui ne vous "
+"appartiennent plus. Votre lisseuse électronique\n"
+"                    ne vous fourni ces livres seulement le temps de leur "
+"lecture. Vous utilisez des Logiciels en tant que Service (SaaS)\n"
+"                    et vous n'avez plus aucuns contrôles, quand le logiciel "
+"sera mis à jour,\n"
+"                    quelles fonctionnalités seront ajoutées, supprimées ou "
+"quel service sera arrêté.\n"
+"                    Vous avez un droit légal d'usage limité dans le temps.\n"
+"                </p>\n"
+"                <p>\n"
+"                    Vous pouvez aussi installer un logiciel propriétaire sur "
+"votre propre serveur, mais vous aurez aussi\n"
+"                    un droit limité sur cette installation. Vous n'êtes pas "
+"autorisé à modifier ou à transmettre\n"
+"                    ce logiciel propriétaire.\n"
+"                </p>\n"
+"                <p>\n"
+"                    Le logiciel libre privacyIDEA est maintenant <b>votre "
+"propriété</b>! Personne ne peut vous retirer ce logiciel\n"
+"                    ou cette installation. En accord avec la licence AGPLv3 "
+"vous pouvez modifier ou distribuer ce logiciel.\n"
+"                    Ne vous souciez plus de la fin de vie du produit.\n"
+"                </p>\n"
+"                <p>\n"
+"                    <b>Utiliser un logiciel libre n'est pas le fait de ne "
+"pas dépenser de l'argent, mais le fait d'avoir un contrôle total\n"
+"                        de votre système ! Pour toujours !</b>\n"
+"                </p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:34
 msgid ""
@@ -121,6 +182,22 @@ msgid ""
 "                    paid programming of new features.\n"
 "                </p>"
 msgstr ""
+"<p><b>Vous utilisez privacyIDEA avec plus de 50 utilisateurs.</b></p>\n"
+"                <p>Merci pour votre confiance!</p>\n"
+"                <p>Pour un usage d'entreprise en production nous "
+"recommandons la version\n"
+"                    <a target=\"netknights\" href=\"https://netknights.it/en/"
+"produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>.\n"
+"                </p>\n"
+"                <p>NetKnights fourni\n"
+"                    <a target=\"netknights\" href=\"https://netknights.it/en/"
+"produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                    incluant le <b>Support et les accords de niveau de "
+"service</b>.\n"
+"                    De plus NetKnights fourni des services, du conseil et\n"
+"                    du développement payant pour de nouvelles "
+"fonctionnalités.\n"
+"                </p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:18
 msgid ""
@@ -136,6 +213,22 @@ msgid ""
 "                    paid programming of new features.\n"
 "                </p>"
 msgstr ""
+"<p>Premièrement, nous aimerions vous donner quelques\n"
+"                    informations sur privacyIDEA.</p>\n"
+"                <p>privacyIDEA est un système d'authentification multi-"
+"facteur d'<b>Entreprise</b>.\n"
+"                    C'est un logiciel libre (open source).\n"
+"                    Les développeurs principaux sont employés par NetKnights "
+"GmbH, Allemagne.\n"
+"                    NetKnights fourni\n"
+"                    <a target=\"netknights\" href=\"https://netknights.it/en/"
+"produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                    incluant le <b>Support et les accords de niveau de "
+"service</b>.\n"
+"                    De plus NetKnights fourni des services, du conseil et\n"
+"                    du développement payant pour de nouvelles "
+"fonctionnalités.\n"
+"                </p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:156
 msgid ""
@@ -263,7 +356,7 @@ msgstr "Administrateur"
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:8
 msgid "All CA Connectors"
-msgstr ""
+msgstr "Tous les connecteurs CA"
 
 #: privacyidea/static/components/config/views/config.events.html:8
 msgid "All Event Handlers"
@@ -271,7 +364,7 @@ msgstr "Tous les gestionnaires d'évènements"
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:7
 msgid "All Machine Resolvers"
-msgstr ""
+msgstr "Tous les résolveurs Machine"
 
 #: privacyidea/static/components/machine/views/machine.html:8
 msgid "All Machines"
@@ -291,7 +384,7 @@ msgstr "Tous les domaines"
 
 #: privacyidea/static/components/config/views/config.resolvers.html:7
 msgid "All Resolvers"
-msgstr ""
+msgstr "Tous les résolveurs"
 
 #: privacyidea/static/components/config/views/config.smsgateway.html:7
 msgid "All SMS Gateways"
@@ -381,7 +474,7 @@ msgstr "Rattacher à une nouvelle machine"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:271
 msgid "Attribute mapping"
-msgstr ""
+msgstr "Mappage d'attribut"
 
 #: privacyidea/static/templates/menu.html:86
 msgid "Audit"
@@ -446,30 +539,35 @@ msgid ""
 "    search for the token. So you can only search within certain token types\n"
 "    or in assigned or unassigned tokens."
 msgstr ""
+"En entrant une valeur OTP vous pouvez obtenir le numéro de série du jeton.\n"
+"    Vous pouvez aussi entrer des paramètres additionnels, afin d'affiner la\n"
+"    recherche du jeton. Vous pouvez également chercher certains types de "
+"jetons\n"
+"    assignés ou non-assignés."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:31
 msgid "CA Certificate"
-msgstr ""
+msgstr "Certificat d'Autorité de Certification (CA)"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:28
 msgid "CA Connector"
-msgstr ""
+msgstr "Connecteur CA"
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:5
 msgid "CA Connector name"
-msgstr ""
+msgstr "Nom du connecteur CA"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:44
 msgid "CA Key"
-msgstr ""
+msgstr "Clé de l'autorité de certification (CA)"
 
 #: privacyidea/static/components/config/views/config.html:73
 msgid "CAs"
-msgstr ""
+msgstr "CAs"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:121
 msgid "CRL Configuration"
-msgstr ""
+msgstr "Configuration liste de révocation (CRL)"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:156
 msgid "Cache Timeout (seconds)"
@@ -488,7 +586,7 @@ msgstr "Annuler"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:45
 msgid "Certificate (PEM)"
-msgstr ""
+msgstr "Certificat (PEM)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:107
 msgid "Certificate Directory"
