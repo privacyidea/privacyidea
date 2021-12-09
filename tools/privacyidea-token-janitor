@@ -229,8 +229,6 @@ def _compare_regex_or_equal(_key, given_regex):
 
 def build_tokenvalue_filter(key,
                             tokeninfo_value,
-                            has_not_tokeninfo_key,
-                            has_tokeninfo_key,
                             tokeninfo_value_greater_than,
                             tokeninfo_value_less_than,
                             tokeninfo_value_after,
@@ -243,6 +241,7 @@ def build_tokenvalue_filter(key,
     if the conjunction of all comparators returns True.
 
     :param key: user-supplied --tokeninfo-key= value
+    :param has_tokeninfo_key: user-supplied --has_tokeninfo_key= value
     :param has_not_tokeninfo_key: user-supplied --has_not_tokeninfo_key= value
     :param tokeninfo_value: user-supplied --tokeninfo-value= value
     :param tokeninfo_value_greater_than: user-supplied --tokeninfo-value-greater-than= value
@@ -254,10 +253,6 @@ def build_tokenvalue_filter(key,
     tvfilter = []
     if tokeninfo_value:
         tvfilter.append(_compare_regex_or_equal(key, tokeninfo_value))
-    if has_not_tokeninfo_key:
-        tvfilter.append(has_not_tokeninfo_key)
-    if has_tokeninfo_key:
-        tvfilter.append(has_tokeninfo_key)
     if tokeninfo_value_greater_than:
         tvfilter.append(_compare_greater_than(key, tokeninfo_value_greater_than))
     if tokeninfo_value_less_than:
@@ -425,13 +420,9 @@ def export_user_data(token_list, attributes=None):
 @manager.option('--set-tokeninfo-key', help='set a new tokeninfo-key')
 @manager.option('--set-tokeninfo-value', help='set a new tokeninfo-value')
 @manager.option('--tokeninfo-value-before', metavar='DATETIME',
-                help='Interpret tokeninfo values as datetimes, match only if they occur '
-                     'before the given '
-                     ' ISO 8601 datetime')
+                help='Interpret tokeninfo values as datetimes, match only if they occur before the given ISO 8601 datetime')
 @manager.option('--tokeninfo-value-after', metavar='DATETIME',
-                help='Interpret tokeninfo values as datetimes, match only if they occur '
-                     'after the given '
-                     'ISO 8601 datetime')
+                help='Interpret tokeninfo values as datetimes, match only if they occur after the given ISO 8601 datetime')
 @manager.option('--tokeninfo-value-greater-than', metavar='INTEGER',
                 help='Interpret tokeninfo values as integers and match only if they are '
                      'greater than the given integer')
@@ -499,8 +490,6 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
     # filter for tokeninfo values
     tvfilter = build_tokenvalue_filter(tokeninfo_key,
                                        tokeninfo_value,
-                                       has_not_tokeninfo_key,
-                                       has_tokeninfo_key,
                                        tokeninfo_value_greater_than,
                                        tokeninfo_value_less_than,
                                        tokeninfo_value_after,
@@ -508,8 +497,6 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
     # filter for token attribute
     tafilter = build_tokenvalue_filter(tokenattribute,
                                        tokenattribute_value,
-                                       has_not_tokeninfo_key,
-                                       has_tokeninfo_key,
                                        tokenattribute_value_greater_than,
                                        tokenattribute_value_less_than,
                                        None, None)
