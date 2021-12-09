@@ -47,7 +47,7 @@ Searches through all tokens and returns the ones with the selected description.
 
 Example::
 
-    privacyidea-token-janitor find --description ^fo.*
+    privacyidea-token-janitor find --description '^fo.*'
 
 Return all tokens where the description begins with "fo".
 
@@ -66,7 +66,7 @@ You can also search for regular expressions. This is interesting, e.g. if findin
 
 Example::
 
-    privacyidea-token-janitor find --serial ^UBOM.*
+    privacyidea-token-janitor find --serial '^UBOM.*'
 
 
 Tokentype
@@ -151,7 +151,7 @@ Example::
 
     privacyidea-token-janitor find --has-not-tokeninfo-key import_time
 
-Searches for all tokens that didnt stored the tokeninfo-key ``import_time``.
+Searches for all tokens that didn't store the tokeninfo-key ``import_time``.
 
 tokeninfo-value REGEX|INTEGER
 .............................
@@ -189,7 +189,7 @@ Search for all tokens with the tokeninfo-key ``timeWindow`` and the associated t
 Actions
 *******
 
-Actions that can be performed on the found tokens.
+Actions are performed by the token janitor on **all** found tokens.
 
 mark - disable - delete - unassign - export - listuser - tokenrealms
 
@@ -198,13 +198,14 @@ mark
 
 **Mark** makes it possible to mark single or multiple tokens in order to carry out further actions with them later.
 
-Please note that without a previous selection of a certain token, all found tokens are automatically marked.
+The tokens are marked by setting a tokeninfo-key and an associated tokininfo-value.
 
 Example::
 
-    privacyidea-token-janitor find --serial OATH0004C934 --action mark
+    privacyidea-token-janitor find --serial OATH0004C934 --action mark --set-tokeninfo-key unused --set-tokeninfo-value True
 
-The token with the serial ``OAUTH0004C934`` will be marked.
+A new tokeninfo-key and the associated tokeninfo-value have been added for the token ``OAUTH0004C934``
+and are now marked for later processing.
 
 
 disable
@@ -212,7 +213,6 @@ disable
 
 With **disable** single or multiple tokens can be disabled.
 
-Please note that without a previous selection of a certain token, all found tokens will be disabled.
 
 Example::
 
@@ -225,7 +225,6 @@ delete
 
 With **delete** single or multiple tokens can be deleted.
 
-Please note that without a previous selection of a certain token, all found tokens will be deleted.
 
 Example::
 
@@ -237,8 +236,6 @@ export
 ......
 
 With **export** single or multiple tokens can be exported as csv or pskc.
-
-Please note that without a previous selection of a certain token, all found tokens will be exported.
 
 Export is only possible with HOTP and TOTP token.
 
