@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2021-06-06 09:14+0200\n"
-"PO-Revision-Date: 2021-06-02 10:32+0000\n"
-"Last-Translator: Nicolas Baudrand <nbaudrand@lozere.fr>\n"
+"PO-Revision-Date: 2021-11-30 16:39+0000\n"
+"Last-Translator: nicolas hahang <nicolas.hahang@gmail.com>\n"
+"Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/fr/>\n"
 "Language: fr\n"
-"Language-Team: French <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/fr/>\n"
-"Plural-Forms: nplurals=2; plural=n > 1\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.10-dev\n"
 "Generated-By: Babel 2.6.0\n"
 
 #: api/auth.py:222
@@ -921,7 +922,6 @@ msgstr ""
 "correspond à cette expression régulière."
 
 #: lib/policy.py:2251
-#, fuzzy
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
 "regexp. key/<regexp>/"
@@ -1059,11 +1059,9 @@ msgstr ""
 "l'interface WEB."
 
 #: lib/policy.py:2361
-#, fuzzy
 msgid "Link your privacy statement to be displayed in the baseline/footer."
 msgstr ""
-"Lier votre politique de confidentialité à afficher en entête/pied de de "
-"page."
+"Lier votre politique de confidentialité à afficher en entête/pied de page."
 
 #: lib/policy.py:2365
 msgid ""
@@ -1453,7 +1451,6 @@ msgstr ""
 "requêtes comme token- et system-requests."
 
 #: lib/eventhandler/logginghandler.py:87
-#, fuzzy
 msgid "The name of the logging facility"
 msgstr "Le nom de la catégorie de journalisation (logging facility)"
 
@@ -1462,7 +1459,6 @@ msgid "The string to write to the log"
 msgstr "La chaîne à écrire dans le log"
 
 #: lib/eventhandler/logginghandler.py:99
-#, fuzzy
 msgid "The logging level for this logging notification"
 msgstr "Le niveau de log pour cette notification"
 
@@ -1728,6 +1724,8 @@ msgid ""
 "This is the template content of the new file. Can contain the tags as "
 "specified in the documentation."
 msgstr ""
+"Ceci est le contenu type du nouveau fichier. Il peut contenir des tags comme "
+"indiqué dans la documentation."
 
 #: lib/eventhandler/usernotification.py:202
 msgid ""
@@ -1735,75 +1733,99 @@ msgid ""
 "name can contain tags as specified in the documentation and can also "
 "contain the tag {random}."
 msgstr ""
+"Le nom de fichier de la notification. Les fichiers existants sont écrasés. "
+"Le nom peut contenir des tags comme spécifié dans la documentation et peut "
+"aussi contenir le tag {random}."
 
 #: lib/machines/ldap.py:338
 #, python-format
 msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr ""
+"Votre configuration LDAP semble correcte, %i objets machines ont été "
+"trouvées."
 
 #: lib/resolvers/LDAPIdResolver.py:1081
 msgid ""
 "Your LDAP config found {0!s} user objects, but only {1!s} with the "
 "specified uidtype"
 msgstr ""
+"Votre configuration LDAP a trouvé {0!s} objets utilisateurs, mais seulement "
+"{1!s} avec le uidtype indiqué"
 
 #: lib/resolvers/LDAPIdResolver.py:1084
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr ""
+"Votre configuration LDAP semble correcte, {0!s} objets utilisateurs ont été "
+"trouvés."
 
 #: lib/smsprovider/FirebaseProvider.py:214
 msgid ""
 "The project ID, that the client should use. Get it from your Firebase "
 "console."
 msgstr ""
+"L'identifiant (ID) projet que le client devrait utiliser. Vous pouvez le "
+"récupérer depuis votre console Firebase."
 
 #: lib/smsprovider/FirebaseProvider.py:218
 msgid ""
 "The project number, that the client should use. Get it from your Firebase"
 " console."
 msgstr ""
+"Le numéro de projet que le client devrait utiliser. Vous pouvez le récupérer "
+"depuis votre console Firebase."
 
 #: lib/smsprovider/FirebaseProvider.py:223
 msgid ""
 "The App ID, that the Android client should use. Get it from your Firebase"
 " console."
 msgstr ""
+"L'identifiant Application (App ID) que le client Android devrait utiliser. "
+"Vous pouvez le récupérer depuis votre console Firebase."
 
 #: lib/smsprovider/FirebaseProvider.py:228
 msgid ""
 "The API Key, that the Android client should use. Get it from your "
 "Firebase console."
 msgstr ""
+"La clé API que le client Android devrait utiliser. Vous pouvez la récupérer "
+"depuis votre console Firebase."
 
 #: lib/smsprovider/FirebaseProvider.py:233
 msgid ""
 "The App ID, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr ""
+"L'identifiant application (App ID) que le client IOS devrait utiliser. Vous "
+"pouvez la récupérer depuis votre console Firebase."
 
 #: lib/smsprovider/FirebaseProvider.py:238
 msgid ""
 "The API Key, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr ""
+"La clé API que le client iOS devrait utiliser. Vous pouvez la récupérer "
+"depuis votre console Firebase."
 
 #: lib/smsprovider/FirebaseProvider.py:243
 msgid ""
 "The filename of the JSON config file, that allows privacyIDEA to talk to "
 "the Firebase REST API."
 msgstr ""
+"Le nom de fichier de la configuration JSON qui permet à PrivacyIdea de "
+"parler avec l'API REST Firebase."
 
 #: lib/smsprovider/FirebaseProvider.py:248
 msgid "Proxy setting for HTTPS connections to googleapis.com."
-msgstr ""
+msgstr "Configuration proxy pour les connections HTTPS vers googleapis.com."
 
 #: lib/smsprovider/HttpSMSProvider.py:241
 msgid "The base URL of the HTTP Gateway"
-msgstr ""
+msgstr "L'adresse URL de base de la passerelle HTTP"
 
 #: lib/smsprovider/HttpSMSProvider.py:244
 msgid "Should the HTTP Gateway be connected via an HTTP GET or POST request."
 msgstr ""
+"La passerelle HTTP devrait se connecter via une requête HTTP GET ou POST."
 
 #: lib/smsprovider/HttpSMSProvider.py:249
 msgid ""
@@ -2714,4 +2736,3 @@ msgstr ""
 #~ "Node name will be displayed below "
 #~ "the logo."
 #~ msgstr ""
-
