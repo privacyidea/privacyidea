@@ -69,14 +69,17 @@ class CustomUserAttributesHandler(BaseEventHandler):
                     'description': _('The value of the attribute')}
             },
             ACTION_TYPE.DELETE_CUSTOM_USER_ATTRIBUTES: {
-                "user" : {
+                "user": {
                     'type': 'str',
                     'required': True,
                     'description': ["logged in user", "tokenowner"],
                     "value": [
                         USER_TYPE.TOKENOWNER,
                         USER_TYPE.LOGGED_IN_USER,
-                    ]}
+                    ]},
+                "attrkey": {
+                    'type': 'str',
+                    'description': _('The key of the custom user attribute that should be deleted.')}
         }}
         return actions
 

@@ -2419,7 +2419,7 @@ class CustomUserAttributesTestCase(MyTestCase):
 
         # Check that the user attribute is deleted
         b = user.attributes
-        if not "test" in b:
+        if "test" not in b:
             self.assertTrue(True)
         else:
             self.assertTrue(False)
@@ -2470,7 +2470,7 @@ class CustomUserAttributesTestCase(MyTestCase):
         g.logged_in_user = user
         # Check that the attribute does not exist
         a = user.attributes
-        if not "test" in a:
+        if "test" not in a:
             self.assertTrue(True)
 
         # The eventhandler will delete the user-attribute
@@ -2486,7 +2486,7 @@ class CustomUserAttributesTestCase(MyTestCase):
 
         # Check that the user attribute is deleted
         b = user.attributes
-        if not "test" in b:
+        if "test" not in b:
             self.assertTrue(True)
         else:
             self.assertTrue(False)
