@@ -45,7 +45,7 @@ ipaddress==1.0.23; python_version < '3.0'
 itsdangerous==1.1.0
 Jinja2==2.11.3
 ldap3==2.9
-lxml==4.6.3
+lxml==4.6.5
 Mako==1.1.4
 MarkupSafe==1.1.1; python_version <= '3.5'
 MarkupSafe==2.0.1; python_version > '3.5'
