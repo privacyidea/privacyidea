@@ -216,7 +216,7 @@ def _compare_before(key, given_value_string):
 
 def _compare_regex_or_equal(_key, given_regex):
     def comparator(value):
-        if type(value) == int:
+        if type(value) in (int, bool):
             # If the value from the database is an integer, we compare "euqals integer"
             given_value = _try_convert_to_integer(given_regex)
             return given_value == value
@@ -302,10 +302,10 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
                                              token_obj.token.description):
                 continue
             if has_not_tokeninfo_key:
-                if token_obj.get_tokeninfo(has_not_tokeninfo_key) is not None:
+                if has_not_tokeninfo_key in token_obj.get_tokeninfo():
                     continue
             if has_tokeninfo_key:
-                if token_obj.get_tokeninfo(has_tokeninfo_key) is None:
+                if has_tokeninfo_key not in token_obj.get_tokeninfo():
                     continue
             if tokeninfo_value_filter and tokeninfo_key:
                 value = token_obj.get_tokeninfo(tokeninfo_key)
