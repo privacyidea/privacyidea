@@ -19,9 +19,12 @@
  *
  */
 
-myApp.controller("ldapMachineResolverController", function ($scope,
-                                                            ConfigFactory, inform,
-                                                            $state, $stateParams) {
+myApp.controller("ldapMachineResolverController", ["$scope", "ConfigFactory",
+                                                   "inform", "$state",
+                                                   "$stateParams",
+                                                   function ($scope, ConfigFactory,
+                                                             inform, $state,
+                                                             $stateParams) {
     $scope.params = {
         type: 'ldap',
         AUTHTYPE: "Simple",
@@ -72,5 +75,5 @@ myApp.controller("ldapMachineResolverController", function ($scope,
         });
     };
 
-});
+}]);
 

@@ -27,16 +27,22 @@ String.prototype.mysplit = function(separator) {
 
 
 angular.module("privacyideaApp")
-    .controller("mainController",
-                            function (Idle,
-                                      $scope, $http, $location,
-                                      authUrl, AuthFactory, $rootScope,
-                                      $state, ConfigFactory, inform,
-                                      PolicyTemplateFactory, gettextCatalog,
-                                      hotkeys, RegisterFactory,
-                                      U2fFactory, webAuthnToken, instanceUrl,
-                                      PollingAuthFactory, $transitions,
-                                      resourceNamePatterns) {
+    .controller("mainController", ["Idle", "$scope", "$http", "$location",
+                                   "authUrl", "AuthFactory", "$rootScope",
+                                   "$state", "ConfigFactory", "inform",
+                                   "PolicyTemplateFactory", "gettextCatalog",
+                                   "hotkeys", "RegisterFactory",
+                                   "U2fFactory", "webAuthnToken", "instanceUrl",
+                                   "PollingAuthFactory", "$transitions",
+                                   "resourceNamePatterns",
+                                   function (Idle, $scope, $http, $location,
+                                             authUrl, AuthFactory, $rootScope,
+                                             $state, ConfigFactory, inform,
+                                             PolicyTemplateFactory, gettextCatalog,
+                                             hotkeys, RegisterFactory,
+                                             U2fFactory, webAuthnToken, instanceUrl,
+                                             PollingAuthFactory, $transitions,
+                                             resourceNamePatterns) {
 
     $scope.instanceUrl = instanceUrl;
     $scope.checkRight = AuthFactory.checkRight;
@@ -594,18 +600,23 @@ angular.module("privacyideaApp")
         $scope.$broadcast("piReload");
     };
 
-});
+}]);
 
 angular.module("privacyideaApp")
-    .controller("pinChangeController",
-                            function (Idle,
-                                      $scope, $http, $location,
-                                      authUrl, AuthFactory, $rootScope,
-                                      $state, ConfigFactory, inform,
-                                      PolicyTemplateFactory, gettextCatalog,
-                                      hotkeys, RegisterFactory,
-                                      U2fFactory, instanceUrl,
-                                      PollingAuthFactory, TokenFactory)
+    .controller("pinChangeController", ["Idle", "$scope", "$http", "$location",
+                                        "authUrl", "AuthFactory", "$rootScope",
+                                        "$state", "ConfigFactory", "inform",
+                                        "PolicyTemplateFactory", "gettextCatalog",
+                                        "hotkeys", "RegisterFactory",
+                                        "U2fFactory", "instanceUrl",
+                                        "PollingAuthFactory", "TokenFactory",
+                                        function (Idle, $scope, $http, $location,
+                                                  authUrl, AuthFactory, $rootScope,
+                                                  $state, ConfigFactory, inform,
+                                                  PolicyTemplateFactory, gettextCatalog,
+                                                  hotkeys, RegisterFactory,
+                                                  U2fFactory, instanceUrl,
+                                                  PollingAuthFactory, TokenFactory)
 {
 
     $scope.newpin = "";
@@ -625,4 +636,4 @@ angular.module("privacyideaApp")
         $scope.logout();
     }
 
-});
+}]);

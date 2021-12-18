@@ -19,7 +19,8 @@
  *
  */
 angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
-    .factory("AuthFactory", function (inform, gettextCatalog, $state) {
+    .factory("AuthFactory", ["inform", "gettextCatalog", "$state",
+                             function (inform, gettextCatalog, $state) {
         /*
         Each service - just like this service factory - is a singleton.
         Here we just store the username of the authenticated user and his
@@ -109,7 +110,7 @@ angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
                 return res;
             }
         };
-    });
+    }]);
 
 //
 // Taken from

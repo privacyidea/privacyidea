@@ -18,8 +18,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("periodicTaskController", function($scope, $stateParams, $state,
-                                             $location, ConfigFactory) {
+myApp.controller("periodicTaskController", ["$scope", "$stateParams", "$state",
+                                            "$location", "ConfigFactory",
+                                            function($scope, $stateParams, $state,
+                                                     $location, ConfigFactory) {
     if ($location.path() === "/config/periodictasks") {
         $location.path("/config/periodictasks/list");
     }
@@ -71,9 +73,12 @@ myApp.controller("periodicTaskController", function($scope, $stateParams, $state
 
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.getPeriodicTasks);
-});
+}]);
 
-myApp.controller("periodicTaskDetailController", function($scope, $stateParams, ConfigFactory, $state) {
+myApp.controller("periodicTaskDetailController", ["$scope", "$stateParams",
+                                                  "ConfigFactory", "$state",
+                                                  function($scope, $stateParams,
+                                                           ConfigFactory, $state) {
     // init
     $scope.form = {
         "ordering": 0
@@ -193,4 +198,4 @@ myApp.controller("periodicTaskDetailController", function($scope, $stateParams, 
             $scope.getPeriodicTask();
         }
     });
-});
+}]);

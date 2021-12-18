@@ -19,8 +19,10 @@
  *
  */
 
-myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
-                                       userUrl, inform, $q) {
+myApp.factory("UserFactory", ['AuthFactory', '$http', '$state', '$rootScope',
+                              'userUrl', 'inform', '$q',
+                              function (AuthFactory, $http, $state, $rootScope,
+                                        userUrl, inform, $q) {
 
         var canceller = $q.defer();
 
@@ -102,4 +104,4 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
 
         };
 
-});
+}]);

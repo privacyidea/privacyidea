@@ -18,11 +18,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
-                                              $scope, $location, AuthFactory,
-                                              instanceUrl,
-                                              $rootScope, gettextCatalog,
-                                              hotkeys) {
+myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
+                                     '$location', 'AuthFactory', 'instanceUrl',
+                                     '$rootScope',
+                                     function (TokenFactory, ConfigFactory,
+                                               $scope, $location, AuthFactory,
+                                               instanceUrl, $rootScope) {
     $scope.tokensPerPage = $scope.token_page_size;
     $scope.params = {page: 1, sortdir: "asc"};
     $scope.reverse = false;
@@ -99,7 +100,7 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
         $scope.get();
     });
 
-});
+}]);
 
 
 myApp.controller("tokenAssignController", ['$scope', 'TokenFactory',
@@ -648,9 +649,11 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 }]);
 
 
-myApp.controller("tokenImportController", function ($scope, Upload,
-                                                    AuthFactory, tokenUrl,
-                                                    ConfigFactory, inform) {
+myApp.controller("tokenImportController", ['$scope', 'Upload', 'AuthFactory',
+                                           'tokenUrl', 'ConfigFactory', 'inform',
+                                           function ($scope, Upload,
+                                                     AuthFactory, tokenUrl,
+                                                     ConfigFactory, inform) {
     $scope.formInit = {
         fileTypes: ["aladdin-xml", "OATH CSV", "Yubikey CSV", "pskc"]
     };
@@ -702,4 +705,4 @@ myApp.controller("tokenImportController", function ($scope, Upload,
                 $scope.uploadProgress = parseInt(100.0 * evt.loaded / evt.total)});
         }
     };
-});
+}]);

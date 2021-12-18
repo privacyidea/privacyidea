@@ -18,8 +18,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("policyListController", function($scope, $stateParams,
-                                                    $location, ConfigFactory) {
+myApp.controller("policyListController", ["$scope", "$stateParams", "$location",
+                                          "ConfigFactory",
+                                          function($scope, $stateParams,
+                                                   $location, ConfigFactory) {
     if ($location.path() === "/config/policies") {
         $location.path("/config/policies/list");
     }
@@ -62,11 +64,14 @@ myApp.controller("policyListController", function($scope, $stateParams,
 
 
     $scope.getPolicies();
-});
+}]);
 
-myApp.controller("policyDetailsController", function($scope, $stateParams,
-                                                     ConfigFactory, $state,
-                                                     PolicyTemplateFactory) {
+myApp.controller("policyDetailsController", ["$scope", "$stateParams",
+                                             "ConfigFactory", "$state",
+                                             "PolicyTemplateFactory",
+                                             function($scope, $stateParams,
+                                                      ConfigFactory, $state,
+                                                      PolicyTemplateFactory) {
     // init
     $scope.realms = [];
     $scope.adminRealms = [];
@@ -413,13 +418,17 @@ myApp.controller("policyDetailsController", function($scope, $stateParams,
             });
         }
     }
-});
+}]);
 
-myApp.controller("tokenConfigController", function ($scope, $location,
-                                                    $rootScope, $state,
-                                                    $stateParams,
-                                                    ConfigFactory,instanceUrl,
-                                                    inform, gettextCatalog) {
+myApp.controller("tokenConfigController", ["$scope", "$location", "$rootScope",
+                                           "$state", "$stateParams",
+                                           "ConfigFactory","instanceUrl",
+                                           "inform", "gettextCatalog",
+                                           function ($scope, $location,
+                                                     $rootScope, $state,
+                                                     $stateParams,
+                                                     ConfigFactory,instanceUrl,
+                                                     inform, gettextCatalog) {
     $scope.defaultSMSProvider = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider";
     $scope.tokentype = $stateParams.tokentype || "hotp";
     $scope.form = {};
@@ -518,11 +527,15 @@ myApp.controller("tokenConfigController", function ($scope, $location,
     $scope.getSmtpIdentifiers();
     $scope.getSMSIdentifiers();
     $scope.loadSystemConfig();
-});
-myApp.controller("configController", function ($scope, $location,
-                                               $rootScope, $state,
-                                               ConfigFactory, instanceUrl,
-                                               inform, gettextCatalog) {
+}]);
+
+myApp.controller("configController", ["$scope", "$location", "$rootScope",
+                                      "$state", "ConfigFactory", "instanceUrl",
+                                      "inform", "gettextCatalog",
+                                      function ($scope, $location, $rootScope,
+                                                $state, ConfigFactory,
+                                                instanceUrl, inform,
+                                                gettextCatalog) {
     $scope.instanceUrl = instanceUrl;
     $scope.params = {};
     $('html,body').scrollTop(0);
@@ -741,10 +754,12 @@ myApp.controller("configController", function ($scope, $location,
         $scope.getSystemConfig();
     });
 
-});
+}]);
 
-myApp.controller("PasswdResolverController", function ($scope, ConfigFactory,
-                                                       $state, $stateParams) {
+myApp.controller("PasswdResolverController", ["$scope", "ConfigFactory",
+                                              "$state", "$stateParams",
+                                              function ($scope, ConfigFactory,
+                                                        $state, $stateParams) {
     $scope.params = {
         type: 'passwdresolver',
         fileName: "/etc/passwd"
@@ -768,11 +783,12 @@ myApp.controller("PasswdResolverController", function ($scope, ConfigFactory,
             $state.go("config.resolvers.list");
         });
     };
-});
+}]);
 
-myApp.controller("hostsResolverController", function ($scope,
-                                                      ConfigFactory,
-                                                      $state, $stateParams) {
+myApp.controller("hostsResolverController", ["$scope", "ConfigFactory",
+                                             "$state", "$stateParams",
+                                             function ($scope, ConfigFactory,
+                                                       $state, $stateParams) {
     $scope.params = {
         type: 'hosts',
         filename: "/etc/hosts"
@@ -796,11 +812,13 @@ myApp.controller("hostsResolverController", function ($scope,
             $state.go("config.mresolvers.list");
         });
     };
-});
+}]);
 
-myApp.controller("CAConnectorController", function($scope, ConfigFactory,
-                                                   $state, $rootScope,
-                                                   $location){
+myApp.controller("CAConnectorController", ["$scope", "ConfigFactory", "$state",
+                                           "$rootScope", "$location",
+                                           function($scope, ConfigFactory,
+                                                    $state, $rootScope,
+                                                    $location){
     if ($location.path() === "/config/caconnectors") {
         $location.path("/config/caconnectors/list");
     }
@@ -827,10 +845,12 @@ myApp.controller("CAConnectorController", function($scope, ConfigFactory,
 
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.getCAConnectors);
-});
+}]);
 
-myApp.controller("LocalCAConnectorController", function($scope, $stateParams,
-                                                        ConfigFactory, $state) {
+myApp.controller("LocalCAConnectorController", ["$scope", "$stateParams",
+                                                "ConfigFactory", "$state",
+                                                function($scope, $stateParams,
+                                                         ConfigFactory, $state) {
     $scope.params = {
         type: 'local'
     };
@@ -856,13 +876,15 @@ myApp.controller("LocalCAConnectorController", function($scope, $stateParams,
         });
     };
 
-});
+}]);
 
 
-myApp.controller("machineResolverController", function ($scope,
-                                                        ConfigFactory,
-                                                        $state, $rootScope,
-                                                        $location) {
+myApp.controller("machineResolverController", ["$scope", "ConfigFactory",
+                                               "$state", "$rootScope",
+                                               "$location",
+                                               function ($scope, ConfigFactory,
+                                                         $state, $rootScope,
+                                                         $location) {
     if ($location.path() === "/config/machineresolvers") {
         $location.path("/config/machineresolvers/list");
     }
@@ -888,11 +910,14 @@ myApp.controller("machineResolverController", function ($scope,
 
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.getMachineResolvers);
-});
+}]);
 
-myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $state,
-                                                     $stateParams, inform,
-                                                     gettextCatalog) {
+myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
+                                            "$stateParams", "inform",
+                                            "gettextCatalog",
+                                            function ($scope, ConfigFactory,
+                                                      $state, $stateParams,
+                                                      inform, gettextCatalog) {
     /*
      BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
      LDAPSEARCHFILTER,
@@ -987,11 +1012,14 @@ myApp.controller("LdapResolverController", function ($scope, ConfigFactory, $sta
             }
         });
     };
-});
+}]);
 
-myApp.controller("ScimResolverController", function ($scope, ConfigFactory,
-                                                     $state, $stateParams,
-                                                     inform, gettextCatalog) {
+myApp.controller("ScimResolverController", ["$scope", "ConfigFactory", "$state",
+                                            "$stateParams", "inform",
+                                            "gettextCatalog",
+                                            function ($scope, ConfigFactory,
+                                                      $state, $stateParams,
+                                                      inform, gettextCatalog) {
     /*
      Authserver, Resourceserver, Client, Secret
      */
@@ -1029,14 +1057,14 @@ myApp.controller("ScimResolverController", function ($scope, ConfigFactory,
             }
         });
     };
-});
+}]);
 
-myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
-                                                    $state, $stateParams,
-                                                    inform, gettextCatalog) {
-    /*
-
-     */
+myApp.controller("SqlResolverController", ["$scope", "ConfigFactory", "$state",
+                                           "$stateParams", "inform",
+                                           "gettextCatalog",
+                                           function ($scope, ConfigFactory,
+                                                     $state, $stateParams,
+                                                     inform, gettextCatalog) {
     $scope.params = {
         type: 'sqlresolver'
     };
@@ -1111,15 +1139,13 @@ myApp.controller("SqlResolverController", function ($scope, ConfigFactory,
             }
         });
     };
-});
+}]);
 
-myApp.controller("HTTPResolverController", function(
-  $scope,
-  ConfigFactory,
-  $state,
-  $stateParams,
-  inform
-) {
+myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
+                                            "$stateParams", "inform",
+                                            function($scope, ConfigFactory,
+                                                     $state, $stateParams,
+                                                     inform) {
   $scope.params = {
     type: "httpresolver",
     endpoint: "",
@@ -1168,4 +1194,4 @@ myApp.controller("HTTPResolverController", function(
       }
     });
   };
-});
+}]);

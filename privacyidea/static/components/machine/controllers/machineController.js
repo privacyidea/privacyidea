@@ -21,9 +21,12 @@
  */
 
 angular.module("privacyideaApp")
-    .controller("machineController", function ($scope, $location, machineUrl,
-                                               realmUrl, $rootScope,
-                                               MachineFactory, $stateParams) {
+    .controller("machineController", ['$scope', '$location', 'machineUrl',
+                                      'realmUrl', '$rootScope', 'MachineFactory',
+                                      '$stateParams',
+                                      function ($scope, $location, machineUrl,
+                                                realmUrl, $rootScope,
+                                                MachineFactory, $stateParams) {
 
         $scope.machinesPerPage = 15;
         $scope.params = {page: 1,
@@ -79,4 +82,4 @@ angular.module("privacyideaApp")
             $scope._getMachines();
         };
 
-    });
+    }]);

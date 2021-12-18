@@ -1,5 +1,7 @@
-myApp.factory("RecoveryFactory", function ($http, $state, $rootScope,
-                                           recoveryUrl, inform) {
+myApp.factory("RecoveryFactory", ['$http', '$state', '$rootScope',
+                                  'recoveryUrl',
+                                  function ($http, $state, $rootScope,
+                                            recoveryUrl) {
     /**
      Each service - just like this service factory - is a singleton.
      */
@@ -16,4 +18,4 @@ myApp.factory("RecoveryFactory", function ($http, $state, $rootScope,
                 function(error) { AuthFactory.authError(error.data) });
         }
     };
-});
+}]);

@@ -1,5 +1,7 @@
-myApp.factory("RegisterFactory", function ($http, $state, $rootScope,
-                                           registerUrl, AuthFactory) {
+myApp.factory("RegisterFactory", ['$http', '$state', '$rootScope',
+                                  'registerUrl', 'AuthFactory',
+                                  function ($http, $state, $rootScope,
+                                            registerUrl, AuthFactory) {
     /**
      Each service - just like this service factory - is a singleton.
      */
@@ -14,4 +16,4 @@ myApp.factory("RegisterFactory", function ($http, $state, $rootScope,
                 function(error) { AuthFactory.authError(error.data) });
         }
     };
-});
+}]);

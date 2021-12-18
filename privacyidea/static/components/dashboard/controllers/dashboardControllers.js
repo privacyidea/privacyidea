@@ -19,12 +19,12 @@
  */
 
 
-myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
-                                              SubscriptionFactory, AuditFactory,
-                                              $scope, $location, AuthFactory,
-                                              instanceUrl,
-                                              $rootScope, gettextCatalog,
-                                              hotkeys) {
+myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
+                                         "SubscriptionFactory", "AuditFactory",
+                                         "$scope", "$location", "AuthFactory",
+                                         function (ConfigFactory, TokenFactory,
+                                                   SubscriptionFactory, AuditFactory,
+                                                   $scope, $location, AuthFactory) {
 
     $scope.tokens = {"total": 0, "hardware": 0};
     $scope.policies = {"active": [], "num_active": 0,
@@ -159,20 +159,20 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
         $scope.get_total_token_number();
         $scope.get_token_hardware();
         $scope.get_token_software();
-    };
+    }
     if (AuthFactory.checkRight('policyread')) {
         $scope.get_policies();
-    };
+    }
     if (AuthFactory.checkRight('eventhandling_read')) {
         $scope.get_events();
-    };
+    }
     if (AuthFactory.checkRight('managesubscription')) {
         $scope.getSubscriptions();
-    };
+    }
     if (AuthFactory.checkRight('auditlog')) {
         $scope.getAuthentication();
         $scope.getAdministration();
-    };
+    }
 
         // listen to the reload broadcast
     $scope.$on("piReload", function() {
@@ -180,19 +180,19 @@ myApp.controller("dashboardController", function (ConfigFactory, TokenFactory,
             $scope.get_total_token_number();
             $scope.get_token_hardware();
             $scope.get_token_software();
-        };
+        }
         if (AuthFactory.checkRight('policyread')) {
             $scope.get_policies();
-        };
+        }
         if (AuthFactory.checkRight('eventhandling_read')) {
             $scope.get_events();
-        };
+        }
         if (AuthFactory.checkRight('managesubscription')) {
             $scope.getSubscriptions();
-        };
+        }
         if (AuthFactory.checkRight('auditlog')) {
             $scope.getAuthentication();
             $scope.getAdministration();
-        };
+        }
     });
-});
+}]);

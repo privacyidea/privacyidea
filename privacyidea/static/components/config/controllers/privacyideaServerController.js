@@ -18,10 +18,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("privacyideaServerController", function($scope, $stateParams,
-                                                         inform, gettextCatalog,
-                                                         $state, $location,
-                                                         ConfigFactory) {
+myApp.controller("privacyideaServerController", ["$scope", "$stateParams", "inform",
+                                                 "gettextCatalog", "$state",
+                                                 "$location", "ConfigFactory",
+                                                 function($scope, $stateParams,
+                                                          inform, gettextCatalog,
+                                                          $state, $location,
+                                                          ConfigFactory) {
     if ($location.path() === "/config/privacyideaserver") {
         $location.path("/config/privacyideaserver/list");
     }
@@ -89,4 +92,4 @@ myApp.controller("privacyideaServerController", function($scope, $stateParams,
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.getPrivacyideaServers);
 
-});
+}]);

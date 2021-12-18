@@ -23,9 +23,10 @@
  *
  */
 
-myApp.factory("AuditFactory", function (AuthFactory,
-                                        $http, $state, $rootScope, auditUrl,
-                                        inform) {
+myApp.factory("AuditFactory", ["AuthFactory", "$http", "$state", "$rootScope",
+                               "auditUrl", "inform",
+                               function (AuthFactory, $http, $state, $rootScope,
+                                         auditUrl, inform) {
         /**
          Each service - just like this service factory - is a singleton.
          */
@@ -45,5 +46,4 @@ myApp.factory("AuditFactory", function (AuthFactory,
                     function(error) { AuthFactory.authError(error.data) });
             }
         }
-    });
-
+    }]);

@@ -19,9 +19,10 @@
  *
  */
 
-myApp.factory("ComponentFactory", function (AuthFactory,
-                                        $http, $state, $rootScope,
-                                        clientUrl, inform) {
+myApp.factory("ComponentFactory", ["AuthFactory", "$http", "$state",
+                                   "$rootScope", "clientUrl", "inform",
+                                   function (AuthFactory, $http, $state,
+                                             $rootScope, clientUrl, inform) {
         /**
          Each service - just like this service factory - is a singleton.
          */
@@ -33,12 +34,14 @@ myApp.factory("ComponentFactory", function (AuthFactory,
                     function(error) { AuthFactory.authError(error.data) });
             }
         }
-    });
+    }]);
 
 
-myApp.factory("SubscriptionFactory", function (AuthFactory, $http, $state,
-                                               $rootScope, subscriptionsUrl,
-                                               inform){
+myApp.factory("SubscriptionFactory", ["AuthFactory", "$http", "$state",
+                                      "$rootScope", "subscriptionsUrl", "inform",
+                                      function (AuthFactory, $http, $state,
+                                                $rootScope, subscriptionsUrl,
+                                                inform){
     return {
         get: function(callback) {
             $http.get(subscriptionsUrl + "/", {
@@ -54,4 +57,4 @@ myApp.factory("SubscriptionFactory", function (AuthFactory, $http, $state,
 
         }
     }
-});
+}]);

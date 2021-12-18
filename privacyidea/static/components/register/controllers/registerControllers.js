@@ -1,11 +1,13 @@
 angular.module("privacyideaApp")
-    .controller("registerController",
-                            function (Idle,
-                                      $scope, $http, $location,
-                                      authUrl, RegisterFactory, $rootScope,
-                                      $state, inform, gettextCatalog,
-                                      hotkeys,
-                                      instanceUrl) {
+    .controller("registerController", ['Idle', '$scope', '$http', '$location',
+                                       'authUrl', 'RegisterFactory', '$rootScope',
+                                       '$state', 'inform', 'gettextCatalog',
+                                       'hotkeys', 'instanceUrl',
+                                       function (Idle, $scope, $http, $location,
+                                                 authUrl, RegisterFactory,
+                                                 $rootScope, $state, inform,
+                                                 gettextCatalog, hotkeys,
+                                                 instanceUrl) {
 
     $scope.instanceUrl = instanceUrl;
     $scope.newUser = {};
@@ -16,4 +18,4 @@ angular.module("privacyideaApp")
                 " Email has been sent to you."), {type: "info"})
         })
     };
-});
+}]);

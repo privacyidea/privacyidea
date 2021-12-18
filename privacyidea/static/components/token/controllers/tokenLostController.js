@@ -1,6 +1,7 @@
-myApp.controller("tokenLostController", function ($scope,
-                                                  TokenFactory, UserFactory,
-                                                  $stateParams) {
+myApp.controller("tokenLostController", ['$scope', 'TokenFactory',
+                                         'UserFactory', '$stateParams',
+                                         function ($scope, TokenFactory,
+                                                   UserFactory, $stateParams) {
     $scope.selectedToken.serial = $stateParams.tokenSerial;
     $scope.tokenLost = false;
 
@@ -10,4 +11,4 @@ myApp.controller("tokenLostController", function ($scope,
             $scope.lostResult = data.result.value;
         });
     };
-});
+}]);
