@@ -744,7 +744,7 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertEqual(r, counter)
         # Now we try several is_previous_otp and the timeShift must stay the same!
         ts0 = float(token.get_tokeninfo("timeShift"))
-        self.assertTrue(-31 < ts0 < 31)
+        self.assertTrue(-181 < ts0 < 181)
         # Too old
         r = token.is_previous_otp(token._calc_otp(counter - 3))
         self.assertEqual(r, False)
