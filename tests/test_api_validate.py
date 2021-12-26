@@ -760,6 +760,9 @@ class ValidateAPITestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status") is True, result)
             self.assertTrue(result.get("value") is False, result)
+            # This is the same OTP value, so we get the "previous otp value" message
+            detail = res.json.get("detail")
+            self.assertIn("previous otp used again", detail.get("message"))
 
     def test_03a_check_user_get(self):
         # Reset the counter!
@@ -3025,6 +3028,43 @@ class ValidateAPITestCase(MyApiTestCase):
         delete_policy("allow_hardware_tokens")
         remove_token("softwareToken")
         remove_token("hardwareToken")
+
+    def test_03b_check_previous_otp_with_totp(self):
+        token = init_token({"type": "totp",
+                            "serial": "totp_previous",
+                            "otpkey": self.otpkey},
+                           user=User("cornelius", self.realm1))
+        # get the OTP
+        counter = token._time2counter(time.time(), timeStepping=30)
+        otp_now = token._calc_otp(counter)
+
+        # test successful authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='GET',
+                                           query_string=urlencode(
+                                                    {"user": "cornelius",
+                                                     "pass": otp_now})):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+        # check the same OTP value again
+        with self.app.test_request_context('/validate/check',
+                                           method='GET',
+                                           query_string=urlencode(
+                                                    {"user": "cornelius",
+                                                     "pass": otp_now})):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            detail = res.json.get("detail")
+            self.assertIn("previous otp used again", detail.get("message"))
+        # clean up
+        remove_token("totp_previous")
 
 
 class RegistrationValidity(MyApiTestCase):

@@ -83,6 +83,8 @@ class HotpTokenClass(TokenClass):
     hotp token class implementation
     """
 
+    previous_otp_offset = 1
+
     @staticmethod
     def get_class_type():
         """
@@ -368,6 +370,23 @@ class HotpTokenClass(TokenClass):
                      get_from_config("hotp.hashlib", u'sha1')
         return hashlibStr
 
+    def _calc_otp(self, counter):
+        """
+        Helper function to calculate the OTP value for the given counter
+        :param counter: The OTP counter
+        :return: OTP value as string
+        """
+        otplen = int(self.token.otplen)
+        secretHOtp = self.token.get_otpkey()
+        hmac2Otp = HmacOtp(secretHOtp,
+                           self.get_otp_count(),
+                           otplen,
+                           self.get_hashlib(self.hashlib))
+
+        otpval = hmac2Otp.generate(counter=counter,
+                                   inc_counter=False,
+                                   do_truncation=True)
+        return otpval
 
     @log_with(log)
     @check_token_locked
@@ -446,7 +465,7 @@ class HotpTokenClass(TokenClass):
         return res
 
     @log_with(log)
-    def is_previous_otp(self, otp, window=10):
+    def is_previous_otp(self, otp):
         """
         Check if the OTP values was previously used.
 
@@ -454,12 +473,17 @@ class HotpTokenClass(TokenClass):
         :param window:
         :return:
         """
-        res = False
-        r = self.check_otp_exist(otp, window=window, symetric=True,
-                                 inc_counter=False)
-        if 0 <= r < self.token.count:
-            res = True
-        return res
+        counter = int(self.get_otp_count())
+        if counter > 0:
+            previous_otp = self._calc_otp(counter - self.previous_otp_offset)
+            res = previous_otp == otp
+            if res:
+                log.info("Previous OTP used again. "
+                         "Serial {0!s} with counter {1!s}.".format(self.token.serial, counter))
+            return res
+        else:
+            # The internal counter is 0, the token was not used, yet.
+            return False
 
     @log_with(log)
     def _autosync(self, hmac2Otp, anOtpVal):
