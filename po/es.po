@@ -1,9 +1,10 @@
+# Jose Maria GJ <josema.gj@gmail.com>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2023-01-16 21:51+0000\n"
-"Last-Translator: Enrico M. V. Fasanelli <enrico@infn.it>\n"
+"PO-Revision-Date: 2024-03-27 09:25+0000\n"
+"Last-Translator: Jose Maria GJ <josema.gj@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/es/>\n"
 "Language: es\n"
@@ -11,7 +12,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.15.1-dev\n"
+"X-Generator: Weblate 5.5-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -1496,8 +1497,8 @@ msgid ""
 "    <a ui-sref=\"config.tokens({tokentype:'sms'})\">SMS Token Config</a>!"
 msgstr ""
 "Para que los tokens de SMS funcionen correctamente, debe establecer la <a ui-"
-"sref=\"config.tokens({tokentype:'sms'})\"> Configuración de tokens de SMS </"
-"a>."
+"sref=\"config.tokens({tokentype:'sms'})\"> Configuración de tokens de SMS "
+"</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.tiqr.html:1
 msgid ""
@@ -1505,8 +1506,8 @@ msgid ""
 "    <a ui-sref=\"config.tokens({tokentype:'tiqr'})\">TiQR Token Config</a>!"
 msgstr ""
 "Para que los tokens TiQR funcionen correctamente, debe establecer la <a ui-"
-"sref=\"config.tokens({tokentype:'tiqr'})\"> Configuración de token de TiQR </"
-"a>"
+"sref=\"config.tokens({tokentype:'tiqr'})\"> Configuración de token de TiQR "
+"</a>"
 
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:8
 msgid ""
