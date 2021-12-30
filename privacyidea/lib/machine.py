@@ -160,8 +160,9 @@ def attach_token(serial, application, hostname=None, machine_id=None,
     :param options: additional options
     :return: the new MachineToken Object
     """
-    machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
-                                                     resolver_name)
+    if hostname or machine_id or resolver_name:
+        machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
+                                                         resolver_name)
     # Now we have all data to create the MachineToken
     machinetoken = MachineToken(machineresolver=resolver_name,
                                 machine_id=machine_id, serial=serial,
@@ -199,16 +200,23 @@ def detach_token(serial, application, hostname=None, machine_id=None,
     :param options: additional options
     :return: the new MachineToken Object
     """
-    machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
-                                                     resolver_name)
+    token_id = get_token_id(serial)
+    if hostname or machine_id or resolver_name:
+        # Only if we have a specific machine, we need to determine these values,
+        # otherwise we are using None.
+        machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
+                                                         resolver_name)
+        machineresolver_id = get_machineresolver_id(resolver_name)
+    else:
+        # No specific machine given.
+        machineresolver_id = None
 
     mtid = get_machinetoken_id(machine_id, resolver_name, serial,
                                application)
-    token_id = get_token_id(serial)
-    machineresolver_id = get_machineresolver_id(resolver_name)
+
     # Delete MachineTokenOptions
-    # Delete MachineToken
     MachineTokenOptions.query.filter(MachineTokenOptions.machinetoken_id == mtid).delete()
+    # Delete MachineToken
     r = MachineToken.query.filter(and_(MachineToken.token_id == token_id,
                                        MachineToken.machine_id == machine_id,
                                        MachineToken.machineresolver_id == machineresolver_id,
@@ -291,13 +299,17 @@ def list_machine_tokens(hostname=None,
              application.
     """
     res = []
-    machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
-                                                     resolver_name)
-    machineresolver_id = get_machineresolver_id(resolver_name)
+    if hostname or machine_id or resolver_name:
+        machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
+                                                         resolver_name)
+        machineresolver_id = get_machineresolver_id(resolver_name)
+        sql_query = MachineToken.query.filter(and_(MachineToken.machine_id ==
+                                                   machine_id,
+                                                   MachineToken.machineresolver_id == machineresolver_id))
+    else:
+        # If we have no specific machine defined, we find all applications/serials
+        sql_query = MachineToken.query.filter()
 
-    sql_query = MachineToken.query.filter(and_(MachineToken.machine_id ==
-                                               machine_id,
-                                               MachineToken.machineresolver_id == machineresolver_id))
     if application:
         sql_query = sql_query.filter(MachineToken.application == application)
     if serial:
@@ -382,7 +394,7 @@ def _get_host_identifier(hostname, machine_id, resolver_name):
     return machine_id, resolver_name
 
 
-def get_auth_items(hostname, ip=None, application=None,
+def get_auth_items(hostname=None, ip=None, application=None,
                    serial=None, challenge=None, filter_param=None):
     """
     Return the authentication items for a given hostname and the application.

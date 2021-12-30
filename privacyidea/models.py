@@ -1630,8 +1630,8 @@ class MachineToken(MethodsMixin, db.Model):
                    primary_key=True, nullable=False)
     token_id = db.Column(db.Integer(),
                          db.ForeignKey('token.id'))
-    machineresolver_id = db.Column(db.Integer(), nullable=False)
-    machine_id = db.Column(db.Unicode(255), nullable=False)
+    machineresolver_id = db.Column(db.Integer())
+    machine_id = db.Column(db.Unicode(255))
     application = db.Column(db.Unicode(64))
     # This connects the machine with the token and makes the machines visible
     # in the token as "machine_list".
@@ -2120,7 +2120,7 @@ def get_machineresolver_id(resolvername):
 
 def get_machinetoken_id(machine_id, resolver_name, serial, application):
     """
-    Returns the ID in the machinetoken table
+    Returns a list of the ID in the machinetoken table
 
     :param machine_id: The resolverdependent machine_id
     :type machine_id: basestring
@@ -2135,12 +2135,16 @@ def get_machinetoken_id(machine_id, resolver_name, serial, application):
     """
     ret = None
     token_id = get_token_id(serial)
-    resolver = MachineResolver.query.filter(MachineResolver.name ==
-                                            resolver_name).first()
+    if resolver_name:
+        resolver = MachineResolver.query.filter(MachineResolver.name ==
+                                                resolver_name).first()
+        resolver_id = resolver.id
+    else:
+        resolver_id = None
 
     mt = MachineToken.query.filter(and_(MachineToken.token_id == token_id,
                                         MachineToken.machineresolver_id ==
-                                        resolver.id,
+                                        resolver_id,
                                         MachineToken.machine_id == machine_id,
                                         MachineToken.application ==
                                         application)).first()

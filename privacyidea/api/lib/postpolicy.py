@@ -444,7 +444,7 @@ def offline_info(request, response):
     """
     This decorator is used with the function /validate/check.
     It is not triggered by an ordinary policy but by a MachineToken definition.
-    If for the given Client and Token an offline application is defined,
+    If for the given Token an offline application is defined,
     the response is enhanced with the offline information - the hashes of the
     OTP.
 
@@ -452,17 +452,10 @@ def offline_info(request, response):
     content = response.json
     # check if the authentication was successful
     if content.get("result").get("value") is True and g.client_ip:
-        # If there is no remote address, we can not determine
-        # offline information
-        client_ip = netaddr.IPAddress(g.client_ip)
         # check if there is a MachineToken definition
         serial = content.get("detail", {}).get("serial")
         try:
-            # if the hostname can not be identified, there might be no
-            # offline definition!
-            hostname = get_hostname(ip=client_ip)
-            auth_items = get_auth_items(hostname=hostname, ip=client_ip,
-                                        serial=serial, application="offline",
+            auth_items = get_auth_items(serial=serial, application="offline",
                                         challenge=request.all_data.get("pass"))
             if auth_items:
                 content["auth_items"] = auth_items

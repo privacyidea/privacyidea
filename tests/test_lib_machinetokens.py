@@ -35,12 +35,15 @@ class MachineTokenTestCase(MyTestCase):
     serial = "myToken"
     resolvername = "reso1"
     serial2 = "ser1"
+    serialHotp = "hotp2"
 
     def test_00_setup(self):
         token1 = init_token({"type": "spass", "serial": self.serial})
         resolver1 = save_resolver({"name": self.resolvername,
                                    "type": "hosts",
                                    "filename": HOSTSFILE})
+        init_token({"type": "hotp", "serial": self.serialHotp, "otpkey": "313233"})
+
     def test_01_attach_token(self):
         mt = attach_token(self.serial, "luks", hostname="gandalf")
         self.assertEqual(mt.token.serial, self.serial)
@@ -148,3 +151,36 @@ class MachineTokenTestCase(MyTestCase):
         sshkey_auth_items = ai.get("ssh")
         # None or an empty list
         self.assertFalse(sshkey_auth_items)
+
+    def test_11_attach_token_without_machine(self):
+        mt = attach_token(self.serialHotp, "offline")
+        self.assertEqual(mt.token.serial, self.serialHotp)
+
+        # look at token, if we see the machine.
+        tok = get_tokens(serial=self.serialHotp)[0]
+        self.assertEqual(tok.token.machine_list[0].machine_id, None)
+        self.assertEqual(tok.token.machine_list[0].application, "offline")
+
+    def test_12_list_tokens_without_machine(self):
+        tokenlist = list_machine_tokens(serial=self.serialHotp, application="offline")
+        self.assertEqual(len(tokenlist), 1)
+
+    def test_13_get_authitems_without_machine(self):
+        # fetch the auth_items for application offline and token serialHotp
+        ai = get_auth_items(application="offline", serial=self.serialHotp)
+        offline_auth_items = ai.get("offline")
+        self.assertEqual(len(offline_auth_items), 1)
+        offline_auth_item = offline_auth_items[0]
+        self.assertIn("refilltoken", offline_auth_item)
+        self.assertIn("response", offline_auth_item)
+        # The counter of the HOTP token is set to >100
+        tok = get_tokens(serial=self.serialHotp)[0]
+        self.assertEqual(tok.token.count, 100)
+
+    def test_14_detach_token_without_machine(self):
+        detach_token(self.serialHotp, "offline")
+
+        # look at token, if we do not see the machine
+        tok = get_tokens(serial=self.serialHotp)[0]
+        machine_list = tok.token.machine_list
+        self.assertEqual(len(machine_list), 0)

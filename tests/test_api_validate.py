@@ -495,7 +495,7 @@ class AValidateOfflineTestCase(MyApiTestCase):
         self.assertTrue(mr_obj > 0)
         # Attach the offline app to pippin
         r = attach_token(self.serials[0], "offline", hostname="pippin",
-                         resolver_name="testresolver")
+                         resolver_name="testresolver", options={"count": 100})
 
         # first online validation
         with self.app.test_request_context('/validate/check',
