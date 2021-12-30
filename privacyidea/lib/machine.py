@@ -245,7 +245,7 @@ def add_option(machinetoken_id=None, machine_id=None, resolver_name=None,
     if options is None:
         options = {}
     if machinetoken_id:
-        machinetoken_ids = [ machinetoken_id ]
+        machinetoken_ids = [machinetoken_id]
     else:
         machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
                                                          resolver_name)
@@ -284,7 +284,7 @@ def delete_option(machinetoken_id=None, machine_id=None, resolver_name=None,
                                                 serial,
                                                 application)
 
-    for mtid  in machinetoken_ids:
+    for mtid in machinetoken_ids:
         r = MachineTokenOptions.query.filter(and_(
             MachineTokenOptions.machinetoken_id == mtid,
             MachineTokenOptions.mt_key == key)).delete()
@@ -310,8 +310,7 @@ def list_machine_tokens(hostname=None,
         machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
                                                          resolver_name)
         machineresolver_id = get_machineresolver_id(resolver_name)
-        sql_query = MachineToken.query.filter(and_(MachineToken.machine_id ==
-                                                   machine_id,
+        sql_query = MachineToken.query.filter(and_(MachineToken.machine_id == machine_id,
                                                    MachineToken.machineresolver_id == machineresolver_id))
     else:
         # If we have no specific machine defined, we find all applications/serials

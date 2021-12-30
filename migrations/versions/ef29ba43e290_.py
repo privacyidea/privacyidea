@@ -38,4 +38,3 @@ def downgrade():
     except Exception as exx:
         print("Failed to make machine_id and resolver_id in machinetokens non-nullable.")
         print(exx)
-
