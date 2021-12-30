@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2021-12-30 16:52+0000\n"
+"PO-Revision-Date: 2021-12-31 21:53+0000\n"
 "Last-Translator: Jose Maria GJ <josema.gj@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/es/>\n"
@@ -2837,200 +2837,200 @@ msgstr "Establecer PIN"
 
 #: privacyidea/static/components/token/views/token.details.html:118
 msgid "Set count window"
-msgstr ""
+msgstr "Establecer ventana de recuento"
 
 #: privacyidea/static/components/token/views/token.details.html:144
 #: privacyidea/static/components/token/views/token.details.html:155
 msgid "Set description"
-msgstr ""
+msgstr "Establecer descripción"
 
 #: privacyidea/static/components/token/views/token.details.html:77
 msgid "Set max fail"
-msgstr ""
+msgstr "Establecer número máximo de fallos"
 
 #: privacyidea/static/components/token/views/token.details.html:394
 msgid "Set random PIN"
-msgstr ""
+msgstr "Establecer PIN aleatorio"
 
 #: privacyidea/static/components/token/views/token.details.html:130
 msgid "Set sync window"
-msgstr ""
+msgstr "Establecer ventana de sincronización"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:50
 msgid "Show Policy templates"
-msgstr ""
+msgstr "Mostrar plantillas de políticas"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:282
 msgid "Show all actions"
-msgstr ""
+msgstr "Mostrar todas las acciones"
 
 #: privacyidea/static/components/config/views/config.events.details.html:133
 msgid "Show all conditions"
-msgstr ""
+msgstr "Mostrar todas las condiciones"
 
 #: privacyidea/static/components/token/views/token.details.html:401
 msgid "Show password"
-msgstr ""
+msgstr "Mostrar contraseña"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:277
 msgid "Show selected actions only"
-msgstr ""
+msgstr "Mostrar solo las acciones seleccionadas"
 
 #: privacyidea/static/components/config/views/config.events.details.html:128
 msgid "Show selected conditions only"
-msgstr ""
+msgstr "Mostrar solo las condiciones seleccionadas"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:134
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:177
 msgid "Size Limit"
-msgstr ""
+msgstr "Tamaño límite"
 
 #: privacyidea/static/components/token/views/token.import.html:143
 msgid "Skipped Tokens"
-msgstr ""
+msgstr "Tokens omitidos"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:22
 msgid "Software"
-msgstr ""
+msgstr "Software"
 
 #: privacyidea/static/components/token/views/token.enroll.html:38
 msgid "Some nice words..."
-msgstr ""
+msgstr "Algunas palabras..."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:61
 msgid ""
 "Special Error\n"
 "                Handling"
-msgstr ""
+msgstr "Manejo especial de errores"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:19
 msgid "Subscription about to expire"
-msgstr ""
+msgstr "Suscripción a punto de caducar"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:24
 msgid "Subscription expired"
-msgstr ""
+msgstr "Subscripción expirada"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:44
 msgid "Subscription issued to"
-msgstr ""
+msgstr "Suscripción emitida a"
 
 #: privacyidea/static/components/components/views/component.html:28
 #: privacyidea/static/components/dashboard/views/dashboard.html:177
 msgid "Subscriptions"
-msgstr ""
+msgstr "Suscripciones"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:282
 msgid "Successfully authenticated."
-msgstr ""
+msgstr "Autenticación con éxito."
 
 #: privacyidea/static/templates/baseline.html:14
 #: privacyidea/static/templates/menu.html:143
 msgid "Support"
-msgstr ""
+msgstr "Soporte"
 
 #: privacyidea/static/components/register/views/register.html:28
 #: privacyidea/static/components/register/views/register.html:32
 #: privacyidea/static/components/user/views/user.password.html:16
 msgid "Surname"
-msgstr ""
+msgstr "Apellido"
 
 #: privacyidea/static/components/token/views/token.details.html:129
 msgid "Sync Window"
-msgstr ""
+msgstr "Ventana de sincronización"
 
 #: privacyidea/static/components/config/views/config.system.html:247
 msgid ""
 "Sync Window of\n"
 "                    newly enrolled tokens"
-msgstr ""
+msgstr "Ventana de sincronización de tokens recién inscritos"
 
 #: privacyidea/static/components/config/views/config.html:20
 msgid "System"
-msgstr ""
+msgstr "Sistema"
 
 #: privacyidea/static/components/config/views/config.system.html:10
 msgid "System Config"
-msgstr ""
+msgstr "Configuración del sistema"
 
 #: privacyidea/static/components/config/controllers/configControllers.js:480
 #: privacyidea/static/components/config/controllers/configControllers.js:708
 msgid "System Config saved."
-msgstr ""
+msgstr "Configuración del sistema guardada."
 
 #: privacyidea/static/components/config/controllers/configControllers.js:489
 msgid "System entry deleted."
-msgstr ""
+msgstr "Entrada del sistema eliminada."
 
 #: privacyidea/static/components/config/views/config.smtp.list.html:8
 msgid "TLS"
-msgstr ""
+msgstr "TLS"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:53
 msgid "TLS Version"
-msgstr ""
+msgstr "Versión TLS"
 
 #: privacyidea/static/components/config/views/config.token.totp.html:1
 msgid "TOTP Token settings"
-msgstr ""
+msgstr "Configuración de TOTP Token"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:191
 msgid "TOTP: time based One Time Passwords"
-msgstr ""
+msgstr "TOTP: contraseñas de un solo uso basadas en tiempo"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:143
 msgid "Table"
-msgstr ""
+msgstr "Tabla"
 
 #: privacyidea/static/components/token/views/token.enrolled.webauthn.html:3
 msgid "Take action on your authenticator"
-msgstr ""
+msgstr "Actúe sobre su autenticador"
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:3
 msgid "Take action on your token"
-msgstr ""
+msgstr "Actúe con su token"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:130
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:10
 msgid "Taskmodule"
-msgstr ""
+msgstr "Módulo de tareas"
 
 #: privacyidea/static/components/config/controllers/smtpServerController.js:72
 msgid "Test Email sent successfully."
-msgstr ""
+msgstr "El correo electrónico de prueba se envió correctamente."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:86
 msgid "Test HTTP Resolver"
-msgstr ""
+msgstr "Test del Almacén HTTP"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:204
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:336
 msgid "Test LDAP Resolver"
-msgstr ""
+msgstr "Test del Almacén LDAP"
 
 #: privacyidea/static/components/token/views/token.details.html:431
 msgid "Test OTP only"
-msgstr ""
+msgstr "Probar solo OTP"
 
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:83
 msgid "Test SCIM Resolver"
-msgstr ""
+msgstr "Test del Almacén SCIM"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:249
 msgid "Test SQL Resolver"
-msgstr ""
+msgstr "Test del Almacén SQL"
 
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:19
 msgid "Test Yubikey"
-msgstr ""
+msgstr "Test Yubikey"
 
 #: privacyidea/static/components/token/views/token.details.html:424
 msgid "Test token"
-msgstr ""
+msgstr "Test del token"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:128
 msgid "Thank you for improving your security!"
-msgstr ""
+msgstr "¡Gracias por mejorar su seguridad!"
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:1
 msgid ""
@@ -3038,20 +3038,26 @@ msgid ""
 "    present at once. You can define how many existing tokens of the given\n"
 "    realms need to be present to perform a successful authentication."
 msgstr ""
+"El token de 4Eyes solo se autenticará si dos o más usuarios están presentes "
+"a la vez. Puede definir cuántos tokens existentes de los dominios dados "
+"deben estar presentes para realizar una autenticación exitosa."
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:27
 msgid "The AppID must not end with a \"/\"."
-msgstr ""
+msgstr "El AppID no debe terminar con un \"/\"."
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:23
 msgid "The AppID needs to start with \"https\"."
-msgstr ""
+msgstr "El AppID debe comenzar con \"https\"."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:22
 msgid ""
 "The Authentication Server is this privacyIDEA server. Note that the\n"
 "        privacyIDEA server needs to be accessible from the users smartphone."
 msgstr ""
+"El servidor de autenticación es este servidor privacyIDEA. Tenga en cuenta "
+"que el servidor privacyIDEA debe ser accesible desde el \"Smartphone\" del "
+"usuario."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:1
 msgid ""
