@@ -2118,7 +2118,7 @@ def get_machineresolver_id(resolvername):
     return mr.id
 
 
-def get_machinetoken_id(machine_id, resolver_name, serial, application):
+def get_machinetoken_ids(machine_id, resolver_name, serial, application):
     """
     Returns a list of the ID in the machinetoken table
 
@@ -2130,10 +2130,10 @@ def get_machinetoken_id(machine_id, resolver_name, serial, application):
     :type serial: basestring
     :param application: The application type
     :type application: basestring
-    :return: The ID of the machinetoken entry
-    :rtype: int
+    :return: A list of IDs of the machinetoken entry
+    :rtype: list of int
     """
-    ret = None
+    ret = []
     token_id = get_token_id(serial)
     if resolver_name:
         resolver = MachineResolver.query.filter(MachineResolver.name ==
@@ -2142,14 +2142,15 @@ def get_machinetoken_id(machine_id, resolver_name, serial, application):
     else:
         resolver_id = None
 
-    mt = MachineToken.query.filter(and_(MachineToken.token_id == token_id,
-                                        MachineToken.machineresolver_id ==
-                                        resolver_id,
-                                        MachineToken.machine_id == machine_id,
-                                        MachineToken.application ==
-                                        application)).first()
-    if mt:
-        ret = mt.id
+    mtokens = MachineToken.query.filter(and_(MachineToken.token_id == token_id,
+                                             MachineToken.machineresolver_id ==
+                                             resolver_id,
+                                             MachineToken.machine_id == machine_id,
+                                             MachineToken.application ==
+                                             application)).all()
+    if mtokens:
+        for mt in mtokens:
+            ret.append(mt.id)
     return ret
 
 

@@ -104,6 +104,68 @@ class APIMachinesTestCase(MyApiTestCase):
         self.assertEqual(token_obj.token.machine_list[0].option_list[0].mt_key,
                          "slot")
 
+    def test_03_attach_offline_token(self):
+        # The offline token allows to be attached without a machine.
+        # create token
+        serial = "offHOTP"
+        init_token({"serial": serial, "genkey": 1})
+
+        with self.app.test_request_context('/machine/token',
+                                           method='POST',
+                                           data={"resolver": "",
+                                                 "machineid": 0,
+                                                 "serial": serial,
+                                                 "application": "offline",
+                                                 "count": "12"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            self.assertTrue(result["value"] >= 1)
+
+        # check if the options were set.
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(token_obj.token.machine_list[0].application, "offline")
+        self.assertEqual(token_obj.token.machine_list[0].option_list[0].mt_key,
+                         "count")
+
+        # Get the token
+        with self.app.test_request_context('/machine/token',
+                                           method='GET',
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            machine_list = result.get("value")
+            self.assertEqual(len(machine_list), 1)
+            self.assertEqual(machine_list[0].get("serial"), serial)
+            self.assertEqual(machine_list[0].get("hostname"), "any host")
+
+        # check if the options were set.
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(token_obj.token.machine_list[0].application, "offline")
+        self.assertEqual(token_obj.token.machine_list[0].option_list[0].mt_key,
+                         "count")
+
+        # Now detach the offline token. In this case we ignore the machine and resolver.
+        with self.app.test_request_context('/machine/token/{0!s}/anymachine/anyresolver/offline'.format(serial),
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            self.assertEqual(result["value"], 1)
+
+        # check that the token has no applications/machines anymore
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(len(token_obj.token.machine_list), 0)
+
+        remove_token(serial)
+
     def test_04_set_options(self):
         serial = "S1"
         with self.app.test_request_context('/machine/tokenoption',

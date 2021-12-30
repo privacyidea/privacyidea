@@ -33,7 +33,7 @@ from privacyidea.models import Token
 from privacyidea.models import (MachineToken, db, MachineTokenOptions,
                                 MachineResolver, get_token_id,
                                 get_machineresolver_id,
-                                get_machinetoken_id)
+                                get_machinetoken_ids)
 from privacyidea.lib.utils import fetch_one_resource
 from netaddr import IPAddress
 from sqlalchemy import and_
@@ -42,6 +42,8 @@ import logging
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.applications.base import get_auth_item
+
+ANY_MACHINE = "any machine"
 
 
 @log_with(log)
@@ -211,11 +213,12 @@ def detach_token(serial, application, hostname=None, machine_id=None,
         # No specific machine given.
         machineresolver_id = None
 
-    mtid = get_machinetoken_id(machine_id, resolver_name, serial,
-                               application)
+    mtids = get_machinetoken_ids(machine_id, resolver_name, serial,
+                                 application)
 
     # Delete MachineTokenOptions
-    MachineTokenOptions.query.filter(MachineTokenOptions.machinetoken_id == mtid).delete()
+    for mtid in mtids:
+        MachineTokenOptions.query.filter(MachineTokenOptions.machinetoken_id == mtid).delete()
     # Delete MachineToken
     r = MachineToken.query.filter(and_(MachineToken.token_id == token_id,
                                        MachineToken.machine_id == machine_id,
@@ -241,17 +244,20 @@ def add_option(machinetoken_id=None, machine_id=None, resolver_name=None,
     """
     if options is None:
         options = {}
-    if not machinetoken_id:
+    if machinetoken_id:
+        machinetoken_ids = [ machinetoken_id ]
+    else:
         machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
                                                          resolver_name)
 
-        machinetoken_id = get_machinetoken_id(machine_id,
-                                              resolver_name,
-                                              serial,
-                                              application)
+        machinetoken_ids = get_machinetoken_ids(machine_id,
+                                                resolver_name,
+                                                serial,
+                                                application)
 
     for option_name, option_value in options.items():
-        MachineTokenOptions(machinetoken_id, option_name, option_value)
+        for mtid in machinetoken_ids:
+            MachineTokenOptions(mtid, option_name, option_value)
     return len(options)
 
 
@@ -273,14 +279,15 @@ def delete_option(machinetoken_id=None, machine_id=None, resolver_name=None,
     if not machinetoken_id:
         machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
                                                          resolver_name)
-        machinetoken_id = get_machinetoken_id(machine_id,
-                                              resolver_name,
-                                              serial,
-                                              application)
+        machinetoken_ids = get_machinetoken_ids(machine_id,
+                                                resolver_name,
+                                                serial,
+                                                application)
 
-    r = MachineTokenOptions.query.filter(and_(
-        MachineTokenOptions.machinetoken_id == machinetoken_id,
-        MachineTokenOptions.mt_key == key)).delete()
+    for mtid  in machinetoken_ids:
+        r = MachineTokenOptions.query.filter(and_(
+            MachineTokenOptions.machinetoken_id == mtid,
+            MachineTokenOptions.mt_key == key)).delete()
     db.session.commit()
     return r
 
@@ -343,29 +350,30 @@ def list_token_machines(serial):
     db_token = fetch_one_resource(Token, serial=serial)
 
     for machine in db_token.machine_list:
-        MR = fetch_one_resource(MachineResolver, id=machine.machineresolver_id)
-        resolver_name = MR.name
+        if machine.machine_id and machine.machineresolver_id:
+            MR = fetch_one_resource(MachineResolver, id=machine.machineresolver_id)
+            resolver_name = MR.name
+        else:
+            resolver_name = "no resolver"
+            hostname = "any host"
 
         option_list = machine.option_list
         options = {}
         for option in option_list:
             options[option.mt_key] = option.mt_value
 
+        # Try to determine the hostname
         machines = get_machines(id=machine.machine_id, resolver=resolver_name)
-        hostname = "unknown"
-        """
-        if len(machines) > 1:
-            raise Exception("Can not get unique ID for IP=%r. "
-                            "More than one machine found." % ip)
-        """
         if len(machines) == 1:
             # There is only one machine in the list and we get its ID
             hostname = machines[0].hostname
             # return the first hostname
             if type(hostname) == list:
                 hostname = hostname[0]
+        elif len(machines) > 1:
+            hostname = "unknown"
 
-        res.append({"machine_id": machine.machine_id,
+        res.append({"machine_id": machine.machine_id or ANY_MACHINE,
                     "hostname": hostname,
                     "application": machine.application,
                     "resolver": resolver_name,
