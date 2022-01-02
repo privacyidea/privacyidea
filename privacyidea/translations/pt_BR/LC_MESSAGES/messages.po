@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2021-06-06 09:14+0200\n"
-"PO-Revision-Date: 2021-08-12 16:34+0000\n"
-"Last-Translator: Rodrigo Rocha <rodrigorocha.info@gmail.com>\n"
+"PO-Revision-Date: 2022-01-03 03:52+0000\n"
+"Last-Translator: Luiz Damascena <lhfdamascena@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "privacyidea/privacyidea-ui/pt_BR/>\n"
 "Language: pt_BR\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.8-dev\n"
+"X-Generator: Weblate 4.10.1\n"
 "Generated-By: Babel 2.6.0\n"
 
 #: api/auth.py:222
@@ -371,11 +371,11 @@ msgstr ""
 
 #: lib/policy.py:1784
 msgid "Admin is allowed to write new SMTP server definitions."
-msgstr ""
+msgstr "Admin é autorizado a escrever definições do servidor SMTP."
 
 #: lib/policy.py:1789
 msgid "Admin is allowed to read SMTP server definitions."
-msgstr ""
+msgstr "Admin é autorizado a ler definições do servidor SMTP."
 
 #: lib/policy.py:1794
 msgid "Admin is allowed to write new RADIUS server definitions."
@@ -383,7 +383,7 @@ msgstr ""
 
 #: lib/policy.py:1800
 msgid "Admin is allowed to read RADIUS server definitions."
-msgstr ""
+msgstr "Admin é autorizado a ler definições do servidor RADIUS."
 
 #: lib/policy.py:1805
 msgid "Admin is allowed to write remote privacyIDEA server definitions."
@@ -391,7 +391,7 @@ msgstr ""
 
 #: lib/policy.py:1812
 msgid "Admin is allowed to read remote privacyIDEA server definitions."
-msgstr ""
+msgstr "Admin é autorizado a ler definições remotas do servidor privacyIDEA."
 
 #: lib/policy.py:1819
 msgid "Admin is allowed to write periodic task definitions."
@@ -423,7 +423,7 @@ msgstr ""
 
 #: lib/policy.py:1852
 msgid "Admin is allowed to read SMS gateway definitions."
-msgstr ""
+msgstr "Admin é autorizado a ler definições do gateway SMS."
 
 #: lib/policy.py:1857
 msgid "Admin is allowed to get the list of authenticated clients and their types."
