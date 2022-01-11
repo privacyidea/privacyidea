@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2021-12-31 21:53+0000\n"
+"PO-Revision-Date: 2022-01-11 14:21+0000\n"
 "Last-Translator: Jose Maria GJ <josema.gj@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/es/>\n"
@@ -3082,12 +3082,12 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:53
 #: privacyidea/static/components/token/views/token.enroll.totp.html:53
 msgid "The Google Authenticator only supports an OTP length of 6."
-msgstr ""
+msgstr "Google Authenticator solo admite una longitud de OTP de 6."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:66
 #: privacyidea/static/components/token/views/token.enroll.totp.html:75
 msgid "The Google Authenticator only supports the SHA1 algorithm."
-msgstr ""
+msgstr "Google Authenticator solo admite el algoritmo SHA1."
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:2
 msgid ""
@@ -3095,6 +3095,8 @@ msgid ""
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
 "    4226</a>."
 msgstr ""
+"El token HOTP es un token de contraseña de un solo uso basado en eventos. Se "
+"describe en <a href=\"https://tools.ietf.org/html/rfc4226\">RFC 4226</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:1
 msgid ""
@@ -3103,23 +3105,29 @@ msgid ""
 "    app like the Google Authenticator turning your\n"
 "    smartphone into an authentication device."
 msgstr ""
+"El token HOTP es un token basado en eventos. Puede pegar una clave secreta o "
+"hacer que el servidor genere el secreto y escanee el código QR con una "
+"aplicación como Google Authenticator, convirtiendo su teléfono móvil en un "
+"dispositivo de autenticación."
 
 #: privacyidea/static/components/login/views/login.html:94
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."
 msgstr ""
+"HSM no está listo. privacyIDEA no puede funcionar correctamente. Inicie HSM "
+"y vuelva a cargar esta página."
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:13
 #: privacyidea/static/components/token/views/token.enrolled.motp.html:10
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:13
 msgid "The OTP key"
-msgstr ""
+msgstr "Clave OTP"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:6
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:6
 msgid "The OTP values"
-msgstr ""
+msgstr "Valores OTP"
 
 #: privacyidea/static/components/token/views/token.enroll.paper.html:1
 msgid ""
@@ -3127,6 +3135,9 @@ msgid ""
 "    These OTP values can be used to authenticate. You need to use on value\n"
 "    after the other."
 msgstr ""
+"El token de papel le permitirá imprimir una lista de valores OTP. Estos "
+"valores OTP se pueden usar para autenticar. Necesita usar un valor después "
+"del otro."
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:25
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:25
@@ -3135,6 +3146,9 @@ msgid ""
 "            protect it. <b>If you are in doubt, that someone else saw it, please\n"
 "            regenerate the QR Code, when no one else is watching.</b>"
 msgstr ""
+"El código QR contiene la clave secreta de su token. Necesitas protegerlo. "
+"<b>Si tiene dudas, si alguien más lo vio, regenere el código QR, cuando "
+"nadie más esté mirando.</b>"
 
 #: privacyidea/static/components/token/views/token.enroll.question.html:1
 msgid ""
@@ -3142,6 +3156,9 @@ msgid ""
 "    When authenticating with this type of token, you will be asked a random\n"
 "    question and then need to provide the previously defined answer."
 msgstr ""
+"El token del Cuestionario le permitirá definir las respuestas a las "
+"preguntas. Al autenticarse con este tipo de token, se le hará una pregunta "
+"aleatoria y luego deberá proporcionar la respuesta definida anteriormente."
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:1
 msgid ""
@@ -3149,12 +3166,15 @@ msgid ""
 "    RADIUS server. You can choose if the PIN should be stripped and\n"
 "    checked locally."
 msgstr ""
+"El token RADIUS reenvía la solicitud de autenticación a otro servidor "
+"RADIUS. Puede elegir si el PIN debe eliminarse y verificarse localmente."
 
 #: privacyidea/static/components/config/views/config.token.radius.html:2
 msgid ""
 "The RADIUS token forwards the authentication request to another RADIUS\n"
 "    server."
 msgstr ""
+"El token RADIUS reenvía la solicitud de autenticación a otro servidor RADIUS."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:85
 msgid ""
@@ -3164,18 +3184,27 @@ msgid ""
 "                your browser and you will be able to install the certificate\n"
 "                to the browser."
 msgstr ""
+"Las claves RSA se generarán en el navegador. Accederá a una nueva ventana "
+"del navegador, donde podrá crear la solicitud de certificado. La clave "
+"privada permanece en su navegador y podrá instalar el certificado en el "
+"navegador."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:9
 msgid ""
 "The Registration Server is this privacyIDEA server. Note that the\n"
 "        privacyIDEA server needs to be accessible from the users smartphone."
 msgstr ""
+"El servidor de registro es este servidor privacyIDEA . Tenga en cuenta que "
+"el servidor privacyIDEA debe ser accesible desde el teléfono móvil de los "
+"usuarios."
 
 #: privacyidea/static/components/config/views/config.token.remote.html:2
 msgid ""
 "The Remote token forwards the authentication request to another\n"
 "    privacyIDEA server."
 msgstr ""
+"El token remoto reenvía la solicitud de autenticación a otro servidor "
+"privacyIDEA."
 
 #: privacyidea/static/components/config/views/config.token.sms.html:2
 msgid ""
@@ -3184,28 +3213,38 @@ msgid ""
 "    users mobile phone. Then user can authenticate with this OTP value in a\n"
 "    second step."
 msgstr ""
+"El token de SMS es un token basado en eventos. Después de que el usuario "
+"haya intentado autenticarse con el PIN OTP, se envía un SMS con un valor OTP "
+"al teléfono móvil del usuario. Luego, el usuario puede autenticarse con este "
+"valor OTP en un segundo paso."
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:1
 msgid "The SMS Token sends an OTP value to the mobile phone of the user."
-msgstr ""
+msgstr "El SMS Token envía un valor OTP al teléfono móvil del usuario."
 
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:1
 msgid ""
 "The SSH Key Token stores the public SSH Key in the server.\n"
 "    This can be used to authenticate to a secure shell."
 msgstr ""
+"El token de clave SSH almacena la clave SSH pública en el servidor. Esto se "
+"puede usar para autenticarse en un shell seguro."
 
 #: privacyidea/static/components/token/views/token.getserial.html:95
 msgid ""
 "The Serial number for the OTP value {{ otp }} is\n"
 "    <a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
 msgstr ""
+"La secuencia para el valor OTP {{ otp }} es <a ui-sref=\"token."
+"details({tokenSerial:serial})\">{{ serial }}</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.spass.html:1
 msgid ""
 "The Simple Pass Token does not take additional arguments. You only need to\n"
 "    specify a OTP PIN."
 msgstr ""
+"El token de paso simple no acepta argumentos adicionales. Solo necesita "
+"especificar un PIN OTP."
 
 #: privacyidea/static/components/token/views/token.enroll.tan.html:1
 msgid ""
@@ -3213,6 +3252,9 @@ msgid ""
 "    These OTP values can be used to authenticate. The values can be used in an\n"
 "    arbitrary order."
 msgstr ""
+"El token TAN le permitirá imprimir una lista de valores OTP. Estos valores "
+"OTP se pueden usar para autenticarse. Los valores se pueden utilizar en un "
+"orden arbitrario."
 
 #: privacyidea/static/components/config/views/config.token.totp.html:2
 msgid ""
