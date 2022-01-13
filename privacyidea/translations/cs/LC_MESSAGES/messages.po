@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2021-06-06 09:14+0200\n"
-"PO-Revision-Date: 2022-01-13 14:55+0000\n"
+"PO-Revision-Date: 2022-01-14 15:55+0000\n"
 "Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/cs/>\n"
@@ -42,69 +42,72 @@ msgstr "Chyba autentizace. Vašemu tokenu vypršela platnost: {0!s}"
 
 #: api/lib/utils.py:324
 msgid "Authentication failure. Error during decoding your token: {0!s}"
-msgstr ""
+msgstr "Chyba autentizace. Selhalo dekódování Vašeho tokenu: {0!s}"
 
 #: api/lib/utils.py:331
 msgid ""
 "Authentication failure. The username {0!s} is not allowed to impersonate "
 "via JWT."
 msgstr ""
+"Chyba autentizace. Uživatelské jméno {0!s} nelze impersonovat pomocí JWT."
 
 #: api/lib/utils.py:335
 msgid ""
 "Authentication failure. You do not have the necessary role ({0!s}) to "
 "access this resource!"
-msgstr ""
+msgstr "Chyba autentizace. Nemáte potřebnou roli ({0!s}) pro přístup ke zdroji!"
 
 #: api/lib/utils.py:353
 msgid "'{0!s}' is an invalid policy name."
-msgstr ""
+msgstr "'{0!s}' není platný název politiky."
 
 #: api/lib/utils.py:356
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
-msgstr ""
+msgstr "Název politiky může obsahovat pouze znaky a-zA-Z0-9_. -"
 
 #: lib/challengeresponsedecorators.py:146
 msgid "Please enter the new PIN again"
-msgstr ""
+msgstr "Prosím znovu vložte nový PIN"
 
 #: lib/challengeresponsedecorators.py:160
 msgid "Please enter a new PIN"
-msgstr ""
+msgstr "Prosím vložte nový PIN"
 
 #: lib/decorators.py:43 lib/token.py:2190
 msgid "This action is not possible, since the token is locked"
-msgstr ""
+msgstr "Tato akce není dostupná, protože token je uzamčený"
 
 #: lib/decorators.py:94
 msgid "You need to specify a serial or a user."
-msgstr ""
+msgstr "Musíte specifikovat sériové číslo nebo uživatele."
 
 #: lib/decorators.py:96
 msgid "Invalid serial number."
-msgstr ""
+msgstr "Chybné sériové čislo."
 
 #: lib/decorators.py:98
 msgid "Invalid user."
-msgstr ""
+msgstr "Chybný uživatel."
 
 #: lib/error.py:170
 msgid "You either need to provide user or serial"
-msgstr ""
+msgstr "Musíte vložit uživatele nebo sériové číslo"
 
 #: lib/policy.py:1477
 msgid "Define in which resolver the user should be registered."
-msgstr ""
+msgstr "Definuje ve kterém resolveru má být uživatel zaregistrován."
 
 #: lib/policy.py:1481
 msgid "Define in which realm the user should be registered."
-msgstr ""
+msgstr "Definuje ve kterém realmu má být uživatel zaregistrován."
 
 #: lib/policy.py:1485
 msgid ""
 "The SMTP server configuration, that should be used to send the "
 "registration email."
 msgstr ""
+"Nastavení SMTP serveru, který má být použit pro odeslání registračního "
+"e-mailu."
 
 #: lib/policy.py:1489
 msgid ""
@@ -974,7 +977,7 @@ msgstr ""
 
 #: lib/tokenclass.py:1555
 msgid "please enter otp: "
-msgstr ""
+msgstr "prosím vložte jednorázový kód: "
 
 #: lib/eventhandler/base.py:146
 msgid ""
@@ -1398,17 +1401,19 @@ msgstr ""
 #: lib/machines/ldap.py:338
 #, python-format
 msgid "Your LDAP config seems to be OK, %i machine objects found."
-msgstr ""
+msgstr "Vaše konfigurace LDAP vypadá v pořádku, bylo nalezeno %i strojů."
 
 #: lib/resolvers/LDAPIdResolver.py:1081
 msgid ""
 "Your LDAP config found {0!s} user objects, but only {1!s} with the "
 "specified uidtype"
 msgstr ""
+"Pomocí vaší konfigurace LDAP bylo nalezeno {0!s} uživatel, ale jen {1!s} se "
+"specifikovaným uidtype"
 
 #: lib/resolvers/LDAPIdResolver.py:1084
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
-msgstr ""
+msgstr "Vaše konfigurace LDAP vypadá v pořádku, bylo nalezeno {0!s} uživatelů."
 
 #: lib/smsprovider/FirebaseProvider.py:214
 msgid ""
@@ -1569,27 +1574,27 @@ msgstr ""
 
 #: lib/task/simplestats.py:48
 msgid "Total number of tokens"
-msgstr ""
+msgstr "Celkový počet tokenů"
 
 #: lib/task/simplestats.py:51
 msgid "Total number of hardware tokens"
-msgstr ""
+msgstr "Celkový počet hardwarových tokenů"
 
 #: lib/task/simplestats.py:54
 msgid "Total number of software tokens"
-msgstr ""
+msgstr "Celkový počet softwarových tokenů"
 
 #: lib/task/simplestats.py:57
 msgid "Number of hardware tokens not assigned to a user"
-msgstr ""
+msgstr "Počet hardwarových tokenů nepřiřazených žádném uživateli"
 
 #: lib/task/simplestats.py:60
 msgid "Number of tokens assigned to users"
-msgstr ""
+msgstr "Počet tokenů přiřazených uživatelům"
 
 #: lib/task/simplestats.py:63
 msgid "Number of users with tokens assigned"
-msgstr ""
+msgstr "Počet uživatelů s přiřazenými tokeny"
 
 #: lib/tokens/certificatetoken.py:273
 msgid "Certificate: Enroll an x509 Certificate Token."
@@ -1850,11 +1855,11 @@ msgstr ""
 
 #: lib/tokens/pushtoken.py:70
 msgid "Please confirm the authentication on your mobile device!"
-msgstr ""
+msgstr "Prosím potvrďte přihlášení na svém mobilním zařízení."
 
 #: lib/tokens/pushtoken.py:71
 msgid "Do you want to confirm the login?"
-msgstr ""
+msgstr "Chcete potvrdit přihlášení?"
 
 #: lib/tokens/pushtoken.py:294
 msgid "PUSH Token"
@@ -1941,7 +1946,7 @@ msgstr ""
 #: lib/tokens/questionnairetoken.py:166
 #, python-format
 msgid "You need to provide at least %s answers."
-msgstr ""
+msgstr "Musíte vložit alespoň %s odpovědí."
 
 #: lib/tokens/radiustoken.py:108
 msgid "RADIUS: Forward authentication request to a RADIUS server."
@@ -1991,7 +1996,7 @@ msgstr ""
 
 #: lib/tokens/smstoken.py:198
 msgid "SMS Token"
-msgstr ""
+msgstr "SMS token"
 
 #: lib/tokens/smstoken.py:200
 msgid "SMS: Send a One Time Password to the users mobile phone."
@@ -2033,7 +2038,7 @@ msgstr ""
 
 #: lib/tokens/smstoken.py:322
 msgid "Enter the OTP from the SMS:"
-msgstr ""
+msgstr "Vložte jednorázový kód z SMS"
 
 #: lib/tokens/spasstoken.py:87
 msgid "SPass: Simple Pass token. Static passwords."
@@ -2087,11 +2092,11 @@ msgstr ""
 
 #: lib/tokens/tiqrtoken.py:396
 msgid "Please scan the QR Code"
-msgstr ""
+msgstr "Prosím naskenujte QR kód"
 
 #: lib/tokens/totptoken.py:108
 msgid "TOTP: Time based One Time Passwords."
-msgstr ""
+msgstr "TOTP: jednorázové kódy založené na čase."
 
 #: lib/tokens/u2ftoken.py:255
 msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
@@ -2147,15 +2152,15 @@ msgstr ""
 
 #: lib/tokens/webauthntoken.py:410
 msgid "Generic WebAuthn Token"
-msgstr ""
+msgstr "Obecný WebAuthn token"
 
 #: lib/tokens/webauthntoken.py:420
 msgid "Please confirm with your WebAuthn token ({0!s})"
-msgstr ""
+msgstr "Prosím potvrďte svým WebAuthn tokenem ({0!s})"
 
 #: lib/tokens/webauthntoken.py:421
 msgid "Please confirm with your WebAuthn token"
-msgstr ""
+msgstr "Prosím potvrďte svým WebAuthn tokenem"
 
 #: lib/tokens/webauthntoken.py:563
 msgid ""
@@ -2196,7 +2201,7 @@ msgstr ""
 
 #: lib/tokens/webauthntoken.py:604
 msgid "A human readable name for the organization rolling out WebAuthn tokens."
-msgstr ""
+msgstr "Uživatelsky přívětivý název organizace vydávající WebAuthn tokeny."
 
 #: lib/tokens/webauthntoken.py:609
 msgid ""
