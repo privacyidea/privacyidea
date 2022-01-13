@@ -8,34 +8,37 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2021-06-06 09:14+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2022-01-13 14:55+0000\n"
+"Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
+"Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/cs/>\n"
 "Language: cs\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"X-Generator: Weblate 4.10.1\n"
 "Generated-By: Babel 2.6.0\n"
 
 #: api/auth.py:222
 msgid "Authentication failure. Unknown realm: {0!s}."
-msgstr ""
+msgstr "Chyba autentizace. Neznámý realm: {0!s}."
 
 #: api/auth.py:226
 msgid "Authentication failure. Missing Username"
-msgstr ""
+msgstr "Chyba autentizace. Chybí uživatelské jméno"
 
 #: api/auth.py:336
 msgid "Authentication failure. Wrong credentials"
-msgstr ""
+msgstr "Chyba autentizace. Nesprávné přístupové údaje"
 
 #: api/lib/utils.py:289
 msgid "Authentication failure. Missing Authorization header."
-msgstr ""
+msgstr "Chyba autentizace. Chybí hlavička Authorization."
 
 #: api/lib/utils.py:317 api/lib/utils.py:327
 msgid "Authentication failure. Your token has expired: {0!s}"
-msgstr ""
+msgstr "Chyba autentizace. Vašemu tokenu vypršela platnost: {0!s}"
 
 #: api/lib/utils.py:324
 msgid "Authentication failure. Error during decoding your token: {0!s}"
