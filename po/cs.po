@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "PO-Revision-Date: 2022-01-15 21:54+0000\n"
-"Last-Translator: Dominik František Bučík <bucik@ics.muni.cz>\n"
+"Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/cs/>\n"
 "Language: cs\n"
@@ -209,7 +209,7 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.add.html:3
 msgid "Add a new user"
-msgstr ""
+msgstr "Přidat uživatele"
 
 #: privacyidea/static/components/user/views/user.details.html:96
 msgid "Add custom attribute"
@@ -221,7 +221,7 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.html:40
 msgid "Add user"
-msgstr ""
+msgstr "Přidat uživatele"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:259
 msgid "Additional conditions"
@@ -281,11 +281,11 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:11
 msgid "All tokens"
-msgstr ""
+msgstr "Tokeny"
 
 #: privacyidea/static/components/user/views/user.html:19
 msgid "All users"
-msgstr ""
+msgstr "Uživatelé"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:163
 msgid "An Attribute or the DN to identify the machine"
@@ -297,7 +297,7 @@ msgstr ""
 
 #: privacyidea/static/components/recovery/controllers/recoveryControllers.js:19
 msgid "An Email to reset the password has been sent to you."
-msgstr ""
+msgstr "Byl Vám odeslán e-mail pro obnovení hesla."
 
 #: privacyidea/static/components/machine/views/machine.details.html:127
 #: privacyidea/static/components/machine/views/machine.details.html:51
@@ -320,32 +320,32 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.html:44
 #: privacyidea/static/components/user/views/user.details.html:199
 msgid "Assign Token"
-msgstr ""
+msgstr "Přiřadit token"
 
 #: privacyidea/static/components/token/views/token.details.html:490
 #: privacyidea/static/components/token/views/token.details.html:503
 msgid "Assign User"
-msgstr ""
+msgstr "Přiřadit uživatele"
 
 #: privacyidea/static/components/user/views/user.details.html:194
 msgid "Assign a new token {{ newToken.serial }}"
-msgstr ""
+msgstr "Přiřadit nový token {{ newToken.serial }}"
 
 #: privacyidea/static/components/token/views/token.assign.html:1
 msgid "Assign a new token {{ newTokenObject.serial }}"
-msgstr ""
+msgstr "Přiřadit nový token {{ newTokenObject.serial }}"
 
 #: privacyidea/static/components/token/views/token.enroll.html:44
 msgid "Assign token to user"
-msgstr ""
+msgstr "Přiřadit token uživateli"
 
 #: privacyidea/static/components/token/views/token.details.html:440
 msgid "Assigned User"
-msgstr ""
+msgstr "Přiřazený uživatel"
 
 #: privacyidea/static/components/token/views/token.getserial.html:33
 msgid "Assignment State"
-msgstr ""
+msgstr "Stav přiřazení"
 
 #: privacyidea/static/components/token/views/token.details.html:646
 msgid "Attach Machine"
@@ -373,15 +373,15 @@ msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:335
 msgid "Authentication failed."
-msgstr ""
+msgstr "Chyba autentizace."
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:41
 msgid "Authentications"
-msgstr ""
+msgstr "Autentizace"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:43
 msgid "Authentications in the last 24 hours"
-msgstr ""
+msgstr "Autentizace za posledních 24 hodin"
 
 #: privacyidea/static/components/config/views/config.system.html:147
 msgid "Auto resync timeout"
@@ -426,6 +426,10 @@ msgid ""
 "    search for the token. So you can only search within certain token types\n"
 "    or in assigned or unassigned tokens."
 msgstr ""
+"Vložte jednorázový kód pro zjištění sériového čísla tokenu.\n"
+"    Můžete přidat další parametry pro zpřesnění hledání.\n"
+"    Můžete hledat pouze tokeny určitého typu\n"
+"    nebo jen přiřazené/nepřiřazené."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:31
 msgid "CA Certificate"
@@ -502,20 +506,20 @@ msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:232
 msgid "Challenge Response Authentication. You are not completely authenticated, yet."
-msgstr ""
+msgstr "Autentizace výzva-odpověď. Autentizace ještě není kompletní."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:307
 msgid "Challenge Response Authentication. Your response was not valid!"
-msgstr ""
+msgstr "Autentizace výzva-odpověď. Odpověď byla chybná."
 
 #: privacyidea/static/components/login/views/pinchange.html:23
 #: privacyidea/static/components/login/views/pinchange.html:4
 msgid "Change PIN"
-msgstr ""
+msgstr "Změnit PIN"
 
 #: privacyidea/static/components/token/views/token.details.html:428
 msgid "Check OTP only."
-msgstr ""
+msgstr "Kontrolovat pouze jednorázový kód."
 
 #: privacyidea/static/components/config/views/config.policies.details.html:199
 msgid ""
@@ -526,25 +530,27 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.radius.html:18
 #: privacyidea/static/components/token/views/token.enroll.remote.html:12
 msgid "Check the PIN locally"
-msgstr ""
+msgstr "Kontrolovat PIN lokálně"
 
 #: privacyidea/static/components/token/views/token.details.html:421
 msgid "Check with OTP PIN."
-msgstr ""
+msgstr "Kontrolovat jednorázový kód a PIN."
 
 #: privacyidea/static/components/login/views/login.html:70
 msgid "Choose a realm..."
-msgstr ""
+msgstr "Zvolte realm..."
 
 #: privacyidea/static/components/config/views/config.realms.html:9
 msgid "Clear default realm"
-msgstr ""
+msgstr "Zrušit výchozí realm"
 
 #: privacyidea/static/components/config/views/config.system.html:87
 msgid ""
 "Clear failcounter\n"
 "                after minutes"
 msgstr ""
+"Vynulovat počitadlo chyb\n"
+"                po kolika minutách"
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:20
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:20
@@ -553,6 +559,10 @@ msgid ""
 "            the QR Code, if you\n"
 "            want to add the Token to your Google Authenticator."
 msgstr ""
+"Klikněte <a href=\"{{ enrolledToken.googleurl.value }}\">zde</a> nebo "
+"naskenujte\n"
+"            QR kód pro přidání tokenu\n"
+"            do TOTP aplikace (např. Google Authenticator)."
 
 #: privacyidea/static/components/token/views/token.enrolled.motp.html:14
 msgid ""
@@ -826,21 +836,21 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:66
 #: privacyidea/static/components/token/views/token.details.html:18
 msgid "Delete"
-msgstr ""
+msgstr "Odstranit"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:12
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:32
 msgid "Delete Token"
-msgstr ""
+msgstr "Odstranit token"
 
 #: privacyidea/static/components/user/views/dialog.ask_user_delete.html:12
 #: privacyidea/static/components/user/views/dialog.ask_user_delete.html:26
 msgid "Delete User"
-msgstr ""
+msgstr "Odstranit uživatele"
 
 #: privacyidea/static/components/user/views/user.details.html:64
 msgid "Delete user"
-msgstr ""
+msgstr "Odstranit uživatele"
 
 #: privacyidea/static/components/config/views/config.events.details.html:31
 #: privacyidea/static/components/config/views/config.events.list.html:13
@@ -859,12 +869,12 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.html:35
 #: privacyidea/static/components/user/views/user.password.html:21
 msgid "Description"
-msgstr ""
+msgstr "Popis"
 
 #: privacyidea/static/components/machine/views/machine.details.html:98
 #: privacyidea/static/components/token/views/token.details.html:585
 msgid "Detach"
-msgstr ""
+msgstr "Odpojit"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:83
 msgid "Detail"
@@ -890,11 +900,11 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.details.html:5
 #: privacyidea/static/components/token/views/token.details.html:46
 msgid "Disable"
-msgstr ""
+msgstr "Zakázat"
 
 #: privacyidea/static/components/token/views/token.list.html:87
 msgid "Disable token"
-msgstr ""
+msgstr "Zakázat token"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:141
 msgid "Dive In!"
@@ -907,18 +917,20 @@ msgstr ""
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:16
 msgid "Do you really want to delete the Token {{ tokenSerial }} from user {{ token.username }}?"
 msgstr ""
+"Opravdu chcete odstranit token {{ tokenSerial }} od uživatele {{ "
+"token.username }}?"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:19
 msgid "Do you really want to delete the Token {{ tokenSerial }}?"
-msgstr ""
+msgstr "Opravdu chcete odstranit token {{ tokenSerial }}?"
 
 #: privacyidea/static/components/user/views/dialog.ask_user_delete.html:15
 msgid "Do you really want to delete the user in the user store?"
-msgstr ""
+msgstr "Opravdu chcete odstranit uživatele z uložiště?"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:3
 msgid "Download"
-msgstr ""
+msgstr "Stáhnout"
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:18
 msgid "Download the PKCS12 file"
@@ -953,7 +965,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:267
 #: privacyidea/static/components/token/views/token.details.html:310
 msgid "Edit"
-msgstr ""
+msgstr "Upravit"
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:14
 msgid "Edit CA Connector {{ connectorname }}"
@@ -1045,12 +1057,12 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.details.html:48
 msgid "Edit user"
-msgstr ""
+msgstr "Upravit uživatele"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:218
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:90
 msgid "Edit user store"
-msgstr ""
+msgstr "Upravit úložiště uživatelů"
 
 #: privacyidea/static/components/recovery/views/recovery.html:28
 #: privacyidea/static/components/recovery/views/recovery.html:32
@@ -1058,22 +1070,22 @@ msgstr ""
 #: privacyidea/static/components/register/views/register.html:52
 #: privacyidea/static/components/user/views/user.password.html:28
 msgid "Email"
-msgstr ""
+msgstr "E-mail"
 
 #: privacyidea/static/components/token/views/token.enroll.email.html:18
 msgid "Email Address"
-msgstr ""
+msgstr "E-mailová adresa"
 
 #: privacyidea/static/components/config/views/config.events.details.html:11
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:11
 #: privacyidea/static/components/config/views/config.policies.details.html:10
 #: privacyidea/static/components/token/views/token.details.html:54
 msgid "Enable"
-msgstr ""
+msgstr "Povolit"
 
 #: privacyidea/static/components/token/views/token.list.html:92
 msgid "Enable token"
-msgstr ""
+msgstr "Povolit token"
 
 #: privacyidea/static/components/token/views/token.details.html:235
 msgid "End Date before Start Date!"
@@ -1085,50 +1097,50 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.details.html:186
 msgid "Enroll New Token"
-msgstr ""
+msgstr "Přidat nový token"
 
 #: privacyidea/static/components/token/views/token.enroll.html:130
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:49
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:49
 #: privacyidea/static/components/token/views/token.html:25
 msgid "Enroll Token"
-msgstr ""
+msgstr "Přidat token"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:95
 #: privacyidea/static/components/token/controllers/tokenControllers.js:136
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:177
 msgid "Enroll a new token"
-msgstr ""
+msgstr "Přidat nový token"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:75
 msgid "Enter OTP + PIN to check the token."
-msgstr ""
+msgstr "Vložte jednorázový kód a PIN pro kontrolu tokenu."
 
 #: privacyidea/static/components/token/views/token.enroll.totp.html:42
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:36
 msgid "Enter OTP key..."
-msgstr ""
+msgstr "Vložte jednorázový kód..."
 
 #: privacyidea/static/components/token/views/token.details.html:369
 msgid "Enter PIN again"
-msgstr ""
+msgstr "Vložte znovu PIN"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:69
 msgid "Enter PIN and OTP to check the token."
-msgstr ""
+msgstr "Vložte PIN a jednorázový kód pro kontrolu tokenu."
 
 #: privacyidea/static/components/token/views/token.details.html:364
 msgid "Enter PIN for token"
-msgstr ""
+msgstr "Vložte PIN pro token"
 
 #: privacyidea/static/components/token/views/token.details.html:341
 msgid "Enter first OTP value"
-msgstr ""
+msgstr "Vložte první jednorázový kód"
 
 #: privacyidea/static/components/token/views/token.details.html:347
 msgid "Enter second OTP value"
-msgstr ""
+msgstr "Vložte druhý jednorázový kód"
 
 #: privacyidea/static/components/login/views/login.html:37
 msgid ""
@@ -1150,7 +1162,7 @@ msgstr ""
 
 #: privacyidea/static/components/login/factories/webauthn.js:103
 msgid "Error in WebAuthn response."
-msgstr ""
+msgstr "Chyba v odpovědi WebAuthn."
 
 #: privacyidea/static/components/config/views/config.events.details.html:44
 #: privacyidea/static/components/config/views/config.events.list.html:16
@@ -1264,7 +1276,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.motp.html:11
 #: privacyidea/static/components/token/views/token.enroll.totp.html:18
 msgid "Generate OTP Key on the Server"
-msgstr ""
+msgstr "Generovat klíč pro jednorázové kódy na serveru"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:12
 msgid "Generate Request"
@@ -1292,21 +1304,21 @@ msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:395
 msgid "Get the Authenticator App for Android."
-msgstr ""
+msgstr "Získat autentizační aplikaci pro Android."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:401
 msgid "Get the Authenticator App for iOS."
-msgstr ""
+msgstr "Získat autentizační aplikaci pro iOS."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:407
 msgid "Get the Authenticator App."
-msgstr ""
+msgstr "Získat autentizační aplikaci."
 
 #: privacyidea/static/components/register/views/register.html:38
 #: privacyidea/static/components/register/views/register.html:42
 #: privacyidea/static/components/user/views/user.password.html:11
 msgid "Given name"
-msgstr ""
+msgstr "Křestní jméno"
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:1
 msgid "HOTP Token settings"
@@ -1323,7 +1335,7 @@ msgstr ""
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:18
 msgid "Hardware"
-msgstr ""
+msgstr "Hardware"
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:60
 #: privacyidea/static/components/token/views/token.enroll.totp.html:69
@@ -1611,34 +1623,36 @@ msgstr ""
 #: privacyidea/static/components/login/views/login.html:20
 #: privacyidea/static/components/login/views/login.html:79
 msgid "Log In"
-msgstr ""
+msgstr "Přihlásit se"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:110
 msgid "Log out"
-msgstr ""
+msgstr "Odhlásit se"
 
 #: privacyidea/static/templates/menu.html:118
 msgid "Login"
-msgstr ""
+msgstr "Přihlášení"
 
 #: privacyidea/static/components/login/views/login.html:9
 msgid ""
 "Login as\n"
 "                {{ remoteUser }}"
 msgstr ""
+"Přihlášení jako\n"
+"                {{ remoteUser }}"
 
 #: privacyidea/static/components/login/views/login.html:23
 msgid "Login with credentials"
-msgstr ""
+msgstr "Přihlášení přístupovými údaji"
 
 #: privacyidea/static/components/token/views/token.enroll.html:181
 #: privacyidea/static/templates/menu.html:151
 msgid "Logout"
-msgstr ""
+msgstr "Odhlášení"
 
 #: privacyidea/static/components/token/views/token.html:73
 msgid "Lost Token"
-msgstr ""
+msgstr "Ztracený token"
 
 #: privacyidea/static/components/directives/views/directive.attachmachine.html:5
 msgid "Machine"
@@ -1673,7 +1687,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.lost.html:27
 msgid "Mark the token as lost"
-msgstr ""
+msgstr "Označit token jako ztracený"
 
 #: privacyidea/static/components/config/views/config.system.html:235
 msgid ""
@@ -1699,7 +1713,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:92
 msgid "Microsoft Internet Explorer is not supported."
-msgstr ""
+msgstr "Microsoft Internet Explorer není podporován."
 
 #: privacyidea/static/components/register/views/register.html:57
 #: privacyidea/static/components/register/views/register.html:60
@@ -1714,7 +1728,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:13
 #: privacyidea/static/components/config/views/config.smsgateway.list.html:5
 msgid "Name"
-msgstr ""
+msgstr "Název"
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:17
 msgid "New Connectors"
@@ -1724,7 +1738,7 @@ msgstr ""
 #: privacyidea/static/components/login/views/pinchange.html:14
 #: privacyidea/static/components/login/views/pinchange.html:16
 msgid "New PIN"
-msgstr ""
+msgstr "Nový PIN"
 
 #: privacyidea/static/components/config/views/config.radius.html:12
 msgid "New RADIUS server"
@@ -1765,16 +1779,16 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:517
 #: privacyidea/static/components/token/views/token.list.html:4
 msgid "Next"
-msgstr ""
+msgstr "Další"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:25
 #: privacyidea/static/components/user/views/dialog.ask_user_delete.html:19
 msgid "No"
-msgstr ""
+msgstr "Ne"
 
 #: privacyidea/static/components/token/views/token.getserial.html:105
 msgid "No Serial number could be found for OTP value {{ otp }}."
-msgstr ""
+msgstr "Nebylo nalezeno žádné sériové číslo pro jednorázový kód {{ otp }}."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:152
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:316
@@ -1792,11 +1806,11 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:19
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:18
 msgid "No serial found"
-msgstr ""
+msgstr "Sériové číslo nenalezeno"
 
 #: privacyidea/static/components/directives/views/directive.assignuser.html:28
 msgid "No user found"
-msgstr ""
+msgstr "Uživatel nenalezen"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:67
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:11
@@ -1893,12 +1907,12 @@ msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:165
 msgid "Okay"
-msgstr ""
+msgstr "OK"
 
 #: privacyidea/static/templates/baseline.html:26
 #: privacyidea/static/templates/menu.html:136
 msgid "Online Documentation"
-msgstr ""
+msgstr "On-line dokumentace"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:96
 msgid ""
@@ -1955,20 +1969,20 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.assignuser.html:36
 #: privacyidea/static/components/token/views/token.enroll.html:59
 msgid "PIN"
-msgstr ""
+msgstr "PIN"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:600
 msgid "PIN changed successfully."
-msgstr ""
+msgstr "PIN byl úspěšně změněn."
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:220
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:234
 msgid "PIN set successfully."
-msgstr ""
+msgstr "PIN byl úspěšně nastaven."
 
 #: privacyidea/static/components/token/views/token.details.html:182
 msgid "PKCS12"
-msgstr ""
+msgstr "PKCS12"
 
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:49
 msgid "Parameters"
@@ -2059,7 +2073,7 @@ msgstr ""
 
 #: privacyidea/static/components/login/views/login.html:51
 msgid "Please sign in"
-msgstr ""
+msgstr "Prosím přihlaste se"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:49
 msgid ""
@@ -2113,6 +2127,8 @@ msgid ""
 "Prepend the PIN in front of the OTP value\n"
 "                . Otherwise it will be post pended."
 msgstr ""
+"Vložte PIN před jednorázový kód\n"
+"                . Jinak se bude vkládat na konec."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:145
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:253
@@ -2130,7 +2146,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:516
 #: privacyidea/static/components/token/views/token.list.html:3
 msgid "Previous"
-msgstr ""
+msgstr "Předchozí"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:57
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:57
@@ -2144,7 +2160,7 @@ msgstr ""
 
 #: privacyidea/static/templates/baseline.html:32
 msgid "Privacy Statement"
-msgstr ""
+msgstr "Ochrana osobních údajů"
 
 #: privacyidea/static/components/token/views/token.import.html:134
 msgid "Progress"
@@ -2241,7 +2257,7 @@ msgstr ""
 #: privacyidea/static/components/login/views/login.html:61
 #: privacyidea/static/components/token/views/token.details.html:462
 msgid "Realm"
-msgstr ""
+msgstr "Realm"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:566
 msgid "Realm defrealm created."
@@ -2269,18 +2285,18 @@ msgstr ""
 
 #: privacyidea/static/templates/menu.html:109
 msgid "Refresh"
-msgstr ""
+msgstr "Obnovit"
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:30
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:30
 msgid "Regenerate QR Code"
-msgstr ""
+msgstr "Znovu vygenerovat QR kód"
 
 #: privacyidea/static/components/register/views/register.html:14
 #: privacyidea/static/components/register/views/register.html:89
 #: privacyidea/static/templates/menu.html:114
 msgid "Register"
-msgstr ""
+msgstr "Registrovat"
 
 #: privacyidea/static/components/token/views/token.enrolled.registration.html:4
 msgid "Registration Code"
@@ -2316,7 +2332,7 @@ msgstr ""
 
 #: privacyidea/static/components/login/views/pinchange.html:20
 msgid "Repeat new PIN"
-msgstr ""
+msgstr "Zopakujte nový PIN"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:37
 #: privacyidea/static/components/directives/views/directive.assignuser.html:46
@@ -2325,7 +2341,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.motp.html:43
 #: privacyidea/static/components/user/views/user.password.html:60
 msgid "Repeat password"
-msgstr ""
+msgstr "Zopakujte heslo"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:38
 msgid "Request Mapping (JSON format)"
@@ -2398,7 +2414,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:355
 msgid "Resync Token"
-msgstr ""
+msgstr "Synchronizovat token"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:56
 msgid "Retries"
@@ -2410,7 +2426,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:62
 msgid "Revoke"
-msgstr ""
+msgstr "Revokovat"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:145
 msgid "Roll the token"
@@ -2493,7 +2509,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.tokens.html:74
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:62
 msgid "Save"
-msgstr ""
+msgstr "Uložit"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:171
 msgid "Save CA"
@@ -2526,7 +2542,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:274
 msgid "Save Token Info"
-msgstr ""
+msgstr "Uložit informace o tokenu"
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:90
 msgid "Save privacyIDEA server"
@@ -2548,7 +2564,7 @@ msgstr ""
 #: privacyidea/static/components/user/views/user.add.html:49
 #: privacyidea/static/components/user/views/user.details.html:54
 msgid "Save user"
-msgstr ""
+msgstr "Uložit uživatele"
 
 #: privacyidea/static/components/config/views/config.policies.list.html:16
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:108
@@ -2674,7 +2690,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:377
 msgid "Set PIN"
-msgstr ""
+msgstr "Nastavit PIN"
 
 #: privacyidea/static/components/token/views/token.details.html:118
 msgid "Set count window"
@@ -2732,7 +2748,7 @@ msgstr ""
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:22
 msgid "Software"
-msgstr ""
+msgstr "Software"
 
 #: privacyidea/static/components/token/views/token.enroll.html:38
 msgid "Some nice words..."
@@ -2763,18 +2779,18 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:282
 msgid "Successfully authenticated."
-msgstr ""
+msgstr "Přihlášení bylo úspěšné."
 
 #: privacyidea/static/templates/baseline.html:14
 #: privacyidea/static/templates/menu.html:143
 msgid "Support"
-msgstr ""
+msgstr "Podpora"
 
 #: privacyidea/static/components/register/views/register.html:28
 #: privacyidea/static/components/register/views/register.html:32
 #: privacyidea/static/components/user/views/user.password.html:16
 msgid "Surname"
-msgstr ""
+msgstr "Příjmení"
 
 #: privacyidea/static/components/token/views/token.details.html:129
 msgid "Sync Window"
@@ -2813,11 +2829,11 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.totp.html:1
 msgid "TOTP Token settings"
-msgstr ""
+msgstr "Nastavení TOTP tokenů"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:191
 msgid "TOTP: time based One Time Passwords"
-msgstr ""
+msgstr "TOTP: jednorázové kódy na základě času"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:143
 msgid "Table"
@@ -2867,7 +2883,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:424
 msgid "Test token"
-msgstr ""
+msgstr "Test tokenu"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:128
 msgid "Thank you for improving your security!"
@@ -2917,12 +2933,12 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:53
 #: privacyidea/static/components/token/views/token.enroll.totp.html:53
 msgid "The Google Authenticator only supports an OTP length of 6."
-msgstr ""
+msgstr "Aplikace Google Authenticator podporuje pouze kódy s délkou 6."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:66
 #: privacyidea/static/components/token/views/token.enroll.totp.html:75
 msgid "The Google Authenticator only supports the SHA1 algorithm."
-msgstr ""
+msgstr "Aplikace Google Authenticator podporuje pouze algoritmus SHA1."
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:2
 msgid ""
@@ -2970,6 +2986,9 @@ msgid ""
 "            protect it. <b>If you are in doubt, that someone else saw it, please\n"
 "            regenerate the QR Code, when no one else is watching.</b>"
 msgstr ""
+"QR kód obsahuje tajný klíč Vašeho tokenu. Musíte ho chránit.\n"
+"            <b>Pokud si myslíte, že ho viděl někdo další, prosím\n"
+"            znovu vygenerujte QR kód, až se nikdo nebude dívat.</b>"
 
 #: privacyidea/static/components/token/views/token.enroll.question.html:1
 msgid ""
@@ -3055,6 +3074,9 @@ msgid ""
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc6238\">RFC\n"
 "    6238</a>."
 msgstr ""
+"TOTP je algoritmus pro generování jednorázových kódů na základě času.\n"
+"    Je popsán v <a href=\"https://tools.ietf.org/html/rfc6238\">RFC\n"
+"    6238</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.totp.html:1
 msgid ""
@@ -3063,6 +3085,11 @@ msgid ""
 "    smartphone app like the Google Authenticator or FreeOTP turning your\n"
 "    smartphone into an authentication device."
 msgstr ""
+"TOTP token je založen na čase. Můžete vložit tajný klíč nebo\n"
+"    si ho nechat vygenerovat a naskenovat QR kód\n"
+"    aplikací v chytrém telefonu (např. Google Authenticator nebo FreeOTP), "
+"čímž\n"
+"    ze svého telefonu učiníte autentikátor."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:2
 msgid ""
@@ -3117,6 +3144,9 @@ msgid ""
 "    You may set a trust anchor directory, which is a path to a directory\n"
 "    containing certificates to trust for WebAuthn authenticator attestation."
 msgstr ""
+"WebAuthn jsou hardwarové tokeny, které komunikují s webovým prohlížečem.\n"
+"    Můžete nastavit trust anchor directory, což je cesta ke složce\n"
+"    obsahující certifikáty atestací důvěryhodných WebAuthn autentikátorů."
 
 #: privacyidea/static/components/token/views/token.enroll.webauthn.html:1
 msgid ""
@@ -3124,6 +3154,9 @@ msgid ""
 "    Alliance. You can register this token with any webservice and with\n"
 "    as many web services you wish to."
 msgstr ""
+"WebAuthn token používá standard definový W3C a Fido\n"
+"    Alliance. Tento token si můžete registrovat s libovolným množstvím\n"
+"    webových služeb."
 
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:1
 msgid ""
@@ -3247,6 +3280,11 @@ msgid ""
 "    </a>\n"
 "    will be disabled and can be deleted or enabled later."
 msgstr ""
+"Původní token\n"
+"    <a ui-sref=\"token.details({tokenSerial:selectedToken.serial})\">\n"
+"        {{ selectedToken.serial }}\n"
+"    </a>\n"
+"    bude zakázán a může být později smazán nebo znovu povolen."
 
 #: privacyidea/static/components/token/views/token.lost.html:48
 msgid "The password can not be shown again, later!"
@@ -3333,6 +3371,9 @@ msgid ""
 "        <a ui-sref=\"token.details({tokenSerial:lostResult.serial})\">\n"
 "        {{ lostResult.serial }}</a>."
 msgstr ""
+"Sériové číslo nového tokenu je\n"
+"        <a ui-sref=\"token.details({tokenSerial:lostResult.serial})\">\n"
+"        {{ lostResult.serial }}</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:22
 #: privacyidea/static/components/token/views/token.enroll.totp.html:22
@@ -3342,6 +3383,9 @@ msgid ""
 "            will be\n"
 "            displayed to you to be scanned."
 msgstr ""
+"Server vytvoří klíč pro jednorázové kódy\n"
+"            a zobrazí se QR kód,\n"
+"            který naskenujete."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:74
 msgid ""
@@ -3377,15 +3421,15 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:34
 #: privacyidea/static/components/token/views/token.enrolled.webauthn.html:32
 msgid "The token is enrolled."
-msgstr ""
+msgstr "Token byl přidán."
 
 #: privacyidea/static/components/token/views/token.lost.html:52
 msgid "The token is valid till {{ lostResult.end_date }}."
-msgstr ""
+msgstr "Token je platný do {{ lostResult.end_date }}."
 
 #: privacyidea/static/components/token/views/token.lost.html:34
 msgid "The token was marked lost successfully."
-msgstr ""
+msgstr "Token byl úspěšně označen jako ztracený."
 
 #: privacyidea/static/components/token/views/token.enroll.html:146
 msgid ""
@@ -3396,6 +3440,14 @@ msgid ""
 "            <a ui-sref=\"user.details({username:newUser.user, realmname:newUser.realm})\">{{ newUser.user }}</a> in realm\n"
 "            {{ newUser.realm }}."
 msgstr ""
+"Token byl úspěšně přidán se sériovým číslem\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
+"\n"
+"                {{ enrolledToken.serial }}</a>\n"
+"            pro uživatele\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> v realmu\n"
+"            {{ newUser.realm }}."
 
 #: privacyidea/static/components/token/views/token.enroll.html:155
 msgid ""
@@ -3403,6 +3455,10 @@ msgid ""
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">\n"
 "                {{ enrolledToken.serial }}</a>."
 msgstr ""
+"Token byl úspěšně přidán se sériovým číslem\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
+"\n"
+"                {{ enrolledToken.serial }}</a>."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
 msgid "The trust_anchor_dir must be an absolute path."
@@ -3666,7 +3722,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:22
 msgid "Token Type"
-msgstr ""
+msgstr "Typ tokenu"
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:7
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:6
@@ -3683,22 +3739,24 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:6
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:16
 msgid "Token data"
-msgstr ""
+msgstr "Data tokenu"
 
 #: privacyidea/static/components/token/views/token.details.html:1
 msgid "Token details for {{ tokenSerial }}"
-msgstr ""
+msgstr "Podrobnosti tokenu {{ tokenSerial }}"
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:4
 #: privacyidea/static/components/token/views/token.enrolled.webauthn.html:4
 msgid "Token enrolled"
-msgstr ""
+msgstr "Token přidán"
 
 #: privacyidea/static/components/token/views/token.html:34
 msgid ""
 "Token enrollment\n"
 "                                wizard"
 msgstr ""
+"Průvodce přidáním\n"
+"                                tokenu"
 
 #: privacyidea/static/components/token/views/token.list.html:65
 msgid "Token realms"
@@ -3706,22 +3764,22 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:262
 msgid "Token resync failed."
-msgstr ""
+msgstr "Synchronizace tokenu se nezdařila."
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:259
 msgid "Token resync successful."
-msgstr ""
+msgstr "Synchronizace tokenu byla úspěšná."
 
 #: privacyidea/static/components/token/views/token.lost.html:2
 msgid "Token {{ selectedToken.serial }} is lost?"
-msgstr ""
+msgstr "Je token {{ selectedToken.serial }} ztracený?"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33
 #: privacyidea/static/components/config/views/config.html:44
 #: privacyidea/static/components/dashboard/views/dashboard.html:7
 #: privacyidea/static/templates/menu.html:46
 msgid "Tokens"
-msgstr ""
+msgstr "Tokeny"
 
 #: privacyidea/static/components/machine/views/machine.details.html:34
 msgid "Tokens and Applications for machine {{ machineid }}"
@@ -3729,11 +3787,11 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.details.html:133
 msgid "Tokens for user {{ username }}"
-msgstr ""
+msgstr "Tokeny uživatele {{ username }}"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:12
 msgid "Total"
-msgstr ""
+msgstr "Celkem"
 
 #: privacyidea/static/components/token/views/token.challenges.html:1
 msgid "Total Challenges:"
@@ -3782,11 +3840,11 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:483
 msgid "Unassign Token"
-msgstr ""
+msgstr "Odebrat token"
 
 #: privacyidea/static/components/token/views/token.details.html:457
 msgid "Unassign User"
-msgstr ""
+msgstr "Odebrat uživatele"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:26
 msgid "Unassigned Hardware"
@@ -3842,7 +3900,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.radius.edit.html:99
 #: privacyidea/static/templates/menu.html:62
 msgid "User"
-msgstr ""
+msgstr "Uživatel"
 
 #: privacyidea/static/components/config/views/config.system.html:160
 msgid ""
@@ -3899,7 +3957,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.html:58
 #: privacyidea/static/templates/menu.html:54
 msgid "Users"
-msgstr ""
+msgstr "Uživatelé"
 
 #: privacyidea/static/components/token/views/token.enroll.vasco.html:9
 msgid "VASCO Token blob"
@@ -3961,21 +4019,21 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:1
 msgid "WebAuthn Token settings"
-msgstr ""
+msgstr "Nastavení WebAuthn tokenu"
 
 #: privacyidea/static/components/login/factories/webauthn.js:42
 #: privacyidea/static/components/login/factories/webauthn.js:69
 msgid "WebAuthn is not supported by this browser, or in this context."
-msgstr ""
+msgstr "WebAuthn není podporováno webovým prohlížečem nebo v tomto kontextu."
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:215
 msgid "WebAuthn: Web Authentication hardware token."
-msgstr ""
+msgstr "WebAuthn: autentikátory standardu Web Authentication."
 
 #: privacyidea/static/components/dialogs/views/dialog.no.token.html:15
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:13
 msgid "Welcome"
-msgstr ""
+msgstr "Vítejte"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:176
 msgid "Where statement"
@@ -4009,12 +4067,19 @@ msgid ""
 "                You may login as this user to privacyIDEA without any further\n"
 "                credentials."
 msgstr ""
+"Jste autentizován/autentizována webovým serverem jako uživatel\n"
+"                <b>{{ remoteUser }}</b>.\n"
+"                Můžete se přihlásit do privacyIDEA jako tento uživatel bez "
+"dalšího\n"
+"                ověření."
 
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:16
 msgid ""
 "You are logged in as {{ loggedInUser.username }}\n"
 "                            @  {{ loggedInUser.realm }}."
 msgstr ""
+"Přihlášen/přihlášena jako {{ loggedInUser.username }}\n"
+"                            @  {{ loggedInUser.realm }}."
 
 #: privacyidea/static/components/token/views/token.import.html:96
 msgid ""
@@ -4051,6 +4116,15 @@ msgid ""
 "                    not see anything, please make sure that your authenticator\n"
 "                    supports WebAuthn."
 msgstr ""
+"Registraci musíte potvrdit svým\n"
+"                    autentikátorem. U fyzického autentikátoru to většinou\n"
+"                    vyžaduje stisknutí tlačítka na autentikátoru nebo "
+"opětovné připojení\n"
+"                    (pokud nemá žádné tlačítko). Pokud chcete\n"
+"                    použít autentikátor zabudovaný v zařízení,\n"
+"                    vyhledejte dialogové okno operačního systému. Pokud\n"
+"                    žádné nevidíte, zkontrolujte, zda Váš autentikátor\n"
+"                    podporuje WebAuthn."
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:28
 msgid ""
@@ -4059,10 +4133,16 @@ msgid ""
 "                    replugging your token. This depends on the actual\n"
 "                    token model."
 msgstr ""
+"Potvrďte registraci svým tokenem,\n"
+"                    zmáčknutím blikajícího tlačítka nebo\n"
+"                    opětovným připojením tokenu. Postup záleží na "
+"konkrétním\n"
+"                    modelu."
 
 #: privacyidea/static/templates/menu.html:162
+#, fuzzy
 msgid "You will be logged out in {{ myCountdown }} second(s)."
-msgstr ""
+msgstr "Za {{ myCountdown }} sekund/sekundy/sekundu dojde k odhlášení."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:373
 msgid "Your OTP pin expires on"
@@ -4105,6 +4185,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:36
 msgid "Your token {{ enrolledToken.serial }} is not completely enrolled, yet."
 msgstr ""
+"Registrace Vašeho tokenu {{ enrolledToken.serial }} ještě není kompletní."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:1
 msgid "Yubico Token settings"
@@ -4417,11 +4498,11 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.list.html:12
 msgid "total tokens: {{ tokendata.count }}"
-msgstr ""
+msgstr "celkem tokenů: {{ tokendata.count }}"
 
 #: privacyidea/static/components/user/views/user.html:49
 msgid "total users: {{ usercount }}"
-msgstr ""
+msgstr "celkem uživatelů: {{ usercount }}"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:89
 msgid ""
