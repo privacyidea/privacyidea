@@ -1,10 +1,11 @@
 # Lukáš Krejza <gryffus@hkfree.org>, 2023.
+# Dominik František Bučík <bucik@ics.muni.cz>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2023-08-01 16:08+0000\n"
-"Last-Translator: Lukáš Krejza <gryffus@hkfree.org>\n"
+"PO-Revision-Date: 2024-03-27 09:25+0000\n"
+"Last-Translator: Dominik František Bučík <bucik@ics.muni.cz>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/cs/>\n"
 "Language: cs\n"
@@ -12,7 +13,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
-"X-Generator: Weblate 5.0-dev\n"
+"X-Generator: Weblate 5.5-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
