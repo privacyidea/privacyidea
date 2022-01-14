@@ -118,7 +118,8 @@ setup(
                  "pytest-cov>=2.5.1",
                  "responses>=0.9.0",
                  "testfixtures>=6.14.2"],
-        'postgres': ['psycopg2>=2.8.3']
+        'postgres': ['psycopg2>=2.8.3'],
+        'hsm': ['PyKCS11>=1.5.10']
     },
     install_requires=install_requires,
     include_package_data=True,
