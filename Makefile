@@ -27,7 +27,7 @@ setversion:
 
 translate:
 	grunt nggettext_extract
-	for language in de nl fr ; do \
+	for language in de nl fr cs ; do \
 		(cd po; msgmerge $$language.po template.pot > tmp.po; mv tmp.po $$language.po) ; \
 	done
 	grunt nggettext_compile
