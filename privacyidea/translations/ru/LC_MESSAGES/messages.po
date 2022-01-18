@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2021-06-06 09:14+0200\n"
-"PO-Revision-Date: 2021-09-29 07:38+0000\n"
-"Last-Translator: Konstantin Burov <sad.2.shade@gmail.com>\n"
+"PO-Revision-Date: 2022-01-19 09:53+0000\n"
+"Last-Translator: Gennady Oshnurov <gercogoge@mail.ru>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/ru/>\n"
 "Language: ru\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 4.9-dev\n"
+"X-Generator: Weblate 4.11-dev\n"
 "Generated-By: Babel 2.6.0\n"
 
 #: api/auth.py:222
@@ -496,65 +496,69 @@ msgstr "Пользователь может активировать свои с
 
 #: lib/policy.py:1913
 msgid "The user is allowed to delete his own tokens."
-msgstr ""
+msgstr "Пользователь может удалить свои собственные токены."
 
 #: lib/policy.py:1919
 msgid "The user is allowed to unassign his own tokens."
-msgstr ""
+msgstr "Пользователь может отключить свои собственные токены."
 
 #: lib/policy.py:1924
 msgid "The user is allowed to resyncronize his tokens."
-msgstr ""
+msgstr "Пользователь может повторно синхронизировать свои собственные токены."
 
 #: lib/policy.py:1929
 msgid "The user is allowed to revoke a token"
-msgstr ""
+msgstr "Пользователь может отозвать токен"
 
 #: lib/policy.py:1934
 msgid "The user is allowed to reset the failcounter of his tokens."
-msgstr ""
+msgstr "Пользователь может обнулить счетчик ошибок своего токена."
 
 #: lib/policy.py:1939
 msgid "The user is allowed to set the OTP PIN of his tokens."
-msgstr ""
+msgstr "Пользователь может установить PIN своих токенов."
 
 #: lib/policy.py:1944
 msgid "The user is allowed to set a random OTP PIN of his tokens."
-msgstr ""
+msgstr "Пользователь может установить случайный PIN своих токенов."
 
 #: lib/policy.py:1949
 msgid "The length of a random PIN set by the user."
-msgstr ""
+msgstr "Длина случайного PIN-кода устанавливается пользователем."
 
 #: lib/policy.py:1952
 msgid "The user is allowed to set the token description."
-msgstr ""
+msgstr "Пользователь может указать описание токена."
 
 #: lib/policy.py:1956
 msgid "The user is allowed to set the OTP PIN during enrollment."
-msgstr ""
+msgstr "Пользователь может указать PIN-код во время создания токена."
 
 #: lib/policy.py:1979
 msgid "Allow the user to view his own token history."
-msgstr ""
+msgstr "Позволить пользователю просматривать историю собственных токенов."
 
 #: lib/policy.py:1982
 msgid "The user will only see audit entries of the last 10d, 3m or 2y."
 msgstr ""
+"Пользователь будет видеть записи аудита за последние 10 дней, 3 месяца или 2 "
+"года."
 
 #: lib/policy.py:1986
 msgid "The user will not see the specified columns in the audit."
-msgstr ""
+msgstr "Пользователь не будет видеть указанные поля на странице аудита."
 
 #: lib/policy.py:1991
 msgid "The user is allowed to view his own user information."
-msgstr ""
+msgstr "Пользователь может видеть информацию о своей учетной записи."
 
 #: lib/policy.py:1995
 msgid ""
 "The user is allowed to update his own user information, like changing his"
 " password."
 msgstr ""
+"Пользователь может обновлять информацию о себе, например менять собственный "
+"пароль."
 
 #: lib/policy.py:2000
 msgid "The user is allowed to do a password reset in an editable UserIdResolver."
@@ -566,6 +570,9 @@ msgid ""
 "should be allowed to set any attribute, set this to '*:*'. Use '*' with "
 "CAUTION! For more details, check the documentation."
 msgstr ""
+"Пользователь может изменять определенные атрибуты. Установить значение '*:*' "
+"если пользователю должно быть доступно изменение любых атрибутов. "
+"Используйте '*' с ОСТОРОЖНОСТЬЮ! Подробности в документации."
 
 #: lib/policy.py:2014
 msgid ""
@@ -573,24 +580,29 @@ msgid ""
 " should be allowed to delete any attribute, set this to '*'. Use '*' with"
 " CAUTION! For more details, check the documentation."
 msgstr ""
+"Пользователь может удалять определенные атрибуты. Установить значение '*:*' "
+"если пользователю должно быть доступно удаление любых атрибутов. Используйте "
+"'*' с ОСТОРОЖНОСТЬЮ! Подробности в документации."
 
 #: lib/policy.py:2025
 msgid "Limit the number of allowed tokens in a realm."
-msgstr ""
+msgstr "Ограничить количество допустимых токенов при realm."
 
 #: lib/policy.py:2029
 msgid "Limit the number of tokens a user may have assigned."
-msgstr ""
+msgstr "Ограничить количество токенов пользователя."
 
 #: lib/policy.py:2034
 msgid "Limit the number of active tokens a user may have assigned."
-msgstr ""
+msgstr "Ограничить количество активных допустимых токенов пользователя."
 
 #: lib/policy.py:2039
 msgid ""
 "Set a random OTP PIN with this length for a token during the enrollment "
 "process."
 msgstr ""
+"При регистрации токена установить случайный PIN-код с этим количеством "
+"символов."
 
 #: lib/policy.py:2044
 msgid "In case of a random OTP PIN use this python module to process the PIN."
