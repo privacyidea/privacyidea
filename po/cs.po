@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-01-19 08:55+0000\n"
+"PO-Revision-Date: 2022-01-19 10:03+0000\n"
 "Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/cs/>\n"
@@ -4161,9 +4161,8 @@ msgstr ""
 "                    modelu."
 
 #: privacyidea/static/templates/menu.html:162
-#, fuzzy
 msgid "You will be logged out in {{ myCountdown }} second(s)."
-msgstr "Za {{ myCountdown }} sekund/sekundy/sekundu dojde k odhlášení."
+msgstr "Za {{ myCountdown }} s dojde k odhlášení."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:373
 msgid "Your OTP pin expires on"
