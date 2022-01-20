@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2021-06-06 09:14+0200\n"
-"PO-Revision-Date: 2022-01-19 09:53+0000\n"
+"PO-Revision-Date: 2022-01-20 05:53+0000\n"
 "Last-Translator: Gennady Oshnurov <gercogoge@mail.ru>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/ru/>\n"
@@ -562,7 +562,7 @@ msgstr ""
 
 #: lib/policy.py:2000
 msgid "The user is allowed to do a password reset in an editable UserIdResolver."
-msgstr ""
+msgstr "Пользователь может сбрасывать пароль в редактируемом UserIdResolver."
 
 #: lib/policy.py:2006
 msgid ""
@@ -607,62 +607,75 @@ msgstr ""
 #: lib/policy.py:2044
 msgid "In case of a random OTP PIN use this python module to process the PIN."
 msgstr ""
+"Использовать модуль на языке Python для формирования PIN-кода если "
+"используется случайный PIN-код."
 
 #: lib/policy.py:2049
 msgid ""
 "If the administrator sets the OTP PIN during enrollment or later, the "
 "user will have to change the PIN during first use."
 msgstr ""
+"Если администратор установил PIN во время формирования или позже, то "
+"пользователю должен поменять его при первом использовании."
 
 #: lib/policy.py:2056
 msgid ""
 "The user needs to change his PIN on a regular basis. To change the PIN "
 "every 180 days, enter '180d'."
 msgstr ""
+"Пользователь менять его PIN на регулярной основе. Для смены PIN каждые 180 "
+"дней введите '180d'."
 
 #: lib/policy.py:2063
 msgid ""
 "The OTP PIN can be hashed or encrypted. Hashing the PIN is the default "
 "behaviour."
 msgstr ""
+"PIN-код может быть хэширован или шифрован. Хэширование PIN-кода включено по "
+"умолчанию."
 
 #: lib/policy.py:2068
 msgid ""
 "Set label for a new enrolled Google Authenticator. Possible tags are <u> "
 "(user), <r> (realm), <s> (serial)."
 msgstr ""
+"Введите название для сформированного токена в Google Authenticator. "
+"Возможные метки - <u> (пользователь), <r> - realm, <s> (серийный номер)."
 
 #: lib/policy.py:2074
 msgid "This is the issuer label for new enrolled Google Authenticators."
-msgstr ""
+msgstr "Название издателя для новых токенов Google Authenticator."
 
 #: lib/policy.py:2080
 msgid "This is the URL to the token image for smartphone apps like FreeOTP."
 msgstr ""
+"Ссылка на изображение токена для приложения смартфона, например FreeOTP."
 
 #: lib/policy.py:2087
 msgid ""
 "Users can assign a token just by using the unassigned token to "
 "authenticate."
 msgstr ""
+"Пользователи могут добавить токен только используя отключенные токены для "
+"аутентификации."
 
 #: lib/policy.py:2093
 msgid "The length of the password in case of temporary token (lost token)."
-msgstr ""
+msgstr "Длина пароля в случае временного токена (токен утерян)."
 
 #: lib/policy.py:2097
 msgid ""
 "The contents of the temporary password, described by the characters C, c,"
 " n, s, 8."
-msgstr ""
+msgstr "Состав временного пароля, описанное символами C, c, n, s, 8."
 
 #: lib/policy.py:2102
 msgid "The length of the validity for the temporary token (in days)."
-msgstr ""
+msgstr "Срок действия временного токена (в днях)."
 
 #: lib/policy.py:2107
 msgid "Set the length of registration codes."
-msgstr ""
+msgstr "Установить длину кодов регистрации."
 
 #: lib/policy.py:2111
 msgid ""
@@ -670,24 +683,33 @@ msgid ""
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
 "[1234567890]"
 msgstr ""
+"Укажите требуемый состав кода регистрации. (c)haracters, (n)umeric, (s)"
+"pecial. Используйте модификаторы +/- или список допустимых символов "
+"[1234567890]"
 
 #: lib/policy.py:2124
 msgid ""
 "Either use the Token PIN , use the Userstore Password or use no fixed "
 "password component."
 msgstr ""
+"Используйте PIN-код для токена, или пользовательский пароль, или "
+"нефиксированную часть пароля."
 
 #: lib/policy.py:2129
 msgid ""
 "This is a whitespace separated list of tokentypes, that can be used with "
 "challenge response."
 msgstr ""
+"Список типов токенов, которые могут использоваться для ответа, разделенный "
+"пробелами"
 
 #: lib/policy.py:2134
 msgid ""
 "Use an alternate challenge text for telling the user to enter an OTP "
 "value."
 msgstr ""
+"Использовать альтернативный текст для запроса пользователя на ввод значения "
+"OTP-кода."
 
 #: lib/policy.py:2139
 msgid ""
@@ -966,7 +988,7 @@ msgstr ""
 msgid ""
 "If this is checked, the privacyIDEA Node name will be displayed in the "
 "menu bar."
-msgstr ""
+msgstr "Показывать название ноды privacyIDEA в меню."
 
 #: lib/policy.py:2430
 msgid ""
@@ -974,6 +996,9 @@ msgid ""
 "will contain a QR code that leads to the privacyIDEA Authenticator in the"
 " Google Play Store."
 msgstr ""
+"Если эта настройка включена, то страница формирования HOTP, TOTP и Push-"
+"токена будет содержать QR-код, ведущий на приложение privacyIDEA "
+"Authenticator в магазине Google Play."
 
 #: lib/policy.py:2437
 msgid ""
@@ -981,12 +1006,17 @@ msgid ""
 "will contain a QR code that leads to the privacyIDEA Authenticator in the"
 " iOS App Store."
 msgstr ""
+"Если эта настройка включена, то страница формирования HOTP, TOTP и Push-"
+"токена будет содержать QR-код, ведущий на приложение privacyIDEA "
+"Authenticator в магазине iOS App Store."
 
 #: lib/policy.py:2444
 msgid ""
 "This action adds a QR code in the enrollment page for HOTP, TOTP and Push"
 " tokens, that lead to this given URL."
 msgstr ""
+"Это действие добавляет QR-код на страницу формирования HOTP, TOTP и Push "
+"токенов, который ведет на указанный URL."
 
 #: lib/policy.py:2489
 msgid ""
@@ -1022,7 +1052,7 @@ msgstr ""
 
 #: lib/token.py:2460
 msgid "The user is allowed to enroll a {0!s} token."
-msgstr ""
+msgstr "Пользователю разрешено сформировать {0!s} токен."
 
 #: lib/token.py:2491
 msgid "Set the maximum allowed PIN length of the {0!s} token."
