@@ -444,7 +444,7 @@ def export_user_data(token_list, attributes=None):
 @manager.option('--serial', help='A regular expression on the serial')
 @manager.option('--description', help='A regular expression on the description')
 @manager.option('--attributes', help='Extends the "listuser" function to display additional user attributes')
-@manager.option('--tokenrealms', help='A comma separated list of realms, to which the tokens '                                      'should be assigned.')
+@manager.option('--tokenrealms', help='A comma separated list of realms, to which the tokens should be assigned.')
 @manager.option('--sum', help='In case of the action "listuser", this switch specifies if '
                               'the output should only contain the number of tokens owned '
                               'by the user.',
