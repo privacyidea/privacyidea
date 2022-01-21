@@ -54,7 +54,7 @@ passlib==1.7.4
 pathlib2==2.3.6; python_version <= '3.5'
 Pillow==6.2.2; python_version < '3.0'
 Pillow==7.2.0; python_version == '3.5'
-Pillow==8.4.0; python_version == '3.6'
+Pillow==9.0.0; python_version == '3.6'
 Pillow==9.0.0; python_version > '3.6'
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
