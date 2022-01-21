@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2021-10-15 22:34+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2022-01-21 15:06+0000\n"
+"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.9-dev\n"
+"X-Generator: Weblate 4.11-dev\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -1056,8 +1056,7 @@ msgstr "E-Mail-Token-Einstellungen"
 #: privacyidea/static/components/token/controllers/tokenControllers.js:203
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
-"E-Mail: Ein Einmalpasswort über E-Mail an die E-Mail-Adresse des Benutzers "
-"versenden."
+"E-Mail: Ein Einmalpasswort an die E-Mail-Adresse des Benutzers versenden."
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:19
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:19
