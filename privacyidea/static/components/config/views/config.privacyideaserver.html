@@ -9,11 +9,10 @@
                         definitions</a></li>
                 <li role="presentation"
                     ng-show="checkRight('privacyideaserver_write')"
-                    >
-                    <a ui-sref="config.privacyideaserver.edit" translate>
+                    ng-class="{ active: $state.includes('config.privacyideaserver.add')}">
+                    <a ui-sref="config.privacyideaserver.add" translate>
                         New privacyIDEA server
                     </a>
-
                 </li>
             </ul>
         </div>
