@@ -66,40 +66,16 @@
     <div ng-show="radioCSR == 'csrgenerate'">
 
         <div class="form-group">
-            <input type="checkbox" ng-model="form.genkey"
+            <input type="hidden" ng-model="form.genkey" ng-value="1"
                    name="generate" id="generate">
-            <label for="generate" translate>Generate the Key Pair on the Server</label>
 
             <div ng-show="form.genkey">
                 <p class="help-block" translate>
                     The server will create the private RSA key and store it in
-                    the
-                    database. If want to create the key pair client side,
-                    uncheck
-                    this option.
+                    the database. You can later download the PKCS#12 file.
                 </p>
             </div>
         </div>
-
-        <div ng-show="!form.genkey">
-            <p class="help-block" translate>
-                The RSA keys will be generated in the browser.
-                You will be taken to a new browser window, where you can
-                create the Certificate Request. The private key remains in
-                your browser and you will be able to install the certificate
-                to the browser.
-            </p>
-            <p class="help-block" translate>
-                Microsoft Internet Explorer is not supported.
-            </p>
-            <div class="text-center">
-                <button ng-click="openCertificateWindow()"
-                class="btn btn-primary" translate>Open new tab to create certificate
-                    request
-                </button>
-            </div>
-        </div>
-
     </div>
 
 </div>
