@@ -1,14 +1,12 @@
 .. _tools:
 
-.. todo:: Extend description and add more tools from /opt/privacyidea/bin?
-
 Tools
 =====
 
 .. index:: tools
 
 privacyIDEA comes with a list of command line tools, which also help to
-automate tasks.
+automate tasks. The tools can be found in the directory `privacyidea/bin`.
 
 .. _token_janitor:
 
@@ -21,8 +19,8 @@ Starting with version 2.19 privacyIDEA comes with a token janitor script.
 This script can find orphaned tokens, unused tokens or tokens of specific
 type, description or token info.
 
-It can unassign, delete or disable those tokens and it can set additional
-tokeninfo or descriptions.
+It can unassign, delete or disable those tokens, it can set additional
+tokeninfo or descriptions and perform other tasks on the found tokens.
 
 Starting with version 3.4 it can also set the tokenrealms of the found tokens.
 
@@ -40,9 +38,71 @@ Find
 ~~~~
 
 With the token-janitor you have the possibility to search for tokens in different ways.
+You can find tokens by providing filter parameters. Note, that you can combine as many filter
+parameters as you want to. This way you can reduce the set of found tokens.
+Several filter parameters allow to search with regular expressions.
+
+Actions will then be performed only on this reduced set.
+
+These are important filter parameters:
+
+Orphaned
+********
+
+Searches for tokens, that are orphaned. Orphaned tokens are assigned to a user. But the
+user does not exist in the user store anymore. This can happen e.g. if an LDAP user gets
+deleted in the LDAP directory.
+
+Example::
+
+    privacyidea-token-janitor find --orphaned 1
+
+This returns all orphaned tokens for later processing.
+
+Active
+******
+
+Searches for tokens that are either active or inactive, this means enabled or disabled.
+
+Example::
+
+    privacyidea-token-janitor find --active False
+
+This returns all disabled tokens. May you later want to delete these disabled tokens.
+
+Assigned
+********
+
+Searches for tokens that are either assigned to a user or unassigned.
+
+Example::
+
+    privacyidea-token-janitor find --assigned False
+
+This returns all tokens, that are not assigned to a user. You could combine this with other filters
+like the ``tokenkind`` to find out how many hardware tokens are not assigned and still available for assignment.
+
+
+Last_auth
+*********
+
+Searches for all tokens, where the last authentication happens longer ago than the given value::
+
+Example::
+
+    privacyidea-token-janitor find --last_auth 10d
+
+This will find all tokens, that did not authenticate within the last 10 days. You can also use "h" and "y"
+to specify hours and years.
+
+Since the last_auth is an entry in the ``tokeninfo`` table you could also search like this::
+
+   privacyidea-token-janitor find --tokeninfo-key last_auth --tokeninfo-value-after '2021-06-01 18:00:00+0200'
+
 
 Description
 ***********
+
 Searches through all tokens and returns the ones with the selected description.
 
 Example::
@@ -62,7 +122,8 @@ Example::
 
 Return all tokens with the serial ``OATH0013B2B4``.
 
-You can also search for regular expressions. This is interesting, e.g. if finding yubikeys, which might be a tokentype "HOTP", but where the serial starts with UBOM.
+By searching for regular expressions, it is e.g. possible to find Yubikeys,
+which might be a tokentype "HOTP", but where the serial starts with UBOM.
 
 Example::
 
@@ -83,7 +144,7 @@ Return all tokens with the tokentype ``hotp``.
 Tokenattribute
 **************
 
-Match for a certain token attribute from the database.
+Match for a certain token attribute from the database table ``token``.
 
 There are different ways of filtering here.
 
@@ -107,9 +168,10 @@ Match if the value of the token attribute is less than the given value.
 
 Example::
 
-    privacyidea-token-janitor find --tokenattribute active --tokenattribute-value-less-than 1
+    privacyidea-token-janitor find --tokenattribute failcount --tokenattribute-value-less-than 10
 
-Search for all tokens with the tokenattribute-key ``active`` and the associated tokenattribute-value below ``1``.
+Search for all tokens with the tokenattribute-key ``failcount`` and the associated tokenattribute-value below ``10``.
+This way you can find tokens, where the fail counter is less than 10 and thus the tokens are not blocked.
 
 tokenattribute-value-greater-than INTEGER
 .........................................
@@ -118,34 +180,35 @@ Match if the value of the token attribute is greater than the given value.
 
 Example::
 
-    privacyidea-token-janitor find --tokenattribute active --tokenattribute-value-greater-than 0
+    privacyidea-token-janitor find --tokenattribute failcount --tokenattribute-value-greater-than 10
 
-Search for all tokens with the tokenattribute-key ``active`` and the associated tokenattribute-value greater than ``0``.
+Search for all tokens with the tokenattribute-key ``failcount`` and the associated tokenattribute-value greater than ``10``.
+This way you can find tokens, where the fail counter is greater than 10 and thus the tokens are blocked.
 
 Tokeninfo-key
 *************
 
-The tokeninfo-key to match.
+This matches on values for tokeninfo, which is actually the database table `tokeninfo`.
 
 There are different ways of filtering here.
 
 has-tokeninfo-key
 .................
 
-Filters for tokens that have given the specified tokeninfo-key.
+Filters for tokens that have given the specified tokeninfo-key no matter which value the key has.
 
 Example::
 
     privacyidea-token-janitor find --has-tokeninfo-key import_time
 
-Searches for all tokens that have stored the tokeninfo-key ``import_time``.
+Searches for all tokens that have a tokeninfo-key ``import_time`` set.
 
 **Note, that it is not important, what value the "import_time" actually has!**
 
 has-not-tokeninfo-key
 .....................
 
-Filters for tokens that have not given the specified tokeninfo-key.
+Filters for tokens that have not set the specified tokeninfo-key.
 
 Example::
 
@@ -196,7 +259,7 @@ mark - disable - delete - unassign - export - listuser - tokenrealms
 mark
 ....
 
-**Mark** makes it possible to mark single or multiple tokens in order to carry out further actions with them later.
+**Mark** makes it possible to mark the found tokens in order to carry out further actions with them later.
 
 The tokens are marked by setting a tokeninfo-key and an associated tokininfo-value.
 
@@ -204,14 +267,15 @@ Example::
 
     privacyidea-token-janitor find --serial OATH0004C934 --action mark --set-tokeninfo-key unused --set-tokeninfo-value True
 
-A new tokeninfo-key and the associated tokeninfo-value have been added for the token ``OAUTH0004C934``
-and are now marked for later processing.
+A new tokeninfo-key and the associated tokeninfo-value would be added for the token ``OAUTH0004C934``
+and are now marked for later processing. If the token already containd this tokeninf-key, the value
+would be changed.
 
 
 disable
 .......
 
-With **disable** single or multiple tokens can be disabled.
+With **disable** the found tokens can be disabled.
 
 
 Example::
@@ -223,7 +287,7 @@ The token with the serial ``OAUTH0004C934`` will be disabled.
 delete
 ......
 
-With **delete** single or multiple tokens can be deleted.
+With **delete** the found tokens can be deleted.
 
 
 Example::
@@ -235,7 +299,7 @@ The token with the serial ``OAUTH0004C934`` will be deleted.
 export
 ......
 
-With **export** single or multiple tokens can be exported as csv or pskc.
+With **export** the found tokens can be exported as csv or pskc.
 
 Export is only possible with HOTP and TOTP token.
 
@@ -250,7 +314,7 @@ Note that you need your encryption key for re-import.
 listuser
 ........
 
-With **listuser** the various tokens are listed in a summarized view.
+With **listuser** the found tokens are listed in a summarized view.
 
 Example::
 
@@ -302,7 +366,7 @@ It is important to note that this is only possible with a previously marked toke
 set-tokeninfo-key and set-tokeninfo-value
 .........................................
 
-Set a new tokeninfo-key and a new tokeninfo-value.
+Set a new tokeninfo-key and a new tokeninfo-value or update the tokeninfo-value of an existing key.
 
 This will only work together it is not possible to set a tokeninfo-key or a tokenifno-value individually.
 
