@@ -142,11 +142,6 @@ class HotpTokenClass(TokenClass):
                            'desc': _("The user may only have this maximum number of active HOTP tokens assigned."),
                            'group': GROUP.TOKEN
                        },
-                       'yubikey_access_code': {
-                           'type': 'str',
-                           'desc': _("The Yubikey access code used to "
-                                     "initialize Yubikeys.")
-                       },
                        'hotp_2step_clientsize': {
                            'type': 'int',
                            'desc': _("The size of the OTP seed part contributed "

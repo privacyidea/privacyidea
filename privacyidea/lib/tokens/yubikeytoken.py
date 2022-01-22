@@ -175,7 +175,12 @@ class YubikeyTokenClass(TokenClass):
                            'desc': _(
                                "The user may only have this maximum number of active Yubikey tokens assigned."),
                            'group': GROUP.TOKEN
-                       }
+                       },
+                       'yubikey_access_code': {
+                           'type': 'str',
+                           'desc': _("The Yubikey access code can be read by an enrollment client to "
+                                     "initialize Yubikeys.")
+                       },
                    }
                }
         }

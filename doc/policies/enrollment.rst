@@ -289,14 +289,20 @@ yubikey_access_code
 
 type: string
 
-This is a 12 character long access code in hex format to be used to initialize Yubikeys. If
-no access code is set, Yubikeys can be re-initialized by everybody. You can choose
-a company wide access code, so that Yubikeys can only be re-initialized by your own system.
+This is a 12 character long access code in hex format to be used to initialize Yubikeys.
+This access code is not actively used by the privacyIDEA server. It is ment to be read by
+an admin client or enrollment client, so the component initializing the Yubikey can use this
+access code, without the operator knowing the code.
+
+If a yubikey uses an access code, Yubikeys can only be re-initialized by persons know this code.
+You could choose a company wide access code, so that Yubikeys can only be re-initialized by your own system.
 
 You can add two access codes separated by a colon to change from one access code to the other.
 
    313233343536:414243444546
 
+.. note:: As long as the enrollment client does not read and uses this access code, this configuration
+   has no effect.
 
 papertoken_count
 ~~~~~~~~~~~~~~~~
