@@ -290,7 +290,7 @@ yubikey_access_code
 type: string
 
 This is a 12 character long access code in hex format to be used to initialize Yubikeys.
-This access code is not actively used by the privacyIDEA server. It is ment to be read by
+This access code is not actively used by the privacyIDEA server. It is meant to be read by
 an admin client or enrollment client, so the component initializing the Yubikey can use this
 access code, without the operator knowing the code.
 
