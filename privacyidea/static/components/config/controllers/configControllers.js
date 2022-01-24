@@ -61,9 +61,10 @@ myApp.controller("policyListController", ["$scope", "$stateParams", "$location",
         });
     };
 
-
-
     $scope.getPolicies();
+
+    // listen to the reload broadcast
+    $scope.$on("piReload", $scope.getPolicies);
 }]);
 
 myApp.controller("policyDetailsController", ["$scope", "$stateParams",
