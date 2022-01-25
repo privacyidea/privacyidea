@@ -29,9 +29,9 @@ POS = $(wildcard po/*.po)
 translate:
 	grunt nggettext_extract
 	for language in $(POS); do \
-		(msgmerge $$language po/template.pot > tmp.po; mv tmp.po $$language) ; \
+		msgmerge -U --backup=off $$language po/template.pot; \
 	done
-	grunt nggettext_compile --force
+	grunt nggettext_compile
 
 translate-server:
 	(cd privacyidea; pybabel extract -F babel.cfg -o messages.pot .)
