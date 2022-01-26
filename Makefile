@@ -6,7 +6,7 @@ info:
 	@echo "make translate        - translate WebUI"
 	@echo "make translate-server - translate string in the server code."
 
-	
+
 SIGNING_KEY=53E66E1D2CABEFCDB1D3B83E106164552E8D8149
 
 clean:
@@ -25,10 +25,11 @@ setversion:
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 	@echo "Please set a tag like:  git tag 3.17"
 
+POS = $(wildcard po/*.po)
 translate:
 	grunt nggettext_extract
-	for language in de nl fr cs ; do \
-		(cd po; msgmerge $$language.po template.pot > tmp.po; mv tmp.po $$language.po) ; \
+	for language in $(POS); do \
+		msgmerge -U --backup=off $$language po/template.pot; \
 	done
 	grunt nggettext_compile
 
