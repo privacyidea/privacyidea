@@ -33,6 +33,9 @@ myApp.controller("radiusServerController", ["$scope", "$stateParams", "inform",
     if ($scope.identifier) {
         // We are editing an existing RADIUS Server
         $scope.getRadiusServers($scope.identifier);
+    } else {
+        // This is a new RADIUS Server
+        $scope.params = { };
     }
 
     // Get all servers
