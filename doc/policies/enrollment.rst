@@ -294,14 +294,14 @@ This access code is not actively used by the privacyIDEA server. It is meant to 
 an admin client or enrollment client, so the component initializing the Yubikey can use this
 access code, without the operator knowing the code.
 
-If a yubikey uses an access code, Yubikeys can only be re-initialized by persons know this code.
+If a yubikey uses an access code, Yubikeys can only be re-initialized by persons who know this code.
 You could choose a company wide access code, so that Yubikeys can only be re-initialized by your own system.
 
 You can add two access codes separated by a colon to change from one access code to the other.
 
    313233343536:414243444546
 
-.. note:: As long as the enrollment client does not read and uses this access code, this configuration
+.. note:: As long as the enrollment client does not read and use this access code, this configuration
    has no effect.
 
 papertoken_count
