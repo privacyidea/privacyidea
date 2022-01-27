@@ -8,16 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-01-22 11:34+0100\n"
-"PO-Revision-Date: 2021-12-12 12:50+0000\n"
-"Last-Translator: Eric <spice2wolf@gmail.com>\n"
+"PO-Revision-Date: 2022-01-28 14:55+0000\n"
+"Last-Translator: Eric <alchemillatruth@purelymail.com>\n"
+"Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
+"privacyidea/privacyidea-ui/zh_Hans/>\n"
 "Language: zh_Hans\n"
-"Language-Team: Chinese (Simplified) "
-"<https://hosted.weblate.org/projects/privacyidea/privacyidea-ui/zh_Hans/>"
-"\n"
-"Plural-Forms: nplurals=1; plural=0\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.11-dev\n"
 "Generated-By: Babel 2.6.0\n"
 
 #: api/auth.py:222
@@ -603,12 +603,11 @@ msgid "Set the length of registration codes."
 msgstr ""
 
 #: lib/policy.py:2154
-#, fuzzy
 msgid ""
 "Specify the required contents of the registration code. (c)haracters, "
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
 "[1234567890]"
-msgstr "指定OTP PIN的必需内容。（c）个字符，（n）个数字，（s）个。使用修饰符+/-或允许的字符列表[1234567890]"
+msgstr "请指定注册码需要填写的内容。(c) 字符、 (n) 数字、(s) 特殊符号。使用修饰符 +/- 或允许的字符列表 [1234567890]"
 
 #: lib/policy.py:2167
 msgid ""
@@ -912,11 +911,10 @@ msgid "If this is checked, the seed will be displayed as text during enrollment.
 msgstr "如果选中此选项，则种子将在注册过程中显示为文本。"
 
 #: lib/policy.py:2473
-#, fuzzy
 msgid ""
 "If this is checked, the privacyIDEA Node name will be displayed in the "
 "menu bar."
-msgstr "如果选中此选项，则种子将在注册过程中显示为文本。"
+msgstr "如果选中此选项，则 privacyIDEA 节点名称将显示在菜单栏中。"
 
 #: lib/policy.py:2478
 msgid ""
@@ -953,11 +951,10 @@ msgid ""
 msgstr ""
 
 #: lib/policy.py:2543
-#, fuzzy
 msgid ""
 "The policy only matches if certain conditions on the token info are "
 "fulfilled."
-msgstr "该策略仅在满足用户信息的某些条件时匹配。"
+msgstr "该策略只在令牌信息的某些条件得到满足时才匹配。"
 
 #: lib/policy.py:2546
 msgid ""
@@ -1361,9 +1358,8 @@ msgid ""
 msgstr ""
 
 #: lib/eventhandler/tokenhandler.py:269
-#, fuzzy
 msgid "Set the maximum failcounter of the token."
-msgstr "设置令牌的故障计数器。"
+msgstr "设置令牌的最大失败次数。"
 
 #: lib/eventhandler/tokenhandler.py:277
 msgid "Set this tokeninfo key."
@@ -2421,4 +2417,3 @@ msgstr ""
 #~ "'*'. For more details, check the "
 #~ "documentation."
 #~ msgstr ""
-
