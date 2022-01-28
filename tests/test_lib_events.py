@@ -2386,9 +2386,8 @@ class CustomUserAttributesTestCase(MyTestCase):
 
         # Check that the user has the correct attribute
         a = user.attributes
-        if "test" in a:
-            b = a.get("test")
-            self.assertEqual('check', b)
+        self.assertIn('test', a, user)
+        self.assertEqual('check', a.get('test'), user)
 
     def test_02_event_delete_attributes(self):
 
@@ -2418,17 +2417,15 @@ class CustomUserAttributesTestCase(MyTestCase):
         self.assertTrue(res)
 
         # Check that the user attribute is deleted
-        b = user.attributes
-        if "test" not in b:
-            self.assertTrue(True)
-        else:
-            self.assertTrue(False)
+        self.assertNotIn("test", user.attributes, user)
 
     def test_03_event_set_attributes_tokenowner(self):
-
+        # Tokenowner is the default
         # Setup realm and user
         self.setUp_user_realms()
 
+        init_token({"serial": "SPASS01", "type": "spass"},
+                   User("cornelius", self.realm1))
         g = FakeFlaskG()
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "SPASS01"},
@@ -2438,8 +2435,7 @@ class CustomUserAttributesTestCase(MyTestCase):
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
-        req.all_data = {"serial": "SomeSerial",
-                        "user": "cornelius"}
+        req.all_data = {"serial": "SPASS01"}
         req.User = User("cornelius", self.realm1)
 
         # The attributekey will be set as "test" and the attributevalue as "check"
@@ -2454,11 +2450,9 @@ class CustomUserAttributesTestCase(MyTestCase):
         self.assertTrue(res)
 
         # Check that the user has the correct attribute
-        user = req.User
-        a = user.attributes
-        if "test" in a:
-            b = a.get("test")
-            self.assertEqual('check', b)
+        a = req.User.attributes
+        self.assertIn('test', a, req.User)
+        self.assertEqual('check', a.get('test'), req.User)
 
     def test_04_delete_not_existing_attribute(self):
 
@@ -2469,9 +2463,7 @@ class CustomUserAttributesTestCase(MyTestCase):
         g = FakeFlaskG()
         g.logged_in_user = user
         # Check that the attribute does not exist
-        a = user.attributes
-        if "test" not in a:
-            self.assertTrue(True)
+        self.assertNotIn('test', user.attributes, user)
 
         # The eventhandler will delete the user-attribute
         options = {"g": g,
@@ -2491,41 +2483,8 @@ class CustomUserAttributesTestCase(MyTestCase):
         else:
             self.assertTrue(False)
 
-    def test_05_set_already_existing_attribute(self):
 
-        # Setup realm and user
-        self.setUp_user_realms()
-
-        user = User("hans", self.realm1)
-        g = FakeFlaskG()
-        g.logged_in_user = user
-        # Setup user attribute
-        ret = user.set_attribute('test', 'check')
-        self.assertTrue(ret)
-        a = user.attributes
-        if "test" in a:
-            b = a.get("test")
-            self.assertEqual('check', b)
-
-        # The attributekey will be set as "test" and the attributevalue as "check"
-        options = {"g": g,
-                   "attrkey": "test",
-                   "attrvalue": "check",
-                   "handler_def": {
-                       "options": {"user": "logged_in_user"}}
-                   }
-        t_handler = CustomUserAttributesHandler()
-        res = t_handler.do("set_custom_user_attributes", options=options)
-        self.assertTrue(res)
-
-        # Check that the user has the correct attribute
-        user = g.logged_in_user
-        a = user.attributes
-        if "test" in a:
-            b = a.get("test")
-            self.assertEqual('check', b)
-
-    def test_06_overwrite_existing_attribute(self):
+    def test_05_overwrite_existing_attribute(self):
 
         # Setup realm and user
         self.setUp_user_realms()
@@ -2555,6 +2514,5 @@ class CustomUserAttributesTestCase(MyTestCase):
         # Check that the user has the correct attribute
         user = g.logged_in_user
         a = user.attributes
-        if "test" in a:
-            b = a.get("test")
-            self.assertEqual('new', b)
+        self.assertIn('test', a, user)
+        self.assertEqual('new', a.get('test'), user)
