@@ -1298,7 +1298,7 @@ def prepare_result(obj, rid=1, details=None):
     if rid > 1:
         if obj:
             r_authentication = "ACCEPT"
-        if not obj and details.get("multi_challenge"):
+        elif not obj and details.get("multi_challenge"):
             # We have a challenge authentication
             r_authentication = "CHALLENGE"
         else:

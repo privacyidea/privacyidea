@@ -234,6 +234,7 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
+            self.assertEqual(result.get("authentication"), "ACCEPT")
 
     @ldap3mock.activate
     def test_03_classic_policies(self):
@@ -253,6 +254,7 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
+            self.assertEqual(result.get("authentication"), "ACCEPT")
 
         # If users in resolver sales are required to use HOTP, then frank still
         # can login with a SPASS token, since he is identified as user in
@@ -278,6 +280,7 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
+            self.assertEqual(result.get("authentication"), "ACCEPT")
 
     def test_04_testing_token_with_setrealm(self):
         """
@@ -308,6 +311,7 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
+            self.assertEqual(result.get("authentication"), "ACCEPT")
 
         delete_policy("pol_setrealm_01")
         remove_token("SPASS_04")
@@ -328,6 +332,7 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
+            self.assertEqual(result.get("authentication"), "ACCEPT")
 
         delete_policy("auth02")
 
@@ -3530,6 +3535,7 @@ class AChallengeResponse(MyApiTestCase):
             data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
+            self.assertEqual(data.get("result").get("authentication"), "CHALLENGE")
             detail = data.get("detail")
             self.assertTrue("enter otp" in detail.get("message"), detail.get("message"))
             transaction_id = detail.get("transaction_id")
@@ -3544,6 +3550,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             data = res.json
             self.assertTrue(data.get("result").get("value"))
+            self.assertEqual(data.get("result").get("authentication"), "ACCEPT")
 
         # Now we send the challenge and then we disable the token
         with self.app.test_request_context('/validate/check',
@@ -3555,6 +3562,7 @@ class AChallengeResponse(MyApiTestCase):
             data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
+            self.assertEqual(data.get("result").get("authentication"), "CHALLENGE")
             detail = data.get("detail")
             self.assertTrue("enter otp" in detail.get("message"), detail.get("message"))
             transaction_id = detail.get("transaction_id")
@@ -3572,6 +3580,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             data = res.json
             self.assertFalse(data.get("result").get("value"))
+            self.assertEqual(data.get("result").get("authentication"), "REJECT")
             detail = data.get("detail")
             self.assertEqual(detail.get("message"), "Challenge matches, but token is not fit for challenge. Token is disabled")
 
@@ -3586,6 +3595,7 @@ class AChallengeResponse(MyApiTestCase):
             data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
+            self.assertEqual(data.get("result").get("authentication"), "REJECT")
             detail = data.get("detail")
             self.assertTrue("No active challenge response" in detail.get("message"), detail.get("message"))
 
@@ -3616,6 +3626,7 @@ class AChallengeResponse(MyApiTestCase):
             data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
+            self.assertEqual(data.get("result").get("authentication"), "CHALLENGE")
             detail = data.get("detail")
             # Only the email token is active and creates a challenge!
             self.assertEqual(u"Enter the OTP from the Email:", detail.get("message"))
