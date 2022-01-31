@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-01-22 11:34+0100\n"
-"PO-Revision-Date: 2021-06-02 10:32+0000\n"
+"PO-Revision-Date: 2022-02-01 07:53+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
+"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/nl/>\n"
 "Language: nl\n"
-"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/nl/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.11-dev\n"
 "Generated-By: Babel 2.6.0\n"
 
 #: api/auth.py:222
@@ -77,7 +78,7 @@ msgstr "Geef een nieuwe PIN"
 
 #: lib/challengeresponsedecorators.py:201
 msgid "To resync your token, please enter the next OTP value"
-msgstr ""
+msgstr "Geef de volgende OTP-waarde om je token opnieuw te synchroniseren"
 
 #: lib/decorators.py:43 lib/token.py:2181
 msgid "This action is not possible, since the token is locked"
@@ -720,6 +721,9 @@ msgid ""
 "The autoresync of a token can be done via a challenge response "
 "message.You need to activate 'Automatic resync' in the general settings!"
 msgstr ""
+"Het automatisch synchroniseren van een token kan gedaan worden via een "
+"challenge-response-bericht. Je moet 'Automatisch synchroniseren' inschakelen "
+"in de algemene instellingen!"
 
 #: lib/policy.py:2203
 msgid ""
@@ -1143,6 +1147,8 @@ msgid ""
 "The policy only matches if certain conditions on the HTTP Environment are"
 " fulfilled."
 msgstr ""
+"Het beleid komt enkel overeen als aan bepaalde voorwaarden van de HTTP-"
+"omgeving voldaan is."
 
 #: lib/radiusserver.py:225 lib/radiusserver.py:257
 msgid "The RADIUS secret is too long"
@@ -2954,4 +2960,3 @@ msgstr ""
 #~ "'*'. For more details, check the "
 #~ "documentation."
 #~ msgstr ""
-
