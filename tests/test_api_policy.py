@@ -26,7 +26,7 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(res.content_length, 0, res)
 
         # test export with a given policy
-        set_policy("hide_welcome", scope=SCOPE.WEBUI, action=ACTION.HIDE_WELCOME)
+        set_policy("hide_welcome", scope=SCOPE.WEBUI, action=ACTION.HIDE_WELCOME, client="10.1.2.3")
         with self.app.test_request_context('/policy/export/pols.txt',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -41,6 +41,7 @@ class APIPolicyTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/pol1',
                                            method='POST',
                                            data={"action": ACTION.NODETAILFAIL,
+                                                 "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "check_all_resolvers": "true",
                                                  "realm": "realm1",
@@ -83,6 +84,7 @@ class APIPolicyTestCase(MyApiTestCase):
                                            method='POST',
                                            data={
                                                "action": ACTION.NODETAILFAIL,
+                                               "client": "10.1.2.3",
                                                "scope": SCOPE.AUTHZ,
                                                "check_all_resolvers": "false",
                                                "priority": 5,
@@ -115,6 +117,7 @@ class APIPolicyTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/polpinode',
                                            method='POST',
                                            data={"action": ACTION.NODETAILFAIL,
+                                                 "client": "10.1.2.3",
                                                  "scope": SCOPE.AUTHZ,
                                                  "pinode": "Node1",
                                                  "priority": 1,
@@ -146,6 +149,7 @@ class APIPolicyTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/cond1',
                                    method='POST',
                                    json={"action": ACTION.NODETAILFAIL,
+                                         "client": "10.1.2.3",
                                          "scope": SCOPE.AUTHZ,
                                          "realm": "realm1",
                                          "conditions": [
@@ -178,6 +182,7 @@ class APIPolicyTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/cond1',
                                    method='POST',
                                    json={"action": ACTION.NODETAILFAIL,
+                                         "client": "10.1.2.3",
                                          "scope": SCOPE.AUTHZ,
                                          "realm": "realm2"},
                                    headers={'Authorization': self.at}):
@@ -205,6 +210,7 @@ class APIPolicyTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/cond1',
                                    method='POST',
                                    json={"action": ACTION.NODETAILFAIL,
+                                         "client": "10.1.2.3",
                                          "scope": SCOPE.AUTHZ,
                                          "conditions": [["userinfo", "type", "equals", "secure", True]],
                                          "realm": "realm2"},
@@ -232,6 +238,7 @@ class APIPolicyTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/cond1',
                                    method='POST',
                                    json={"action": ACTION.NODETAILFAIL,
+                                         "client": "10.1.2.3",
                                          "scope": SCOPE.AUTHZ,
                                          "conditions": [["userinfo", "type", "equals", "secure"]],
                                          "realm": "realm2"},
@@ -242,6 +249,7 @@ class APIPolicyTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/cond1',
                                    method='POST',
                                    json={"action": ACTION.NODETAILFAIL,
+                                         "client": "10.1.2.3",
                                          "scope": SCOPE.AUTHZ,
                                          "conditions": [["userinfo", "type", "equals", "secure", True, "extra"]],
                                          "realm": "realm2"},
@@ -253,6 +261,7 @@ class APIPolicyTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/cond1',
                                    method='POST',
                                    json={"action": ACTION.NODETAILFAIL,
+                                         "client": "10.1.2.3",
                                          "scope": SCOPE.AUTHZ,
                                          "conditions": [["userinfo", "type", "equals", 123, False]],
                                          "realm": "realm2"},
@@ -263,6 +272,7 @@ class APIPolicyTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/cond1',
                                    method='POST',
                                    json={"action": ACTION.NODETAILFAIL,
+                                         "client": "10.1.2.3",
                                          "scope": SCOPE.AUTHZ,
                                          "conditions": [["userinfo", "type", "equals", "123", "true"]],
                                          "realm": "realm2"},
@@ -274,6 +284,7 @@ class APIPolicyTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/cond1',
                                    method='POST',
                                    json={"action": ACTION.NODETAILFAIL,
+                                         "client": "10.1.2.3",
                                          "scope": SCOPE.AUTHZ,
                                          "conditions": [],
                                          "realm": "realm2"},
@@ -309,7 +320,8 @@ class APIPolicyTestCase(MyApiTestCase):
                                                ACTION.POLICYREAD),
                                                "scope": SCOPE.ADMIN,
                                                "realm": "",
-                                               "adminuser": "testadmin"},
+                                               "adminuser": "testadmin",
+                                               "client": "10.1.2.3"},
                                            headers={
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -389,6 +401,23 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertIn("Node1", value)
             self.assertIn("Node2", value)
 
+    def test_05_invalid_client(self):
+        with self.app.test_request_context('/policy/condFalse',
+                                           method='POST',
+                                           json={
+                                               "client": "10.1.2.3.4",
+                                               "action": ACTION.NODETAILSUCCESS,
+                                               "realm": "realm1",
+                                               "conditions": [[CONDITION_SECTION.HTTP_REQUEST_HEADER,
+                                                               "User-Agent", "broken",
+                                                               "SpecialApp", True]],
+                                               "scope": SCOPE.AUTHZ},
+                                           headers={'PI-Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400)
+            data = res.json
+            result = data.get("result")
+            self.assertEqual(result['error'], {'code': 302, 'message': 'ERR302: Invalid client definition!'})
 
 class APIPolicyConditionTestCase(MyApiTestCase):
 
@@ -398,7 +427,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            json={"type": "spass", "pin": "1234",
-                                                 "serial": "sp1", "user": "cornelius", "realm": "realm1"},
+                                                 "serial": "sp1", "user": "cornelius", "realm": "realm1", "client": "10.1.2.3"},
                                            headers={'PI-Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
@@ -406,7 +435,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # test an auth request
         with self.app.test_request_context('/validate/check',
                                            method='POST',
-                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1"}):
+                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1", "client": "10.1.2.3"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json
@@ -418,6 +447,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
                                            json={"action": ACTION.NODETAILSUCCESS,
+                                                 "client": "10.1.2.3",
                                                  "realm": "realm1",
                                                  "conditions": [[CONDITION_SECTION.HTTP_REQUEST_HEADER,
                                                                  "User-Agent", "equals", "SpecialApp", True]],
@@ -430,7 +460,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            headers={"User-Agent": "somethingelse"},
-                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1"}):
+                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1", "client": "10.1.2.3"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json
@@ -441,7 +471,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            headers={'User-Agent': 'SpecialApp'},
-                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1"}):
+                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1", "client": "10.1.2.3"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json
@@ -451,7 +481,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            headers={"Another": "header"},
-                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1"}):
+                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1", "client": "10.1.2.3"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
@@ -462,7 +492,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # A request without such a specific header - always has a header
         with self.app.test_request_context('/validate/check',
                                            method='POST',
-                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1"}):
+                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1", "client": "10.1.2.3"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
@@ -475,6 +505,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
                                            json={"action": ACTION.NODETAILSUCCESS,
+                                                 "client": "10.1.2.3",
                                                  "realm": "realm1",
                                                  "conditions": [[CONDITION_SECTION.HTTP_REQUEST_HEADER,
                                                                  "User-Agent", "broken",
@@ -488,7 +519,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                                            method='POST',
                                            headers={"User-Agent": "SpecialApp"},
                                            json={"pass": "1234", "user": "cornelius",
-                                                 "realm": "realm1"}):
+                                                 "realm": "realm1", "client": "10.1.2.3"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
@@ -500,6 +531,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         with self.app.test_request_context('/policy/cond1',
                                            method='POST',
                                            json={"action": ACTION.NODETAILSUCCESS,
+                                                 "client": "10.1.2.3",
                                                  "realm": "realm1",
                                                  "conditions": [['blabla',
                                                                  "User-Agent", "equals",
@@ -513,7 +545,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                                            method='POST',
                                            headers={"User-Agent": "SpecialApp"},
                                            json={"pass": "1234", "user": "cornelius",
-                                                 "realm": "realm1"}):
+                                                 "realm": "realm1", "client": "10.1.2.3"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
@@ -532,7 +564,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            json={"type": "spass", "pin": "1234",
-                                                 "serial": "sp1", "user": "cornelius", "realm": "realm1"},
+                                                 "serial": "sp1", "user": "cornelius", "realm": "realm1", "client": "10.1.2.3"},
                                            headers={'PI-Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
@@ -540,7 +572,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # test an auth request
         with self.app.test_request_context('/validate/check',
                                            method='POST',
-                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1"}):
+                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1", "client": "10.1.2.3"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json
@@ -553,6 +585,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                                            method='POST',
                                            json={"action": ACTION.NODETAILSUCCESS,
                                                  "realm": "realm1",
+                                                 "client": "10.1.2.3",
                                                  "conditions": [[CONDITION_SECTION.HTTP_ENVIRONMENT,
                                                                  "REQUEST_METHOD", "equals", "POST", True]],
                                                  "scope": SCOPE.AUTHZ},
@@ -563,7 +596,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # A GET request will contain the details!
         with self.app.test_request_context('/validate/check',
                                            method='GET',
-                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1"}):
+                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1", "client": "10.1.2.3"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json
@@ -573,7 +606,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
         # A POST request will NOT contain the details!
         with self.app.test_request_context('/validate/check',
                                            method='POST',
-                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1"}):
+                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1", "client": "10.1.2.3"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json
@@ -585,6 +618,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                                            method='POST',
                                            json={"action": ACTION.NODETAILSUCCESS,
                                                  "realm": "realm1",
+                                                 "client": "10.1.2.3",
                                                  "conditions": [[CONDITION_SECTION.HTTP_ENVIRONMENT,
                                                                  "NON_EXISTING", "equals", "POST", True]],
                                                  "scope": SCOPE.AUTHZ},
@@ -594,7 +628,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
-                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1"}):
+                                           json={"pass": "1234", "user": "cornelius", "realm": "realm1", "client": "10.1.2.3"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json

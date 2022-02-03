@@ -188,6 +188,8 @@ from privacyidea.lib.utils.compare import compare_values, COMPARATOR_DESCRIPTION
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.lib.user import User
 from privacyidea.lib import _
+from netaddr import AddrFormatError
+from privacyidea.lib.error import privacyIDEAError
 import datetime
 import re
 import ast
@@ -1337,6 +1339,10 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         resolver = ", ".join(resolver)
     if type(client) == list:
         client = ", ".join(client)
+    try:
+        check_ip_in_policy("127.0.0.1", client.split(","))
+    except AddrFormatError:
+        raise privacyIDEAError(_("Invalid client definition!"), id=302)
     if type(pinode) == list:
         pinode = ", ".join(pinode)
     # validate conditions parameter
