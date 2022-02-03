@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-01-22 11:34+0100\n"
-"PO-Revision-Date: 2022-02-01 07:53+0000\n"
+"PO-Revision-Date: 2022-02-04 07:54+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/nl/>\n"
@@ -1910,7 +1910,7 @@ msgstr "Aantal gebruikers met een toegewezen token"
 
 #: lib/tokens/certificatetoken.py:273
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr "Certificaat: een x509-certificaat-token aanmelden."
+msgstr "Certificaat: een x509 certificaat-token aanmelden."
 
 #: lib/tokens/certificatetoken.py:284
 msgid "The user may only have this maximum number of certificates assigned."
