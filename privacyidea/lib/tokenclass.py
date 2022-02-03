@@ -150,6 +150,7 @@ class ROLLOUTSTATE(object):
     PENDING = 'pending'
     # This means the user needs to authenticate to verify that the token was successfully enrolled.
     VERIFYPENDING = 'verify_pending'
+    ENROLLED = 'enrolled'
 
 
 class TokenClass(object):
@@ -543,6 +544,7 @@ class TokenClass(object):
         otpKey = getParam(param, "otpkey", optional)
         genkey = is_true(getParam(param, "genkey", optional))
         twostep_init = is_true(getParam(param, "2stepinit", optional))
+        verify = getParam(param, "verify", optional)
         otpkeyformat = getParam(param, "otpkeyformat", optional)
 
         if otpKey is not None and otpkeyformat is not None:
@@ -574,8 +576,8 @@ class TokenClass(object):
         if otpKey is None and genkey:
             otpKey = self._genOtpKey_(key_size)
 
-        # otpKey still None?? - raise the exception
-        if otpKey is None and self.hKeyRequired is True:
+        # otpKey still None?? - raise the exception, if an otpkey is required and we are not in verify state
+        if otpKey is None and self.hKeyRequired is True and not verify:
             otpKey = getParam(param, "otpkey", required)
 
         if otpKey is not None:

@@ -4244,6 +4244,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.all_data = {}
         self.setUp_user_realms()
         req.User = User("autoassignuser", self.realm1)
         # The response contains the token type HOTP, enrollment

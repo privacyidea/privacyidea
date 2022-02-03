@@ -784,6 +784,10 @@ def check_verify_enrollment(request, response):
     :return:
     """
     serial = response.json.get("detail").get("serial")
+    verify = request.all_data.get("verify")
+    if verify:
+        # In case we are in a 2nd step verification, we must early exit
+        return response
     tokenobj_list = get_tokens(serial=serial)
     if len(tokenobj_list) == 1:
         tokenobj = tokenobj_list[0]

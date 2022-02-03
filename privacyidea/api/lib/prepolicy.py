@@ -84,6 +84,7 @@ from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
+from privacyidea.lib.tokenclass import ROLLOUTSTATE
 import functools
 import jwt
 import re
@@ -674,6 +675,33 @@ def twostep_enrollment_parameters(request=None, action=None):
                                           user_object=request.User).action_values(unique=True)
             if action_values:
                 request.all_data[parameter] = list(action_values)[0]
+
+
+def verify_enrollment(request=None, action=None):
+    """
+    This is used to verify an already enrolled token.
+    The parameter "verify" is used to do so. If successful,
+    the current rollout_state "verify_pending" of the token will be changed to "enrolled".
+    :param request:
+    :param action:
+    :return:
+    """
+    serial = getParam(request.all_data, "serial", optional)
+    verify = getParam(request.all_data, "verify", optional)
+    if verify and serial:
+        # Only now, we check if we need to verify
+        tokenobj_list = get_tokens(serial=serial)
+        if len(tokenobj_list) == 1:
+            tokenobj = tokenobj_list[0]
+            if tokenobj.rollout_state == ROLLOUTSTATE.VERIFYPENDING:
+                log.debug("Verifying the token enrollment for token {0!s}.".format(serial))
+                r = tokenobj.verify_enrollment(verify)
+                log.info("Result of enrollment verification for token {0!s}: {1!s}".format(serial, r))
+                if r:
+                    tokenobj.token.rollout_state = ROLLOUTSTATE.ENROLLED
+                else:
+                    from privacyidea.lib.error import ParameterError
+                    raise ParameterError("Verification of the new token failed.")
 
 
 def check_max_token_user(request=None, action=None):

@@ -96,6 +96,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            twostep_enrollment_parameters,
                                            sms_identifiers, pushtoken_add_config,
                                            check_admin_tokenlist,
+                                           verify_enrollment,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation)
@@ -146,6 +147,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(webauthntoken_request, request)
 @prepolicy(webauthntoken_enroll, request)
 @prepolicy(required_piv_attestation, request)
+@prepolicy(verify_enrollment, request)
 @postpolicy(save_pin_change, request)
 @postpolicy(check_verify_enrollment, request)
 @CheckSubscription(request)
@@ -254,6 +256,33 @@ def init():
     Base Tokenclass contains an extremely simple way by concatenating the 
     two parts. See
     :func:`~privacyidea.lib.tokenclass.TokenClass.generate_symmetric_key`
+
+    **verify enrollment**
+
+    Some tokens can be configured via enrollment policy so that the user
+    needs to provide some verification that e.g. a QR code was scanned correctly or
+    the token works correctly in general.
+    The specific way depends on the token class.
+    The necessary token class functions are
+    :func:`~privacyidea.lib.tokenclass.TokenClass.verify_enrollment`
+    :func:`~privacyidea.lib.tokenclass.TokenClass.prepare_verify_enrollment`
+
+    The first API call to /token/init returns responses in
+
+        {"detail": {"verify": {"message": "Please provide a valid OTP value."},
+                    "rollout_state": "verify_pending"}}
+
+    The second API call then needs to send the serial number and a response
+
+       .. sourcecode:: http
+
+           POST /token/init
+
+           serial=<serial from the previous response>
+           verify=<e.g. the OTP value>
+
+    As long as the token is in state "verify_pending" it can not be used for
+    authentication.
     """
     response_details = {}
     tokenrealms = None

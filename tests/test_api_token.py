@@ -2398,14 +2398,34 @@ class APITokenTestCase(MyApiTestCase):
             self.assertFalse(result.get("value"))
             self.assertEqual(detail.get("message"), "matching 1 tokens, Token is not yet enrolled")
 
-        # TODO: Now run the second step: verify enrollment and test again
-        #with self.app.test_request_context('/token/init',
-        #                                   method='POST',
-        #                                   data={"serial": serial,
-        #                                         "response": self.valid_otp_values[1]},
-        #                                   headers={'Authorization': self.at}):
-        #    res = self.app.full_dispatch_request()
-        #    self.assertTrue(res.status_code == 200, res)
+        # Now run the second step: verify enrollment, but fail with a wrong OTP value
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "verify": "111111"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"))
+            self.assertEqual(result.get("error").get("code"), 905)
+            self.assertEqual(result.get("error").get("message"), "ERR905: Verification of the new token failed.")
+
+        # Now run the second step: verify enrollment and test again
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "verify": self.valid_otp_values[1]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            tokenobj_list = get_tokens(serial=serial)
+            # Check the token rollout state, it is empty now.
+            self.assertEqual(ROLLOUTSTATE.ENROLLED, tokenobj_list[0].token.rollout_state)
 
         delete_policy("verify_toks1")
         delete_policy("verify_toks2")

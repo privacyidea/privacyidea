@@ -792,15 +792,15 @@ class HotpTokenClass(TokenClass):
         """
         return {"message": VERIFY_ENROLLMENT_MESSAGE}
 
-    def verify_enrollment(self, response):
+    def verify_enrollment(self, verify):
         """
         This is called during the 2nd step of the verified enrollment.
         This method verifies the actual response from the user.
         Returns true, if the verification was successful.
 
-        :param response: The response given by the user
+        :param verify: The response given by the user
         :return: True
         """
-        r = self.check_otp(response)
+        r = self.check_otp(verify)
         log.debug("Enrollment verified: {0!s}".format(r))
         return r >= 0
