@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2022-02-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add verified enrollment
 #  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Implement tokenkind. Token can be hardware, software or virtual
 #  2017-07-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -146,6 +148,8 @@ class CLIENTMODE(object):
 class ROLLOUTSTATE(object):
     CLIENTWAIT = 'clientwait'
     PENDING = 'pending'
+    # This means the user needs to authenticate to verify that the token was successfully enrolled.
+    VERIFYPENDING = 'verify_pending'
 
 
 class TokenClass(object):
@@ -157,6 +161,8 @@ class TokenClass(object):
     client_mode = CLIENTMODE.INTERACTIVE
     # Usually a token will be checked in the lib:check_token_list, even if it is disabled
     check_if_disabled = True
+    # If the toke provide means that the user has to prove/verify that the token was successfully enrolled.
+    can_verify_enrollment = False
 
     @log_with(log)
     def __init__(self, db_token):
@@ -1224,7 +1230,7 @@ class TokenClass(object):
             message_list.append("Failcounter exceeded")
         elif not self.check_validity_period():
             message_list.append("Outside validity period")
-        elif self.rollout_state in [ROLLOUTSTATE.CLIENTWAIT]:
+        elif self.rollout_state in [ROLLOUTSTATE.CLIENTWAIT, ROLLOUTSTATE.VERIFYPENDING]:
             message_list.append("Token is not yet enrolled")
         else:
             r = True
@@ -1797,3 +1803,29 @@ class TokenClass(object):
             params["otplen"] = 6
 
         return params
+
+    def prepare_verify_enrollment(self):
+        """
+        This is called, if the token should be enrolled in a way, that the user
+        needs to provide a proof, that the server can verify, that the token
+        was successfully enrolled. E.g. with HOTP tokens the user might need to provide
+        a correct OTP value.
+
+        The returned dictionary is added to the response in "detail" -> "verify".
+        :return: A dictionary with information that is needed to trigger the verification.
+        """
+        return None
+
+    def verify_enrollment(self, response):
+        """
+        This is called during the 2nd step of the verified enrollment.
+        This method verifies the actual response from the user.
+        Returns true, if the verification was successful.
+
+        :param response: The response given by the user
+        :return: True
+        """
+        return False
+
+    def set_verify_enrollment_state(self):
+        self.token.rollout_state = ROLLOUTSTATE.VERIFYPENDING

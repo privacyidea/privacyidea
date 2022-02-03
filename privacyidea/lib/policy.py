@@ -372,6 +372,7 @@ class ACTION(object):
     SHOW_NODE = "show_node"
     SET_USER_ATTRIBUTES = "set_custom_user_attributes"
     DELETE_USER_ATTRIBUTES = "delete_custom_user_attributes"
+    VERIFY_ENROLLMENT = "verify_enrollment"
 
 
 class TYPE(object):
@@ -399,6 +400,7 @@ class GROUP(object):
     MODIFYING_RESPONSE = "modifying response"
     CONDITIONS = "conditions"
     SETTING_ACTIONS = "setting actions"
+
 
 class MAIN_MENU(object):
     __doc__ = """These are the allowed top level menu items. These are used
@@ -2156,8 +2158,12 @@ def get_static_policy_definitions(scope=None):
                           "(c)haracters, (n)umeric, "
                           "(s)pecial. Use modifiers +/- or a list "
                           "of allowed characters [1234567890]"),
-                'group': GROUP.TOKEN
-            }
+                'group': GROUP.TOKEN},
+            ACTION.VERIFY_ENROLLMENT: {
+                'type': 'str',
+                'desc': _("Specify a comma separated list of token types, "
+                          "that should be verified during enrollment."),
+                'group': GROUP.TOKEN}
         },
         SCOPE.AUTH: {
             ACTION.OTPPIN: {

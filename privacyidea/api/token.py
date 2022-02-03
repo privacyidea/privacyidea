@@ -99,7 +99,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation)
-from privacyidea.api.lib.postpolicy import (save_pin_change,
+from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
 from privacyidea.api.auth import admin_required
@@ -147,6 +147,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(webauthntoken_enroll, request)
 @prepolicy(required_piv_attestation, request)
 @postpolicy(save_pin_change, request)
+@postpolicy(check_verify_enrollment, request)
 @CheckSubscription(request)
 @event("token_init", request, g)
 @log_with(log, log_entry=False)

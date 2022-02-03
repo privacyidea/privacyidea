@@ -5,6 +5,8 @@
 #  License: AGPLv3
 #  contact: http://www.privacyidea.org
 #
+#  2022-02-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add verified enrollment
 #  2018-06-06 Michael Becker <michael.becker@hs-niederrhein.de>
 #             Add get_setting_type to make hotp.hashlib public and
 #             therefore recognised in token enrollment with role user.
@@ -53,7 +55,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import (TokenClass,
                                         TWOSTEP_DEFAULT_DIFFICULTY,
                                         TWOSTEP_DEFAULT_CLIENTSIZE,
-                                        TOKENKIND)
+                                        TOKENKIND, ROLLOUTSTATE)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.error import ParameterError
@@ -77,6 +79,8 @@ keylen = {'sha1': 20,
           'sha512': 64
           }
 
+VERIFY_ENROLLMENT_MESSAGE = _("Please enter a valid OTP value of the new token.")
+
 
 class HotpTokenClass(TokenClass):
     """
@@ -84,6 +88,9 @@ class HotpTokenClass(TokenClass):
     """
 
     previous_otp_offset = 1
+
+    # The HOTP token provides means to verify the enrollment
+    can_verify_enrollment = True
 
     @staticmethod
     def get_class_type():
@@ -772,3 +779,28 @@ class HotpTokenClass(TokenClass):
         if len(l) >= 5:
             params["counter"] = int(l[4].strip())
         return params
+
+    def prepare_verify_enrollment(self):
+        """
+        This is called, if the token should be enrolled in a way, that the user
+        needs to provide a proof, that the server can verify, that the token
+        was successfully enrolled. E.g. with HOTP tokens the user might need to provide
+        a correct OTP value.
+
+        The returned dictionary is added to the response in "detail" -> "verify".
+        :return: A dictionary with information that is needed to trigger the verification.
+        """
+        return {"message": VERIFY_ENROLLMENT_MESSAGE}
+
+    def verify_enrollment(self, response):
+        """
+        This is called during the 2nd step of the verified enrollment.
+        This method verifies the actual response from the user.
+        Returns true, if the verification was successful.
+
+        :param response: The response given by the user
+        :return: True
+        """
+        r = self.check_otp(response)
+        log.debug("Enrollment verified: {0!s}".format(r))
+        return r >= 0

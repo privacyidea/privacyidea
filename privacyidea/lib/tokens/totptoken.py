@@ -60,6 +60,9 @@ class TotpTokenClass(HotpTokenClass):
     # but the last used OTP value, so we need to set this to 0.
     previous_otp_offset = 0
 
+    # The TOTP token provides means to verify the enrollment
+    can_verify_enrollment = True
+
     @log_with(log)
     def __init__(self, db_token):
         """

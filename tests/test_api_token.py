@@ -19,6 +19,8 @@ from privacyidea.lib.event import set_event, delete_event, EventConfiguration
 from privacyidea.lib.caconnector import save_caconnector
 from six.moves.urllib.parse import urlencode
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from dateutil.tz import tzlocal
 from privacyidea.lib import _
@@ -136,8 +138,8 @@ class API000TokenAdminRealmList(MyApiTestCase):
                        "fileName": PWFILE2})
         added, failed = set_realm(self.realm1,
                                   [self.resolvername1, self.resolvername2])
-        self.assertEquals(len(failed), 0)
-        self.assertEquals(len(added), 2)
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 2)
 
         # create token delete policy for "testadmin" on resolver1
         set_policy(name="pol-reso1",
@@ -367,6 +369,7 @@ class APIAttestationTestCase(MyApiTestCase):
         delete_policy("pol1")
         delete_policy("pol2")
         delete_policy("pol_verify")
+
 
 class APITokenTestCase(MyApiTestCase):
 
@@ -681,10 +684,10 @@ class APITokenTestCase(MyApiTestCase):
 #                             "ERR1103: Token already assigned to user "
 #                             "User(login='cornelius', realm='realm1', "
 #                             "resolver='resolver1')")
-            self.assertRegexpMatches(error.get('message'),
-                                     r"ERR1103: Token already assigned to user "
-                                     r"User\(login=u?'cornelius', "
-                                     r"realm=u?'realm1', resolver=u?'resolver1'\)")
+            self.assertRegex(error.get('message'),
+                             r"ERR1103: Token already assigned to user "
+                             r"User\(login=u?'cornelius', "
+                             r"realm=u?'realm1', resolver=u?'resolver1'\)")
 
         # Now the user tries to assign a foreign token
         with self.app.test_request_context('/auth',
@@ -2362,6 +2365,50 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("allowed_to_set_pin")
         delete_policy("pinpolrandom")
         delete_policy("pinpolrandom2")
+
+    def test_40_init_verify_token(self):
+        set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=hotp top".format(ACTION.VERIFY_ENROLLMENT))
+        set_policy("verify_toks2", scope=SCOPE.ENROLL, action="{0!s}=HOTP email".format(ACTION.VERIFY_ENROLLMENT))
+        # Enroll an HOTP token
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"otpkey": self.otpkey},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            detail = res.json.get("detail")
+            result = res.json.get("result")
+            self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING)
+            self.assertEqual(detail.get("verify").get("message"),  VERIFY_ENROLLMENT_MESSAGE)
+            serial = detail.get("serial")
+            tokenobj_list = get_tokens(serial=serial)
+            # Check the token rollout state
+            self.assertEqual(tokenobj_list[0].token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
+
+        # Try to authenticate with this not readily enrolled token and fail
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={'serial': serial,
+                                                 'pass': self.valid_otp_values[0]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            # we fail to authenticate with a token, that in in state verify_pending
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual(detail.get("message"), "matching 1 tokens, Token is not yet enrolled")
+
+        # TODO: Now run the second step: verify enrollment and test again
+        #with self.app.test_request_context('/token/init',
+        #                                   method='POST',
+        #                                   data={"serial": serial,
+        #                                         "response": self.valid_otp_values[1]},
+        #                                   headers={'Authorization': self.at}):
+        #    res = self.app.full_dispatch_request()
+        #    self.assertTrue(res.status_code == 200, res)
+
+        delete_policy("verify_toks1")
+        delete_policy("verify_toks2")
 
 
 class API00TokenPerformance(MyApiTestCase):

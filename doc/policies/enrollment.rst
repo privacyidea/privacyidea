@@ -437,6 +437,24 @@ verification during authentication, see :ref:`policy_push_ssl_verify_auth`.
 
 .. _policy_webauthn_enroll_relying_party_id:
 
+
+verify_enrollment
+~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action takes a white space separated list of tokentypes.
+These tokens then need to be verified during enrollment.
+This is supported for HOTP and TOTP tokens.
+
+In this case after enrolling the token the user is queried to enter
+a valid OTP value. This way the system can verify, that the user has
+successfully enrolled the token.
+
+As long as no OTP value is provided by the user during the enrollment process, the
+token can not be used for authentication.
+
+
 webauthn_relying_party_id
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
