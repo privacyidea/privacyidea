@@ -512,7 +512,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     $scope.sendVerifyResponse = function () {
         var params = {
             "serial": $scope.enrolledToken.serial,
-            "verify": $scope.verifyResponse
+            "verify": $scope.verifyResponse,
+            "type": $scope.form.type
+
         };
         TokenFactory.enroll($scope.newUser, params, function (data) {
             $scope.verifyResponse = "";
