@@ -2366,7 +2366,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("pinpolrandom")
         delete_policy("pinpolrandom2")
 
-    def test_40_init_verify_token(self):
+    def test_40_init_verify_hotp_token(self):
         set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=hotp top".format(ACTION.VERIFY_ENROLLMENT))
         set_policy("verify_toks2", scope=SCOPE.ENROLL, action="{0!s}=HOTP email".format(ACTION.VERIFY_ENROLLMENT))
         # Enroll an HOTP token
@@ -2431,6 +2431,47 @@ class APITokenTestCase(MyApiTestCase):
 
         delete_policy("verify_toks1")
         delete_policy("verify_toks2")
+
+    def test_41_init_verify_email_token(self):
+        set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=email".format(ACTION.VERIFY_ENROLLMENT))
+        # Enroll an email token
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"otpkey": self.otpkey,
+                                                 "type": "email",
+                                                 "email": "user@example.com"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            detail = res.json.get("detail")
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING)
+            self.assertEqual(detail.get("verify").get("message"),  VERIFY_ENROLLMENT_MESSAGE)
+            serial = detail.get("serial")
+            tokenobj_list = get_tokens(serial=serial)
+            # Check the token rollout state
+            self.assertEqual(tokenobj_list[0].token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
+
+        # Now run the second step: verify enrollment and test again
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "type": "email",
+                                                 "verify": self.valid_otp_values[1]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            tokenobj_list = get_tokens(serial=serial)
+            # Check the token rollout state, it is empty now.
+            self.assertEqual(ROLLOUTSTATE.ENROLLED, tokenobj_list[0].token.rollout_state)
+
+        delete_policy("verify_toks1")
 
 
 class API00TokenPerformance(MyApiTestCase):
