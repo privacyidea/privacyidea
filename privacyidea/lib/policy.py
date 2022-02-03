@@ -2161,7 +2161,7 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.TOKEN},
             ACTION.VERIFY_ENROLLMENT: {
                 'type': 'str',
-                'desc': _("Specify a comma separated list of token types, "
+                'desc': _("Specify a white space separated list of token types, "
                           "that should be verified during enrollment."),
                 'group': GROUP.TOKEN}
         },

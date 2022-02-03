@@ -812,6 +812,7 @@ def check_verify_enrollment(request, response):
                 content["detail"]["verify"] = tokenobj.prepare_verify_enrollment()
                 content["detail"]["rollout_state"] = ROLLOUTSTATE.VERIFYPENDING
                 tokenobj.token.rollout_state = ROLLOUTSTATE.VERIFYPENDING
+                tokenobj.token.save()
                 response.set_data(json.dumps(content))
     else:
         log.warning("No distinct token object found in enrollment response!")

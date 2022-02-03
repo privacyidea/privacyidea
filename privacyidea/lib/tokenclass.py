@@ -149,7 +149,7 @@ class ROLLOUTSTATE(object):
     CLIENTWAIT = 'clientwait'
     PENDING = 'pending'
     # This means the user needs to authenticate to verify that the token was successfully enrolled.
-    VERIFYPENDING = 'verify_pending'
+    VERIFYPENDING = 'verify'
     ENROLLED = 'enrolled'
 
 
@@ -1828,6 +1828,3 @@ class TokenClass(object):
         :return: True
         """
         return False
-
-    def set_verify_enrollment_state(self):
-        self.token.rollout_state = ROLLOUTSTATE.VERIFYPENDING

@@ -421,7 +421,6 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     $scope.CATemplates = {};
     $scope.radioCSR = 'csrgenerate';
 
-
     // default enrollment callback
     $scope.callback = function (data) {
         $scope.U2FToken = {};
@@ -506,6 +505,17 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         };
         TokenFactory.enroll($scope.newUser, params, function (data) {
             $scope.clientpart = "";
+            $scope.callback(data);
+        });
+    };
+
+    $scope.sendVerifyResponse = function () {
+        var params = {
+            "serial": $scope.enrolledToken.serial,
+            "verify": $scope.verifyResponse
+        };
+        TokenFactory.enroll($scope.newUser, params, function (data) {
+            $scope.verifyResponse = "";
             $scope.callback(data);
         });
     };

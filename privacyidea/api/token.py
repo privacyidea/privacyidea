@@ -270,7 +270,7 @@ def init():
     The first API call to /token/init returns responses in
 
         {"detail": {"verify": {"message": "Please provide a valid OTP value."},
-                    "rollout_state": "verify_pending"}}
+                    "rollout_state": "verify"}}
 
     The second API call then needs to send the serial number and a response
 
@@ -281,7 +281,7 @@ def init():
            serial=<serial from the previous response>
            verify=<e.g. the OTP value>
 
-    As long as the token is in state "verify_pending" it can not be used for
+    As long as the token is in state "verify" it can not be used for
     authentication.
     """
     response_details = {}
