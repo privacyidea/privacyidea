@@ -2378,6 +2378,8 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             detail = res.json.get("detail")
             result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
             self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING)
             self.assertEqual(detail.get("verify").get("message"),  VERIFY_ENROLLMENT_MESSAGE)
             serial = detail.get("serial")
