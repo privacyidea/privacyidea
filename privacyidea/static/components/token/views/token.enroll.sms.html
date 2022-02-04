@@ -32,12 +32,12 @@
     </div>
 </div>
 
-<div class="form-group" ng-show="getRightsValue('sms_gateways').split(' ')">
+<div class="form-group" ng-show="smsGateways">
     <label for="identifier" translate>A token specific SMS gateway</label>
     <select class="form-control" id="identifier"
             ng-model="form['sms.identifier']"
             name="identifier"
-            ng-options="identifier for identifier in getRightsValue('sms_gateways').split(' ')">
+            ng-options="identifier for identifier in smsGateways">
     </select>
     <p class="help" translate>If this token should not use the system wide SMS gateway but an individual SMS gateway,
         you can select the gateway here.</p>

@@ -63,6 +63,7 @@ from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance,
                                                      get_smsgateway)
+from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from json import loads
 from privacyidea.lib import _
 
@@ -269,17 +270,19 @@ class SmsTokenClass(HotpTokenClass):
         :type param: dict
         :return: nothing
         """
-        if getParam(param, "dynamic_phone", optional):
-            self.add_tokeninfo("dynamic_phone", True)
-        else:
-            # specific - phone
-            phone = getParam(param, "phone", required)
-            self.add_tokeninfo("phone", phone)
+        verify = getParam(param, "verify", optional=True)
+        if not verify:
+            if getParam(param, "dynamic_phone", optional):
+                self.add_tokeninfo("dynamic_phone", True)
+            else:
+                # specific - phone
+                phone = getParam(param, "phone", required)
+                self.add_tokeninfo("phone", phone)
 
-        # in case of the sms token, only the server must know the otpkey
-        # thus if none is provided, we let create one (in the TokenClass)
-        if "genkey" not in param and "otpkey" not in param:
-            param['genkey'] = 1
+            # in case of the sms token, only the server must know the otpkey
+            # thus if none is provided, we let create one (in the TokenClass)
+            if "genkey" not in param and "otpkey" not in param:
+                param['genkey'] = 1
 
         HotpTokenClass.update(self, param, reset_failcount)
 
@@ -550,3 +553,16 @@ class SmsTokenClass(HotpTokenClass):
             autosms = len(autosmspol) >= 1
 
         return autosms
+
+    def prepare_verify_enrollment(self):
+        """
+        This is called, if the token should be enrolled in a way, that the user
+        needs to provide a proof, that the server can verify, that the token
+        was successfully enrolled.
+        The email token needs to send an email with OTP.
+
+        The returned dictionary is added to the response in "detail" -> "verify".
+        :return: A dictionary with information that is needed to trigger the verification.
+        """
+        self.create_challenge()
+        return {"message": VERIFY_ENROLLMENT_MESSAGE}

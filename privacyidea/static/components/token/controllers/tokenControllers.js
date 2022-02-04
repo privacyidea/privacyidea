@@ -151,6 +151,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
     $scope.qrCodeWidth = 250;
 
+    // Available SMS gateways. We do this here to avoid javascript loops
+    $scope.smsGateways = $scope.getRightsValue('sms_gateways').split(' ');
+
     if ($state.includes('token.wizard') && !$scope.show_seed) {
         $scope.qrCodeWidth = 300;
     }
