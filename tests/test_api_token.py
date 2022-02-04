@@ -2381,7 +2381,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING)
-            self.assertEqual(detail.get("verify").get("message"),  VERIFY_ENROLLMENT_MESSAGE)
+            self.assertEqual(detail.get("verify").get("message"), VERIFY_ENROLLMENT_MESSAGE)
             serial = detail.get("serial")
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state
@@ -2448,7 +2448,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING)
-            self.assertEqual(detail.get("verify").get("message"),  VERIFY_ENROLLMENT_MESSAGE)
+            self.assertEqual(detail.get("verify").get("message"), VERIFY_ENROLLMENT_MESSAGE)
             serial = detail.get("serial")
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state
@@ -2489,7 +2489,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING)
-            self.assertEqual(detail.get("verify").get("message"),  VERIFY_ENROLLMENT_MESSAGE)
+            self.assertEqual(detail.get("verify").get("message"), VERIFY_ENROLLMENT_MESSAGE)
             serial = detail.get("serial")
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state

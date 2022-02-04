@@ -162,7 +162,7 @@ class TokenClass(object):
     client_mode = CLIENTMODE.INTERACTIVE
     # Usually a token will be checked in the lib:check_token_list, even if it is disabled
     check_if_disabled = True
-    # If the toke provide means that the user has to prove/verify that the token was successfully enrolled.
+    # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
 
     @log_with(log)

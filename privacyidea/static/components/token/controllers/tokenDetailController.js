@@ -269,7 +269,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             $scope.get();
         });
     };
-    
+
     $scope.sendVerifyResponse = function () {
         var params = {
             "serial": $scope.token.serial,
