@@ -1340,7 +1340,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     if type(client) == list:
         client = ", ".join(client)
     try:
-        check_ip_in_policy("127.0.0.1", client.split(","))
+        client = client or ""
+        check_ip_in_policy("127.0.0.1", [c.strip() for c in client.split(",")])
     except AddrFormatError:
         raise privacyIDEAError(_("Invalid client definition!"), id=302)
     if type(pinode) == list:
