@@ -71,7 +71,14 @@
         <tr ng-if="token.rollout_state">
             <td translate>Rollout State</td>
             <td>{{ token.rollout_state }}</td>
-            <td></td>
+            <td>
+                <div ng-show="token.rollout_state === 'verify'">
+                    <input type="text" ng-model="token.verifyResponse" class="form-control"
+                           placeholder="{{ 'Enter code to verify enrollment' | translate }}">
+                    <button type="button" ng-click="sendVerifyResponse()"
+                            class="btn btn-primary" translate>Verify Token</button>
+                </div>
+            </td>
         </tr>
         <tr token-data-edit text="{{'Maxfail' | translate }}"
             button-text="{{ 'Set max fail'|translate}}"
