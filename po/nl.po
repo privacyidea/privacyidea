@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2021-06-02 14:49+0000\n"
+"PO-Revision-Date: 2022-02-04 07:54+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/nl/>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.7-dev\n"
+"X-Generator: Weblate 4.11-dev\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -889,9 +889,8 @@ msgid "Create realm"
 msgstr "Maak een realm"
 
 #: privacyidea/static/components/user/views/user.details.html:107
-#, fuzzy
 msgid "Custom attribute name"
-msgstr "Aangepast kenmerk toevoegen"
+msgstr "Naam aangepast kenmerk"
 
 #: privacyidea/static/components/user/views/user.details.html:79
 msgid "Custom attributes for user {{ username }}"
@@ -1085,7 +1084,7 @@ msgstr "E-mail token-instellingen"
 #: privacyidea/static/components/token/controllers/tokenControllers.js:204
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
-"E-mail: stuur een one time password naar het e-mailadres van de gebruiker."
+"E-mail: stuur een One Time Password naar het e-mailadres van de gebruiker."
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:19
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:19
@@ -1660,7 +1659,7 @@ msgstr ""
 
 #: privacyidea/static/components/recovery/views/recovery.html:6
 msgid "If you forgot your password, you may set a new one."
-msgstr "Als je je wachtwoord vergeten bent, dan kun een nieuw instellen."
+msgstr "Als je het wachtwoord vergeten bent, dan kun een nieuw instellen."
 
 #: privacyidea/static/components/token/views/token.assign.html:3
 msgid ""
@@ -2121,7 +2120,7 @@ msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:165
 msgid "Okay"
-msgstr "Okay"
+msgstr "Ok"
 
 #: privacyidea/static/templates/baseline.html:26
 #: privacyidea/static/templates/menu.html:136
@@ -2751,9 +2750,8 @@ msgstr "Bewaar CA"
 
 #: privacyidea/static/components/config/views/config.events.details.html:103
 #: privacyidea/static/components/config/views/config.events.details.html:282
-#, fuzzy
 msgid "Save Event Handler Definition"
-msgstr "Maak een event handler definitie"
+msgstr "Bewaar event handler definitie"
 
 #: privacyidea/static/components/machine/views/machine.details.html:104
 #: privacyidea/static/components/token/views/token.details.html:592
@@ -2762,9 +2760,8 @@ msgstr "Bewaar opties"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:119
 #: privacyidea/static/components/config/views/config.policies.details.html:400
-#, fuzzy
 msgid "Save Policy"
-msgstr "Maak een beleid"
+msgstr "Bewaar beleid"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:120
 msgid "Save RADIUS server"
@@ -3021,7 +3018,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.list.html:8
 msgid "StartTLS"
-msgstr ""
+msgstr "StartTLS"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:19
 msgid "Subscription about to expire"
@@ -3157,9 +3154,9 @@ msgid ""
 "    realms need to be present to perform a successful authentication."
 msgstr ""
 "Het 4 Eyes-token zal je enkel authenticeren wanneer twee of meer\n"
-"  gebruikers tegelijk aanwezig zijn. Je kunt bepalen hoeveel bestaande\n"
-"  tokens van de gegeven realms aanwezig moeten zijn om de authenticatie\n"
-"  te doen lukken."
+"     gebruikers tegelijk aanwezig zijn. Je kunt bepalen hoeveel bestaande\n"
+"     tokens van de gegeven realms aanwezig moeten zijn om de authenticatie\n"
+"     te doen lukken."
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:27
 msgid "The AppID must not end with a \"/\"."
@@ -4473,9 +4470,8 @@ msgid "Use STARTTLS on a plain LDAP connection usually on port 389."
 msgstr "Gebruik STARTTLS op een gewone LDAP-verbinding op poort 389."
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:113
-#, fuzzy
 msgid "Use StartTLS"
-msgstr "Gebruik TLS"
+msgstr "Gebruik StartTLS"
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:35
 #: privacyidea/static/components/token/views/token.enroll.totp.html:35
@@ -4686,6 +4682,9 @@ msgid ""
 "subscription, to use Push tokens in push mode. Otherwise Push tokens will "
 "only work in poll only mode."
 msgstr ""
+"Je gebruikt een aantal Push-tokens. Merk op dat je een geldig abonnement "
+"nodig hebt om Push-tokens in Push-modus te gebruiken. Anders zullen Push-"
+"tokens enkel in poll-modus werken."
 
 #: privacyidea/static/components/token/views/token.import.html:96
 msgid ""
@@ -4798,9 +4797,8 @@ msgid "Your secret phrase."
 msgstr "Jouw geheime zin."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:494
-#, fuzzy
 msgid "Your subscription for the privacyIDEA Authenticator has expired."
-msgstr "Gebruik twee-stap aanmelding met de PrivacyIDEA Authenticator App"
+msgstr "Je abonnement voor de PrivacyIDEA Authenticator App is verlopen."
 
 #: privacyidea/static/templates/menu.html:167
 msgid ""
