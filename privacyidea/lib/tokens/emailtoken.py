@@ -434,8 +434,8 @@ class EmailTokenClass(HotpTokenClass):
         tags = create_tag_dict(serial=serial,
                                tokenowner=self.user,
                                tokentype=self.get_tokentype(),
-                               recipient={"givenname": self.user.info.get("givenname"),
-                                          "surname": self.user.info.get("surname")},
+                               recipient={"givenname": self.user.info.get("givenname") if self.user else "",
+                                          "surname": self.user.info.get("surname") if self.user else ""},
                                escape_html=mimetype.lower() == "html")
 
         message = message.format(otp=otp, **tags)
