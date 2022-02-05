@@ -448,7 +448,7 @@ class TokenEventHandler(BaseEventHandler):
                         init_param.update(add_params)
 
                 if tokentype == "sms":
-                    if handler_options.get("dynamic_phone"):
+                    if is_true(handler_options.get("dynamic_phone")):
                         init_param["dynamic_phone"] = 1
                     else:
                         init_param['phone'] = user.get_user_phone(
@@ -459,7 +459,7 @@ class TokenEventHandler(BaseEventHandler):
                     if handler_options.get("sms_identifier"):
                         init_param["sms.identifier"] = handler_options.get("sms_identifier")
                 elif tokentype == "email":
-                    if handler_options.get("dynamic_email"):
+                    if is_true(handler_options.get("dynamic_email")):
                         init_param["dynamic_email"] = 1
                     else:
                         init_param['email'] = user.info.get("email", "")

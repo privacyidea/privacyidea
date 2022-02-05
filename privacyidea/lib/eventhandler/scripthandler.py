@@ -173,24 +173,24 @@ class ScriptEventHandler(BaseEventHandler):
                  content.get("detail", {}).get("serial") or \
                  g.audit_object.audit_data.get("serial")
 
-        if handler_options.get("serial"):
+        if is_true(handler_options.get("serial")):
             proc_args.append("--serial")
             proc_args.append(serial or "none")
 
-        if handler_options.get("user"):
+        if is_true(handler_options.get("user")):
             proc_args.append("--user")
             proc_args.append(request.User.login or "none")
 
-        if handler_options.get("realm"):
+        if is_true(handler_options.get("realm")):
             proc_args.append("--realm")
             proc_args.append(request.User.realm or "none")
 
-        if handler_options.get("logged_in_user"):
+        if is_true(handler_options.get("logged_in_user")):
             proc_args.append("--logged_in_user")
             proc_args.append("{username}@{realm}".format(
                 **logged_in_user))
 
-        if handler_options.get("logged_in_role"):
+        if is_true(handler_options.get("logged_in_role")):
             proc_args.append("--logged_in_role")
             proc_args.append(logged_in_user.get("role", "none"))
 
