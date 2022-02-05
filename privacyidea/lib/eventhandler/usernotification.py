@@ -48,7 +48,7 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.user import User, get_user_list, is_attribute_at_all
-from privacyidea.lib.utils import create_tag_dict, to_unicode
+from privacyidea.lib.utils import create_tag_dict, to_unicode, is_true
 from privacyidea.lib.crypto import get_alphanum_str
 from privacyidea.lib import _
 from email.mime.multipart import MIMEMultipart
@@ -421,7 +421,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 emailconfig = handler_options.get("emailconfig")
                 mimetype = handler_options.get("mimetype", "plain")
                 useremail = recipient.get("email")
-                attach_qrcode = handler_options.get("attach_qrcode", False)
+                attach_qrcode = is_true(handler_options.get("attach_qrcode"))
 
                 if attach_qrcode and googleurl_img:
                     # get the image part of the googleurl
