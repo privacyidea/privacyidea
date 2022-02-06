@@ -29,10 +29,10 @@ class APIMonitoringTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
 
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(200, res.status_code, res)
             result = res.json.get("result")
-            self.assertTrue("key1" in result.get("value"), result)
-            self.assertTrue("key2" in result.get("value"), result)
+            self.assertIn("key1", result.get("value"), result)
+            self.assertIn("key2", result.get("value"), result)
 
         # check values of key1
         with self.app.test_request_context('/monitoring/key1',
@@ -92,7 +92,7 @@ class APIMonitoringTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEqual(result.get("value"), 4)
+            self.assertEqual(4, result.get("value"), result)
 
     def test_02_delete_stats(self):
 
@@ -119,4 +119,4 @@ class APIMonitoringTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             # Number of remaining values
-            self.assertEqual(len(result.get("value")), 1)
+            self.assertEqual(1, len(result.get("value")), result)
