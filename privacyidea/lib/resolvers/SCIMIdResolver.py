@@ -69,6 +69,20 @@ class IdResolver (UserIdResolver):
         # TODO: Implement password checking with SCIM
         return False
 
+    # def getUserInfo(self, userid):
+    #     """
+    #     returns the user information for a given uid.
+    #     """
+    #     ret = {}
+    #     # The SCIM ID is always /Users/ID
+    #     # Alas, we can not map the ID to any other attribute
+    #     res = self._get_user(self.resource_server,
+    #                          self.access_token,
+    #                          userid)
+    #     user = res
+    #     ret = self._fill_user_schema_1_0(user)
+
+    #     return ret
     def getUserInfo(self, userid):
         """
         returns the user information for a given uid.
@@ -76,12 +90,16 @@ class IdResolver (UserIdResolver):
         ret = {}
         # The SCIM ID is always /Users/ID
         # Alas, we can not map the ID to any other attribute
-        res = self._get_user(self.resource_server,
-                             self.access_token,
-                             userid)
-        user = res
-        ret = self._fill_user_schema_1_0(user)
-
+        params = {'filter' : 'userName eq "{0}"'.format(userid)}
+        res = self._search_users(self.resource_server,
+                                 self.access_token,
+                                 self.verify_tls,
+                                 params)
+        if len(res.get('resources', [])) > 1:
+            raise Exception('Could not find user: {0}'.format(userid))
+        if res.get('resources'):
+            for entry in res.get('resources'):
+                ret = self._fill_user_schema_1_0(entry, self.mapping)
         return ret
 
     @staticmethod
@@ -220,18 +238,18 @@ class IdResolver (UserIdResolver):
     def testconnection(cls, param):
         """
         This function lets you test the to be saved SCIM connection.
-              
+
         :param param: A dictionary with all necessary parameter to test the
                         connection.
         :type param: dict
         :return: Tuple of success and a description
         :rtype: (bool, string)
-        
+
         Parameters are: Authserver, Resourceserver, Client, Secret, Mapping
         """
         desc = None
         success = False
-               
+
         try:
             access_token = cls.get_access_token(str(param.get("Authserver")),
                                                 param.get("Client"),
@@ -245,7 +263,7 @@ class IdResolver (UserIdResolver):
             log.error("Failed to retrieve users: {0!s}".format(exx))
             log.debug("{0!s}".format(traceback.format_exc()))
             desc = "failed to retrieve users: {0!s}".format(exx)
-            
+
         return success, desc
 
     @staticmethod
@@ -266,7 +284,7 @@ class IdResolver (UserIdResolver):
         j_content = yaml.safe_load(resp.content)
 
         return j_content
-    
+
     @staticmethod
     def _get_user(resource_server, access_token, userid):
         """
