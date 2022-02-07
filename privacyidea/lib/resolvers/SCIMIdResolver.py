@@ -90,7 +90,7 @@ class IdResolver (UserIdResolver):
         ret = {}
         # The SCIM ID is always /Users/ID
         # Alas, we can not map the ID to any other attribute
-        params = {'filter' : 'userName eq "{0}"'.format(userid)}
+        params = {'filter':'userName eq "{0}"'.format(userid)}
         res = self._search_users(self.resource_server,
                                  self.access_token,
                                  self.verify_tls,
