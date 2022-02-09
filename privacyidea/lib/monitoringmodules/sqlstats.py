@@ -85,10 +85,8 @@ class Monitoring(MonitoringBase):
             self.session.commit()
             if reset_values:
                 # Successfully saved the new stats entry, so remove old entries
-                self.session.query(MonitoringStats). \
-                    filter(and_(MonitoringStats.stats_key == stats_key,
-                                MonitoringStats.timestamp < utc_timestamp)). \
-                    delete()
+                self.session.query(MonitoringStats).filter(and_(MonitoringStats.stats_key == stats_key,
+                                                                MonitoringStats.timestamp < utc_timestamp)).delete()
                 self.session.commit()
         except Exception as exx:  # pragma: no cover
             log.error(u"exception {0!r}".format(exx))
@@ -129,9 +127,7 @@ class Monitoring(MonitoringBase):
         """
         keys = []
         try:
-            for monStat in self.session.query(MonitoringStats). \
-                    with_entities(MonitoringStats.stats_key). \
-                    distinct():
+            for monStat in self.session.query(MonitoringStats).with_entities(MonitoringStats.stats_key).distinct():
                 keys.append(monStat.stats_key)
         except Exception as exx:  # pragma: no cover
             log.error(u"exception {0!r}".format(exx))
@@ -154,8 +150,7 @@ class Monitoring(MonitoringBase):
             if end_timestamp:
                 utc_end_timestamp = convert_timestamp_to_utc(end_timestamp)
                 conditions.append(MonitoringStats.timestamp <= utc_end_timestamp)
-            for ms in self.session.query(MonitoringStats). \
-                    filter(and_(*conditions)). \
+            for ms in self.session.query(MonitoringStats).filter(and_(*conditions)). \
                     order_by(MonitoringStats.timestamp.asc()):
                 aware_timestamp = ms.timestamp.replace(tzinfo=tzutc())
                 values.append((aware_timestamp, ms.stats_value))
@@ -173,8 +168,7 @@ class Monitoring(MonitoringBase):
     def get_last_value(self, stats_key):
         val = None
         try:
-            s = self.session.query(MonitoringStats). \
-                filter(MonitoringStats.stats_key == stats_key). \
+            s = self.session.query(MonitoringStats).filter(MonitoringStats.stats_key == stats_key). \
                 order_by(MonitoringStats.timestamp.desc()).first()
             if s:
                 val = s.stats_value
