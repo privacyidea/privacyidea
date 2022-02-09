@@ -51,7 +51,7 @@ myApp.controller("privacyideaServerController", ["$scope", "$stateParams", "info
 
     $scope.identifier = $stateParams.identifier;
     if ($scope.identifier) {
-        // We are editing an existing RADIUS Server
+        // We are editing an existing privacyIDEA Server
         $scope.getPrivacyideaServers($scope.identifier);
         } else {
         // This is a new privacyIDEA server
