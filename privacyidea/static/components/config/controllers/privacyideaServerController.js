@@ -25,19 +25,9 @@ myApp.controller("privacyideaServerController", ["$scope", "$stateParams", "info
                                                           inform, gettextCatalog,
                                                           $state, $location,
                                                           ConfigFactory) {
+    // Set the default route
     if ($location.path() === "/config/privacyideaserver") {
         $location.path("/config/privacyideaserver/list");
-    }
-
-    $scope.identifier = $stateParams.identifier;
-    if ($scope.identifier) {
-        // We are editing an existing RADIUS Server
-        $scope.getPrivacyideaServers($scope.identifier);
-        } else {
-        // This is a new privacyIDEA server
-        $scope.params = {
-            tls: true
-        }
     }
 
     // Get all servers
@@ -54,6 +44,22 @@ myApp.controller("privacyideaServerController", ["$scope", "$stateParams", "info
         });
     };
 
+    if ($location.path() === "/config/privacyideaserver/list") {
+    // in case of list we fetch all servers
+        $scope.getPrivacyideaServers();
+    }
+
+    $scope.identifier = $stateParams.identifier;
+    if ($scope.identifier) {
+        // We are editing an existing privacyIDEA Server
+        $scope.getPrivacyideaServers($scope.identifier);
+        } else {
+        // This is a new privacyIDEA server
+        $scope.params = {
+            tls: true
+        }
+    }
+
     $scope.delPrivacyideaServer = function (identifier) {
         ConfigFactory.delPrivacyidea(identifier, function(data) {
             $scope.getPrivacyideaServers();
@@ -65,8 +71,6 @@ myApp.controller("privacyideaServerController", ["$scope", "$stateParams", "info
             $scope.getPrivacyideaServers();
         });
     };
-
-    $scope.getPrivacyideaServers();
 
     $scope.testPrivacyideaServer = function() {
         ConfigFactory.testPrivacyidea($scope.params, function(data) {

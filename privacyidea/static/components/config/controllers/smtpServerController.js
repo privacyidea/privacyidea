@@ -24,21 +24,9 @@ myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
                                           function($scope, $stateParams, inform,
                                                    gettextCatalog, $state,
                                                    $location, ConfigFactory) {
+    // set the default route
     if ($location.path() === "/config/smtp") {
         $location.path("/config/smtp/list");
-    }
-
-    $scope.identifier = $stateParams.identifier;
-    if ($scope.identifier) {
-        // We are editing an existing SMTP Server
-        $scope.getSmtpServers($scope.identifier);
-    } else {
-        // This is a new SMTP server
-        $scope.params = {
-            tls: true,
-            port: 25,
-            timeout: 10
-        }
     }
 
     // Get all servers
@@ -55,6 +43,24 @@ myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
         });
     };
 
+    if ($location.path() == "/config/smtp/list") {
+        // in case of list we fetch all smtp servers
+        $scope.getSmtpServers();
+    }
+
+    $scope.identifier = $stateParams.identifier;
+    if ($scope.identifier) {
+        // We are editing an existing SMTP Server
+        $scope.getSmtpServers($scope.identifier);
+    } else {
+        // This is a new SMTP server
+        $scope.params = {
+            tls: true,
+            port: 25,
+            timeout: 10
+        }
+    }
+
     $scope.delSmtpServer = function (identifier) {
         ConfigFactory.delSmtp(identifier, function(data) {
             $scope.getSmtpServers();
@@ -66,8 +72,6 @@ myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
             $scope.getSmtpServers();
         });
     };
-
-    $scope.getSmtpServers();
 
     $scope.sendTestEmail = function() {
         ConfigFactory.testSmtp($scope.params, function(data) {

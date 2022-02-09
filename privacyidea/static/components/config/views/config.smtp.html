@@ -7,12 +7,11 @@
                     <a ui-sref="config.smtp.list"
                             translate>List SMTP server definitions</a></li>
                 <li role="presentation"
-                    >
-                    <a ui-sref="config.smtp.edit" translate
-                       ng-show="checkRight('smtpserver_write')">
+                    ng-class="{ active: $state.includes('config.smtp.add')}"
+                    ng-show="checkRight('smtpserver_write')">
+                    <a ui-sref="config.smtp.add" translate>
                         New SMTP server
                     </a>
-
                 </li>
             </ul>
         </div>
