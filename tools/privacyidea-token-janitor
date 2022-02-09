@@ -89,6 +89,8 @@ Actions:
     privacyidea-token-janitor find 
         --last_auth=10h|7d|2y
         --tokeninfo-key=<key>
+        --has-not-tokeninfo-key<key>
+        --has-tokeninfo-key<key>
         --tokeninfo-value=<value>
         --tokeninfo-value-greater-than=<value>
         --tokeninfo-value-less-than=<value>
@@ -214,7 +216,7 @@ def _compare_before(key, given_value_string):
 
 def _compare_regex_or_equal(_key, given_regex):
     def comparator(value):
-        if type(value) == int:
+        if type(value) in (int, bool):
             # If the value from the database is an integer, we compare "euqals integer"
             given_value = _try_convert_to_integer(given_regex)
             return given_value == value
@@ -237,7 +239,10 @@ def build_tokenvalue_filter(key,
     user-defined criterion matches.
     The filter matches a record if *all* comparator functions return True, i.e.
     if the conjunction of all comparators returns True.
+
     :param key: user-supplied --tokeninfo-key= value
+    :param has_tokeninfo_key: user-supplied --has_tokeninfo_key= value
+    :param has_not_tokeninfo_key: user-supplied --has_not_tokeninfo_key= value
     :param tokeninfo_value: user-supplied --tokeninfo-value= value
     :param tokeninfo_value_greater_than: user-supplied --tokeninfo-value-greater-than= value
     :param tokeninfo_value_less_than: user-supplied --tokeninfo-value-less-than= value
@@ -261,7 +266,7 @@ def build_tokenvalue_filter(key,
 
 def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
                    tokeninfo_value_filter, tokenattribute, tokenattribute_filter,
-                   orphaned, tokentype, serial, description, chunksize):
+                   orphaned, tokentype, serial, description, chunksize, has_not_tokeninfo_key, has_tokeninfo_key):
     filter_active = None
     filter_assigned = None
     orphaned = orphaned or ""
@@ -296,6 +301,12 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
             if description and not re.search(description,
                                              token_obj.token.description):
                 continue
+            if has_not_tokeninfo_key:
+                if has_not_tokeninfo_key in token_obj.get_tokeninfo():
+                    continue
+            if has_tokeninfo_key:
+                if has_tokeninfo_key not in token_obj.get_tokeninfo():
+                    continue
             if tokeninfo_value_filter and tokeninfo_key:
                 value = token_obj.get_tokeninfo(tokeninfo_key)
                 # if the tokeninfo key is not even set, it does not match the filter
@@ -405,52 +416,49 @@ def export_user_data(token_list, attributes=None):
     return users
 
 
-@manager.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
-@manager.option('--assigned', help='True|False|None')
-@manager.option('--active', help='True|False|None')
-@manager.option('--tokeninfo-value', metavar='REGEX', help='The tokeninfo value to match')
+@manager.option('--set-description', help='set a new description')
+@manager.option('--set-tokeninfo-key', help='set a new tokeninfo-key')
+@manager.option('--set-tokeninfo-value', help='set a new tokeninfo-value')
+@manager.option('--tokeninfo-value-before', metavar='DATETIME',
+                help='Interpret tokeninfo values as datetimes, match only if they occur before the given ISO 8601 datetime')
+@manager.option('--tokeninfo-value-after', metavar='DATETIME',
+                help='Interpret tokeninfo values as datetimes, match only if they occur after the given ISO 8601 datetime')
 @manager.option('--tokeninfo-value-greater-than', metavar='INTEGER',
                 help='Interpret tokeninfo values as integers and match only if they are '
                      'greater than the given integer')
 @manager.option('--tokeninfo-value-less-than', metavar='INTEGER',
                 help='Interpret tokeninfo values as integers and match only if they are '
                      'smaller than the given integer')
-@manager.option('--tokeninfo-value-after', metavar='DATETIME',
-                help='Interpret tokeninfo values as datetimes, match only if they occur '
-                     'after the given '
-                     'ISO 8601 datetime')
-@manager.option('--tokeninfo-value-before', metavar='DATETIME',
-                help='Interpret tokeninfo values as datetimes, match only if they occur '
-                     'before the given '
-                     ' ISO 8601 datetime')
-@manager.option('--tokeninfo-key', help='The tokeninfo key to match')
-@manager.option('--orphaned',
-                help='Whether the token is an orphaned token. Set to 1')
+@manager.option('--tokeninfo-value', metavar='REGEX|INTEGER', help='The tokeninfo value to match')
+@manager.option('--has-not-tokeninfo-key', help='filters for tokens that have not given the specified tokeninfo-key')
+@manager.option('--has-tokeninfo-key', help='filters for tokens that have given the specified tokeninfo-key.')
+@manager.option('--tokeninfo-key', help='The tokeninfo key to match. ')
+@manager.option('--tokenattribute-value-greater-than', metavar='INTEGER',
+                help="Match if the value of the token attribute is greater than the given value.")
+@manager.option('--tokenattribute-value-less-than', metavar='INTEGER',
+                help="Match if the value of the token attribute is less than the given value.")
+@manager.option('--tokenattribute-value', metavar='REGEX|INTEGER',
+                help='The value of the token attribute which should match.')
+@manager.option('--tokenattribute', help='Match for a certain token attribute from the database.')
 @manager.option('--tokentype', help='The tokentype to search.')
 @manager.option('--serial', help='A regular expression on the serial')
 @manager.option('--description', help='A regular expression on the description')
-@manager.option('--action', help='Which action should be performed on the '
-                                 'found tokens. {0!s}'.format("|".join(ALLOWED_ACTIONS)))
-@manager.option('--set-description', help='')
-@manager.option('--set-tokeninfo-key', help='')
-@manager.option('--set-tokeninfo-value', help='')
+@manager.option('--attributes', help='Extends the "listuser" function to display additional user attributes')
+@manager.option('--tokenrealms', help='A comma separated list of realms, to which the tokens should be assigned.')
 @manager.option('--sum', help='In case of the action "listuser", this switch specifies if '
                               'the output should only contain the number of tokens owned '
                               'by the user.',
                 dest='sum_tokens', action='store_true')
-@manager.option('--attributes', help='Extends the "listuser" function to display additional user attributes')
-@manager.option('--tokenrealms', help='A comma separated list of realms, to which the tokens '
-                                      'should be assigned.')
-@manager.option('--tokenattribute', help='Match for a certain token attribute from the database.')
-@manager.option('--tokenattribute-value-less-than', metavar='INTEGER',
-                help="Match if the value of the token attribute is less than the given value.")
-@manager.option('--tokenattribute-value-greater-than', metavar='INTEGER',
-                help="Match if the value of the token attribute is greater than the given value.")
-@manager.option('--tokenattribute-value', metavar='REGEX|INTEGER',
-                help='The value of the token attribute which should match.')
+@manager.option('--action', help='Which action should be performed on the '
+                                 'found tokens. {0!s}'.format("|".join(ALLOWED_ACTIONS)))
 @manager.option('--csv', dest='csv', action='store_true',
                 help='In case of a simple find, the output is written as CSV instead of the '
                      'formatted output.')
+@manager.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
+@manager.option('--assigned', help='True|False|None')
+@manager.option('--active', help='True|False|None')
+@manager.option('--orphaned',
+                help='Whether the token is an orphaned token. Set to 1')
 @manager.option('--b32', dest='b32', action='store_true',
                 help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.')
 @manager.option('--chunksize', default=None,
@@ -460,7 +468,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
          tokeninfo_value_after, tokeninfo_value_before,
          orphaned, tokentype, serial, description, action, set_description,
          set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv,
-         chunksize, attributes, b32,
+         chunksize, attributes, b32, has_not_tokeninfo_key, has_tokeninfo_key,
          tokenattribute, tokenattribute_value, tokenattribute_value_greater_than,
          tokenattribute_value_less_than):
     """
@@ -496,7 +504,8 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                                tokeninfo_key, tvfilter,
                                tokenattribute, tafilter,
                                orphaned, tokentype, serial,
-                               description, chunksize)
+                               description, chunksize, has_not_tokeninfo_key,
+                               has_tokeninfo_key)
     if chunksize is not None:
         sys.stderr.write("+ Reading tokens from database in chunks of {}...\n".format(chunksize))
     else:
