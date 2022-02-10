@@ -35,8 +35,8 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
-from privacyidea.api.lib.prepolicy import _generate_pin_from_policy
 
+# We use the old default length of 24 for registration tokens
 DEFAULT_LENGTH = 24
 DEFAULT_CONTENTS = 'cn'
 
@@ -94,12 +94,14 @@ class RegistrationTokenClass(PasswordTokenClass):
 
     """
 
+    password_detail_key = "registrationcode"
+
     def __init__(self, aToken):
         PasswordTokenClass.__init__(self, aToken)
         self.hKeyRequired = False
-        self.set_type(u"registration")
         self.otp_len = DEFAULT_LENGTH
         self.otp_contents = DEFAULT_CONTENTS
+        self.set_type(u"registration")
 
     @staticmethod
     def get_class_type():
@@ -163,22 +165,8 @@ class RegistrationTokenClass(PasswordTokenClass):
         :type param: dict
         :return: None
         """
-        if "genkey" in param:
-            # We do not need the genkey! We generate anyway.
-            # Otherwise genkey and otpkey will raise an exception in
-            # PasswordTokenClass
-            del param["genkey"]
-        if "registration.length" in param:
-            size = param["registration.length"]
-            del param["registration.length"]
-        else:
-            size = self.otp_len
-        if "registration.contents" in param:
-            contents = param["registration.contents"]
-            del param["registration.contents"]
-        else:
-            contents = self.otp_contents
-        param["otpkey"] = _generate_pin_from_policy(contents, size=int(size))
+        # We always generate the registration code, so we need to set this parameter
+        param["genkey"] = 1
         PasswordTokenClass.update(self, param)
 
     @log_with(log, log_entry=False)
@@ -188,15 +176,3 @@ class RegistrationTokenClass(PasswordTokenClass):
         Delete the registration token after successful authentication
         """
         self.delete_token()
-
-    @log_with(log)
-    def get_init_detail(self, params=None, user=None):
-        """
-        At the end of the initialization we return the registration code.
-        """
-        response_detail = PasswordTokenClass.get_init_detail(self, params, user)
-        params = params or {}
-        secretHOtp = self.token.get_otpkey()
-        registrationcode = secretHOtp.getKey()
-        response_detail["registrationcode"] = to_unicode(registrationcode)
-        return response_detail

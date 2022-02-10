@@ -2489,10 +2489,7 @@ class ValidateAPITestCase(MyApiTestCase):
         self.setUp_user_realms()
         user = User("cornelius", self.realm1)
 
-        # two different token types
-        init_token({"serial": "SPASS1",
-                    "type": "spass",
-                    "pin": "hallo123"}, user)
+        # Authenticate with PW token
         init_token({"serial": "PW1",
                     "type": "pw",
                     "otpkey": "123",
@@ -2506,11 +2503,29 @@ class ValidateAPITestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result.get("value"), True)
             detail = res.json.get("detail")
+            self.assertEqual(detail.get("type"), "pw")
+            # check if serial has been added to g
+            self.assertEqual(self.app_context.g.serial, 'PW1')
+
+        # two different token types result in "undetermined
+        init_token({"serial": "SPASS1",
+                    "type": "spass",
+                    "pin": "hallo123"}, user)
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "hallo123"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result.get("value"), True)
+            detail = res.json.get("detail")
             self.assertEqual(detail.get("type"), "undetermined")
             # check if serial has been added to g
             self.assertTrue(self.app_context.g.serial is None)
 
-        # two same token types.
+        # Remove PW token, and authenticate with spass
         remove_token("PW1")
         init_token({"serial": "SPASS2",
                     "type": "spass",
@@ -3099,6 +3114,158 @@ class RegistrationValidity(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
             self.assertEqual("matching 1 tokens, Outside validity period", detail.get("message"))
+
+
+class RegistrationAndPasswordToken(MyApiTestCase):
+
+    def setUp(self):
+        self.setUp_user_realms()
+
+    def test_00_registration_tokens(self):
+        # Registration tokens always do a genkey, even if we do not set it
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={'user': 'cornelius',
+                                                 'type': 'registration'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            detail = data.get("detail")
+            regcode = detail.get("registrationcode")
+
+        # now check if authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": regcode}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertEqual("ACCEPT", data.get("result").get("authentication"))
+
+        # Create a reg token with explicitly setting genkey
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={'user': 'cornelius',
+                                                 'type': 'registration',
+                                                 'genkey': 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            detail = data.get("detail")
+            regcode = detail.get("registrationcode")
+
+        # now check the authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": regcode}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertEqual("ACCEPT", data.get("result").get("authentication"))
+
+        # create a reg token, where the otpkey is ignored
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={'user': 'cornelius',
+                                                 'type': 'registration',
+                                                 'otpkey': "hallo"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            detail = data.get("detail")
+            regcode = detail.get("registrationcode")
+
+        # now check the authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": regcode}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertEqual("ACCEPT", data.get("result").get("authentication"))
+
+        # The registration code was generated. The passed otpkey was NOT used.
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "hallo"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertEqual("REJECT", data.get("result").get("authentication"))
+
+    def test_01_password_tokens(self):
+        # The password token requires either an otpkey or genkey
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={'user': 'cornelius',
+                                                 'type': 'pw'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code)
+            data = res.json
+            error = data.get("result").get("error")
+            self.assertEqual(905, error.get("code"))
+            self.assertEqual("ERR905: Missing parameter: 'otpkey'", error.get("message"))
+
+        # Try setting an explicit password
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={'user': 'cornelius',
+                                                 'type': 'pw',
+                                                 'otpkey': 'topsecret',
+                                                 'pin': 'test'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            data = res.json
+            detail = data.get("detail")
+            serial = detail.get("serial")
+
+        # now check the authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "testtopsecret"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertEqual("ACCEPT", data.get("result").get("authentication"))
+        # delete token
+        remove_token(serial)
+
+        # Try getting a generated password
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={'user': 'cornelius',
+                                                 'type': 'pw',
+                                                 'genkey': 1,
+                                                 'pin': 'test'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            data = res.json
+            detail = data.get("detail")
+            serial = detail.get("serial")
+            password = detail.get("password")
+
+        # now check the authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "test{0!s}".format(password)}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertEqual("ACCEPT", data.get("result").get("authentication"))
+        # delete token
+        remove_token(serial)
 
 
 class WebAuthn(MyApiTestCase):

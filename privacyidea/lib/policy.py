@@ -292,6 +292,8 @@ class ACTION(object):
     REALM = "realm"
     REGISTRATIONCODE_LENGTH = "registration.length"
     REGISTRATIONCODE_CONTENTS = "registration.contents"
+    PASSWORD_LENGTH = "pw.length"
+    PASSWORD_CONTENTS = "pw.contents"
     REMOTE_USER = "remote_user"
     REQUIREDEMAIL = "requiredemail"
     RESET = "reset"
@@ -1944,8 +1946,7 @@ def get_static_policy_definitions(scope=None):
                 'type': TYPE.STRING,
                 'desc': _('A whitespace-separated list of tokeninfo fields '
                           'which are not displayed to the admin.'),
-                'group': GROUP.TOKEN
-            }
+                'group': GROUP.TOKEN}
         },
 
         SCOPE.USER: {
@@ -2174,6 +2175,19 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 "desc": _("Specify the required "
                           "contents of the registration code. "
+                          "(c)haracters, (n)umeric, "
+                          "(s)pecial. Use modifiers +/- or a list "
+                          "of allowed characters [1234567890]"),
+                'group': GROUP.TOKEN},
+            ACTION.PASSWORD_LENGTH: {
+                'type': 'int',
+                'value': list(range(1, 32)),
+                "desc": _("Set the length of the password of generated password tokens."),
+                'group': GROUP.TOKEN},
+            ACTION.PASSWORD_CONTENTS: {
+                'type': 'str',
+                "desc": _("Specify the required "
+                          "contents of the password of a password token. "
                           "(c)haracters, (n)umeric, "
                           "(s)pecial. Use modifiers +/- or a list "
                           "of allowed characters [1234567890]"),

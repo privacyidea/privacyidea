@@ -243,6 +243,28 @@ This defines what characters the registrationcodes should contain.
 
 This takes the same values like the admin policy :ref:`admin_policies_otp_pin_contents`.
 
+pw.length
+~~~~~~~~~
+
+.. index:: pw token
+
+type: int
+
+This is the length if the password of a password token (pw token) is automatically generated
+with the `genkey` parameter.
+The default length is 12.
+
+pw.contents
+~~~~~~~~~~~
+
+type: string
+
+contents: cns
+
+This is the contents of an automatically generated password of a password token (pw token).
+
+This takes the same values like the admin policy :ref:`admin_policies_otp_pin_contents`.
+
 losttoken_PW_length
 ~~~~~~~~~~~~~~~~~~~
 
