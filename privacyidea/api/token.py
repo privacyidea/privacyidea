@@ -85,7 +85,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_max_token_user,
                                            check_max_token_realm,
                                            init_tokenlabel, init_random_pin,
-                                           init_registrationcode_length_contents,
+                                           init_token_length_contents,
                                            set_random_pin,
                                            encrypt_pin, check_otp_pin,
                                            check_external, init_token_defaults,
@@ -134,7 +134,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="init")
 @prepolicy(init_token_defaults, request)
-@prepolicy(init_registrationcode_length_contents, request)
+@prepolicy(init_token_length_contents, request)
 @prepolicy(papertoken_count, request)
 @prepolicy(sms_identifiers, request)
 @prepolicy(tantoken_count, request)

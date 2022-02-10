@@ -506,37 +506,52 @@ def init_token_defaults(request=None, action=None):
     return True
 
 
-def init_registrationcode_length_contents(request=None, action=None):
+def init_token_length_contents(request=None, action=None):
     """
     This policy function is to be used as a decorator in the API token init function.
 
-    If there is a valid policy set the action values of REGISTRATIONCODE_LENGTH
-    and REGISTRATIONCODE_CONTENTS are added to request.all_data as
+    It can set the parameters for automatic code or password created in regards to length and
+    contents for the tokentypes 'registration' and 'pw'.
+
+    If there is a valid policy set the action values of REGISTRATIONCODE_LENGTH / PASSWORD_LENGTH
+    and REGISTRATIONCODE_CONTENTS / PASSWORD_CONTENTS are added to request.all_data as
 
     { 'registration.length': '10', 'registration.contents': 'cn' }
+    or
+    { 'pw.length': '10', 'pw.contents': 'cn' }
     """
-    from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
     no_content_policy = True
     no_length_policy = True
     params = request.all_data
     tokentype = params.get("type")
-    if tokentype == "registration":
-        user_object = get_user_from_param(params)
-        length_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.REGISTRATIONCODE_LENGTH,
-                                user_object=user_object).action_values(unique=True)
-        if len(length_pols) == 1:
-            request.all_data[ACTION.REGISTRATIONCODE_LENGTH] = list(length_pols)[0]
-            no_length_policy = False
-        content_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.REGISTRATIONCODE_CONTENTS,
-                                user_object=user_object).action_values(unique=True)
-        if len(content_pols) == 1:
-            request.all_data[ACTION.REGISTRATIONCODE_CONTENTS] = list(content_pols)[0]
-            no_content_policy = False
+
+    if tokentype == 'registration':
+        from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
+        length_action = ACTION.REGISTRATIONCODE_LENGTH
+        contents_action = ACTION.REGISTRATIONCODE_CONTENTS
+    elif tokentype == 'pw':
+        from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
+        length_action = ACTION.PASSWORD_LENGTH
+        contents_action = ACTION.PASSWORD_CONTENTS
+    else:
+        return True
+
+    user_object = get_user_from_param(params)
+    length_pols = Match.user(g, scope=SCOPE.ENROLL, action=length_action,
+                            user_object=user_object).action_values(unique=True)
+    if len(length_pols) == 1:
+        request.all_data[length_action] = list(length_pols)[0]
+        no_length_policy = False
+    content_pols = Match.user(g, scope=SCOPE.ENROLL, action=contents_action,
+                            user_object=user_object).action_values(unique=True)
+    if len(content_pols) == 1:
+        request.all_data[contents_action] = list(content_pols)[0]
+        no_content_policy = False
     # if there is no policy, set defaults.
     if no_length_policy:
-        request.all_data[ACTION.REGISTRATIONCODE_LENGTH] = DEFAULT_LENGTH
+        request.all_data[length_action] = DEFAULT_LENGTH
     if no_content_policy:
-        request.all_data[ACTION.REGISTRATIONCODE_CONTENTS] = DEFAULT_CONTENTS
+        request.all_data[contents_action] = DEFAULT_CONTENTS
     return True
 
 
