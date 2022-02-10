@@ -149,10 +149,6 @@ class PasswordTokenClass(TokenClass):
         :type param: dict
         :return: None
         """
-        """
-        :param param:
-        :return:        
-        """
         if "genkey" in param:
             # Otherwise genkey and otpkey will raise an exception in
             # PasswordTokenClass
