@@ -80,18 +80,20 @@ angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
                 ////debug: console.log("checking right: " + action + ": " + res);
                 return res;
             },
-            getRightsValue: function (action) {
+            getRightsValue: function (action, defaultValue=false) {
                 // return the value of an action like otp_pin_minlength
-                var res = false;
-                user.rights.forEach(function(entry){
-                    if (entry.indexOf("=") >= 0) {
-                        // this is a value action
-                        var components = entry.split("=");
-                        if (components[0] === action) {
-                            res = components[1];
+                var res = defaultValue;
+                if (user.rights) {
+                    user.rights.forEach(function (entry) {
+                        if (entry.indexOf("=") >= 0) {
+                            // this is a value action
+                            var components = entry.split("=");
+                            if (components[0] === action) {
+                                res = components[1];
+                            }
                         }
-                    }
-                });
+                    });
+                }
                 return res;
             },
             checkMainMenu: function (menu) {
@@ -101,12 +103,14 @@ angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
             checkEnroll: function() {
                 // Check if any enroll* action is contained in user.rights
                 var res = false;
-                user.rights.forEach(function(entry){
-                    // check if the action starts with "enroll"
-                    if (entry.indexOf("enroll") === 0) {
-                        res = true;
-                    }
-                });
+                if (user.rights) {
+                    user.rights.forEach(function(entry){
+                        // check if the action starts with "enroll"
+                        if (entry.indexOf("enroll") === 0) {
+                            res = true;
+                        }
+                    });
+                }
                 return res;
             }
         };
