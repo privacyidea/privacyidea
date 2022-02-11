@@ -682,6 +682,7 @@ def verify_enrollment(request=None, action=None):
     This is used to verify an already enrolled token.
     The parameter "verify" is used to do so. If successful,
     the current rollout_state "verify" of the token will be changed to "enrolled".
+
     :param request:
     :param action:
     :return:

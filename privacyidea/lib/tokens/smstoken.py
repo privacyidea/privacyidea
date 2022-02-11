@@ -562,6 +562,7 @@ class SmsTokenClass(HotpTokenClass):
         The email token needs to send an email with OTP.
 
         The returned dictionary is added to the response in "detail" -> "verify".
+        
         :return: A dictionary with information that is needed to trigger the verification.
         """
         self.create_challenge()

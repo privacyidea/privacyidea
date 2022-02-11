@@ -447,7 +447,7 @@ This action takes a white space separated list of tokentypes.
 These tokens then need to be verified during enrollment.
 This is supported for HOTP, TOTP, Email and SMS tokens.
 
-In this case after enrolling the token the user is queried to enter
+In this case after enrolling the token the user is prompted to enter
 a valid OTP value. This way the system can verify, that the user has
 successfully enrolled the token.
 

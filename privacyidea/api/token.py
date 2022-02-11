@@ -264,10 +264,11 @@ def init():
     the token works correctly in general.
     The specific way depends on the token class.
     The necessary token class functions are
-    :func:`~privacyidea.lib.tokenclass.TokenClass.verify_enrollment`
-    :func:`~privacyidea.lib.tokenclass.TokenClass.prepare_verify_enrollment`
 
-    The first API call to /token/init returns responses in
+    * :func:`~privacyidea.lib.tokenclass.TokenClass.verify_enrollment`
+    * :func:`~privacyidea.lib.tokenclass.TokenClass.prepare_verify_enrollment`
+
+    The first API call to /token/init returns responses in::
 
         {"detail": {"verify": {"message": "Please provide a valid OTP value."},
                     "rollout_state": "verify"}}

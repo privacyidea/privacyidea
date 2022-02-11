@@ -1814,6 +1814,7 @@ class TokenClass(object):
         a correct OTP value.
 
         The returned dictionary is added to the response in "detail" -> "verify".
+
         :return: A dictionary with information that is needed to trigger the verification.
         """
         return None
