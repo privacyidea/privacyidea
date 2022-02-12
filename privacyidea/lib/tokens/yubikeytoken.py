@@ -298,7 +298,11 @@ class YubikeyTokenClass(TokenClass):
 
         uid = msg_hex[0:12]
         log.debug("uid: {0!r}".format(uid))
-        log.debug("prefix: {0!r}".format(binascii.hexlify(modhex_decode(yubi_prefix))))
+        try:
+            log.debug("prefix: {0!r}".format(binascii.hexlify(modhex_decode(yubi_prefix))))
+        except binascii.Error:
+            log.info("Wrong OTP value. Not modhex compatible. Can not extract yubi_prefix.")
+            return -4
         # usage_counter can go from 1 – 0x7fff
         usage_counter = msg_hex[12:16]
         timestamp = msg_hex[16:22]

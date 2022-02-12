@@ -822,6 +822,8 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(modhex_decode('cbdefghijklnrtuv'),
                           binascii.unhexlify('0123456789abcdef'))
         self.assertEqual(modhex_decode('fjhbhrhrhv'), b'Hallo')
+        # fail with invalid modhex
+        self.assertRaises(binascii.Error, modhex_decode, 'nlltvcc')
 
         # now test the crc function
         self.assertEqual(checksum(b'\x01\x02\x03\x04'), 0xc66e)
