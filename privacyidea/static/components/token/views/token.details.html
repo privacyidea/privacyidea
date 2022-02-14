@@ -612,8 +612,6 @@
     <form name="formAttachMachine" role="form"
           ng-hide="token.locked"
           validate>
-        <div ng-hide="form.application=='offline'"
-             attach-machine new-machine="newMachine"></div>
 
         <div class="form-group">
             <label for="application" translate>Application</label>
@@ -625,6 +623,9 @@
                     >
             </select>
         </div>
+
+        <div ng-hide="form.application=='offline'"
+             attach-machine new-machine="newMachine"></div>
 
         <!-- Options for a new MachineToken -->
         <div class="form-group"
