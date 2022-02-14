@@ -26,7 +26,7 @@ The file should contain the following contents::
    # Your database
    SQLALCHEMY_DATABASE_URI = 'sqlite:////etc/privacyidea/data.sqlite'
    # Set maximum identifier length to 128
-   SQLALCHEMY_ENGINE_OPTIONS = {"max_identifier_length": 128}
+   # SQLALCHEMY_ENGINE_OPTIONS = {"max_identifier_length": 128}
    # This is used to encrypt the auth_token
    SECRET_KEY = 't0p s3cr3t'
    # This is used to encrypt the admin passwords
@@ -56,11 +56,12 @@ drivers, to connect to this database. Please read :ref:`mysqldb`.
 
 ``SQLALCHEMY_ENGINE_OPTIONS`` is a dictionary of keyword args to send
 to `create_engine() <https://docs.sqlalchemy.org/en/14/core/engines.html#sqlalchemy
-.create_engine>`_. `max_identifier_length <https://docs.sqlalchemy.org/en/14/core/engines
-.html#sqlalchemy.create_engine.params.max_identifier_length>`_ is the database’s
+.create_engine>`_. The ``max_identifier_length`` is the database’s
 configured maximum number of characters that may be used in a SQL identifier
-such as a table name, column name, or label name. ``max_identifier_length``
-should be set to *128* to avoid error messages.
+such as a table name, column name, or label name. For Oracle version 19 and above
+the `max_identifier_length <https://docs.sqlalchemy.org/en/14/core/engines
+.html#sqlalchemy.create_engine.params.max_identifier_length>`_ should be set to 128.
+
 
 The ``SUPERUSER_REALM`` is a list of realms, in which the users get the role
 of an administrator.
