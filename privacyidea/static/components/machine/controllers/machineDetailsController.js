@@ -31,7 +31,11 @@ angular.module("privacyideaApp")
         MachineFactory.getApplicationDefinition(function(data){
             $scope.Applications = data.result.value;
             var applications = [];
-            for(var k in $scope.Applications) applications.push(k);
+            for (var k in $scope.Applications) {
+                    if (k !== "offline") {
+                        applications.push(k)
+                    };
+            }
             $scope.formInit = { application: applications};
         });
 
