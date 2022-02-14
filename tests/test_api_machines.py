@@ -494,3 +494,66 @@ class APIMachinesTestCase(MyApiTestCase):
                                                  response.get('34')))
         self.assertEqual(token_obj.check_otp('747439'), -1) # count = 34
         self.assertEqual(token_obj.check_otp('037211'), 35) # count = 35
+
+    def test_20_detach_ssh_key_any_token(self):
+        # we could also attach an SSH key to "any machine".
+        # We need to check, that we can also detach this token.
+        serial = "SSHany"
+        token_obj = init_token({"serial": serial, "type": "sshkey",
+                                "sshkey": SSHKEY})
+        self.assertEqual(token_obj.type, "sshkey")
+
+        with self.app.test_request_context('/machine/token',
+                                           method='POST',
+                                           data={"resolver": "",
+                                                 "machineid": 0,
+                                                 "serial": serial,
+                                                 "application": "ssh",
+                                                 "user": "root"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            self.assertTrue(result["value"] >= 1)
+
+        # check if the options were set.
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(token_obj.token.machine_list[0].application, "ssh")
+        self.assertEqual(token_obj.token.machine_list[0].option_list[0].mt_key,
+                         "user")
+
+        # Get the token
+        with self.app.test_request_context('/machine/token',
+                                           method='GET',
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            machine_list = result.get("value")
+            self.assertEqual(len(machine_list), 1)
+            self.assertEqual(machine_list[0].get("serial"), serial)
+            self.assertEqual(machine_list[0].get("hostname"), "any host")
+
+        # check if the options were set.
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual("ssh", token_obj.token.machine_list[0].application)
+        self.assertEqual("user", token_obj.token.machine_list[0].option_list[0].mt_key)
+
+        # Now detach the ssh token from any machine
+        with self.app.test_request_context('/machine/token/{0!s}/any%20machine/no%20resolver/ssh'.format(serial),
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            self.assertEqual(result["value"], 1)
+
+        # check that the token has no applications/machines anymore
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(len(token_obj.token.machine_list), 0)
+
+        remove_token(serial)

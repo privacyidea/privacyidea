@@ -44,6 +44,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.applications.base import get_auth_item
 
 ANY_MACHINE = "any machine"
+NO_RESOLVER = "no resolver"
 
 
 @log_with(log)
@@ -203,7 +204,13 @@ def detach_token(serial, application, hostname=None, machine_id=None,
     :return: the new MachineToken Object
     """
     token_id = get_token_id(serial)
-    if hostname or machine_id or resolver_name:
+    if machine_id == ANY_MACHINE and resolver_name == NO_RESOLVER:
+        # We have attached a token to any machine, like with offline
+        machineresolver_id = None
+        # For later handling we need to reset the machine_id and the resovler_name:
+        machine_id = None
+        resolver_name = None
+    elif hostname or machine_id or resolver_name:
         # Only if we have a specific machine, we need to determine these values,
         # otherwise we are using None.
         machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
@@ -353,7 +360,7 @@ def list_token_machines(serial):
             MR = fetch_one_resource(MachineResolver, id=machine.machineresolver_id)
             resolver_name = MR.name
         else:
-            resolver_name = "no resolver"
+            resolver_name = NO_RESOLVER
             hostname = "any host"
 
         option_list = machine.option_list
