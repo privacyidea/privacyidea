@@ -210,10 +210,6 @@ def detach_token_api(serial, machineid, resolver, application):
          "application": "luks" }
 
     """
-    # In case of offline we are ignoring the machineid and the resolver.
-    if application.lower() == "offline":
-        machineid = None
-        resolver = None
     r = detach_token(serial, application,
                      machine_id=machineid, resolver_name=resolver)
 
