@@ -356,6 +356,7 @@ def list_token_machines(serial):
     db_token = fetch_one_resource(Token, serial=serial)
 
     for machine in db_token.machine_list:
+        hostname = "unknown"
         if machine.machine_id and machine.machineresolver_id:
             MR = fetch_one_resource(MachineResolver, id=machine.machineresolver_id)
             resolver_name = MR.name
@@ -376,9 +377,7 @@ def list_token_machines(serial):
             # return the first hostname
             if type(hostname) == list:
                 hostname = hostname[0]
-        elif len(machines) > 1:
-            hostname = "unknown"
-
+        
         res.append({"machine_id": machine.machine_id or ANY_MACHINE,
                     "hostname": hostname,
                     "application": machine.application,
