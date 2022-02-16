@@ -115,11 +115,12 @@ class CustomUserAttributesHandler(BaseEventHandler):
 
         attrkey = options.get("attrkey")
         attrvalue = options.get("attrvalue")
-        if action.lower() in ["set_custom_user_attributes",
-                              "delete_custom_user_attributes"]:
-            if action.lower() == "set_custom_user_attributes":
-                ret = user.set_attribute(attrkey, attrvalue)
-            elif action.lower() == "delete_custom_user_attributes":
-                ret = user.delete_attribute(attrkey)
+        if action.lower() == "set_custom_user_attributes":
+            ret = user.set_attribute(attrkey, attrvalue)
+        elif action.lower() == "delete_custom_user_attributes":
+            ret = user.delete_attribute(attrkey)
+        else:
+            log.warning('please set a correct action')
+            ret = False
 
         return ret
