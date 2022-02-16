@@ -377,7 +377,7 @@ def list_token_machines(serial):
             # return the first hostname
             if type(hostname) == list:
                 hostname = hostname[0]
-        
+
         res.append({"machine_id": machine.machine_id or ANY_MACHINE,
                     "hostname": hostname,
                     "application": machine.application,
