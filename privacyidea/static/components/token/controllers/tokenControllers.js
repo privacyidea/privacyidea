@@ -151,6 +151,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
     $scope.qrCodeWidth = 250;
 
+    // Available SMS gateways. We do this here to avoid javascript loops
+    $scope.smsGateways = $scope.getRightsValue('sms_gateways', '').split(' ');
+
     if ($state.includes('token.wizard') && !$scope.show_seed) {
         $scope.qrCodeWidth = 300;
     }
@@ -421,7 +424,6 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     $scope.CATemplates = {};
     $scope.radioCSR = 'csrgenerate';
 
-
     // default enrollment callback
     $scope.callback = function (data) {
         $scope.U2FToken = {};
@@ -506,6 +508,19 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         };
         TokenFactory.enroll($scope.newUser, params, function (data) {
             $scope.clientpart = "";
+            $scope.callback(data);
+        });
+    };
+
+    $scope.sendVerifyResponse = function () {
+        var params = {
+            "serial": $scope.enrolledToken.serial,
+            "verify": $scope.verifyResponse,
+            "type": $scope.form.type
+
+        };
+        TokenFactory.enroll($scope.newUser, params, function (data) {
+            $scope.verifyResponse = "";
             $scope.callback(data);
         });
     };

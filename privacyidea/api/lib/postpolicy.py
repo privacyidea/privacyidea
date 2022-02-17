@@ -64,6 +64,7 @@ from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.subscriptions import subscription_status
 from privacyidea.lib.utils import create_img
 from privacyidea.lib.config import get_privacyidea_node
+from privacyidea.lib.tokenclass import ROLLOUTSTATE
 
 log = logging.getLogger(__name__)
 
@@ -760,5 +761,53 @@ def is_authorized(request, response):
     if authorized_pol:
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
             raise ValidateError("User is not authorized to authenticate under these conditions.")
+
+    return response
+
+
+def check_verify_enrollment(request, response):
+    """
+    This policy decorator is used in the ENROLL scope to
+    decorate the /token/init
+    If will check for action=verify_enrollment and ask the user
+    in a 2nd step to provide information to verify, that the token was successfully enrolled.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    serial = response.json.get("detail").get("serial")
+    verify = request.all_data.get("verify")
+    if verify:
+        # In case we are in a 2nd step verification, we must early exit
+        return response
+    tokenobj_list = get_tokens(serial=serial)
+    if len(tokenobj_list) == 1:
+        tokenobj = tokenobj_list[0]
+        # check if this token type can do verify enrollment
+        if tokenobj.can_verify_enrollment:
+            # Get policies
+            verify_pol_dict = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.VERIFY_ENROLLMENT,
+                                         user_object=request.User).action_values(unique=False,
+                                                                                 allow_white_space_in_action=True,
+                                                                                 write_to_audit_log=False)
+            # verify_pol_dict.keys() is a list of actions from several policies. It
+            # could look like this:
+            # ["hotp totp", "hotp email"]
+            do_verify_enrollment = False
+            for toks in verify_pol_dict:
+                if tokenobj.get_tokentype().upper() in [x.upper() for x in toks.split(" ")]:
+                    # This token is supposed to do verify enrollment
+                    do_verify_enrollment = True
+                    g.audit_object.add_policy(verify_pol_dict.get(toks))
+            if do_verify_enrollment:
+                content = response.json
+                content["detail"]["verify"] = tokenobj.prepare_verify_enrollment()
+                content["detail"]["rollout_state"] = ROLLOUTSTATE.VERIFYPENDING
+                tokenobj.token.rollout_state = ROLLOUTSTATE.VERIFYPENDING
+                tokenobj.token.save()
+                response.set_data(json.dumps(content))
+    else:
+        log.warning("No distinct token object found in enrollment response!")
 
     return response

@@ -270,6 +270,27 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         });
     };
 
+    $scope.sendVerifyResponse = function () {
+        var params = {
+            "serial": $scope.token.serial,
+            "verify": $scope.token.verifyResponse,
+            "type": $scope.token.tokentype
+        };
+        TokenFactory.enroll($scope.newUser, params, function (data) {
+            $scope.token.verifyResponse = "";
+            if (data.result.value === true) {
+                inform.add(gettextCatalog.getString("Enrollment successfully verified."),
+                                {type: "info", ttl: 10000});
+            } else {
+                inform.add(gettextCatalog.getString("Enrollment verification failed."),
+                                {type: "danger", ttl: 10000});
+            }
+            $scope.get();
+        });
+    };
+
+
+
     $scope.testOtp = function (otponly) {
         var params = {
             serial: $scope.tokenSerial,

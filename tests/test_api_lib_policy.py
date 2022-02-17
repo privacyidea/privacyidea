@@ -58,7 +58,8 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             get_webui_settings,
                                             save_pin_change,
                                             add_user_detail_to_response,
-                                            mangle_challenge_response, is_authorized)
+                                            mangle_challenge_response, is_authorized,
+                                            check_verify_enrollment)
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token,
                                    enable_token)
@@ -4226,3 +4227,50 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("auth01")
         delete_policy("auth02")
+
+    def test_20_verify_enrollment(self):
+        # Test verify enrollment policy
+        serial = "HOTP123456"
+        tok = init_token({"serial": serial,
+                          "type": "hotp",
+                          "otpkey": "31323334353637383040"})
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius",
+                                       'genkey': 1,
+                                       'type': 'hotp'},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {}
+        self.setUp_user_realms()
+        req.User = User("autoassignuser", self.realm1)
+        # The response contains the token type HOTP, enrollment
+        from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
+        from privacyidea.lib.tokenclass import ROLLOUTSTATE
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "id": 1,
+               "detail": {"serial": serial}}
+        resp = jsonify(res)
+        g.policy_object = PolicyClass()
+
+        # The response is unchanged
+        new_resp = check_verify_enrollment(req, resp)
+        self.assertEqual(resp, new_resp)
+
+        # Define a verify enrollment policy
+        set_policy("verify_toks", scope=SCOPE.ENROLL, action="{0!s}=hotp".format(ACTION.VERIFY_ENROLLMENT))
+        g.policy_object = PolicyClass()
+
+        new_resp = check_verify_enrollment(req, resp)
+        detail = new_resp.json.get("detail")
+        self.assertEqual(detail.get("verify").get("message"), VERIFY_ENROLLMENT_MESSAGE)
+        self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING)
+        # Also check the token object.
+        self.assertEqual(tok.token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
+        delete_policy("verify_toks")

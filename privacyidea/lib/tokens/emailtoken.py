@@ -69,6 +69,7 @@ import logging
 import traceback
 import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
+from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
@@ -99,6 +100,8 @@ class EmailTokenClass(HotpTokenClass):
     """
 
     EMAIL_ADDRESS_KEY = "email"
+    # The HOTP token provides means to verify the enrollment
+    can_verify_enrollment = True
 
     def __init__(self, aToken):
         HotpTokenClass.__init__(self, aToken)
@@ -213,18 +216,20 @@ class EmailTokenClass(HotpTokenClass):
         :return: nothing
 
         """
-        if getParam(param, "dynamic_email", optional=True):
-            self.add_tokeninfo("dynamic_email", True)
-        else:
-            # specific - e-mail
-            self._email_address = getParam(param,
-                                           self.EMAIL_ADDRESS_KEY,
-                                           optional=False)
+        verify = getParam(param, "verify", optional=True)
+        if not verify:
+            if getParam(param, "dynamic_email", optional=True):
+                self.add_tokeninfo("dynamic_email", True)
+            else:
+                # specific - e-mail
+                self._email_address = getParam(param,
+                                               self.EMAIL_ADDRESS_KEY,
+                                               optional=False)
 
-        # in case of the e-mail token, only the server must know the otpkey
-        # thus if none is provided, we let create one (in the TokenClass)
-        if 'genkey' not in param and 'otpkey' not in param:
-            param['genkey'] = 1
+            # in case of the e-mail token, only the server must know the otpkey
+            # thus if none is provided, we let create one (in the TokenClass)
+            if 'genkey' not in param and 'otpkey' not in param:
+                param['genkey'] = 1
 
         HotpTokenClass.update(self, param, reset_failcount)
         return
@@ -487,3 +492,17 @@ class EmailTokenClass(HotpTokenClass):
             description = TEST_SUCCESSFUL
 
         return r, description
+
+    def prepare_verify_enrollment(self):
+        """
+        This is called, if the token should be enrolled in a way, that the user
+        needs to provide a proof, that the server can verify, that the token
+        was successfully enrolled.
+        The email token needs to send an email with OTP.
+
+        The returned dictionary is added to the response in "detail" -> "verify".
+
+        :return: A dictionary with information that is needed to trigger the verification.
+        """
+        self.create_challenge()
+        return {"message": VERIFY_ENROLLMENT_MESSAGE}
