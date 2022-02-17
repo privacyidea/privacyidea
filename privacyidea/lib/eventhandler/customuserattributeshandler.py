@@ -56,7 +56,7 @@ class CustomUserAttributesHandler(BaseEventHandler):
                 "user": {
                     'type': 'str',
                     'required': True,
-                    'description': ["logged in user", "tokenowner"],
+                    'description': _('The user for whom the custom attribute should be set.'),
                     "value": [
                         USER_TYPE.TOKENOWNER,
                         USER_TYPE.LOGGED_IN_USER,
@@ -66,13 +66,13 @@ class CustomUserAttributesHandler(BaseEventHandler):
                     'description': _('The key of the custom user attribute that should be set.')},
                 "attrvalue": {
                     'type': 'str',
-                    'description': _('The value of the attribute')}
+                    'description': _('The value of the custom user attribute.')}
             },
             ACTION_TYPE.DELETE_CUSTOM_USER_ATTRIBUTES: {
                 "user": {
                     'type': 'str',
                     'required': True,
-                    'description': ["logged in user", "tokenowner"],
+                    'description': _('The user from which the custom attribute should be deleted.'),
                     "value": [
                         USER_TYPE.TOKENOWNER,
                         USER_TYPE.LOGGED_IN_USER,
@@ -93,7 +93,6 @@ class CustomUserAttributesHandler(BaseEventHandler):
         :type options: dict
         :return:
         """
-        ret = True
         g = options.get("g")
         request = options.get("request")
         handler_def = options.get("handler_def")
@@ -109,8 +108,8 @@ class CustomUserAttributesHandler(BaseEventHandler):
         elif user_type == USER_TYPE.LOGGED_IN_USER:
             user = logged_in_user
         else:
-            log.warning("Unable to determine the recipient for the user "
-                        "notification: {0!s}".format(handler_def))
+            log.warning("Unable to determine the user for handling the custom "
+                        "attribute: {0!s}".format(handler_def))
             return False
 
         attrkey = options.get("attrkey")
@@ -120,7 +119,7 @@ class CustomUserAttributesHandler(BaseEventHandler):
         elif action.lower() == "delete_custom_user_attributes":
             ret = user.delete_attribute(attrkey)
         else:
-            log.warning('please set a correct action')
+            log.warning('Unknown action value: {0!s}'.format(action))
             ret = False
 
         return ret

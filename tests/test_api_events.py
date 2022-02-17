@@ -5,6 +5,10 @@ from .base import MyApiTestCase
 from . import smtpmock
 from privacyidea.lib.config import set_privacyidea_config
 
+# TODO: this should be imported from lib.event when available
+HANDLERS = ["UserNotification", "Token", "Federation", "Script", "Counter",
+            "RequestMangler", "ResponseMangler", "Logging", "CustomUserAttributes"]
+
 
 class APIEventsTestCase(MyApiTestCase):
 
@@ -254,8 +258,8 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
-            self.assertTrue("UserNotification" in result.get("value"))
+            for h in HANDLERS:
+                self.assertIn(h, result.get("value"), result)
 
     def test_05_get_handler_actions(self):
         with self.app.test_request_context('/event/actions/UserNotification',

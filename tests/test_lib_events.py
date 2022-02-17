@@ -2483,7 +2483,6 @@ class CustomUserAttributesTestCase(MyTestCase):
         else:
             self.assertTrue(False)
 
-
     def test_05_overwrite_existing_attribute(self):
 
         # Setup realm and user
