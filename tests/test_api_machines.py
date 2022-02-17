@@ -563,7 +563,6 @@ class APIMachinesTestCase(MyApiTestCase):
     def test_30_detach_old_offline_token(self):
         # Old offline tokens are attached to a distinct machine in a resolver.
         # We need to ensure, that the new code can also detach these old tokens.
-        pass
         # 1. Create machine resolver
         # We are using the existing machine resolver: 192.168.0.1/machineresolver1 (gandalf)
         # 2. Create an HOTP token
@@ -580,11 +579,12 @@ class APIMachinesTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEqual(result["status"], True)
+            self.assertTrue(result["status"])
             self.assertTrue(result["value"] >= 1)
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(token_obj.token.machine_list[0].machine_id, "192.168.0.1")
         self.assertEqual(token_obj.token.machine_list[0].application, "offline")
 
         # 4. Authenticate
