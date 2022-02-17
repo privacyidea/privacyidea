@@ -25,6 +25,7 @@ angular.module("privacyideaApp")
         $scope.tokensPerPage = 5;
         $scope.newToken = {"serial": "", pin: ""};
         $scope.params = {page: 1};
+        $scope.form = {"options": {}};
         // scroll to the top of the page
         document.body.scrollTop = document.documentElement.scrollTop = 0;
         // read the application definition from the server
