@@ -8,7 +8,7 @@ from privacyidea.lib.user import User
 from .base import MyApiTestCase
 import json
 from privacyidea.lib.token import init_token, get_tokens, remove_token
-from privacyidea.lib.machine import attach_token, detach_token
+from privacyidea.lib.machine import attach_token, detach_token, ANY_MACHINE, NO_RESOLVER
 from privacyidea.lib.policy import (set_policy, delete_policy, ACTION, SCOPE)
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -103,6 +103,70 @@ class APIMachinesTestCase(MyApiTestCase):
         self.assertEqual(token_obj.token.machine_list[0].application, "luks")
         self.assertEqual(token_obj.token.machine_list[0].option_list[0].mt_key,
                          "slot")
+
+    def test_03_attach_offline_token(self):
+        # The offline token allows to be attached without a machine.
+        # create token
+        serial = "offHOTP"
+        init_token({"serial": serial, "genkey": 1})
+
+        with self.app.test_request_context('/machine/token',
+                                           method='POST',
+                                           data={"resolver": "",
+                                                 "machineid": 0,
+                                                 "serial": serial,
+                                                 "application": "offline",
+                                                 "count": "12"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            self.assertTrue(result["value"] >= 1)
+
+        # check if the options were set.
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(token_obj.token.machine_list[0].application, "offline")
+        self.assertEqual(token_obj.token.machine_list[0].option_list[0].mt_key,
+                         "count")
+
+        # Get the token
+        with self.app.test_request_context('/machine/token',
+                                           method='GET',
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            machine_list = result.get("value")
+            self.assertEqual(len(machine_list), 1)
+            self.assertEqual(machine_list[0].get("serial"), serial)
+            self.assertEqual(machine_list[0].get("hostname"), "any host")
+
+        # check if the options were set.
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(token_obj.token.machine_list[0].application, "offline")
+        self.assertEqual(token_obj.token.machine_list[0].option_list[0].mt_key,
+                         "count")
+
+        # Now detach the offline token. In this case we ignore the machine and resolver.
+        with self.app.test_request_context('/machine/token/{0!s}/{1!s}/{2!s}/offline'.format(serial,
+                                                                                             ANY_MACHINE,
+                                                                                             NO_RESOLVER),
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            self.assertEqual(result["value"], 1)
+
+        # check that the token has no applications/machines anymore
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(len(token_obj.token.machine_list), 0)
+
+        remove_token(serial)
 
     def test_04_set_options(self):
         serial = "S1"
@@ -432,3 +496,129 @@ class APIMachinesTestCase(MyApiTestCase):
                                                  response.get('34')))
         self.assertEqual(token_obj.check_otp('747439'), -1) # count = 34
         self.assertEqual(token_obj.check_otp('037211'), 35) # count = 35
+
+    def test_20_detach_ssh_key_any_token(self):
+        # we could also attach an SSH key to "any machine".
+        # We need to check, that we can also detach this token.
+        serial = "SSHany"
+        token_obj = init_token({"serial": serial, "type": "sshkey",
+                                "sshkey": SSHKEY})
+        self.assertEqual(token_obj.type, "sshkey")
+
+        with self.app.test_request_context('/machine/token',
+                                           method='POST',
+                                           data={"resolver": "",
+                                                 "machineid": 0,
+                                                 "serial": serial,
+                                                 "application": "ssh",
+                                                 "user": "root"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            self.assertTrue(result["value"] >= 1)
+
+        # check if the options were set.
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(token_obj.token.machine_list[0].application, "ssh")
+        self.assertEqual(token_obj.token.machine_list[0].option_list[0].mt_key,
+                         "user")
+
+        # Get the token
+        with self.app.test_request_context('/machine/token',
+                                           method='GET',
+                                           data={"serial": serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            machine_list = result.get("value")
+            self.assertEqual(len(machine_list), 1)
+            self.assertEqual(machine_list[0].get("serial"), serial)
+            self.assertEqual(machine_list[0].get("hostname"), "any host")
+
+        # check if the options were set.
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual("ssh", token_obj.token.machine_list[0].application)
+        self.assertEqual("user", token_obj.token.machine_list[0].option_list[0].mt_key)
+
+        # Now detach the ssh token from any machine
+        with self.app.test_request_context('/machine/token/{0!s}/any%20machine/no%20resolver/ssh'.format(serial),
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            self.assertEqual(result["value"], 1)
+
+        # check that the token has no applications/machines anymore
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(len(token_obj.token.machine_list), 0)
+
+        remove_token(serial)
+
+    def test_30_detach_old_offline_token(self):
+        # Old offline tokens are attached to a distinct machine in a resolver.
+        # We need to ensure, that the new code can also detach these old tokens.
+        # 1. Create machine resolver
+        # We are using the existing machine resolver: 192.168.0.1/machineresolver1 (gandalf)
+        # 2. Create an HOTP token
+        serial = "hotp01"
+        tok = init_token({"type": "hotp", "otpkey": self.otpkey, "serial": serial}, User("cornelius", self.realm1))
+        self.assertEqual("hotp", tok.token.tokentype)
+        # 3. Attach this token to a distinct machine
+        with self.app.test_request_context('/machine/token',
+                                           method='POST',
+                                           data={"hostname": "gandalf",
+                                                 "serial": serial,
+                                                 "application": "offline"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"])
+            self.assertTrue(result["value"] >= 1)
+
+        # check if the options were set.
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(token_obj.token.machine_list[0].machine_id, "192.168.0.1")
+        self.assertEqual(token_obj.token.machine_list[0].application, "offline")
+
+        # 4. Authenticate
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           environ_base={'REMOTE_ADDR': '192.168.0.1'},
+                                           data={"user": "cornelius",
+                                                 "pass": self.valid_otp_values[0]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            self.assertTrue(result["value"] >= 1)
+            detail = res.json.get("detail")
+            self.assertEqual(serial, detail.get("serial"))
+            # check for offline data
+            auth_items = res.json.get("auth_items")
+            self.assertIn("offline", auth_items)
+            offline = auth_items.get("offline")
+            self.assertEqual(1, len(offline))
+            self.assertIn("refilltoken", offline[0])
+
+        # 5. Detach this token from the offline application and machine
+        with self.app.test_request_context('/machine/token/{0!s}/192.168.0.1/machineresolver1/offline'.format(serial),
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            # One recorded deleted
+            self.assertEqual(result["value"], 1)
+
+        # check that the token has no applications/machines anymore
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(len(token_obj.token.machine_list), 0)
+        remove_token(serial)

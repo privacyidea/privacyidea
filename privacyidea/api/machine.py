@@ -34,6 +34,7 @@ from ..lib.machine import (get_machines, attach_token, detach_token,
                            add_option, delete_option,
                            list_token_machines, list_machine_tokens,
                            get_auth_items)
+from privacyidea.lib.machine import ANY_MACHINE
 import logging
 import netaddr
 
@@ -158,6 +159,9 @@ def attach_token_api():
     resolver = getParam(request.all_data, "resolver")
     serial = getParam(request.all_data, "serial", optional=False)
     application = getParam(request.all_data, "application", optional=False)
+    if resolver == "":
+        resolver = None
+        machineid = None
 
     # get additional options:
     options = {}
@@ -216,7 +220,6 @@ def detach_token_api(serial, machineid, resolver, application):
     return send_result(r)
 
 
-
 @machine_blueprint.route('/token', methods=['GET'])
 @prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
 def list_machinetokens_api():
@@ -244,6 +247,10 @@ def list_machinetokens_api():
         # We return the list of the machines for the given serial
         res = list_token_machines(serial)
     else:
+        if machineid == ANY_MACHINE:
+            hostname = None
+            machineid = None
+            resolver = None
         res = list_machine_tokens(hostname=hostname, machine_id=machineid,
                                   resolver_name=resolver)
 

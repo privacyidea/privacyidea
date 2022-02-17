@@ -313,8 +313,14 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             var machineObject = fixMachine($scope.newMachine);
             params["serial"] = $scope.tokenSerial;
             params["application"] = $scope.form.application;
-            params["machineid"] = machineObject.id;
-            params["resolver"] = machineObject.resolver;
+            if ($scope.form.application === "offline") {
+                // We force to be not attached to a machine
+                params["machineid"] = 0;
+                params["resolver"] = "";
+            } else {
+                params["machineid"] = machineObject.id;
+                params["resolver"] = machineObject.resolver;
+            }
             MachineFactory.attachTokenMachine(params, function (data) {
                 // clear form
                 $scope.form.application = null;

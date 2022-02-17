@@ -105,7 +105,7 @@ from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.api.auth import admin_required
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.machine import list_token_machines
+from privacyidea.lib.machine import list_machine_tokens
 from privacyidea.lib.applications.offline import MachineApplication
 import json
 
@@ -172,21 +172,23 @@ def offlinerefill():
         raise ParameterError("The token does not exist")
     else:
         tokenobj = tokenobj_list[0]
-        machine_defs = list_token_machines(serial)
-        # check if is still an offline token:
-        for mdef in machine_defs:
-            if mdef.get("application") == "offline":
-                # check refill token:
-                if tokenobj.get_tokeninfo("refilltoken") == refilltoken:
-                    # refill
-                    otps = MachineApplication.get_refill(tokenobj, password, mdef.get("options"))
-                    refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
-                    response = send_result(True)
-                    content = response.json
-                    content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
-                                                          "response": otps}]}
-                    response.set_data(json.dumps(content))
-                    return response
+        tokenattachments = list_machine_tokens(serial=serial, application="offline")
+        if tokenattachments:
+            # TODO: Currently we do not distinguish, if a token had more than one offline attachment
+            # We need the options to pass the count and the rounds for the next offline OTP values,
+            # which could have changed in the meantime.
+            options = tokenattachments[0].get("options")
+            # check refill token:
+            if tokenobj.get_tokeninfo("refilltoken") == refilltoken:
+                # refill
+                otps = MachineApplication.get_refill(tokenobj, password, options)
+                refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
+                response = send_result(True)
+                content = response.json
+                content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
+                                                      "response": otps}]}
+                response.set_data(json.dumps(content))
+                return response
         raise ParameterError("Token is not an offline token or refill token is incorrect")
 
 
