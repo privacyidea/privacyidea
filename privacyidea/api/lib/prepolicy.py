@@ -2129,28 +2129,27 @@ def required_piv_attestation(request, action=None):
                                                  REQUIRE_ACTIONS.REQUIRE_AND_VERIFY in list(require_att)
 
 
-def check_hide_tokeninfo(request=None, action=None):
-    # user_object = request.User
-    # role = g.logged_in_user.get("role")
-    # if role == ROLE.USER:
-    #     return True
-    #
-    # pols = Match.user(g, scope=SCOPE.USER, action=ACTION.TOKENINFO_API_EXCLUDE, user_object=user_object)\
-    #     .action_values(unique=True)
-    #
-    # # when there is a policy
-    # if pols:
-    #     # get the excluded fields
-    #     action_string = list(pols)[0]
-    #     # create a list
-    #     action_list = action_string.split(';')
-    #     # set the fields as a list to the request-data
-    #     request.all_data['excluded_tokeninfo_fields'] = action_list if len(action_list) > 0 else None
+def hide_tokeninfo(request=None, action=None):
+    """
+    This decorator checks for the policy `hide_tokeninfo` and sets the
+    `hidden_tokeninfo` parameter.
 
-    hidden_fields = Match.admin_or_user(g, action=ACTION.HIDE_TOKENINFO, user_obj=request.User)\
+    The given tokeninfo keys will be removed from the response.
+
+    The decorator wraps GET /token/
+
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional Action
+    :type action: str
+    :return: Always true. Modifies the parameter `request`
+    :rtype: bool
+    """
+    hidden_fields = Match.admin_or_user(g, action=ACTION.HIDE_TOKENINFO,
+                                        user_obj=request.User)\
         .action_values(unique=False)
 
-    hidden_fields = list(hidden_fields)
-    request.all_data['hidden_tokeninfo_fields'] = hidden_fields if len(hidden_fields) > 0 else None
+    if hidden_fields:
+        request.all_data['hidden_tokeninfo'] = list(hidden_fields)
 
     return True

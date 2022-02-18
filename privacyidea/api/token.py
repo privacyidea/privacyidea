@@ -100,7 +100,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation,
-                                           check_hide_tokeninfo)
+                                           hide_tokeninfo)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -377,7 +377,7 @@ def get_challenges_api(serial=None):
 
 @token_blueprint.route('/', methods=['GET'])
 @prepolicy(check_admin_tokenlist, request)
-@prepolicy(check_hide_tokeninfo, request)
+@prepolicy(hide_tokeninfo, request)
 @event("token_list", request, g)
 @log_with(log)
 def list_api():
@@ -445,7 +445,8 @@ def list_api():
     allowed_realms = getattr(request, "pi_allowed_realms", None)
     g.audit_object.log({'info': "realm: {0!s}".format((allowed_realms))})
 
-    hidden_tokeninfo_fields = getParam(request.all_data, 'hidden_tokeninfo_fields', default=None)
+    # get hide_tokeninfo setting from all_data
+    hidden_tokeninfo = getParam(request.all_data, 'hidden_tokeninfo', default=None)
 
     # get list of tokens as a dictionary
     tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,
@@ -456,7 +457,7 @@ def list_api():
                                  description=description,
                                  userid=userid, allowed_realms=allowed_realms,
                                  tokeninfo=tokeninfo,
-                                 hidden_tokeninfo_fields=hidden_tokeninfo_fields)
+                                 hidden_tokeninfo=hidden_tokeninfo)
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)

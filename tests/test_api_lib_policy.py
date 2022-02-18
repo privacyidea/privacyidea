@@ -47,7 +47,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            webauthntoken_auth, webauthntoken_authz,
                                            webauthntoken_enroll, webauthntoken_request,
                                            webauthntoken_allowed, check_application_tokentype,
-                                           required_piv_attestation, check_custom_user_attributes)
+                                           required_piv_attestation, check_custom_user_attributes,
+                                           hide_tokeninfo)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -1547,6 +1548,62 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             self.assertIn(col, req.all_data.get("hidden_columns"))
         # delete user policy
         delete_policy("hide_audit_columns_user")
+
+    def test_18c_hide_tokeninfo(self):
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        g.policy_object = PolicyClass()
+
+        # set a policy to hide the "tokenkind" and the "unknown" tokeninfo values
+        set_policy(name="hide_tokeninfo_admin",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}=tokenkind unknown".format(ACTION.HIDE_TOKENINFO))
+        g.logged_in_user = {"username": "admin1",
+                            "realm": "",
+                            "role": "admin"}
+        req.all_data = {}
+        req.User = User("Unknown")
+        hide_tokeninfo(req)
+        # Check if the hidden_tokeninfo entry was added to the request.data
+        self.assertIn('hidden_tokeninfo', req.all_data, req.all_data)
+        for col in ["tokenkind", "unknown"]:
+            self.assertIn(col, req.all_data.get("hidden_tokeninfo"))
+        # check that it won't be added when logged in as a user
+        g.logged_in_user = {"username": "user1",
+                            "realm": "",
+                            "role": "user"}
+        req.all_data = {}
+        hide_tokeninfo(req)
+        self.assertNotIn('hidden_tokeninfo', req.all_data, req.all_data)
+
+        delete_policy("hide_tokeninfo_admin")
+
+        # set a policy to hide the "number" and the "realm" columns in the audit response
+        set_policy(name="hide_tokeninfo_user",
+                   scope=SCOPE.USER,
+                   action="{0!s}=tokenkind unknown".format(ACTION.HIDE_TOKENINFO))
+        g.logged_in_user = {"username": "user1",
+                            "realm": "",
+                            "role": "user"}
+        req.all_data = {}
+        hide_tokeninfo(req)
+        # Check if the hidden_tokeninfo entry was added to the request.data
+        self.assertIn('hidden_tokeninfo', req.all_data, req.all_data)
+        for col in ["tokenkind", "unknown"]:
+            self.assertIn(col, req.all_data.get("hidden_tokeninfo"))
+
+        # check that it won't be added when logged in as an admin
+        g.logged_in_user = {"username": "admin1",
+                            "realm": "",
+                            "role": "admin"}
+        req.all_data = {}
+        #        req.User = User("user1")
+        hide_tokeninfo(req)
+        self.assertNotIn('hidden_tokeninfo', req.all_data, req.all_data)
+
+        delete_policy("hide_tokeninfo_user")
 
     def test_19_papertoken_count(self):
         g.logged_in_user = {"username": "admin1",
