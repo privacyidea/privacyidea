@@ -23,7 +23,7 @@ Version 3.7dev3, 2022-02-22
 
   Fixes:
   * Token: Remove the tokenowner entry after the automatic deletion of the registration token (#2907)
-  * Fix the usage of seconday login attribute (#2919)
+  * Fix the usage of secondary login attribute (#2919)
   * Fix removal of the "alembic_version" table with dropdb (#2848)
   * Fix "validate_mac no_check" when importing tokens with the token janitor (#2755)
   * Update dependencies
