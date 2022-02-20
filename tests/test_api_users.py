@@ -234,8 +234,21 @@ class APIUsersTestCase(MyApiTestCase):
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
 
+        # The administrator can update the username of the user by specifying the userid
+        with self.app.test_request_context('/user/',
+                                           method='PUT',
+                                           query_string=urlencode(
+                                               {"user": "wordy2",
+                                                "resolver": resolver,
+                                                "userid": "7"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"))
+
         # Delete the users
-        with self.app.test_request_context('/user/{0!s}/{1!s}'.format(resolver, "wordy"),
+        with self.app.test_request_context('/user/{0!s}/{1!s}'.format(resolver, "wordy2"),
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()

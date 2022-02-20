@@ -225,6 +225,10 @@ angular.module("privacyideaApp")
                     inform.add(gettextCatalog.getString("User updated " +
                         "successfully."),
                                 {type: "info"});
+                    // in case we changed the username:
+                    $scope.username = $scope.User.username;
+                    $state.go("user.details", {realmname:$scope.realmname,
+                                               username:$scope.username});
                     // we also need to update the user list
                     $scope._getUsers();
                     // ...and update the user details
