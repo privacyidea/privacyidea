@@ -131,6 +131,16 @@ can set a token PIN during enrollment. If the action is not defined and
 the user tries to set a PIN during enrollment, this PIN is deleted
 from the request.
 
+hide_tokeninfo
+~~~~~~~~~~~~~~
+
+type: string
+
+This specifies a blank-separated list of tokeninfo keys, which should be removed
+from the response and therefore will not be shown in the WebUI or JSON response.
+
+For example a value ``tokenkind auto_renew`` will hide these two tokeninfo entries.
+
 otp_pin_maxlength
 ~~~~~~~~~~~~~~~~~
 

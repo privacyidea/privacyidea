@@ -319,6 +319,7 @@ class ACTION(object):
     TOKENREALMS = "tokenrealms"
     TOKENTYPE = "tokentype"
     TOKENINFO = "tokeninfo"
+    HIDE_TOKENINFO = "hide_tokeninfo"
     TOKENWIZARD = "tokenwizard"
     TOKENWIZARD2ND = "tokenwizard_2nd_token"
     TOKENROLLOVER = "token_rollover"
@@ -1938,7 +1939,13 @@ def get_static_policy_definitions(scope=None):
                           "attribute, set this to '*'. For more details, check "
                           "the documentation."),
                 'mainmenu': [],
-                'group': GROUP.USER}
+                'group': GROUP.USER},
+            ACTION.HIDE_TOKENINFO: {
+                'type': TYPE.STRING,
+                'desc': _('A whitespace-separated list of tokeninfo fields '
+                          'which are not displayed to the admin.'),
+                'group': GROUP.TOKEN
+            }
         },
 
         SCOPE.USER: {
@@ -2068,8 +2075,13 @@ def get_static_policy_definitions(scope=None):
                           "attribute, set this to '*'. Use '*' with CAUTION! "
                           "For more details, check the documentation."),
                 'mainmenu': [],
-                'group': GROUP.USER}
-
+                'group': GROUP.USER},
+            ACTION.HIDE_TOKENINFO: {
+                'type': TYPE.STRING,
+                'desc': _('A whitespace-separated list of tokeninfo fields '
+                          'which are not displayed to the user.'),
+                'group': GROUP.TOKEN
+            }
         },
         SCOPE.ENROLL: {
             ACTION.MAXTOKENREALM: {

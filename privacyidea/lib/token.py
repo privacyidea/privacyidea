@@ -444,9 +444,10 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 
 @log_with(log)
 def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
-                serial=None, active=None, resolver=None, rollout_state=None,
-                sortby=Token.serial, sortdir="asc", psize=15,
-                page=1, description=None, userid=None, allowed_realms=None, tokeninfo=None):
+                        serial=None, active=None, resolver=None, rollout_state=None,
+                        sortby=Token.serial, sortdir="asc", psize=15,
+                        page=1, description=None, userid=None, allowed_realms=None,
+                        tokeninfo=None, hidden_tokeninfo=None):
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -536,6 +537,11 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 log.error("User information can not be retrieved: {0!s}".format(exx))
                 log.debug(traceback.format_exc())
                 token_dict["username"] = "**resolver error**"
+
+            if hidden_tokeninfo:
+                for key in list(token_dict['info']):
+                    if key in hidden_tokeninfo:
+                        token_dict['info'].pop(key)
 
             token_list.append(token_dict)
 

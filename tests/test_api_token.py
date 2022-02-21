@@ -11,7 +11,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    get_tokens_from_serial_or_user, enable_token,
                                    check_serial_pass, get_realms_of_token,
-                                   assign_token, token_exist)
+                                   assign_token, token_exist, add_tokeninfo)
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
@@ -373,6 +373,10 @@ class APIAttestationTestCase(MyApiTestCase):
 
 class APITokenTestCase(MyApiTestCase):
 
+    def setUp(self):
+        super(APITokenTestCase, self).setUp()
+        self.setUp_user_realms()
+
     def _create_temp_token(self, serial):
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -381,9 +385,6 @@ class APITokenTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-
-    def test_000_setup_realms(self):
-        self.setUp_user_realms()
 
     def test_00_init_token(self):
         # hmac is now hotp.
@@ -411,10 +412,12 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
+            serial = detail.get("serial")
             self.assertTrue(result.get("status"), result)
             self.assertTrue(result.get("value"), result)
             self.assertTrue("value" in detail.get("googleurl"), detail)
-            self.assertTrue("OATH" in detail.get("serial"), detail)
+            self.assertTrue("OATH" in serial, detail)
+            remove_token(serial)
 
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -422,17 +425,17 @@ class APITokenTestCase(MyApiTestCase):
                                                  "otpkey": self.otpkey,
                                                  "genkey": 0},
                                            headers={'Authorization': self.at}):
-                res = self.app.full_dispatch_request()
-                data = res.json
-                self.assertTrue(res.status_code == 200, res)
-                result = data.get("result")
-                detail = data.get("detail")
-                self.assertTrue(result.get("status"), result)
-                self.assertTrue(result.get("value"), result)
-                self.assertTrue("value" in detail.get("googleurl"), detail)
-                serial = detail.get("serial")
-                self.assertTrue("OATH" in serial, detail)
-        remove_token(serial)
+            res = self.app.full_dispatch_request()
+            data = res.json
+            self.assertTrue(res.status_code == 200, res)
+            result = data.get("result")
+            detail = data.get("detail")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertTrue("value" in detail.get("googleurl"), detail)
+            serial = detail.get("serial")
+            self.assertTrue("OATH" in serial, detail)
+            remove_token(serial)
 
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -442,19 +445,20 @@ class APITokenTestCase(MyApiTestCase):
                                                  "user": "cornelius",
                                                  "realm": self.realm1},
                                            headers={'Authorization': self.at}):
-                res = self.app.full_dispatch_request()
-                data = res.json
-                self.assertTrue(res.status_code == 200, res)
-                result = data.get("result")
-                detail = data.get("detail")
-                self.assertTrue(result.get("status"), result)
-                self.assertTrue(result.get("value"), result)
-                self.assertTrue("value" in detail.get("googleurl"), detail)
-                serial = detail.get("serial")
-                self.assertTrue("OATH" in serial, detail)
-        remove_token(serial)
+            res = self.app.full_dispatch_request()
+            data = res.json
+            self.assertTrue(res.status_code == 200, res)
+            result = data.get("result")
+            detail = data.get("detail")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertTrue("value" in detail.get("googleurl"), detail)
+            serial = detail.get("serial")
+            self.assertTrue("OATH" in serial, detail)
+            remove_token(serial)
 
     def test_01_list_tokens(self):
+        init_token({"otpkey": self.otpkey}, tokenkind="hotp")
         with self.app.test_request_context('/token/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -2358,13 +2362,90 @@ class APITokenTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertEqual(9, len(detail.get("pin")))
 
         delete_policy("allowed_to_set_pin")
         delete_policy("pinpolrandom")
         delete_policy("pinpolrandom2")
+
+    def test_33_hide_tokeninfo_user(self):
+        set_policy(name="hide_tokeninfo_user",
+                   scope=SCOPE.USER,
+                   action="{0!s}=tokenkind unknown".format(ACTION.HIDE_TOKENINFO))
+        t = init_token({"genkey": 1}, tokenkind='testing',
+                       user=User('cornelius', realm=self.realm1))
+        add_tokeninfo(t.token.serial, 'blabla', value='SomeValue')
+        for i in ['blabla', 'tokenkind']:
+            self.assertIn(i, t.get_tokeninfo(), t.get_tokeninfo())
+
+        # check that the admin user can see all tokeninfo
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={'serial': t.token.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get('status'), result)
+            toks = result.get('value').get('tokens')
+            self.assertEqual(1, len(toks), toks)
+            tok = toks[0]
+            self.assertEqual('testing', tok.get('info').get('tokenkind'), tok)
+            self.assertEqual('SomeValue', tok.get('info').get('blabla'), tok)
+
+        # check that the "tokenkind" tokeninfo is hidden when calling as user
+        with self.app.test_request_context('/auth',
+                                           data={"username": 'cornelius',
+                                                 "password": 'test'},
+                                           method='POST'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            user_token = result.get("value").get("token")
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={'serial': t.token.serial},
+                                           headers={'Authorization': user_token}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get('status'), result)
+            toks = result.get('value').get('tokens')
+            self.assertEqual(1, len(toks), toks)
+            tok = toks[0]
+            self.assertEqual('SomeValue', tok.get('info').get('blabla'), tok)
+            self.assertNotIn('tokenkind', tok.get('info'), tok)
+
+        delete_policy('hide_tokeninfo_user')
+
+    def test_34_hide_tokeninfo_admin(self):
+        set_policy(name="hide_tokeninfo_admin",
+                   scope=SCOPE.ADMIN,
+                   action="{0!s}=tokenkind unknown, {1!s}".format(ACTION.HIDE_TOKENINFO,
+                                                                  ACTION.TOKENLIST))
+        t = init_token({"genkey": 1}, tokenkind='testing')
+        add_tokeninfo(t.token.serial, 'blabla', value='SomeValue')
+        for i in ['blabla', 'tokenkind']:
+            self.assertIn(i, t.get_tokeninfo(), t.get_tokeninfo())
+
+        # check that the admin user can't see the tokenkind info
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={'serial': t.token.serial},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get('status'), result)
+            toks = result.get('value').get('tokens')
+            self.assertEqual(1, len(toks), toks)
+            tok = toks[0]
+            self.assertEqual('SomeValue', tok.get('info').get('blabla'), tok)
+            self.assertNotIn('tokenkind', tok.get('info'), tok)
+
+        delete_policy('hide_tokeninfo_admin')
 
     def test_40_init_verify_hotp_token(self):
         set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=hotp top".format(ACTION.VERIFY_ENROLLMENT))

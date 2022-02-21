@@ -77,7 +77,7 @@ from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
 from privacyidea.lib.utils import (parse_timedelta, is_true, generate_charlists_from_pin_policy,
-                                   check_pin_contents, get_module_class,
+                                   get_module_class,
                                    determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
@@ -2127,3 +2127,27 @@ def required_piv_attestation(request, action=None):
         # Add parameter verify_attestation
         request.all_data["verify_attestation"] = REQUIRE_ACTIONS.VERIFY in list(require_att) or \
                                                  REQUIRE_ACTIONS.REQUIRE_AND_VERIFY in list(require_att)
+
+
+def hide_tokeninfo(request=None, action=None):
+    """
+    This decorator checks for the policy `hide_tokeninfo` and sets the
+    `hidden_tokeninfo` parameter.
+
+    The given tokeninfo keys will be removed from the response.
+
+    The decorator wraps GET /token/
+
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional Action
+    :type action: str
+    :return: Always true. Modifies the parameter `request`
+    :rtype: bool
+    """
+    hidden_fields = Match.admin_or_user(g, action=ACTION.HIDE_TOKENINFO,
+                                        user_obj=request.User)\
+        .action_values(unique=False)
+
+    request.all_data['hidden_tokeninfo'] = list(hidden_fields)
+    return True

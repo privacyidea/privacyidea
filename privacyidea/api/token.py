@@ -99,7 +99,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            verify_enrollment,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
-                                           webauthntoken_request, required_piv_attestation)
+                                           webauthntoken_request, required_piv_attestation,
+                                           hide_tokeninfo)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -376,6 +377,7 @@ def get_challenges_api(serial=None):
 
 @token_blueprint.route('/', methods=['GET'])
 @prepolicy(check_admin_tokenlist, request)
+@prepolicy(hide_tokeninfo, request)
 @event("token_list", request, g)
 @log_with(log)
 def list_api():
@@ -443,6 +445,9 @@ def list_api():
     allowed_realms = getattr(request, "pi_allowed_realms", None)
     g.audit_object.log({'info': "realm: {0!s}".format((allowed_realms))})
 
+    # get hide_tokeninfo setting from all_data
+    hidden_tokeninfo = getParam(request.all_data, 'hidden_tokeninfo', default=None)
+
     # get list of tokens as a dictionary
     tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,
                                  user=user, assigned=assigned, psize=psize,
@@ -451,7 +456,8 @@ def list_api():
                                  resolver=resolver,
                                  description=description,
                                  userid=userid, allowed_realms=allowed_realms,
-                                 tokeninfo=tokeninfo)
+                                 tokeninfo=tokeninfo,
+                                 hidden_tokeninfo=hidden_tokeninfo)
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)
