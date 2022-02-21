@@ -77,7 +77,7 @@ from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
 from privacyidea.lib.utils import (parse_timedelta, is_true, generate_charlists_from_pin_policy,
-                                   check_pin_contents, get_module_class,
+                                   get_module_class,
                                    determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
@@ -2149,7 +2149,5 @@ def hide_tokeninfo(request=None, action=None):
                                         user_obj=request.User)\
         .action_values(unique=False)
 
-    if hidden_fields:
-        request.all_data['hidden_tokeninfo'] = list(hidden_fields)
-
+    request.all_data['hidden_tokeninfo'] = list(hidden_fields)
     return True

@@ -1944,7 +1944,7 @@ def get_static_policy_definitions(scope=None):
                 'type': TYPE.STRING,
                 'desc': _('A whitespace-separated list of tokeninfo fields '
                           'which are not displayed to the admin.'),
-                'group': GROUP.SYSTEM
+                'group': GROUP.TOKEN
             }
         },
 
@@ -2080,7 +2080,7 @@ def get_static_policy_definitions(scope=None):
                 'type': TYPE.STRING,
                 'desc': _('A whitespace-separated list of tokeninfo fields '
                           'which are not displayed to the user.'),
-                'group': GROUP.SYSTEM
+                'group': GROUP.TOKEN
             }
         },
         SCOPE.ENROLL: {
