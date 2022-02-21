@@ -1576,7 +1576,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                             "role": "user"}
         req.all_data = {}
         hide_tokeninfo(req)
-        self.assertNotIn('hidden_tokeninfo', req.all_data, req.all_data)
+        self.assertEqual(0, len(req.all_data['hidden_tokeninfo']), req.all_data)
 
         delete_policy("hide_tokeninfo_admin")
 
@@ -1601,7 +1601,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.all_data = {}
         #        req.User = User("user1")
         hide_tokeninfo(req)
-        self.assertNotIn('hidden_tokeninfo', req.all_data, req.all_data)
+        self.assertEqual(0, len(req.all_data['hidden_tokeninfo']), req.all_data)
 
         delete_policy("hide_tokeninfo_user")
 
