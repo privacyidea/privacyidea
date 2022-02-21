@@ -16,7 +16,8 @@ from privacyidea.lib.user import (User, create_user,
                                   get_username,
                                   get_user_list,
                                   split_user,
-                                  get_user_from_param)
+                                  get_user_from_param,
+                                  UserError)
 from . import ldap3mock
 from .test_lib_resolver import LDAPDirectory_small
 
@@ -93,14 +94,25 @@ class UserTestCase(MyTestCase):
         self.assertFalse(self.resolvername2 in resolvers, resolvers)
         
     def test_02_get_user_identifiers(self):
+        # create user by login
         user = User(login="root",
                     realm=self.realm1)
         (uid, rtype, resolvername) = user.get_user_identifiers()
-        self.assertTrue(uid == "0", uid)
-        self.assertTrue(rtype == "passwdresolver", rtype)
-        self.assertTrue(resolvername == self.resolvername1, resolvername)
+        self.assertEqual("0", uid)
+        self.assertEqual("passwdresolver", rtype)
+        self.assertEqual(self.resolvername1, resolvername)
         self.assertEqual(user.realm_id, 1)
-        
+
+        # create user by uid. fail, since the resolver is missing
+        self.assertRaises(UserError, User, realm=self.realm1, uid="0")
+        # create user by uid.
+        user2 = User(realm=self.realm1, resolver=self.resolvername1, uid="0")
+        (uid, rtype, resolvername) = user2.get_user_identifiers()
+        self.assertEqual("root", user2.login)
+        self.assertEqual("passwdresolver", rtype)
+        self.assertEqual(self.resolvername1, resolvername)
+        self.assertEqual(user.realm_id, 1)
+
     def test_03_get_username(self):
         username = get_username("0", self.resolvername1)
         self.assertTrue(username == "root", username)

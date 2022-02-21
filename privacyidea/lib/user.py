@@ -87,7 +87,7 @@ class User(object):
     # NOTE: Directly decorating the class ``User`` breaks ``isinstance`` checks,
     # which is why we have to decorate __init__
     @log_with(log)
-    def __init__(self, login="", realm="", resolver=""):
+    def __init__(self, login="", realm="", resolver="", uid=None):
         self.login = login or ""
         self.used_login = self.login
         self.realm = (realm or "").lower()
@@ -95,11 +95,13 @@ class User(object):
         if resolver == "**":
             resolver = ""
         self.resolver = resolver or ""
-        self.uid = None
+        self.uid = uid
         self.rtype = None
+        if not self.login and not self.resolver and uid is not None:
+            raise UserError("Can not create a user object from a uid without a resolver!")
         # Enrich user object with information from the userstore or from the
         # usercache
-        if login:
+        if login or uid is not None:
             self._get_user_from_userstore()
             # Just store the resolver type
             self.rtype = get_resolver_type(self.resolver)
@@ -118,9 +120,14 @@ class User(object):
             if y is None:
                 raise UserError("The resolver '{0!s}' does not exist!".format(
                     self.resolver))
-            self.uid = y.getUserId(self.login)
+            if self.uid is None:
+                # Determine the uid
+                self.uid = y.getUserId(self.login)
+            if not self.login:
+                # Determine the login if it does not exist or
+                self.used_login = self.login = y.getUsername(self.uid)
             if y.has_multiple_loginnames:
-                # In this case the primary login might be another value!
+                # if the resolver has multiple logins the primary login might be another value!
                 self.login = y.getUsername(self.uid)
 
     def is_empty(self):
