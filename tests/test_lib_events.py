@@ -11,7 +11,8 @@ import responses
 import os
 import mock
 
-from privacyidea.lib.eventhandler.customuserattributeshandler import CustomUserAttributesHandler
+from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
+                                                                      ACTION_TYPE as CUAH_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import USER_TYPE
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from .base import MyTestCase, FakeFlaskG, FakeAudit
@@ -2375,10 +2376,10 @@ class CustomUserAttributesTestCase(MyTestCase):
 
         # The attributekey will be set as "test" and the attributevalue as "check"
         options = {"g": g,
-                   "attrkey": "test",
-                   "attrvalue": "check",
                    "handler_def": {
-                        "options": {"user": "logged_in_user"}}
+                        "options": {"user": "logged_in_user",
+                                    "attrkey": "test",
+                                    "attrvalue": "check"}}
                    }
         t_handler = CustomUserAttributesHandler()
         res = t_handler.do("set_custom_user_attributes", options=options)
@@ -2440,13 +2441,13 @@ class CustomUserAttributesTestCase(MyTestCase):
 
         # The attributekey will be set as "test" and the attributevalue as "check"
         options = {"g": g,
-                   "attrkey": "test",
                    "request": req,
-                   "attrvalue": "check",
-                   "handler_def": {"conditions": {"tokentype": "totp,spass,oath,"}}
-                   }
+                   "handler_def": {"conditions": {"tokentype": "totp,spass,oath,"},
+                                   "options": {"attrkey": "test",
+                                               "attrvalue": "check",
+                                               "user": USER_TYPE.TOKENOWNER}}}
         t_handler = CustomUserAttributesHandler()
-        res = t_handler.do("set_custom_user_attributes", options=options)
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
         self.assertTrue(res)
 
         # Check that the user has the correct attribute
@@ -2467,13 +2468,13 @@ class CustomUserAttributesTestCase(MyTestCase):
 
         # The eventhandler will delete the user-attribute
         options = {"g": g,
-                   "attrkey": "test",
-                   "attrvalue": "check",
                    "handler_def": {
-                       "options": {"user": "logged_in_user"}}
+                       "options": {"attrkey": "test",
+                                   "attrvalue": "check",
+                                   "user": USER_TYPE.LOGGED_IN_USER}}
                    }
         t_handler = CustomUserAttributesHandler()
-        res = t_handler.do("delete_custom_user_attributes", options)
+        res = t_handler.do(CUAH_ACTION_TYPE.DELETE_CUSTOM_USER_ATTRIBUTES, options)
         self.assertFalse(res)
 
         # Check that the user attribute is deleted
@@ -2501,13 +2502,13 @@ class CustomUserAttributesTestCase(MyTestCase):
 
         # The attributekey will be set as "test" and the attributevalue as "check"
         options = {"g": g,
-                   "attrkey": "test",
-                   "attrvalue": "new",
                    "handler_def": {
-                       "options": {"user": "logged_in_user"}}
+                       "options": {"user": USER_TYPE.LOGGED_IN_USER,
+                                   "attrkey": "test",
+                                   "attrvalue": "new"}}
                    }
         t_handler = CustomUserAttributesHandler()
-        res = t_handler.do("set_custom_user_attributes", options=options)
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
         self.assertTrue(res)
 
         # Check that the user has the correct attribute

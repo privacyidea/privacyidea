@@ -7,6 +7,8 @@ from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
 import logging
 
+from privacyidea.lib.user import User
+
 log = logging.getLogger(__name__)
 
 
@@ -98,22 +100,19 @@ class CustomUserAttributesHandler(BaseEventHandler):
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
         user_type = handler_options.get("user", USER_TYPE.TOKENOWNER)
-        try:
-            logged_in_user = g.logged_in_user
-        except AttributeError:
-            logged_in_user = {}
         tokenowner = self._get_tokenowner(request)
         if user_type == USER_TYPE.TOKENOWNER and not tokenowner.is_empty():
             user = tokenowner
-        elif user_type == USER_TYPE.LOGGED_IN_USER:
-            user = logged_in_user
+        elif user_type == USER_TYPE.LOGGED_IN_USER and hasattr(g, 'logged_in_user'):
+            user = User(login=g.logged_in_user.get('username'),
+                        realm=g.logged_in_user.get('realm'))
         else:
             log.warning("Unable to determine the user for handling the custom "
-                        "attribute: {0!s}".format(handler_def))
+                        "attribute! action: {0!s}, handler: {1!s}".format(action, handler_def))
             return False
 
-        attrkey = options.get("attrkey")
-        attrvalue = options.get("attrvalue")
+        attrkey = handler_options.get("attrkey")
+        attrvalue = handler_options.get("attrvalue")
         if action.lower() == "set_custom_user_attributes":
             ret = user.set_attribute(attrkey, attrvalue)
         elif action.lower() == "delete_custom_user_attributes":

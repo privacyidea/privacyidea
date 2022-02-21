@@ -1,6 +1,10 @@
 import json
 
+from privacyidea.lib.event import set_event, delete_event
+from privacyidea.lib.eventhandler.customuserattributeshandler import ACTION_TYPE, USER_TYPE
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
+from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.user import User
 from .base import MyApiTestCase
 from . import smtpmock
 from privacyidea.lib.config import set_privacyidea_config
@@ -550,3 +554,166 @@ class APIEventsTestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertEqual(result.get("value").get("count"), 1)
             self.assertEqual(result.get("value").get("tokens")[0].get("tokentype"), u"email")
+
+
+class CustomUserAttributeHandlerTestCase(MyApiTestCase):
+    def setUp(self):
+        super(CustomUserAttributeHandlerTestCase, self).setUp()
+        self.setUp_user_realms()
+
+    def test_01_user_attribute_with_handler_tokenowner(self):
+        user = User('cornelius', self.realm1)
+        tok = init_token({'type': 'spass', 'pin': 'test'})
+        self.assertNotIn('foo', user.attributes, user.attributes)
+
+        # First try to delete a non-existing attribute
+        eid = set_event("user_atts", event=["validate_check"],
+                        action=ACTION_TYPE.DELETE_CUSTOM_USER_ATTRIBUTES,
+                        handlermodule="CustomUserAttributes", conditions={},
+                        options={'user': USER_TYPE.TOKENOWNER,
+                                 'attrkey': 'foo'})
+
+        # what happens if the token has no user
+        with self.app.test_request_context('/validate/check',
+                                           data={"serial": tok.token.serial,
+                                                 "pass": 'test'},
+                                           method='POST'):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"), result)
+            self.assertNotIn('foo', user.attributes, user.attributes)
+
+        # now we attach the token to a user
+        tok.add_user(user)
+        with self.app.test_request_context('/validate/check',
+                                           data={"user": 'cornelius',
+                                                 "pass": 'test'},
+                                           method='POST'):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"), result)
+            self.assertNotIn('foo', user.attributes, user.attributes)
+
+        # update event to add an attribute
+        eid = set_event("user_atts", event=["validate_check"], id=eid,
+                        action=ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES,
+                        handlermodule="CustomUserAttributes", conditions={},
+                        options={'user': USER_TYPE.TOKENOWNER,
+                                 'attrkey': 'foo',
+                                 'attrvalue': 'bar'})
+        with self.app.test_request_context('/validate/check',
+                                           data={"user": "cornelius",
+                                                 "pass": 'test'},
+                                           method='POST'):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual('bar', user.attributes.get('foo'), user.attributes)
+
+        # update event to update an attribute
+        eid = set_event("user_atts", event=["validate_check"], id=eid,
+                        action=ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES,
+                        handlermodule="CustomUserAttributes", conditions={},
+                        options={'user': USER_TYPE.TOKENOWNER,
+                                 'attrkey': 'foo',
+                                 'attrvalue': 'baz'})
+        with self.app.test_request_context('/validate/check',
+                                           data={"user": "cornelius",
+                                                 "pass": 'test'},
+                                           method='POST'):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual('baz', user.attributes.get('foo'), user.attributes)
+
+        # now delete the added attribute
+        eid = set_event("user_atts", event=["validate_check"], id=eid,
+                        action=ACTION_TYPE.DELETE_CUSTOM_USER_ATTRIBUTES,
+                        handlermodule="CustomUserAttributes", conditions={},
+                        options={'user': USER_TYPE.TOKENOWNER,
+                                 'attrkey': 'foo'})
+        with self.app.test_request_context('/validate/check',
+                                           data={"user": "cornelius",
+                                                 "pass": 'test'},
+                                           method='POST'):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"), result)
+            self.assertNotIn('foo', user.attributes, user.attributes)
+
+        delete_event(eid)
+        remove_token(tok.token.serial)
+
+    def test_02_user_attribute_with_handler_logged_in_user(self):
+        user = User('cornelius', realm=self.realm1)
+        self.assertNotIn('foo', user.attributes, user.attributes)
+
+        # get the auth-token for the user
+        with self.app.test_request_context('/auth',
+                                           data={"username": 'cornelius',
+                                                 "password": 'test'},
+                                           method='POST'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            user_token = result.get("value").get("token")
+
+        # try to delete a non-existing attribute
+        eid = set_event("user_atts", event=["token_list"],
+                        action=ACTION_TYPE.DELETE_CUSTOM_USER_ATTRIBUTES,
+                        handlermodule="CustomUserAttributes", conditions={},
+                        options={'user': USER_TYPE.LOGGED_IN_USER,
+                                 'attrkey': 'foo'})
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': user_token}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertNotIn('foo', user.attributes, user.attributes)
+
+        # delete an existing attribute
+        user.set_attribute('foo', 'bar')
+        self.assertIn('foo', user.attributes, user.attributes)
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': user_token}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertNotIn('foo', user.attributes, user.attributes)
+
+        # add an attribute
+        eid = set_event("user_atts", event=["token_list"], id=eid,
+                        action=ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES,
+                        handlermodule="CustomUserAttributes", conditions={},
+                        options={'user': USER_TYPE.LOGGED_IN_USER,
+                                 'attrkey': 'foo',
+                                 'attrvalue': 'bar'})
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': user_token}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual('bar', user.attributes['foo'], user.attributes)
+
+        # overwrite an attribute
+        eid = set_event("user_atts", event=["token_list"], id=eid,
+                        action=ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES,
+                        handlermodule="CustomUserAttributes", conditions={},
+                        options={'user': USER_TYPE.LOGGED_IN_USER,
+                                 'attrkey': 'foo',
+                                 'attrvalue': 'baz'})
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': user_token}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual('baz', user.attributes['foo'], user.attributes)
+
+        delete_event(eid)
+        user.delete_attribute('foo')
