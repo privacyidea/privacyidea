@@ -2372,7 +2372,8 @@ class CustomUserAttributesTestCase(MyTestCase):
 
         user = User("hans", self.realm1)
         g = FakeFlaskG()
-        g.logged_in_user = user
+        g.logged_in_user = {'username': 'hans',
+                            'realm': self.realm1}
 
         # The attributekey will be set as "test" and the attributevalue as "check"
         options = {"g": g,
@@ -2397,7 +2398,8 @@ class CustomUserAttributesTestCase(MyTestCase):
 
         user = User("hans", self.realm1)
         g = FakeFlaskG()
-        g.logged_in_user = user
+        g.logged_in_user = {'username': 'hans',
+                            'realm': self.realm1}
         # Setup user attribute
         ret = user.set_attribute('test', 'check')
         self.assertTrue(ret)
@@ -2462,7 +2464,8 @@ class CustomUserAttributesTestCase(MyTestCase):
 
         user = User("hans", self.realm1)
         g = FakeFlaskG()
-        g.logged_in_user = user
+        g.logged_in_user = {'username': 'hans',
+                            'realm': self.realm1}
         # Check that the attribute does not exist
         self.assertNotIn('test', user.attributes, user)
 
@@ -2491,7 +2494,8 @@ class CustomUserAttributesTestCase(MyTestCase):
 
         user = User("hans", self.realm1)
         g = FakeFlaskG()
-        g.logged_in_user = user
+        g.logged_in_user = {'username': 'hans',
+                            'realm': self.realm1}
         # Setup user attribute
         ret = user.set_attribute('test', 'old')
         self.assertTrue(ret)
@@ -2512,7 +2516,6 @@ class CustomUserAttributesTestCase(MyTestCase):
         self.assertTrue(res)
 
         # Check that the user has the correct attribute
-        user = g.logged_in_user
         a = user.attributes
         self.assertIn('test', a, user)
         self.assertEqual('new', a.get('test'), user)
