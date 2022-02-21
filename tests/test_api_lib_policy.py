@@ -1580,7 +1580,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("hide_tokeninfo_admin")
 
-        # set a policy to hide the "number" and the "realm" columns in the audit response
+        # set a policy to hide the "tokenkind" and the "unknown" entries from the tokeninfo
         set_policy(name="hide_tokeninfo_user",
                    scope=SCOPE.USER,
                    action="{0!s}=tokenkind unknown".format(ACTION.HIDE_TOKENINFO))
