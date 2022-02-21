@@ -1,3 +1,40 @@
+Version 3.7dev3, 2022-02-22
+
+  Features:
+  * Allow Offline Token without assigning to a specific IP address (#2926)
+  * The enrollment of HOTP, TOTP, SMS and Email Tokens can be verified
+    by entering a valid OTP value after the enrollment. (#2441)
+
+  Enhancements:
+  * Policies: Also honor the user resolver in policies, when administrator is managing tokens (#2778)
+  * Token: Redesign the code logic of is_previous_otp and make it more robust for HOTP and TOTP tokens (#2916)
+  * Add detailed log messages to track HSM sessions (#3000)
+  * UI: If an adminitrator is allowed to manage only one realm, this realm is autoselected in the UI. (#2908)
+  * UI: Rename buttons from "create" to "save" to avoid misunderstanding (#2932)
+  * UI: Use new dependency injection in javascript code (#1917)
+  * Tools: The tokenjanitor can check for the pure existence of a tokeninfo key (#2753)
+  * Tools: Improve the token janitor documentation (#2885)
+  * Add new translated languages from the community: cs, es, it nb_NO, pl, ru, si, tr, uk, zh_HANS
+  * Add nightly tests with a MySQL database (2477)
+  * Add extra_require in setup.py for PyKCS11 to allow installing via pip also in case of use with HSMs. (#2951)
+  * Documentation: Add documentation for max_identifier_length for Oracle DBs (#2986)
+  * Documentation: Improve Event Handler documentation
+  * Documentation: Add missing policy documentation (#2768)
+
+  Fixes:
+  * Token: Remove the tokenowner entry after the automatic deletion of the registration token (#2907)
+  * Fix the usage of secondary login attribute (#2919)
+  * Fix removal of the "alembic_version" table with dropdb (#2848)
+  * Fix "validate_mac no_check" when importing tokens with the token janitor (#2755)
+  * Update dependencies
+  * UI: Fix reload of policy list (#2967)
+  * UI: Remove the client side keygen tag for x509 certificates, since it is not supported by browsers anymore (#2968)
+  * UI: Fix submenu links like "new" and the routing highlighting (#2546)
+  * UI: Check the sanity of client IPs during creation of a policy (#2949)
+  * Event Handler: Fix loading of boolean values in event handler options (#2310)
+  * Token: Fix email token without an assigned user (#2990)
+  * Token: Handle modhex error for invalid passwords in Yubikey token (#2896)
+
 Version 3.6.3, 2021-11-18
 
   Fixes:
