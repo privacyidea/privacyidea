@@ -490,7 +490,6 @@ class SMSTokenTestCase(MyTestCase):
                                "HttpSMSProvider.HttpSMSProvider")
         c = token.create_challenge(transactionid)
         self.assertFalse(c[0], c)
-        self.assertTrue("Failed to load sms.providerConfig" in c[1], c[1])
 
         # test with the parameter exception=1
         self.assertRaises(Exception, token.create_challenge, transactionid, {"exception": "1"})
