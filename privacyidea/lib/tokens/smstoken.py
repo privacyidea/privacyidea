@@ -353,7 +353,8 @@ class SmsTokenClass(HotpTokenClass):
                         "SMS could not be sent: %r" % e)
                 log.warning(info)
                 log.debug("{0!s}".format(traceback.format_exc()))
-                return_message = info
+                return_message = ("The PIN was correct, but the "
+                        "SMS could not be sent")
                 if is_true(options.get("exception")):
                     raise Exception(info)
 

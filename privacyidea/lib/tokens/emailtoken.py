@@ -308,7 +308,8 @@ class EmailTokenClass(HotpTokenClass):
                         "EMail could not be sent: %r" % e)
                 log.warning(info)
                 log.debug(u"{0!s}".format(traceback.format_exc()))
-                return_message = info
+                return_message = info = ("The PIN was correct, but the "
+                        "EMail could not be sent")
                 if is_true(options.get("exception")):
                     raise Exception(info)
 
