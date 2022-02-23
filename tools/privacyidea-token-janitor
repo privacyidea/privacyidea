@@ -176,7 +176,8 @@ def _try_convert_to_datetime(given_value_string):
     try:
         parsed = parser.parse(given_value_string, dayfirst=False)
         if not parsed.tzinfo:
-            parsed = parser.parse(given_value_string, dayfirst=False, tzinfos=tzlocal)
+            # If not timezone is given we assume the timestamp is given in local time
+            parsed = parsed.replace(tzinfo=tzlocal())
         return parsed
     except ValueError:
         raise InvalidCommand('Not a valid datetime format: {}'.format(given_value_string))
