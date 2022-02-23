@@ -45,7 +45,8 @@ The file should contain the following contents::
    # PI_INIT_CHECK_HOOK = 'your.module.function'
    # PI_CSS = '/location/of/theme.css'
    # PI_UI_DEACTIVATED = True
-
+   # This is used to create a custom list of hash algorithms.
+   # PI_HASH_ALGO_LIST = ['pbkdf2_sha1', 'pbkdf2_sha512', 'argon2']
 
 .. note:: The config file is parsed as python code, so you can use variables to
    set the path and you need to take care for indentations.
@@ -82,6 +83,13 @@ slower but more robust and can be necessary in large redundant setups.
    The database might respond with an error like "object has been deleted or its
    row is otherwise not present". In this case setting ``PI_DB_SAFE_STORE``  to *True*
    might help.
+
+``PI_HASH_ALGO_LIST`` is a user-defined list of hash algorithms can be defined in the ``pi.cfg``.
+The context object will use the first algorithm listed in ``PI_HASH_ALGO_LIST`` when creating new hashes.
+If ``PI_HASH_ALGO_LIST`` is not defined, ``['argon2', 'pbkdf2_sha512']`` is the default.
+
+.. note:: If you change the hash algorithm, take care that the previously used one is still
+   included in the ``PI_HASH_ALGO_LIST`` so already generated hashes can still be verified.
 
 Logging
 -------

@@ -4,9 +4,13 @@ This test file tests the lib.crypto and lib.security.default
 """
 from mock import call
 import binascii
+from passlib.context import CryptContext
 
+from privacyidea.config import TestingConfig
 from privacyidea.lib.error import HSMException
-from .base import MyTestCase
+from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
+                                       get_app_config)
+from .base import MyTestCase, OverrideConfigTestCase
 # need to import pkcs11mock before PyKCS11, because it may be replaced by a mock module
 from .pkcs11mock import PKCS11Mock
 from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
@@ -26,6 +30,7 @@ from six import text_type
 from PyKCS11 import PyKCS11Error
 import string
 import passlib.hash
+
 
 class SecurityModuleTestCase(MyTestCase):
     """
@@ -54,8 +59,9 @@ class SecurityModuleTestCase(MyTestCase):
 
     def test_04_random(self):
         config = current_app.config
-        hsm = DefaultSecurityModule({"file": config.get("PI_ENCFILE"),
-                                     "crypted": True})
+        hsm = DefaultSecurityModule({
+            "file": config.get("PI_ENCFILE"),
+            "crypted": True})
         r = hsm.random(20)
         self.assertTrue(len(r) == 20, r)
         self.assertFalse(hsm.is_ready)
@@ -102,8 +108,9 @@ class SecurityModuleTestCase(MyTestCase):
 
     def test_07_encrypted_key_file(self):
         config = current_app.config
-        hsm = DefaultSecurityModule({"file": config.get("PI_ENCFILE_ENC"),
-                                     "crypted": True})
+        hsm = DefaultSecurityModule({
+            "file": config.get("PI_ENCFILE_ENC"),
+            "crypted": True})
         # The HSM is not ready, since the file is crypted and we did not
         # provide the password, yet
         self.assertFalse(hsm.is_ready)
@@ -245,15 +252,15 @@ class CryptoTestCase(MyTestCase):
         iv_hex = 'cd5245a2875007d30cc049c2e7eca0c5'
         enc_data_hex = '7ea55168952b33131077f4249cf9e52b5f2b572214ace13194c436451fe3788c'
         self.assertEqual(s, decrypt(binascii.unhexlify(enc_data_hex),
-                                     binascii.unhexlify(iv_hex)))
+                                    binascii.unhexlify(iv_hex)))
         enc_data_hex = 'fb79a04d69e832aec8ffb4bbfe031b3bd28a2840150212d8c819e' \
                        '362b1711cc389aed70eaf27af53131ea446095da80e88c4caf791' \
                        'c709e9581ff0a5f1e19228dc4c3c278d148951acaab9a164c1770' \
                        '7166134f4ba6111055c65d72771c6f59c2dc150a53753f2cf4c47' \
                        'ec02901022f02a054d1fc7678fd4f66b47967a5d222a'
         self.assertEqual(b'\x01\x02' * 30,
-                          decrypt(binascii.unhexlify(enc_data_hex),
-                                  binascii.unhexlify(iv_hex)))
+                         decrypt(binascii.unhexlify(enc_data_hex),
+                                 binascii.unhexlify(iv_hex)))
 
     def test_05_encode_decode(self):
         b_str = b'Hello World'
@@ -269,7 +276,6 @@ class CryptoTestCase(MyTestCase):
         self.assertTrue(keypriv.startswith("-----BEGIN RSA PRIVATE KEY-----"), keypriv)
 
 
-
 class RandomTestCase(MyTestCase):
     """
     Test the random functions from lib.crypto
@@ -282,7 +288,6 @@ class RandomTestCase(MyTestCase):
         self.assertTrue(100 <= r <= 200, r)
         r = urandom.uniform(200, 100)
         self.assertTrue(100 <= r <= 200, r)
-
 
     def test_01_randint(self):
         r = urandom.randint(100)
@@ -300,7 +305,7 @@ class RandomTestCase(MyTestCase):
 
     def test_03_randrange(self):
         r = urandom.randrange(100, 200, step=10)
-        self.assertTrue(100<=r<=200, r)
+        self.assertTrue(100 <= r <= 200, r)
         self.assertTrue(r % 10 == 0, r)
         r = urandom.randrange(100)
         self.assertTrue(r <= 100)
@@ -347,7 +352,7 @@ class RandomTestCase(MyTestCase):
             # a character from each requirement must be found
             self.assertTrue(
                 any(char in "AB" for char in password_req) and any(char in "12" for char in password_req))
-            self.assertEqual(len(password_req),3)
+            self.assertEqual(len(password_req), 3)
 
         # use letters for base and numbers for requirements
         # this cannot be achieved with a pin policy
@@ -368,6 +373,7 @@ class RandomTestCase(MyTestCase):
         # negative size without requirements results in an empty password
         password = generate_password(size=-1)
         self.assertEqual(password, '')
+
 
 class AESHardwareSecurityModuleTestCase(MyTestCase):
     """
@@ -498,7 +504,7 @@ class AESHardwareSecurityModuleTestCase(MyTestCase):
             # simulate that the HSM disappears after that, so we cannot
             # even open a session
             with pkcs11.simulate_failure(pkcs11.session_mock.generateRandom, 1), \
-                pkcs11.simulate_failure(pkcs11.mock.openSession, 1):
+                    pkcs11.simulate_failure(pkcs11.mock.openSession, 1):
                 with self.assertRaises(PyKCS11Error):
                     hsm.encrypt_password(password)
                 self.assertEqual(pkcs11.mock.openSession.mock_calls, [call(slot=1)] * 2)
@@ -680,3 +686,53 @@ class SignObjectTestCase(MyTestCase):
         long_data_sig = 991763198885165486007338893972384496025563436289154190056285376683148093829644985815692167116166669178171916463844829424162591848106824431299796818231239278958776853940831433819576852350691126984617641483209392489383319296267416823194661791079316704545017249491961092046751201670544843607206698682190381208022128216306635574292359600514603728560982584561531193227312370683851459162828981766836503134221347324867936277484738573153562229478151744446530191383660477390958159856842222437156763388859923477183453362567547792824054461704970820770533637185477922709297916275611571003099205429044820469679520819043851809079
         long_data = b'\x01\x02' * 5000
         self.assertTrue(so.verify(long_data, long_data_sig, verify_old_sigs=True))
+
+
+class CheckCustomAlgoList(OverrideConfigTestCase):
+    """Test for custom list of hash algorithms in pi.cfg"""
+
+    class Config(TestingConfig):
+        # Set custom list of algorithms in pi.cfg.
+        PI_HASH_ALGO_LIST = ['pbkdf2_sha1', 'pbkdf2_sha512', 'argon2']
+
+    def test_00_access_on_config_file(self):
+        DEFAULT_HASH_ALGO_LIST = ['argon2', 'pbkdf2_sha512']
+        password = "password"
+
+        pbkdf2_sha512_hash = '$pbkdf2-sha512$25000$XEvJOcf437tXam1Nydm79w$6eDPlPjRgnJGGK0j8a3to' \
+                             'SZoSUvwZzcvEj96t7Hg.X/SC822EFaO2iWoHFTUc1NMsX6sgQyQqbjWxGXgRWNzkw'
+
+        argon2_hash = '$argon2id$v=19$m=102400,t=2,p=8$oXRO6Z3zXsv5n1PqfQ9BqA$v87efWeG6BuP4W/3xgd2QQ'
+
+        # CryptContext always takes the first entry from the stored list of algorithms.
+        pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
+                                                     default=DEFAULT_HASH_ALGO_LIST))
+
+        # Checks if the first entry is taken from "PI_HASH_ALGO_LIST".
+        self.assertEqual(pass_ctx.hash(password)[0:7], '$pbkdf2')
+
+        # Checks if the password can also be verified with pbkdf2_sha512".
+        self.assertTrue(pass_ctx.verify(password, pbkdf2_sha512_hash))
+        # Checks if the password can also be verified with argon2".
+        self.assertTrue(pass_ctx.verify(password, argon2_hash))
+
+
+class CheckDefaultAlgoList(MyTestCase):
+    """Checks if the default table is used. If no user-defined "PI_HASH_ALGO_LIST" was created in the pi.cfg."""
+
+    def test_00_take_default_list(self):
+        DEFAULT_HASH_ALGO_LIST = ['argon2', 'pbkdf2_sha512']
+        password = "password"
+
+        pbkdf2_sha512_hash = '$pbkdf2-sha512$25000$XEvJOcf437tXam1Nydm79w$6eDPlPjRgnJGGK0j8a3to' \
+                             'SZoSUvwZzcvEj96t7Hg.X/SC822EFaO2iWoHFTUc1NMsX6sgQyQqbjWxGXgRWNzkw'
+
+        # CryptContext always takes the first entry from the stored list of algorithms.
+        pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
+                                                     default=DEFAULT_HASH_ALGO_LIST))
+
+        # Checks if the first entry is taken from "DEFAULT_HASH_ALGO_LIST"
+        self.assertEqual(pass_ctx.hash(password)[0:6], '$argon')
+
+        # Checks if the password can also be verified with pbkdf2_sha512 from "DEFAULT_HASH_ALGO_LIST".
+        self.assertTrue(pass_ctx.verify(password, pbkdf2_sha512_hash))
