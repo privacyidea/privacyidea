@@ -860,19 +860,22 @@ class PushTokenClass(TokenClass):
                                          validitytime=validity)
                 db_challenge.save()
                 self.challenge_janitor()
+                transactionid = db_challenge.transaction_id
 
-            # If sending the Push message failed, we still raise an error and a warning.
+            # If sending the Push message failed, we log a warning
             if not res:
                 log.warning(u"Failed to submit message to Firebase service for token {0!s}."
                             .format(self.token.serial))
-                raise ValidateError("Failed to submit message to Firebase service.")
+                if is_true(options.get("exception")):
+                    raise ValidateError("Failed to submit message to Firebase service.")
         else:
             log.warning(u"The token {0!s} has no tokeninfo {1!s}. "
                         u"The message could not be sent.".format(self.token.serial,
                                                                  PUSH_ACTION.FIREBASE_CONFIG))
-            raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")
+            if is_true(options.get("exception")):
+                raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")
 
-        return True, message, db_challenge.transaction_id, reply_dict
+        return True, message, transactionid, reply_dict
 
     @check_token_locked
     def authenticate(self, passw, user=None, options=None):

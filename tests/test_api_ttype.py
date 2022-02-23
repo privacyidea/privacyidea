@@ -273,18 +273,21 @@ class TtypePushAPITestCase(MyApiTestCase):
 
             # Send the first authentication request to trigger the challenge.
             # No push notification is submitted to firebase, but a challenge is created anyway
-            with self.app.test_request_context('/validate/check',
-                                               method='POST',
-                                               data={"user": "cornelius",
-                                                     "realm": self.realm1,
-                                                     "pass": "pushpin"}):
-                res = self.app.full_dispatch_request()
-                self.assertTrue(res.status_code == 400, res)
-                jsonresp = res.json
-                self.assertFalse(jsonresp.get("result").get("status"))
-                self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
-                self.assertEqual(jsonresp.get("result").get("error").get("message"),
-                                 "ERR401: Failed to submit message to Firebase service.")
+            with mock.patch("logging.Logger.warning") as mock_log:
+                with self.app.test_request_context('/validate/check',
+                                                   method='POST',
+                                                   data={"user": "cornelius",
+                                                         "realm": self.realm1,
+                                                         "pass": "pushpin"}):
+                    res = self.app.full_dispatch_request()
+                    self.assertTrue(res.status_code == 200, res)
+                    result = res.json.get("result")
+                    self.assertTrue(result.get("status"))
+                    self.assertFalse(result.get("value"))
+                    self.assertEqual("CHALLENGE", result.get("authentication"))
+                    # Check that the warning was written to the log file.
+                    mock_log.assert_called_with("Failed to submit message to Firebase service for token {0!s}."
+                                                .format(serial))
 
         # first create a signature
         ts = datetime.utcnow().isoformat()
