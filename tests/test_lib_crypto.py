@@ -60,7 +60,7 @@ class SecurityModuleTestCase(MyTestCase):
     def test_04_random(self):
         config = current_app.config
         hsm = DefaultSecurityModule({"file": config.get("PI_ENCFILE"),
-            "crypted": True})
+                                     "crypted": True})
         r = hsm.random(20)
         self.assertTrue(len(r) == 20, r)
         self.assertFalse(hsm.is_ready)
@@ -108,7 +108,7 @@ class SecurityModuleTestCase(MyTestCase):
     def test_07_encrypted_key_file(self):
         config = current_app.config
         hsm = DefaultSecurityModule({"file": config.get("PI_ENCFILE_ENC"),
-            "crypted": True})
+                                     "crypted": True})
         # The HSM is not ready, since the file is crypted and we did not
         # provide the password, yet
         self.assertFalse(hsm.is_ready)
