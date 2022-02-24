@@ -268,6 +268,12 @@ class PushTokenTestCase(MyTestCase):
                     # Check that the warning was written to the log file.
                     mock_log.assert_called_with("Failed to submit message to Firebase service for token {0!s}."
                                                 .format(serial))
+                    # Check that the user was informed about the need to poll
+                    detail = res.json.get("detail")
+                    self.assertEqual("Please confirm the authentication on your mobile device! "
+                                     "Use the polling feature of your privacyIDEA Authenticator App "
+                                     "to check for a new Login request.", detail.get("message"))
+
 
             # Our ServiceAccountCredentials mock has been called once, because
             # no access token has been fetched before
