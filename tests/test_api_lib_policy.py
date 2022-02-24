@@ -3119,6 +3119,12 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Check, if the tokenlabel was added
         self.assertEqual(req.all_data.get("pw.length"), "6")
         self.assertEqual(req.all_data.get("pw.contents"), "+n")
+        # request, that creates a different token type
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "hotp", "genkey": "1"}
+        init_token_length_contents(req)
+        # Check, if the tokenlabel was added
+        self.assertNotIn("pw.length", req.all_data)
+        self.assertNotIn("pw.contents", req.all_data)
         # delete policy
         delete_policy("pw_length")
         delete_policy("pw_contents")

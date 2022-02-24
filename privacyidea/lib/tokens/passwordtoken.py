@@ -171,22 +171,6 @@ class PasswordTokenClass(TokenClass):
             param["otplen"] = len(param["otpkey"])
         TokenClass.update(self, param)
 
-    @log_with(log)
-    @check_token_locked
-    def set_otplen__(self, otplen=0):
-        """
-        sets the OTP length to the length of the password
-
-        :param otplen: This is ignored in this class
-        :type otplen: int
-        :result: None
-        """
-        secretHOtp = self.token.get_otpkey()
-        sp = PasswordTokenClass.SecretPassword(secretHOtp)
-        pw_len = len(sp.get_password())
-        TokenClass.set_otplen(self, pw_len)
-        return
-
     @log_with(log, log_entry=False)
     @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
