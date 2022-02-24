@@ -90,6 +90,8 @@ def safe_compare(a, b):
 if not PY2:
     long = int
 
+ROUNDS = 9
+
 # The CryptContext makes it easier to work with multiple password hash algorithms:
 # The first algorithm in the list is the default algorithm used for hashing.
 # When verifying a password hash, all algorithms in the context are checked
@@ -189,7 +191,8 @@ def pass_hash(password):
     :return: The hash string of the password
     """
     pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
-                                                 default=DEFAULT_HASH_ALGO_LIST))
+                                                 default=DEFAULT_HASH_ALGO_LIST),
+                            argon2__rounds=ROUNDS)
     pw_dig = pass_ctx.hash(password)
     return pw_dig
 
@@ -206,7 +209,8 @@ def verify_pass_hash(password, hvalue):
     :rtype: bool
     """
     pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
-                                                 default=DEFAULT_HASH_ALGO_LIST))
+                                                 default=DEFAULT_HASH_ALGO_LIST),
+                            argon2__rounds=ROUNDS)
     return pass_ctx.verify(password, hvalue)
 
 

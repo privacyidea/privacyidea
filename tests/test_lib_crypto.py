@@ -699,9 +699,9 @@ class CheckCustomAlgoList(OverrideConfigTestCase):
         pbkdf2_sha512_hash = '$pbkdf2-sha512$25000$XEvJOcf437tXam1Nydm79w$6eDPlPjRgnJGGK0j8a3to' \
                              'SZoSUvwZzcvEj96t7Hg.X/SC822EFaO2iWoHFTUc1NMsX6sgQyQqbjWxGXgRWNzkw'
 
-        argon2_hash = '$argon2id$v=19$m=102400,t=2,p=8$oXRO6Z3zXsv5n1PqfQ9BqA$v87efWeG6BuP4W/3xgd2QQ'
+        argon2_hash = '$argon2id$v=19$m=102400,t=9,p=8$vZeyFqI0xhiDEIKw1przfg$8FX07S7VpaYae51Oe9Cj8g'
 
-        argon2_fail_hash = '$argon2id$v=19$m=102400,t=2,p=8$oXRO6Z3zXsv5nqfQ9BqA$v87efWeG6BuP4W/3xgd2QQ'
+        argon2_fail_hash = '$argon2id$v=19$m=102400,t=9,p=8$vZeyFqI0xhiDEIKw1przfg$8FX07S7VpaYae51Oe9Cj7g'
 
         # Checks if the first entry is taken from "PI_HASH_ALGO_LIST".
         self.assertEqual(pass_hash(password)[0:7], '$pbkdf2')
@@ -724,7 +724,7 @@ class CheckDefaultAlgoList(MyTestCase):
         pbkdf2_sha512_hash = '$pbkdf2-sha512$25000$XEvJOcf437tXam1Nydm79w$6eDPlPjRgnJGGK0j8a3to' \
                              'SZoSUvwZzcvEj96t7Hg.X/SC822EFaO2iWoHFTUc1NMsX6sgQyQqbjWxGXgRWNzkw'
 
-        argon2_fail_hash = '$argon2id$v=19$m=102400,t=2,p=8$oXRO6Z3zXsv5nqfQ9BqA$v87efWeG6BuP4W/3xgd2QQ'
+        argon2_fail_hash = '$argon2id$v=19$m=102400,t=9,p=8$vZeyFqI0xhiDEIKw1przfg$8FX07S7VpaYae51Oe9Cj7g'
 
         # Checks if the first entry is taken from "DEFAULT_HASH_ALGO_LIST"
         self.assertEqual(pass_hash(password)[0:6], '$argon')

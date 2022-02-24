@@ -82,7 +82,8 @@ slower but more robust and can be necessary in large redundant setups.
    row is otherwise not present". In this case setting ``PI_DB_SAFE_STORE``  to *True*
    might help.
 
-The first entry in ``PI_HASH_ALGO_LIST`` is used for hashing.
+``PI_HASH_ALGO_LIST`` is a user-defined list of hash algorithms wich i used to decrypt
+passwords and pins. The first entry in ``PI_HASH_ALGO_LIST`` is used for hashing.
 If ``PI_HASH_ALGO_LIST`` is not defined, ``['argon2', 'pbkdf2_sha512']`` is the default.
 
 .. note:: If you change the hash algorithm, take care that the previously used one is still
