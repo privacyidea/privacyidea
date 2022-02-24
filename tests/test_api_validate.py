@@ -24,6 +24,8 @@ from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm, ge
 from privacyidea.lib.radiusserver import add_radius
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.tokens.webauthn import webauthn_b64_decode
+from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_REG
+from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_PW
 from privacyidea.lib import _
 from passlib.hash import argon2
 
@@ -3133,6 +3135,11 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             data = res.json
             detail = data.get("detail")
             regcode = detail.get("registrationcode")
+            self.assertEqual(DEFAULT_LENGTH_REG, len(regcode))
+            # Check if a number is contained
+            self.assertRegex(regcode, "[0-9]+")
+            # Check if a character is contained
+            self.assertRegex(regcode, "[a-z]+")
 
         # now check if authentication
         with self.app.test_request_context('/validate/check',
@@ -3179,6 +3186,8 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             data = res.json
             detail = data.get("detail")
             regcode = detail.get("registrationcode")
+            self.assertEqual(DEFAULT_LENGTH_REG, len(regcode))
+            self.assertNotEqual("hallo", regcode)
 
         # now check the authentication
         with self.app.test_request_context('/validate/check',
@@ -3254,6 +3263,11 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             detail = data.get("detail")
             serial = detail.get("serial")
             password = detail.get("password")
+            self.assertEqual(DEFAULT_LENGTH_PW, len(password))
+            # Check if a number is contained
+            self.assertRegex(password, "[0-9]+")
+            # Check if a character is contained
+            self.assertRegex(password, "[a-z]+")
 
         # now check the authentication
         with self.app.test_request_context('/validate/check',
