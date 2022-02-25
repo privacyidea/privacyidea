@@ -17,7 +17,7 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
 from privacyidea.lib.event import set_event, delete_event, EventConfiguration
 from privacyidea.lib.caconnector import save_caconnector
-from six.moves.urllib.parse import urlencode
+from six.moves.urllib.parse import urlencode, quote
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from dateutil.tz import tzlocal
@@ -1568,18 +1568,18 @@ class APITokenTestCase(MyApiTestCase):
         # check password
         with self.app.test_request_context('/validate/check',
                                            data={"user": "cornelius",
-                                                 "pass": registrationcode},
+                                                 "pass": quote(registrationcode)},
                                            method="POST"):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result.get("value"))
+            self.assertTrue(result.get("value"), registrationcode)
 
         # check password again. THe second time it will fail, since the token
         # does not exist anymore.
         with self.app.test_request_context('/validate/check',
                                            data={"user": "cornelius",
-                                                 "pass": registrationcode},
+                                                 "pass": quote(registrationcode)},
                                            method="POST"):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
