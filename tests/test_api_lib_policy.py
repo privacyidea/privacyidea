@@ -34,7 +34,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            init_token_defaults, _generate_pin_from_policy,
                                            encrypt_pin, check_otp_pin,
                                            enroll_pin,
-                                           init_registrationcode_length_contents,
+                                           init_token_length_contents,
                                            check_external, api_key_required,
                                            mangle, is_remote_user_allowed,
                                            required_email, auditlog_age, hide_audit_columns,
@@ -3066,7 +3066,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # first test without any policy
         req.all_data = {"user": "cornelius", "realm": "home", "type": "registration"}
-        init_registrationcode_length_contents(req)
+        init_token_length_contents(req)
         # Check, if the tokenlabel was added
         self.assertEqual(req.all_data.get("registration.length"), DEFAULT_LENGTH)
         self.assertEqual(req.all_data.get("registration.contents"), DEFAULT_CONTENTS)
@@ -3080,13 +3080,54 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    action="{0!s}={1!s}".format(ACTION.REGISTRATIONCODE_CONTENTS, "+n"))
         # request, that matches the policy
         req.all_data = {"user": "cornelius", "realm": "home", "type": "registration"}
-        init_registrationcode_length_contents(req)
+        init_token_length_contents(req)
         # Check, if the tokenlabel was added
         self.assertEqual(req.all_data.get("registration.length"), "6")
         self.assertEqual(req.all_data.get("registration.contents"), "+n")
         # delete policy
         delete_policy("reg_length")
         delete_policy("reg_contents")
+
+    def test_37_init_password_length_contents(self):
+        g.logged_in_user = {"username": "admin1",
+                            "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'type': "password", "genkey": 1},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+
+        # first test without any policy
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "pw", "genkey": 1}
+        init_token_length_contents(req)
+        # Check, if the tokenlabel was added
+        from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
+        self.assertEqual(req.all_data.get("pw.length"), DEFAULT_LENGTH)
+        self.assertEqual(req.all_data.get("pw.contents"), DEFAULT_CONTENTS)
+
+        # now create a policy for the length of the registration code
+        set_policy(name="pw_length",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(ACTION.PASSWORD_LENGTH, 6))
+        set_policy(name="pw_contents",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(ACTION.PASSWORD_CONTENTS, "+n"))
+        # request, that matches the policy
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "pw"}
+        init_token_length_contents(req)
+        # Check, if the tokenlabel was added
+        self.assertEqual(req.all_data.get("pw.length"), "6")
+        self.assertEqual(req.all_data.get("pw.contents"), "+n")
+        # request, that creates a different token type
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "hotp", "genkey": "1"}
+        init_token_length_contents(req)
+        # Check, if the tokenlabel was added
+        self.assertNotIn("pw.length", req.all_data)
+        self.assertNotIn("pw.contents", req.all_data)
+        # delete policy
+        delete_policy("pw_length")
+        delete_policy("pw_contents")
 
     def test_40_custom_user_attributes(self):
         g.logged_in_user = {"username": "admin1",
