@@ -21,6 +21,7 @@ import datetime
 import uuid
 import pytest
 import json
+import ssl
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver, LockingServerPool
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
@@ -38,7 +39,6 @@ from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.models import ResolverConfig
 from privacyidea.lib.utils import to_bytes, to_unicode
 from requests import HTTPError
-from privacyidea.lib.error import ParameterError
 
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
@@ -1597,7 +1597,7 @@ class LDAPResolverTestCase(MyTestCase):
                   'UIDTYPE': 'unknownType',
                   'CACHE_TIMEOUT': 0,
                   'TLS_VERIFY': '1'
-        }
+                  }
         start_tls_resolver = LDAPResolver()
         start_tls_resolver.loadConfig(config)
         result = start_tls_resolver.getUserList({'username': '*'})
@@ -1630,7 +1630,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'CACHE_TIMEOUT': 0,
                       'START_TLS': '1',
                       'TLS_VERIFY': '1'
-        }
+                      }
             config.update({"TLS_VERSION": tls_version_pi})
             start_tls_resolver = LDAPResolver()
             start_tls_resolver.loadConfig(config)
@@ -1652,6 +1652,40 @@ class LDAPResolverTestCase(MyTestCase):
         for tls_version_pi, tls_version_ldap3 in tls_versions.items():
             check_tls_version_ldap3(tls_version_pi, tls_version_ldap3)
         self.assertRaises(ValueError, check_tls_version_ldap3, "version is nonsense", "nothing to check")
+
+    @ldap3mock.activate
+    def test_24c_no_tls_verify(self):
+        # Check that tls should not verify the server
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        config = {'LDAPURI': 'ldaps://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn",'
+                                '"phone" : "telephoneNumber", '
+                                '"mobile" : "mobile"'
+                                ', "email" : "mail", '
+                                '"surname" : "sn", '
+                                '"givenname" : "givenName" }',
+                  'UIDTYPE': 'unknownType',
+                  'CACHE_TIMEOUT': 0,
+                  'TLS_CA_FILE': '/unknown/path/to/ca_certs.crt',
+                  'TLS_VERIFY': '0'
+                  }
+        start_tls_resolver = LDAPResolver()
+        start_tls_resolver.loadConfig(config)
+        result = start_tls_resolver.getUserList({'username': '*'})
+        self.assertEqual(len(result), len(LDAPDirectory))
+        # We check that all Server objects were constructed with a non-None TLS context and use_ssl=True
+        for _, kwargs in ldap3mock.get_server_mock().call_args_list:
+            self.assertIsNotNone(kwargs['tls'])
+            self.assertTrue(kwargs['use_ssl'])
+            self.assertEqual(2, kwargs['tls'].version, kwargs['tls'])
+            # the ca_certs_file should be None since we passed a non-existing path
+            self.assertIsNone(kwargs['tls'].ca_certs_file, kwargs['tls'])
+            self.assertEqual(ssl.CERT_NONE, kwargs['tls'].validate, kwargs['tls'])
 
     @ldap3mock.activate
     def test_25_LDAP_DN_with_utf8(self):

@@ -526,6 +526,7 @@ class IdResolver (UserIdResolver):
                 tls_ca_file = tls_ca_file or DEFAULT_CA_FILE
             else:
                 tls_verify = ssl.CERT_NONE
+                tls_ca_file = None
             tls_context = Tls(validate=tls_verify,
                               version=int(tls_version),
                               ssl_options=tls_options,
@@ -817,11 +818,11 @@ class IdResolver (UserIdResolver):
         self.tls_verify = is_true(config.get("TLS_VERIFY", False))
         # Fallback to DEFAULT_TLS_PROTOCOL (TLSv1: 3, TLSv1.1: 4, v1.2: 5, TLS negotiation: 2)
         self.tls_version = int(config.get("TLS_VERSION") or DEFAULT_TLS_PROTOCOL)
-        self.tls_ca_file = config.get("TLS_CA_FILE") or DEFAULT_CA_FILE
+        self.tls_ca_file = config.get("TLS_CA_FILE")
         self.tls_context = self._get_tls_context(ldap_uri=self.uri, start_tls=self.start_tls,
-                                            tls_version=self.tls_version,
-                                            tls_verify=self.tls_verify,
-                                            tls_ca_file=self.tls_ca_file)
+                                                 tls_version=self.tls_version,
+                                                 tls_verify=self.tls_verify,
+                                                 tls_ca_file=self.tls_ca_file)
         self.serverpool_persistent = is_true(config.get("SERVERPOOL_PERSISTENT", False))
         self.serverpool_rounds = int(config.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
