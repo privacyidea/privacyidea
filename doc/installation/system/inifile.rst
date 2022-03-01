@@ -83,7 +83,7 @@ slower but more robust and can be necessary in large redundant setups.
    might help.
 
 ``PI_HASH_ALGO_LIST`` is a user-defined list of hash algorithms which are used
-to decrypt passwords and pins. The first entry in ``PI_HASH_ALGO_LIST`` is used
+to verify passwords and pins. The first entry in ``PI_HASH_ALGO_LIST`` is used
 for hashing a new password/pin.
 If ``PI_HASH_ALGO_LIST`` is not defined, ``['argon2', 'pbkdf2_sha512']`` is the default.
 Further information can be found in the FAQ (:ref:`faq_crypto_pin_hashing`).
