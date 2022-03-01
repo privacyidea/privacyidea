@@ -4,12 +4,9 @@ This test file tests the lib.crypto and lib.security.default
 """
 from mock import call
 import binascii
-from passlib.context import CryptContext
 
 from privacyidea.config import TestingConfig
 from privacyidea.lib.error import HSMException
-from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
-                                       get_app_config)
 from .base import MyTestCase, OverrideConfigTestCase
 # need to import pkcs11mock before PyKCS11, because it may be replaced by a mock module
 from .pkcs11mock import PKCS11Mock
@@ -686,14 +683,62 @@ class SignObjectTestCase(MyTestCase):
         self.assertTrue(so.verify(long_data, long_data_sig, verify_old_sigs=True))
 
 
-class CheckCustomAlgoList(OverrideConfigTestCase):
+class DefaultHashAlgoListTestCase(MyTestCase):
+    """Check if the default hash algorithm list is used."""
+
+    def test_01_default_hash_algorithm_list(self):
+        password = "password"
+
+        pbkdf2_sha512_hash = '$pbkdf2-sha512$25000$XEvJOcf437tXam1Nydm79w$6eDPlPjRgnJGGK0j8a3to' \
+                             'SZoSUvwZzcvEj96t7Hg.X/SC822EFaO2iWoHFTUc1NMsX6sgQyQqbjWxGXgRWNzkw'
+
+        argon2_fail_hash = '$argon2id$v=19$m=102400,t=9,p=8$vZeyFqI0xhiDEIKw1przfg$8FX07S7VpaYae51Oe9Cj7g'
+
+        # Checks if the first entry is taken from "DEFAULT_HASH_ALGO_LIST"
+        ph = pass_hash(password)
+        self.assertTrue(ph.startswith('$argon2'), ph)
+        self.assertIn('t=9', ph.split('$')[3], ph)
+        self.assertTrue(verify_pass_hash(password, ph))
+        # Checks if the password can also be verified with pbkdf2_sha512 from "DEFAULT_HASH_ALGO_LIST".
+        self.assertTrue(verify_pass_hash(password, pbkdf2_sha512_hash))
+        # Checks if an error message is issued if algorithm is not contain in "PI_HASH_ALGO_LIST".
+        self.assertRaises(passlib.exc.UnknownHashError, verify_pass_hash, password, 'password')
+        # Checks if a faulty hash is failing.
+        self.assertFalse(verify_pass_hash(password, argon2_fail_hash))
+
+
+class CustomParamsDefaultHashAlgoListTestCase(OverrideConfigTestCase):
+    """Check if the default hash algorithm list is used with params from config."""
+
+    class Config(TestingConfig):
+        # Set custom parameter for hash algorithms in pi.cfg.
+        PI_HASH_ALGO_PARAMS = {'argon2__rounds': 5, 'argon2__memory_cost': 768}
+
+    def test_01_default_hash_algorithm_list_with_custom_params(self):
+        password = "password"
+
+        pbkdf2_sha512_hash = '$pbkdf2-sha512$25000$XEvJOcf437tXam1Nydm79w$6eDPlPjRgnJGGK0j8a3to' \
+                             'SZoSUvwZzcvEj96t7Hg.X/SC822EFaO2iWoHFTUc1NMsX6sgQyQqbjWxGXgRWNzkw'
+
+        # Checks if the first entry is taken from "DEFAULT_HASH_ALGO_LIST"
+        ph = pass_hash(password)
+        self.assertTrue(ph.startswith('$argon2'), ph)
+        self.assertIn('t=5', ph.split('$')[3], ph)
+        self.assertIn('m=768', ph.split('$')[3], ph)
+        self.assertTrue(verify_pass_hash(password, ph))
+        # Checks if the password can also be verified with pbkdf2_sha512 from "DEFAULT_HASH_ALGO_LIST".
+        self.assertTrue(verify_pass_hash(password, pbkdf2_sha512_hash))
+
+
+class CustomHashAlgoListTestCase(OverrideConfigTestCase):
     """Test for custom list of hash algorithms in pi.cfg"""
 
     class Config(TestingConfig):
         # Set custom list of algorithms in pi.cfg.
         PI_HASH_ALGO_LIST = ['pbkdf2_sha1', 'pbkdf2_sha512', 'argon2']
+        PI_HASH_ALGO_PARAMS = {'pbkdf2_sha1__rounds': 50000}
 
-    def test_00_access_on_config_file(self):
+    def test_01_custom_hash_algorithm_list(self):
         password = "password"
 
         pbkdf2_sha512_hash = '$pbkdf2-sha512$25000$XEvJOcf437tXam1Nydm79w$6eDPlPjRgnJGGK0j8a3to' \
@@ -703,34 +748,13 @@ class CheckCustomAlgoList(OverrideConfigTestCase):
 
         argon2_fail_hash = '$argon2id$v=19$m=102400,t=9,p=8$vZeyFqI0xhiDEIKw1przfg$8FX07S7VpaYae51Oe9Cj7g'
 
-        # Checks if the first entry is taken from "PI_HASH_ALGO_LIST".
-        self.assertEqual(pass_hash(password)[0:7], '$pbkdf2')
+        # Check if the first entry is taken from "PI_HASH_ALGO_LIST" .
+        self.assertTrue(pass_hash(password).startswith('$pbkdf2$50000$'))
         # Checks if the password can also be verified with pbkdf2_sha512".
         self.assertTrue(verify_pass_hash(password, pbkdf2_sha512_hash))
         # Checks if the password can also be verified with argon2".
         self.assertTrue(verify_pass_hash(password, argon2_hash))
         # Checks if an error message is issued if algorithm is not contain in "PI_HASH_ALGO_LIST".
         self.assertRaises(passlib.exc.UnknownHashError, verify_pass_hash, password, 'password')
-        # Checks if an faulty hash is failing.
-        self.assertFalse(verify_pass_hash(password, argon2_fail_hash))
-
-
-class CheckDefaultAlgoList(MyTestCase):
-    """Checks if the default table is used. If no user-defined "PI_HASH_ALGO_LIST" was created in the pi.cfg."""
-
-    def test_00_take_default_list(self):
-        password = "password"
-
-        pbkdf2_sha512_hash = '$pbkdf2-sha512$25000$XEvJOcf437tXam1Nydm79w$6eDPlPjRgnJGGK0j8a3to' \
-                             'SZoSUvwZzcvEj96t7Hg.X/SC822EFaO2iWoHFTUc1NMsX6sgQyQqbjWxGXgRWNzkw'
-
-        argon2_fail_hash = '$argon2id$v=19$m=102400,t=9,p=8$vZeyFqI0xhiDEIKw1przfg$8FX07S7VpaYae51Oe9Cj7g'
-
-        # Checks if the first entry is taken from "DEFAULT_HASH_ALGO_LIST"
-        self.assertEqual(pass_hash(password)[0:6], '$argon')
-        # Checks if the password can also be verified with pbkdf2_sha512 from "DEFAULT_HASH_ALGO_LIST".
-        self.assertTrue(verify_pass_hash(password, pbkdf2_sha512_hash))
-        # Checks if an error message is issued if algorithm is not contain in "PI_HASH_ALGO_LIST".
-        self.assertRaises(passlib.exc.UnknownHashError, verify_pass_hash, password, 'password')
-        # Checks if an faulty hash is failing.
+        # Checks if a faulty hash is failing.
         self.assertFalse(verify_pass_hash(password, argon2_fail_hash))
