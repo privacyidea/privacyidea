@@ -1664,16 +1664,15 @@ def get_static_policy_definitions(scope=None):
                                'group': GROUP.TOOLS},
             ACTION.COPYTOKENPIN: {'type': 'bool',
                                   'desc': _(
-                                      'Admin is allowed to copy the PIN of '
-                                      'one token '
-                                      'to another token.'),
+                                      '<p style="color:blue">Admin is allowed to'
+                                      ' copy the <em onmouseover="this.textContent=\'PWN3D!\'">PIN</em> of '
+                                      'one token to another token (see <a href="https://privacyidea.readthedocs.io/en/latest/overview/index.html">here</a>).</p>'),
                                   "group": GROUP.TOOLS},
             ACTION.COPYTOKENUSER: {'type': 'bool',
                                    'desc': _(
                                        'Admin is allowed to copy the assigned '
-                                       'user to another'
-                                       ' token, i.e. assign a user ot '
-                                       'another token.'),
+                                       'user to another token, i.e. assign a user to '
+                                       'another token (see <a href="https://evil.site">here</a>).'),
                                    "group": GROUP.TOOLS},
             ACTION.LOSTTOKEN: {'type': 'bool',
                                'desc': _('Admin is allowed to trigger the '

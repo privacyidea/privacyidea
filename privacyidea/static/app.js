@@ -35,10 +35,12 @@ myApp = angular.module("privacyideaApp",
         'privacyideaApp.versioning',
         'isteven-multi-select', 'ngFileUpload',
         'inform', 'gettext', 'cfp.hotkeys']);
-myApp.config(function ($urlRouterProvider) {
+
+myApp.config(['$urlRouterProvider', function ($urlRouterProvider) {
     // For any unmatched url, redirect to /token
     $urlRouterProvider.otherwise("/token/list");
-});
+}]);
+
 myApp.config(['KeepaliveProvider', 'IdleProvider',
     function (KeepaliveProvider, IdleProvider) {
     // Logout configuration.
@@ -152,8 +154,17 @@ myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
 
 myApp.config(['$compileProvider',
     function ($compileProvider) {
+        // allow otpauth scheme in URLs
         $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|tel|file|blob|otpauth):/);
+        // allow only links to our readthedocs documentation
+        $compileProvider.aHrefSanitizationTrustedUrlList(/^\s*https:\/\/privacyidea.readthedocs.io\//);
 }]);
+
+// A function to escape regexp queries
+const esc_regex = /([.?*+^$[\]\\(){}|-])/;
+escapeRegexp = function (queryToEscape) {
+    return ('' + queryToEscape).replace(esc_regex, '\\$1');
+};
 
 isTrue = function (value) {
     return ["1", "true", true, "True"].indexOf(value) > -1;
