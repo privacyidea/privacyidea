@@ -46,7 +46,6 @@ The file should contain the following contents::
    # PI_CSS = '/location/of/theme.css'
    # PI_UI_DEACTIVATED = True
 
-
 .. note:: The config file is parsed as python code, so you can use variables to
    set the path and you need to take care for indentations.
 
@@ -82,6 +81,24 @@ slower but more robust and can be necessary in large redundant setups.
    The database might respond with an error like "object has been deleted or its
    row is otherwise not present". In this case setting ``PI_DB_SAFE_STORE``  to *True*
    might help.
+
+``PI_HASH_ALGO_LIST`` is a user-defined list of hash algorithms which are used
+to verify passwords and pins. The first entry in ``PI_HASH_ALGO_LIST`` is used
+for hashing a new password/pin.
+If ``PI_HASH_ALGO_LIST`` is not defined, ``['argon2', 'pbkdf2_sha512']`` is the default.
+Further information can be found in the FAQ (:ref:`faq_crypto_pin_hashing`).
+
+.. note:: If you change the hash algorithm, take care that the previously used one is still
+   included in the ``PI_HASH_ALGO_LIST`` so already generated hashes can still be verified.
+
+
+``PI_HASH_ALGO_PARAMS`` is a user-defined dictionary where various parameters for the hash algorithm
+can be set, for example::
+
+   PI_HASH_ALGO_PARAMS = {'argon2__rounds': 5, 'argon2__memory_cost': 768'}
+
+Further information on possible parameters can be found in the
+`PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
 
 Logging
 -------

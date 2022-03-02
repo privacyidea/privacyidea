@@ -58,7 +58,6 @@ import base64
 import traceback
 from six import PY2
 from passlib.context import CryptContext
-
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
@@ -97,7 +96,9 @@ ROUNDS = 9
 # The first algorithm in the list is the default algorithm used for hashing.
 # When verifying a password hash, all algorithms in the context are checked
 # until one succeeds (or all fail).
-pass_ctx = CryptContext(['argon2', 'pbkdf2_sha512'], argon2__rounds=ROUNDS)
+
+DEFAULT_HASH_ALGO_LIST = ['argon2', 'pbkdf2_sha512']
+DEFAULT_HASH_ALGO_PARAMS = {'argon2__rounds': ROUNDS}
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
 
@@ -190,6 +191,11 @@ def pass_hash(password):
     :type password: str
     :return: The hash string of the password
     """
+    DEFAULT_HASH_ALGO_PARAMS.update(get_app_config_value("PI_HASH_ALGO_PARAMS",
+                                                         default={}))
+    pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
+                                                 default=DEFAULT_HASH_ALGO_LIST),
+                            **DEFAULT_HASH_ALGO_PARAMS)
     pw_dig = pass_ctx.hash(password)
     return pw_dig
 
@@ -205,6 +211,8 @@ def verify_pass_hash(password, hvalue):
     :return: True if the password matches
     :rtype: bool
     """
+    pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
+                                                 default=DEFAULT_HASH_ALGO_LIST))
     return pass_ctx.verify(password, hvalue)
 
 

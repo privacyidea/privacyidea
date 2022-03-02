@@ -29,6 +29,8 @@ Token Hash Algorithms
 OTP values according to HOTP and TOTP can be calculated using SHA1, SHA2-256
 and SHA2-512.
 
+.. _faq_crypto_pin_hashing:
+
 PIN Hashing
 ~~~~~~~~~~~
 
