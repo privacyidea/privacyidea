@@ -92,11 +92,13 @@ Further information can be found in the FAQ (:ref:`faq_crypto_pin_hashing`).
    included in the ``PI_HASH_ALGO_LIST`` so already generated hashes can still be verified.
 
 
-``PI_HASH_ALGO_PARAMS`` is a is a user-defined dictionary where various parameters for the hash algorithm can be set, for example::
+``PI_HASH_ALGO_PARAMS`` is a user-defined dictionary where various parameters for the hash algorithm
+can be set, for example::
 
    PI_HASH_ALGO_PARAMS = {'argon2__rounds': 5, 'argon2__memory_cost': 768'}
 
-Further information can be found in the `PassLib documentation <https://passlib.readthedocs.io/en/stable/index.html>`_.
+Further information on possible parameters can be found in the
+`PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
 
 Logging
 -------
