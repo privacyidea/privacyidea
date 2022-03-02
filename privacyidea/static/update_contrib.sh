@@ -23,7 +23,6 @@ JS_NGMODULES=(
     "angular-ui-router/release/angular-ui-router.js.map"
     "ng-file-upload/dist/ng-file-upload.js"
     "isteven-angular-multiselect/isteven-multi-select.js"
-    "angular-ui-utils/modules/highlight/highlight.js"
 )
 
 # CSS files

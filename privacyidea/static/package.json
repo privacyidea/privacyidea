@@ -11,7 +11,6 @@
     "angular-sanitize": "^1.8.2",
     "angular-ui-bootstrap": "^2.5.6",
     "angular-ui-router": "^1.0.29",
-    "angular-ui-utils": "^0.1.1",
     "bootstrap": "^3.4.1",
     "isteven-angular-multiselect": "^4.0.0",
     "jquery": "^3.6.0",
