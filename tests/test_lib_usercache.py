@@ -449,7 +449,7 @@ class UserCacheTestCase(MyTestCase):
         # Assert it was found in reso_b (as it does not have a phone number)!
         self.assertEqual(user1.resolver, 'reso_b')
         self.assertEqual(UserCache.query.filter(UserCache.username == 'wordpressuser',
-                                                UserCache.user_id == 6).one().resolver,
+                                                UserCache.user_id == '6').one().resolver,
                          'reso_b')
         # Add a phone number. We do not use the User API to do that to simulate that the change is performed
         # out of privacyIDEA's control. Using `update_user_info` would invalidate the cache, which would be unrealistic.
@@ -459,7 +459,7 @@ class UserCacheTestCase(MyTestCase):
         get_resolver_object('reso_a').update_user(user1.uid, new_info)
         # Ensure that the user's association with reso_b is still cached.
         self.assertEqual(UserCache.query.filter(UserCache.username == 'wordpressuser',
-                                                UserCache.user_id == 6).one().resolver,
+                                                UserCache.user_id == '6').one().resolver,
                          'reso_b')
         # Now, it should be located in reso_a!
         user2 = User('wordpressuser', self.sql_realm)
@@ -467,7 +467,7 @@ class UserCacheTestCase(MyTestCase):
         self.assertEqual(user2.resolver, 'reso_a')
         # ... but the cache still contains entries for both!
         resolver_query = UserCache.query.filter(UserCache.username == 'wordpressuser',
-                                                UserCache.user_id == 6).order_by(UserCache.timestamp.desc())
+                                                UserCache.user_id == '6').order_by(UserCache.timestamp.desc())
         cached_resolvers = [entry.resolver for entry in resolver_query.all()]
         self.assertEqual(cached_resolvers, ['reso_a', 'reso_b'])
         # Remove the phone number.

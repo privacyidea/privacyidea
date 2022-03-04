@@ -1006,7 +1006,8 @@ class PolicyTestCase(MyTestCase):
         audit_data = {}
         r = P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH, unique=True, audit_data=audit_data)
 
-        self.assertEqual(r, {"userstore": ["act1", "act2"]})
+        self.assertIn('userstore', r, r)
+        self.assertEqual({'act1', 'act2'}, set(r['userstore']), r)
 
         # The audit_data contains act1 and act2
         self.assertTrue("act1" in audit_data.get("policies"))
@@ -1052,15 +1053,19 @@ class PolicyTestCase(MyTestCase):
         P = PolicyClass()
         self.assertEqual(set(p['name'] for p in P.match_policies(user_object=cornelius)),
                          {"act1", "act2", "act3"})
-        self.assertEqual(P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH,
-                                             user_object=cornelius),
-                         {"userstore": ["act1", "act2"], "none": ["act3"]})
+        r = P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH, user_object=cornelius)
+        self.assertIn('userstore', r, r)
+        self.assertIn('none', r, r)
+        self.assertEqual({'act1', 'act2'}, set(r['userstore']), r)
+        self.assertEqual(['act3'], r['none'], r)
 
         self.assertEqual(set(p['name'] for p in P.match_policies(user_object=nonascii)),
                          {"act1", "act2", "act3", "act4"})
-        self.assertEqual(P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH,
-                                             user_object=nonascii),
-                         {"userstore": ["act1", "act2"], "none": ["act3", "act4"]})
+        r = P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH, user_object=nonascii)
+        self.assertIn('userstore', r, r)
+        self.assertIn('none', r, r)
+        self.assertEqual({'act1', 'act2'}, set(r['userstore']), r)
+        self.assertEqual({'act3', 'act4'}, set(r['none']), r)
 
         self.assertEqual(set(p['name'] for p in P.match_policies(user_object=selfservice)),
                          {"act2", "act3"})
@@ -1076,9 +1081,11 @@ class PolicyTestCase(MyTestCase):
 
         self.assertEqual(set(p['name'] for p in P.match_policies(user_object=None)),
                          {"act1", "act2", "act3", "act4"})
-        self.assertEqual(P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH,
-                                             user_object=None),
-                         {"userstore": ["act1", "act2"], "none": ["act3", "act4"]})
+        r = P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH, user_object=None)
+        self.assertIn('userstore', r, r)
+        self.assertIn('none', r, r)
+        self.assertEqual({'act1', 'act2'}, set(r['userstore']), r)
+        self.assertEqual({'act3', 'act4'}, set(r['none']), r)
 
         self.assertEqual(set(p['name'] for p in P.match_policies(user_object=User())),
                          set())
@@ -1104,8 +1111,11 @@ class PolicyTestCase(MyTestCase):
         # If we pass None as the user object, all policies match
         self.assertEqual(set(p['name'] for p in P.match_policies(user_object=None)),
                          {"act1", "act2", "act3", "act4", "act5"})
-        self.assertEqual(P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH, user_object=None),
-                         {"userstore": ["act1", "act2"], "none": ["act3", "act4", "act5"]})
+        r = P.get_action_values(action=ACTION.OTPPIN, scope=SCOPE.AUTH, user_object=None)
+        self.assertIn('userstore', r, r)
+        self.assertIn('none', r, r)
+        self.assertEqual({'act1', 'act2'}, set(r['userstore']), r)
+        self.assertEqual({'act3', 'act4', 'act5'}, set(r['none']), r)
 
         # if we pass user_obj ornelius, we only get 4 policies
         self.assertEqual(set(p['name'] for p in P.match_policies(user_object=cornelius)),

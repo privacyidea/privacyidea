@@ -199,8 +199,8 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         self.assertEqual(status_code, 200)
         self.assertTrue(data['result']['status'])
         self.assertEqual(len(data['result']['value']), 2)
-        self.assertEqual([task['name'] for task in data['result']['value']],
-                         ['new name', 'some other task'])
+        self.assertIn('new name', [task['name'] for task in data['result']['value']], data)
+        self.assertIn('some other task', [task['name'] for task in data['result']['value']], data)
 
         # get updated task
         status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='GET')
