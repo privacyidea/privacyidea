@@ -2,6 +2,8 @@
 import six
 from six.moves.urllib.parse import urlencode
 import json
+
+from privacyidea.lib.utils import hexlify_and_unicode
 from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
@@ -3341,7 +3343,7 @@ class WebAuthn(MyApiTestCase):
 
         # We need to change the nonce in the challenge database to use our recorded WebAuthN enrollment data
         recorded_nonce = "nh0iBz0SMndlVsPRGLvOCQc-PprPxOJf30KeZmTXY94"
-        recorded_nonce_hex = binascii.hexlify(webauthn_b64_decode(recorded_nonce))
+        recorded_nonce_hex = hexlify_and_unicode(webauthn_b64_decode(recorded_nonce))
         # Update the nonce in the challenge database.
         from privacyidea.lib.challenge import get_challenges
         chal = get_challenges(serial=self.serial, transaction_id=transaction_id)[0]
@@ -3413,7 +3415,7 @@ class WebAuthn(MyApiTestCase):
 
         # We need to change the nonce in the challenge database to use our recorded WebAuthN enrollment data
         recorded_nonce = "nh0iBz0SMndlVsPRGLvOCQc-PprPxOJf30KeZmTXY94"
-        recorded_nonce_hex = binascii.hexlify(webauthn_b64_decode(recorded_nonce))
+        recorded_nonce_hex = hexlify_and_unicode(webauthn_b64_decode(recorded_nonce))
         # Update the nonce in the challenge database.
         from privacyidea.lib.challenge import get_challenges
         chal = get_challenges(serial=self.serial, transaction_id=transaction_id)[0]
