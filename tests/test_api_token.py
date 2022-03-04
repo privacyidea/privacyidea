@@ -1580,7 +1580,7 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result.get("value"), registrationcode)
+            self.assertTrue(result.get("value"), (result, registrationcode))
 
         # check password again. THe second time it will fail, since the token
         # does not exist anymore.

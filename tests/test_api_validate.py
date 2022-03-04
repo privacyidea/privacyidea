@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import six
-from six.moves.urllib.parse import urlencode
+from six.moves.urllib.parse import urlencode, quote
 import json
 from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
@@ -3108,14 +3108,15 @@ class RegistrationValidity(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": password}):
+                                                 "pass": quote(password)}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
-            self.assertEqual("matching 1 tokens, Outside validity period", detail.get("message"))
+            self.assertEqual("matching 1 tokens, Outside validity period",
+                             detail.get("message"), detail)
 
 
 class RegistrationAndPasswordToken(MyApiTestCase):
