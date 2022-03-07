@@ -68,6 +68,8 @@ import time
 log = logging.getLogger(__name__)
 
 DEFAULT_CHALLENGE_TEXT = _("Please confirm the authentication on your mobile device!")
+ERROR_CHALLENGE_TEXT = _("Use the polling feature of your privacyIDEA Authenticator App"
+                         " to check for a new Login request.")
 DEFAULT_MOBILE_TEXT = _("Do you want to confirm the login?")
 PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
@@ -860,19 +862,24 @@ class PushTokenClass(TokenClass):
                                          validitytime=validity)
                 db_challenge.save()
                 self.challenge_janitor()
+                transactionid = db_challenge.transaction_id
 
-            # If sending the Push message failed, we still raise an error and a warning.
+            # If sending the Push message failed, we log a warning
             if not res:
                 log.warning(u"Failed to submit message to Firebase service for token {0!s}."
                             .format(self.token.serial))
-                raise ValidateError("Failed to submit message to Firebase service.")
+                message += " " + ERROR_CHALLENGE_TEXT
+                if is_true(options.get("exception")):
+                    raise ValidateError("Failed to submit message to Firebase service.")
         else:
             log.warning(u"The token {0!s} has no tokeninfo {1!s}. "
                         u"The message could not be sent.".format(self.token.serial,
                                                                  PUSH_ACTION.FIREBASE_CONFIG))
-            raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")
+            message += " " + ERROR_CHALLENGE_TEXT
+            if is_true(options.get("exception")):
+                raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")
 
-        return True, message, db_challenge.transaction_id, reply_dict
+        return True, message, transactionid, reply_dict
 
     @check_token_locked
     def authenticate(self, passw, user=None, options=None):

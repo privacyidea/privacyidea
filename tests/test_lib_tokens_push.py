@@ -253,18 +253,26 @@ class PushTokenTestCase(MyTestCase):
                           content_type="application/json")
 
             # Send the first authentication request to trigger the challenge
-            with self.app.test_request_context('/validate/check',
-                                               method='POST',
-                                               data={"user": "cornelius",
-                                                     "realm": self.realm1,
-                                                     "pass": "pushpin"}):
-                res = self.app.full_dispatch_request()
-                self.assertTrue(res.status_code == 400, res)
-                jsonresp = res.json
-                self.assertFalse(jsonresp.get("result").get("status"))
-                self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
-                self.assertEqual(jsonresp.get("result").get("error").get("message"),
-                                 "ERR401: Failed to submit message to Firebase service.")
+            with mock.patch("logging.Logger.warning") as mock_log:
+                with self.app.test_request_context('/validate/check',
+                                                   method='POST',
+                                                   data={"user": "cornelius",
+                                                         "realm": self.realm1,
+                                                         "pass": "pushpin"}):
+                    res = self.app.full_dispatch_request()
+                    self.assertTrue(res.status_code == 200, res)
+                    result = res.json.get("result")
+                    self.assertTrue(result.get("status"))
+                    self.assertFalse(result.get("value"))
+                    self.assertEqual("CHALLENGE", result.get("authentication"))
+                    # Check that the warning was written to the log file.
+                    mock_log.assert_called_with("Failed to submit message to Firebase service for token {0!s}."
+                                                .format(serial))
+                    # Check that the user was informed about the need to poll
+                    detail = res.json.get("detail")
+                    self.assertEqual("Please confirm the authentication on your mobile device! "
+                                     "Use the polling feature of your privacyIDEA Authenticator App "
+                                     "to check for a new Login request.", detail.get("message"))
 
             # Our ServiceAccountCredentials mock has been called once, because
             # no access token has been fetched before
@@ -278,42 +286,85 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(len(chals), 1, chals)
             chals[0].delete()
 
+            # Do the same with the parameter "exception", so that we receive an Error on HTTP
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "exception": 1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code)
+                result = res.json.get("result")
+                self.assertFalse(result.get("status"))
+                error = result.get("error")
+                self.assertEqual(401, error.get("code"))
+                self.assertEqual("ERR401: Failed to submit message to Firebase service.", error.get("message"))
+
+            # Remove the created challenge
+            chals = get_challenges(serial=tokenobj.token.serial)
+            self.assertEqual(len(chals), 1, chals)
+            chals[0].delete()
+
             # Now disable polling and check that no challenge is created
             # disallow polling through a policy
             set_policy('push_poll', SCOPE.AUTH,
                        action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
                                                    PushAllowPolling.DENY))
-            with self.app.test_request_context('/validate/check',
-                                               method='POST',
-                                               data={"user": "cornelius",
-                                                     "realm": self.realm1,
-                                                     "pass": "pushpin"}):
-                res = self.app.full_dispatch_request()
-                self.assertTrue(res.status_code == 400, res)
-                jsonresp = res.json
-                self.assertFalse(jsonresp.get("result").get("status"))
-                self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
-                self.assertEqual(jsonresp.get("result").get("error").get("message"),
-                                 "ERR401: Failed to submit message to Firebase service.")
+
+            with mock.patch("logging.Logger.warning") as mock_log:
+                with self.app.test_request_context('/validate/check',
+                                                   method='POST',
+                                                   data={"user": "cornelius",
+                                                         "realm": self.realm1,
+                                                         "pass": "pushpin"}):
+                    res = self.app.full_dispatch_request()
+                    self.assertTrue(res.status_code == 200, res)
+                    result = res.json.get("result")
+                    self.assertTrue(result.get("status"))
+                    self.assertFalse(result.get("value"))
+                    self.assertEqual("CHALLENGE", result.get("authentication"))
+                    # Check that the warning was written to the log file.
+                    mock_log.assert_called_with("Failed to submit message to Firebase service for token {0!s}."
+                                                .format(serial))
             self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 0)
             # disallow polling the specific token through a policy
             set_policy('push_poll', SCOPE.AUTH,
                        action='{0!s}={1!s}'.format(PUSH_ACTION.ALLOW_POLLING,
                                                    PushAllowPolling.TOKEN))
             tokenobj.add_tokeninfo(POLLING_ALLOWED, False)
+            with mock.patch("logging.Logger.warning") as mock_log:
+                with self.app.test_request_context('/validate/check',
+                                                   method='POST',
+                                                   data={"user": "cornelius",
+                                                         "realm": self.realm1,
+                                                         "pass": "pushpin"}):
+                    res = self.app.full_dispatch_request()
+                    self.assertTrue(res.status_code == 200, res)
+                    result = res.json.get("result")
+                    self.assertTrue(result.get("status"))
+                    self.assertFalse(result.get("value"))
+                    self.assertEqual("CHALLENGE", result.get("authentication"))
+                    # Check that the warning was written to the log file.
+                    mock_log.assert_called_with("Failed to submit message to Firebase service for token {0!s}."
+                                                .format(serial))
+            self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 0)
+
+            # Do the same with the parameter "exception", so that we receive an Error on HTTP
             with self.app.test_request_context('/validate/check',
                                                method='POST',
                                                data={"user": "cornelius",
                                                      "realm": self.realm1,
+                                                     "exception": 1,
                                                      "pass": "pushpin"}):
                 res = self.app.full_dispatch_request()
-                self.assertTrue(res.status_code == 400, res)
-                jsonresp = res.json
-                self.assertFalse(jsonresp.get("result").get("status"))
-                self.assertEqual(jsonresp.get("result").get("error").get("code"), 401)
-                self.assertEqual(jsonresp.get("result").get("error").get("message"),
-                                 "ERR401: Failed to submit message to Firebase service.")
-            self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 0)
+                self.assertEqual(400, res.status_code)
+                result = res.json.get("result")
+                self.assertFalse(result.get("status"))
+                error = result.get("error")
+                self.assertEqual(401, error.get("code"))
+                self.assertEqual("ERR401: Failed to submit message to Firebase service.", error.get("message"))
+
             # Check that the challenge is created if the request to firebase
             # succeeded even though polling is disabled
             # add responses, to simulate the successful communication to firebase
@@ -332,6 +383,7 @@ class PushTokenTestCase(MyTestCase):
                 self.assertTrue(jsonresp.get("result").get("status"))
             self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 1)
             get_challenges(serial=tokenobj.token.serial)[0].delete()
+
         remove_token(serial=serial)
         delete_smsgateway(self.firebase_config_name)
         delete_policy('push_poll')
