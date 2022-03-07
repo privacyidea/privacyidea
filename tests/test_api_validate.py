@@ -3118,7 +3118,7 @@ class RegistrationValidity(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
             self.assertEqual("matching 1 tokens, Outside validity period",
-                             detail.get("message"), detail)
+                             detail.get("message"), (detail, password))
 
 
 class RegistrationAndPasswordToken(MyApiTestCase):
@@ -3148,11 +3148,11 @@ class RegistrationAndPasswordToken(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": regcode}):
+                                                 "pass": quote(regcode)}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
-            self.assertEqual("ACCEPT", data.get("result").get("authentication"))
+            self.assertEqual("ACCEPT", data.get("result").get("authentication"), (data, regcode))
 
         # Create a reg token with explicitly setting genkey
         with self.app.test_request_context('/token/init',
@@ -3171,11 +3171,11 @@ class RegistrationAndPasswordToken(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": regcode}):
+                                                 "pass": quote(regcode)}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
-            self.assertEqual("ACCEPT", data.get("result").get("authentication"))
+            self.assertEqual("ACCEPT", data.get("result").get("authentication"), (data, regcode))
 
         # create a reg token, where the otpkey is ignored
         with self.app.test_request_context('/token/init',
@@ -3196,11 +3196,11 @@ class RegistrationAndPasswordToken(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": regcode}):
+                                                 "pass": quote(regcode)}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
-            self.assertEqual("ACCEPT", data.get("result").get("authentication"))
+            self.assertEqual("ACCEPT", data.get("result").get("authentication"), (data, regcode))
 
         # The registration code was generated. The passed otpkey was NOT used.
         with self.app.test_request_context('/validate/check',
@@ -3210,7 +3210,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
-            self.assertEqual("REJECT", data.get("result").get("authentication"))
+            self.assertEqual("REJECT", data.get("result").get("authentication"), data)
 
     def test_01_password_tokens(self):
         # The password token requires either an otpkey or genkey
@@ -3224,7 +3224,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             data = res.json
             error = data.get("result").get("error")
             self.assertEqual(905, error.get("code"))
-            self.assertEqual("ERR905: Missing parameter: 'otpkey'", error.get("message"))
+            self.assertEqual("ERR905: Missing parameter: 'otpkey'", error.get("message"), data)
 
         # Try setting an explicit password
         with self.app.test_request_context('/token/init',
@@ -3248,7 +3248,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
-            self.assertEqual("ACCEPT", data.get("result").get("authentication"))
+            self.assertEqual("ACCEPT", data.get("result").get("authentication"), data)
         # delete token
         remove_token(serial)
 
@@ -3280,7 +3280,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
-            self.assertEqual("ACCEPT", data.get("result").get("authentication"))
+            self.assertEqual("ACCEPT", data.get("result").get("authentication"), (data, password))
         # delete token
         remove_token(serial)
 
