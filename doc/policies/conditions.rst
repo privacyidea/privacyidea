@@ -123,7 +123,7 @@ The token condition works on the database columns of the token. This would be
 ``description``, ``otplen``, ``count``, ``serial``, ``active`` but most importantly
 also ``failcount`` and ``tokentype``.
 
-.. note:: A policy with an active tokeninfo condition will
+.. note:: A policy with an active token condition will
    throw an exception whenever the token object cannot be determined.
    It will also throw an error, if the request ``Key`` does not exist
    as a database column.
