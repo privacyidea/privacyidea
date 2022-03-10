@@ -23,7 +23,7 @@ minutes, the poll mechanism of Push tokens will not work.
 System and Logs
 ~~~~~~~~~~~~~~~
 
-If you have a redundant setup, you need to ensure, that both systems have the same - preferrably the correct - time.
+If you have a redundant setup, you need to ensure, that both systems have the same - preferably the correct - time.
 Otherwise you will get an unsorted audit log.
 
 For a useful audit log and for a useful log file you should ensure that your system has the correct time.
