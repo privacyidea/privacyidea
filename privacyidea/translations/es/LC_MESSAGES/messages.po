@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-01-22 11:34+0100\n"
-"PO-Revision-Date: 2021-12-28 20:51+0000\n"
-"Last-Translator: Jose Maria GJ <josema.gj@gmail.com>\n"
+"PO-Revision-Date: 2022-03-10 23:07+0000\n"
+"Last-Translator: Thiago Augusto Koroll <thiagok@cloudbasis.com.br>\n"
+"Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/es/>\n"
 "Language: es\n"
-"Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/es/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.12-dev\n"
 "Generated-By: Babel 2.6.0\n"
 
 #: api/auth.py:222
@@ -77,7 +78,7 @@ msgstr "Por favor, ingrese un nuevo PIN"
 
 #: lib/challengeresponsedecorators.py:201
 msgid "To resync your token, please enter the next OTP value"
-msgstr ""
+msgstr "Para volver a sincronizar su token, ingrese el siguiente valor OTP"
 
 #: lib/decorators.py:43 lib/token.py:2181
 msgid "This action is not possible, since the token is locked"
@@ -753,6 +754,9 @@ msgid ""
 "The autoresync of a token can be done via a challenge response "
 "message.You need to activate 'Automatic resync' in the general settings!"
 msgstr ""
+"La resincronización automática de un token se puede realizar a través de un "
+"mensaje de respuesta de desafío. ¡Debe activar 'Resincronización automática' "
+"en la configuración general!"
 
 #: lib/policy.py:2203
 msgid ""
@@ -1185,6 +1189,8 @@ msgid ""
 "The policy only matches if certain conditions on the HTTP Environment are"
 " fulfilled."
 msgstr ""
+"La política solo coincide si se cumplen ciertas condiciones en el entorno "
+"HTTP."
 
 #: lib/radiusserver.py:225 lib/radiusserver.py:257
 msgid "The RADIUS secret is too long"
@@ -2954,4 +2960,3 @@ msgstr ""
 #~ "'*'. For more details, check the "
 #~ "documentation."
 #~ msgstr ""
-
