@@ -933,7 +933,8 @@ class WebAuthnTokenClass(TokenClass):
             if not params:
                 raise ValueError("Creating a WebAuthn token requires params to be provided")
             if not user:
-                raise ValueError("Creating a WebAuthn token requires user to be provided")
+                raise ParameterError("Failed to create a WebAuhn token."
+                                     "Creating a WebAuthn token requires user to be provided")
 
             # To aid with unit testing a fixed nonce may be passed in.
             nonce = self._get_nonce()
