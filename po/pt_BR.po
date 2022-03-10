@@ -1,9 +1,15 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
+"PO-Revision-Date: 2022-03-10 23:07+0000\n"
+"Last-Translator: Thiago Augusto Koroll <thiagok@cloudbasis.com.br>\n"
+"Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
+"privacyidea/privacyidea-server/pt_BR/>\n"
 "Language: pt_BR\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.12-dev\n"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -479,7 +485,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:208
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr ""
+msgstr "Certificado: Inscrição de um Token de Certificado x509."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:69
 msgid "Certificates Templates file"
@@ -921,7 +927,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:204
 msgid "EMail: Send a One Time Password to the users email address."
-msgstr ""
+msgstr "EMail: Envie uma senha única para o endereço de e-mail dos usuários."
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:19
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:19
@@ -2433,7 +2439,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:206
 msgid "SMS: Send a One Time Password to the users mobile phone."
-msgstr ""
+msgstr "SMS: Envie uma senha única para o telefone celular dos usuários."
 
 #: privacyidea/static/components/config/controllers/smtpServerController.js:85
 msgid "SMTP Config saved."
