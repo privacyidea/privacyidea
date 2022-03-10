@@ -821,7 +821,6 @@ class PushTokenClass(TokenClass):
                                                  ACTION.CHALLENGETEXT,
                                                  options) or DEFAULT_CHALLENGE_TEXT
 
-        reply_dict = {}
         data = None
         # Initially we assume there is no error from Firebase
         res = True
@@ -879,6 +878,7 @@ class PushTokenClass(TokenClass):
             if is_true(options.get("exception")):
                 raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")
 
+        reply_dict = {"attributes": {"hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE}}
         return True, message, transactionid, reply_dict
 
     @check_token_locked

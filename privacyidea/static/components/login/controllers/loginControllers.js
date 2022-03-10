@@ -28,7 +28,7 @@ String.prototype.mysplit = function(separator) {
 
 angular.module("privacyideaApp")
     .controller("mainController", ["Idle", "$scope", "$http", "$location",
-                                   "authUrl", "AuthFactory", "$rootScope",
+                                   "authUrl", "validateUrl", "AuthFactory", "$rootScope",
                                    "$state", "ConfigFactory", "inform",
                                    "PolicyTemplateFactory", "gettextCatalog",
                                    "hotkeys", "RegisterFactory",
@@ -36,7 +36,7 @@ angular.module("privacyideaApp")
                                    "PollingAuthFactory", "$transitions",
                                    "resourceNamePatterns",
                                    function (Idle, $scope, $http, $location,
-                                             authUrl, AuthFactory, $rootScope,
+                                             authUrl, validateUrl, AuthFactory, $rootScope,
                                              $state, ConfigFactory, inform,
                                              PolicyTemplateFactory, gettextCatalog,
                                              hotkeys, RegisterFactory,
@@ -257,26 +257,27 @@ angular.module("privacyideaApp")
                     if (multi_challenge.length > 1) {
                         $scope.challenge_message = $scope.challenge_message + ' ' + multi_challenge[i].serial;
                     }
-                    var attributes = multi_challenge[i].attributes;
-                    if (attributes === null || attributes.hideResponseInput !== true) {
+                    let challenge = multi_challenge[i];
+                    let attributes = challenge.attributes ? challenge.attributes : null;
+                    if (challenge === null || (attributes && attributes.hideResponseInput !== true)) {
                         $scope.hideResponseInput = false;
                     }
-                    if (attributes !== null) {
-                        if (attributes.u2fSignRequest) {
+                    if (challenge !== null) {
+                        if (attributes && attributes.u2fSignRequest) {
                            $scope.u2fSignRequests.push(attributes.u2fSignRequest);
                         }
-                        if (attributes.webAuthnSignRequest) {
+                        if (attributes && attributes.webAuthnSignRequest) {
                             $scope.webAuthnSignRequests.push(attributes.webAuthnSignRequest);
                         }
-                        if (attributes.img) {
-                            $scope.image = attributes.img;
+                        if (challenge.image) {
+                            $scope.image = challenge.image;
                             if ($scope.image.indexOf("data:image") === -1) {
                                 // In case of an Image link, we prepend the instanceUrl
                                 $scope.image = $scope.instanceUrl + "/" + $scope.image;
                             }
                         }
-                        if (attributes.poll) {
-                            $scope.polling = attributes.poll;
+                        if (challenge.client_mode && challenge.client_mode === 'poll') {
+                            $scope.polling = true;
                         }
                     }
                 }
@@ -350,15 +351,29 @@ angular.module("privacyideaApp")
         // authentication was performed successfully in the background
         // This is used for the TiQR token.
         //debug: console.log("calling check_authentication.");
-        $http.post(authUrl, {
-            username: $scope.login.username,
-            password: "",
-            transaction_id: $scope.transactionid
-        }, {
-            withCredentials: true
+        $http.get(validateUrl + "/polltransaction", {
+            params: {
+                'transaction_id': $scope.transactionid
+            }
         }).then(function (response) {
-            $scope.do_login_stuff(response.data);
-            PollingAuthFactory.stop();
+            if (response.data.result.value === true) {
+                $http.post(authUrl, {
+                    username: $scope.login.username,
+                    password: "",
+                    transaction_id: $scope.transactionid
+                }).then(function (response) {
+                    $scope.do_login_stuff(response.data);
+                }, function (response) {
+                    console.log('Authentication failed after polling!');
+                    console.log(response.data);
+                });
+                PollingAuthFactory.stop();
+            }
+            // if result.value is false, the challenge hasn't been answered yet.
+            // Continue polling
+        }, function(response) {
+            // the /validate/polltransaction endpoint returned an error
+            console.warn("Polling for transactions returned an error: " + response.data);
         });
     };
 
