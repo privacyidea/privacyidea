@@ -105,3 +105,50 @@ this prefix, ``_`` and the key identifier (respectively ``token``,
 
 ``PI_HSM_MODULE_KEY_LABEL_VALUE`` is the label for ``value`` key
 (defaults to value based on ``PI_HSM_MODULE_KEY_LABEL`` setting).
+
+Encrypt Key Security Module
+---------------------------
+
+The Encrypt Key Security Module uses a hardware security module (HSM)
+to decrypt the encrypted encryption key. Within the HSM a private RSA key is
+used to decrypt an encrypted file like `/etc/privacyidea/enckey.enc`.
+
+With the first request to each process of the privacyIDEA server, the HSM is used
+to decrypt the encryption key. After that the encryption key is kept in memory during run time.
+
+To activate this module add the following to the configuration file
+(:ref:`cfgfile`)
+
+    PI_HSM_MODULE = "privacyidea.lib.security.encryptkey.EncryptKeyHardwareSecurityModule"
+
+Further attributes are
+``PI_HSM_MODULE_MODULE`` which takes the pkcs11 library. This is the full
+specified path to the shared object file in the file system.
+
+``PI_HSM_MODULE_SLOT`` is the slot on the HSM where the keys are
+located. This is an integer value.
+Alternatively you can specify ``PI_HSM_MODULE_SLOTNAME`` which would be the descriptive name
+of this slot.
+
+To use the correct key in this slot you can either specify the key by providing
+``PI_HSM_MODULE_KEYID`` with the integer id of the key or
+``PI_HSM_MODULE_KEYLABEL`  with the descriptive label of the key.
+
+.. note:: Some HSM fail to provide a correct keyid and it is necessary to use the key label.
+
+The last two mandatory attributes are ``PI_HSM_MODULE_PASSWORD`` which holds the password of the slot
+and ``PI_HSM_MODULE_ENCFILE`` which specifies the encrypted encryption key.
+
+You could e.g. use a Yubikey this way::
+
+    PI_HSM_MODULE = "privacyidea.lib.security.encryptkey.EncryptKeyHardwareSecurityModule"
+    PI_HSM_MODULE_MODULE = "/usr/lib/libykcs11.so"
+    PI_HSM_MODULE_SLOTNAME = "Yubico YubiKey"
+    PI_HSM_MODULE_KEYLABEL = 'Private key for PIV Authentication'
+    PI_HSM_MODULE_PASSWORD = 'yourPin'
+    PI_HSM_MODULE_ENCFILE = "/etc/privacyidea/enckey.enc"
+
+To encrypt an existing key file you can use the module like this::
+
+    python encryptkey.py --module /usr/lib/libykcs11.so --keyid 1 --slotname "Yubico YubiKey"  \
+                         --infile enckey --outfile enckey.enc
