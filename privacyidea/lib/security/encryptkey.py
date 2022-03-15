@@ -36,7 +36,7 @@ module in pi.cfg.
 
   python encryptkey.py --module /usr/lib/libykcs11.so --keyid 1 --slotname "Yubico YubiKey" \
                        --infile enckey --outfile enckey.enc
-                       
+              
   python encryptkey.py --module /usr/lib/libykcs11.so --keylabel "my secret key" --slotname "Yubico YubiKey" \
                        --infile enckey --outfile enckey.enc
 """
@@ -227,7 +227,7 @@ class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cov
         r = self.session.decrypt(privkey, filecontents, m)
         r = int_list_to_bytestring(r)
         for key_id in [0, 1, 2]:
-            self.secrets[key_id] = r[key_id*32:(key_id+1)*32]
+            self.secrets[key_id] = r[key_id * 32: (key_id + 1) * 32]
         log.info("Successfully loaded encryption keys into process.")
 
     def _get_secret(self, slot_id=0, password=None):
