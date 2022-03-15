@@ -36,7 +36,7 @@ module in pi.cfg.
 
   python encryptkey.py --module /usr/lib/libykcs11.so --keyid 1 --slotname "Yubico YubiKey" \
                        --infile enckey --outfile enckey.enc
-              
+
   python encryptkey.py --module /usr/lib/libykcs11.so --keylabel "my secret key" --slotname "Yubico YubiKey" \
                        --infile enckey --outfile enckey.enc
 """
