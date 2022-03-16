@@ -14,8 +14,6 @@ API :ref:`rest_token`, :ref:`rest_system`, :ref:`rest_realm` and
 Admin policies are implemented as decorators in :ref:`code_policy` and
 :ref:`policy_decorators`.
 
-The ``user`` in the admin policies refers to the name of the administrator.
-
 Starting with privacyIDEA 2.4 admin policies can also store a field "admin
 realm". This is used, if you define realms to be superuser realms. See
 :ref:`cfgfile` for information how to do this. Read :ref:`faq_admins` for
@@ -40,6 +38,8 @@ to enable tokens in the user-realm *sales*.
 
 .. note:: As long as no admin policy is defined all administrators
    are allowed to do everything.
+
+.. note:: Admin policies are also checked for all local administrators.
 
 The following actions are available in the scope
 *admin*:
