@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-01-22 11:34+0100\n"
-"PO-Revision-Date: 2021-07-07 19:02+0000\n"
-"Last-Translator: ToldYouThat <itoldyouthat@protonmail.com>\n"
+"PO-Revision-Date: 2022-03-17 05:57+0000\n"
+"Last-Translator: Salih Kiraz <salihk06@gmail.com>\n"
+"Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/tr/>\n"
 "Language: tr\n"
-"Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/tr/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.12-dev\n"
 "Generated-By: Babel 2.6.0\n"
 
 #: api/auth.py:222
@@ -48,168 +49,186 @@ msgid ""
 "Authentication failure. The username {0!s} is not allowed to impersonate "
 "via JWT."
 msgstr ""
+"Kimlik doğrulama hatası. {0!s} kullanıcı adının JWT aracılığıyla kimliğine "
+"bürünmesine izin verilmiyor."
 
 #: api/lib/utils.py:356
 msgid ""
 "Authentication failure. You do not have the necessary role ({0!s}) to "
 "access this resource!"
 msgstr ""
+"Kimlik doğrulama hatası. Bu kaynağa erişmek için gerekli role ({0!s}) sahip "
+"değilsiniz!"
 
 #: api/lib/utils.py:374
 msgid "'{0!s}' is an invalid policy name."
-msgstr ""
+msgstr "geçersiz bir politika adı."
 
 #: api/lib/utils.py:377
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
-msgstr ""
+msgstr "Politikanın adı yalnızca a-zA-Z0-9_. - karakterlerini içerebilir. -"
 
 #: lib/challengeresponsedecorators.py:149
 msgid "Please enter the new PIN again"
-msgstr ""
+msgstr "Lütfen yeni PIN'i tekrar girin"
 
 #: lib/challengeresponsedecorators.py:163
 msgid "Please enter a new PIN"
-msgstr ""
+msgstr "Lütfen yeni bir PIN girin"
 
 #: lib/challengeresponsedecorators.py:201
 msgid "To resync your token, please enter the next OTP value"
 msgstr ""
+"Tokeninizi yeniden senkronize etmek için lütfen sonraki OTP değerini girin"
 
 #: lib/decorators.py:43 lib/token.py:2181
 msgid "This action is not possible, since the token is locked"
-msgstr ""
+msgstr "Belirteç kilitli olduğundan bu eylem mümkün değildir"
 
 #: lib/decorators.py:94
 msgid "You need to specify a serial or a user."
-msgstr ""
+msgstr "Bir seri veya kullanıcı belirtmeniz gerekir."
 
 #: lib/decorators.py:96
 msgid "Invalid serial number."
-msgstr ""
+msgstr "Geçersiz seri numarası."
 
 #: lib/decorators.py:98
 msgid "Invalid user."
-msgstr ""
+msgstr "Geçersiz kullanıcı."
 
 #: lib/error.py:170
 msgid "You either need to provide user or serial"
-msgstr ""
+msgstr "Kullanıcı veya seri sağlamanız gerekir"
 
 #: lib/policy.py:1520
 msgid "Define in which resolver the user should be registered."
-msgstr ""
+msgstr "Kullanıcının hangi çözümleyicide kaydedileceğini tanımlayın."
 
 #: lib/policy.py:1524
 msgid "Define in which realm the user should be registered."
-msgstr ""
+msgstr "Kullanıcının hangi alanda kayıtlı olması gerektiğini tanımlayın."
 
 #: lib/policy.py:1528
 msgid ""
 "The SMTP server configuration, that should be used to send the "
 "registration email."
 msgstr ""
+"Kayıt e-postasını göndermek için kullanılması gereken SMTP sunucusu "
+"yapılandırması."
 
 #: lib/policy.py:1532
 msgid ""
 "Only users with this email address are allowed to register. This is a "
 "regular expression."
 msgstr ""
+"Yalnızca bu e-posta adresine sahip kullanıcıların kayıt olmasına izin "
+"verilir. Bu normal bir ifadedir."
 
 #: lib/policy.py:1537
 msgid ""
 "The body of the registration email. Use '{regkey}' as tag for the "
 "registration key."
 msgstr ""
+"Kayıt e-postasının gövdesi. Kayıt anahtarı için etiket olarak '{regkey} ' "
+"kullanın."
 
 #: lib/policy.py:1543
 msgid "Admin is allowed to enable tokens."
-msgstr ""
+msgstr "Yöneticinin belirteçleri etkinleştirmesine izin verilir."
 
 #: lib/policy.py:1547
 msgid "Admin is allowed to disable tokens."
-msgstr ""
+msgstr "Yöneticinin belirteçleri devre dışı bırakmasına izin verilir."
 
 #: lib/policy.py:1551
 msgid "Admin is allowed to set token properties."
-msgstr ""
+msgstr "Yöneticinin belirteç özelliklerini ayarlamasına izin verilir."
 
 #: lib/policy.py:1556
 msgid "Admin is allowed to set the OTP PIN of tokens."
-msgstr ""
+msgstr "Yöneticinin belirteçlerin OTP PIN'ini ayarlamasına izin verilir."
 
 #: lib/policy.py:1562
 msgid "Admin is allowed to set a random OTP PIN of tokens."
-msgstr ""
+msgstr "Yönetici belirteçleri rastgele bir OTP PIN ayarlamak için izin verilir."
 
 #: lib/policy.py:1566
 msgid "Admin is allowed to manually set and delete token info."
 msgstr ""
+"Yöneticiye el ile ayarlamak için ve token bilgi silmek için izin verilir."
 
 #: lib/policy.py:1570
 msgid "Admin is allowed to set the OTP PIN during enrollment."
-msgstr ""
+msgstr "Yöneticinin kayıt sırasında OTP PIN'ini ayarlamasına izin verilir."
 
 #: lib/policy.py:1575
 msgid "Admin is allowed to resync tokens."
-msgstr ""
+msgstr "Yöneticinin belirteçleri yeniden senkronize etmesine izin verilir."
 
 #: lib/policy.py:1579
 msgid "Admin is allowed to reset the Failcounter of a token."
 msgstr ""
+"Yöneticinin bir belirtecin hatalı giriş sayacı (Failcounter)'ını "
+"sıfırlamasına izin verilir."
 
 #: lib/policy.py:1585
 msgid "Admin is allowed to revoke a token"
-msgstr ""
+msgstr "Yöneticinin bir belirteci iptal etmesine izin verilir"
 
 #: lib/policy.py:1589
 msgid "Admin is allowed to assign a token to a user."
-msgstr ""
+msgstr "Yöneticinin bir kullanıcıya bir belirteç atamasına izin verilir."
 
 #: lib/policy.py:1595
 msgid "Admin is allowed to remove the token from a user, i.e. unassign a token."
 msgstr ""
+"Yöneticinin belirteci bir kullanıcıdan kaldırmasına, yani bir jeton "
+"atamasını kaldırmasına izin verilir."
 
 #: lib/policy.py:1602
 msgid "Admin is allowed to import token files."
-msgstr ""
+msgstr "Yöneticinin belirteç dosyalarını içe aktarmasına izin verilir."
 
 #: lib/policy.py:1607
 msgid "Admin is allowed to remove tokens from the database."
-msgstr ""
+msgstr "Yöneticinin veritabanından jetonları kaldırmasına izin verilir."
 
 #: lib/policy.py:1613
 msgid "Admin is allowed to view the list of the users."
-msgstr ""
+msgstr "Yönetici, kullanıcıların listesini görüntülemesine izin verilir."
 
 #: lib/policy.py:1619
 msgid "The Admin is allowed to list the machines."
-msgstr ""
+msgstr "Yöneticinin makineleri listelemesine izin verilir."
 
 #: lib/policy.py:1624
 msgid "The Admin is allowed to attach and detach tokens to machines."
-msgstr ""
+msgstr "Yöneticinin makinelere jeton eklemesine ve ayırmasına izin verilir."
 
 #: lib/policy.py:1631
 msgid ""
 "The Admin is allowed to fetch authentication items of tokens assigned to "
 "machines."
 msgstr ""
+"Yöneticinin makinelere atanan jetonların kimlik doğrulama öğelerini almasına "
+"izin verilir."
 
 #: lib/policy.py:1636
 msgid "Admin is allowed to manage the realms of a token."
-msgstr ""
+msgstr "Yöneticinin bir jetonun alanlarını yönetmesine izin verilir."
 
 #: lib/policy.py:1641
 msgid "Admin is allowed to list tokens."
-msgstr ""
+msgstr "Yöneticinin jetonları listelemesine izin verilir."
 
 #: lib/policy.py:1645
 msgid "Admin is allowed to retrieve a serial for a given OTP value."
-msgstr ""
+msgstr "Yöneticinin belirli bir OTP değeri için bir seri almasına izin verilir."
 
 #: lib/policy.py:1650
 msgid "Admin is allowed to retrieve random keys from privacyIDEA."
-msgstr ""
+msgstr "Yöneticinin privacyıdea'dan rasgele anahtarlar almasına izin verilir."
 
 #: lib/policy.py:1654
 msgid "Admin is allowed to copy the PIN of one token to another token."
@@ -299,21 +318,24 @@ msgstr ""
 
 #: lib/policy.py:1767 lib/policy.py:2009
 msgid "Set the minimum required length of the OTP PIN."
-msgstr ""
+msgstr "OTP PIN'inin gerekli minimum uzunluğunu ayarlayın."
 
 #: lib/policy.py:1771 lib/policy.py:2013
 msgid ""
 "Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
 msgstr ""
+"OTP pın'inin gerekli içeriğini belirtin. (c)haracters, (n)umeric, (s)pecial. "
+"Değiştiricileri +/- veya izin verilen karakterlerin listesini kullanın "
+"[1234567890]"
 
 #: lib/policy.py:1780
 msgid "The length of a random PIN set by the administrator."
-msgstr ""
+msgstr "Yönetici tarafından belirlenen rastgele bir pın'in uzunluğu."
 
 #: lib/policy.py:1783
 msgid "Admin is allowed to view the Audit log."
-msgstr ""
+msgstr "Yöneticinin Denetim günlüğünü görüntülemesine izin verilir."
 
 #: lib/policy.py:1787
 msgid "The admin will only see audit entries of the last 10d, 3m or 2y."
@@ -434,10 +456,12 @@ msgid ""
 "The user is allowed to assign an existing token that is not yet assigned "
 "using the token serial number."
 msgstr ""
+"Kullanıcının, belirteç seri numarası kullanılarak henüz atanmamış varolan "
+"bir jeton atamasına izin verilir."
 
 #: lib/policy.py:1944
 msgid "The user is allowed to disable his own tokens."
-msgstr ""
+msgstr "Kullanıcının kendi belirteçlerini devre dışı bırakmasına izin verilir."
 
 #: lib/policy.py:1950
 msgid "The user is allowed to enable his own tokens."
@@ -2365,4 +2389,3 @@ msgid ""
 "true if the integer value of the left attribute is bigger than the right "
 "integer value"
 msgstr ""
-
