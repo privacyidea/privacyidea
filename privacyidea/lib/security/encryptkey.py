@@ -18,6 +18,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
+import contextlib
 import getopt
 import logging
 from privacyidea.lib.security.default import DefaultSecurityModule
@@ -53,6 +54,25 @@ except ImportError:
 
 def int_list_to_bytestring(int_list):  # pragma: no cover
     return b"".join([int2byte(i) for i in int_list])
+
+import os
+import time
+DIR = "/dev/shm/pilock"
+
+@contextlib.contextmanager
+def hsm_lock(timeout=15):
+    # Wait, that we are free to go
+    while timeout > 0:
+        timeout -= 1
+        if os.path.exists(DIR):
+            time.sleep(1)
+        else:
+            break
+    # Lock, since we are acting.
+    os.mkdir(DIR)
+    yield
+    # Cleanup
+    os.rmdir(DIR)
 
 
 class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cover
@@ -114,62 +134,63 @@ class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cov
         # Now we have our password
         self.is_ready = False
 
-        self.pkcs11 = PyKCS11.PyKCS11Lib()
-        self.pkcs11.load(self.config.get("module"))
-        self.pkcs11.lib.C_Initialize()
+        with hsm_lock():
+            self.pkcs11 = PyKCS11.PyKCS11Lib()
+            self.pkcs11.load(self.config.get("module"))
+            self.pkcs11.lib.C_Initialize()
 
-        slotlist = self.pkcs11.getSlotList()
-        log.debug("Found the slots: {0!s}".format(slotlist))
-        if not len(slotlist):
-            raise HSMException("No HSM connected. No slots found.")
+            slotlist = self.pkcs11.getSlotList()
+            log.debug("Found the slots: {0!s}".format(slotlist))
+            if not len(slotlist):
+                raise HSMException("No HSM connected. No slots found.")
 
-        if self.slot == -1:
-            if len(slotlist) == 1:
-                # Use the first and only slot
-                self.slot = slotlist[0]
-            elif len(slotlist) > 1:
-                for slot in slotlist:
-                    # Find the slot via the slotname
-                    slotinfo = self.pkcs11.getSlotInfo(slot)
-                    log.debug("Found slot '{}'".format(slotinfo.slotDescription))
-                    if slotinfo.slotDescription.startswith(self.slotname):
-                        self.slot = slot
-                        break
+            if self.slot == -1:
+                if len(slotlist) == 1:
+                    # Use the first and only slot
+                    self.slot = slotlist[0]
+                elif len(slotlist) > 1:
+                    for slot in slotlist:
+                        # Find the slot via the slotname
+                        slotinfo = self.pkcs11.getSlotInfo(slot)
+                        log.debug("Found slot '{}'".format(slotinfo.slotDescription))
+                        if slotinfo.slotDescription.startswith(self.slotname):
+                            self.slot = slot
+                            break
 
-        if self.slot not in slotlist:
-            raise HSMException("Slot {0:d} not present".format(self.slot))
+            if self.slot not in slotlist:
+                raise HSMException("Slot {0:d} not present".format(self.slot))
 
-        slotinfo = self.pkcs11.getSlotInfo(self.slot)
-        log.debug("Setting up slot {0!s}: '{1!s}'".format(self.slot, slotinfo.slotDescription))
+            slotinfo = self.pkcs11.getSlotInfo(self.slot)
+            log.debug("Setting up slot {0!s}: '{1!s}'".format(self.slot, slotinfo.slotDescription))
 
-        self.session = self.pkcs11.openSession(slot=self.slot)
-        log.debug("Logging on to '{}'".format(slotinfo.slotDescription))
-        try:
-            self.session.login(self.password)
-        except PyKCS11.PyKCS11Error as e:
-            if str(e).startswith("CKR_USER_ALREADY_LOGGED_IN"):
-                log.info("Timing issues. We need to relogin the user.")
-                # in case the user is already logged in
-                self.session.logout()
+            self.session = self.pkcs11.openSession(slot=self.slot)
+            log.debug("Logging on to '{}'".format(slotinfo.slotDescription))
+            try:
                 self.session.login(self.password)
-            elif str(e).startswith("CKR_PIN_INCORRECT"):
-                log.error("A wrong HSM Password is configured. Please check your configuration in pi.cfg")
-                # We reset the password, to avoid future PIN Locking!
-                # I think this does not work between processes!
-                self.password = None
-                raise e
-            else:
-                raise e
+            except PyKCS11.PyKCS11Error as e:
+                if str(e).startswith("CKR_USER_ALREADY_LOGGED_IN"):
+                    log.info("Timing issues. We need to relogin the user.")
+                    # in case the user is already logged in
+                    self.session.logout()
+                    self.session.login(self.password)
+                elif str(e).startswith("CKR_PIN_INCORRECT"):
+                    log.error("A wrong HSM Password is configured. Please check your configuration in pi.cfg")
+                    # We reset the password, to avoid future PIN Locking!
+                    # I think this does not work between processes!
+                    self.password = None
+                    raise e
+                else:
+                    raise e
 
-        log.debug("Successfully setup the security module.")
-        self.is_ready = True
-        # We need this for the base class
-        self.crypted = True
-        if "encfile" in self.config:
-            self._decrypt_file(self.config.get("encfile"))
-        if logout:
-            self.session.logout()
-            self.session.closeSession()
+            if "encfile" in self.config:
+                self._decrypt_file(self.config.get("encfile"))
+            log.debug("Successfully setup the security module.")
+            self.is_ready = True
+            # We need this for the base class
+            self.crypted = True
+            if logout:
+                self.session.logout()
+                self.session.closeSession()
 
     def _add_template(self, template):
         if self.keyid:
