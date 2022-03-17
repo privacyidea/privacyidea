@@ -58,21 +58,25 @@ def int_list_to_bytestring(int_list):  # pragma: no cover
 import os
 import time
 DIR = "/dev/shm/pilock"
+DEFAULT_TIMEOUT = 15
+
 
 @contextlib.contextmanager
-def hsm_lock(timeout=15):
+def hsm_lock(timeout=DEFAULT_TIMEOUT):
     # Wait, that we are free to go
     while timeout > 0:
         timeout -= 1
-        if os.path.exists(DIR):
-            time.sleep(1)
-        else:
+        try:
+            # Try to get the Lock, since we are acting.
+            os.mkdir(DIR)
+            yield
+            # Cleanup
+            os.rmdir(DIR)
             break
-    # Lock, since we are acting.
-    os.mkdir(DIR)
-    yield
-    # Cleanup
-    os.rmdir(DIR)
+        except FileExistsError:
+            # Some other process got the lock in the meantime.
+            log.info("Can not get the lock on {0!s}. Can not initialize the HSM, yet.".format(DIR))
+            time.sleep(1)
 
 
 class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cover
@@ -134,7 +138,9 @@ class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cov
         # Now we have our password
         self.is_ready = False
 
-        with hsm_lock():
+        timeout = self.config.get("timeout") or DEFAULT_TIMEOUT
+
+        with hsm_lock(timeout=timeout):
             self.pkcs11 = PyKCS11.PyKCS11Lib()
             self.pkcs11.load(self.config.get("module"))
             self.pkcs11.lib.C_Initialize()
