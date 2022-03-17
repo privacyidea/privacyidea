@@ -2472,7 +2472,7 @@ msgstr "RADIUS-Server"
 msgid "RADIUS: Forward authentication request to a RADIUS server"
 msgstr ""
 "RADIUS: Die Authentisierungsanfrage wird an einen RADIUS-Server "
-"weitergeleitet."
+"weitergeleitet"
 
 #: privacyidea/static/components/token/views/token.details.html:391
 #: privacyidea/static/components/token/views/token.details.html:384
@@ -2572,7 +2572,7 @@ msgstr "Remote-Token Einstellungen"
 msgid "Remote Token: Forward authentication request to another server"
 msgstr ""
 "Remote: Die Authentisierungsanfrage wird an einen anderen privacyIDEA-Server "
-"weitergeleitet."
+"weitergeleitet"
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:36
 msgid "Remote User"
@@ -2749,7 +2749,7 @@ msgstr "SMTP-Server"
 #: privacyidea/static/components/token/controllers/tokenControllers.js:196
 #: privacyidea/static/components/token/controllers/tokenControllers.js:193
 msgid "SPass: Simple Pass token. Static passwords"
-msgstr "SPass: Simple-Pass-Token. Statisches Passwort."
+msgstr "SPass: Simple-Password-Token. Statisches Passwort"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:198
 #: privacyidea/static/components/token/controllers/tokenControllers.js:195
