@@ -1,11 +1,12 @@
 # Paul Lettich <paul.lettich@netknights.it>, 2023, 2024.
 # Cornelius Kölbel <cornelius.koelbel@netknights.it>, 2024.
+# NNLemling <sebastian@lemling.de>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"Last-Translator: NNLemling <sebastian@lemling.de>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
