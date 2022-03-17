@@ -1,14 +1,14 @@
 """
 This test file tests the lib.tokens.smstoken
 """
-PWFILE = "tests/testdata/passwords"
+import logging
 
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import is_true
-from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.tokens.smstoken import SmsTokenClass, SMSACTION
 from privacyidea.models import (Token, Config, Challenge)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
@@ -17,6 +17,9 @@ from privacyidea.lib import _
 import datetime
 import mock
 import responses
+from testfixtures import log_capture
+
+PWFILE = "tests/testdata/passwords"
 
 
 class SMSTokenTestCase(MyTestCase):
@@ -472,25 +475,40 @@ class SMSTokenTestCase(MyTestCase):
         r = token.check_otp(self.valid_otp_values[5 + len(smstext_tests)], options=options)
         self.assertTrue(r > 0, r)
 
-    def test_21_failed_loading(self):
+    @ log_capture(level=logging.WARN)
+    def test_21_failed_loading(self, capture):
+        token = init_token({'type': 'sms', 'phone': self.phone1})
         transactionid = "123456098712"
         set_privacyidea_config("sms.providerConfig", "noJSON")
         set_privacyidea_config("sms.provider",
                                "privacyidea.lib.smsprovider."
                                "HttpSMSProvider.HttpSMSProviderWRONG")
-        db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = SmsTokenClass(db_token)
 
         c = token.create_challenge(transactionid)
         self.assertFalse(c[0], c)
-        self.assertTrue("The PIN was correct, but" in c[1], c[1])
+        self.assertTrue(c[1].startswith("The PIN was correct, but"), c[1])
+        capture.check_present(
+            ('privacyidea.lib.tokens.smstoken', 'WARNING',
+             'The PIN was correct, but the SMS could not be sent. '
+             '(privacyidea.lib.smsprovider.HttpSMSProvider has no '
+             'attribute HttpSMSProviderWRONG)')
+        )
+        capture.clear()
 
         set_privacyidea_config("sms.provider",
                                "privacyidea.lib.smsprovider."
                                "HttpSMSProvider.HttpSMSProvider")
         c = token.create_challenge(transactionid)
         self.assertFalse(c[0], c)
+        self.assertTrue(c[1].startswith("The PIN was correct, but"), c[1])
+        capture.check_present(
+            ('privacyidea.lib.tokens.smstoken', 'WARNING',
+             'The PIN was correct, but the SMS could not be sent. '
+             '(Failed to load sms.providerConfig: JSONDecodeError(\''
+             'Expecting value: line 1 column 1 (char 0)\'))')
+        )
 
         # test with the parameter exception=1
         self.assertRaises(Exception, token.create_challenge, transactionid, {"exception": "1"})
 
+        remove_token(token.get_serial())
