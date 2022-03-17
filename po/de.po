@@ -879,9 +879,8 @@ msgid "Create realm"
 msgstr "Realm anlegen"
 
 #: privacyidea/static/components/user/views/user.details.html:107
-#, fuzzy
 msgid "Custom attribute name"
-msgstr "Benutzerdefiniertes Attribut hinzufügen"
+msgstr "Benutzerdefinierter Attributname"
 
 #: privacyidea/static/components/user/views/user.details.html:79
 msgid "Custom attributes for user {{ username }}"
