@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-03-17 16:57+0100\n"
-"PO-Revision-Date: 2022-01-22 15:52+0000\n"
+"PO-Revision-Date: 2022-03-18 15:58+0000\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/de/>\n"
 "Language: de\n"
-"Language-Team: German <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/de/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.12-dev\n"
 "Generated-By: Babel 2.9.1\n"
 
 #: api/auth.py:222
@@ -78,6 +79,8 @@ msgstr "Vergeben Sie bitte eine neue PIN"
 #: lib/challengeresponsedecorators.py:201
 msgid "To resync your token, please enter the next OTP value"
 msgstr ""
+"Um Ihren Token neu zu synchronisieren, geben Sie bitte den nächsten OTP-Wert "
+"ein"
 
 #: lib/decorators.py:43 lib/token.py:2187
 msgid "This action is not possible, since the token is locked"
@@ -101,7 +104,7 @@ msgstr "Sie müssen entweder eine Seriennummer oder einen Benutzer angeben"
 
 #: lib/policy.py:1351
 msgid "Invalid client definition!"
-msgstr ""
+msgstr "Ungültige Client-Definition!"
 
 #: lib/policy.py:1532
 msgid "Define in which resolver the user should be registered."
@@ -482,13 +485,12 @@ msgstr ""
 " die Dokumentation."
 
 #: lib/policy.py:1947
-#, fuzzy
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the admin."
 msgstr ""
-"Dies ist eine mit Leerzeichen getrennte Liste an Tokentypen, für die das "
-"Rollover im WebUI erlaubt ist."
+"Dies ist eine mit Leerzeichen getrennte Liste an Tokeninfo-Einträge, die dem "
+"Administrator nicht angezeigt werden."
 
 #: lib/policy.py:1955
 msgid ""
@@ -603,13 +605,12 @@ msgstr ""
 "Sie bitte die Dokumentation."
 
 #: lib/policy.py:2082
-#, fuzzy
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the user."
 msgstr ""
-"Dies ist eine mit Leerzeichen getrennte Liste an Tokentypen, für die das "
-"Rollover im WebUI erlaubt ist."
+"Dies ist eine mit Leerzeichen getrennte Liste an Tokeninfo-Einträgen, die "
+"dem Benutzer nicht angezeigt werden."
 
 #: lib/policy.py:2090
 msgid "Limit the number of allowed tokens in a realm."
@@ -722,31 +723,27 @@ msgstr ""
 "[1234567890] angegeben werden."
 
 #: lib/policy.py:2185
-#, fuzzy
 msgid "Set the length of the password of generated password tokens."
-msgstr ""
-"Die Länge des Passworts für einen temporären Token (Workflow \"Verlorener"
-" Token\")."
+msgstr "Die Länge des Passworts für einen generierten Passwort-Token."
 
 #: lib/policy.py:2189
-#, fuzzy
 msgid ""
 "Specify the required contents of the password of a password token. "
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of "
 "allowed characters [1234567890]"
 msgstr ""
-"Geben Sie den geforderten Inhalt der OTP PIN an. (c) für Zeichen, (n) für"
-" Zahlen, (s) für Sonderzeichen. Sie können die Modifizierer +/- verwenden"
-" oder eine dedizierte Liste an Zeichen [1234565890] angeben."
+"Geben Sie den geforderten Inhalt des Passwortes eines Passwort-Tokens an. (c)"
+" für Zeichen, (n) für Zahlen, (s) für Sonderzeichen. Sie können die "
+"Modifizierer +/- verwenden oder eine dedizierte Liste an Zeichen [1234565890]"
+" angeben."
 
 #: lib/policy.py:2197
-#, fuzzy
 msgid ""
 "Specify a white space separated list of token types, that should be "
 "verified during enrollment."
 msgstr ""
-"Liste von Tokentypen, die für Challenge Response verwendet werden können."
-" (Trennung durch Leerzeichen)"
+"Eine Leerzeichen-getrennte Liste an Tokentypen, die beim Rollout durch die "
+"Eingabe eines OTP-Wertes verifiziert werden sollen."
 
 #: lib/policy.py:2206
 msgid ""
@@ -802,6 +799,9 @@ msgid ""
 "The autoresync of a token can be done via a challenge response "
 "message.You need to activate 'Automatic resync' in the general settings!"
 msgstr ""
+"Die automatische Resynchronisierung eines Tokens kann über eine Challenge-"
+"Response-Nachricht erfolgen. In den allgemeinen Einstellungen muss die "
+"'Automatische Resynchronisierung' aktiviert sein!"
 
 #: lib/policy.py:2242
 msgid ""
@@ -1219,13 +1219,12 @@ msgstr ""
 "Request Header erfüllt sind."
 
 #: lib/policy.py:2588
-#, fuzzy
 msgid ""
 "The policy only matches if certain conditions on the HTTP Environment are"
 " fulfilled."
 msgstr ""
-"Die Richtlinie greift, wenn zusätzliche Anforderungen an die Token "
-"Infoattribute erfüllt sind."
+"Die Richtlinie greift, wenn zusätzliche Anforderungen an HTTP "
+"Umgebungsvariablen erfüllt sind."
 
 #: lib/radiusserver.py:225 lib/radiusserver.py:257
 msgid "The RADIUS secret is too long"
@@ -1445,28 +1444,24 @@ msgid "Don't stop counter if it reaches zero."
 msgstr "Der Counter darf auch negative Werte erreichen."
 
 #: lib/eventhandler/customuserattributeshandler.py:61
-#, fuzzy
 msgid "The user for whom the custom attribute should be set."
-msgstr "Wert des JSON Schlüssels, welcher gesetzt werden soll."
+msgstr "Der Benutzer, für den das Attribut gesetzt werden soll."
 
 #: lib/eventhandler/customuserattributeshandler.py:68
-#, fuzzy
 msgid "The key of the custom user attribute that should be set."
-msgstr "Wert des JSON Schlüssels, welcher gesetzt werden soll."
+msgstr "Der Schlüssel des Attributes, das gesetzt werden soll."
 
 #: lib/eventhandler/customuserattributeshandler.py:71
 msgid "The value of the custom user attribute."
-msgstr ""
+msgstr "Wert des benutzerdefinierten Benutzerattributs."
 
 #: lib/eventhandler/customuserattributeshandler.py:77
-#, fuzzy
 msgid "The user from which the custom attribute should be deleted."
-msgstr "Der Parameter der gelöscht werden soll."
+msgstr "Der Benutzer, dessen Attribut gelöscht werden soll."
 
 #: lib/eventhandler/customuserattributeshandler.py:84
-#, fuzzy
 msgid "The key of the custom user attribute that should be deleted."
-msgstr "Der Parameter der gelöscht werden soll."
+msgstr "Der Schlüssel des Attributes, das gelöscht werden soll."
 
 #: lib/eventhandler/federationhandler.py:76
 msgid "The remote/child privacyIDEA Server."
@@ -2150,7 +2145,7 @@ msgstr ""
 
 #: lib/tokens/hotptoken.py:82
 msgid "Please enter a valid OTP value of the new token."
-msgstr ""
+msgstr "Bitte geben Sie einen gültigen OTP-Wert des neuen Tokens ein."
 
 #: lib/tokens/hotptoken.py:127
 msgid "Specify the hashlib to be used. Can be sha1 (1) or sha2-256 (2)."
@@ -2343,6 +2338,8 @@ msgid ""
 "Use the polling feature of your privacyIDEA Authenticator App to check "
 "for a new Login request."
 msgstr ""
+"Verwenden Sie die Polling-Funktion Ihrer privacyIDEA Authenticator App, um "
+"nach einer neuen Anmeldeanfrage zu suchen."
 
 #: lib/tokens/pushtoken.py:73
 msgid "Do you want to confirm the login?"
@@ -2915,11 +2912,12 @@ msgstr ""
 "zugewiesen haben."
 
 #: lib/tokens/yubikeytoken.py:181
-#, fuzzy
 msgid ""
 "The Yubikey access code can be read by an enrollment client to initialize"
 " Yubikeys."
-msgstr "Yubikey Access Code, der benötigt wird, um Yubikeys zu initialisieren."
+msgstr ""
+"Der Yubikey Access Code kann vom Rollout-Client gelesen werden, um Yubikeys "
+"auszurollen."
 
 #: lib/utils/compare.py:191
 msgid "true if the value of the left attribute contains the right value"
@@ -3098,4 +3096,3 @@ msgstr ""
 #~ "können soll, dann geben Sie hier "
 #~ "'*' ein. Für weitere Details lesen "
 #~ "Sie bitte die Dokumentation."
-

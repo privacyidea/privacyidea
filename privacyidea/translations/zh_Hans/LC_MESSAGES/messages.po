@@ -8,16 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-03-17 16:57+0100\n"
-"PO-Revision-Date: 2022-01-28 14:55+0000\n"
+"PO-Revision-Date: 2022-03-18 15:52+0000\n"
 "Last-Translator: Eric <alchemillatruth@purelymail.com>\n"
+"Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
+"privacyidea/privacyidea-ui/zh_Hans/>\n"
 "Language: zh_Hans\n"
-"Language-Team: Chinese (Simplified) "
-"<https://hosted.weblate.org/projects/privacyidea/privacyidea-ui/zh_Hans/>"
-"\n"
-"Plural-Forms: nplurals=1; plural=0\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.12-dev\n"
 "Generated-By: Babel 2.9.1\n"
 
 #: api/auth.py:222
@@ -626,24 +626,22 @@ msgid ""
 msgstr "请指定注册码需要填写的内容。(c) 字符、 (n) 数字、(s) 特殊符号。使用修饰符 +/- 或允许的字符列表 [1234567890]"
 
 #: lib/policy.py:2185
-#, fuzzy
 msgid "Set the length of the password of generated password tokens."
-msgstr "临时令牌（丢失令牌）时密码的长度。"
+msgstr "设定生成的密码令牌的密码的长度。"
 
 #: lib/policy.py:2189
-#, fuzzy
 msgid ""
 "Specify the required contents of the password of a password token. "
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of "
 "allowed characters [1234567890]"
-msgstr "指定OTP PIN的必需内容。（c）个字符，（n）个数字，（s）个。使用修饰符+/-或允许的字符列表[1234567890]"
+msgstr "指定密码令牌的密码的需要的内容。(c)字符、 (n)数字、 (s)特殊符号。使用修饰符 "
+"+/- 或允许字符[1234567890] 的列表"
 
 #: lib/policy.py:2197
-#, fuzzy
 msgid ""
 "Specify a white space separated list of token types, that should be "
 "verified during enrollment."
-msgstr "这是由空格分隔的令牌类型列表，可以与质询响应一起使用。"
+msgstr "指定由空格分隔的令牌类型列表， 应该在注册时对它们进行核实。"
 
 #: lib/policy.py:2206
 msgid ""
@@ -1189,28 +1187,24 @@ msgid "Don't stop counter if it reaches zero."
 msgstr "如果计数器达到零，请不要停止。"
 
 #: lib/eventhandler/customuserattributeshandler.py:61
-#, fuzzy
 msgid "The user for whom the custom attribute should be set."
-msgstr "应该设置的JSON密钥的值。"
+msgstr "应设置自定义属性的用户。"
 
 #: lib/eventhandler/customuserattributeshandler.py:68
-#, fuzzy
 msgid "The key of the custom user attribute that should be set."
-msgstr "应该设置的JSON密钥的值。"
+msgstr "应设置的自定义用户属性的键。"
 
 #: lib/eventhandler/customuserattributeshandler.py:71
 msgid "The value of the custom user attribute."
 msgstr ""
 
 #: lib/eventhandler/customuserattributeshandler.py:77
-#, fuzzy
 msgid "The user from which the custom attribute should be deleted."
-msgstr "应该删除的参数。"
+msgstr "应删除自定义属性的用户。"
 
 #: lib/eventhandler/customuserattributeshandler.py:84
-#, fuzzy
 msgid "The key of the custom user attribute that should be deleted."
-msgstr "应该删除的参数。"
+msgstr "应该删除的自定义用户属性的键。"
 
 #: lib/eventhandler/federationhandler.py:76
 msgid "The remote/child privacyIDEA Server."
@@ -2398,11 +2392,10 @@ msgid ""
 msgstr "用户只能分配此最大数量的活动Yubikey令牌。"
 
 #: lib/tokens/yubikeytoken.py:181
-#, fuzzy
 msgid ""
 "The Yubikey access code can be read by an enrollment client to initialize"
 " Yubikeys."
-msgstr "Yubikey access code，用于初始化Yubikeys。"
+msgstr "注册客户端可以读取 Yubikey 访问代码来初始化 Yubikey。"
 
 #: lib/utils/compare.py:191
 msgid "true if the value of the left attribute contains the right value"
@@ -2490,4 +2483,3 @@ msgstr ""
 #~ "'*'. For more details, check the "
 #~ "documentation."
 #~ msgstr ""
-
