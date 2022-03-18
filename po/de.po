@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-03-18 15:48+0000\n"
-"Last-Translator: NNLemling <sebastian@lemling.de>\n"
+"PO-Revision-Date: 2022-03-18 15:58+0000\n"
+"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -1243,14 +1243,12 @@ msgid "Enroll a new token"
 msgstr "Neuen Token ausrollen"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:282
-#, fuzzy
 msgid "Enrollment successfully verified."
-msgstr "Test Email wurde erfolgreich versendet."
+msgstr "Der Rollout wurde erfolgreich überprüft."
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:285
-#, fuzzy
 msgid "Enrollment verification failed."
-msgstr "Authentisierung fehlgeschlagen."
+msgstr "Die Überprüfung des Rollouts ist fehlgeschlagen."
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:79
 msgid "Enter OTP + PIN to check the token."
@@ -2777,9 +2775,8 @@ msgstr "Zertifizierungsstelle speichern"
 
 #: privacyidea/static/components/config/views/config.events.details.html:103
 #: privacyidea/static/components/config/views/config.events.details.html:282
-#, fuzzy
 msgid "Save Event Handler Definition"
-msgstr "Erstelle eine Ereignisdefinition"
+msgstr "Ereignisdefinition speichern"
 
 #: privacyidea/static/components/machine/views/machine.details.html:104
 #: privacyidea/static/components/token/views/token.details.html:599
@@ -2789,9 +2786,8 @@ msgstr "Optionen speichern"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:119
 #: privacyidea/static/components/config/views/config.policies.details.html:400
-#, fuzzy
 msgid "Save Policy"
-msgstr "Richtlinie erzeugen"
+msgstr "Richtlinie speichern"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:120
 msgid "Save RADIUS server"
@@ -3859,14 +3855,12 @@ msgstr ""
 "den Sie mit einer Smartphone-App scannen können."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
-#, fuzzy
 msgid ""
 "The server will create the private RSA key and store it in\n"
 "                    the database. You can later download the PKCS#12 file."
 msgstr ""
 "Der Server erzeugt das RSA Schlüsselpaar und speichert es in der Datenbank. "
-"Wenn Sie das Schlüsselpaar im Browser erzeugen wollen, entfernen Sie den "
-"Haken."
+"Sie können später eine PKCS#12 abspeichern."
 
 #: privacyidea/static/components/token/views/token.enroll.motp.html:14
 msgid ""
@@ -4443,9 +4437,8 @@ msgid "Use STARTTLS on a plain LDAP connection usually on port 389."
 msgstr "STARTTLS mit einer LDAP-Verbindung auf Port 389 benutzen."
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:113
-#, fuzzy
 msgid "Use StartTLS"
-msgstr "TLS verwenden"
+msgstr "StartTLS verwenden"
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:35
 #: privacyidea/static/components/token/views/token.enroll.totp.html:35
@@ -4564,9 +4557,8 @@ msgstr "TLS verifizieren"
 
 #: privacyidea/static/components/token/views/token.details.html:78
 #: privacyidea/static/components/token/views/token.enroll.html:188
-#, fuzzy
 msgid "Verify Token"
-msgstr "TLS verifizieren"
+msgstr "Token verifizieren"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:64
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:81
@@ -4777,9 +4769,8 @@ msgstr "Ihre geheime Zeichenkette oder Satz."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:509
 #: privacyidea/static/components/login/controllers/loginControllers.js:494
-#, fuzzy
 msgid "Your subscription for the privacyIDEA Authenticator has expired."
-msgstr "Ausrollen mit Zwei-Schritt und der privacyIDEA Authenticator App"
+msgstr "Die Susbscription für den privacyIDEA Authenticator ist abgelaufen."
 
 #: privacyidea/static/templates/menu.html:167
 msgid ""
