@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-03-17 16:57+0100\n"
-"PO-Revision-Date: 2022-03-18 15:52+0000\n"
-"Last-Translator: NNLemling <sebastian@lemling.de>\n"
+"PO-Revision-Date: 2022-03-18 15:58+0000\n"
+"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/de/>\n"
 "Language: de\n"
@@ -485,13 +485,12 @@ msgstr ""
 " die Dokumentation."
 
 #: lib/policy.py:1947
-#, fuzzy
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the admin."
 msgstr ""
-"Dies ist eine mit Leerzeichen getrennte Liste an Tokentypen, für die das "
-"Rollover im WebUI erlaubt ist."
+"Dies ist eine mit Leerzeichen getrennte Liste an Tokeninfo-Einträge, die dem "
+"Administrator nicht angezeigt werden."
 
 #: lib/policy.py:1955
 msgid ""
@@ -606,13 +605,12 @@ msgstr ""
 "Sie bitte die Dokumentation."
 
 #: lib/policy.py:2082
-#, fuzzy
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the user."
 msgstr ""
-"Dies ist eine mit Leerzeichen getrennte Liste an Tokentypen, für die das "
-"Rollover im WebUI erlaubt ist."
+"Dies ist eine mit Leerzeichen getrennte Liste an Tokeninfo-Einträgen, die "
+"dem Benutzer nicht angezeigt werden."
 
 #: lib/policy.py:2090
 msgid "Limit the number of allowed tokens in a realm."
@@ -725,31 +723,27 @@ msgstr ""
 "[1234567890] angegeben werden."
 
 #: lib/policy.py:2185
-#, fuzzy
 msgid "Set the length of the password of generated password tokens."
-msgstr ""
-"Die Länge des Passworts für einen temporären Token (Workflow \"Verlorener"
-" Token\")."
+msgstr "Die Länge des Passworts für einen generierten Passwort-Token."
 
 #: lib/policy.py:2189
-#, fuzzy
 msgid ""
 "Specify the required contents of the password of a password token. "
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of "
 "allowed characters [1234567890]"
 msgstr ""
-"Geben Sie den geforderten Inhalt der OTP PIN an. (c) für Zeichen, (n) für"
-" Zahlen, (s) für Sonderzeichen. Sie können die Modifizierer +/- verwenden"
-" oder eine dedizierte Liste an Zeichen [1234565890] angeben."
+"Geben Sie den geforderten Inhalt des Passwortes eines Passwort-Tokens an. (c)"
+" für Zeichen, (n) für Zahlen, (s) für Sonderzeichen. Sie können die "
+"Modifizierer +/- verwenden oder eine dedizierte Liste an Zeichen [1234565890]"
+" angeben."
 
 #: lib/policy.py:2197
-#, fuzzy
 msgid ""
 "Specify a white space separated list of token types, that should be "
 "verified during enrollment."
 msgstr ""
-"Liste von Tokentypen, die für Challenge Response verwendet werden können."
-" (Trennung durch Leerzeichen)"
+"Eine Leerzeichen-getrennte Liste an Tokentypen, die beim Rollout durch die "
+"Eingabe eines OTP-Wertes verifiziert werden sollen."
 
 #: lib/policy.py:2206
 msgid ""
@@ -1225,13 +1219,12 @@ msgstr ""
 "Request Header erfüllt sind."
 
 #: lib/policy.py:2588
-#, fuzzy
 msgid ""
 "The policy only matches if certain conditions on the HTTP Environment are"
 " fulfilled."
 msgstr ""
-"Die Richtlinie greift, wenn zusätzliche Anforderungen an die Token "
-"Infoattribute erfüllt sind."
+"Die Richtlinie greift, wenn zusätzliche Anforderungen an HTTP "
+"Umgebungsvariablen erfüllt sind."
 
 #: lib/radiusserver.py:225 lib/radiusserver.py:257
 msgid "The RADIUS secret is too long"
@@ -1451,28 +1444,24 @@ msgid "Don't stop counter if it reaches zero."
 msgstr "Der Counter darf auch negative Werte erreichen."
 
 #: lib/eventhandler/customuserattributeshandler.py:61
-#, fuzzy
 msgid "The user for whom the custom attribute should be set."
-msgstr "Wert des JSON Schlüssels, welcher gesetzt werden soll."
+msgstr "Der Benutzer, für den das Attribut gesetzt werden soll."
 
 #: lib/eventhandler/customuserattributeshandler.py:68
-#, fuzzy
 msgid "The key of the custom user attribute that should be set."
-msgstr "Wert des JSON Schlüssels, welcher gesetzt werden soll."
+msgstr "Der Schlüssel des Attributes, das gesetzt werden soll."
 
 #: lib/eventhandler/customuserattributeshandler.py:71
 msgid "The value of the custom user attribute."
 msgstr "Wert des benutzerdefinierten Benutzerattributs."
 
 #: lib/eventhandler/customuserattributeshandler.py:77
-#, fuzzy
 msgid "The user from which the custom attribute should be deleted."
-msgstr "Der Parameter der gelöscht werden soll."
+msgstr "Der Benutzer, dessen Attribut gelöscht werden soll."
 
 #: lib/eventhandler/customuserattributeshandler.py:84
-#, fuzzy
 msgid "The key of the custom user attribute that should be deleted."
-msgstr "Der Parameter der gelöscht werden soll."
+msgstr "Der Schlüssel des Attributes, das gelöscht werden soll."
 
 #: lib/eventhandler/federationhandler.py:76
 msgid "The remote/child privacyIDEA Server."
@@ -2923,11 +2912,12 @@ msgstr ""
 "zugewiesen haben."
 
 #: lib/tokens/yubikeytoken.py:181
-#, fuzzy
 msgid ""
 "The Yubikey access code can be read by an enrollment client to initialize"
 " Yubikeys."
-msgstr "Yubikey Access Code, der benötigt wird, um Yubikeys zu initialisieren."
+msgstr ""
+"Der Yubikey Access Code kann vom Rollout-Client gelesen werden, um Yubikeys "
+"auszurollen."
 
 #: lib/utils/compare.py:191
 msgid "true if the value of the left attribute contains the right value"
