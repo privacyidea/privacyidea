@@ -207,8 +207,8 @@ class SmsTokenClass(HotpTokenClass):
                    SCOPE.AUTH: {
                         SMSACTION.SMSTEXT: {
                             'type': 'str',
-                            'desc': _('The text that will be send via SMS for'
-                                      ' an SMS token. Use <otp> and <serial> '
+                            'desc': _('The text that will be send via SMS for '
+                                      'an SMS token. Use tags like {otp} and {serial} '
                                       'as parameters.')},
                         SMSACTION.SMSAUTO: {
                             'type': 'bool',

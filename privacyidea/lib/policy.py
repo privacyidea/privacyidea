@@ -1606,8 +1606,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.UNASSIGN: {'type': 'bool',
                               'desc': _(
                                   'Admin is allowed to remove the token from '
-                                  'a user, '
-                                  'i.e. unassign a token.'),
+                                  'a user, i.e. unassign a token.'),
                               'mainmenu': [MAIN_MENU.TOKENS],
                               'group': GROUP.TOKEN},
             ACTION.IMPORT: {'type': 'bool',
@@ -1665,14 +1664,12 @@ def get_static_policy_definitions(scope=None):
             ACTION.COPYTOKENPIN: {'type': 'bool',
                                   'desc': _(
                                       'Admin is allowed to copy the PIN of '
-                                      'one token '
-                                      'to another token.'),
+                                      'one token to another token.'),
                                   "group": GROUP.TOOLS},
             ACTION.COPYTOKENUSER: {'type': 'bool',
                                    'desc': _(
                                        'Admin is allowed to copy the assigned '
-                                       'user to another'
-                                       ' token, i.e. assign a user ot '
+                                       'user to another token, i.e. assign a user to '
                                        'another token.'),
                                    "group": GROUP.TOOLS},
             ACTION.LOSTTOKEN: {'type': 'bool',

@@ -85,9 +85,11 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
     $scope.pinodesLoaded = false;
     $scope.policyConditionDefsLoaded = false;
     $scope.scopes = [];
+    $scope.selectedScope = null;
     $scope.viewPolicyTemplates = false;
     $scope.action_filter = "";
     $('html,body').scrollTop(0);
+    $scope.onlySelectedVisible = false;
 
     var check_all_loaded = function() {
         if ($scope.resolversLoaded &&
@@ -418,7 +420,16 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                 $scope.presetEditValues2(policy);
             });
         }
-    }
+    };
+
+    // test if the accordion group should be open or closed
+    $scope.checkOpenGroup = function(action, pattern) {
+        let pat = escapeRegexp(pattern);
+        let re = RegExp(pat, 'i');
+        return ($scope.actionCheckBox[action.name] ||
+                !$scope.onlySelectedVisible) &&
+            (re.test(action.name) || re.test(action.desc));
+    };
 }]);
 
 myApp.controller("tokenConfigController", ["$scope", "$location", "$rootScope",

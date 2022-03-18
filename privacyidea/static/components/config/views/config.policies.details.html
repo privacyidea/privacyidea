@@ -78,7 +78,7 @@
     </div>
 
     <div class="form-group">
-        <label for="scope" class="col-sm-3 control-label">
+        <label for="selectScope" class="col-sm-3 control-label">
             Scope</label>
         <div class="col-sm-9">
             <div isteven-multi-select
@@ -96,12 +96,13 @@
     </div>
 
     <div class="form-group">
-        <label for="time" class="col-sm-3 control-label"
+        <label for="priority" class="col-sm-3 control-label"
                translate>Priority</label>
 
         <div class="col-sm-9">
             <input type="number" class="form-control"
                    max="999" min="1"
+                   id="priority"
                    ng-model="params.priority"/>
             <p class="help-block" translate>
                 In case of conflicting policies, the policy with the lowest priority number will take precedence.
@@ -142,6 +143,7 @@
                 <div class="col-sm-9">
                     <div isteven-multi-select
                          input-model="adminRealms"
+                         id="adminrealm"
                          output-model="selectedAdminRealms"
                          button-label="icon name"
                          item-label="icon name maker"
@@ -152,11 +154,12 @@
             </div>
 
             <div class="form-group" ng-show="selectedScope[0].name=='admin'">
-                <label for="user" class="col-sm-3 control-label" translate>Admin
+                <label for="adminuser" class="col-sm-3 control-label" translate>Admin
                 </label>
 
                 <div class="col-sm-9">
-                    <input name="user" class="form-control"
+                    <input name="admin" class="form-control"
+                           id="adminuser"
                            type="text"
                            ng-model="params.adminuser"
                            placeholder="admin, superuser"/>
@@ -166,11 +169,12 @@
 
 
             <div class="form-group">
-                <label for="realm" class="col-sm-3 control-label"
+                <label for="userrealm" class="col-sm-3 control-label"
                        translate>User-Realm</label>
 
                 <div class="col-sm-9">
                     <div isteven-multi-select
+                         id="userrealm"
                          input-model="realms"
                          output-model="selectedRealms"
                          button-label="icon name"
@@ -181,10 +185,11 @@
                 </div>
             </div>
             <div class="form-group">
-                <label for="resolver" class="col-sm-3
+                <label for="userresolver" class="col-sm-3
         control-label" translate>User-Resolver</label>
                 <div class="col-sm-3">
                     <div isteven-multi-select
+                         id="userresolver"
                          input-model="resolvers"
                          output-model="selectedResolvers"
                          button-label="icon name"
@@ -209,6 +214,7 @@
 
                 <div class="col-sm-9">
                     <input name="user" class="form-control"
+                           id="user"
                            type="text"
                            ng-model="params.user"
                            placeholder="userA, userB"/>
@@ -220,6 +226,7 @@
                 <label for="pinode" class="col-sm-3 control-label" translate>privacyIDEA Node</label>
                 <div class="col-sm-3">
                     <div isteven-multi-select
+                         id="pinode"
                          input-model="pinodes"
                          output-model="selectedPINodes"
                          button-label="icon name"
@@ -235,6 +242,7 @@
 
                 <div class="col-sm-9">
                     <input name="client" class="form-control"
+                           id="client"
                            type="text"
                            ng-model="params.client"
                            placeholder="10.0.0.0/8, !10.0.0.124"/>
@@ -247,6 +255,7 @@
 
                 <div class="col-sm-9">
                     <input name="time" class="form-control"
+                           id="time"
                            type="text"
                            ng-model="params.time"
                            placeholder="Mon-Fri: 9-18, Sat: 10-15"/>
@@ -269,7 +278,7 @@
         <div class="tab-pane action" id="action">
             <h3 translate>Action</h3>
             <div class="row">
-                <div class="col-sm-3">
+                <div class="col-sm-6">
                     <label for="action">
                         <button class="btn btn-sm btn-success"
                                 ng-show="!onlySelectedVisible"
@@ -282,10 +291,24 @@
                             <translate>Show all actions</translate>
                         </button>
                     </label>
+                    <label for="toggleAccordion">
+                        <button class="btn btn-sm btn-success"
+                                ng-show="!isOpen"
+                                ng-click="isOpen = true">
+                            <translate>Open all groups</translate>
+                        </button>
+                        <button class="btn btn-sm btn-success"
+                                ng-show="isOpen"
+                                ng-click="isOpen = false">
+                            <translate>Close all groups</translate>
+                        </button>
+                    </label>
                 </div>
-                <div class="col-sm-9">
+                <div class="col-sm-6">
                     <div class="input-group">
+                        <label for="actionfilter"></label>
                         <input type="text" ng-model="action_filter"
+                               id="actionfilter"
                                placeholder="{{ 'filter action...'|translate }}"
                                ng-change="isOpen = (action_filter.length > 0)"
                                class="form-control"
@@ -308,77 +331,76 @@
                                  ng-repeat="actionGroup in actionGroups">
                                 <table class="table table-hover">
                                     <tr ng-repeat="action in actions"
-                                        ng-show="(actionCheckBox[action.name] ||
-                                    !onlySelectedVisible) &&
-                                    (action.name.toLowerCase().match(action_filter.toLowerCase()) !== null ||
-                                    action.desc.toLowerCase().match(action_filter.toLowerCase()) !== null)"
+                                        ng-show="checkOpenGroup(action, action_filter)"
                                         ng-if="action.group===null || actionGroup===action.group">
                                         <td>
                                             <input type="checkbox"
-                                                   name="{{ action.name }}"
+                                                   name="action.name"
                                                    ng-model="actionCheckBox[action.name]"
                                                    id="cb_{{ action.name }}">
-                                            <label for="cb_{{ action.name }}">
-                                                   {{ action.name }}
+                                            <label for="cb_{{ action.name }}"
+                                                   ng-bind-html="action.name | highlight: action_filter">
                                             </label>
                                         </td>
 
                                         <td class="policyaction">
+                                            <label for="action_{{ action.name }}_str_vals"></label>
                                             <select class="form-control"
+                                                    id="action_{{ action.name }}_str_vals"
                                                     ng-show="action.allowedValues && action.type=='str'"
                                                     ng-model="actionValuesStr[action.name]"
                                                     ng-disabled="!actionCheckBox[action.name]"
                                                     name="action.name"
-                                                    ng-options="select for select in action
-                                    .allowedValues"
-                                            >
+                                                    ng-options="select for select in action.allowedValues">
                                             </select>
+                                            <label for="action_{{ action.name }}_num_vals"></label>
                                             <select class="form-control"
+                                                    id="action_{{ action.name }}_num_vals"
                                                     ng-show="action.allowedValues && action.type=='int'"
                                                     ng-model="actionValuesNum[action.name]"
                                                     ng-disabled="!actionCheckBox[action.name]"
                                                     name="action.name"
-                                                    ng-options="select for select in action
-                                    .allowedValues"
-                                            >
+                                                    ng-options="select for select in action.allowedValues">
                                             </select>
+                                            <label for="action_{{ action.name }}_text_vals"></label>
                                             <select class="form-control"
+                                                    id="action_{{ action.name }}_text_vals"
                                                     ng-show="action.allowedValues && action.type=='text'"
                                                     ng-model="actionValuesText[action.name]"
                                                     ng-disabled="!actionCheckBox[action.name]"
                                                     name="action.name"
-                                                    ng-options="select for select in action
-                                    .allowedValues"
-                                            >
+                                                    ng-options="select for select in action.allowedValues">
                                             </select>
+                                            <label for="action_{{ action.name }}_str"></label>
                                             <input type="text"
+                                                   id="action_{{ action.name }}_str"
                                                    placeholder="text..."
                                                    ng-model="actionValuesStr[action.name]"
                                                    ng-show="action.type=='str' && !action.allowedValues"
                                                    ng-disabled="!actionCheckBox[action.name]"
-                                                   ng-required="actionCheckBox[action.name] &&
-                                   action.type=='str'"
+                                                   ng-required="actionCheckBox[action.name] && action.type=='str'"
                                                    class="form-control"/>
+                                            <label for="action_{{ action.name }}_num"></label>
                                             <input type="number"
+                                                   id="action_{{ action.name }}_num"
                                                    ng-model="actionValuesNum[action.name]"
                                                    ng-show="action.type=='int' && !action.allowedValues"
                                                    ng-disabled="!actionCheckBox[action.name]"
-                                                   ng-required="actionCheckBox[action.name] &&action
-                                   .type=='num'"
+                                                   ng-required="actionCheckBox[action.name] && action.type=='num'"
                                                    class="form-control"/>
-                                            <textarea
-                                                    ng-model="actionValuesText[action.name]"
-                                                    ng-show="action.type=='text' && !action.allowedValues"
-                                                    ng-disabled="!actionCheckBox[action.name]"
-                                                    ng-required="actionCheckBox[action.name] &&action
-                                   .type=='text'"
-                                                    class="form-control"></textarea>
+                                            <label for="action_{{ action.name }}_text"></label>
+                                            <textarea id="action_{{ action.name }}_text"
+                                                      ng-model="actionValuesText[action.name]"
+                                                      ng-show="action.type=='text' && !action.allowedValues"
+                                                      ng-disabled="!actionCheckBox[action.name]"
+                                                      ng-required="actionCheckBox[action.name] && action.type=='text'"
+                                                      class="form-control"></textarea>
                                         </td>
                                         <td>
                                             <!-- This is the description of the policy action
                                              -->
-                                            <p class="help help-block">
-                                               {{ action.desc }}
+                                            <p class="help help-block"
+                                            ng-bind-html="action.desc | highlight: action_filter">
                                             </p>
                                         </td>
                                     </tr>
