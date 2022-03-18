@@ -422,6 +422,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         }
     };
 
+    // test if the accordion group should be open or closed
     $scope.checkOpenGroup = function(action, pattern) {
         let pat = escapeRegexp(pattern);
         let re = RegExp(pat, 'i');

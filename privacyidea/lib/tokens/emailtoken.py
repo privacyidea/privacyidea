@@ -162,14 +162,15 @@ class EmailTokenClass(HotpTokenClass):
                'policy': {SCOPE.AUTH: {
                    EMAILACTION.EMAILTEXT: {
                        'type': 'str',
-                       'desc': _('The text that will be sent via EMail for'
-                                 ' an EMail token. Use <otp> and <serial> '
-                                 'as parameters. You may also specify a filename '
-                                 'as email template starting with "file:".')},
+                       'desc': _('The text that will be sent via EMail for '
+                                 'an EMail-token. Several tags like {otp} and '
+                                 '{serial} can be used as parameters. You may '
+                                 'also specify a filename as email template '
+                                 'starting with "file:".')},
                    EMAILACTION.EMAILSUBJECT: {
                        'type': 'str',
-                       'desc': _('The subject of the EMail for'
-                                 ' an EMail token. Use <otp> and <serial> '
+                       'desc': _('The subject of the EMail for '
+                                 'an EMail token. Use tags like {otp} and {serial} '
                                  'as parameters.')},
                    EMAILACTION.EMAILAUTO: {
                        'type': 'bool',
