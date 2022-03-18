@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-03-18 15:58+0000\n"
-"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"PO-Revision-Date: 2022-03-18 16:52+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -2171,7 +2171,7 @@ msgstr "ownCloud"
 #: privacyidea/static/components/token/controllers/tokenControllers.js:220
 #: privacyidea/static/components/token/controllers/tokenControllers.js:217
 msgid "PAPER: OTP values on a sheet of paper."
-msgstr "PAPER: OTP-Liste auf einem Stück Papier"
+msgstr "PAPER: OTP-Liste auf einem Stück Papier."
 
 #: privacyidea/static/components/token/views/token.import.html:112
 msgid "PGP Key"
