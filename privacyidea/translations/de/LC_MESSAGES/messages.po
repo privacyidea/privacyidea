@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-03-17 16:57+0100\n"
-"PO-Revision-Date: 2022-01-22 15:52+0000\n"
-"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"PO-Revision-Date: 2022-03-18 15:52+0000\n"
+"Last-Translator: NNLemling <sebastian@lemling.de>\n"
+"Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/de/>\n"
 "Language: de\n"
-"Language-Team: German <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/de/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.12-dev\n"
 "Generated-By: Babel 2.9.1\n"
 
 #: api/auth.py:222
@@ -78,6 +79,8 @@ msgstr "Vergeben Sie bitte eine neue PIN"
 #: lib/challengeresponsedecorators.py:201
 msgid "To resync your token, please enter the next OTP value"
 msgstr ""
+"Um Ihren Token neu zu synchronisieren, geben Sie bitte den nächsten OTP-Wert "
+"ein"
 
 #: lib/decorators.py:43 lib/token.py:2187
 msgid "This action is not possible, since the token is locked"
@@ -101,7 +104,7 @@ msgstr "Sie müssen entweder eine Seriennummer oder einen Benutzer angeben"
 
 #: lib/policy.py:1351
 msgid "Invalid client definition!"
-msgstr ""
+msgstr "Ungültige Client-Definition!"
 
 #: lib/policy.py:1532
 msgid "Define in which resolver the user should be registered."
@@ -802,6 +805,9 @@ msgid ""
 "The autoresync of a token can be done via a challenge response "
 "message.You need to activate 'Automatic resync' in the general settings!"
 msgstr ""
+"Die automatische Resynchronisierung eines Tokens kann über eine Challenge-"
+"Response-Nachricht erfolgen. In den allgemeinen Einstellungen muss die "
+"'Automatische Resynchronisierung' aktiviert sein!"
 
 #: lib/policy.py:2242
 msgid ""
@@ -1456,7 +1462,7 @@ msgstr "Wert des JSON Schlüssels, welcher gesetzt werden soll."
 
 #: lib/eventhandler/customuserattributeshandler.py:71
 msgid "The value of the custom user attribute."
-msgstr ""
+msgstr "Wert des benutzerdefinierten Benutzerattributs."
 
 #: lib/eventhandler/customuserattributeshandler.py:77
 #, fuzzy
@@ -2150,7 +2156,7 @@ msgstr ""
 
 #: lib/tokens/hotptoken.py:82
 msgid "Please enter a valid OTP value of the new token."
-msgstr ""
+msgstr "Bitte geben Sie einen gültigen OTP-Wert des neuen Tokens ein."
 
 #: lib/tokens/hotptoken.py:127
 msgid "Specify the hashlib to be used. Can be sha1 (1) or sha2-256 (2)."
@@ -2343,6 +2349,8 @@ msgid ""
 "Use the polling feature of your privacyIDEA Authenticator App to check "
 "for a new Login request."
 msgstr ""
+"Verwenden Sie die Polling-Funktion Ihrer privacyIDEA Authenticator App, um "
+"nach einer neuen Anmeldeanfrage zu suchen."
 
 #: lib/tokens/pushtoken.py:73
 msgid "Do you want to confirm the login?"
@@ -3098,4 +3106,3 @@ msgstr ""
 #~ "können soll, dann geben Sie hier "
 #~ "'*' ein. Für weitere Details lesen "
 #~ "Sie bitte die Dokumentation."
-
