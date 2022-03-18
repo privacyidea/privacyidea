@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-01-21 15:06+0000\n"
+"PO-Revision-Date: 2022-03-18 15:48+0000\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.11-dev\n"
+"X-Generator: Weblate 4.12-dev\n"
 
 # This is the level in the subscriptions
 #. level of subscription
@@ -1277,7 +1277,7 @@ msgstr "Token-PIN eingeben"
 
 #: privacyidea/static/components/token/views/token.details.html:77
 msgid "Enter code to verify enrollment"
-msgstr ""
+msgstr "Bitte Code eingeben, um das Rollout abzuschließen"
 
 #: privacyidea/static/components/token/views/token.details.html:348
 #: privacyidea/static/components/token/views/token.details.html:341
@@ -2749,7 +2749,7 @@ msgstr "SMTP-Server"
 #: privacyidea/static/components/token/controllers/tokenControllers.js:196
 #: privacyidea/static/components/token/controllers/tokenControllers.js:193
 msgid "SPass: Simple Pass token. Static passwords"
-msgstr "SPass: Simple-Password-Token. Statisches Passwort"
+msgstr "SPass: Simple-Pass-Token. Statisches Passwort"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:198
 #: privacyidea/static/components/token/controllers/tokenControllers.js:195
