@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2022-03-18 15:48+0000\n"
-"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"Last-Translator: NNLemling <sebastian@lemling.de>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -3910,6 +3910,8 @@ msgid ""
 "The token was enrolled, but you still need to verify it before you can use "
 "it!"
 msgstr ""
+"Der Token wurde ausgerollt, aber Sie müssen ihn noch verifizieren, bevor er "
+"verwendet werden kann!"
 
 #: privacyidea/static/components/token/views/token.lost.html:34
 msgid "The token was marked lost successfully."
@@ -5186,7 +5188,7 @@ msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
 
 #: privacyidea/static/components/token/views/token.enroll.html:181
 msgid "{{ enrolledToken.verify.message }}"
-msgstr ""
+msgstr "{{ enrolledToken.verify.message }}"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:71
 msgid "Generate the Key Pair on the Server"
