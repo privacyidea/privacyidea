@@ -35,8 +35,13 @@ in the HSM with an asymmetric private key.
 Please see the docstring of the SecurityModule below, on how to configure this
 module in pi.cfg.
 
+If you have a plain text 96 bytes key file, you can encrypt this file with a given key id like this::
+
   python encryptkey.py --module /usr/lib/libykcs11.so --keyid 1 --slotname "Yubico YubiKey" \
                        --infile enckey --outfile enckey.enc
+
+Some HSMs have not working key ids and rather use key labels to identify the keys. Then you can encrypt
+an existing key file like this::
 
   python encryptkey.py --module /usr/lib/libykcs11.so --keylabel "my secret key" --slotname "Yubico YubiKey" \
                        --infile enckey --outfile enckey.enc
@@ -164,7 +169,7 @@ class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cov
                             break
 
             if self.slot not in slotlist:
-                raise HSMException("Slot {0:d} not present".format(self.slot))
+                raise HSMException("Slot {0:d} ({1:s}) not present".format(self.slot, self.slotname))
 
             slotinfo = self.pkcs11.getSlotInfo(self.slot)
             log.debug("Setting up slot {0!s}: '{1!s}'".format(self.slot, slotinfo.slotDescription))
@@ -313,7 +318,7 @@ if __name__ == "__main__":  # pragma: no cover
             config["encfile"] = a
         elif o in ("-l", "--listpublic"):
             listkeys = "public"
-        elif o in ("-l", "--listprivate"):
+        elif o in ("--listprivate"):
             listkeys = "private"
 
     p = EncryptKeyHardwareSecurityModule(config, logout=False)
