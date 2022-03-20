@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-02-04 07:54+0000\n"
+"PO-Revision-Date: 2022-03-20 08:55+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/nl/>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.11-dev\n"
+"X-Generator: Weblate 4.12-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -1256,14 +1256,12 @@ msgid "Enroll a new token"
 msgstr "Een nieuw token aanmelden"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:282
-#, fuzzy
 msgid "Enrollment successfully verified."
-msgstr "Test e-mail met succes verzonden."
+msgstr "Aanmelding geverifieerd."
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:285
-#, fuzzy
 msgid "Enrollment verification failed."
-msgstr "Authenticatie mislukt."
+msgstr "Aanmeldingsverificatie mislukt."
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:79
 msgid "Enter OTP + PIN to check the token."
