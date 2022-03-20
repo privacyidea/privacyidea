@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-03-20 08:55+0000\n"
+"PO-Revision-Date: 2022-03-21 09:57+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/nl/>\n"
@@ -1286,7 +1286,7 @@ msgstr "Geef PIN voor token"
 
 #: privacyidea/static/components/token/views/token.details.html:77
 msgid "Enter code to verify enrollment"
-msgstr ""
+msgstr "Geef code om aanmelding te verifiëren"
 
 #: privacyidea/static/components/token/views/token.details.html:348
 msgid "Enter first OTP value"
@@ -3836,16 +3836,13 @@ msgstr ""
 "          die je kunt scannen."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
-#, fuzzy
 msgid ""
 "The server will create the private RSA key and store it in\n"
 "                    the database. You can later download the PKCS#12 file."
 msgstr ""
-"De server zal een private RSA-sleutel make en die\n"
-"                    bewaren in de databank.\n"
-"                    Als je het sleutelpaar aan de kant van de cliënt\n"
-"                    wil maken, haal dan het vinkje weg\n"
-"                    bij deze optie."
+"De server zal een private RSA-sleutel maken en die\n"
+"                          bewaren in de databank. Je kunt het PKCS#12-"
+"bestand later downloaden."
 
 #: privacyidea/static/components/token/views/token.enroll.motp.html:14
 msgid ""
@@ -3892,6 +3889,8 @@ msgid ""
 "The token was enrolled, but you still need to verify it before you can use "
 "it!"
 msgstr ""
+"Het token was aangemeld, maar je moet het nog verifiëren voor je het kunt "
+"gebruiken!"
 
 #: privacyidea/static/components/token/views/token.lost.html:34
 msgid "The token was marked lost successfully."
@@ -4570,9 +4569,8 @@ msgstr "Verifieer TLS"
 
 #: privacyidea/static/components/token/views/token.details.html:78
 #: privacyidea/static/components/token/views/token.enroll.html:188
-#, fuzzy
 msgid "Verify Token"
-msgstr "Verifieer TLS"
+msgstr "Verifieer token"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:64
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:81
@@ -5191,7 +5189,7 @@ msgstr "{{ auditdata.count }} items gevonden."
 
 #: privacyidea/static/components/token/views/token.enroll.html:181
 msgid "{{ enrolledToken.verify.message }}"
-msgstr ""
+msgstr "{{ enrolledToken.verify.message }}"
 
 #~ msgid "Generate the Key Pair on the Server"
 #~ msgstr "Genereer het sleutelpaar op de server"
