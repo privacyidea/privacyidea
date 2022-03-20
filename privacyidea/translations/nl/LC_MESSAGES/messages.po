@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-03-17 16:57+0100\n"
-"PO-Revision-Date: 2022-02-04 07:54+0000\n"
+"PO-Revision-Date: 2022-03-21 09:59+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
+"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/nl/>\n"
 "Language: nl\n"
-"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/nl/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.12-dev\n"
 "Generated-By: Babel 2.9.1\n"
 
 #: api/auth.py:222
@@ -101,7 +102,7 @@ msgstr "Je moet een gebruiker of een serienummer geven"
 
 #: lib/policy.py:1351
 msgid "Invalid client definition!"
-msgstr ""
+msgstr "Ongeldige client definitie!"
 
 #: lib/policy.py:1532
 msgid "Define in which resolver the user should be registered."
@@ -457,13 +458,12 @@ msgstr ""
 "Meer details in de documentatie."
 
 #: lib/policy.py:1947
-#, fuzzy
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the admin."
 msgstr ""
-"Dit is een lijst met token-types, door witruimte gescheiden, waarvoor een"
-" overgangsknop getoond wordt in de token details."
+"Een door spaties gescheiden lijst met token-informatievelden die niet aan de "
+"beheerder getoond worden."
 
 #: lib/policy.py:1955
 msgid ""
@@ -576,13 +576,12 @@ msgstr ""
 "documentatie."
 
 #: lib/policy.py:2082
-#, fuzzy
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the user."
 msgstr ""
-"Dit is een lijst met token-types, door witruimte gescheiden, waarvoor een"
-" overgangsknop getoond wordt in de token details."
+"Een door spaties gescheiden lijst met token-informatievelden die niet aan de "
+"gebruiker getoond worden."
 
 #: lib/policy.py:2090
 msgid "Limit the number of allowed tokens in a realm."
@@ -689,29 +688,27 @@ msgstr ""
 " tekens [1234567890]"
 
 #: lib/policy.py:2185
-#, fuzzy
 msgid "Set the length of the password of generated password tokens."
-msgstr "De lengte van et wachtwoord voor een tijdelijk token (verloren token)."
+msgstr ""
+"Stel de lengte in van het wachtwoord van gegenereerde wachtwoord-tokens."
 
 #: lib/policy.py:2189
-#, fuzzy
 msgid ""
 "Specify the required contents of the password of a password token. "
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of "
 "allowed characters [1234567890]"
 msgstr ""
-"Geef de vereiste samenstelling van de OTP PIN (c) tekens, (n) getallen, "
-"(s) speciale tekens. Gebruik modifiërs +/- of een lijst met toegestane "
-"tekens [1234567890]"
+"Geef de vereiste samenstelling van het wachtwoord van een wachtwoord-token. "
+"(c) tekens, (n) getallen, (s) speciale tekens. Gebruik modifiërs +/- of een "
+"lijst met toegestane tekens [1234567890]"
 
 #: lib/policy.py:2197
-#, fuzzy
 msgid ""
 "Specify a white space separated list of token types, that should be "
 "verified during enrollment."
 msgstr ""
-"Dit is een door spaties gescheiden lijst van token-types die gebruikt "
-"kunnen worden met challenge-response."
+"Dit is een door spaties gescheiden lijst van token-types die tijdens de "
+"aanmelding geverifieerd zouden moeten worden."
 
 #: lib/policy.py:2206
 msgid ""
@@ -1411,28 +1408,26 @@ msgid "Don't stop counter if it reaches zero."
 msgstr "Stom de teller niet als die nul bereikt."
 
 #: lib/eventhandler/customuserattributeshandler.py:61
-#, fuzzy
 msgid "The user for whom the custom attribute should be set."
-msgstr "De waarde van de JSON key die ingsteld moet worden."
+msgstr "De gebruiker voor wie het aangepaste attribuut ingesteld moet worden."
 
 #: lib/eventhandler/customuserattributeshandler.py:68
-#, fuzzy
 msgid "The key of the custom user attribute that should be set."
-msgstr "De waarde van de JSON key die ingsteld moet worden."
+msgstr ""
+"De sleutel van het aangepast gebruikersattribuut dat moet ingesteld worden."
 
 #: lib/eventhandler/customuserattributeshandler.py:71
 msgid "The value of the custom user attribute."
-msgstr ""
+msgstr "De waarde van het aangepast gebruikersattribuut."
 
 #: lib/eventhandler/customuserattributeshandler.py:77
-#, fuzzy
 msgid "The user from which the custom attribute should be deleted."
-msgstr "De parameter die moet verwijderd worden."
+msgstr "De gebruiker waarvan het aangepaste attribuut moet verwijderd worden."
 
 #: lib/eventhandler/customuserattributeshandler.py:84
-#, fuzzy
 msgid "The key of the custom user attribute that should be deleted."
-msgstr "De parameter die moet verwijderd worden."
+msgstr ""
+"De sleutel van het aangepast gebruikersattribuut dat moet verwijderd worden."
 
 #: lib/eventhandler/federationhandler.py:76
 msgid "The remote/child privacyIDEA Server."
@@ -2108,7 +2103,7 @@ msgstr ""
 
 #: lib/tokens/hotptoken.py:82
 msgid "Please enter a valid OTP value of the new token."
-msgstr ""
+msgstr "Geef een geldige OTP-waarde voor het nieuwe token."
 
 #: lib/tokens/hotptoken.py:127
 msgid "Specify the hashlib to be used. Can be sha1 (1) or sha2-256 (2)."
@@ -2315,6 +2310,8 @@ msgid ""
 "Use the polling feature of your privacyIDEA Authenticator App to check "
 "for a new Login request."
 msgstr ""
+"Gebruiik de polling-mogelijkheid van je privacyIDEA Authenticator App om te "
+"controleren voor een nieuwe aanmeldingsaanvraag."
 
 #: lib/tokens/pushtoken.py:73
 msgid "Do you want to confirm the login?"
@@ -2879,11 +2876,12 @@ msgstr ""
 "toegewezen hebben."
 
 #: lib/tokens/yubikeytoken.py:181
-#, fuzzy
 msgid ""
 "The Yubikey access code can be read by an enrollment client to initialize"
 " Yubikeys."
-msgstr "De Yubikey toegangscode die gebruikt werd om de Yubikeys te initialiseren."
+msgstr ""
+"De Yubikey toegangscode kan gelezen worden door een aanmeldingsclient om "
+"Yubikeys te initialiseren."
 
 #: lib/utils/compare.py:191
 msgid "true if the value of the left attribute contains the right value"
@@ -3043,4 +3041,3 @@ msgstr ""
 #~ "'*'. For more details, check the "
 #~ "documentation."
 #~ msgstr ""
-
