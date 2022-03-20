@@ -68,8 +68,12 @@ the token in challenge response.
    authentication is stored in the Challenge DB table.
    (No need for the application to take any action)
 5. Now, the application needs to poll
-   ``/validate/check?user=<user>&transaction_id=*&pass=`` to verifiy the
-   successful authentication. The ``pass`` can be empty.
+   ``/validate/polltransaction?transaction_id=<transaction_id>`` to check
+   the transaction status. If the endpoint returns ``false``, the challenge
+   has not been answered yet.
+6. Once ``/validate/polltransaction`` returns true, the application needs to finalize
+   the authentication with a request ``/validate/check?user=<user>&transaction_id=<transaction_id>&pass=``.
+   The ``pass`` can be empty.
    If ``value=true`` is returned, the user authenticated successfully
    with the TiQR token.
 
@@ -80,7 +84,7 @@ from six.moves.urllib.parse import quote_plus
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass, TOKENMODE
+from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE, CLIENTMODE
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import generate_otpkey
 from privacyidea.lib.utils import create_img
@@ -95,6 +99,7 @@ from privacyidea.models import cleanup_challenges
 from privacyidea.lib import _
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.tokens.ocratoken import OcraTokenClass
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 log = logging.getLogger(__name__)
 optional = True
@@ -115,7 +120,8 @@ class TiqrTokenClass(OcraTokenClass):
     """
     The TiQR Token implementation.
     """
-    mode = [TOKENMODE.AUTHENTICATE, TOKENMODE.CHALLENGE, TOKENMODE.OUTOFBAND]
+    mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE, AUTHENTICATIONMODE.OUTOFBAND]
+    client_mode = CLIENTMODE.POLL
 
     @staticmethod
     def get_class_type():
@@ -156,7 +162,21 @@ class TiqrTokenClass(OcraTokenClass):
                'user':  ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of TiQR tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active TiQR tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
 
         if key:
@@ -365,13 +385,13 @@ class TiqrTokenClass(OcraTokenClass):
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
         :type options: dict
-        :return: tuple of (bool, message, transactionid, attributes)
+        :return: tuple of (bool, message, transactionid, reply_dict)
         :rtype: tuple
 
         The return tuple builds up like this:
         ``bool`` if submit was successful;
         ``message`` which is displayed in the JSON response;
-        additional ``attributes``, which are displayed in the JSON response.
+        additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
         message = _('Please scan the QR Code')
@@ -414,12 +434,15 @@ class TiqrTokenClass(OcraTokenClass):
                                               challenge,
                                               service_displayname
                                               )
-        attributes = {"img": create_img(authurl, width=250),
+        image = create_img(authurl, width=250)
+        attributes = {"img": image,
                       "value": authurl,
-                      "poll": True,
-                      "hideResponseInput": True}
+                      "poll": self.client_mode == CLIENTMODE.POLL,
+                      "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE}
+        reply_dict = {"attributes": attributes,
+                      "image": image}
 
-        return True, message, db_challenge.transaction_id, attributes
+        return True, message, db_challenge.transaction_id, reply_dict
 
     @check_token_locked
     def check_challenge_response(self, user=None, passw=None, options=None):

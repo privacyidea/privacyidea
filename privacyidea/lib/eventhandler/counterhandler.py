@@ -31,6 +31,7 @@ from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
 from privacyidea.lib.counter import increase, decrease, reset
 import logging
+from privacyidea.lib.utils import is_true
 import traceback
 
 log = logging.getLogger(__name__)
@@ -102,7 +103,7 @@ class CounterEventHandler(BaseEventHandler):
             increase(counter_name)
             log.debug(u"Increased the counter {0!s}.".format(counter_name))
         elif action == "decrease_counter":
-            allow_negative = handler_options.get("allow_negative_values")
+            allow_negative = is_true(handler_options.get("allow_negative_values", False))
             decrease(counter_name, allow_negative)
             log.debug(u"Decreased the counter {0!s}.".format(counter_name))
         elif action == "reset_counter":

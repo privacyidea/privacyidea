@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 import hashlib
-import json
 import binascii
 import base64
 import time
 
-from passlib.utils.pbkdf2 import pbkdf2
+from passlib.crypto.digest import pbkdf2_hmac
 
 from privacyidea.lib.utils import b32encode_and_unicode
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
@@ -52,11 +51,37 @@ class TwoStepInitTestCase(MyApiTestCase):
             self.assertEqual(detail['2step_salt'], 8)
             self.assertEqual(detail['2step_output'], 20)
 
+        # Do a 2step 1st step on an already existing token using the rollover parameter will succeed
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "genkey": "1",
+                                                 "rollover": "1",
+                                                 "serial": serial,
+                                                 "2stepinit": "1"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status") is True, result)
+            self.assertTrue(result.get("value") is True, result)
+            detail = res.json.get("detail")
+            serial = detail.get("serial")
+            otpkey_url = detail.get("otpkey", {}).get("value")
+            server_component = binascii.unhexlify(otpkey_url.split("/")[2])
+            google_url = detail["googleurl"]["value"]
+            self.assertIn('2step_difficulty=10000', google_url)
+            self.assertIn('2step_salt=8', google_url)
+            self.assertIn('2step_output=20', google_url)
+            self.assertEqual(detail['2step_difficulty'], 10000)
+            self.assertEqual(detail['2step_salt'], 8)
+            self.assertEqual(detail['2step_output'], 20)
+
         client_component = b"VRYSECRT"
         checksum = hashlib.sha1(client_component).digest()[:4]
         base32check_client_component = b32encode_and_unicode(checksum + client_component).strip("=")
 
-        # Try to do a 2stepinit on a second step will raise an error
+        # Try to do a 2stepinit on a second step without rollover parameter will raise an error
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "hotp",
@@ -132,7 +157,8 @@ class TwoStepInitTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
 
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, 20)
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 10000, 20)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,
@@ -247,7 +273,8 @@ class TwoStepInitTestCase(MyApiTestCase):
         # Check serversize
         self.assertEqual(len(server_component), 33)
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 12345, 20)
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 12345, 20)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,
@@ -342,7 +369,8 @@ class TwoStepInitTestCase(MyApiTestCase):
         # Check serversize
         self.assertEqual(len(server_component), 5)
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 17898, 64)
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 17898, 64)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,
@@ -504,7 +532,8 @@ class TwoStepInitTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
 
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, 20)
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 10000, 20)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,
@@ -626,7 +655,8 @@ class TwoStepInitTestCase(MyApiTestCase):
         # Check serversize
         self.assertEqual(len(server_component), 33)
         # Check that the OTP key is what we expected it to be
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 12345, 64)
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 12345, 64)
         self.assertEqual(otpkey_bin, expected_secret)
 
         with self.app.test_request_context('/token/'+ serial,

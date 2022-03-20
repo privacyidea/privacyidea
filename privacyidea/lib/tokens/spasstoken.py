@@ -41,7 +41,7 @@ from privacyidea.lib import _
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 optional = True
 required = False
@@ -92,7 +92,21 @@ class SpassTokenClass(TokenClass):
                # SPASS token can have specific PIN policies in the scopes
                # admin and user
                'pin_scopes': [SCOPE.ADMIN, SCOPE.USER],
-               'policy': {}
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of SPASS tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active SPASS tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               }
                }
 
         # do we need to define the lost token policies here...

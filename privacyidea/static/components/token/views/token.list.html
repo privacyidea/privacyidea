@@ -1,15 +1,15 @@
-<pagination ng-show="tokendata.count > tokensPerPage"
-            total-items="tokendata.count" ng-model="params.page"
-            previous-text="{{ 'Previous'|translate }}"
-            next-text="{{ 'Next'|translate }}"
-            last-text="{{ 'Last'|translate }}"
-            first-text="{{ 'First'|translate }}"
-            items-per-page="{{ tokensPerPage }}" 
-            max-size="5"
-            boundary-links="true" ng-change="pageChanged()"></pagination>
+<div uib-pagination ng-show="tokendata.count > tokensPerPage"
+     total-items="tokendata.count" ng-model="params.page"
+     previous-text="{{ 'Previous'|translate }}"
+     next-text="{{ 'Next'|translate }}"
+     last-text="{{ 'Last'|translate }}"
+     first-text="{{ 'First'|translate }}"
+     items-per-page="{{ tokensPerPage }}"
+     max-size="5"
+     boundary-links="true" ng-change="pageChanged()"></div>
 
 
-<span translate>total tokens:</span> {{ tokendata.count }}
+<span translate>total tokens: {{ tokendata.count }}</span>
 
 <div class="table-responsive">
     <table class="table table-bordered table-striped" id="tabletokenlist">
@@ -62,30 +62,16 @@
             </th>
             <th ng-show="loggedInUser.role == 'admin'" translate>user</th>
             <th ng-show="loggedInUser.role == 'admin'" translate>realm</th>
-            <th class="pifilter" ng-show="loggedInUser.role == 'admin' &&
-            user_details_in_tokenlist">
-                <button pi-sort-by="resolver"
-                        class="btn btn-default
-                         unsorted"
-                        translate>UserId
-                </button>
-                <pi-filter ng-model="userIdFilter"
+            <th class="pifilter" ng-show="loggedInUser.role == 'admin'"><translate>Token realms</translate>
+                <pi-filter ng-model="tokenrealmFilter"
                            ng-change="get('livesearch')"
                            ng-keypress="($event.which==13)?get():return"
                 ></pi-filter>
             </th>
-            <th class="pifilter" ng-show="loggedInUser.role == 'admin' &&
-            user_details_in_tokenlist">
-                <button pi-sort-by="user_id"
-                        class="btn btn-default
-                         unsorted"
-                        translate>User Store
-                </button>
-                <pi-filter ng-model="resolverFilter"
-                           ng-change="get('livesearch')"
-                           ng-keypress="($event.which==13)?get():return"
-                ></pi-filter>
-            </th>
+            <th ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist"
+                translate>UserId</th>
+            <th ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist"
+                translate>Resolver</th>
         </tr>
         </thead>
         <tbody>
@@ -113,7 +99,7 @@
             <td><span class="label"
                       title="{{ 'Reset Failcounter'|translate }}"
                       ng-click="reset(token.serial)"
-                      ng-class="{'label-success': token.failcount==0,
+                      ng-class="{'label-success': token.failcount<=0,
                    'label-warning': token.failcount>0,
                    'label-danger': token.failcount>=token.maxfail}">
             {{ token.failcount }}
@@ -129,6 +115,11 @@
             </td>
             <td ng-show="loggedInUser.role == 'admin'">
                 <a ui-sref="config.realms.list">{{ token.user_realm }}</a>
+            </td>
+
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="config.realms.list" ng-repeat="t_realm in token.realms">
+                    {{ t_realm }}</a>&nbsp;
             </td>
 
             <td ng-show="loggedInUser.role == 'admin' &&

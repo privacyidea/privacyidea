@@ -56,16 +56,16 @@ from .log import log_with
 from .resolver import (get_resolver_object,
                        get_resolver_type)
 
-from .realm import (get_realms,
+from .realm import (get_realms, realm_is_defined,
                     get_default_realm,
-                    get_realm)
-from .config import get_from_config
+                    get_realm, get_realm_id)
+from .config import get_from_config, SYSCONF
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
+from privacyidea.models import CustomUserAttribute, db
 
 log = logging.getLogger(__name__)
 
 
-@log_with(log)
 @six.python_2_unicode_compatible
 class User(object):
     """
@@ -84,20 +84,29 @@ class User(object):
     realm = ""
     resolver = ""
 
-    def __init__(self, login="", realm="", resolver=""):
+    # NOTE: Directly decorating the class ``User`` breaks ``isinstance`` checks,
+    # which is why we have to decorate __init__
+    @log_with(log)
+    def __init__(self, login="", realm="", resolver="", uid=None):
         self.login = login or ""
         self.used_login = self.login
         self.realm = (realm or "").lower()
+        self.realm_id = None
         if resolver == "**":
             resolver = ""
         self.resolver = resolver or ""
-        self.uid = None
+        self.uid = uid
+        self.rtype = None
+        if not self.login and not self.resolver and uid is not None:
+            raise UserError("Can not create a user object from a uid without a resolver!")
         # Enrich user object with information from the userstore or from the
         # usercache
-        if login:
+        if login or uid is not None:
             self._get_user_from_userstore()
             # Just store the resolver type
             self.rtype = get_resolver_type(self.resolver)
+            # Add realm_id to User object
+            self.realm_id = get_realm_id(self.realm)
 
     @user_cache(user_init)
     def _get_user_from_userstore(self):
@@ -111,9 +120,14 @@ class User(object):
             if y is None:
                 raise UserError("The resolver '{0!s}' does not exist!".format(
                     self.resolver))
-            self.uid = y.getUserId(self.login)
+            if self.uid is None:
+                # Determine the uid
+                self.uid = y.getUserId(self.login)
+            if not self.login:
+                # Determine the login if it does not exist or
+                self.used_login = self.login = y.getUsername(self.uid)
             if y.has_multiple_loginnames:
-                # In this case the primary login might be another value!
+                # if the resolver has multiple logins the primary login might be another value!
                 self.login = y.getUsername(self.uid)
 
     def is_empty(self):
@@ -135,6 +149,15 @@ class User(object):
         """
         return isinstance(other, type(self)) and (self.login == other.login) and (
                 self.resolver == other.resolver) and (self.realm == other.realm)
+
+    def __ne__(self, other):
+        """
+        Compare two user objects and return true, if they are not equal
+
+        :param other: The other User objkect
+        :return: True or False
+        """
+        return not self.__eq__(other)
 
     def __hash__(self):
         return hash((type(self), self.login, self.resolver, self.realm))
@@ -274,8 +297,49 @@ class User(object):
         (uid, _rtype, _resolver) = self.get_user_identifiers()
         y = get_resolver_object(self.resolver)
         userInfo = y.getUserInfo(uid)
+        # Now add the custom attributes, this is used e.g. in ADDUSERINRESPONSE
+        userInfo.update(self.attributes)
         return userInfo
-    
+
+    @log_with(log)
+    def set_attribute(self, attrkey, attrvalue, attrtype=None):
+        """
+        Set a custom attribute for a user
+
+        :param attrkey: The key of the attribute
+        :param attrvalue: The value of the attribute
+        :return: The id of the attribute setting
+        """
+        ua = CustomUserAttribute(user_id=self.uid, resolver=self.resolver, realm_id=self.realm_id,
+                                 Key=attrkey, Value=attrvalue, Type=attrtype).save()
+        return ua
+
+    @property
+    def attributes(self):
+        """
+        returns the custom attributes of a user
+        :return: a dictionary of attributes with keys and values
+        """
+        return get_attributes(self.uid, self.resolver, self.realm_id)
+
+    @log_with(log)
+    def delete_attribute(self, attrkey=None):
+        """
+        Delete the given key as custom user attribute.
+        If no key is given, then all attributes are deleted
+
+        :param attrkey: The key to delete
+        :return: The number of deleted rows
+        """
+        if attrkey:
+            ua = CustomUserAttribute.query.filter_by(user_id=self.uid, resolver=self.resolver,
+                                                     realm_id=self.realm_id, Key=attrkey).delete()
+        else:
+            ua = CustomUserAttribute.query.filter_by(user_id=self.uid, resolver=self.resolver,
+                                                     realm_id=self.realm_id).delete()
+        db.session.commit()
+        return ua
+
     @log_with(log)
     def get_user_phone(self, phone_type='phone', index=None):
         """
@@ -517,11 +581,14 @@ def split_user(username):
     """
     Split the username of the form user@realm into the username and the realm
     splitting myemail@emailprovider.com@realm is also possible and will
-    return (myemail@emailprovider, realm).
+    return (myemail@emailprovider.com, realm).
 
     If for a user@domain the "domain" does not exist as realm, the name is
     not split, since it might be the user@domain in the default realm
-    
+
+    If the Split@Sign configuration is disabled, the username won't be split
+    and the username and an empty realm will be returned.
+
     We can also split realm\\user to (user, realm)
     
     :param username: the username to split
@@ -529,19 +596,20 @@ def split_user(username):
     :return: username and realm
     :rtype: tuple
     """
-    from privacyidea.lib.realm import realm_is_defined
     user = username.strip()
     realm = ""
 
-    l = user.split('@')
-    if len(l) >= 2:
-        if realm_is_defined(l[-1]):
-            # split the last only if the last part is really a realm
-            (user, realm) = user.rsplit('@', 1)
-    else:
-        l = user.split('\\')
+    split_at_sign = get_from_config(SYSCONF.SPLITATSIGN, return_bool=True)
+    if split_at_sign:
+        l = user.split('@')
         if len(l) >= 2:
-            (realm, user) = user.rsplit('\\', 1)
+            if realm_is_defined(l[-1]):
+                # split the last only if the last part is really a realm
+                (user, realm) = user.rsplit('@', 1)
+        else:
+            l = user.split('\\')
+            if len(l) >= 2:
+                (realm, user) = user.rsplit('\\', 1)
 
     return user, realm
 
@@ -566,10 +634,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
     if username is None:
         username = ""
     else:
-        splitAtSign = get_from_config("splitAtSign", default=False,
-                                      return_bool=True)
-        if splitAtSign:
-            (username, realm) = split_user(username)
+        username, realm = split_user(username)
 
     if "realm" in param:
         realm = param["realm"]
@@ -585,7 +650,19 @@ def get_user_from_param(param, optionalOrRequired=optional):
 
 
 @log_with(log)
-def get_user_list(param=None, user=None):
+def get_user_list(param=None, user=None, custom_attributes=False):
+    """
+    This function returns a list of user dictionaries.
+
+    :param param: search parameters
+    :type param: dict
+    :param user:  a specific user object to return
+    :type user: User object
+    :param custom_attributes:  Set to True, if you want to receive custom attributes
+        of external users.
+    :type custom_attributes: bool
+    :return: list of dictionaries
+    """
     users = []
     resolvers = []
     searchDict = {"username": "*"}
@@ -644,9 +721,15 @@ def get_user_list(param=None, user=None):
             log.debug("with this search dictionary: {0!r} ".format(searchDict))
             ulist = y.getUserList(searchDict)
             # Add resolvername to the list
+            realm_id = get_realm_id(param_realm or user_realm)
             for ue in ulist:
                 ue["resolver"] = resolver_name
                 ue["editable"] = y.editable
+            if custom_attributes and realm_id is not None:
+                for ue in ulist:
+                    # Add the custom attributes, by class method from User
+                    # with uid, resolvername and realm_id, which we need to determine by the realm name
+                    ue.update(get_attributes(ue.get("userid"), ue.get("resolver"), realm_id))
             log.debug("Found this userlist: {0!r}".format(ulist))
             users.extend(ulist)
 
@@ -694,3 +777,27 @@ def log_used_user(user, other_text=""):
     :return: str
     """
     return u"logged in as {0}. {1}".format(user.used_login, other_text) if user.used_login != user.login else other_text
+
+
+def get_attributes(uid, resolver, realm_id):
+    """
+    Returns the attributes for the given user.
+
+    :param uid: The UID of the user
+    :param resolver: The name of the resolver
+    :param realm_id: The realm_id
+    :return: A dictionary of key/values
+    """
+    r = {}
+    attributes = CustomUserAttribute.query.filter_by(user_id=uid, resolver=resolver, realm_id=realm_id).all()
+    for attr in attributes:
+        r[attr.Key] = attr.Value
+    return r
+
+
+def is_attribute_at_all():
+    """
+    Check if there are custom user attributes at all
+    :return: bool
+    """
+    return bool(CustomUserAttribute.query.count())

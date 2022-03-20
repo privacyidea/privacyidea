@@ -103,8 +103,8 @@ class EmailTokenTestCase(MyTestCase):
         self.assertTrue(token.type == "email", token.type)
 
         token.add_user(User(login="cornelius", realm=self.realm1))
-        self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
-        self.assertEqual(token.token.owners.first().user_id, "1000")
+        self.assertEqual(token.token.first_owner.resolver, self.resolvername1)
+        self.assertEqual(token.token.first_owner.user_id, "1000")
 
         user_object = token.user
         self.assertTrue(user_object.login == "cornelius",
@@ -343,7 +343,7 @@ class EmailTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid)
         self.assertTrue(c[0], c)
         otp = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertTrue(c[3].get('attributes').get("state"), transactionid)
 
         # check for the challenges response
         r = token.check_challenge_response(passw=otp)
@@ -364,7 +364,7 @@ class EmailTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid)
         self.assertTrue(c[0], c)
         otp = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertTrue(c[3]['attributes']["state"], transactionid)
 
         # check for the challenges response
         r = token.check_challenge_response(passw=otp)
@@ -401,7 +401,7 @@ class EmailTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid, options=options)
         self.assertTrue(c[0], c)
         display_message = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertTrue(c[3]["attributes"]["state"], transactionid)
         self.assertEqual(display_message, _("Enter the OTP from the Email:"))
         _n, mimetype = token._get_email_text_or_subject(options, EMAILACTION.EMAILTEXT)
         self.assertEqual(mimetype, "plain")
@@ -442,7 +442,7 @@ class EmailTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid, options=options)
         self.assertTrue(c[0], c)
         display_message = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertTrue(c[3]["attributes"]["state"], transactionid)
         self.assertEqual(display_message, _("Enter the OTP from the Email:"))
 
     @smtpmock.activate
@@ -481,10 +481,32 @@ class EmailTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid)
         self.assertTrue(c[0], c)
         otp = c[1]
-        self.assertTrue(c[3].get("state"), transactionid)
+        self.assertTrue(c[3]["attributes"]["state"], transactionid)
 
         # check for the challenges response
         r = token.check_challenge_response(passw=otp)
         self.assertTrue(r, r)
         delete_smtpserver("myServer")
         delete_privacyidea_config("email.identifier")
+
+    @smtpmock.activate
+    def test_23_specific_email_config(self):
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
+        transactionid = "123456098723"
+        # create new configuration
+        r = add_smtpserver(identifier="myServer", server="1.2.3.4")
+        set_privacyidea_config("email.identifier", "myServer")
+        # set it to the token instead of changing the global config
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = EmailTokenClass(db_token)
+        token.add_tokeninfo("email.identifier", "myServer")
+        self.assertTrue(token.check_otp("123456", 1, 10) == -1)
+        c = token.create_challenge(transactionid)
+        self.assertTrue(c[0], c)
+        otp = c[1]
+        self.assertTrue(c[3]["attributes"]["state"], transactionid)
+
+        # check for the challenges response
+        r = token.check_challenge_response(passw=otp)
+        self.assertTrue(r, r)
+        delete_smtpserver("myServer")

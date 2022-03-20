@@ -79,7 +79,7 @@ class TokenModelTestCase(MyTestCase):
         up = t.get_user_pin()
         self.assertTrue(up.getPin() == userpin.encode('utf8'))
 
-        self.assertTrue(t.check_hashed_pin("1234"))
+        self.assertTrue(t.check_pin("1234"))
 
         t.set_user_pin(b'HalloDuDa')
         self.assertTrue(t.get_user_pin().getPin() == b'HalloDuDa')
@@ -88,10 +88,24 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(t.get_user_pin().getPin().decode('utf8') == u'HelloWörld')
 
         t.set_hashed_pin(b'1234')
-        self.assertTrue(t.check_hashed_pin(b'1234'))
+        self.assertTrue(t.check_pin(b'1234'))
 
         t.set_hashed_pin(u'HelloWörld')
-        self.assertTrue(t.check_hashed_pin(u'HelloWörld'))
+        self.assertTrue(t.check_pin(u'HelloWörld'))
+
+        t.pin_hash = None
+        self.assertTrue(t.check_pin(''))
+        self.assertFalse(t.check_pin(None))
+        self.assertFalse(t.check_pin('1234'))
+
+        t.pin_hash = ''
+        self.assertTrue(t.check_pin(''))
+        self.assertFalse(t.check_pin('1234'))
+
+        t.set_hashed_pin('')
+        self.assertTrue(len(t.pin_hash) > 0)
+        self.assertTrue(t.check_pin(''))
+        self.assertFalse(t.check_pin('1234'))
 
         # Delete the token
         t1.delete()
@@ -120,7 +134,7 @@ class TokenModelTestCase(MyTestCase):
         t2 = Token.query\
                   .filter_by(serial="serial2")\
                   .first()
-        self.assertEqual(t2.owners.first().resolver, "resolver1")
+        self.assertEqual(t2.first_owner.resolver, "resolver1")
         # check the realm list of the token
         realm_found = False
         for realm_entry in t2.realm_list:
@@ -216,10 +230,14 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(u'Hellö', t2.get_otpkey().getKey().decode('utf8'), t2)
 
         # key too long
-        # TODO should this throw an error? otherwise the DB would complain
         k = os.urandom(256)
         t2.set_otpkey(k)
         self.assertGreater(len(t2.key_enc), Token.key_enc.property.columns[0].type.length)
+
+        # SQLite supports writing too long data, all others don't.
+        if db.engine.name != 'sqlite':
+            self.assertRaises(Exception, db.session.commit)
+            db.session.rollback()
 
         # set an empty token description
         self.assertEqual(t2.set_description(desc=None), '')
@@ -383,13 +401,16 @@ class TokenModelTestCase(MyTestCase):
         p.resolver = "*"
         p.client = "0.0.0.0"
         p.time = "anytime"
+        p.pinode = "pinode1, pinode2"
         p.save()
         self.assertTrue(p.user == "cornelius", p.user)
+        self.assertEqual(p.pinode, "pinode1, pinode2")
 
         # save admin policy
         p3 = Policy("pol3", active="false", scope="admin",
-                    adminrealm='superuser', action="*")
+                    adminrealm='superuser', action="*", pinode="pinode3")
         self.assertEqual(p3.adminrealm, "superuser")
+        self.assertEqual(p3.pinode, "pinode3")
         p3.save()
 
         # set conditions
@@ -413,6 +434,7 @@ class TokenModelTestCase(MyTestCase):
 
         # Check that the change has been persisted to the database
         p3_reloaded1 = Policy.query.filter_by(name="pol3").one()
+        self.assertEqual(p3_reloaded1.get()["pinode"], ["pinode3"])
         self.assertEqual(p3_reloaded1.get()["conditions"],
                          [("userinfo", "type", "==", "baz", True)])
         self.assertEqual(len(p3_reloaded1.conditions), 1)
@@ -424,6 +446,16 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(p3.get()["conditions"], [])
         self.assertEqual(Policy.query.filter_by(name="pol3").one().get()["conditions"], [])
         self.assertEqual(PolicyCondition.query.count(), 0)
+
+        # Test policies with adminusers
+        p = Policy("pol1admin", active="true",
+                   scope="admin", action="action1",
+                   adminuser="jan, hein, klaas, pit")
+        r = p.save()
+        adminusers = p.get("adminuser")
+        self.assertEqual([u"jan", u"hein", u"klaas", u"pit"], adminusers)
+        p2 = Policy.query.filter_by(id=r).one()
+        self.assertEqual("jan, hein, klaas, pit", p2.adminuser)
 
     def test_12_challenge(self):
         c = Challenge("S123456")
@@ -599,12 +631,12 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(eh1.handlermodule, handlermodule)
         self.assertEqual(eh1.action, action)
         self.assertEqual(eh1.condition, condition)
-        self.assertEqual(eh1.option_list[0].Key, "mailserver")
-        self.assertEqual(eh1.option_list[0].Value, "blafoo")
-        self.assertEqual(eh1.option_list[1].Key, "option2")
-        self.assertEqual(eh1.option_list[1].Value, "value2")
-        self.assertEqual(eh1.condition_list[0].Key, "user_type")
-        self.assertEqual(eh1.condition_list[0].Value, "admin")
+        self.assertEqual(eh1.options[0].Key, "mailserver")
+        self.assertEqual(eh1.options[0].Value, "blafoo")
+        self.assertEqual(eh1.options[1].Key, "option2")
+        self.assertEqual(eh1.options[1].Value, "value2")
+        self.assertEqual(eh1.conditions[0].Key, "user_type")
+        self.assertEqual(eh1.conditions[0].Value, "admin")
 
         id = eh1.id
 
@@ -616,23 +648,23 @@ class TokenModelTestCase(MyTestCase):
 
         # Update option value
         EventHandlerOption(id, Key="mailserver", Value="mailserver")
-        self.assertEqual(eh1.option_list[0].Value, "mailserver")
+        self.assertEqual(eh1.options[0].Value, "mailserver")
 
         # Add Option
         EventHandlerOption(id, Key="option3", Value="value3")
-        self.assertEqual(eh1.option_list[2].Key, "option3")
-        self.assertEqual(eh1.option_list[2].Value, "value3")
+        self.assertEqual(eh1.options[2].Key, "option3")
+        self.assertEqual(eh1.options[2].Value, "value3")
 
         # Update condition value
         EventHandlerCondition(id, Key="user_type", Value="user")
-        self.assertEqual(eh1.condition_list[0].Value, "user")
+        self.assertEqual(eh1.conditions[0].Value, "user")
 
         # Add condition
         EventHandlerCondition(id, Key="result_value", Value="True")
-        self.assertEqual(eh1.condition_list[0].Key, "result_value")
-        self.assertEqual(eh1.condition_list[0].Value, "True")
-        self.assertEqual(eh1.condition_list[1].Key, "user_type")
-        self.assertEqual(eh1.condition_list[1].Value, "user")
+        self.assertEqual(eh1.conditions[0].Key, "result_value")
+        self.assertEqual(eh1.conditions[0].Value, "True")
+        self.assertEqual(eh1.conditions[1].Key, "user_type")
+        self.assertEqual(eh1.conditions[1].Value, "user")
 
         # Delete event handler
         eh1.delete()
@@ -652,15 +684,21 @@ class TokenModelTestCase(MyTestCase):
         SMSGateway(name, provider_module2,
                    options={"k1": "v1"})
         self.assertEqual(gw.providermodule, provider_module2)
-        self.assertEqual(gw.ref_option_list[0].Key, "k1")
-        self.assertEqual(gw.ref_option_list[0].Value, "v1")
+        self.assertEqual(gw.options[0].Key, "k1")
+        self.assertEqual(gw.options[0].Value, "v1")
 
         # Delete gateway
         gw.delete()
 
     def test_21_add_update_delete_clientapp(self):
-        ClientApplication(ip="1.2.3.4", hostname="host1",
-                          clienttype="PAM", node="localnode").save()
+        # MySQLs DATETIME type supports only seconds so we have to mock now()
+        current_time = datetime(2018, 3, 4, 5, 6, 8)
+        with mock.patch('privacyidea.models.datetime') as mock_dt:
+            mock_dt.now.return_value = current_time
+
+            ClientApplication(ip="1.2.3.4", hostname="host1",
+                              clienttype="PAM", node="localnode").save()
+
         c = ClientApplication.query.filter(ClientApplication.ip == "1.2.3.4").first()
         self.assertEqual(c.hostname, "host1")
         self.assertEqual(c.ip, "1.2.3.4")
@@ -672,7 +710,7 @@ class TokenModelTestCase(MyTestCase):
         ClientApplication(ip="1.2.3.4", hostname="host1",
                           clienttype="PAM", node="localnode").save()
         c = ClientApplication.query.filter(ClientApplication.ip == "1.2.3.4").first()
-        self.assertTrue(c.lastseen > t1)
+        self.assertGreater(c.lastseen, t1, c)
 
         ClientApplication.query.filter(ClientApplication.id == c.id).delete()
         c = ClientApplication.query.filter(ClientApplication.ip == "1.2.3.4").first()
@@ -717,7 +755,9 @@ class TokenModelTestCase(MyTestCase):
         username = "cornelius"
         resolver = "resolver1"
         user_id = 1
-        timestamp = datetime.now()
+        # we don't need a timestamp with microseconds here, the MySQL DATETIME
+        # type doesn't support it out of the box anyway
+        timestamp = datetime.now().replace(microsecond=0)
 
         # create a user in the cache
         cached_user = UserCache(username, username, resolver, user_id, timestamp)
@@ -831,6 +871,7 @@ class TokenModelTestCase(MyTestCase):
                 "foo": "bar"
             })
 
+
         self.assertEqual(PeriodicTask.query.filter_by(name="task1").one(), task1)
         self.assertEqual(PeriodicTask.query.filter_by(name="some other task").one(), task2)
         self.assertEqual(PeriodicTaskOption.query.filter_by(periodictask_id=task1.id, key="KEY2").one().value,
@@ -851,6 +892,7 @@ class TokenModelTestCase(MyTestCase):
                 "KEY2": "True",
                 "key3": u"öfføff",
             },
+            "retry_if_failed": True,
             "last_runs": {}})
 
         # register a run
@@ -879,6 +921,7 @@ class TokenModelTestCase(MyTestCase):
                              "ordering": 3,
                              "options": {"KEY2": "value number 2",
                                          "key 4": "1234"},
+                             'retry_if_failed': True,
                              "last_runs": {
                                  "localhost": datetime(2018, 3, 4, 5, 6, 7, tzinfo=tzutc()),
                                  "otherhost": datetime(2018, 8, 9, 10, 11, 12, tzinfo=tzutc()),
@@ -901,6 +944,7 @@ class TokenModelTestCase(MyTestCase):
                              "ordering": 3,
                              "options": {"KEY2": "value number 2",
                                          "key 4": "1234"},
+                             'retry_if_failed': True,
                              "last_runs": {
                                  "localhost": datetime(2018, 3, 4, 5, 6, 8, tzinfo=tzutc()),
                                  "otherhost": datetime(2018, 8, 9, 10, 11, 12, tzinfo=tzutc()),
@@ -940,3 +984,31 @@ class TokenModelTestCase(MyTestCase):
         MonitoringStats.query.delete()
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 0)
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key2).count(), 0)
+
+
+class TokenModelTestCaseDeleting(MyTestCase):
+
+    def test_01_create_and_delete_resolver(self):
+        r = Resolver("try_delete", "passwdresolver")
+        rid = r.save()
+        self.assertTrue(r.name is not None, r.name)
+        self.assertTrue(r.rtype is not None, r.rtype)
+        # Add configuration to the resolver
+        conf = ResolverConfig(r.id, "fileName", "this_very_specific_file_try_delete")
+        conf.save()
+
+        # Read Resolver
+        r1 = Resolver.query.filter_by(name="try_delete").first()
+        self.assertTrue(r1.rtype == "passwdresolver", r1.rtype)
+        self.assertEqual(rid, r1.id)
+
+        # Get the option
+        rc = ResolverConfig.query.filter_by(Value="this_very_specific_file_try_delete").first()
+        self.assertTrue(rc)
+        self.assertEqual(rc.resolver_id, rid)
+
+        # Now delete the Resolver and check, if there is no config left
+        reso = Resolver.query.filter_by(name="try_delete").first()
+        reso.delete()
+        rc = ResolverConfig.query.filter_by(Value="this_very_specific_file_try_delete").first()
+        self.assertIsNone(rc)

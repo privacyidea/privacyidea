@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+
 # 2018-07-31 Cornelius Koelbel <cornelius.koelbel@netknights.it>
 #
 # Copyright (c) 2018, Cornelius Koelbel
@@ -30,45 +30,68 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
 
-if [ "$1" == "" ]; then
-	echo
-	echo "Please specify the pi.cfg file!"
-	echo
-	exit 1
-else
+PICFG="/etc/privacyidea/pi.cfg"
+
+if [ "$#" -gt 0 ]; then
 	PICFG=$1
 fi
 
-tempfile=`mktemp --suff=.diag`
+if [[ ! -r $PICFG ]];then
+	echo "Could not read $PICFG! Please specify the pi.cfg file!"
+	exit 1
+fi
+
+OS=$(grep "^ID=" /etc/os-release | sed -e 's/^ID=//g' | tr -d '"')
+diag_info=$(mktemp -d -t pi_diag_XXXXXXXXXX)
+tempfile="${diag_info}/privacyidea.config"
+timestamp=$(date +"%y-%m-%d")
+diag_file="/tmp/${timestamp}_$(basename "$diag_info").tar.gz"
+
+case $OS in
+	centos | rhel | debian | ubuntu)
+	;;
+	*)
+		echo  "Your operating system $OS is not supported!"
+		;;
+esac
 
 log() {
-	echo $1 >> $tempfile
+	echo "$1" >> "$tempfile"
+}
+
+call_pi_manage() {
+	PRIVACYIDEA_CONFIGFILE=$PICFG pi-manage "$@"
+}
+
+upload_info() {
+	echo
+	echo "Please upload the diagnostics file $diag_file to your support team."
+	echo
 }
 
 get_os() {
 	log
 	log "SECTION: Linux Distribution"
 	log "==========================="
-	cat /etc/*-release >> $tempfile
+	cat /etc/*-release >> "$tempfile"
 }
 
 get_pi_cfg() {
 	log
 	log "SECTION: pi.cfg file"
 	log "===================="
-	grep -v -e 'SECRET_KEY\|PI_PEPPER\|SQLALCHEMY_DATABASE_URI' $PICFG >> $tempfile
+	grep -v -e 'SECRET_KEY\|PI_PEPPER\|SQLALCHEMY_DATABASE_URI' "$PICFG" >> "$tempfile"
 	# only write the driver part of the URI to the logfile.
 	# So we see if eg. pymysql, mysql or any other dialect is used.
-	grep ^SQLALCHEMY_DATABASE_URI $PICFG | cut -d':' -f 1 >> $tempfile
+	grep ^SQLALCHEMY_DATABASE_URI "$PICFG" | cut -d':' -f 1 >> "$tempfile"
 }
 
-
-upload_info() {
-	echo
-	echo "Please upload the diagnostics file $tempfile to your support team."
-	echo
+current_db_revision() {
+	log
+	log "SECTION: current_db_revision"
+	log "============================"
+	call_pi_manage db current -d /opt/privacyidea/lib/privacyidea/migrations/ >> "$tempfile"
 }
 
 pi_versions() {
@@ -78,19 +101,22 @@ pi_versions() {
 	log "Installed packages"
 	log "------------------"
 	FileName=$(mktemp)
-	# In case it is Ubuntu
-	dpkg -l | sort >> $FileName
-	# In case it is CentOS/RHEL
-	rpm -qa | sort >> $FileName
+	if [[ "${OS}" == "centos" || "${OS}" == "rhel" ]]; then
+		# In case it is CentOS/RHEL
+		rpm -qa | sort >> "$FileName"
+	elif [[ "${OS}" == "ubuntu" || "${OS}" == "debian" ]]; then
+		# In case it is Ubuntu/Debian
+		dpkg -l | sort >> "$FileName";
+	fi
 	# save all installed packages
-	cat $FileName >> $tempfile	
-	rm -f $FileName
-	log "Is this a pip installation?"
-	log "---------------------------"
-	log "The contents of /opt/:"
-	ls -l /opt >> $tempfile
-	log "Can we do a pip freeze?"
-	pip freeze >> $tempfile
+	cat "$FileName" >> "$tempfile"
+	rm -f "$FileName"
+	log
+	log "Python packages in /opt/privacyidea:"
+	log "===================================="
+	if [[ -x  /opt/privacyidea/bin/pip ]]; then
+		/opt/privacyidea/bin/pip freeze >> "$tempfile"
+	fi
 }
 
 pi_config() {
@@ -99,38 +125,115 @@ pi_config() {
 	log "=================================="
 	log "Resolvers"
 	log "---------"
-	pi-manage resolver list -v >> $tempfile
+	call_pi_manage resolver list -v >> "$tempfile"
 	log "Realms"
 	log "------"
-	pi-manage realm list >> $tempfile
+	call_pi_manage realm list >> "$tempfile"
 	log "Events"
 	log "------"
-	pi-manage event e_export >> $tempfile
+	call_pi_manage event e_export >> "$tempfile"
 	log "Policies"
 	log "--------"
-	pi-manage policy p_export >> $tempfile
+	call_pi_manage policy p_export >> "$tempfile"
 }
 
+FreeRADIUS_config() {
+	log
+	log "SECTION: FreeRADIUS Configurations"
+	log "=================================="
+	if [[ "${OS}" == "centos" || "${OS}" == "rhel" ]]; then
+		if (rpm -qa | grep freeradius > /dev/null); then
+			ls -R /etc/raddb  >> "$tempfile";
+		else
+			log
+			log "FreeRADIUS is not installed"
+		fi
+	elif [[ "${OS}" == "ubuntu" || "${OS}" == "debian" ]]; then
+		if (dpkg -l | grep freeradius > /dev/null); then
+			ls -R /etc//freeradius/3.0 >> "$tempfile";
+		else
+			log
+			log "FreeRADIUS is not installed"
+		fi
+	fi
+}
+
+system_status() {
+	log
+	log "SECTION: System Status"
+	log "======================"
+	log "CPU cores: $(grep -c ^processor /proc/cpuinfo)"
+	log "========================"
+	top -b -n 1 >> "$tempfile"
+	log
+	log "HD"
+	log "========================"
+	df -h >> "$tempfile"
+}
+
+centos_auditlog() {
+	if [[ "$(getenforce)" == "Enforcing" ]]; then
+		log
+		log "SECTION: centOS Auditlog"
+		log "========================"
+		grep "denied" /var/log/audit/audit.log  >> "$tempfile"
+	fi
+}
+
+apache_log() {
+	if [[ "${OS}" == "centos" || "${OS}" == "rhel" ]]; then
+		log
+		log "SECTION: httpd SSL_error_log"
+		log "============================"
+		tail -100 /var/log/httpd/ssl_error_log  >> "$tempfile"
+		log
+		log "SECTION: httpd Access_log"
+		log "========================="
+		tail -100 /var/log/httpd/ssl_access_log  >> "$tempfile"
+		log
+		log "SECTION: apache configuration"
+		log "============================="
+		tail -n +1 /etc/httpd/conf/httpd.conf /etc/httpd/conf.d/privacyidea.conf >>  "$tempfile"
+	elif [[ "${OS}" == "ubuntu" || "${OS}" == "debian" ]]; then
+		log
+		log "SECTION: apache2 error_log"
+		log "=========================="
+		tail -100 /var/log/apache2/error.log >> "$tempfile"
+		log
+		log "SECTION: apache2 SSL_access_log"
+		log "==============================="
+		tail -100 /var/log/apache2/ssl_access.log >> "$tempfile"
+		log
+		log "SECTION: apache configuration"
+		log "============================="
+		tail -n +1 /etc/apache2/apache2.conf /etc/apache2/sites-enabled/* >> "$tempfile"
+	fi
+}
 
 pi_logfile() {
-	log
-	log "SECTION: privacyIDEA Logfile"
-	log "============================"
-	R=$( grep "PI_LOGFILE" $PICFG | cut -d "=" -f2 | tr -d "\'\"" )
-	cat $R >> $tempfile
+	R=$( grep "^PI_LOGFILE" "$PICFG" | cut -d "=" -f2 | tr -d "\t \'\"" )
+	[ -f ${R} ] && cp ${R} "${diag_info}/privacyidea.logfile" || echo "Could not read logfile ${R}" >> "$tempfile"
 }
 
 pi_auditlog() {
-    log
-    log "SECTION: privacyIDEA Auditlog"
-    log "============================="
-    pi-manage audit dump -f - -t 2d >> $tempfile
+	call_pi_manage audit dump -f - -t 2d >> "${diag_info}/privacyidea.auditlog"
 }
+
 
 get_os
 get_pi_cfg
+current_db_revision
 pi_versions
 pi_config
+FreeRADIUS_config
+system_status
+if [[ "${OS}" == "centos" ]]; then
+	centos_auditlog
+fi
+apache_log
 pi_logfile
 pi_auditlog
+
+tar -zcf "$diag_file" -C /tmp "$(basename "$diag_info")"
+
 upload_info

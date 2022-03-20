@@ -3,7 +3,7 @@ This file contains the tests for the periodic tasks API.
 
 This tests api/periodictask.py
 """
-import json
+import jwt
 from contextlib import contextmanager
 import mock
 from dateutil.parser import parse as parse_timestamp
@@ -44,7 +44,8 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         self.assertEqual(data['result']['value'], [])
 
         # need authorization
-        status_code, data = self.simulate_request('/periodictask/', method='GET', headers={'Authorization': 'ABC'})
+        fake_auth_token = jwt.encode({"role": "admin"}, key="313233343536", algorithm="HS256")
+        status_code, data = self.simulate_request('/periodictask/', method='GET', headers={'Authorization': fake_auth_token})
         self.assertEqual(status_code, 401)
         self.assertFalse(data['result']['status'])
 
@@ -57,6 +58,7 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
                 'interval': '0 8 * * *',
                 'taskmodule': 'UnitTest',
                 'ordering': 5,
+                'retry_if_failed': False,
                 'options': '{"something": 123, "else": true}',
             }
             status_code, data = self.simulate_request('/periodictask/', method='POST', data=task_dict1)
@@ -165,6 +167,7 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         self.assertEqual(result_dict['nodes'], ['pinode1', 'pinode2'])
         self.assertEqual(result_dict['last_runs'], {})
         last_update = parse_timestamp(result_dict['last_update'])
+        self.assertEqual(result_dict['retry_if_failed'], False)
         self.assertIsNotNone(last_update)
         self.assertEqual(result_dict['options'], {'something': '123', 'else': 'True'})
 
@@ -196,8 +199,8 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         self.assertEqual(status_code, 200)
         self.assertTrue(data['result']['status'])
         self.assertEqual(len(data['result']['value']), 2)
-        self.assertEqual([task['name'] for task in data['result']['value']],
-                         ['new name', 'some other task'])
+        self.assertIn('new name', [task['name'] for task in data['result']['value']], data)
+        self.assertIn('some other task', [task['name'] for task in data['result']['value']], data)
 
         # get updated task
         status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='GET')
@@ -292,4 +295,4 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         status_code, data = self.simulate_request('/periodictask/nodes/', method='GET')
         self.assertEqual(status_code, 200)
         self.assertTrue(data['result']['status'])
-        self.assertEqual(data['result']['value'], ['Node2', 'Node1'])
+        self.assertEqual(set(data['result']['value']), set(['Node2', 'Node1']))

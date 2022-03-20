@@ -37,7 +37,6 @@ TOTP is defined in https://tools.ietf.org/html/rfc6238
 from __future__ import division
 import logging
 import time
-import math
 import datetime
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.config import get_from_config
@@ -45,25 +44,21 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.policy import ACTION, SCOPE
-from privacyidea.lib.auth import ROLE
+from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
+from privacyidea.lib.utils import determine_logged_in_userparams
 from privacyidea.lib import _
 
 optional = True
 required = False
-
-keylen = {'sha1': 20,
-          'sha256': 32,
-          'sha512': 64
-          }
 
 log = logging.getLogger(__name__)
 
 
 class TotpTokenClass(HotpTokenClass):
 
-    # When resyncing we need to do two directly consecutive values.
-    resyncDiffLimit = 1
+    # In contrast to the HOTP the counter does not contain the next OTP value,
+    # but the last used OTP value, so we need to set this to 0.
+    previous_otp_offset = 0
 
     @log_with(log)
     def __init__(self, db_token):
@@ -77,7 +72,6 @@ class TotpTokenClass(HotpTokenClass):
         self.set_type(u"totp")
         self.hKeyRequired = True
 
-    
     @staticmethod
     def get_class_type():
         """
@@ -141,6 +135,20 @@ class TotpTokenClass(HotpTokenClass):
                                            'forced to use two-step enrollment.')}
                    },
                    SCOPE.ADMIN: {
+                       'totp_timestep': {'type': 'int',
+                                         'value': [30, 60],
+                                         'desc': 'Specify the time step of '
+                                                 'the timebased OTP token.'},
+                       'totp_hashlib': {'type': 'str',
+                                        'value': ["sha1",
+                                                  "sha256",
+                                                  "sha512"],
+                                        'desc': 'Specify the hashlib to be used. '
+                                                'Can be SHA1, SHA256 or SHA512.'},
+                       'totp_otplen': {'type': 'int',
+                                       'value': [6, 8],
+                                       'desc': "Specify the OTP length to be "
+                                               "used."},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
                                  'desc': _('Specify whether admins are allowed or '
@@ -162,7 +170,19 @@ class TotpTokenClass(HotpTokenClass):
                            'type': 'bool',
                            'desc': _('Enforce setting an app pin for the privacyIDEA '
                                      'Authenticator App')
+                       },
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of remote tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active remote tokens assigned."),
+                           'group': GROUP.TOKEN
                        }
+
                    }
                },
                }
@@ -414,10 +434,15 @@ class TotpTokenClass(HotpTokenClass):
                 otp1c = int(info.get("otp1c"))
                 otp2c = res
                 log.debug("otp1c: {0!r}, otp2c: {1!r}".format(otp1c, otp2c))
-                diff = math.fabs(otp2c - otp1c)
-                if diff > self.resyncDiffLimit:
+                if (otp1c + 1) != otp2c:
+                    log.debug("Autoresync failed for token {0!s}. OTP values too far apart.".format(self.token.serial))
+                    res = -1
+                elif otp2c <= self.token.count:
+                    # The resync was done with previous (old) OTP values
+                    log.debug("Autoresync failed for token {0!s}. Previous OTP values used.".format(self.token.serial))
                     res = -1
                 else:
+                    log.info("Autoresync successful for token {0!s}.".format(self.token.serial))
                     server_time = time.time()
                     counter = int((server_time / self.timestep) + 0.5)
 
@@ -631,59 +656,52 @@ class TotpTokenClass(HotpTokenClass):
         return settings.get(key, "")
 
     @classmethod
-    def get_default_settings(cls, params, logged_in_user=None,
-                             policy_object=None, client_ip=None):
+    def get_default_settings(cls, g, params):
         """
         This method returns a dictionary with default settings for token
         enrollment.
-        These default settings are defined in SCOPE.USER and are
+        These default settings are defined in SCOPE.USER or SCOPE.ADMIN and are
         totp_hashlib, totp_timestep and totp_otplen.
-        If these are set, the user will only be able to enroll tokens with
-        these values.
+        If these are set, the user or admin will only be able to enroll tokens
+        with these values.
 
         The returned dictionary is added to the parameters of the API call.
+        :param g: context object, see documentation of ``Match``
         :param params: The call parameters
         :type params: dict
-        :param logged_in_user: The logged_in_user dictionary with "role",
-            "username" and "realm"
-        :type logged_in_user: dict
-        :param policy_object: The policy_object
-        :type policy_object: PolicyClass
-        :param client_ip: The client IP address
-        :type client_ip: basestring
         :return: default parameters
         """
         ret = {}
-        if logged_in_user.get("role") == ROLE.USER:
-            hashlib_pol = policy_object.get_action_values(
-                action="totp_hashlib",
-                scope=SCOPE.USER,
-                user=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                client=client_ip,
-                unique=True)
-            if hashlib_pol:
-                ret["hashlib"] = list(hashlib_pol)[0]
+        if not g.logged_in_user:
+            return ret
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
+                                                                                            params)
+        hashlib_pol = Match.generic(g, scope=role,
+                                    action="totp_hashlib",
+                                    user=username,
+                                    realm=userrealm,
+                                    adminuser=adminuser,
+                                    adminrealm=adminrealm).action_values(unique=True)
+        if hashlib_pol:
+            ret["hashlib"] = list(hashlib_pol)[0]
 
-            timestep_pol = policy_object.get_action_values(
-                action="totp_timestep",
-                scope=SCOPE.USER,
-                user=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                client=client_ip,
-                unique=True)
-            if timestep_pol:
-                ret["timeStep"] = list(timestep_pol)[0]
+        timestep_pol = Match.generic(g, scope=role,
+                                     action="totp_timestep",
+                                     user=username,
+                                     realm=userrealm,
+                                     adminuser=adminuser,
+                                     adminrealm=adminrealm).action_values(unique=True)
+        if timestep_pol:
+            ret["timeStep"] = list(timestep_pol)[0]
 
-            otplen_pol = policy_object.get_action_values(
-                action="totp_otplen",
-                scope=SCOPE.USER,
-                user=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                client=client_ip,
-                unique=True)
-            if otplen_pol:
-                ret["otplen"] = list(otplen_pol)[0]
+        otplen_pol = Match.generic(g, scope=role,
+                                   action="totp_otplen",
+                                   user=username,
+                                   realm=userrealm,
+                                   adminuser=adminuser,
+                                   adminrealm=adminrealm).action_values(unique=True)
+        if otplen_pol:
+            ret["otplen"] = list(otplen_pol)[0]
 
         return ret
 

@@ -38,7 +38,7 @@
 #
 #
 
-__doc__="""This is the SMSClass to send SMS via HTTP Gateways
+__doc__ = """This is the SMSClass to send SMS via HTTP Gateways
 It can handle HTTP/HTTPS PUT and GET requests also with Proxy support
 
 The code is tested in tests/test_lib_smsprovider
@@ -79,6 +79,7 @@ class HttpSMSProvider(ISMSProvider):
         """
         log.debug("submitting message {0!r} to {1!s}".format(message, phone))
         parameter = {}
+        headers = {}
         if self.smsgateway:
             phone = self._mangle_phone(phone, self.smsgateway.option_dict)
             url = self.smsgateway.option_dict.get("URL")
@@ -96,6 +97,7 @@ class HttpSMSProvider(ISMSProvider):
                 if k not in self.parameters().get("parameters"):
                     # This is an additional option
                     parameter[k] = v.format(otp=message, phone=phone)
+            headers = self.smsgateway.header_dict
         else:
             phone = self._mangle_phone(phone, self.config)
             url = self.config.get('URL')
@@ -145,10 +147,11 @@ class HttpSMSProvider(ISMSProvider):
             params = {}
             data = parameter
 
-        log.debug("issuing request with parameters %s and method %s and "
-                  "authentication %s to url %s." % (parameter, method,
-                                                    basic_auth, url))
-        r = requestor(url, params=params,
+        log.debug(u"issuing request with parameters {0!s} headers {1!s} and method {2!s} and"
+                  "authentication {3!s} to url {4!s}.".format(params, headers, method,
+                                                              basic_auth, url))
+        # Todo: drop basic auth if Authorization-Header is given?
+        r = requestor(url, params=params, headers=headers,
                       data=data,
                       verify=ssl_verify,
                       auth=basic_auth,
@@ -203,9 +206,9 @@ class HttpSMSProvider(ISMSProvider):
                 log.warning("failed to send sms. Reply %s does not match "
                             "the RETURN_SUCCESS definition" % reply)
                 raise SMSError(response.status_code,
-                           "We received a none success reply from the "
-                           "SMS Gateway: {0!s} ({1!s})".format(reply,
-                                                               return_success))
+                               "We received a none success reply from the "
+                               "SMS Gateway: {0!s} ({1!s})".format(reply,
+                                                                   return_success))
 
         elif return_fail:
             if return_fail in reply:
@@ -231,6 +234,7 @@ class HttpSMSProvider(ISMSProvider):
         :return: dict
         """
         params = {"options_allowed": True,
+                  "headers_allowed": True,
                   "parameters": {
                       "URL": {
                           "required": True,
@@ -258,6 +262,7 @@ class HttpSMSProvider(ISMSProvider):
                                            "authentication.")
                       },
                       "CHECK_SSL": {
+                          "required": True,
                           "description": _("Should the SSL certificate be "
                                            "verified."),
                           "values": ["yes", "no"]
@@ -265,17 +270,17 @@ class HttpSMSProvider(ISMSProvider):
                       "REGEXP": {
                           "description": _("Regular expression to modify the phone number "                 
                                            "to make it compatible with provider. "
-                                           "Enter something like '/[\+/]//' to remove "
+                                           "Enter something like '/[\\+/]//' to remove "
                                            "pluses and slashes.")
                       },
-                      "PROXY": {"description": _("An optional proxy string. DEPRECATED. Do not use"
-                                                 "this anymore. Rather use HTTP_PROXY for http connections and"
-                                                 "HTTPS_PROXY for https connection. The PROXY option will be"
-                                                 "removed in future.")},
+                      "PROXY": {"description": _("An optional proxy string. DEPRECATED. Do not use "
+                                                 "this anymore. Rather use HTTP_PROXY for http "
+                                                 "connections and HTTPS_PROXY for https "
+                                                 "connection. The PROXY option will be removed in "
+                                                 "future.")},
                       "HTTP_PROXY": {"description": _("Proxy setting for HTTP connections.")},
-                      "HTTPS_PROXY": {"description":_("Proxy setting for HTTPS connections.")},
+                      "HTTPS_PROXY": {"description": _("Proxy setting for HTTPS connections.")},
                       "TIMEOUT": {"description": _("The timeout in seconds.")}
                   }
                   }
         return params
-        

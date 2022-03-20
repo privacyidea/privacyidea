@@ -15,15 +15,11 @@
     <label for="dynamic_email" translate>Read email address dynamically from user source on each request.</label>
 </div>
 <div class="form-group" ng-hide="form.dynamic_email">
-    <label for="phone" translate>Email Address</label>
-    <input type="email"
+    <label for="email" translate>Email Address</label>
+    <input type="email" id="email"
            autofocus
+           ng-required="! form.dynamic_email"
            class="form-control"
            placeholder="Users email address..."
            ng-model="form.email" name="email" />
-    <label for="description" translate>Description</label>
-    <input type="text" class="form-control"
-            placeholder="Some nice words..."
-            ng-model="form.description" />
 </div>
-

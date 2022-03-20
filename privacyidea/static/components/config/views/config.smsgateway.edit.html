@@ -15,6 +15,7 @@
         <div class="col-sm-6">
             <input name="name" id="name" class="form-control" required
                    ng-model="form.name" placeholder=""
+                   autofocus
                    />
         </div>
     </div>
@@ -105,6 +106,41 @@
             <td>
                 <button ng-click="addOption()"
                         ng-disabled="newoption===''"
+                        class="btn btn-success">Add</button>
+            </td>
+        </tr>
+    </table>
+    </div>
+
+    <!-- headers -->
+    <div ng-show="smsproviders[form.module]['headers_allowed']">
+    <h3 translate>Headers</h3>
+        <table class="table table-hover">
+        <tr ng-repeat="(headername, header) in headers">
+            <td>
+                <b>{{ headername }}</b>
+            </td>
+            <td>
+                {{ header }}
+            </td>
+            <td>
+                <button ng-click="deleteHeader(headername)"
+                class="btn btn-danger">Delete</button>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <input class="form-control"
+                       ng-model="newheader">
+            </td>
+            <td>
+                <input class="form-control"
+                       ng-model="newheadervalue">
+            </td>
+            <td>
+                <button ng-click="addHeader()"
+                        ng-disabled="newheader===''"
                         class="btn btn-success">Add</button>
             </td>
         </tr>

@@ -42,13 +42,14 @@ from ..models import (Realm,
 from .log import log_with
 from privacyidea.lib.config import get_config_object
 import logging
-from privacyidea.lib.utils import sanity_name_check, fetch_one_resource
+from privacyidea.lib.utils import sanity_name_check, fetch_one_resource, is_true
+from privacyidea.lib.utils.export import (register_import, register_export)
 log = logging.getLogger(__name__)
 
 
 @log_with(log)
 #@cache.memoize(10)
-def get_realms(realmname=""):
+def get_realms(realmname=None):
     '''
     either return all defined realms or a specific realm
     
@@ -79,6 +80,15 @@ def get_realm(realmname):
     """
     r = get_realms(realmname).get(realmname)
     return r or {}
+
+
+def get_realm_id(realmname):
+    """
+    Returns the realm_id for a realm name
+    :param realmname: The name of the realm
+    :return: The ID of the realm. If the realm does not exist, returns None.
+    """
+    return get_config_object().realm.get(realmname, {}).get("id")
 
 
 @log_with(log)
@@ -168,12 +178,6 @@ def delete_realm(realmname):
     return ret
 
 
-
-
-
-
-
-
 @log_with(log)
 def set_realm(realm, resolvers=None, priority=None):
     """
@@ -199,7 +203,7 @@ def set_realm(realm, resolvers=None, priority=None):
     realm_created = False
     realm = realm.lower().strip()
     realm = realm.replace(" ", "-")
-    nameExp = "^[A-Za-z0-9_\-\.]*$"
+    nameExp = r"^[A-Za-z0-9_\-\.]*$"
     sanity_name_check(realm, nameExp)
 
     # create new realm if it does not exist
@@ -233,4 +237,33 @@ def set_realm(realm, resolvers=None, priority=None):
         save_config_timestamp()
         db.session.commit()
 
-    return (added, failed)
+    return added, failed
+
+
+@register_export('realm')
+def export_realms(name=None):
+    """
+    Export given realm configuration or all realms
+    """
+    return get_realms(realmname=name)
+
+
+@register_import('realm')
+def import_realms(data, name=None):
+    """
+    Import given realm configurations
+    """
+    # TODO: the set_realm() function always creates the realm in the DB even if
+    #  the associated resolver are not available. So the realms must be imported
+    #  *after* the resolver.
+    log.debug('Import realm config: {0!s}'.format(data))
+    for realm, r_config in data.items():
+        if name and name != realm:
+            continue
+        added, failed = set_realm(
+            realm, resolvers=[r['name'] for r in r_config['resolver']],
+            priority={r['name']: r['priority'] for r in r_config['resolver']})
+        if is_true(r_config['default']):
+            set_default_realm(realm)
+        log.info('realm: {0!s:<15} resolver added: {1!s} '
+                 'failed: {2!s}'.format(realm, added, failed))

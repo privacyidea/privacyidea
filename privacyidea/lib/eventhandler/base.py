@@ -38,7 +38,9 @@ from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.token import get_token_owner, get_tokens
 from privacyidea.lib.user import User, UserError
+from privacyidea.lib.counter import read as counter_read
 from privacyidea.lib.utils import (compare_condition, compare_value_value,
+                                   compare_generic_condition,
                                    parse_time_offset_from_now, is_true,
                                    check_ip_in_policy)
 import datetime
@@ -64,6 +66,8 @@ class CONDITION(object):
     COUNT_AUTH = "count_auth"
     COUNT_AUTH_SUCCESS = "count_auth_success"
     COUNT_AUTH_FAIL = "count_auth_fail"
+    COUNTER = "counter"
+    FAILCOUNTER = 'failcounter'
     TOKENINFO = "tokeninfo"
     DETAIL_ERROR_MESSAGE = "detail_error_message"
     DETAIL_MESSAGE = "detail_message"
@@ -75,6 +79,17 @@ class CONDITION(object):
     RESOLVER = "resolver"
     CLIENT_IP = "client_ip"
     ROLLOUT_STATE = "rollout_state"
+
+
+class GROUP(object):
+    """
+    These are the event handler groups. The conditions
+    will be grouped in the UI.
+    """
+    TOKEN = "token"
+    GENERAL = "general"
+    USER = "user"
+    COUNTER = "counter"
 
 
 class BaseEventHandler(object):
@@ -128,137 +143,176 @@ class BaseEventHandler(object):
         cond = {
             CONDITION.ROLLOUT_STATE: {
                 "type": "str",
-                "desc": _("The rollout_state of the token has a certain value like 'clientwait' or 'enrolled'.")
+                "desc": _("The rollout_state of the token has a certain value like 'clientwait' or 'enrolled'."),
+                "group": GROUP.TOKEN
             },
             CONDITION.REALM: {
                 "type": "str",
                 "desc": _("The realm of the user, for which this event should apply."),
-                "value": list(realms)
+                "value": list(realms),
+                "group": GROUP.USER
             },
             CONDITION.RESOLVER: {
                 "type": "str",
                 "desc": _("The resolver of the user, for which this event should apply."),
-                "value": list(resolvers)
+                "value": list(resolvers),
+                "group": GROUP.USER
             },
             CONDITION.TOKENREALM: {
                 "type": "multi",
                 "desc": _("The realm of the token, for which this event should "
                           "apply."),
-                "value": [{"name": r} for r in realms]
+                "value": [{"name": r} for r in realms],
+                "group": GROUP.TOKEN
             },
             CONDITION.TOKENRESOLVER: {
                 "type": "multi",
                 "desc": _("The resolver of the token, for which this event should "
                           "apply."),
-                "value": [{"name": r} for r in resolvers]
+                "value": [{"name": r} for r in resolvers],
+                "group": GROUP.TOKEN
             },
             CONDITION.TOKENTYPE: {
                 "type": "multi",
                 "desc": _("The type of the token."),
-                "value": [{"name": r} for r in get_token_types()]
+                "value": [{"name": r} for r in get_token_types()],
+                "group": GROUP.TOKEN
             },
             "logged_in_user": {
                 "type": "str",
                 "desc": _("The logged in user is of the following type."),
-                "value": (ROLE.ADMIN, ROLE.USER)
+                "value": (ROLE.ADMIN, ROLE.USER),
+                "group": GROUP.USER
             },
             CONDITION.RESULT_VALUE: {
                 "type": "str",
                 "desc": _("The result.value within the response is "
                           "True or False."),
-                "value": ("True", "False")
+                "value": ("True", "False"),
+                "group": GROUP.GENERAL
             },
             CONDITION.RESULT_STATUS: {
                 "type": "str",
                 "desc": _("The result.status within the response is "
                           "True or False."),
-                "value": ("True", "False")
+                "value": ("True", "False"),
+                "group": GROUP.GENERAL
             },
             "token_locked": {
                 "type": "str",
                 "desc": _("Check if the max failcounter of the token is "
                           "reached."),
-                "value": ("True", "False")
+                "value": ("True", "False"),
+                "group": GROUP.TOKEN
             },
             CONDITION.TOKEN_HAS_OWNER: {
                 "type": "str",
                 "desc": _("The token has a user assigned."),
-                "value": ("True", "False")
+                "value": ("True", "False"),
+                "group": GROUP.TOKEN
             },
             CONDITION.TOKEN_IS_ORPHANED: {
                 "type": "str",
                 "desc": _("The token has a user assigned, but the user does "
                           "not exist in the userstore anymore."),
-                "value": ("True", "False")
+                "value": ("True", "False"),
+                "group": GROUP.TOKEN
             },
             CONDITION.TOKEN_VALIDITY_PERIOD: {
                 "type": "str",
                 "desc": _("Check if the token is within its validity period."),
-                "value": ("True", "False")
+                "value": ("True", "False"),
+                "group": GROUP.TOKEN
             },
             "serial": {
                 "type": "regexp",
                 "desc": _("Action is triggered, if the serial matches this "
-                          "regular expression.")
+                          "regular expression."),
+                "group": GROUP.TOKEN
             },
             CONDITION.USER_TOKEN_NUMBER: {
                 "type": "str",
                 "desc": _("Action is triggered, if the user has this number "
-                          "of tokens assigned.")
+                          "of tokens assigned."),
+                "group": GROUP.USER
             },
             CONDITION.OTP_COUNTER: {
                 "type": "str",
                 "desc": _("Action is triggered, if the counter of the token "
                           "equals this setting. Can also be "
-                          "'>100' or '<99' for no exact match.")
+                          "'>100' or '<99' for no exact match."),
+                "group": GROUP.COUNTER
             },
             CONDITION.LAST_AUTH: {
                 "type": "str",
                 "desc": _("Action is triggered, if the last authentication of "
-                          "the token is older than 7h, 10d or 1y.")
+                          "the token is older than 7h, 10d or 1y."),
+                "group": GROUP.TOKEN
             },
             CONDITION.COUNT_AUTH: {
                 "type": "str",
                 "desc": _("This can be '>100', '<99', or '=100', to trigger "
                           "the action, if the tokeninfo field 'count_auth' is "
-                          "bigger than 100, less than 99 or exactly 100.")
+                          "bigger than 100, less than 99 or exactly 100."),
+                "group": GROUP.COUNTER
             },
             CONDITION.COUNT_AUTH_SUCCESS: {
                 "type": "str",
                 "desc": _("This can be '>100', '<99', or '=100', to trigger "
                           "the action, if the tokeninfo field "
                           "'count_auth_success' is "
-                          "bigger than 100, less than 99 or exactly 100.")
+                          "bigger than 100, less than 99 or exactly 100."),
+                "group": GROUP.COUNTER
             },
             CONDITION.COUNT_AUTH_FAIL: {
                 "type": "str",
                 "desc": _("This can be '>100', '<99', or '=100', to trigger "
                           "the action, if the difference between the tokeninfo "
                           "field 'count_auth' and 'count_auth_success is "
-                          "bigger than 100, less than 99 or exactly 100.")
+                          "bigger than 100, less than 99 or exactly 100."),
+                "group": GROUP.COUNTER
+            },
+            CONDITION.FAILCOUNTER: {
+                "type": "str",
+                "desc": _("This can be '>9', '<9', or '=10', to trigger "
+                          "the action, if the failcounter of a token matches this value. "
+                          "Note that the failcounter stops increasing, if the max_failcount is "
+                          "reached."),
+                "group": GROUP.COUNTER
             },
             CONDITION.TOKENINFO: {
                 "type": "str",
                 "desc": _("This condition can check any arbitrary tokeninfo "
                           "field. You need to enter something like "
                           "'<fieldname> == <fieldvalue>', '<fieldname> > "
-                          "<fieldvalue>' or '<fieldname> < <fieldvalue>'")
+                          "<fieldvalue>' or '<fieldname> < <fieldvalue>'."),
+                "group": GROUP.TOKEN
+            },
+            CONDITION.COUNTER: {
+                "type": "str",
+                "desc": _("This condition can check the value of an arbitrary event counter and "
+                          "compare it like 'myCounter == 1000', 'myCounter > 1000' or "
+                          "'myCounter < 1000'."),
+                "group": GROUP.COUNTER
             },
             CONDITION.DETAIL_ERROR_MESSAGE: {
                 "type": "str",
                 "desc": _("Here you can enter a regular expression. The "
                           "condition only applies if the regular expression "
-                          "matches the detail->error->message in the response.")
+                          "matches the detail->error->message in the response."),
+                "group": GROUP.GENERAL
             },
             CONDITION.DETAIL_MESSAGE: {
                 "type": "str",
                 "desc": _("Here you can enter a regular expression. The "
                           "condition only applies if the regular expression "
-                          "matches the detail->message in the response.")
+                          "matches the detail->message in the response."),
+                "group": GROUP.GENERAL
             },
             CONDITION.CLIENT_IP: {
                 "type": "str",
-                "desc": _("Trigger the action, if the client IP matches.")
+                "desc": _("Trigger the action, if the client IP matches."),
+                "group": GROUP.GENERAL
             }
         }
         return cond
@@ -301,14 +355,10 @@ class BaseEventHandler(object):
 
     @staticmethod
     def _get_response_content(response):
+        content = {}
         if response:
             if response.is_json:
                 content = response.json
-            else:
-                content = response.get_json(force=True, cache=False)
-        else:
-            # In Pre-Handling we have no response and no content
-            content = {}
         return content
 
     def check_condition(self, options):
@@ -438,17 +488,26 @@ class BaseEventHandler(object):
                 return False
 
         if CONDITION.DETAIL_ERROR_MESSAGE in conditions:
-            message = content.get("detail", {}).get("error", {}).get("message")
+            message = content.get("detail", {}).get("error", {}).get("message", "")
             search_exp = conditions.get(CONDITION.DETAIL_ERROR_MESSAGE)
             m = re.search(search_exp, message)
             if not bool(m):
                 return False
 
         if CONDITION.DETAIL_MESSAGE in conditions:
-            message = content.get("detail", {}).get("message")
+            message = content.get("detail", {}).get("message", "")
             search_exp = conditions.get(CONDITION.DETAIL_MESSAGE)
             m = re.search(search_exp, message)
             if not bool(m):
+                return False
+
+        if CONDITION.COUNTER in conditions:
+            # Can be counter==1000
+            if not compare_generic_condition(conditions.get(CONDITION.COUNTER),
+                                             lambda x: counter_read(x) or 0,
+                                             "Misconfiguration in your counter "
+                                             "condition: {0!s}"
+                                             ):
                 return False
 
         # Token specific conditions
@@ -518,6 +577,12 @@ class BaseEventHandler(object):
                 if not compare_condition(cond, c_fail):
                     return False
 
+            if CONDITION.FAILCOUNTER in conditions:
+                failcount = token_obj.get_failcount()
+                cond = conditions.get(CONDITION.FAILCOUNTER)
+                if not compare_condition(cond, failcount):
+                    return False
+
             if CONDITION.TOKENINFO in conditions:
                 cond = conditions.get(CONDITION.TOKENINFO)
                 # replace {now} in condition
@@ -525,25 +590,10 @@ class BaseEventHandler(object):
                 s_now = (datetime.datetime.now(tzlocal()) + td).strftime(
                     DATE_FORMAT)
                 cond = cond.format(now=s_now)
-                if len(cond.split("==")) == 2:
-                    key, value = [x.strip() for x in cond.split("==")]
-                    if not compare_value_value(token_obj.get_tokeninfo(key),
-                                              "==", value):
-                        return False
-                elif len(cond.split(">")) == 2:
-                    key, value = [x.strip() for x in cond.split(">")]
-                    if not compare_value_value(token_obj.get_tokeninfo(key),
-                                              ">", value):
-                        return False
-                elif len(cond.split("<")) == 2:
-                    key, value = [x.strip() for x in cond.split("<")]
-                    if not compare_value_value(token_obj.get_tokeninfo(key),
-                                              "<", value):
-                        return False
-                else:
-                    # There is a condition, but we do not know it!
-                    log.warning("Misconfiguration in your tokeninfo "
-                                "condition: {0!s}".format(cond))
+                if not compare_generic_condition(cond,
+                                                 token_obj.get_tokeninfo,
+                                                 "Misconfiguration in your tokeninfo "
+                                                 "condition: {0!s}"):
                     return False
 
             if CONDITION.ROLLOUT_STATE in conditions:

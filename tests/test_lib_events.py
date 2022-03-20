@@ -1,51 +1,48 @@
+# -*- coding: utf-8 -*-
+
 """
 This file contains the event handlers tests. It tests:
 
 lib/eventhandler/usernotification.py (one event handler module)
 lib/event.py (the decorator)
 """
-import email
 
-import mock
-
-from . import smtpmock
 import responses
 import os
+import mock
+
+from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
+                                                                      ACTION_TYPE as CUAH_ACTION_TYPE)
+from privacyidea.lib.eventhandler.customuserattributeshandler import USER_TYPE
+from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from .base import MyTestCase, FakeFlaskG, FakeAudit
-from privacyidea.lib.eventhandler.usernotification import (
-    UserNotificationEventHandler, NOTIFY_TYPE)
 from privacyidea.lib.config import get_config_object
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
-from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT, SCRIPT_BACKGROUND
+from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
 from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
-from privacyidea.models import EventCounter, TokenOwner
+from privacyidea.models import EventCounter
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
 from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
-from privacyidea.lib.smtpserver import add_smtpserver
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+from privacyidea.lib.counter import increase as counter_increase
 from flask import Request
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object,
                                    enable_event)
-from privacyidea.lib.resolver import save_resolver, delete_resolver
-from privacyidea.lib.realm import set_realm, delete_realm
-from privacyidea.lib.token import (init_token, remove_token, unassign_token,
-                                   get_realms_of_token, get_tokens,
+from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token, get_tokens,
                                    add_tokeninfo)
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.user import create_user, User
-from privacyidea.lib.policy import ACTION
+from privacyidea.lib.user import User
 from privacyidea.lib.error import ResourceNotFoundError
-from privacyidea.lib.utils import is_true, to_unicode
+from privacyidea.lib.utils import is_true
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 from privacyidea.app import PiResponseClass as Response
-import json
+from collections import OrderedDict
 
 
 class EventHandlerLibTestCase(MyTestCase):
@@ -150,7 +147,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         events = BaseEventHandler().events
         self.assertEqual(events, ["*"])
 
-        base_handler =  BaseEventHandler()
+        base_handler = BaseEventHandler()
         r = base_handler.check_condition({})
         self.assertTrue(r)
 
@@ -281,6 +278,36 @@ class BaseEventHandlerTestCase(MyTestCase):
              }
         )
         self.assertFalse(r)
+
+        # check for failcounter
+        tok.set_failcount(8)
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.FAILCOUNTER: "<9"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.FAILCOUNTER: ">9"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.FAILCOUNTER: "=8"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
         remove_token(serial)
 
     def test_04_tokeninfo_condition(self):
@@ -417,6 +444,23 @@ class BaseEventHandlerTestCase(MyTestCase):
         )
         self.assertEqual(r, False)
 
+        # Check DETAIL_MESSAGE to evaluate to False if it does not exist
+        resp = Response()
+        resp.data = """{"result": {"value": true, "status": true},
+                "detail": {"options": "Nothing"}
+                }
+                """
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE:
+                                                "special"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertEqual(r, False)
+
         # Check DETAIL_ERROR_MESSAGE
         resp = Response()
         resp.data = """{"result": {"value": false, "status": false},
@@ -531,6 +575,76 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         remove_token(serial)
+
+    def test_08_counter_condition(self):
+        # increase a counter to 4
+        for i in range(0, 4):
+            counter_increase("myCounter")
+
+        uhandler = BaseEventHandler()
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "secret"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        # This is a kind of authentication request
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "secret"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNTER:
+                                                "myCounter<4"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNTER:
+                                                "myCounter==4"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNTER:
+                                                "myCounter>3"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
+
+        # If we have a nonexisting counter this should be treated as zero
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNTER:
+                                                "myNonExistingCounter>3"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertFalse(r)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.COUNTER:
+                                                "myNonExistingCounter<3"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        self.assertTrue(r)
 
 
 class CounterEventTestCase(MyTestCase):
@@ -677,6 +791,57 @@ class ScriptEventTestCase(MyTestCase):
         d = "{0!s}/tests/testdata/scripts/".format(d)
         t_handler = ScriptEventHandler(script_directory=d)
         self.assertRaises(Exception, t_handler.do, script_name, options=options)
+
+    def test_03_sync_to_db(self):
+        g = FakeFlaskG()
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        req.User = User()
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "options": {
+                           "user": "1",
+                           "realm": "1",
+                           "serial": "1",
+                           "logged_in_user": "1",
+                           "logged_in_role": "1"}
+                   }
+                   }
+
+        script_name = "ls.sh"
+        d = os.getcwd()
+        d = "{0!s}/tests/testdata/scripts/".format(d)
+        t_handler = ScriptEventHandler(script_directory=d)
+        # first check that the db session is not synced by default
+        with mock.patch('privacyidea.lib.eventhandler.scripthandler.db') as mdb:
+            res = t_handler.do(script_name, options=options)
+            mdb.session.commit.assert_not_called()
+        self.assertTrue(res)
+        # now set the parameter to sync the db session before running the script
+        options['handler_def']['options']['sync_to_database'] = "1"
+        with mock.patch('privacyidea.lib.eventhandler.scripthandler.db') as mdb:
+            res = t_handler.do(script_name, options=options)
+            mdb.session.commit.assert_called_with()
+        self.assertTrue(res)
+        # and now with the parameter explicitly disabled
+        options['handler_def']['options']['sync_to_database'] = "0"
+        with mock.patch('privacyidea.lib.eventhandler.scripthandler.db') as mdb:
+            res = t_handler.do(script_name, options=options)
+            mdb.session.commit.assert_not_called()
+        self.assertTrue(res)
 
 
 class FederationEventTestCase(MyTestCase):
@@ -1065,7 +1230,7 @@ class RequestManglerTestCase(MyTestCase):
 
         # The request does not contain the match_parameter, thus the
         # parameter in question will not be modified
-        req.all_data = {"user": "givenname.surname@company.com" }
+        req.all_data = {"user": "givenname.surname@company.com"}
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -1221,7 +1386,6 @@ class ResponseManglerTestCase(MyTestCase):
         self.assertEqual(resp.data, csv)
 
     def test_02_set_response(self):
-
         g = FakeFlaskG()
         audit_object = FakeAudit()
         builder = EnvironBuilder(method='POST',
@@ -1597,6 +1761,27 @@ class TokenEventTestCase(MyTestCase):
         self.assertEqual(t.get_tokeninfo("phone"), user_obj.info.get("mobile"))
         remove_token(t.token.serial)
 
+        # Enroll an SMS token with specific SMS gateway config
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "sms",
+                                        "user": "1",
+                                        "sms_identifier": "mySMSGateway"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="sms")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
+        self.assertEqual(t.get_tokeninfo("phone"), user_obj.info.get("mobile"))
+        self.assertEqual(t.get_tokeninfo("sms.identifier"), "mySMSGateway")
+        remove_token(t.token.serial)
+
         # Enroll an Email token
         options = {"g": g,
                    "request": req,
@@ -1614,6 +1799,27 @@ class TokenEventTestCase(MyTestCase):
         self.assertTrue(t)
         self.assertEqual(t.user, user_obj)
         self.assertEqual(t.get_tokeninfo("email"), user_obj.info.get("email"))
+        remove_token(t.token.serial)
+
+        # Enroll an Email token with specific SMTP server config
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options":
+                                       {"tokentype": "email",
+                                        "user": "1",
+                                        "smtp_identifier": "myServer"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+        # Check if the token was created and assigned
+        t = get_tokens(tokentype="email")[0]
+        self.assertTrue(t)
+        self.assertEqual(t.user, user_obj)
+        self.assertEqual(t.get_tokeninfo("email"), user_obj.info.get("email"))
+        self.assertEqual(t.get_tokeninfo("email.identifier"), "myServer")
         remove_token(t.token.serial)
 
         # Enroll an mOTP token
@@ -1991,7 +2197,7 @@ class TokenEventTestCase(MyTestCase):
 
         remove_token("SPASS01")
 
-    def test_10_set_failcounter(self):
+    def test_10_set_or_change_failcounter(self):
         # setup realms
         self.setUp_user_realms()
 
@@ -2023,7 +2229,7 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # The token faile counter will be set to 7
+        # The token fail counter will be set to 7
         options = {"g": g,
                    "request": req,
                    "response": resp,
@@ -2033,1346 +2239,283 @@ class TokenEventTestCase(MyTestCase):
         t_handler = TokenEventHandler()
         res = t_handler.do(ACTION_TYPE.SET_FAILCOUNTER, options=options)
         self.assertTrue(res)
-        # Check if the token has the correct sync window
+        # Check if the token has the correct fail counter
         t = get_tokens(serial="SPASS01")
         tw = t[0].get_failcount()
         self.assertEqual(tw, 7)
 
+        # check the change failcount option starting with the set failcount of 7
+        handler_options = OrderedDict([("-8", -1),
+                                       ("2", 1),
+                                       ("+1", 2)])
+        for diff, failcount in handler_options.items():
+            options["handler_def"] = {"options": {"change fail counter": diff}}
+            res = t_handler.do(ACTION_TYPE.CHANGE_FAILCOUNTER, options=options)
+            self.assertTrue(res)
+            # Check if the token has the correct fail counter
+            t = get_tokens(serial="SPASS01")
+            tw = t[0].get_failcount()
+            self.assertEqual(tw, failcount)
+
+        remove_token("SPASS01")
+
+    def test_11_set_random_pin(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        init_token({"serial": "SPASS01", "type": "spass"},
+                   User("cornelius", self.realm1))
+        t = get_tokens(serial="SPASS01")
+        uid = t[0].get_user_id()
+        self.assertEqual(uid, "1000")
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        resp = Response(mimetype='application/json')
+        resp.data = """{"result": {"value": true}}"""
+
+        # The token will get a random pin of 8
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"length": "8"}}
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.SET_RANDOM_PIN, options=options)
+        self.assertTrue(res)
+        # Check, if we have a pin
+        self.assertIn("pin", resp.json["detail"])
+        pin = resp.json["detail"]["pin"]
+        self.assertEqual(len(pin), 8)
+
+        # Check if the new PIN will authenticate with the SPass token
+        r, _counter, _reply = t[0].authenticate(pin)
+        self.assertTrue(r)
+
+        remove_token("SPASS01")
+
+    def test_12_set_max_failcount(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        init_token({"serial": "SPASS01", "type": "spass"},
+                   User("cornelius", self.realm1))
+        t = get_tokens(serial="SPASS01")
+        uid = t[0].get_user_id()
+        self.assertEqual(uid, "1000")
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # The count window of the token will be set to 123
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"max failcount": "123"}
+                                   }
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.SET_MAXFAIL, options=options)
+        self.assertTrue(res)
+        # Check if the token has the correct sync window
+        t = get_tokens(serial="SPASS01")
+        fc = t[0].get_max_failcount()
+        self.assertEqual(fc, 123)
+
         remove_token("SPASS01")
 
 
-class UserNotificationTestCase(MyTestCase):
+class CustomUserAttributesTestCase(MyTestCase):
 
-    def test_01_basefunctions(self):
-        actions = UserNotificationEventHandler().actions
-        self.assertTrue("sendmail" in actions)
+    def test_01_event_set_attributes_logged_in_user(self):
 
-    @smtpmock.activate
-    def test_02_sendmail(self):
-        # setup realms
+        # Setup realm and user
         self.setUp_user_realms()
 
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
-        self.assertTrue(r > 0)
-
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-
+        user = User("hans", self.realm1)
         g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "123456"
+        g.logged_in_user = {'username': 'hans',
+                            'realm': self.realm1}
 
-        g.logged_in_user = {"username": "admin",
-                            "role": "admin",
-                            "realm": ""}
-        g.audit_object = audit_object
-
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
-                                 headers={})
-
-        env = builder.get_environ()
-        # Set the remote address so that we can filter for it
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        req.all_data = {"serial": "SomeSerial",
-                        "user": "cornelius"}
-        req.User = User("cornelius", self.realm1)
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
+        # The attributekey will be set as "test" and the attributevalue as "check"
         options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {"options":
-                                       {"emailconfig": "myserver"}
-                                   }
-                   }
-
-        un_handler = UserNotificationEventHandler()
-        res = un_handler.do("sendmail", options=options)
-        self.assertTrue(res)
-
-    @smtpmock.activate
-    def test_03_sendsms(self):
-        # setup realms
-        self.setUp_user_realms()
-
-        r = set_smsgateway(identifier="myGW",
-                           providermodule="privacyidea.lib.smsprovider."
-                                          "SmtpSMSProvider.SmtpSMSProvider",
-                           options={"SMTPIDENTIFIER": "myserver",
-                                    "MAILTO": "test@example.com"})
-        self.assertTrue(r > 0)
-
-        smtpmock.setdata(response={"test@example.com": (200, "OK")},
-                         support_tls=False)
-
-        g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "123456"
-
-        g.logged_in_user = {"username": "admin",
-                            "role": "admin",
-                            "realm": ""}
-        g.audit_object = audit_object
-
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
-                                 headers={})
-
-        env = builder.get_environ()
-        # Set the remote address so that we can filter for it
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        req.all_data = {"serial": "SomeSerial",
-                        "user": "cornelius"}
-        req.User = User("cornelius", self.realm1)
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
-        options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {"options":
-                                       {"smsconfig": "myGW"}
-                                   }
-                   }
-
-        un_handler = UserNotificationEventHandler()
-        res = un_handler.do("sendsms", options=options)
-        self.assertTrue(res)
-
-    def test_04_conditions(self):
-        c = UserNotificationEventHandler().conditions
-        self.assertTrue("logged_in_user" in c)
-        self.assertTrue("result_value" in c)
-
-    @smtpmock.activate
-    def test_05_check_conditions(self):
-
-        uhandler = UserNotificationEventHandler()
-        resp = Response()
-        # The actual result_status is false and the result_value is false.
-        resp.data = """{"result": {"value": false, "status": false}}"""
-        builder = EnvironBuilder(method='POST')
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {}
-        req.User = User()
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"logged_in_user": "admin"}},
-             "response": resp,
-             "request": req})
-        self.assertEqual(r, False)
-
-        # We expect the result_value to be True, but it is not.
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"result_value": "True"}},
-             "response": resp,
-             "request": req})
-        self.assertEqual(r, False)
-
-        # We expect the result_value to be False, and it is.
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"result_value": "False"}},
-             "response": resp,
-             "request": req})
-        self.assertEqual(r, True)
-
-        # We expect the result_status to be True, but it is not!
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"result_status": "True"}},
-             "response": resp,
-             "request": req})
-        self.assertEqual(r, False)
-
-        # We expect the result_status to be False, and it is!
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"result_status": "False"}},
-             "response": resp,
-             "request": req})
-        self.assertEqual(r, True)
-
-        # check a locked token with maxfail = failcount
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
-                                 headers={})
-
-        req.all_data = {"user": "cornelius"}
-        resp.data = """{"result": {"value": false},
-            "detail": {"serial": "lockedtoken"}
-            }
-        """
-        tok = init_token({"serial": "lockedtoken", "type": "spass"})
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"token_locked": "True"}},
-             "response": resp,
-             "request": req
-             }
-        )
-        # not yet locked
-        self.assertEqual(r, False)
-
-        # lock it
-        tok.set_failcount(10)
-        options = {"g": {},
-                   "handler_def": {"conditions": {"token_locked": "True"}},
-                   "response": resp,
-                   "request": req
-                   }
-        r = uhandler.check_condition(options)
-        # now locked
-        self.assertEqual(r, True)
-
-        # check the do action.
-        g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "123456"
-        g.audit_object = audit_object
-        options = {"g": g,
-                   "handler_def": {"conditions": {"token_locked": "True"},
-                                   "options": {"emailconfig": "myserver"}},
-                   "response": resp,
-                   "request": req
-                   }
-
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
-        self.assertTrue(r > 0)
-
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-
-        r = uhandler.do("sendmail", options=options)
-        self.assertEqual(r, True)
-
-    def test_06_check_conditions_realm(self):
-        uhandler = UserNotificationEventHandler()
-        # check a locked token with maxfail = failcount
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1"},
-                                 headers={})
-
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius@realm1"}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"realm": "realm2"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # wrong realm
-        self.assertEqual(r, False)
-
-        # Check condition resolver
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"resolver": "resolver1"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        self.assertTrue(r)
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"resolver": "resolver2"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        self.assertFalse(r)
-
-    @smtpmock.activate
-    def test_07_locked_token_wrong_pin(self):
-        tok = init_token({"serial": "lock2", "type": "spass",
-                          "pin": "pin"}, user=User("cornelius", "realm1"))
-        # lock it
-        tok.set_failcount(10)
-
-        uhandler = UserNotificationEventHandler()
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
-        builder = EnvironBuilder(method='POST')
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius", "pass": "wrong"}
-        req.User = User("cornelius", self.realm1)
-        # check the do action.
-        g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = None
-        g.audit_object = audit_object
-        g.client_ip = "127.0.0.1"
-        options = {"g": g,
-                   "handler_def": {"conditions": {"token_locked": "True"},
-                                   "options": {"emailconfig": "myserver"}},
-                   "response": resp,
-                   "request": req
-                   }
-
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
-        self.assertTrue(r > 0)
-
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-
-        r = uhandler.check_condition(options)
-        self.assertEqual(r, True)
-
-        r = uhandler.do("sendmail", options=options)
-        self.assertEqual(r, True)
-
-    @smtpmock.activate
-    def test_08_check_conditions_serial(self):
-        uhandler = UserNotificationEventHandler()
-        # check a serial with regexp
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1"},
-                                 headers={})
-
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius@realm1",
-                        "serial": "OATH123456"}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"serial": "^OATH.*"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # Serial matches the regexp
-        self.assertEqual(r, True)
-
-    def test_09_check_conditions_tokenrealm(self):
-        uhandler = UserNotificationEventHandler()
-        # check if tokenrealm is contained
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1"},
-                                 headers={})
-
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=User("cornelius", "realm1"))
-
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius@realm1",
-                        "serial": "oath1234"}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"tokenrealm": "realm1,realm2,"
-                                                          "realm3"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # realm matches
-        self.assertEqual(r, True)
-
-        # test condition tokenresolver
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"tokenresolver": "resolver1,reso2"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        self.assertTrue(r)
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"tokenresolver": "reso2,reso3"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        self.assertFalse(r)
-
-    def test_10_check_conditions_tokentype(self):
-        uhandler = UserNotificationEventHandler()
-        # check if tokenrealm is contained
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1"},
-                                 headers={})
-
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=User("cornelius", "realm1"))
-
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius@realm1",
-                        "serial": "oath1234"}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {"tokentype": "totp,spass,oath,"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # Serial matches the regexp
-        self.assertEqual(r, True)
-
-    def test_10_check_conditions_token_has_owner(self):
-        uhandler = UserNotificationEventHandler()
-        # check if tokenrealm is contained
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1"},
-                                 headers={})
-
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=User("cornelius", "realm1"))
-
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius@realm1",
-                        "serial": "oath1234"}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKEN_HAS_OWNER: "True"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # Token has an owner
-        self.assertEqual(r, True)
-
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKEN_HAS_OWNER: "False"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # Token has an owner, but the condition is wrong
-        self.assertEqual(r, False)
-
-        # unassign token, no owner
-        unassign_token("oath1234")
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {
-                 "conditions": {CONDITION.TOKEN_HAS_OWNER: "False"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # The condition was, token-not-assigned and the token has no user
-        self.assertEqual(r, True)
-
-    def test_10_check_conditions_token_validity_period(self):
-        uhandler = UserNotificationEventHandler()
-        serial = "spass01"
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1"},
-                                 headers={})
-
-        tok = init_token({"serial": serial,
-                          "type": "spass"},
-                          user=User("cornelius", "realm1"))
-
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius@realm1",
-                        "serial": serial}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
-
-        # token is within validity period
-        r = uhandler.check_condition(
-            {"g": {},
-             "request": req,
-             "response": resp,
-             "handler_def": {
-                 "conditions": {CONDITION.TOKEN_VALIDITY_PERIOD: "True"}}
-             }
-        )
-        self.assertEqual(r, True)
-
-        # token is outside validity period
-        end_date = datetime.now(tzlocal()) - timedelta(1)
-        end = end_date.strftime(DATE_FORMAT)
-        tok.set_validity_period_end(end)
-        r = uhandler.check_condition(
-            {"g": {},
-             "request": req,
-             "response": resp,
-             "handler_def": {
-                 "conditions": {CONDITION.TOKEN_VALIDITY_PERIOD: "True"}}
-             }
-        )
-        self.assertEqual(r, False)
-
-        # token is outside validity period but we check for invalid token
-        r = uhandler.check_condition(
-            {"g": {},
-             "request": req,
-             "response": resp,
-             "handler_def": {
-                 "conditions": {CONDITION.TOKEN_VALIDITY_PERIOD: "False"}}
-             }
-        )
-        self.assertEqual(r, True)
-
-        remove_token(serial)
-
-    def test_10_check_conditions_token_is_orphaned(self):
-        uhandler = UserNotificationEventHandler()
-        serial = "orphaned1"
-        # check if tokenrealm is contained
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1"},
-                                 headers={})
-
-        # Assign a non-existing user to the token
-        tok = init_token({"serial": serial, "type": "spass"})
-        r = TokenOwner(token_id=tok.token.id, resolver=self.resolvername1,
-                       realmname=self.realm1, user_id="123981298").save()
-        self.assertTrue(r > 0)
-
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"serial": serial}
-        req.User = User()
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKEN_IS_ORPHANED: "True"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # Token has an owner assigned, but this user does not exist
-        # -> token is orphaned
-        self.assertEqual(r, True)
-
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {
-                 "conditions": {CONDITION.TOKEN_IS_ORPHANED: "False"}},
-             "request": req,
-             "response": resp
-             }
-        )
-
-        # Token is orphaned, but we check for non-orphaned tokens.
-        self.assertEqual(r, False)
-
-        # Unassign any user from this token - we need to do this, since the token can have more users.
-        unassign_token(tok.token.serial)
-        self.assertEqual(tok.token.owners.first(), None)
-        # Set an existing user for the token.
-        tok.add_user(User("cornelius", "realm1"))
-        self.assertEqual(tok.token.owners.first().user_id, "1000")
-        self.assertEqual(tok.token.owners.first().realm.name, "realm1")
-
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {
-                 "conditions": {CONDITION.TOKEN_IS_ORPHANED: "False"}},
-             "request": req,
-             "response": resp
-             }
-        )
-
-        # Token is not orphaned
-        self.assertEqual(r, True)
-
-        remove_token(serial)
-
-    @smtpmock.activate
-    def test_11_extended_body_tags(self):
-        # setup realms
-        self.setUp_user_realms()
-
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
-        self.assertTrue(r > 0)
-
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-
-        g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "123456"
-
-        g.logged_in_user = {"username": "admin",
-                            "role": "admin",
-                            "realm": ""}
-        g.audit_object = audit_object
-
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
-                                 headers={})
-
-        env = builder.get_environ()
-        # Set the remote address so that we can filter for it
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        req.all_data = {"serial": "SomeSerial",
-                        "user": "cornelius"}
-        req.User = User("cornelius", self.realm1)
-        resp = Response()
-        resp.data = """{"result": {"value": true},
-        "detail": {"registrationcode": "12345678910"}
-        }
-        """
-        options = {"g": g,
-                   "request": req,
-                   "response": resp,
                    "handler_def": {
-                       "conditions": {"serial": "123.*"},
-                       "options": {"body": "your {registrationcode}",
-                                   "emailconfig": "myserver"}}}
-
-        un_handler = UserNotificationEventHandler()
-        res = un_handler.do("sendmail", options=options)
-        self.assertTrue(res)
-
-    @smtpmock.activate
-    def test_12_send_to_email(self):
-        # setup realms
-        self.setUp_user_realms()
-
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
-        self.assertTrue(r > 0)
-
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-
-        g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "123456"
-
-        g.logged_in_user = {"username": "admin",
-                            "role": "admin",
-                            "realm": ""}
-        g.audit_object = audit_object
-
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
-                                 headers={})
-
-        env = builder.get_environ()
-        # Set the remote address so that we can filter for it
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        req.all_data = {"serial": "SomeSerial",
-                        "user": "cornelius"}
-        req.User = User("cornelius", self.realm1)
-        resp = Response()
-        resp.data = """{"result": {"value": true},
-        "detail": {"registrationcode": "12345678910"}
-        }
-        """
-        options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {
-                       "conditions": {"serial": "123.*"},
-                       "options": {"body": "your {registrationcode}",
-                                   "emailconfig": "myserver",
-                                   "To": NOTIFY_TYPE.EMAIL,
-                                   "To "+NOTIFY_TYPE.EMAIL:
-                                       "recp@example.com"}}}
-
-        un_handler = UserNotificationEventHandler()
-        res = un_handler.do("sendmail", options=options)
-        self.assertTrue(res)
-
-
-    @smtpmock.activate
-    def test_12_send_to_internal_admin(self):
-        # setup realms
-        self.setUp_user_realms()
-
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
-        self.assertTrue(r > 0)
-
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-
-        g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "123456"
-
-        g.logged_in_user = {"username": "admin",
-                            "role": "admin",
-                            "realm": ""}
-        g.audit_object = audit_object
-
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
-                                 headers={})
-
-        env = builder.get_environ()
-        # Set the remote address so that we can filter for it
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        req.all_data = {"serial": "SomeSerial",
-                        "user": "cornelius"}
-        req.User = User("cornelius", self.realm1)
-        resp = Response()
-        resp.data = """{"result": {"value": true},
-        "detail": {"registrationcode": "12345678910"}
-        }
-        """
-
-        # Test with non existing admin
-        options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {
-                       "conditions": {"serial": "123.*"},
-                       "options": {"body": "your {registrationcode}",
-                                   "emailconfig": "myserver",
-                                   "To": NOTIFY_TYPE.INTERNAL_ADMIN,
-                                   "To " + NOTIFY_TYPE.INTERNAL_ADMIN:
-                                       "super"}}}
-
-        un_handler = UserNotificationEventHandler()
-        res = un_handler.do("sendmail", options=options)
-        self.assertTrue(res)
-
-        # Test with existing admin
-        options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {
-                       "conditions": {"serial": "123.*"},
-                       "options": {"body": "your {registrationcode}",
-                                   "emailconfig": "myserver",
-                                   "To": NOTIFY_TYPE.INTERNAL_ADMIN,
-                                   "To " + NOTIFY_TYPE.INTERNAL_ADMIN:
-                                       "testadmin"}}}
-
-        un_handler = UserNotificationEventHandler()
-        res = un_handler.do("sendmail", options=options)
-        self.assertTrue(res)
-
-    @smtpmock.activate
-    def test_13_send_to_logged_in_user(self):
-        # setup realms
-        self.setUp_user_realms()
-
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
-        self.assertTrue(r > 0)
-
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-
-        g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "123456"
-
-        g.logged_in_user = {"username": "testadmin",
-                            "role": "admin",
-                            "realm": ""}
-        g.audit_object = audit_object
-
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
-                                 headers={})
-
-        env = builder.get_environ()
-        # Set the remote address so that we can filter for it
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        req.all_data = {"serial": "SomeSerial",
-                        "user": "cornelius"}
-        req.User = User("cornelius", self.realm1)
-        resp = Response()
-        resp.data = """{"result": {"value": true},
-        "detail": {"registrationcode": "12345678910"}
-        }
-        """
-
-        # Test with non existing admin
-        options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {
-                       "conditions": {"serial": "123.*"},
-                       "options": {"body": "your {registrationcode}",
-                                   "emailconfig": "myserver",
-                                   "To": NOTIFY_TYPE.LOGGED_IN_USER}}}
-
-        un_handler = UserNotificationEventHandler()
-        res = un_handler.do("sendmail", options=options)
-        self.assertTrue(res)
-
-        # Now send the mail to a logged in user from a realm
-        g.logged_in_user = {"username": "cornelius",
-                            "role": "user",
-                            "realm": "realm1"}
-        options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {
-                       "conditions": {"serial": "123.*"},
-                       "options": {"body": "your {registrationcode}",
-                                   "emailconfig": "myserver",
-                                   "To": NOTIFY_TYPE.LOGGED_IN_USER}}}
-        un_handler = UserNotificationEventHandler()
-        res = un_handler.do("sendmail", options=options)
-        self.assertTrue(res)
-
-    @smtpmock.activate
-    def test_14_send_to_adminrealm(self):
-        # setup realms
-        self.setUp_user_realms()
-
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
-        self.assertTrue(r > 0)
-
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-
-        g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "123456"
-
-        g.logged_in_user = {"username": "testadmin",
-                            "role": "admin",
-                            "realm": ""}
-        g.audit_object = audit_object
-
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
-                                 headers={})
-
-        env = builder.get_environ()
-        # Set the remote address so that we can filter for it
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        req.all_data = {"serial": "SomeSerial",
-                        "user": "cornelius"}
-        req.User = User("cornelius", self.realm1)
-        resp = Response()
-        resp.data = """{"result": {"value": true},
-        "detail": {"registrationcode": "12345678910"}
-        }
-        """
-
-        # send email to user in adminrealm "realm1"
-        # Although this is no admin realm, but this realm contains some email
-        #  addresses.
-        options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {
-                       "conditions": {"serial": "123.*"},
-                       "options": {"body": "your {registrationcode}",
-                                   "emailconfig": "myserver",
-                                   "To": NOTIFY_TYPE.ADMIN_REALM,
-                                   "To "+NOTIFY_TYPE.ADMIN_REALM:
-                                       "realm1"}}}
-        un_handler = UserNotificationEventHandler()
-        res = un_handler.do("sendmail", options=options)
-        self.assertTrue(res)
-
-    def test_15_unassign_missing_user(self):
-        """
-        Unassign a token from a user that does not exist anymore.
-
-        There is a token which is owned by a user, who was deleted fromt he
-        userstore.
-        An Event Handler, to notifiy the user via email on unassign is defined.
-        This testcase must NOT throw an exception. Well, the user can not be
-        notified anymore, since the email also does not exist in the
-        userstore anymore.
-        """
-        # Create admin authentication token
-        self.authenticate()
-        # Create our realm and resolver
-        parameters = {'resolver': "notify_resolver",
-                      "type": "sqlresolver",
-                      'Driver': 'sqlite',
-                      'Server': '/tests/testdata/',
-                      'Database': "testuser.sqlite",
-                      'Table': 'users',
-                      'Encoding': 'utf8',
-                      'Editable': True,
-                      'Map': '{ "username": "username", \
-                        "userid" : "id", \
-                        "email" : "email", \
-                        "surname" : "name", \
-                        "givenname" : "givenname", \
-                        "password" : "password", \
-                        "phone": "phone", \
-                        "mobile": "mobile"}'
-                      }
-        r = save_resolver(parameters)
-        self.assertTrue(r)
-
-        success, fail = set_realm("notify_realm", ["notify_resolver"])
-        self.assertEqual(len(success), 1)
-        self.assertEqual(len(fail), 0)
-
-        # Create a user
-        ## First delete it, in case the user exist
-        User("notify_user", "notify_realm").delete()
-        uid = create_user("notify_resolver", {"username": "notify_user"})
-        self.assertTrue(uid)
-        user = User("notify_user", "notify_realm")
-        self.assertEqual(user.login, "notify_user")
-        self.assertEqual(user.realm, "notify_realm")
-
-        # Create a token for this user
-        r = init_token({"type": "spass",
-                        "serial": "SPNOTIFY"}, user=user)
-        self.assertTrue(r)
-
-        # create notification handler
-        eid = set_event("This definition sends emails", "token_unassign",
-                        "UserNotification", "sendmail", position="post")
-        self.assertTrue(eid)
-
-        # delete the user
-        r = user.delete()
-        self.assertTrue(r)
-
-        # unassign the token from the non-existing user
-        # call the notification handler implicitly
-        with self.app.test_request_context('/token/unassign',
-                                           method='POST',
-                                           data={"serial": "SPNOTIFY"},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertEqual(result.get("value"), 1)
-
-        # Cleanup
-        delete_event(eid)
-        delete_realm("notify_realm")
-        delete_resolver("notify_resolver")
-        remove_token("SPNOTIFY")
-
-    def test_16_check_conditions_user_num_tokens(self):
-        # prepare
-        user = User("cornelius", "realm1")
-        remove_token(user=user)
-        uhandler = UserNotificationEventHandler()
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1"},
-                                 headers={})
-
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=user)
-
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius@realm1",
-                        "serial": "oath1234"}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
-        # Do checking
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: "1"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # The user has one token
-        self.assertEqual(r, True)
-
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: "2"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # The user has not two tokens!
-        self.assertEqual(r, False)
-
-        remove_token("oath1234")
-
-    def test_17_check_conditions_otp_counter(self):
-        # prepare
-        serial = "spass01"
-        user = User("cornelius", "realm1")
-        remove_token(user=user)
-        uhandler = UserNotificationEventHandler()
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1"},
-                                 headers={})
-
-        tok = init_token({"serial": serial, "type": "spass",
-                          "otppin": "spass"},
-                         user=user)
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius@realm1",
-                        "serial": serial}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
-        # Do checking
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: "1"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # The counter of the token is 0
-        self.assertEqual(r, False)
-
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: "0"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # The counter of the token is 0
-        self.assertEqual(r, True)
-
-        # match if counter is >100
-        tok.token.count = 101
-        tok.token.save()
-
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: ">100"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        self.assertTrue(r)
-
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.OTP_COUNTER: "<100"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        self.assertFalse(r)
-
-        remove_token(serial)
-
-    def test_18_check_conditions_last_auth(self):
-        # prepare
-        serial = "spass01"
-        user = User("cornelius", "realm1")
-        remove_token(user=user)
-        uhandler = UserNotificationEventHandler()
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1"},
-                                 headers={})
-
-        tok = init_token({"serial": serial, "type": "spass",
-                          "otppin": "spass"},
-                         user=user)
-        # Add last authentication
-        tok.add_tokeninfo(ACTION.LASTAUTH, "2016-10-10 10:10:10.000")
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius@realm1",
-                        "serial": serial}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
-        # Do checking
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.LAST_AUTH: "1h"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # the last authentication is longer than one hour ago
-        self.assertEqual(r, True)
-
-        r = uhandler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.LAST_AUTH: "100y"}},
-             "request": req,
-             "response": resp
-             }
-        )
-        # The last authentication is not longer than 100 years ago
-        self.assertEqual(r, False)
-
-        remove_token(serial)
-
-    @smtpmock.activate
-    def test_19_sendmail_escape_html(self):
-        # setup realms
-        self.setUp_user_realms()
-
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
-        self.assertTrue(r > 0)
-
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-
-        g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "123456"
-
-        g.logged_in_user = {"username": "admin",
-                            "role": "admin",
-                            "realm": ""}
-        g.audit_object = audit_object
-
-        # Set a user agent with HTML tags
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
-                                 headers={"User-Agent": "<b>agent</b>"})
-
-        env = builder.get_environ()
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        req.all_data = {"serial": "SomeSerial",
-                        "user": "cornelius"}
-        req.User = User("cornelius", self.realm1)
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
-        # If we send a plain email, we do not escape HTML
-        options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {"options":
-                                       {"emailconfig": "myserver",
-                                        "body": "{ua_string} performed an action for {user}"}
-                                   }
+                        "options": {"user": "logged_in_user",
+                                    "attrkey": "test",
+                                    "attrvalue": "check"}}
                    }
-
-        un_handler = UserNotificationEventHandler()
-        res = un_handler.do("sendmail", options=options)
+        t_handler = CustomUserAttributesHandler()
+        res = t_handler.do("set_custom_user_attributes", options=options)
         self.assertTrue(res)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message())
-        payload = to_unicode(parsed_email.get_payload(decode=True))
-        self.assertEqual(parsed_email.get_content_type(), "text/plain")
-        self.assertIn("<b>agent</b>", payload)
-        # If we send a HTML email, we do escape HTML
-        options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {"options":
-                                       {"emailconfig": "myserver",
-                                        "mimetype": "html",
-                                        "body": "{ua_string} performed an action for {user}"}
-                                   }
-                   }
-        un_handler = UserNotificationEventHandler()
-        res = un_handler.do("sendmail", options=options)
-        self.assertTrue(res)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message())
-        payload = to_unicode(parsed_email.get_payload(decode=True))
-        self.assertEqual(parsed_email.get_content_type(), "text/html")
-        self.assertIn("&lt;b&gt;agent&lt;/b&gt;", payload)
-        self.assertNotIn("<b>", payload)
 
-    @smtpmock.activate
-    def test_20_sendmail_googleurl(self):
-        # setup realms
+        # Check that the user has the correct attribute
+        a = user.attributes
+        self.assertIn('test', a, user)
+        self.assertEqual('check', a.get('test'), user)
+
+    def test_02_event_delete_attributes(self):
+
+        # Setup realm and user
         self.setUp_user_realms()
 
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
-        self.assertTrue(r > 0)
-
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-
+        user = User("hans", self.realm1)
         g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "123456"
+        g.logged_in_user = {'username': 'hans',
+                            'realm': self.realm1}
+        # Setup user attribute
+        ret = user.set_attribute('test', 'check')
+        self.assertTrue(ret)
+        a = user.attributes
+        if "test" in a:
+            b = a.get("test")
+            self.assertEqual('check', b)
 
-        g.logged_in_user = {"username": "admin",
-                            "role": "admin",
-                            "realm": ""}
-        g.audit_object = audit_object
-
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
-                                 headers={})
-
-        env = builder.get_environ()
-        # Set the remote address so that we can filter for it
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        req.all_data = {"serial": "SomeSerial",
-                        "user": "cornelius"}
-        req.User = User("cornelius", self.realm1)
-        resp = Response()
-        resp.data = """{
-    "detail": {
-        "googleurl": {
-            "description": "URL for google Authenticator",
-            "img": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeoAAAHqAQAAAADjFjCXAAAD+UlEQVR4nO2dTYrkSAxGn8aGWtowB6ij2Dcb5khzA/soeYABe9lgo1mE4qeKphdpN901+WlRpDP9iEwQUnySHGXOBVv/uEKDcOHChQsXLly48HtxC+sxG08DTmMdT7N5N7M5XUK6NDOz+b7Vhb8ajru7M7m7+9a5ux/A4O7L4MlgOIhP0y2ZWL70bxf+q/G9hC/AF05j2oDVenyhc7MxPjWz/ubVhb82bvP+loopZmaRa+E0Jj9++urCXxRf3w/sr0dPinUM7jbvPbGv+8mrC38pfHD3Jb08jfX9AIYjuZ4vdO4Lp/kCxNbvztWFvxYeaiKsc6btx3/yrVITwp83/2jx7nDgy3BEmHOPV6F1i8nrhD9ltQ6SAtm0dQ4ppXYOg5cI1xWfVOVE+BXLNZB9hPXdgf00Zx+NyU9z9v5wdmD650+A7gDOjH3p3y78V+E5w6YSMKTacMmmNddmwREBTxlW+AWrXhdpNvsakWYhXA+K/x1SE8KvWNYQJdYVXytFk6ph0y3uh2Kd8CsWamLLyoEP3dcqM1I4BGCS1wm/Zp81bOtrXeOEtfsPpYYirxP+lDX7uhrrlrJzSyl1gybDlmEUeZ3w56zNpnWWaQtfayRtEhfDoX2d8JtiXXhTqf7WzR0Q83X1EqRhhd+A7z0xWmJmsFsaHnb3A6ZHX6bqIuDdu7rw18LbDFtGhnNbLJSrL4N7Uq5Lqdwpwwq/iMdG7tFjM3WWuHObAaaHmf9dJ4hvXl34q+Fl5qQEsqJhS5O/zncmwbEM6v4Lv2TV66iTJuFckU2hvgdo5kT4LXh6FGfyA5vTgxIAlIrwRp5gH0JchP/9Dl9e+JfD017N1/nNYR9x9hEYDizy6oav798Mhn/NAQekYYVfstybIPdXPza+ylhA06pN05/KsMIv4uvYOexvbvZ+NAnXF04zG6Hd5qleJ/ya5Z5D6fRnlRoNio3y8ES5VB9W+DWLPtjGh+pveUai1Ivb6ROX1wm/Be/c5sGddQwNm1NqPPbvyx5n7+jECeE3qgnIw8PU0ZKt1PCaS3XEhN+FRx/iNKZHnw7WSQU6hm8p/sURO8OBzXevLvx18NL9d8/P43gefKq6glpIgTr4pFgn/Dn7pA/qmRLRbt1ywi3d13S6k+p1wp+3XDkB2rJw5zQH69SZz3LYibxO+PMW3uS5VFeH1yP1Hm01ZSplFmVY4c9bk1dLNo2QlhJpnvRsTFVi4bfi7o+3dFYdq/WkLtlMlRmhOmz+GasLf1G8qRLTOevId47pLMNQv9mXF/418O+ewd6UT+qJE/XozhhQUYYV/qx91rBTVg5VvjaVkxgjVr1O+BUz/fc64cKFCxcuXLjw/wX+HzgPbUakdjuaAAAAAElFTkSuQmCC",
-            "value": "otpauth://hotp/OATH0001D8B6?secret=GQROHTUPBAK5N6T2HBUK4IP42R56EMV3&counter=1&digits=6&issuer=privacyIDEA"
-        },
-        "rollout_state": "",
-        "serial": "OATH0001D8B6",
-        "threadid": 140437172639168
-    },
-    "id": 1,
-    "jsonrpc": "2.0",
-    "result": {
-        "status": true,
-        "value": true
-    },
-    "signature": "foo",
-    "time": 1561549651.093083,
-    "version": "privacyIDEA 3.0.1.dev2",
-    "versionnumber": "3.0.1.dev2"
-}
-"""
+        # The eventhandler will delete the user-attribute
         options = {"g": g,
-                   "request": req,
-                   "response": resp,
+                   "attrkey": "test",
+                   "attrvalue": "check",
                    "handler_def": {
-                       "conditions": {"serial": "123.*"},
-                       "options": {"body": "<img src='{googleurl_img}' />",
-                                   "mimetype": "html",
-                                   "emailconfig": "myserver"}}}
-
-        un_handler = UserNotificationEventHandler()
-        res = un_handler.do("sendmail", options=options)
+                       "options": {"user": "logged_in_user"}}
+                   }
+        t_handler = CustomUserAttributesHandler()
+        res = t_handler.do("delete_custom_user_attributes", options)
         self.assertTrue(res)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message())
-        payload = to_unicode(parsed_email.get_payload(decode=True))
-        self.assertEqual(parsed_email.get_content_type(), "text/html")
-        # Check that the base64-encoded image does not get mangled
-        self.assertEqual(payload,
-                         "<img src='data:image/png;base64,"
-                         "iVBORw0KGgoAAAANSUhEUgAAAeoAAAHqAQAAAADjFjCXAAAD+UlEQVR4nO2dTYrkSAxGn8aGWtowB6ij2Dcb5khzA"
-                         "/soeYABe9lgo1mE4qeKphdpN901+WlRpDP9iEwQUnySHGXOBVv/uEKDcOHChQsXLly48HtxC"
-                         "+sxG08DTmMdT7N5N7M5XUK6NDOz+b7Vhb8ajru7M7m7+9a5ux/A4O7L4MlgOIhP0y2ZWL70bxf+q/G9hC"
-                         "/AF05j2oDVenyhc7MxPjWz/ubVhb82bvP+loopZmaRa+E0Jj9++urCXxRf3w/sr0dPinUM7jbvPbGv"
-                         "+8mrC38pfHD3Jb08jfX9AIYjuZ4vdO4Lp/kCxNbvztWFvxYeaiKsc6btx3/yrVITwp83"
-                         "/2jx7nDgy3BEmHOPV6F1i8nrhD9ltQ6SAtm0dQ4ppXYOg5cI1xWfVOVE+BXLNZB9hPXdgf00Zx+NyU9z9v5wdmD650"
-                         "+A7gDOjH3p3y78V+E5w6YSMKTacMmmNddmwREBTxlW+AWrXhdpNvsakWYhXA+K"
-                         "/x1SE8KvWNYQJdYVXytFk6ph0y3uh2Kd8CsWamLLyoEP3dcqM1I4BGCS1wm/Zp81bOtrXeOEtfsPpYYirxP"
-                         "+lDX7uhrrlrJzSyl1gybDlmEUeZ3w56zNpnWWaQtfayRtEhfDoX2d8JtiXXhTqf7WzR0Q83X1EqRhhd"
-                         "+A7z0xWmJmsFsaHnb3A6ZHX6bqIuDdu7rw18LbDFtGhnNbLJSrL4N7Uq5Lqdwpwwq"
-                         "/iMdG7tFjM3WWuHObAaaHmf9dJ4hvXl34q+Fl5qQEsqJhS5O"
-                         "/zncmwbEM6v4Lv2TV66iTJuFckU2hvgdo5kT4LXh6FGfyA5vTgxIAlIrwRp5gH0JchP/9Dl9e+JfD017N1"
-                         "/nNYR9x9hEYDizy6oav798Mhn/NAQekYYVfstybIPdXPza+ylhA06pN05/KsMIv4uvYOexvbvZ"
-                         "+NAnXF04zG6Hd5qleJ/ya5Z5D6fRnlRoNio3y8ES5VB9W+DWLPtjGh+pveUai1Ivb6ROX1wm/Be"
-                         "/c5sGddQwNm1NqPPbvyx5n7+jECeE3qgnIw8PU0ZKt1PCaS3XEhN+FRx/iNKZHnw7WSQU6hm8p"
-                         "/sURO8OBzXevLvx18NL9d8/P43gefKq6glpIgTr4pFgn/Dn7pA/qmRLRbt1ywi3d13S6k+p1wp"
-                         "+3XDkB2rJw5zQH69SZz3LYibxO+PMW3uS5VFeH1yP1Hm01ZSplFmVY4c9bk1dLNo2QlhJpnvRsTFVi4bfi7o+3dFYdq"
-                         "/WkLtlMlRmhOmz+GasLf1G8qRLTOevId47pLMNQv9mXF/418O+ewd6UT+qJE/XozhhQUYYV"
-                         "/qx91rBTVg5VvjaVkxgjVr1O+BUz/fc64cKFCxcuXLjw/wX+HzgPbUakdjuaAAAAAElFTkSuQmCC' />")
 
-    def test_21_save_notification(self):
+        # Check that the user attribute is deleted
+        self.assertNotIn("test", user.attributes, user)
+
+    def test_03_event_set_attributes_tokenowner(self):
+        # Tokenowner is the default
+        # Setup realm and user
+        self.setUp_user_realms()
+
+        init_token({"serial": "SPASS01", "type": "spass"},
+                   User("cornelius", self.realm1))
         g = FakeFlaskG()
-        audit_object = FakeAudit()
-        g.logged_in_user = {"username": "admin",
-                            "role": "admin",
-                            "realm": ""}
-        g.audit_object = audit_object
-
         builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
+                                 data={'serial': "SPASS01"},
                                  headers={})
 
         env = builder.get_environ()
-        # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
-        req.all_data = {"serial": "OATH123456",
-                        "user": "cornelius"}
+        req.all_data = {"serial": "SPASS01"}
         req.User = User("cornelius", self.realm1)
-        resp = Response()
-        resp.data = """{"result": {"value": true}}"""
+
+        # The attributekey will be set as "test" and the attributevalue as "check"
         options = {"g": g,
                    "request": req,
-                   "response": resp,
-                   "handler_def": {"options":
-                                       {"filename": "test{serial}.txt",
-                                        "body": "{serial}, {user}"}
-                                   }
-                   }
-        # remove leftover file from the last test run, if any
-        if os.path.exists("tests/testdata/testOATH123456.txt"):
-            os.remove("tests/testdata/testOATH123456.txt")
-        un_handler = UserNotificationEventHandler()
-        res = un_handler.do("savefile", options=options)
+                   "handler_def": {"conditions": {"tokentype": "totp,spass,oath,"},
+                                   "options": {"attrkey": "test",
+                                               "attrvalue": "check",
+                                               "user": USER_TYPE.TOKENOWNER}}}
+        t_handler = CustomUserAttributesHandler()
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
         self.assertTrue(res)
-        # check, if the file was written with the correct contents
-        with open("tests/testdata/testOATH123456.txt") as f:
-            l = f.read()
-        self.assertEqual(l, "OATH123456, Cornelius")
-        os.remove("tests/testdata/testOATH123456.txt")
 
-        # Check what happens if we try to write outside of spooldir
+        # Check that the user has the correct attribute
+        a = req.User.attributes
+        self.assertIn('test', a, req.User)
+        self.assertEqual('check', a.get('test'), req.User)
+
+    def test_04_delete_not_existing_attribute(self):
+
+        # Setup realm and user
+        self.setUp_user_realms()
+
+        user = User("hans", self.realm1)
+        g = FakeFlaskG()
+        g.logged_in_user = {'username': 'hans',
+                            'realm': self.realm1}
+        # Check that the attribute does not exist
+        self.assertNotIn('test', user.attributes, user)
+
+        # The eventhandler will delete the user-attribute
         options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {"options":
-                                       {"filename": "../../../test{serial}.txt",
-                                        "body": "{serial}, {user}"}
-                                   }
+                   "handler_def": {
+                       "options": {"attrkey": "test",
+                                   "attrvalue": "check",
+                                   "user": USER_TYPE.LOGGED_IN_USER}}
                    }
+        t_handler = CustomUserAttributesHandler()
+        res = t_handler.do(CUAH_ACTION_TYPE.DELETE_CUSTOM_USER_ATTRIBUTES, options)
+        self.assertFalse(res)
 
-        un_handler = UserNotificationEventHandler()
-        # Check that an error is written to the logfile
-        with mock.patch("logging.Logger.error") as mock_log:
-            un_handler.do("savefile", options=options)
-            mock_log.assert_called_once_with("Cannot write outside of spooldir tests/testdata/!")
+        # Check that the user attribute is deleted
+        b = user.attributes
+        if "test" not in b:
+            self.assertTrue(True)
+        else:
+            self.assertTrue(False)
 
-        # Check what happens if the file can not be written
+    def test_05_overwrite_existing_attribute(self):
+
+        # Setup realm and user
+        self.setUp_user_realms()
+
+        user = User("hans", self.realm1)
+        g = FakeFlaskG()
+        g.logged_in_user = {'username': 'hans',
+                            'realm': self.realm1}
+        # Setup user attribute
+        ret = user.set_attribute('test', 'old')
+        self.assertTrue(ret)
+        a = user.attributes
+        if "test" in a:
+            b = a.get("test")
+            self.assertEqual('old', b)
+
+        # The attributekey will be set as "test" and the attributevalue as "check"
         options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {"options":
-                                       {"filename": "test{serial}.txt",
-                                        "body": "{serial}, {user}"}
-                                   }
+                   "handler_def": {
+                       "options": {"user": USER_TYPE.LOGGED_IN_USER,
+                                   "attrkey": "test",
+                                   "attrvalue": "new"}}
                    }
+        t_handler = CustomUserAttributesHandler()
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
+        self.assertTrue(res)
 
-        # create a file, that is not writable
-        with open("tests/testdata/testOATH123456.txt", "w") as f:
-            f.write("empty")
-        os.chmod("tests/testdata/testOATH123456.txt", 0o400)
-        un_handler = UserNotificationEventHandler()
-        # Check that an error is written to the logfile
-        with mock.patch("logging.Logger.error") as mock_log:
-            un_handler.do("savefile", options=options)
-            call_args = mock_log.call_args
-            # ensure log.error was actually called ...
-            self.assertIsNotNone(call_args)
-            # ... with the right message
-            self.assertTrue(call_args[0][0].startswith("Failed to write notification file:"))
-
-        os.remove("tests/testdata/testOATH123456.txt")
-
+        # Check that the user has the correct attribute
+        a = user.attributes
+        self.assertIn('test', a, user)
+        self.assertEqual('new', a.get('test'), user)

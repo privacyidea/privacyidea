@@ -3,15 +3,28 @@
 Upgrading
 ---------
 
+In any case before upgrading a major version read the document
+`READ_BEFORE_UPDATE <https://github.com/privacyidea/privacyidea/blob/master/READ_BEFORE_UPDATE.md>`_
+which is continuously updated in the Github repository.
+Note, that when you are upgrading over several major versions, read all the comments
+for all versions.
+
 If you installed privacyIDEA via DEB or RPM repository you can use the normal
-system ways of *apt-get*, *aptitude* and *rpm* to upgrade privacyIDEA to the
+system ways of *apt-get*, *aptitude* and *yum* to upgrade privacyIDEA to the
 current version.
 
-If you want to upgrade your Ubuntu installtion from privacyIDEA 2.23 to
-privacyIDEA 3.0, please read :ref:`upgrade_ubuntu`.
+If you want to upgrade an old Ubuntu installation from privacyIDEA 2.23 to
+privacyIDEA 3.0, please read the :ref:`Note on legacy upgrades <upgrade_packaged_legacy>`.
 
-Basic pip upgrade process
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Different upgrade processes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Depending on the way privacyIDEA was installed, there are different recommended update procedures.
+The following section describes the process for pip installations.
+Instructions for packaged versions on RHEL and Ubuntu are found in :ref:`upgrade_packaged`.
+
+Upgrading a pip installation
+............................
 
 If you install privacyIDEA into a python virtualenv like */opt/privacyidea*,
 you can follow this basic upgrade process.
@@ -30,7 +43,7 @@ and your database:
    pi-manage backup create
 
 Running upgrade
-...............
+^^^^^^^^^^^^^^^
 
 Starting with version 2.17 the script ``privacyidea-pip-update`` performs the
 update of the python virtualenv and the DB schema.
@@ -46,11 +59,11 @@ The following parameters are allowed:
 
 ``-s`` or ``--skipstamp`` skips the version stamping during schema update.
 
-``-n`` or ``--noshema`` completely skips the schema update and only updates the code.
+``-n`` or ``--noschema`` completely skips the schema update and only updates the code.
 
 
 Manual upgrade
-..............
+^^^^^^^^^^^^^^
 
 Now you can upgrade the installation:
 
@@ -67,166 +80,50 @@ Usually you will need to upgrade/migrate the database:
 
 Now you need to restart your webserver for the new code to take effect.
 
+.. _upgrade_packaged:
 
-Upgrade to privacyIDEA 2.12
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Upgrading a packaged installation
+.................................
 
-In privacyIDEA 2.12 the Event Handler framework was added.
-Two new tables "eventhandler" and "eventhandleroption" were added.
+In general, the upgrade of a packaged version of privacyIDEA should be done using the
+default tools (e.g. apt and yum). In any case, read the
+`READ_BEFORE_UPDATE <https://github.com/privacyidea/privacyidea/blob/master/READ_BEFORE_UPDATE.md>`_
+file. It is also a good idea to backup your system before upgrading.
 
-You need to update the database models:
+Ubuntu upgrade
+^^^^^^^^^^^^^^
 
-.. code-block:: bash
+If you use the Ubuntu packages in a default setup, the upgrade can should be done
+using::
 
-   pi-manage db stamp 4f32a4e1bf33 -d path/to/migrations
-   pi-manage db upgrade -d path/to/migrations
-
-
-Upgrade to privacyIDEA 2.11
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In privacyIDEA 2.11 the RADIUS server definition was added.
-RADIUS servers can be used in RADIUS tokens and in the
-RADIUS passthru policy. 
-
-A new database table "radiusserver" was added.
-
-You need to update the database models:
-
-.. code-block:: bash
-
-   pi-manage db stamp 4f32a4e1bf33 -d path/to/migrations
-   pi-manage db upgrade -d path/to/migrations
+   apt update
+   apt dist-upgrade
 
 
-Upgrade to privacyIDEA 2.10
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _upgrade_packaged_legacy:
 
-In privacyIDEA 2.10 SMTP servers were added. SMTP servers can be used for
-notifications, registration and also for Email token and SMS token.
+.. note::
+    In case you upgrade from the old privacyIDEA 2.23.x to the version 3.x you have to
+    change from your ppa sources to the new repositories. If you are upgrading your
+    Ubuntu release, e.g. from 14.04 to 16.04 the principal steps are
 
-SMTP servers need a new database table "smtpserver".
+    * Bring your Ubuntu 14.04 system up-to-date
+    * Run the release upgrade (do-release-upgrade)
+    * Eventually remove old repositories and add recent repositories as described in :ref:`add_ubuntu_repository`.
+    * Reinstall/Upgrade privacyIDEA 3.x
 
-You need to update the database models:
+    privacyIDEA 2.x installed the python packages to the system directly. The packages
+    in the repository instead come with a virtual python environment. This may cause lots
+    of obsolete packages after upgrading which may be removed with::
 
-.. code-block:: bash
-
-   pi-manage db stamp 4f32a4e1bf33 -d path/to/migrations
-   pi-manage db upgrade -d path/to/migrations
-
-privacyIDEA 2.10 can import all kind of PSKC token files. These XML files
-need to be parsed. Therefore *BeautifulSoup4* and *lxml* is used. On pip
-installations you need to install a package like *libxslt1-dev*.
+       apt autoremove
 
 
-Upgrade From privacyIDEA 2.x to 2.3
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+CentOS upgrade
+^^^^^^^^^^^^^^
 
-In 2.3 the priority of resolvers in realms was added.
+For a Red Hat Enterprise Linux (RHEL) installation run::
 
-You need to update the database models:
+ yum update
 
-.. code-block:: bash
-
-   pi-manage db stamp 4f32a4e1bf33 -d path/to/migrations
-   pi-manage db upgrade -d path/to/migrations
-
-.. note:: You need to specify the path to the migrations scripts.
-   This could be /usr/lib/privacyidea/migrations.
-
-.. note:: When upgrading with the Ubuntu LTS packages, the database
-   update is performed automatically.
-
-Upgrade From privacyIDEA 1.5
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. warning:: privacyIDEA 2.0 introduces many changes in
-   database schema, so at least perform a database backup!
-
-Stopping Your Server
-....................
-
-Be sure to stop your privacyIDEA server.
-
-Upgrade Software
-................
-
-To upgrade the code enter your python virtualenv and run:
-
-.. code-block:: bash
-
-   pip install --upgrade privacyidea
-
-Configuration
-.............
-
-Read about the configuration in the :ref:`cfgfile`.
-
-You can use the old `enckey`, the old `signing keys` and the
-old `database uri`. The values can be found in your old ini-file 
-as ``privacyideaSecretFile``, ``privacyideaAudit.key.private``, 
-``privacyideaAudit.key.public`` and ``sqlalchemy.url``. Your new 
-config file might look like this:
-
-.. code-block:: python
-
-   config_path = "/home/cornelius/tmp/pi20/etc/privacyidea/"
-   # This is your old database URI
-   # Note the three slashes!
-   SQLALCHEMY_DATABASE_URI = "sqlite:///" + config_path + "token.sqlite"
-   # This is new!
-   SECRET_KEY = 't0p s3cr3t'
-   # This is new 
-   #This is used to encrypt the admin passwords
-   PI_PEPPER = "Never know..."
-   # This is used to encrypt the token data and token passwords
-   # This is your old encryption key!
-   PI_ENCFILE = config_path + 'enckey'
-   # THese are your old signing keys
-   # This is used to sign the audit log
-   PI_AUDIT_KEY_PRIVATE = config_path + 'private.pem'
-   PI_AUDIT_KEY_PUBLIC = config_path + 'public.pem'
-
-To verify the new configuration run:
-
-.. code-block:: bash
-
-   pi-manage create_enckey
-
-It should say, that the enckey already exists!
-
-Migrate The Database
-....................
-
-You need to upgrade the database to the new database schema:
-
-.. code-block:: bash
-
-   pi-manage db upgrade -d lib/privacyidea/migrations
-
-.. note:: In the Ubuntu package the migrations folder is located at
-   ``/usr/lib/privacyidea/migrations/``.
-
-Create An Administrator
-.......................
-
-With privacyIDEA 2.0 the administrators are stored in the database.
-The password of the administrator is salted and also peppered, to avoid
-having a database administrator slip in a rogue password.
-
-You need to create new administrator accounts:
-
-.. code-block:: bash
-
-   pi-manage addadmin <email-address> <admin-name>
-
-Start The Server
-................
-
-Run the server:
-
-.. code-block:: bash
-
-   pi-manage runserver
-
-or add it to your Apache or Nginx configuration.
+to upgrade.

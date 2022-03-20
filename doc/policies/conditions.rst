@@ -30,7 +30,8 @@ consists of five parts:
 Sections
 ~~~~~~~~
 
-privacyIDEA 3.1 implements only one section, which is called ``userinfo``.
+privacyIDEA implements the sections ``userinfo``, ``token``, ``tokeninfo``, ``HTTP Request Headers``
+and ``HTTP Environment``.
 
 ``userinfo``
 ^^^^^^^^^^^^
@@ -105,6 +106,68 @@ allowed to log in.
 If the userinfo of the user that is trying to log in does not contain attributes
 ``email`` or ``groups`` (due to a resolver misconfiguration, for example), privacyIDEA
 throws an error and the request is aborted.
+
+
+``tokeninfo``
+^^^^^^^^^^^^
+
+The tokeninfo condition works the same way as userinfo but matches the tokeninfo instead.
+
+.. note:: Similar to the userinfo condition, a policy with an active tokeninfo condition will
+   throw an exception whenever the token object cannot be determined (usually from the serial).
+
+``token``
+^^^^^^^^^
+
+The token condition works on the database columns of the token. This would be
+``description``, ``otplen``, ``count``, ``serial``, ``active`` but most importantly
+also ``failcount`` and ``tokentype``.
+
+.. note:: A policy with an active token condition will
+   throw an exception whenever the token object cannot be determined.
+   It will also throw an error, if the request ``Key`` does not exist
+   as a database column.
+
+.. note:: The matching is case sensitive. Note, that e.g. token types are
+   stored in lower case in the database.
+
+**Example**: The administrator could define a dedicated policy in the scope *user* with the
+action ``delete`` and the token condition ``active``, ``<``, ``1``. For an inactive token the attribute ``active``
+would evaluate to ``0`` and thus be smaller than ``1``. An ``active`` token would evaluate to ``1``.
+This would allow the user to delete only inactive tokens, but not still active tokens.
+
+``HTTP Request Header``
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The section ``HTTP Request header`` can be used to define conditions that are checked against
+the request header key-value pairs.
+
+The ``Key`` specifies the request header key. It is case-sensitive.
+
+privacyIDEA uses the ``Comparator`` to check if the value of a header is equal or a substring
+of the required value.
+
+.. note:: privacyIDEA raises an error if ``Key`` refers to an unknown request header.
+   If the header in question is missing, the policy can not get completely evaluated.
+   Be aware that requests, that do not contain the header ``Key`` will always fail!
+   Thus, if you are using uncommon headers you should
+   in addition restrict the policy e.g. to client IPs, to assure, that a request from
+   this certain IP address will always contain the header, that is to be checked.
+
+``HTTP Environment``
+^^^^^^^^^^^^^^^^^^^^
+
+The section ``HTTP Environment`` can be used to define conditions that are checked against
+the HTTP environment key-value pairs.
+
+The ``Key`` is case sensitive.
+
+The environment contains information like the ``PATH_INFO`` which contains the name of the
+endpoint like ``/validate/check`` or ``/auth``.
+
+.. note:: privacyIDEA raises an error if ``Key`` refers to an unknown environment key.
+   The log file then contains information about the available keys.
+   The behaviour is similar to the extended conditions of HTTP Request Header.
 
 Comparators
 ~~~~~~~~~~~

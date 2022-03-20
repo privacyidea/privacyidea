@@ -18,19 +18,21 @@
 #
 #
 import six
-
+from six.moves.urllib.parse import urlparse
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.models import SMTPServer as SMTPServerDB
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
-from privacyidea.lib.utils import fetch_one_resource, to_bytes
+from privacyidea.lib.utils import fetch_one_resource, to_bytes, to_unicode
+from privacyidea.lib.utils.export import (register_import, register_export)
 import logging
 from privacyidea.lib.log import log_with
 from time import gmtime, strftime
 import smtplib
+from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
-from privacyidea.lib.error import ConfigAdminError
+
 __doc__ = """
 This is the library for creating, listing and deleting SMTPServer objects in
 the Database.
@@ -75,11 +77,11 @@ class SMTPServer(object):
         :param config: The email configuration
         :type config: dict
         :param recipient: The recipients of the email
-        :type recipient: list
+        :type recipient: list or str
         :param subject: The subject of the email
         :type subject: basestring
         :param body: The body of the email
-        :type body: basestring
+        :type body: email.mime.base.MIMEBase or str
         :param sender: An optional sender of the email. The SMTP database
             object has its own sender. This parameter can be used to override
             the internal sender.
@@ -93,21 +95,35 @@ class SMTPServer(object):
             recipient = [recipient]
         mail_from = sender or config['sender']
         reply_to = reply_to or mail_from
-        msg = MIMEText(body.encode('utf-8'), mimetype, 'utf-8')
+        if isinstance(body, MIMEBase):
+            msg = body
+        else:
+            msg = MIMEText(to_unicode(body), mimetype, 'utf-8')
         msg['Subject'] = subject
         msg['From'] = mail_from
         msg['To'] = ",".join(recipient)
         msg['Date'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
         msg['Reply-To'] = reply_to
 
-        mail = smtplib.SMTP(config['server'], port=int(config['port']),
-                            timeout=config.get('timeout', TIMEOUT))
+        srv = config['server']
+        # urllib looks for a '//' to identify the host in the string. If it is
+        # missing we add one.
+        smtp_server = ''.join(['//', srv]) if srv.find('//') < 0 else srv
+        smtp_url = urlparse(smtp_server, scheme='smtp')
+        if smtp_url.scheme == 'smtps':
+            mail = smtplib.SMTP_SSL(smtp_url.hostname,
+                                    port=smtp_url.port or int(config['port']),
+                                    timeout=config.get('timeout', TIMEOUT))
+        else:
+            mail = smtplib.SMTP(smtp_url.hostname,
+                                port=smtp_url.port or int(config['port']),
+                                timeout=config.get('timeout', TIMEOUT))
         log.debug(u"submitting message to {0!s}".format(msg["To"]))
         log.debug("Saying EHLO to mailserver {0!s}".format(config['server']))
         r = mail.ehlo()
         log.debug("mailserver responded with {0!s}".format(r))
         # Start TLS if required
-        if config.get('tls', False):
+        if not smtp_url.scheme == 'smtps' and config.get('tls', False):
             log.debug("Trying to STARTTLS: {0!s}".format(config['tls']))
             mail.starttls()
         # Authenticate, if a username is given.
@@ -132,8 +148,8 @@ class SMTPServer(object):
             if res_id != 200 and res_text != "OK":
                 success = False
                 log.error("Failed to send email to {0!r}: {1!r}, {2!r}".format(one_recipient,
-                                                                  res_id,
-                                                                  res_text))
+                                                                               res_id,
+                                                                               res_text))
         mail.quit()
         log.debug("I am done sending your email.")
         return success
@@ -243,7 +259,39 @@ def get_smtpservers(identifier=None, server=None):
 
 
 @log_with(log)
-def add_smtpserver(identifier, server, port=25, username="", password="",
+def list_smtpservers(identifier=None, server=None):
+    """
+    This returns a list of all smtpservers matching the criterion.
+    If no identifier or server is provided, it will return a list of all smtp
+    server definitions.
+
+    :param identifier: The identifier or the name of the SMTPServer definition.
+        As the identifier is unique, providing an identifier will return a
+        list with either one or no smtpserver
+    :type identifier: basestring
+    :param server: The FQDN or IP address of the smtpserver
+    :type server: basestring
+    :return: list of SMTPServer configuration dicts.
+    """
+    res = {}
+    # get list of smtpserver objects
+    server_obj_list = get_smtpservers(identifier=identifier, server=server)
+    # transfer the definitions to a dictionary
+    for server_obj in server_obj_list:
+        decrypted_password = decryptPassword(server_obj.config.password)
+        # If the database contains garbage, use the empty password as fallback
+        if decrypted_password == FAILED_TO_DECRYPT_PASSWORD:
+            decrypted_password = ""
+        res[server_obj.config.identifier] = server_obj.config.get()
+        res[server_obj.config.identifier].pop('id')
+        res[server_obj.config.identifier].pop('identifier')
+        res[server_obj.config.identifier].update({"password": decrypted_password})
+
+    return res
+
+
+@log_with(log)
+def add_smtpserver(identifier, server=None, port=25, username="", password="",
                    sender="", description="", tls=False, timeout=TIMEOUT,
                    enqueue_job=False):
     """
@@ -276,3 +324,22 @@ def delete_smtpserver(identifier):
     :return: The ID of the database entry, that was deleted
     """
     return fetch_one_resource(SMTPServerDB, identifier=identifier).delete()
+
+
+@register_export('smtpserver')
+def export_smtpserver(name=None):
+    """ Export given or all smtpserver configuration """
+    return list_smtpservers(identifier=name)
+
+
+@register_import('smtpserver')
+def import_smtpserver(data, name=None):
+    """Import policy configuration"""
+    log.debug('Import smtpserver config: {0!s}'.format(data))
+    for res_name, res_data in data.items():
+        if name and name != res_name:
+            continue
+        # condition is apparently not used anymore
+        rid = add_smtpserver(res_name, **res_data)
+        log.info('Import of smtpserver "{0!s}" finished,'
+                 ' id: {1!s}'.format(res_name, rid))

@@ -18,11 +18,12 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
-                                              $scope, $location, AuthFactory,
-                                              instanceUrl,
-                                              $rootScope, gettextCatalog,
-                                              hotkeys) {
+myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
+                                     '$location', 'AuthFactory', 'instanceUrl',
+                                     '$rootScope',
+                                     function (TokenFactory, ConfigFactory,
+                                               $scope, $location, AuthFactory,
+                                               instanceUrl, $rootScope) {
     $scope.tokensPerPage = $scope.token_page_size;
     $scope.params = {page: 1, sortdir: "asc"};
     $scope.reverse = false;
@@ -40,11 +41,13 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
     $scope.get = function (live_search) {
         if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
             $scope.params.serial = "*" + ($scope.serialFilter || "") + "*";
+            $scope.params.tokenrealm = "*" + ($scope.tokenrealmFilter || "") + "*";
             $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
             $scope.params.description = "*" + ($scope.descriptionFilter || "") + "*";
             $scope.params.userid = "*" + ($scope.userIdFilter || "") + "*";
             $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
             $scope.params.pagesize = $scope.token_page_size;
+            $scope.params.sortby = $scope.sortby;
             if ($scope.reverse) {
                 $scope.params.sortdir = "desc";
             } else {
@@ -57,40 +60,6 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
             }, $scope.params);
         }
     };
-
-    if ($scope.loggedInUser.role === "admin") {
-        /*
-        * Functions to check and to create a default realm. At the moment this is
-        * in the tokenview, as the token view is the first view. This could be
-        * changed to be located anywhere else.
-        */
-        ConfigFactory.getRealms(function (data) {
-            // Check if there is a realm defined, or if we should display the
-            // Auto Create Dialog
-            var number_of_realms = Object.keys(data.result.value).length;
-            if (number_of_realms === 0) {
-                $('#dialogAutoCreateRealm').modal();
-            }
-        });
-        /*
-         Welcome dialog, which displays a lot of information to the
-         administrator.
-
-         We display it if
-         subscription_state = 0 and hide_welcome = false
-         subscription_state = 1
-         subscription_state = 2
-         */
-        if ($scope.welcomeStep < 4) {
-            // We did not walk throught the welcome dialog, yet.
-            if (($scope.subscription_state === 0 && !$scope.hide_welcome) ||
-                ($scope.subscription_state === 1) ||
-                ($scope.subscription_state === 2)) {
-                $('#dialogWelcome').modal("show");
-                $("body").addClass("modal-open");
-            }
-        }
-    }
 
     // single token function
     $scope.reset = function (serial) {
@@ -131,12 +100,14 @@ myApp.controller("tokenController", function (TokenFactory, ConfigFactory,
         $scope.get();
     });
 
-});
+}]);
 
 
-myApp.controller("tokenAssignController", function ($scope, TokenFactory,
-                                                    $stateParams, AuthFactory,
-                                                    UserFactory, $state) {
+myApp.controller("tokenAssignController", ['$scope', 'TokenFactory',
+                                           '$stateParams', 'AuthFactory',
+                                           'UserFactory', '$state',
+    function tokenAssignController($scope, TokenFactory, $stateParams,
+                                   AuthFactory, UserFactory, $state) {
     $scope.assignToken = function () {
         TokenFactory.assign({
             serial: fixSerial($scope.newToken.serial),
@@ -145,16 +116,21 @@ myApp.controller("tokenAssignController", function ($scope, TokenFactory,
             $state.go('token.list');
         });
     };
-});
+}]);
 
-myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
-                                                    $timeout,
-                                                    $stateParams, AuthFactory,
-                                                    UserFactory, $state,
-                                                    ConfigFactory, instanceUrl,
-                                                    $http, hotkeys,
-                                                    gettextCatalog,
-                                                    inform, U2fFactory) {
+myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
+                                           "$stateParams", "AuthFactory",
+                                           "UserFactory", "$state",
+                                           "ConfigFactory", "instanceUrl",
+                                           "$http", "hotkeys", "gettextCatalog",
+                                           "inform", "U2fFactory",
+                                           "webAuthnToken",
+                                           "versioningSuffixProvider",
+    function tokenEnrollController($scope, TokenFactory, $timeout, $stateParams,
+                                   AuthFactory, UserFactory, $state,
+                                   ConfigFactory, instanceUrl, $http, hotkeys,
+                                   gettextCatalog, inform, U2fFactory,
+                                   webAuthnToken, versioningSuffixProvider) {
 
     hotkeys.bindTo($scope).add({
         combo: 'alt+e',
@@ -175,10 +151,12 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
 
     $scope.qrCodeWidth = 250;
 
-    if ($state.includes('token.wizard') && !$scope.show_seed) {
-        $scope.qrCodeWidth = 500;
-    }
+    // Available SMS gateways. We do this here to avoid javascript loops
+    $scope.smsGateways = $scope.getRightsValue('sms_gateways', '').split(' ');
 
+    if ($state.includes('token.wizard') && !$scope.show_seed) {
+        $scope.qrCodeWidth = 300;
+    }
     $scope.checkRight = AuthFactory.checkRight;
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.newUser = {};
@@ -186,11 +164,13 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.instanceUrl = instanceUrl;
     $scope.click_wait = true;
     $scope.U2FToken = {};
+    $scope.webAuthnToken = {};
     // System default values for enrollment
     $scope.systemDefault = {};
     // questions for questionnaire token
     $scope.questions = [];
     $scope.num_questions = 5;
+    $scope.fileVersionSuffix = versioningSuffixProvider.$get();
     // These are values that are also sent to the backend!
     $scope.form = {
         timeStep: 30,
@@ -200,10 +180,15 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         hashlib: "sha1",
         'radius.system_settings': true
     };
+    if ($state.includes('token.rollover')) {
+        $scope.form.serial = $stateParams.tokenSerial;
+        $scope.form.type = $stateParams.tokenType;
+    }
     $scope.vasco = {
         // Note: A primitive does not work in the ng-model of the checkbox!
         useIt: false
     };
+    $scope.enrolling = false;
 
     $scope.formInit = {
         tokenTypes: {"hotp": gettextCatalog.getString("HOTP: event based One Time Passwords"),
@@ -230,6 +215,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             "tiqr": gettextCatalog.getString("TiQR: Authenticate with Smartphone by scanning" +
                 " a QR code."),
             "u2f": gettextCatalog.getString("U2F: Universal 2nd Factor hardware token."),
+            "indexedsecret": gettextCatalog.getString("IndexedSecret: Challenge token based on a shared secret."),
+            "webAuthn": gettextCatalog.getString("WebAuthn: Web Authentication hardware token."),
             "paper": gettextCatalog.getString("PAPER: OTP values on a sheet of paper.")},
         timesteps: [30, 60],
         otplens: [6, 8],
@@ -272,26 +259,70 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         }
         if ($scope.form.type === "hotp") {
             // preset HOTP hashlib
-            $scope.form.hashlib = $scope.form['hotp.hashlib'];
+            $scope.form.hashlib = $scope.systemDefault['hotp.hashlib'] || 'sha1';
         } else if ($scope.form.type === "totp") {
             // preset TOTP hashlib
-            $scope.form.hashlib = $scope.form['totp.hashlib'];
+            $scope.form.hashlib = $scope.systemDefault['totp.hashlib'] || 'sha1';
+            $scope.form.timeStep = parseInt($scope.systemDefault['totp.timeStep'] || '30');
         }
         if ($scope.form.type === "vasco") {
             $scope.form.genkey = false;
         } else {
             $scope.form.genkey = true;
         }
+        if ($scope.form.type === "yubikey") {
+            // save the original otp length
+            $scope.old_otplen = $scope.form.otplen;
+            // set the default otp length for yubikeys in AES mode to 44
+            // (12 characters (6 bytes) UID and 32 characters (16 bytes) OTP)
+            $scope.form.otplen = 44;
+        } else {
+            // restore old otp length if available
+            if (typeof $scope.old_otplen != "undefined") {
+                $scope.form.otplen = $scope.old_otplen;
+                delete $scope.old_otplen;
+            }
+        }
+
+        $scope.preset_indexedsecret();
+
         if ($scope.form.type === "radius") {
             // only load RADIUS servers when the user actually tries to enroll a RADIUS token,
             // because the user might not be allowed to list RADIUS servers
             $scope.getRADIUSIdentifiers();
+        }
+        if ($scope.form.type === "remote") {
+            // fetch the privacyIDEA servers
+            $scope.getPrivacyIDEAServers();
         }
         if ($scope.form.type === "certificate") {
             $scope.getCAConnectors();
         }
         // preset twostep enrollment
         $scope.setTwostepEnrollmentDefault();
+    };
+
+    // helper function for setting indexed secret attribute
+    $scope.preset_indexedsecret = function() {
+        if ($scope.form.type === "indexedsecret") {
+            // in case of indexedsecret we do never generate a key from the UI
+            $scope.form.genkey = false;
+            // Only fetch, if a preset_attribute is defined
+            if ($scope.tokensettings.indexedsecret.preset_attribute) {
+                // In case of a normal logged in user, an empty params is fine
+                var params = {};
+                if (AuthFactory.getRole() === 'admin') {
+                    params = {realm: $scope.newUser.realm,
+                        username: fixUser($scope.newUser.user)};
+                }
+                UserFactory.getUsers(params,
+                        function(data) {
+                            var userObject = data.result.value[0];
+                            // preset for indexedsecret token
+                            $scope.form.otpkey = userObject[$scope.tokensettings.indexedsecret.preset_attribute];
+                    });
+            }
+        }
     };
 
     // Set the default value of the "2stepinit" field if twostep enrollment should be forced
@@ -314,6 +345,11 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             if (newValue != '') {
                 $scope.form.phone = newValue;
             }
+        });
+    $scope.$watch(function(scope) {return fixUser(scope.newUser.user);},
+        function(newValue, oldValue) {
+            // The newUser was changed
+            $scope.preset_indexedsecret();
         });
 
     // Get the realms and fill the realm dropdown box
@@ -350,7 +386,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                             $scope.form.phone = userObject.mobile;
                         } else {
                             $scope.phone_list = userObject.mobile;
-                            if ($scope.phone_list.length === 1) {
+                            if ($scope.phone_list && $scope.phone_list.length === 1) {
                                 $scope.form.phone = $scope.phone_list[0];
                             }
                         }
@@ -377,6 +413,8 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
                 $scope.form.type = tkey;
                 // Set the 2step enrollment value
                 $scope.setTwostepEnrollmentDefault();
+                // Initialize token specific settings
+                $scope.changeTokenType();
                 break;
             }
         }
@@ -386,10 +424,10 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     $scope.CATemplates = {};
     $scope.radioCSR = 'csrgenerate';
 
-
     // default enrollment callback
     $scope.callback = function (data) {
         $scope.U2FToken = {};
+        $scope.webAuthnToken = {};
         $scope.enrolledToken = data.detail;
         $scope.click_wait=false;
         if ($scope.enrolledToken.otps) {
@@ -413,12 +451,16 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             $scope.pkcs12Blob = (window.URL || window.webkitURL).createObjectURL( blob );
         }
         if ($scope.enrolledToken.u2fRegisterRequest) {
-            // This is the first step of U2F registering
-            // save serial
+            // This is the first step of U2F registering, save serial.
             $scope.serial = data.detail.serial;
-            // We need to send the 2nd stage of the U2F enroll
-            $scope.register_u2f($scope.enrolledToken.u2fRegisterRequest);
-            $scope.click_wait=true;
+
+            $scope.register_fido($scope.enrolledToken.u2fRegisterRequest, U2fFactory, $scope.U2FToken);
+        }
+        if ($scope.enrolledToken.webAuthnRegisterRequest) {
+            // This is the first step of U2F registering, save serial.
+            $scope.serial = data.detail.serial;
+
+            $scope.register_fido($scope.enrolledToken.webAuthnRegisterRequest, webAuthnToken, $scope.webAuthnToken);
         }
         if ($scope.enrolledToken.rollout_state === "clientwait") {
             $scope.pollTokenInfo();
@@ -427,6 +469,7 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     };
 
     $scope.enrollToken = function () {
+        $scope.enrolling = true;
         //debug: console.log($scope.newUser.user);
         //debug: console.log($scope.newUser.realm);
         //debug: console.log($scope.newUser.pin);
@@ -435,7 +478,9 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         $scope.form.validity_period_start = date_object_to_string($scope.form.validity_period_start);
         $scope.form.validity_period_end = date_object_to_string($scope.form.validity_period_end);
         TokenFactory.enroll($scope.newUser,
-            $scope.form, $scope.callback);
+            $scope.form, $scope.callback,
+            function (data) {$scope.enrolling=false;}
+            );
     };
 
     $scope.pollTokenInfo = function () {
@@ -467,6 +512,19 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         });
     };
 
+    $scope.sendVerifyResponse = function () {
+        var params = {
+            "serial": $scope.enrolledToken.serial,
+            "verify": $scope.verifyResponse,
+            "type": $scope.form.type
+
+        };
+        TokenFactory.enroll($scope.newUser, params, function (data) {
+            $scope.verifyResponse = "";
+            $scope.callback(data);
+        });
+    };
+
     // Special Token functions
     $scope.sshkeyChanged = function () {
         var keyArr = $scope.form.sshkey.split(" ");
@@ -474,33 +532,40 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
     };
 
     $scope.yubikeyGetLen = function () {
-        if ($scope.tempData.yubikeyTest.length >= 32) {
-            $scope.form.otplen = $scope.tempData.yubikeyTest.length;
-            if ($scope.tempData.yubikeyTest.length > 32) {
-                $scope.tempData.yubikeyUid = true;
-                $scope.tempData.yubikeyUidLen = $scope.tempData.yubikeyTest.length - 32;
-            }
+        let yktestdatalen = $scope.tempData.yubikeyTest.trim().length;
+        if (yktestdatalen >= 32) {
+            $scope.form.otplen = yktestdatalen;
         }
     };
 
-    // U2F
-    $scope.register_u2f = function (registerRequest) {
-        U2fFactory.register_request(registerRequest, function (params) {
+    // U2F and WebAuthn
+    $scope.register_fido = function (registerRequest, Factory, token) {
+        // We need to send the 2nd stage of the U2F enroll
+        Factory.register_request(registerRequest, function (params) {
             params.serial = $scope.serial;
             TokenFactory.enroll($scope.newUser,
                 params, function (response) {
                     $scope.click_wait = false;
-                    $scope.U2FToken.subject = response.detail.u2fRegisterResponse.subject;
-                    $scope.U2FToken.vendor = $scope.U2FToken.subject.split(" ")[0];
-                    //debug: console.log($scope.U2FToken);
+                    token.subject
+                        = (response.detail.u2fRegisterResponse || response.detail.webAuthnRegisterResponse).subject;
+                    token.vendor = token.subject.split(" ")[0];
+                    console.log(token);
                 });
         });
+        $scope.click_wait = true;
     };
 
     // get the list of configured RADIUS server identifiers
     $scope.getRADIUSIdentifiers = function() {
         ConfigFactory.getRadiusNames(function(data){
             $scope.radiusIdentifiers = data.result.value;
+        });
+    };
+
+    // get the list of configured privacyIDEA server identifiers
+    $scope.getPrivacyIDEAServers = function() {
+        ConfigFactory.getPrivacyidea(function(data){
+            $scope.privacyIDEAServers = data.result.value;
         });
     };
 
@@ -523,29 +588,28 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
             radius.server, radius.secret...
            are stored in systemDefault and $scope.form
          */
-        var systemDefault = data.result.value;
+        $scope.systemDefault = data.result.value;
         //debug: console.log("system default config");
         //debug: console.log(systemDefault);
         // TODO: The entries should be handled automatically.
         var entries = ["radius.server", "radius.secret", "remote.server",
-            "radius.identifier",
-            "totp.hashlib", "hotp.hashlib", "email.mailserver",
+            "radius.identifier", "email.mailserver",
             "email.mailfrom", "yubico.id", "tiqr.regServer"];
         entries.forEach(function(entry) {
             if (!$scope.form[entry]) {
                 // preset the UI
-                $scope.form[entry] = systemDefault[entry];
+                $scope.form[entry] = $scope.systemDefault[entry];
             }
         });
         // Default HOTP hashlib
-        $scope.form.hashlib = $scope.form["hotp.hashlib"];
+        $scope.form.hashlib = $scope.systemDefault["hotp.hashlib"] || 'sha1';
         // Now add the questions
-        angular.forEach(systemDefault, function(value, key) {
+        angular.forEach($scope.systemDefault, function(value, key) {
             if (key.indexOf("question.question.") === 0) {
                 $scope.questions.push(value);
             }
         });
-        $scope.num_answers = systemDefault["question.num_answers"];
+        $scope.num_answers = $scope.systemDefault["question.num_answers"];
         //debug: console.log($scope.questions);
         //debug: console.log($scope.form);
     });
@@ -597,12 +661,14 @@ myApp.controller("tokenEnrollController", function ($scope, TokenFactory,
         startingDay: 1
     };
 
-});
+}]);
 
 
-myApp.controller("tokenImportController", function ($scope, $upload,
-                                                    AuthFactory, tokenUrl,
-                                                    ConfigFactory, inform) {
+myApp.controller("tokenImportController", ['$scope', 'Upload', 'AuthFactory',
+                                           'tokenUrl', 'ConfigFactory', 'inform',
+                                           function ($scope, Upload,
+                                                     AuthFactory, tokenUrl,
+                                                     ConfigFactory, inform) {
     $scope.formInit = {
         fileTypes: ["aladdin-xml", "OATH CSV", "Yubikey CSV", "pskc"]
     };
@@ -628,32 +694,30 @@ myApp.controller("tokenImportController", function ($scope, $upload,
         $scope.pgpkeys = data.result.value;
     });
 
-    $scope.upload = function (files) {
-        if (files && files.length) {
-            for (var i = 0; i < files.length; i++) {
-                var file = files[i];
-                $upload.upload({
-                    url: tokenUrl + '/load/filename',
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    fields: {type: $scope.form.type,
-                             psk: $scope.form.psk,
-                             password: $scope.form.password,
-                             tokenrealms: $scope.form.realm},
-                    file: file
-                }).progress(function (evt) {
-                    $scope.progressPercentage = parseInt(100.0 * evt.loaded / evt.total);
-                }).success(function (data, status, headers, config) {
-                    $scope.uploadedFile = config.file.name;
-                    $scope.uploadedTokens = data.result.value;
-                }).error(function (error) {
-                    if (error.result.error.code === -401) {
-                        $state.go('login');
-                    } else {
-                        inform.add(error.result.error.message,
-                                {type: "danger", ttl: 10000});
-                    }
-                });
-            }
+    $scope.upload = function (file) {
+        if (file) {
+            Upload.upload({
+                url: tokenUrl + '/load/filename',
+                headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                data: {file: file,
+                    type: $scope.form.type,
+                    psk: $scope.form.psk,
+                    pskcValidateMAC: $scope.form.validateMAC,
+                    password: $scope.form.password,
+                    tokenrealms: $scope.form.realm},
+            }).then(function (resp) {
+                $scope.uploadedFile = resp.config.data.file.name;
+                $scope.uploadedTokens = resp.data.result.value.n_imported;
+                $scope.notImportedTokens = resp.data.result.value.n_not_imported;
+            }, function (error) {
+                if (error.data.result.error.code === -401) {
+                    $state.go('login');
+                } else {
+                    inform.add(error.data.result.error.message,
+                        {type: "danger", ttl: 10000});
+                }
+            }, function (evt) {
+                $scope.uploadProgress = parseInt(100.0 * evt.loaded / evt.total)});
         }
     };
-});
+}]);

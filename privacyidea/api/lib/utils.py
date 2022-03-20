@@ -23,6 +23,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import string
+
 from ...lib.error import (ParameterError,
                           AuthError, ERROR)
 from ...lib.log import log_with
@@ -35,11 +37,15 @@ import jwt
 import threading
 import six
 import re
+from six.moves.urllib.parse import unquote
 from flask import (jsonify,
                    current_app)
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
+TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
+                     "RS256", "RS384", "RS512",
+                     "PS256", "PS384", "PS512"]
 
 SESSION_KEY_LENGTH = 32
 
@@ -148,6 +154,36 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
     return ret
 
 
+def send_html(output):
+    """
+    Send the ouput as HTML to the client with the correct mimetype.
+
+    :param output: The HTML to send to the client
+    :type output: str
+    :return: The generated response
+    :rtype: flask.Response
+    """
+    return current_app.response_class(output, mimetype='text/html')
+
+
+def send_file(output, filename, content_type='text/csv'):
+    """
+    Send the output to the client with the "Content-disposition" header to
+    declare it as a downloadable file.
+    :param output: The data that should be send as a file
+    :type output: str
+    :param filename: The proposed filename
+    :type filename: str
+    :param content_type: The proposed content type of the data
+    :type content_type: str (should be something from this list:
+                             https://www.iana.org/assignments/media-types/media-types.xhtml)
+    :return: The generated response
+    :rtype: flask.Response
+    """
+    headers = {'Content-disposition': 'attachment; filename={0!s}'.format(filename)}
+    return current_app.response_class(output, headers=headers, mimetype=content_type)
+
+
 def send_csv_result(obj, data_key="tokens",
                     filename="privacyidea-tokendata.csv"):
     """
@@ -169,25 +205,25 @@ def send_csv_result(obj, data_key="tokens",
     :rtype: Response object
     """
     delim = "'"
-    content_type = "application/force-download"
-    headers = {'Content-disposition': 'attachment; filename={0!s}'.format(filename)}
     output = u""
-    # Do the header
-    for k, _v in obj.get(data_key, {})[0].items():
-        output += "{0!s}{1!s}{2!s}, ".format(delim, k, delim)
-    output += "\n"
-
-    # Do the data
-    for row in obj.get(data_key, {}):
-        for val in row.values():
-            if isinstance(val, six.string_types):
-                value = val.replace("\n", " ")
-            else:
-                value = val
-            output += "{0!s}{1!s}{2!s}, ".format(delim, value, delim)
+    # check if there is any data
+    if data_key in obj and len(obj[data_key]) > 0:
+        # Do the header
+        for k, _v in obj.get(data_key)[0].items():
+            output += "{0!s}{1!s}{2!s}, ".format(delim, k, delim)
         output += "\n"
 
-    return current_app.response_class(output, mimetype=content_type)
+        # Do the data
+        for row in obj.get(data_key):
+            for val in row.values():
+                if isinstance(val, six.string_types):
+                    value = val.replace("\n", " ")
+                else:
+                    value = val
+                output += "{0!s}{1!s}{2!s}, ".format(delim, value, delim)
+            output += "\n"
+
+    return send_file(output, filename)
 
 
 @log_with(log)
@@ -202,21 +238,41 @@ def getLowerParams(param):
     return ret
 
 
-def get_all_params(param, body):
+def get_all_params(request):
     """
-    Combine parameters from GET and POST requests
-    """
-    return_param = {}
-    for key in param.keys():
-        return_param[key] = param[key]
+    Retrieve all parameters from a request, no matter if these are GET or POST requests
+    or parameters are contained as viewargs like the serial in DELETE /token/<serial>
 
-    # In case of serialized JSON data in the body, add these to the values.
-    try:
-        json_data = json.loads(to_unicode(body))
-        for k, v in json_data.items():
-            return_param[k] = v
-    except Exception as exx:
-        log.debug("Can not get param: {0!s}".format(exx))
+    :param request: The flask request object
+    """
+    param = request.values
+    body = request.data
+    return_param = {}
+    if param:
+        log.debug(u"Update params in request {0!s} {1!s} with values.".format(request.method,
+                                                                              request.base_url))
+        # Add the unquoted HTML and form parameters
+        return_param = {key: unquote(value) for (key, value) in param.items()}
+
+    if request.json:
+        log.debug(u"Update params in request {0!s} {1!s} with JSON data.".format(request.method,
+                                                                                 request.base_url))
+        # Add the original JSON data
+        return_param.update(request.json)
+    elif body:
+        # In case of serialized JSON data in the body, add these to the values.
+        try:
+            json_data = json.loads(to_unicode(body))
+            for k, v in json_data.items():
+                return_param[k] = v
+        except Exception as exx:
+            log.debug("Can not get param: {0!s}".format(exx))
+
+    if request.view_args:
+        log.debug(u"Update params in request {0!s} {1!s} with view_args.".format(request.method,
+                                                                                 request.base_url))
+        # We add the unquoted view_args
+        return_param.update({key: unquote(value) for (key, value) in request.view_args.items()})
 
     return return_param
 
@@ -232,7 +288,7 @@ def get_priority_from_param(param):
     """
     priority = {}
     for k, v in param.items():
-        if k.startswith("priority."):
+        if k.startswith("priority.") and isinstance(v, int):
             priority[k[len("priority."):]] = int(v)
     return priority
 
@@ -247,19 +303,53 @@ def verify_auth_token(auth_token, required_role=None):
     :param required_role: list of "user" and "admin"
     :return: dict with authtype, realm, rights, role, username, exp, nonce
     """
+    r = None
     if required_role is None:
         required_role = ["admin", "user"]
     if auth_token is None:
         raise AuthError(_("Authentication failure. Missing Authorization header."),
                         id=ERROR.AUTHENTICATE_AUTH_HEADER)
-    try:
-        r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
-    except jwt.DecodeError as err:
-        raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
-                        id=ERROR.AUTHENTICATE_DECODING_ERROR)
-    except jwt.ExpiredSignature as err:
-        raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
-                        id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
+
+    headers = jwt.get_unverified_header(auth_token)
+    algorithm = headers.get("alg")
+    wrong_username = None
+    if algorithm in TRUSTED_JWT_ALGOS:
+        # The trusted JWTs are RSA, PSS or eliptic curve signed
+        trusted_jwts = current_app.config.get("PI_TRUSTED_JWT", [])
+        for trusted_jwt in trusted_jwts:
+            try:
+                if trusted_jwt.get("algorithm") in TRUSTED_JWT_ALGOS:
+                    j = jwt.decode(auth_token,
+                                   trusted_jwt.get("public_key"),
+                                   algorithms=[trusted_jwt.get("algorithm")])
+                    if dict((k, j.get(k)) for k in ("role", "resolver", "realm")) == \
+                            dict((k, trusted_jwt.get(k)) for k in ("role", "resolver", "realm")):
+                        if re.match(trusted_jwt.get("username") + "$", j.get("username")):
+                            r = j
+                            break
+                        else:
+                            r = wrong_username = j.get("username")
+                else:
+                    log.warning(u"Unsupported JWT algorithm in PI_TRUSTED_JWT.")
+            except jwt.DecodeError as err:
+                log.info(u"A given JWT definition does not match.")
+            except jwt.ExpiredSignatureError as err:
+                # We have the correct token. It expired, so we raise an error
+                raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
+                                id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
+
+    if not r:
+        try:
+            r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
+        except jwt.DecodeError as err:
+            raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
+                            id=ERROR.AUTHENTICATE_DECODING_ERROR)
+        except jwt.ExpiredSignature as err:
+            raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
+                            id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
+    if wrong_username:
+        raise AuthError(_("Authentication failure. The username {0!s} is not allowed to "
+                          "impersonate via JWT.".format(wrong_username)))
     if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does
         # not match
@@ -283,8 +373,62 @@ def check_policy_name(name):
         if re.search(disallowed_pattern[0], name, flags=disallowed_pattern[1]):
             raise ParameterError(_(u"'{0!s}' is an invalid policy name.").format(name))
 
-    if not re.match('^[a-zA-Z0-9_.\- ]*$', name):
+    if not re.match(r'^[a-zA-Z0-9_.\- ]*$', name):
         raise ParameterError(_("The name of the policy may only contain "
-                               "the characters a-zA-Z0-9_.- "))
+                               "the characters a-zA-Z0-9_. -"))
 
 
+def attestation_certificate_allowed(cert_info, allowed_certs_pols):
+    """
+    Check a certificate against a set of policies.
+
+    This will check an attestation certificate of a U2F-, or WebAuthn-Token,
+    against a list of policies. It is used to verify, whether a token with the
+    given attestation may be enrolled, or authorized, respectively.
+
+    The certificate info may be None, in which case, true will be returned if
+    the policies are also empty.
+
+    :param cert_info: The `attestation_issuer`, `attestation_serial`, and `attestation_subject` of the cert.
+    :type cert_info: dict or None
+    :param allowed_certs_pols: The policies restricting enrollment, or authorization.
+    :type allowed_certs_pols: dict or None
+    :return: Whether the token should be allowed to complete enrollment, or authorization, based on its attestation.
+    :rtype: bool
+    """
+
+    if not cert_info:
+        return not allowed_certs_pols
+
+
+    if allowed_certs_pols:
+        for allowed_cert in allowed_certs_pols:
+            tag, matching, _rest = allowed_cert.split("/", 3)
+            tag_value = cert_info.get("attestation_{0!s}".format(tag))
+            # if we do not get a match, we bail out
+            m = re.search(matching, tag_value) if matching and tag_value else None
+            if matching and not m:
+                return False
+
+    return True
+
+def is_fqdn(x):
+    """
+    Check whether a given string could plausibly be a FQDN.
+
+    This checks, whether a string could be a FQDN. Please note, that this
+    function will currently return true for plenty of strings, that are not
+    actually valid FQDNs. This is expected. This function performs a simple
+    plausibility check to ward against obvious mistakes, like a user
+    accidentally putting in a full url with protocol. The caller should not
+    rely on this function, if it is absolutely crucial, that the checked
+    string is a valid FQDN. It is solely intended to be used to implement user
+    convenience, by alerting the user early on, if they have misunderstood
+    a particular fields purpose.
+
+    :param x: String to check.
+    :type x: basestring
+    :return: Whether the given string may plausibly be a FQDN.
+    :rtype: bool
+    """
+    return set(string.punctuation).intersection(x).issubset({'-', '.'})

@@ -2,7 +2,7 @@
 name: Are you lost?
 about: If you did not find a bug and do not want to suggest a new feature, you probably have some questions.
 title: ''
-labels: question
+labels: 'Tye: Question'
 assignees: ''
 
 ---

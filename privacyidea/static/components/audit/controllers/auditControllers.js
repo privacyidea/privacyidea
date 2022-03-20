@@ -22,15 +22,17 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("auditController", function (AuditFactory, $scope, $rootScope,
-                                              $stateParams, $http,
-                                              AuthFactory, instanceUrl,
-                                              $location, gettextCatalog) {
+myApp.controller("auditController", ["AuditFactory", "$scope", "$rootScope",
+                                     "$stateParams", "$http", "AuthFactory",
+                                     "instanceUrl", "$location", "gettextCatalog",
+                                     function (AuditFactory, $scope, $rootScope,
+                                               $stateParams, $http, AuthFactory,
+                                               instanceUrl, $location, gettextCatalog) {
     $scope.params = {sortorder: "desc",
                      page_size: 10,
                      page: 1};
     $scope.instanceUrl = instanceUrl;
-    var df = gettextCatalog.getString("yyyy-MM-dd HH:mm:ss");
+    var df = "yyyy-MM-dd HH:mm:ss";
     $scope.dateFormat = df;
 
     // If the state is called with some filter values
@@ -56,6 +58,8 @@ myApp.controller("auditController", function (AuditFactory, $scope, $rootScope,
         $scope.params.privacyidea_server = "*" + ($scope.serverFilter || "") + "*";
         $scope.params.info = "*" + ($scope.infoFilter || "") + "*";
         $scope.params.date = "*" + ($scope.dateFilter || "") + "*";
+        $scope.params.startdate = "*" + ($scope.startdateFilter || "") + "*";
+        $scope.params.duration = "*" + ($scope.durationFilter || "") + "*";
         //debug: console.log("Request Audit Trail with params");
         //debug: console.log($scope.params);
     };
@@ -65,6 +69,7 @@ myApp.controller("auditController", function (AuditFactory, $scope, $rootScope,
             $scope.getParams();
             AuditFactory.get($scope.params, function(data) {
                 $scope.auditdata = data.result.value;
+                $scope.audit_columns = data.result.value.auditcolumns;
                 // We split the policies, which come as comma separated string to an array.
                 angular.forEach($scope.auditdata.auditdata, function(auditentry, key) {
                     if ($scope.auditdata.auditdata[key].policies != null) {
@@ -114,4 +119,4 @@ myApp.controller("auditController", function (AuditFactory, $scope, $rootScope,
         }
     });
 
-});
+}]);

@@ -40,7 +40,7 @@ from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.api.auth import (user_required, admin_required, jwtauth)
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object
-from privacyidea.lib.token import get_token_type
+from privacyidea.lib.token import get_token_type, get_token_owner
 from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.validate import validate_blueprint
 from .resolver import resolver_blueprint
@@ -72,6 +72,7 @@ from ..lib.error import (privacyIDEAError,
                          PolicyError, ResourceNotFoundError)
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.user import User
+import datetime
 
 log = logging.getLogger(__name__)
 
@@ -82,10 +83,19 @@ log = logging.getLogger(__name__)
 @token_blueprint.before_app_request
 def log_begin_request():
     log.debug(u"Begin handling of request {!r}".format(request.full_path))
+    g.startdate = datetime.datetime.now()
 
 
 @token_blueprint.teardown_app_request
 def teardown_request(exc):
+    try:
+        if g.audit_object.has_data:
+            g.audit_object.finalize_log()
+    except AttributeError:
+        # In certain error cases the before_request was not handled
+        # completely so that we do not have an audit_object
+        # Also during calling webui, there is not audit_object, yet.
+        pass
     call_finalizers()
     log.debug(u"End handling of request {!r}".format(request.full_path))
 
@@ -132,7 +142,7 @@ def before_request():
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
     ensure_no_config_object()
-    request.all_data = get_all_params(request.values, request.data)
+    request.all_data = get_all_params(request)
     if g.logged_in_user.get("role") == "user":
         # A user is calling this API. First thing we do is restricting the user parameter.
         # ...to restrict token view, audit view or token actions.
@@ -154,18 +164,30 @@ def before_request():
         request.User = User()
 
     g.policy_object = PolicyClass()
-    g.audit_object = getAudit(current_app.config)
+    g.audit_object = getAudit(current_app.config, g.startdate)
     g.event_config = EventConfiguration()
     # access_route contains the ip adresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request,
                                 get_from_config(SYSCONF.OVERRIDECLIENT))
+    # Save the HTTP header in the localproxy object
+    g.request_headers = request.headers
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
-    if serial:
+    if serial and not "*" in serial:
+        g.serial = serial
         tokentype = get_token_type(serial)
+        if not request.User:
+            # We determine the user object by the given serial number
+            try:
+                request.User = get_token_owner(serial) or User()
+            except ResourceNotFoundError:
+                # The serial might not exist! This would raise an exception
+                pass
+
     else:
+        g.serial = None
         tokentype = None
 
     if request.User:
@@ -215,6 +237,7 @@ def before_request():
 @smtpserver_blueprint.after_request
 @eventhandling_blueprint.after_request
 @radiusserver_blueprint.after_request
+@smsgateway_blueprint.after_request
 @periodictask_blueprint.after_request
 @privacyideaserver_blueprint.after_request
 @client_blueprint.after_request
@@ -231,11 +254,6 @@ def after_request(response):
     This function is called after a request
     :return: The response
     """
-    # In certain error cases the before_request was not handled
-    # completely so that we do not have an audit_object
-    if "audit_object" in g and g.audit_object.audit_data:
-        g.audit_object.finalize_log()
-
     # No caching!
     response.headers['Cache-Control'] = 'no-cache'
     return response
@@ -254,7 +272,6 @@ def after_request(response):
 @eventhandling_blueprint.app_errorhandler(AuthError)
 @subscriptions_blueprint.app_errorhandler(AuthError)
 @monitoring_blueprint.app_errorhandler(AuthError)
-@postrequest(sign_response, request=request)
 def auth_error(error):
     if "audit_object" in g:
         message = ''
@@ -267,8 +284,7 @@ def auth_error(error):
                 if 'message' in error.details:
                     message = u'{}|{}'.format(message, error.details['message'])
 
-        g.audit_object.log({"info": message})
-        g.audit_object.finalize_log()
+        g.audit_object.add_to_log({"info": message}, add_with_comma=True)
     return send_error(error.message,
                       error_code=error.id,
                       details=error.details), 401
@@ -289,11 +305,10 @@ def auth_error(error):
 @recover_blueprint.app_errorhandler(PolicyError)
 @subscriptions_blueprint.app_errorhandler(PolicyError)
 @monitoring_blueprint.app_errorhandler(PolicyError)
-@postrequest(sign_response, request=request)
+@ttype_blueprint.app_errorhandler(PolicyError)
 def policy_error(error):
     if "audit_object" in g:
-        g.audit_object.log({"info": error.message})
-        g.audit_object.finalize_log()
+        g.audit_object.add_to_log({"info": error.message}, add_with_comma=True)
     return send_error(error.message, error_code=error.id), 403
 
 
@@ -311,7 +326,7 @@ def policy_error(error):
 @register_blueprint.app_errorhandler(ResourceNotFoundError)
 @recover_blueprint.app_errorhandler(ResourceNotFoundError)
 @subscriptions_blueprint.app_errorhandler(ResourceNotFoundError)
-@postrequest(sign_response, request=request)
+@ttype_blueprint.app_errorhandler(ResourceNotFoundError)
 def resource_not_found_error(error):
     """
     This function is called when an ResourceNotFoundError occurs.
@@ -319,7 +334,6 @@ def resource_not_found_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": error.message})
-        g.audit_object.finalize_log()
     return send_error(error.message, error_code=error.id), 404
 
 
@@ -338,7 +352,7 @@ def resource_not_found_error(error):
 @recover_blueprint.app_errorhandler(privacyIDEAError)
 @subscriptions_blueprint.app_errorhandler(privacyIDEAError)
 @monitoring_blueprint.app_errorhandler(privacyIDEAError)
-@postrequest(sign_response, request=request)
+@ttype_blueprint.app_errorhandler(privacyIDEAError)
 def privacyidea_error(error):
     """
     This function is called when an privacyIDEAError occurs.
@@ -346,7 +360,6 @@ def privacyidea_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": six.text_type(error)})
-        g.audit_object.finalize_log()
     return send_error(six.text_type(error), error_code=error.id), 400
 
 
@@ -366,7 +379,7 @@ def privacyidea_error(error):
 @recover_blueprint.app_errorhandler(500)
 @subscriptions_blueprint.app_errorhandler(500)
 @monitoring_blueprint.app_errorhandler(500)
-@postrequest(sign_response, request=request)
+@ttype_blueprint.app_errorhandler(500)
 def internal_error(error):
     """
     This function is called when an internal error (500) occurs.
@@ -375,5 +388,4 @@ def internal_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": six.text_type(error)})
-        g.audit_object.finalize_log()
     return send_error(six.text_type(error), error_code=-500), 500

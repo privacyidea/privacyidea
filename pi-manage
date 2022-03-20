@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2020-11-18 Henning Hollermann <henning.hollermann@netknights.it>
+#            Allow import and export of events, resolvers and policies
 # 2018-08-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Allow creation of HSM keys
 # 2017-10-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -48,6 +50,7 @@
 # ./manage.py db migrate
 # ./manage.py createdb
 #
+from __future__ import print_function
 import os
 import sys
 import datetime
@@ -58,11 +61,13 @@ from getpass import getpass
 import gnupg
 import yaml
 import contextlib
+import argparse
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 import flask
 from six.moves import shlex_quote
+import importlib_metadata
 
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.security.default import DefaultSecurityModule
@@ -73,6 +78,7 @@ from privacyidea.lib.policy import (delete_policy, enable_policy,
                                     PolicyClass, set_policy)
 from privacyidea.lib.event import (delete_event, enable_event,
                                    set_event, EventConfiguration)
+from privacyidea.lib.resolver import get_resolver_list, save_resolver
 from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_class,
                                          get_caconnector_object,
@@ -81,7 +87,7 @@ from privacyidea.app import create_app
 from privacyidea.lib.auth import ROLE
 from flask_script import Manager, Command, Option
 from privacyidea.app import db
-from flask_migrate import MigrateCommand
+from flask_migrate import MigrateCommand, stamp as fm_stamp
 # Wee need to import something, so that the models will be created.
 from privacyidea.models import Audit
 from sqlalchemy import create_engine, desc, MetaData
@@ -89,20 +95,27 @@ from sqlalchemy.orm import sessionmaker
 from privacyidea.lib.auditmodules.sqlaudit import LogEntry
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.authcache import cleanup as authcache_cleanup
-from privacyidea.lib.utils import parse_timedelta
+from privacyidea.lib.utils import parse_timedelta, get_version_number
 from privacyidea.lib.crypto import create_hsm_object
+from privacyidea.lib.importotp import parseOATHcsv
+from privacyidea.lib.token import import_token
+from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
 import jwt
 import ast
+import base64
+import tarfile
 
 SILENT = True
 MYSQL_DIALECTS = ["mysql", "pymysql", "mysql+pymysql"]
+DEFAULT_CONFTYPE_LIST = ("policy", "resolver", "event")
 
 app = create_app(config_name='production', silent=SILENT)
 manager = Manager(app)
 admin_manager = Manager(usage='Create new administrators or modify existing '
                               'ones.')
 backup_manager = Manager(usage='Create database backup and restore')
-realm_manager = Manager(usage='Create new realms')
+realm_manager = Manager(usage='Create new realms, delete existing realms '
+                              'or set the default realm')
 resolver_manager = Manager(usage='Create new resolver')
 policy_manager = Manager(usage='Manage policies')
 event_manager = Manager(usage='Manage events')
@@ -111,6 +124,10 @@ ca_manager = Manager(usage="Manage Certificate Authorities")
 audit_manager = Manager(usage="Manage Audit log")
 authcache_manager = Manager(usage="Manage AuthCache")
 hsm_manager = Manager(usage="Manage HSM")
+token_manager = Manager(usage="Manage tokens")
+config_manager = Manager(usage="Manage the privacyIDEA configuration")
+config_import_manager = Manager(usage="import configuration")
+config_export_manager = Manager(usage="export configuration")
 manager.add_command('db', MigrateCommand)
 manager.add_command('admin', admin_manager)
 manager.add_command('backup', backup_manager)
@@ -123,6 +140,10 @@ manager.add_command('ca', ca_manager)
 manager.add_command('audit', audit_manager)
 manager.add_command('authcache', authcache_manager)
 manager.add_command('hsm', hsm_manager)
+manager.add_command('token', token_manager)
+manager.add_command('config', config_manager)
+config_manager.add_command('import', config_import_manager)
+config_manager.add_command('export', config_export_manager)
 
 
 @hsm_manager.command
@@ -263,6 +284,7 @@ def create(directory="/var/lib/privacyidea/backup/",
     DATE = datetime.datetime.now().strftime("%Y%m%d-%H%M")
     BASE_NAME = "privacyidea-backup"
 
+    directory = os.path.abspath(directory)
     call(["mkdir", "-p", directory])
     # set correct owner, if possible
     if os.geteuid() == 0:
@@ -280,7 +302,7 @@ def create(directory="/var/lib/privacyidea/backup/",
         sqlfile = "%s/db-%s.sqlite" % (directory, DATE)
         call(["cp", productive_file, sqlfile])
     elif sqltype in MYSQL_DIALECTS:
-        m = re.match(".*mysql://(.*):(.*)@(.*)/(\w*)\??(.*)", sqluri)
+        m = re.match(r".*mysql://(.*):(.*)@(.*)/(\w*)\??(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
         datahost = m.groups()[2]
@@ -308,7 +330,8 @@ def create(directory="/var/lib/privacyidea/backup/",
 
     if not enckey:
         # Exclude enckey from backup
-        backup_call.append("--exclude={0!s}".format(enc_file))
+        # since tar v1.30 --exclude cannot be appended
+        backup_call.insert(1, "--exclude={0!s}".format(enc_file))
 
     call(backup_call)
     os.unlink(sqlfile)
@@ -327,7 +350,9 @@ def _write_mysql_defaults(filename, username, password):
     with open(filename, "w") as f:
         f.write("""[client]
 user={0!s}
-password={1!s}""".format(username, password))
+password={1!s}
+[mysqldump]
+no-tablespaces=True""".format(username, password))
 
     os.chmod(filename, 0o600)
     # set correct owner, if possible
@@ -346,7 +371,7 @@ def restore(backup_file):
     sqlfile = None
     enckey_contained = False
 
-    p = Popen(["tar", "-ztf", backup_file], stdout=PIPE)
+    p = Popen(["tar", "-ztf", backup_file], stdout=PIPE, universal_newlines=True)
     std_out, err_out = p.communicate()
     for line in std_out.split("\n"):
         if re.search(r"/pi.cfg$", line):
@@ -370,7 +395,7 @@ def restore(backup_file):
                                                            sqlfile))
 
     call(["tar", "-zxf", backup_file, "-C", "/"])
-    print(60*"=")
+    print(60 * "=")
     with open(config_file, "r") as f:
         # Determine the SQLAlchemy URI
         for line in f:
@@ -389,7 +414,7 @@ def restore(backup_file):
         call(["cp", sqlfile, productive_file])
         os.unlink(sqlfile)
     elif sqltype in MYSQL_DIALECTS:
-        m = re.match(".*mysql://(.*):(.*)@(.*)/(.*)", sqluri)
+        m = re.match(r".*mysql://(.*):(.*)@(.*)/(\w*)\??(.*)", sqluri)
         username = m.groups()[0]
         password = m.groups()[1]
         datahost = m.groups()[2]
@@ -445,9 +470,13 @@ def encrypt_enckey(encfile):
 
 
 @manager.command
-def create_enckey():
+def create_enckey(enckey_b64=None):
     """
-    If the key of the given configuration does not exist, it will be created
+    If the key of the given configuration does not exist, it will be created.
+
+
+    :param enckey_b64: (Optional) base64 encoded plain text key
+    :return:
     """
     print()
     filename = app.config.get("PI_ENCFILE")
@@ -456,8 +485,15 @@ def create_enckey():
               filename)
         sys.exit(1)
     with open(filename, "wb") as f:
-        f.write(DefaultSecurityModule.random(96))
-
+        if enckey_b64 is None:
+            f.write(DefaultSecurityModule.random(96))
+        else:
+            print("Warning: Passing enckey via cli input is considered harmful.")
+            bin_enckey = base64.b64decode(enckey_b64)
+            if len(bin_enckey) != 96:
+                print("Error: enckey must be 96 bytes length")
+                sys.exit(1)
+            f.write(bin_enckey)
     print("Encryption key written to %s" % filename)
     os.chmod(filename, 0o400)
     print("The file permission of %s was set to 400!" % filename)
@@ -480,6 +516,14 @@ def create_pgp_keys(keysize=2048, force=False):
     input_data = gpg.gen_key_input(key_type="RSA", key_length=keysize,
                                    name_real="privacyIDEA Server",
                                    name_comment="Import")
+    inputs = input_data.split("\n")
+    if inputs[-2] == "%commit":
+        del (inputs[-1])
+        del (inputs[-1])
+        inputs.append("%no-protection")
+        inputs.append("%commit")
+        inputs.append("")
+        input_data = "\n".join(inputs)
     gpg.gen_key(input_data)
 
 
@@ -519,21 +563,28 @@ def create_audit_keys(keysize=2048):
     print("Please ensure, that it is owned by the right user.")
 
 
-@manager.command
-def createdb():
+@manager.option('--stamp', '-s', help='Stamp database to current head revision.',
+                default=False, action='store_true')
+def createdb(stamp=False):
     """
-    Initially create the tables in the database. The database must exist.
-    (SQLite database will be created)
+    Initially create the tables in the database. The database must exist
+    (an SQLite database will be created).
     """
     print(db)
     db.create_all()
+    if stamp:
+        # get the path to the migration directory from the distribution
+        p = [x.locate() for x in importlib_metadata.files('privacyidea') if
+             'migrations/env.py' in str(x)]
+        migration_dir = os.path.dirname(os.path.abspath(p[0]))
+        fm_stamp(directory=migration_dir)
     db.session.commit()
 
 
 @manager.command
 def dropdb(dropit=None):
     """
-    This drops all the privacyIDEA database tables (except audit table).
+    This drops all the privacyIDEA database tables.
     Use with caution! All data will be lost!
 
     For safety reason you need to pass
@@ -543,6 +594,13 @@ def dropdb(dropit=None):
     if dropit == "yes":
         print("Dropping all database tables!")
         db.drop_all()
+        table_name = "alembic_version"
+        db.reflect()
+        table = db.Model.metadata.tables.get(table_name, None)
+        if table:
+            db.Model.metadata.drop_all(bind=db.engine,
+                                       tables=[table],
+                                       checkfirst=True)
     else:
         print("Not dropping anything!")
 
@@ -569,6 +627,7 @@ class CommandOutsideRequestContext(Command):
     In contrast to flask_script's `Command`, this command class does
     not push a request context before running the command.
     """
+
     def __call__(self, app=None, *args, **kwargs):
         return self.run(*args, **kwargs)
 
@@ -580,7 +639,7 @@ def profile(length=30, profile_dir=None):
     """
     Start the application in profiling mode.
     """
-    from werkzeug.contrib.profiler import ProfilerMiddleware
+    from werkzeug.middleware.profiler import ProfilerMiddleware
     if flask.has_request_context():
         print("WARNING: The app may behave unrealistically during profiling.")
     app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length],
@@ -668,11 +727,10 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
         print("Cleaning up with config file.")
     elif age:
         age = int(age)
-        print("Cleaning up with age: %s. %s" % (age, audit_db_uri))
+        print("Cleaning up with age: {0!s}.".format(age))
     else:
-        print("Cleaning up with high: %s, low: %s. %s" % (highwatermark,
-                                                          lowwatermark,
-                                                          audit_db_uri))
+        print("Cleaning up with high: {0!s}, low: {1!s}.".format(highwatermark,
+                                                                 lowwatermark))
 
     engine = create_engine(audit_db_uri)
     # create a configured "Session" class
@@ -844,20 +902,21 @@ def create_internal(name):
             print("Invalid username and password in database URI: %s" % sqluri)
             sys.exit(3)
     # now we can create the resolver
-    params = {'resolver': name,
-              'type': "sqlresolver",
-              'Server': host,
-              'Driver': sql_driver,
-              'User': username,
-              'Password': password,
-              'Database': database,
-              'Table': 'users_' + name,
-              'Limit': '500',
-              'Editable': '1',
-              'Map': '{"userid": "id", "username": "username", '
-                     '"email":"email", "password": "password", '
-                     '"phone":"phone", "mobile":"mobile", "surname":"surname", '
-                     '"givenname":"givenname", "description": "description"}'}
+    params = {
+        'resolver': name,
+        'type': "sqlresolver",
+        'Server': host,
+        'Driver': sql_driver,
+        'User': username,
+        'Password': password,
+        'Database': database,
+        'Table': 'users_' + name,
+        'Limit': '500',
+        'Editable': '1',
+        'Map': '{"userid": "id", "username": "username", '
+               '"email":"email", "password": "password", '
+               '"phone":"phone", "mobile":"mobile", "surname":"surname", '
+               '"givenname":"givenname", "description": "description"}'}
     save_resolver(params)
 
     # Now we create the database table
@@ -878,6 +937,27 @@ def create_internal(name):
           Column('givenname', String(40)),
           Column('description', String(255)))
     metadata.create_all(engine)
+
+
+def r_export(filename=None, name=None, print_passwords=False):
+    """
+    Export the resolver, specified by 'resolver' to a file. If no resolver name
+    is given, all resolver configurations are exported. By default, the content is censored.
+    This behavior may be changed by 'print_passwords'.
+    If the filename is omitted, the resolvers are written to stdout.
+    """
+    conf_export(conftype="resolver", filename=filename, name=name,
+                print_passwords=print_passwords)
+
+
+def r_import(filename=None, cleanup=None, update=False):
+    """
+    Import the resolvers from a json file. Existing resolvers are skipped by default.
+    If 'update' is specified the configuration of any existing resolver is updated.
+    Values given as __CENSORED__ (like e.g. passwords) are not touched during the update.
+    """
+    # Todo: Support the cleanup option to remove all resolvers which do not exist in the imported file
+    conf_import(conftype="resolver", filename=filename, cleanup=cleanup, update=update)
 
 
 # unfortunately it is not possible in flask_script to add a command with a
@@ -902,7 +982,7 @@ class ListResolver(Command):
         else:
             for (name, resolver) in resolver_list.items():
                 print("{0!s:16} - ({1!s})".format(name, resolver.get("type")))
-                print("."*32)
+                print("." * 32)
                 data = resolver.get("data", {})
                 for (k, v) in data.items():
                     if k.lower() in ["bindpw", "password"]:
@@ -929,16 +1009,44 @@ realm_manager.add_command('list', Command(list_realms))
 
 
 @realm_manager.command
-def create(name, resolver):
+def create(name, resolvers):
     """
     Create a new realm.
-    This will create a new realm with the given resolver.
-    *restriction*: The new realm will only contain one resolver!
-
-    :return:
+    This will create a new realm with the given resolver
+    or a comma-separated list of resolvers. An existing realm
+    with the same name will be replaced.
     """
     from privacyidea.lib.realm import set_realm
-    set_realm(name, [resolver])
+    resolvers = resolvers.split(",")
+    set_realm(name, resolvers)
+
+
+@realm_manager.command
+def delete(realm):
+    """
+    Delete the given realm
+    """
+    from privacyidea.lib.realm import delete_realm
+    delete_realm(realm)
+
+
+@realm_manager.command
+def set_default(realm):
+    """
+    Set the given realm to default
+    """
+    from privacyidea.lib.realm import set_default_realm
+    set_default_realm(realm)
+
+
+@realm_manager.command
+def clear_default():
+    """
+    Unset the default realm
+    """
+    from privacyidea.lib.realm import set_default_realm
+    set_default_realm(None)
+
 
 # Event interface
 
@@ -950,12 +1058,12 @@ def list_events():
     conf = EventConfiguration()
     events = conf.events
     print("{0:7} {4:4} {1:30}\t{2:20}\t{3}".format("Active", "Name", "Module", "Action", "ID"))
-    print(90*"=")
+    print(90 * "=")
     for event in events:
         print("[{0!s:>5}] {4:4} {1:30}\t{2:20}\t{3}".format(event.get("active"),
                                                             event.get("name")[0:30],
                                                             event.get("handlermodule"),
-                                                            event.get("action"), event.get("id"),))
+                                                            event.get("action"), event.get("id"), ))
 
 
 event_manager.add_command('list', Command(list_events))
@@ -989,51 +1097,22 @@ def delete(eid):
 
 
 @event_manager.command
-def e_export(filename=None):
+def e_export(filename=None, name=None):
     """
-    Export all events to a file
+    Export the specified event or all events to a file.
+    If the filename is omitted, the event configurations are written to stdout.
     """
-    import pprint
-    pp = pprint.PrettyPrinter(indent=4)
-    conf = EventConfiguration()
-    events = conf.events
-    event_str = pp.pformat(events)
-    if filename:
-        with open(filename, "w") as f:
-            f.write(event_str)
-    else:
-        print(event_str)
+    conf_export(conftype="event", filename=filename, name=name)
 
 
 @event_manager.command
-def e_import(filename, cleanup=False):
+def e_import(filename=None, cleanup=False, update=False):
     """
     Import the events from a file.
     If 'cleanup' is specified the existing events are deleted before the
     events from the file are imported.
     """
-    if cleanup:
-        print("Cleanup old events.")
-        conf = EventConfiguration()
-        events = conf.events
-        for event in events:
-            name = event.get("name")
-            r = delete_event(event.get("id"))
-            print("Deleted event '{0!s}' with result {1!s}".format(name, r))
-
-    with open(filename, 'r') as f:
-        contents = f.read()
-
-    events = ast.literal_eval(contents)
-    for event in events:
-        name = event.get("name")
-        r = set_event(name, event.get("event"), event.get("handlermodule"),
-                      event.get("action"),
-                      conditions=event.get("conditions"),
-                      ordering=event.get("ordering"),
-                      options=event.get("options"),
-                      active=event.get("active"))
-        print("Added event '{0!s}' with result {1!s}".format(name, r))
+    conf_import(conftype="event", filename=filename, cleanup=cleanup, update=update)
 
 
 # Policy interface
@@ -1045,7 +1124,7 @@ def list_policies():
     pol_cls = PolicyClass()
     policies = pol_cls.list_policies()
     print("Active \t Name \t Scope")
-    print(40*"=")
+    print(40 * "=")
     for policy in policies:
         print("%s \t %s \t %s" % (policy.get("active"), policy.get("name"),
                                   policy.get("scope")))
@@ -1082,58 +1161,22 @@ def delete(name):
 
 
 @policy_manager.command
-def p_export(filename=None):
+def p_export(filename=None, name=None):
     """
-    Export all policies to a file.
+    Export the specified policy or all policies to a file.
     If the filename is omitted, the policies are written to stdout.
     """
-    import pprint
-    pp = pprint.PrettyPrinter(indent=4)
-    pol_cls = PolicyClass()
-    policies = pol_cls.list_policies()
-    pol_str = pp.pformat(policies)
-    if filename:
-        with open(filename, 'w') as f:
-            f.write(pol_str)
-    else:
-        print(pol_str)
+    conf_export(conftype="policy", filename=filename, name=name)
 
 
 @policy_manager.command
-def p_import(filename, cleanup=False):
+def p_import(filename=None, cleanup=False, update=False):
     """
     Import the policies from a file.
     If 'cleanup' is specified the existing policies are deleted before the
     policies from the file are imported.
     """
-    if cleanup:
-        print("Cleanup old policies.")
-        pol_cls = PolicyClass()
-        policies = pol_cls.list_policies()
-        for policy in policies:
-            name = policy.get("name")
-            r = delete_policy(name)
-            print("Deleted policy {0!s} with result {1!s}".format(name, r))
-
-    with open(filename, 'r') as f:
-        contents = f.read()
-    policies = ast.literal_eval(contents)
-    for policy in policies:
-        name = policy.get("name")
-        r = set_policy(name,
-                       action=policy.get("action"),
-                       active=policy.get("active", True),
-                       adminrealm=policy.get("adminrealm"),
-                       check_all_resolvers=policy.get(
-                           "check_all_resolvers", False),
-                       client=policy.get("client"),
-                       # condition=policy.get("condition"),
-                       realm=policy.get("realm"),
-                       resolver=policy.get("resolver"),
-                       scope=policy.get("scope"),
-                       time=policy.get("time"),
-                       user=policy.get("user"))
-        print("Added policy {0!s} with result {1!s}".format(name, r))
+    conf_import(conftype="policy", filename=filename, cleanup=cleanup, update=update)
 
 
 @policy_manager.command
@@ -1159,7 +1202,7 @@ def create(name, scope, action, filename=None):
             else:
                 print("name not defined in file, will use the cli value "
                       "{0!s}.".format(name))
-                params["scope"] = name
+                params["name"] = name
 
             if params.get("scope") and params.get("scope") != scope:
                 print("Found scope '{0!s}' in file, will use that instead of "
@@ -1187,6 +1230,7 @@ def create(name, scope, action, filename=None):
                            client=params.get("client"),
                            active=params.get("active", True),
                            adminrealm=params.get("adminrealm"),
+                           adminuser=params.get("adminuser"),
                            check_all_resolvers=params.get(
                                "check_all_resolvers", False))
             return r
@@ -1226,20 +1270,430 @@ def createtoken(role, days, realm, username):
     secret = app.config.get("SECRET_KEY")
     authtype = "API"
     validity = timedelta(days=int(days))
-    token = jwt.encode({"username": username,
-                        "realm": realm,
-                        "nonce": geturandom(hex=True),
-                        "role": role,
-                        "authtype": authtype,
-                        "exp": datetime.datetime.utcnow() + validity,
-                        "rights": "TODO"},
-                       secret)
+    token = jwt.encode({
+        "username": username,
+        "realm": realm,
+        "nonce": geturandom(hex=True),
+        "role": role,
+        "authtype": authtype,
+        "exp": datetime.datetime.utcnow() + validity,
+        "rights": "TODO"},
+        secret)
     print("Username:   {0!s}".format(username))
     print("Realm:      {0!s}".format(realm))
     print("Role:       {0!s}".format(role))
     print("Validity:   {0!s} days".format(days))
     print("Auth-Token: {0!s}".format(token))
 
+
+def import_tokens(file, tokenrealm=None):
+    """
+    Import Tokens from a CSV file
+    """
+    contents = ""
+    with open(file, "r") as f:
+        contents = f.read()
+    tokens = parseOATHcsv(contents)
+    tokenrealms = [tokenrealm] if tokenrealm else []
+    i = 0
+    for serial in tokens:
+        i += 1
+        print(u"{0!s}/{1!s} Importing token {2!s}".format(i, len(tokens), serial))
+
+        import_token(serial, tokens[serial], tokenrealms=tokenrealm)
+
+
+token_manager.add_command('import', Command(import_tokens))
+
+from functools import partial
+import json
+
+exp_fmt_dict = {
+    'python': str,
+    'json': partial(json.dumps, indent=2),
+    'yaml': yaml.safe_dump}
+
+
+@config_manager.option('-o', '--output', type=argparse.FileType('w'),
+                       default=sys.stdout,
+                       help='The filename to export the data to. Write to '
+                            '<stdout> if this argument is not given.')
+@config_manager.option('-f', '--format', default='python', dest='fmt',
+                       choices=exp_fmt_dict.keys(),
+                       help='Output format, default is \'python\'')
+# TODO: we need to have an eye on the help output, it might get less readable
+#  when more exporter functions are added
+@config_manager.option('-t', '--types', nargs='*', default=['all'],
+                       choices=['all'] + list(EXPORT_FUNCTIONS.keys()),
+                       help='The types of configuration to export. By default create '
+                            'export using all available exporter types. Currently registered '
+                            'exporter types are: '
+                            '{0!s}'.format(', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))),
+                       )
+@config_manager.option('-n', '--name',
+                       help = 'The name of the configuration object to export (default: export all)')
+def exporter(output, fmt, types, name=None):
+    """
+    Export server configuration using specific or all registered exporter types.
+    """
+    exp_types = EXPORT_FUNCTIONS.keys() if 'all' in types else types
+
+    out = {}
+    for typ in exp_types:
+        out.update({typ: EXPORT_FUNCTIONS[typ](name=name)})
+
+    if out:
+        res = exp_fmt_dict.get(fmt.lower())(out) + '\n'
+        output.write(res)
+
+
+imp_fmt_dict = {
+    'python': ast.literal_eval,
+    'json': json.loads,
+    'yaml': yaml.safe_load}
+
+
+@config_manager.option('-i', '--input', type=argparse.FileType('r'),
+                       default=sys.stdin, dest='infile',
+                       help='The filename to import the data from. Try to read '
+                            'from <stdin> if this argument is not given.')
+@config_manager.option('-t', '--types', nargs='*', default=['all'],
+                       choices=['all'] + list(IMPORT_FUNCTIONS.keys()),
+                       help='The types of configuration to import. By default import all '
+                            'available data if a corresponding importer type exists. '
+                            'Currently registered importer types are: '
+                            '{0!s}'.format(', '.join(['all'] + list(IMPORT_FUNCTIONS.keys()))))
+@config_manager.option('-n', '--name',
+                       help = 'The name of the configuration object to import (default: import all)')
+def importer(infile, types, name=None):
+    """
+    Import server configuration using specific or all registered importer types.
+    """
+    data = None
+    imp_types = IMPORT_FUNCTIONS.keys() if 'all' in types else types
+
+    content = infile.read()
+
+    for fmt in imp_fmt_dict:
+        try:
+            data = imp_fmt_dict[fmt](content)
+            break
+        except (SyntaxError, json.decoder.JSONDecodeError, yaml.error.YAMLError) as _e:
+            continue
+    if not data:
+        print('Could not read input format! '
+              'Accepting: {0!s}.'.format(', '.join(imp_fmt_dict.keys())),
+              file=sys.stderr)
+        sys.exit(1)
+
+    # we need to go through the importer functions based on priority
+    for typ, value in sorted(IMPORT_FUNCTIONS.items(), key=lambda x: x[1]['prio']):
+        if typ in imp_types:
+            if typ in data:
+                print('Importing configuration type "{0!s}".'.format(typ))
+                value['func'](data[typ], name=name)
+
+
+# conf export menu
+def _get_conf_event(name=None, print_passwords=None):
+    """ helper function for conf_export """
+    event_cls = EventConfiguration()
+    if name:
+        conf = [e for e in event_cls.events if (e.get("name") == name)]
+    else:
+        conf = event_cls.events
+    return conf
+
+
+def _get_conf_resolver(name=None, print_passwords=False):
+    """ helper function for conf_export """
+    from privacyidea.lib.resolver import get_resolver_list
+    resolver_dict = get_resolver_list(filter_resolver_name=name,
+                                      censor=not print_passwords)
+    return list(resolver_dict.values())
+
+
+def _get_conf_policy(name=None, print_passwords=None):
+    """ helper function for conf_export """
+    pol_cls = PolicyClass()
+    return pol_cls.list_policies(name=name)
+
+
+def conf_export(conftype=DEFAULT_CONFTYPE_LIST, filename=None, name=None, print_passwords=False):
+    """
+    Export configurations to a file or write them to stdout if no filename is given.
+    """
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4)
+
+    ret_dict = {}
+    conf = None
+    if isinstance(conftype, list) or isinstance(conftype, tuple):
+        conftype_list = conftype
+    else:
+        conftype_list = [conftype]
+
+    for conftype in conftype_list:
+        if '_get_conf_' + conftype in globals():
+            conf = globals()['_get_conf_' + conftype](name=name, print_passwords=print_passwords)
+        if not conf:
+            print("The requested {0!s} configuration is empty.".format(conftype), file=sys.stderr)
+        ret_dict[conftype] = conf
+
+    ret_str = pp.pformat(ret_dict)
+    if filename:
+        with open(filename, 'w') as f:
+            f.write(ret_str)
+    if not filename:
+        print(ret_str)
+
+
+class FullExport(Command):
+    """
+    This action exports resolvers, policies and event handlers to standard output or to a file and optionally
+    compresses them as tar.gz archive
+    """
+    option_list = (
+        Option("--print_passwords", "-p", action="store_true",
+               help="Print the passwords used in the resolver configuration. "
+                    "This will overwrite existing passwords on import."),
+        Option("--archive", "-a", action="store_true",
+               help="Compress the created config-backup as tar.gz archive instead "
+                    "of printing to standard out."),
+        Option("--directory", "-d", action="store_true",
+               help="Directory where the backup will be stored.")
+    )
+
+    def run(self, directory=None, archive=False, print_passwords=False):
+        print("Exporting privacyIDEA configuration.", file=sys.stderr)
+        if archive or directory:
+            from socket import gethostname
+            DATE = datetime.datetime.now().strftime("%Y%m%d-%H%M")
+            BASE_NAME = "privacyidea-config-backup"
+            HOSTNAME = gethostname()
+            if not directory:
+                directory = './'
+            else:
+                call(["mkdir", "-p", directory])
+            config_backup_file_base = "%s/%s-%s-%s" % (directory, BASE_NAME, HOSTNAME, DATE)
+            config_backup_file = config_backup_file_base + ".py"
+            conf_export(filename=config_backup_file, print_passwords=print_passwords)
+            if archive:
+                config_backup_archive = config_backup_file_base + ".tar.gz"
+                tar = tarfile.open(config_backup_archive, "w:gz")
+                tar.add(config_backup_file)
+                tar.close()
+                # cleanup
+                if tarfile.is_tarfile(config_backup_archive):
+                    os.remove(config_backup_file)
+        else:
+            conf_export(filename=None, print_passwords=print_passwords)
+
+
+config_export_manager.add_command('full', FullExport)
+config_export_manager.add_command('policy', Command(p_export))
+config_export_manager.add_command('resolver', Command(r_export))
+config_export_manager.add_command('event', Command(e_export))
+
+
+# conf import menu
+
+def _import_conf_resolver(config_list, cleanup=False, update=False):
+    """
+    import resolver configuration from a resolver list
+    """
+    if cleanup:
+        print("No cleanup for resolvers implemented")
+
+    for config in config_list:
+        action_str = "Added"
+
+        name = config.get("resolvername")
+        exists = get_resolver_list(filter_resolver_name=name)
+        if exists:
+            if not update:
+                print("Resolver {0!s} exists and -u is not specified, "
+                      "skipping import.".format(name))
+                continue
+            else:
+                action_str = "Updated"
+
+        resolvertype = config.get("type")
+        data = config.get("data")
+        # now we can create the resolver
+        params = {'resolver': name, 'type': resolvertype}
+        for key in data.keys():
+            params.update({key: data.get(key)})
+        r = save_resolver(params)
+        print("{0!s} resolver {1!s} with result {2!s}".format(action_str, name, r))
+
+
+def _import_conf_event(config_list, cleanup=False, update=False):
+    """
+    import event configuration from an event list
+    """
+    cls = EventConfiguration()
+    if cleanup:
+        print("Cleanup old events.")
+        events = cls.events
+        for event in events:
+            name = event.get("name")
+            r = delete_event(event.get("id"))
+            print("Deleted event '{0!s}' with result {1!s}".format(name, r),
+                  file=sys.stderr)
+
+    for event in config_list:
+        action_str = "Added"
+        # Todo: This check does not work properly. The event is created nevertheless
+        name = event.get("name")
+        events_with_name = [e for e in cls.events if (name in e.get("name"))]
+        if events_with_name:
+            exists = True
+            event_id = events_with_name[0].get("id")
+        else:
+            exists = False
+            event_id = None
+        if exists:
+            if not update:
+                print("Event {0!s} exists and -u is not specified, "
+                      "skipping import.".format(name))
+                continue
+            else:
+                action_str = "Updated"
+        r = set_event(name, event.get("event"), event.get("handlermodule"),
+                      event.get("action"),
+                      conditions=event.get("conditions"),
+                      ordering=event.get("ordering"),
+                      options=event.get("options"),
+                      active=event.get("active"),
+                      position=event.get("position", "post"),
+                      id=event_id)
+        print("{0!s} event {1!s} with result {2!s}".format(action_str, name, r))
+
+
+def _import_conf_policy(config_list, cleanup=False, update=False):
+    """
+    import policy configuration from a policy list
+    """
+
+    cls = PolicyClass()
+
+    if cleanup:
+        print("Cleanup old policies.")
+        policies = cls.list_policies()
+        for policy in policies:
+            name = policy.get("name")
+            r = delete_policy(name)
+            print("Deleted policy {0!s} with result {1!s}".format(name, r))
+
+    for policy in config_list:
+        action_str = "Added"
+        name = policy.get("name")
+        exists = cls.list_policies(name=name)
+        if exists:
+            if not update:
+                print("Policy {0!s} exists and -u is not specified, "
+                      "skipping import.".format(name))
+                continue
+            else:
+                action_str = "Updated"
+        r = set_policy(name,
+                       action=policy.get("action"),
+                       active=policy.get("active", True),
+                       adminrealm=policy.get("adminrealm"),
+                       adminuser=policy.get("adminuser"),
+                       check_all_resolvers=policy.get(
+                           "check_all_resolvers", False),
+                       client=policy.get("client"),
+                       conditions=policy.get("conditions"),
+                       pinode=policy.get("pinode"),
+                       priority=policy.get("priority"),
+                       realm=policy.get("realm"),
+                       resolver=policy.get("resolver"),
+                       scope=policy.get("scope"),
+                       time=policy.get("time"),
+                       user=policy.get("user"))
+        print("{0!s} policy {1!s} with result {2!s}".format(action_str, name, r))
+
+
+def conf_import(filename=None, conftype=None, cleanup=False, update=False):
+    """
+    import privacyIDEA configuration from file
+    """
+    if filename:
+        with open(filename, 'r') as f:
+            contents = f.read()
+    else:
+        filename = "Standard input"
+        contents = sys.stdin.read()
+
+    contents_var = ast.literal_eval(contents)
+
+    # be backwards-compatible. In old versions of pi-manage config were exported to
+    # individual files as python list without dict key
+    if isinstance(contents_var, list):
+        conftype_list = [conftype]
+        contents_var = {conftype: contents_var}
+    else:
+        if conftype:
+            conftype_list = [conftype]
+        else:
+            conftype_list = list(contents_var.keys())
+
+    for conftype in conftype_list:
+
+        print("Importing {0!s} from {1!s}".format(conftype, filename))
+
+        config_list = contents_var[conftype]
+        if '_import_conf_' + conftype in globals():
+            globals()['_import_conf_' + conftype](config_list,
+                                                  cleanup=cleanup, update=update)
+
+
+class FullImport(Command):
+    """
+    This option reads configuration-backups from a plain file, a tar.gz archive or from standard input and imports
+    the contained resolvers, policies and event handlers.
+    """
+    option_list = (
+        Option("--file", "-f", dest="file",
+               help="The file to import. It can be a plain python file or a tar.gz archive "
+                    "containing a configuration backup file with a name containing "
+                    "'privacyidea-config-backup'."),
+        Option("--update", "-u", action="store_true",
+               help="Update the existing configuration. New policies, resolvers and events will also "
+                    "be added."),
+        Option("--cleanup", "-c", action="store_true",
+               help="The configuration on the target machine will be wiped before the import."),
+        Option("--wipe", "-w", action="store_true", dest="cleanup",
+               help="Wipe is an alias for cleanup."),
+    )
+
+    def run(self, file=None, cleanup=False, update=False):
+        if file:
+            if os.path.isfile(file):
+                if tarfile.is_tarfile(file):
+                    tarinfo_objects = []
+                    tar = tarfile.open(file)
+                    for member in tar.members:
+                        if re.search(r"privacyidea-config-backup", member.name):
+                            tarinfo_objects.append(member)
+                    tar.extractall(members=tarinfo_objects)
+                    tar.close()
+                    for tarinfo in tarinfo_objects:
+                        conf_import(filename=tarinfo.name, cleanup=cleanup, update=update)
+                        # cleanup extracted files
+                        os.remove(tarinfo.name)
+                else:
+                    conf_import(filename=file, cleanup=cleanup, update=update)
+        else:
+            conf_import(cleanup=cleanup, update=update)
+
+
+config_import_manager.add_command('full', FullImport)
+config_import_manager.add_command('policy', Command(p_import))
+config_import_manager.add_command('resolver', Command(r_import))
+config_import_manager.add_command('event', Command(e_import))
 
 if __name__ == '__main__':
     # We add one blank line, to separate the messages from the initialization
@@ -1249,5 +1703,6 @@ if __name__ == '__main__':
   / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
  / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
 /_/                       /___/
-   """)
+{0!s:>51}
+    """.format('v{0!s}'.format(get_version_number())), file=sys.stderr)
     manager.run()

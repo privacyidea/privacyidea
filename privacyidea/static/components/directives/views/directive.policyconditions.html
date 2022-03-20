@@ -51,11 +51,19 @@
                </span>
            </td>
            <td style="text-align: right;">
-               <button class="btn btn-default" ng-click="editCondition($index)">
+               <button ng-show="editIndex != $index"
+                       class="btn btn-primary" ng-click="editCondition($index)">
                    <span class="glyphicon glyphicon-edit"></span>
-                </button>
-               <button class="btn btn-default" ng-click="deleteCondition($index)">
-                   <span class="glyphicon glyphicon-remove"></span>
+                   <span translate>Edit</span>
+               </button>
+               <button ng-show="editIndex == $index"
+                       class="btn btn-primary" ng-click="editCondition($index)">
+                   <span class="glyphicon glyphicon-save"></span>
+                   <span translate>Save</span>
+               </button>
+               <button class="btn btn-danger" ng-click="deleteCondition($index)">
+                   <span class="glyphicon glyphicon-trash"></span>
+                    <span translate>Delete</span>
                </button>
            </td>
         </tr>

@@ -16,6 +16,8 @@
             <input name="identifier" id="identifier" class="form-control"
                    ng-model="params.identifier" required
                    placeholder="mySmtpServer"
+                   ng-pattern="inputNamePatterns.withoutTestEmail.pattern"
+                   title="{{ inputNamePatterns.withoutTestEmail.title | translate }}"
                    autofocus/>
             <p class="help-block" translate>This is the unique identifying name
                 of the SMTP server definition.</p>
@@ -28,7 +30,7 @@
         <div class="col-sm-9">
             <input name="server" class="form-control"
                    ng-model="params.server" required
-                   placeholder="mail.example.com"/>
+                   placeholder="smtp://mail.example.com"/>
         </div>
     </div>
     <div class="form-group">
@@ -85,7 +87,7 @@
                translate>Password</label>
         <div class="col-sm-9">
             <input name="password" class="form-control"
-                   type="password" autocomplete="off"
+                   type="password" autocomplete="new-password"
                    ng-model="params.password"
                    placeholder="topsecret"/>
         </div>
@@ -99,7 +101,8 @@
                    placeholder="some wise words"/>
         </div>
     </div>
-    <div class="form-group">
+    <div class="form-group"
+        ng_show="params.server.toLowerCase().substring(0,6) !== 'smtps:'">
         <div class="col-sm-3 control-label"></div>
         <div class="col-sm-9">
         <input type="checkbox"
@@ -107,7 +110,7 @@
                ng-checked="isChecked(params.tls)"
                name="tls"
                id="tls">
-        <label for="tls" translate>Use TLS</label>
+        <label for="tls" translate>Use StartTLS</label>
         </div>
     </div>
     <div class="form-group" ng-if="hasJobQueue">

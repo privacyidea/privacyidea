@@ -16,6 +16,8 @@
             <input name="identifier" id="identifier" class="form-control"
                    ng-model="params.identifier" required
                    placeholder="myRadiusServer"
+                   ng-pattern="inputNamePatterns.withoutTestRequest.pattern"
+                   title="{{ inputNamePatterns.withoutTestRequest.title | translate }}"
                    autofocus/>
             <p class="help-block" translate>This is the unique identifying name
                 of the RADIUS server definition.</p>
@@ -102,7 +104,7 @@
         <div class="col-sm-3">
             <label for="password" translate>Password</label>
             <input type="password" class="form-control" class="col"
-                   autocomplete="off"
+                   autocomplete="new-password"
                    ng-model="params.password" name="password">
         </div>
         <div class="col-sm-3">

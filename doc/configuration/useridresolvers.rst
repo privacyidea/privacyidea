@@ -22,10 +22,11 @@ protocol to access userstores.
 privacyIDEA already comes with UserIdResolvers to talk to all these
 user stores:
 
- * Flatfile resolver,
- * LDAP resolver,
- * SQL resolver,
- * SCIM resolver.
+ * :ref:`flatfile_resolver`
+ * :ref:`ldap_resolver`
+ * :ref:`sql_resolver`
+ * :ref:`scim_resolver`
+ * :ref:`http_resolver`
 
 .. note:: New resolver types (python modules) can be added easily. See the
    module section for this
@@ -56,7 +57,8 @@ Flatfile resolvers read files like ``/etc/passwd``.
 .. note:: The file ``/etc/passwd`` does not contain the unix password.
    Thus, if you create a flatfile resolver from this file the functionality
    with ``otppin=userstore`` is not available. You can create a flatfile with
-   passwords using the tool ``privacyidea-create-pwidresolver-user``.
+   passwords using the tool ``privacyidea-create-pwidresolver-user`` which is
+   usually found in ``/opt/privacyidea/bin/``.
 
 Create a flat file like this::
    
@@ -181,8 +183,10 @@ The *Server pool retry rounds* and *Server pool skip timeout* settings configure
 the LDAP server pool. When establishing a LDAP connection, the resolver uses a round-robin
 strategy to select a LDAP server from the pool. If the current server is not reachable, it is removed
 from the pool and will be re-inserted after the number of seconds specified in the *skip timeout*.
-If no server from the pool is reachable, the servers are queried again from the beginning. If
-a reachable server has not been found after the number of rounds specified in the *retry rounds*,
+If the pool is empty after a round, a timeout is added before the next round is started.
+The ldap3 module defaults system wide to 10 seconds before starting the next round.
+This timeout can be changed by setting ``PI_LDAP_POOLING_LOOP_TIMEOUT`` to an integer in seconds in ``pi.cfg``.
+If no reachable server could be found after the number of rounds specified in the *retry rounds*,
 the request fails.
 
 By default, knowledge about unavailable pool servers is not persisted between requests.
@@ -191,32 +195,36 @@ has not passed yet. If the *Per-process server pool* is enabled, knowledge about
 servers is persisted within each process. This setting may improve performance in situations in
 which a LDAP server from the pool is down for extended periods of time.
 
+TLS Version
+~~~~~~~~~~~
+
+When using TLS, you may specify the TLS version to use. Starting from version 3.6, privacyIDEA offers
+TLS v1.3 by default.
+
+
 TLS certificates
 ~~~~~~~~~~~~~~~~
 
-Starting with privacyIDEA 2.18 in case of encrypted LDAPS
-connections privacyIDEA can verify  the TLS
-certificate. (Python >= 2.7.9 required)
-To have privacyIDEA verify the TLS certificate you need to check the
-according checkbox.
+When using TLS with LDAP, you can tell privacyIDEA to verify the certificate. The according
+checkbox is visible in the WebUI if the target URL starts with *ldaps* or when using STARTTLS.
 
 You can specify a file with the trusted CA certificate, that signed the
 TLS certificate. The default CA filename is */etc/privacyidea/ldap-ca.crt*
 and can contain a list of base64 encoded CA certificates.
-PrivacyIDEA will use the CA file if specifed. If you leave the field empty
+PrivacyIDEA will use the CA file if specified. If you leave the field empty
 it will also try the system certificate store (*/etc/ssl/certs/ca-certificates.crt*
 or */etc/ssl/certs/ca-bundle.crt*).
 
 Modifying users
 ~~~~~~~~~~~~~~~
 
-Starting with privacyIDEA 2.12 you can define the LDAP resolver as editable.
+Starting with privacyIDEA 2.12, you can define the LDAP resolver as editable.
 I.e. you can create and modify users from within privacyIDEA.
 
 There are two additional configuration parameters for this case.
 
 ``DN Template`` defines how the DN of the new LDAP object should be created. You can use *username*, *surname*,
-*givenname* and *basedn* to create the distiguished name.
+*givenname* and *basedn* to create the distinguished name.
 
 **Examples**:
 
@@ -246,6 +254,8 @@ see expired accounts.
 
 This functionality is used with the script *privacyidea-expired-users*.
 
+.. _sql_resolver:
+
 SQL resolver
 ............
 
@@ -270,7 +280,7 @@ identified.
 
 The ``Database table`` contains the users. 
 
-.. note:: At the moment only one table 
+.. note:: At the moment, only one table
    is supported, i.e. if some of the user data like email address or telephone
    number is located in a second table, those data can not be retrieved.
   
@@ -294,14 +304,14 @@ password. This is used, if you are doing user authentication against the SQL
 database.
 
 .. note:: There is no standard way to store passwords in an SQL database.
-   There are several different ways to do this. privacyIDEA supports the most
+   privacyIDEA supports the most
    common ways like Wordpress hashes starting with *$P* or *$S*. Secure hashes
    starting with *{SHA}* or salted secure hashes starting with *{SSHA}*,
    *{SSHA256}* or *{SSHA512}*. Password hashes of length 64 are interpreted as
    OTRS sha256 hashes.
 
 You can mark the users as ``Editable``. The ``Password_Hash_Type`` can be
-used to determine wich hash algorithm should be used, if a password of an
+used to determine which hash algorithm should be used, if a password of an
 editable user is written to the database.
 
 You can add an additional ``Where statement`` if you do not want to use
@@ -312,7 +322,7 @@ The ``poolSize`` and ``poolTimeout`` determine the pooling behaviour. The
 pool. The ``poolTimeout`` (default 10) specifies how long the application
 waits to get a connection from the pool.
 
-.. note:: The pooling parameters only have effect if the ``PI_ENGINE_REGISTRY_CLASS``
+.. note:: The pooling parameters only have an effect if the ``PI_ENGINE_REGISTRY_CLASS``
    config option is set to ``"shared"`` (see :ref:`engine-registry`).
    If you then have several SQL resolvers with the same connection and pooling settings,
    they will use the same shared connection pool.
@@ -323,6 +333,8 @@ waits to get a connection from the pool.
 .. note:: The ``Additional connection parameters``
    refer to the SQLAlchemy connection but are not used at the moment.
 
+.. _scim_resolver:
+
 SCIM resolver
 .............
 
@@ -332,14 +344,17 @@ SCIM is a "System for Cross-domain Identity Management". SCIM is a REST-based
 protocol that can be used to ease identity management in the cloud.
 
 The SCIM resolver is tested in basic functions with OSIAM [#osiam]_,
-the "Open Source Idenitty & Access Management".
+the "Open Source Identity & Access Management".
 
 To connect to a SCIM service you need to provide a URL to an authentication 
 server and a URL to the resource server. The authentication server is used to
-authenticate the privacyIDEA server. The authentication is based on a ``client``
+authenticate the privacyIDEA server. The authentication is based on a ``Client``
 name and the ``Secret`` for this client.
 
-Userinformation is then retrieved from the resource server.
+.. figure:: images/scim-resolver.png
+   :width: 500
+
+User information is then retrieved from the resource server.
 
 The available attributes for the ``Attribute mapping`` are:
 
@@ -349,6 +364,62 @@ The available attributes for the ``Attribute mapping`` are:
  * phone,
  * mobile,
  * email.
+
+.. _http_resolver:
+
+HTTP resolver
+.............
+
+.. index:: HTTP resolver, resolver, api, http
+
+Starting with version 3.4 the HTTP resolver is available to retrieve user information from any kind
+of web service API. privacyIDEA issues a request to the target service and expects a JSON object in return.
+The configuration of the HTTP resolver sets the details of the request in the ``Request Mapping`` as well as the
+mapping of the obtained information as a ``Response Mapping``.
+
+.. figure:: images/http_resolver.png
+   :width: 500
+
+The ``Request Mapping`` is used to build the request issued to the remote API from privacyIDEA's user information.
+For example an endpoint definition::
+
+   POST /get-user
+   customerId=<user_id>&accessKey="secr3t!"
+
+will require a request mapping
+
+.. code-block:: json
+
+   { "customerId": "{userid}", "accessKey": "secr3t!" }
+
+The ``Response Mapping`` follows the same rules as the attribute mapping of the SQL resolver. The known attributes are
+
+ * username *(mandatory)*,
+ * givenname,
+ * surname,
+ * phone,
+ * mobile,
+ * email.
+
+Nested attributes are also supported using `pydash deep path <https://pydash.readthedocs.io/en/latest/deeppath.html>`_
+for parsing, e.g.
+
+.. code-block:: json
+
+   { "username": "{Username}", "email": "{Email}", "phone": "{Phone_Numbers.Phone}" }
+
+For APIs which return ``200 OK`` also for a negative response, ``Special error handling`` can be activated to treat
+the request as unsuccessful if the response contains certain content.
+
+The above configuration image will throw an error for a response
+
+.. code-block:: json
+
+   { "success": false, "message": "There was an error!" }
+
+because privacyIDEA will match ``{ "success": false }``.
+
+.. note:: If the HTTP response status is >= 400, the resolver will throw an exception.
 
 .. _usercache:
 
@@ -393,7 +464,7 @@ However, cache entries are removed at some defined events:
 
 .. rubric:: Footnotes
 
-.. [#adreferrals] http://blogs.technet.com/b/ad/archive/2009/07/06/referral-chasing.aspx
-.. [#osiam] http://www.osiam.org
-.. [#serverpool] https://github.com/cannatag/ldap3/blob/master/docs/manual/source/servers.rst#server-pool
-.. [#ldapschema] http://ldap3.readthedocs.io/schema.html
+.. [#adreferrals] https://techcommunity.microsoft.com/t5/azure-active-directory-identity/referral-chasing/ba-p/243177
+.. [#osiam] http://osiam.github.io
+.. [#serverpool] https://github.com/cannatag/ldap3/blob/master/docs/manual/source/server.rst#server-pool
+.. [#ldapschema] https://ldap3.readthedocs.io/en/latest/schema.html

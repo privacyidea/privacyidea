@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2020-01-28 Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
+#             Add WebAuthn token
 #  2019-02-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add push token enrollment policy
 #  2018-11-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -62,29 +64,53 @@ Wrapping the functions in a decorator class enables easy modular testing.
 
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
+
 import logging
-log = logging.getLogger(__name__)
-from privacyidea.lib.error import PolicyError, RegistrationError
+
+from OpenSSL import crypto
+
+from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError
 from flask import g, current_app
-from privacyidea.lib.policy import SCOPE, ACTION, PolicyClass
+from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
+from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
-from privacyidea.lib.token import (get_tokens, get_realms_of_token)
-from privacyidea.lib.utils import (get_client_ip,
-                                   parse_timedelta, is_true, check_pin_policy, get_module_class)
+from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
+from privacyidea.lib.utils import (parse_timedelta, is_true, generate_charlists_from_pin_policy,
+                                   get_module_class,
+                                   determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
-from privacyidea.api.lib.utils import getParam
+from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
 from privacyidea.lib.clientapplication import save_clientapplication
-from privacyidea.lib.config import (get_token_class, get_from_config, SYSCONF)
+from privacyidea.lib.config import (get_token_class)
+from privacyidea.lib.tokenclass import ROLLOUTSTATE
 import functools
 import jwt
 import re
 import importlib
+
 # Token specific imports!
+from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse,
+                                             AUTHENTICATOR_ATTACHMENT_TYPES,
+                                             USER_VERIFICATION_LEVELS, ATTESTATION_LEVELS,
+                                             ATTESTATION_FORMS)
+from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION,
+                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
+                                                  DEFAULT_TIMEOUT, DEFAULT_ALLOWED_TRANSPORTS,
+                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT,
+                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
+                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
+                                                  DEFAULT_CHALLENGE_TEXT_ENROLL,
+                                                  is_webauthn_assertion_response)
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
+
+log = logging.getLogger(__name__)
 
 optional = True
 required = False
@@ -131,36 +157,108 @@ class prepolicy(object):
         return policy_wrapper
 
 
-def init_random_pin(request=None, action=None):
+def _generate_pin_from_policy(policy, size=6):
     """
-    This policy function is to be used as a decorator in the API init function.
+    This helper function creates a string of allowed characters from the value of a pincontents policy.
+
+    :param policy: The policy that describes the allowed contents of the PIN (see check_pin_contents).
+    :param size: The desired length of the generated pin
+    :return: The generated PIN
+    """
+
+    charlists_dict = generate_charlists_from_pin_policy(policy)
+
+    pin = generate_password(size=size, characters=charlists_dict['base'],
+                      requirements=charlists_dict['requirements'])
+    return pin
+
+
+def set_random_pin(request=None, action=None):
+    """
+    This policy function is to be used as a decorator in the API setrandompin function
     If the policy is set accordingly it adds a random PIN to the
     request.all_data like.
 
-    It uses the policy SCOPE.ENROLL, ACTION.OTPPINRANDOM to set a random OTP
-    PIN during Token enrollment
+    It uses the policy ACTION.OTPPINSETRANDOM in SCOPE.ADMIN or SCOPE.USER to set a random OTP PIN
     """
     params = request.all_data
     policy_object = g.policy_object
+    # Determine the user and admin. We still pass the "username" and "realm" explicitly,
+    # since we could have an admin request with only a realm, but not a complete user_object.
+    user_object = request.User
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+
+    # get the length of the random PIN from the policies
+    pin_pols = Match.generic(g, action=ACTION.OTPPINSETRANDOM,
+                             scope=role,
+                             adminrealm=adminrealm,
+                             adminuser=adminuser,
+                             user=username,
+                             realm=realm,
+                             user_object=user_object).action_values(unique=True)
+
+    if len(pin_pols) == 0:
+        # We do this to avoid that an admin sets a random PIN manually!
+        raise TokenAdminError("You need to specify a policy '{0!s}' in scope "
+                              "{1!s}.".format(ACTION.OTPPINSETRANDOM, role))
+    elif len(pin_pols) == 1:
+        # check pin contents policy per token type, otherwise fall back
+        tokentype = get_token_type(request.all_data.get("serial"))
+        pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
+                                           user_obj=request.User).action_values(unique=True)
+        if not pol_contents:
+            pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
+                                               user_obj=request.User).action_values(unique=True)
+
+        if len(pol_contents) == 1:
+            log.info("Creating random OTP PIN with length {0!s} "
+                      "matching the contents policy {1!s}".format(list(pin_pols)[0], list(pol_contents)[0]))
+            # generate a pin which matches the contents requirement
+            r = _generate_pin_from_policy(list(pol_contents)[0], size=int(list(pin_pols)[0]))
+            request.all_data["pin"] = r
+        else:
+            log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
+            request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
+
+    return True
+
+
+def init_random_pin(request=None, action=None):
+    """
+    This policy function is to be used as a decorator in the API init function
+    If the policy is set accordingly it adds a random PIN to the
+    request.all_data like.
+
+    It uses the policy SCOPE.ENROLL, ACTION.OTPPINRANDOM and ACTION.OTPPINCONTENTS
+    to set a random OTP PIN during Token enrollment
+    """
+    params = request.all_data
     user_object = get_user_from_param(params)
     # get the length of the random PIN from the policies
-    pin_pols = policy_object.get_action_values(action=ACTION.OTPPINRANDOM,
-                                               scope=SCOPE.ENROLL,
-                                               user_object=user_object,
-                                               client=g.client_ip,
-                                               unique=True,
-                                               audit_data=g.audit_object.audit_data)
-
+    pin_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.OTPPINRANDOM,
+                          user_object=user_object).action_values(unique=True)
     if len(pin_pols) == 1:
-        log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
-        request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
+        # check pin contents policy per token type, otherwise fall back
+        tokentype = request.all_data.get("type", "hotp")
+        pol_contents = Match.admin_or_user(g, action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
+                                           user_obj=request.User).action_values(unique=True)
+        if not pol_contents:
+            pol_contents = Match.admin_or_user(g, action=ACTION.OTPPINCONTENTS,
+                                               user_obj=request.User).action_values(unique=True)
+
+        if len(pol_contents) == 1:
+            log.info("Creating random OTP PIN with length {0!s} "
+                      "matching the contents policy {1!s}".format(list(pin_pols)[0], list(pol_contents)[0]))
+            # generate a pin which matches the contents requirement
+            r = _generate_pin_from_policy(list(pol_contents)[0], size=int(list(pin_pols)[0]))
+            request.all_data["pin"] = r
+        else:
+            log.debug("Creating random OTP PIN with length {0!s}".format(list(pin_pols)[0]))
+            request.all_data["pin"] = generate_password(size=int(list(pin_pols)[0]))
 
         # handle the PIN
-        handle_pols = policy_object.get_action_values(
-            action=ACTION.PINHANDLING, scope=SCOPE.ENROLL,
-            user_object=user_object,
-            client=g.client_ip,
-            audit_data=g.audit_object.audit_data)
+        handle_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.PINHANDLING,
+                                 user_object=user_object).action_values(unique=False)
         # We can have more than one pin handler policy. So we can process the
         #  PIN in several ways!
         for handle_pol in handle_pols:
@@ -197,12 +295,7 @@ def realmadmin(request=None, action=None):
         params = request.all_data
         if not "realm" in params:
             # add the realm to params
-            policy_object = g.policy_object
-            po = policy_object.match_policies(
-                action=action, scope=SCOPE.ADMIN,
-                user=g.logged_in_user.get("username"),
-                adminrealm=g.logged_in_user.get("realm"), client=g.client_ip,
-                active=True, audit_data=g.audit_object.audit_data)
+            po = Match.admin(g, action=action).policies()
             # TODO: fix this: there could be a list of policies with a list
             # of realms!
             if po and po[0].get("realm"):
@@ -243,62 +336,37 @@ def check_otp_pin(request=None, action=None):
             tokentype = tokensobject_list[0].token.tokentype
     # the default tokentype is still HOTP
     tokentype = tokentype or "hotp"
-    policy_object = g.policy_object
-    role = g.logged_in_user.get("role")
-    username = g.logged_in_user.get("username")
-    if role == ROLE.ADMIN:
-        scope = SCOPE.ADMIN
-        admin_realm = g.logged_in_user.get("realm")
-        realm = params.get("realm", "")
-    else:
-        scope = SCOPE.USER
-        realm = g.logged_in_user.get("realm")
-        admin_realm = None
-    # get the policies for minimum length, maximum length and PIN contents
-    # first try to get a token specific policy - otherwise fall back to
-    # default policy
-    pol_minlen = policy_object.get_action_values(
-        action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMINLEN),
-        scope=scope, user=username, realm=realm, adminrealm=admin_realm,
-        client=g.client_ip, unique=True, audit_data=g.audit_object.audit_data) or \
-                 policy_object.get_action_values(
-                     action=ACTION.OTPPINMINLEN, scope=scope, user=username,
-                     realm=realm, adminrealm=admin_realm, client=g.client_ip,
-                     unique=True, audit_data=g.audit_object.audit_data)
+    check_pin(g, pin, tokentype, request.User)
+    return True
 
-    pol_maxlen = policy_object.get_action_values(
-        action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINMAXLEN),
-        scope=scope, user=username, realm=realm, adminrealm=admin_realm,
-        client=g.client_ip, unique=True, audit_data=g.audit_object.audit_data) or \
-                 policy_object.get_action_values(
-                     action=ACTION.OTPPINMAXLEN, scope=scope, user=username,
-                     realm=realm, adminrealm=admin_realm, client=g.client_ip,
-                     unique=True, audit_data=g.audit_object.audit_data)
 
-    pol_contents = policy_object.get_action_values(
-        action="{0!s}_{1!s}".format(tokentype, ACTION.OTPPINCONTENTS),
-        scope=scope, user=username, realm=realm, adminrealm=admin_realm,
-        client=g.client_ip, unique=True, audit_data=g.audit_object.audit_data) or \
-                   policy_object.get_action_values(
-                       action=ACTION.OTPPINCONTENTS, scope=scope,
-                       user=username, realm=realm, adminrealm=admin_realm,
-                       client=g.client_ip, unique=True, audit_data=g.audit_object.audit_data)
+def check_application_tokentype(request=None, action=None):
+    """
+    This pre policy checks if the request is allowed to specify the tokentype.
+    If the policy is not set, a possibly set parameter "type" is removed
+    from the request.
 
-    if len(pol_minlen) == 1 and len(pin) < int(list(pol_minlen)[0]):
-        # check the minimum length requirement
-        raise PolicyError("The minimum OTP PIN length is {0!s}".format(
-                          list(pol_minlen)[0]))
+    Check ACTION.APPLICATION_TOKENTYPE
 
-    if len(pol_maxlen) == 1 and len(pin) > int(list(pol_maxlen)[0]):
-        # check the maximum length requirement
-        raise PolicyError("The maximum OTP PIN length is {0!s}".format(
-                          list(pol_maxlen)[0]))
+    This decorator should wrap
+        /validate/check, /validate/samlcheck and /validate/triggerchallenge.
 
-    if len(pol_contents) == 1:
-        # check the contents requirement
-        r, comment = check_pin_policy(pin, list(pol_contents)[0])
-        if r is False:
-            raise PolicyError(comment)
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional Action
+    :type action: basestring
+    :returns: Always true. Modified the parameter request
+    """
+    application_allowed = Match.generic(g, scope=SCOPE.AUTHZ,
+                                        action=ACTION.APPLICATION_TOKENTYPE,
+                                        user_object=request.User,
+                                        active=True).any()
+
+    # if the application is not allowed, we remove the tokentype
+    if not application_allowed and "type" in request.all_data:
+        log.info("Removing parameter 'type' from request, "
+                 "since application is not allowed to authenticate by token type.")
+        del request.all_data["type"]
 
     return True
 
@@ -317,28 +385,7 @@ def sms_identifiers(request=None, action=None):
     sms_identifier = request.all_data.get("sms.identifier")
     if sms_identifier:
         from privacyidea.lib.tokens.smstoken import SMSACTION
-        role = g.logged_in_user.get("role")
-        if role == ROLE.USER:
-            scope = SCOPE.USER
-            username = g.logged_in_user.get("username")
-            realm = g.logged_in_user.get("realm")
-            adminrealm = None
-        else:
-            scope = SCOPE.ADMIN
-            username = g.logged_in_user.get("username")
-            realm = getParam(request.all_data, "realm")
-            adminrealm = g.logged_in_user.get("realm")
-
-        policy_object = g.policy_object
-        pols = policy_object.get_action_values(
-            action=SMSACTION.GATEWAYS,
-            scope=scope,
-            user=username,
-            realm=realm,
-            adminrealm=adminrealm,
-            client=g.client_ip,
-            unique=False,
-            audit_data=g.audit_object.audit_data)
+        pols = Match.admin_or_user(g, action=SMSACTION.GATEWAYS, user_obj=request.User).action_values(unique=False)
         gateway_identifiers = []
 
         for p in pols:
@@ -363,15 +410,8 @@ def papertoken_count(request=None, action=None):
     :return:
     """
     from privacyidea.lib.tokens.papertoken import PAPERACTION
-    policy_object = g.policy_object
-    pols = policy_object.get_action_values(
-        action=PAPERACTION.PAPERTOKEN_COUNT,
-        scope=SCOPE.ENROLL,
-        user_object=request.User,
-        client=g.client_ip,
-        unique=True,
-        audit_data=g.audit_object.audit_data)
-
+    pols = Match.user(g, scope=SCOPE.ENROLL, action=PAPERACTION.PAPERTOKEN_COUNT,
+                      user_object=request.User).action_values(unique=True)
     if pols:
         papertoken_count = list(pols)[0]
         request.all_data["papertoken_count"] = papertoken_count
@@ -392,15 +432,8 @@ def tantoken_count(request=None, action=None):
     :return:
     """
     from privacyidea.lib.tokens.tantoken import TANACTION
-    policy_object = g.policy_object
-    pols = policy_object.get_action_values(
-        action=TANACTION.TANTOKEN_COUNT,
-        scope=SCOPE.ENROLL,
-        user=request.User,
-        client=g.client_ip,
-        unique=True,
-        audit_data=g.audit_object.audit_data)
-
+    pols = Match.user(g, scope=SCOPE.ENROLL, action=TANACTION.TANTOKEN_COUNT,
+                      user_object=request.User).action_values(unique=True)
     if pols:
         tantoken_count = list(pols)[0]
         request.all_data["tantoken_count"] = tantoken_count
@@ -419,17 +452,10 @@ def encrypt_pin(request=None, action=None):
     It uses the policy SCOPE.ENROLL, ACTION.ENCRYPTPIN
     """
     params = request.all_data
-    policy_object = g.policy_object
     user_object = get_user_from_param(params)
     # get the length of the random PIN from the policies
-    pin_pols = policy_object.match_policies(action=ACTION.ENCRYPTPIN,
-                                            scope=SCOPE.ENROLL,
-                                            user=user_object.login,
-                                            realm=user_object.realm,
-                                            client=g.client_ip,
-                                            active=True,
-                                            audit_data=g.audit_object.audit_data)
-
+    pin_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.ENCRYPTPIN,
+                          user_object=user_object).policies()
     if pin_pols:
         request.all_data["encryptpin"] = "True"
     else:
@@ -445,29 +471,20 @@ def enroll_pin(request=None, action=None):
     It checks, if the user or the admin is allowed to set a token PIN during
     enrollment. If not, it deleted the PIN from the request.
     """
-    policy_object = g.policy_object
-    role = g.logged_in_user.get("role")
-    if role == ROLE.USER:
-        scope = SCOPE.USER
-        username = g.logged_in_user.get("username")
-        realm = g.logged_in_user.get("realm")
-        adminrealm = None
-    else:
-        scope = SCOPE.ADMIN
-        username = g.logged_in_user.get("username")
-        realm = getParam(request.all_data, "realm")
-        adminrealm = g.logged_in_user.get("realm")
-    pin_pols = policy_object.match_policies(action=ACTION.ENROLLPIN,
-                                            scope=scope,
-                                            user=username,
-                                            realm=realm,
-                                            adminrealm=adminrealm,
-                                            client=g.client_ip,
-                                            active=True,
-                                            audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.list_policies(scope=scope, active=True)
+    resolver = request.User.resolver if request.User else None
+    (role, username, userrealm, adminuser, adminrealm ) = determine_logged_in_userparams(g.logged_in_user,
+                                                                                         request.all_data)
+    allowed_action = Match.generic(g, scope=role,
+                                   action=ACTION.ENROLLPIN,
+                                   user_object=request.User,
+                                   user=username,
+                                   resolver=resolver,
+                                   realm=userrealm,
+                                   adminrealm=adminrealm,
+                                   adminuser=adminuser,
+                                   active=True).allowed()
 
-    if action_at_all and not pin_pols:
+    if not allowed_action:
         # Not allowed to set a PIN during enrollment!
         if "pin" in request.all_data:
             del request.all_data["pin"]
@@ -483,13 +500,59 @@ def init_token_defaults(request=None, action=None):
     params = request.all_data
     ttype = params.get("type") or "hotp"
     token_class = get_token_class(ttype)
-    default_settings = token_class.get_default_settings(params,
-                                                        g.logged_in_user,
-                                                        g.policy_object,
-                                                        g.client_ip)
+    default_settings = token_class.get_default_settings(g, params)
     log.debug("Adding default settings {0!s} for token type {1!s}".format(
         default_settings, ttype))
     request.all_data.update(default_settings)
+    return True
+
+
+def init_token_length_contents(request=None, action=None):
+    """
+    This policy function is to be used as a decorator in the API token init function.
+
+    It can set the parameters for automatic code or password created in regards to length and
+    contents for the tokentypes 'registration' and 'pw'.
+
+    If there is a valid policy set the action values of REGISTRATIONCODE_LENGTH / PASSWORD_LENGTH
+    and REGISTRATIONCODE_CONTENTS / PASSWORD_CONTENTS are added to request.all_data as
+
+    { 'registration.length': '10', 'registration.contents': 'cn' }
+    or
+    { 'pw.length': '10', 'pw.contents': 'cn' }
+    """
+    no_content_policy = True
+    no_length_policy = True
+    params = request.all_data
+    tokentype = params.get("type")
+
+    if tokentype == 'registration':
+        from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
+        length_action = ACTION.REGISTRATIONCODE_LENGTH
+        contents_action = ACTION.REGISTRATIONCODE_CONTENTS
+    elif tokentype == 'pw':
+        from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
+        length_action = ACTION.PASSWORD_LENGTH
+        contents_action = ACTION.PASSWORD_CONTENTS
+    else:
+        return True
+
+    user_object = get_user_from_param(params)
+    length_pols = Match.user(g, scope=SCOPE.ENROLL, action=length_action,
+                            user_object=user_object).action_values(unique=True)
+    if len(length_pols) == 1:
+        request.all_data[length_action] = list(length_pols)[0]
+        no_length_policy = False
+    content_pols = Match.user(g, scope=SCOPE.ENROLL, action=contents_action,
+                            user_object=user_object).action_values(unique=True)
+    if len(content_pols) == 1:
+        request.all_data[contents_action] = list(content_pols)[0]
+        no_content_policy = False
+    # if there is no policy, set defaults.
+    if no_length_policy:
+        request.all_data[length_action] = DEFAULT_LENGTH
+    if no_content_policy:
+        request.all_data[contents_action] = DEFAULT_CONTENTS
     return True
 
 
@@ -499,7 +562,7 @@ def init_tokenlabel(request=None, action=None):
     It adds the tokenlabel definition to the params like this:
     params : { "tokenlabel": "<u>@<r>" }
 
-    In addtion it adds the tokenissuer to the params like this:
+    In addition it adds the tokenissuer to the params like this:
     params : { "tokenissuer": "privacyIDEA instance" }
 
     It also checks if the force_app_pin policy is set and adds the corresponding
@@ -511,50 +574,29 @@ def init_tokenlabel(request=None, action=None):
     response.
     """
     params = request.all_data
-    policy_object = g.policy_object
     user_object = get_user_from_param(params)
     token_type = getParam(request.all_data, "type", optional, "hotp").lower()
     # get the serials from a policy definition
-    label_pols = policy_object.get_action_values(action=ACTION.TOKENLABEL,
-                                                 scope=SCOPE.ENROLL,
-                                                 user_object=user_object,
-                                                 client=g.client_ip,
-                                                 unique=True,
-                                                 allow_white_space_in_action=True,
-                                                 audit_data=g.audit_object.audit_data)
-
+    label_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.TOKENLABEL,
+                            user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
     if len(label_pols) == 1:
         # The policy was set, so we need to set the tokenlabel in the request.
         request.all_data[ACTION.TOKENLABEL] = list(label_pols)[0]
 
-    issuer_pols = policy_object.get_action_values(action=ACTION.TOKENISSUER,
-                                                  scope=SCOPE.ENROLL,
-                                                  user_object=user_object,
-                                                  client=g.client_ip,
-                                                  unique=True,
-                                                  allow_white_space_in_action=True,
-                                                  audit_data=g.audit_object.audit_data)
+    issuer_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.TOKENISSUER,
+                             user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
     if len(issuer_pols) == 1:
         request.all_data[ACTION.TOKENISSUER] = list(issuer_pols)[0]
 
-    imageurl_pols = policy_object.get_action_values(action=ACTION.APPIMAGEURL,
-                                                    scope=SCOPE.ENROLL,
-                                                    user_object=user_object,
-                                                    client=g.client_ip,
-                                                    unique=True,
-                                                    allow_white_space_in_action=True,
-                                                    audit_data=g.audit_object.audit_data)
+    imageurl_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.APPIMAGEURL,
+                               user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
     if len(imageurl_pols) == 1:
         request.all_data[ACTION.APPIMAGEURL] = list(imageurl_pols)[0]
 
     # check the force_app_pin policy
-    app_pin_pols = policy_object.match_policies(action='{0!s}_{1!s}'.format(token_type,
-                                                                            ACTION.FORCE_APP_PIN),
-                                                scope=SCOPE.ENROLL,
-                                                user_object=user_object,
-                                                client=g.client_ip,
-                                                active=True,
-                                                audit_data=g.audit_object.audit_data)
+    app_pin_pols = Match.user(g, scope=SCOPE.ENROLL,
+                              action='{0!s}_{1!s}'.format(token_type, ACTION.FORCE_APP_PIN),
+                              user_object=user_object).any()
     if app_pin_pols:
         request.all_data[ACTION.FORCE_APP_PIN] = True
 
@@ -570,7 +612,6 @@ def twostep_enrollment_activation(request=None, action=None):
     If a ``<type>_2step`` policy matches, the ``2stepinit`` parameter is handled according to the policy.
     If no policy matches, the ``2stepinit`` parameter is removed from the request data.
     """
-    policy_object = g.policy_object
     user_object = get_user_from_param(request.all_data)
     serial = getParam(request.all_data, "serial", optional)
     token_type = getParam(request.all_data, "type", optional, "hotp")
@@ -581,30 +622,14 @@ def twostep_enrollment_activation(request=None, action=None):
             token_type = tokensobject_list[0].token.tokentype
             token_exists = True
     token_type = token_type.lower()
-    role = g.logged_in_user.get("role")
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
-    if role == ROLE.ADMIN:
-        scope = SCOPE.ADMIN
-        adminrealm = g.logged_in_user.get("realm")
-    else:
-        scope = SCOPE.USER
-        adminrealm = None
-    realm = user_object.realm
     # In any case, the policy's user attribute is matched against the
     # currently logged-in user (which may be the admin or the
     # self-enrolling user).
-    user = g.logged_in_user.get("username")
     # Tokentypes have separate twostep actions
     action = "{}_2step".format(token_type)
-    twostep_enabled_pols = policy_object.get_action_values(action=action,
-                                                           scope=scope,
-                                                           unique=True,
-                                                           user=user,
-                                                           realm=realm,
-                                                           client=g.client_ip,
-                                                           adminrealm=adminrealm,
-                                                           audit_data=g.audit_object.audit_data)
+    twostep_enabled_pols = Match.admin_or_user(g, action=action, user_obj=user_object).action_values(unique=True)
     if twostep_enabled_pols:
         enabled_setting = list(twostep_enabled_pols)[0]
         if enabled_setting == "allow":
@@ -632,7 +657,7 @@ def twostep_enrollment_parameters(request=None, action=None):
     to ``request.all_data``, that is:
 
      * ``{type}_2step_serversize`` is written to ``2step_serversize``
-     * ``{type}_2step_clientsize`` is written to ``2step_clientsize`
+     * ``{type}_2step_clientsize`` is written to ``2step_clientsize``
      * ``{type}_2step_difficulty`` is written to ``2step_difficulty``
 
     If no policy matches, the value passed by the user is kept.
@@ -648,33 +673,51 @@ def twostep_enrollment_parameters(request=None, action=None):
         if len(tokensobject_list) == 1:
             token_type = tokensobject_list[0].token.tokentype
     token_type = token_type.lower()
-    role = g.logged_in_user.get("role")
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
-    if role == ROLE.ADMIN:
-        adminrealm = g.logged_in_user.get("realm")
-    else:
-        adminrealm = None
-    realm = user_object.realm
-    # In any case, the policy's user attribute is matched against the
-    # currently logged-in user (which may be the admin or the
-    # self-enrolling user).
-    user = g.logged_in_user.get("username")
+    (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
+                                                                                         request.all_data)
     # Tokentypes have separate twostep actions
     if is_true(getParam(request.all_data, "2stepinit", optional)):
         parameters = ("2step_serversize", "2step_clientsize", "2step_difficulty")
         for parameter in parameters:
             action = u"{}_{}".format(token_type, parameter)
-            action_values = policy_object.get_action_values(action=action,
-                                                            scope=SCOPE.ENROLL,
-                                                            unique=True,
-                                                            user=user,
-                                                            realm=realm,
-                                                            client=g.client_ip,
-                                                            adminrealm=adminrealm,
-                                                            audit_data=g.audit_object.audit_data)
+            # SCOPE.ENROLL does not have an admin realm
+            action_values = Match.generic(g, action=action,
+                                          scope=SCOPE.ENROLL,
+                                          user=username,
+                                          realm=userrealm,
+                                          user_object=request.User).action_values(unique=True)
             if action_values:
                 request.all_data[parameter] = list(action_values)[0]
+
+
+def verify_enrollment(request=None, action=None):
+    """
+    This is used to verify an already enrolled token.
+    The parameter "verify" is used to do so. If successful,
+    the current rollout_state "verify" of the token will be changed to "enrolled".
+
+    :param request:
+    :param action:
+    :return:
+    """
+    serial = getParam(request.all_data, "serial", optional)
+    verify = getParam(request.all_data, "verify", optional)
+    if verify and serial:
+        # Only now, we check if we need to verify
+        tokenobj_list = get_tokens(serial=serial)
+        if len(tokenobj_list) == 1:
+            tokenobj = tokenobj_list[0]
+            if tokenobj.rollout_state == ROLLOUTSTATE.VERIFYPENDING:
+                log.debug("Verifying the token enrollment for token {0!s}.".format(serial))
+                r = tokenobj.verify_enrollment(verify)
+                log.info("Result of enrollment verification for token {0!s}: {1!s}".format(serial, r))
+                if r:
+                    tokenobj.token.rollout_state = ROLLOUTSTATE.ENROLLED
+                else:
+                    from privacyidea.lib.error import ParameterError
+                    raise ParameterError("Verification of the new token failed.")
 
 
 def check_max_token_user(request=None, action=None):
@@ -693,17 +736,50 @@ def check_max_token_user(request=None, action=None):
     :return: True otherwise raises an Exception
     """
     ERROR = "The number of tokens for this user is limited!"
+    ERROR_TYPE = "The number of tokens of type {0!s} for this user is limited!"
     ERROR_ACTIVE = "The number of active tokens for this user is limited!"
+    ERROR_ACTIVE_TYPE = "The number of active tokens of type {0!s} for this user is limited!"
     params = request.all_data
-    user_object = get_user_from_param(params)
     serial = getParam(params, "serial")
+    tokentype = getParam(params, "type")
+    user_object = get_user_from_param(params)
+    if user_object.is_empty() and serial:
+        try:
+            user_object = get_token_owner(serial) or User()
+        except ResourceNotFoundError:
+            # in case of token init the token does not yet exist in the db
+            pass
     if user_object.login:
-        policy_object = g.policy_object
+        tokentype = getParam(params, "type")
+        if not tokentype:
+            if serial:
+                # If we have a serial but no tokentype, we can get the tokentype from
+                # the token, if it exists
+                tokentype = get_token_type(serial) or "hotp"
+            else:
+                tokentype = "hotp"
+
+        # check maximum number of type specific tokens of user
+        limit_list = Match.user(g, scope=SCOPE.ENROLL,
+                                action="{0!s}_{1!s}".format(tokentype.lower(), ACTION.MAXTOKENUSER),
+                                user_object=user_object).action_values(unique=False, write_to_audit_log=False)
+        if limit_list:
+            # we need to check how many tokens of this specific type the user already has assigned!
+            tokenobject_list = get_tokens(user=user_object, tokentype=tokentype)
+            if serial and serial in [tok.token.serial for tok in tokenobject_list]:
+                # If a serial is provided and this token already exists, the
+                # token can be regenerated
+                pass
+            else:
+                already_assigned_tokens = len(tokenobject_list)
+                max_value = max([int(x) for x in limit_list])
+                if already_assigned_tokens >= max_value:
+                    g.audit_object.add_policy(limit_list.get(str(max_value)))
+                    raise PolicyError(ERROR_TYPE.format(tokentype))
+
         # check maximum tokens of user
-        limit_list = policy_object.get_action_values(ACTION.MAXTOKENUSER,
-                                                     scope=SCOPE.ENROLL,
-                                                     user_object=user_object,
-                                                     client=g.client_ip)
+        limit_list = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.MAXTOKENUSER,
+                                user_object=user_object).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many tokens the user already has assigned!
             tokenobject_list = get_tokens(user=user_object)
@@ -719,22 +795,35 @@ def check_max_token_user(request=None, action=None):
                     raise PolicyError(ERROR)
 
         # check maximum active tokens of user
-        limit_list = policy_object.get_action_values(ACTION.MAXACTIVETOKENUSER,
-                                                     scope=SCOPE.ENROLL,
-                                                     user_object=user_object,
-                                                     client=g.client_ip)
+        limit_list = Match.user(g, scope=SCOPE.ENROLL,
+                                action="{0!s}_{1!s}".format(tokentype, ACTION.MAXACTIVETOKENUSER),
+                                user_object=user_object).action_values(unique=False, write_to_audit_log=False)
+        if limit_list:
+            # we need to check how many active tokens the user already has assigned!
+            tokenobject_list = get_tokens(user=user_object, active=True, tokentype=tokentype)
+            if serial and serial in [tok.token.serial for tok in tokenobject_list]:
+                # If a serial is provided and this token already exists, the
+                # token can be regenerated
+                pass
+            else:
+                already_assigned_tokens = len(tokenobject_list)
+                max_value = max([int(x) for x in limit_list])
+                if already_assigned_tokens >= max_value:
+                    g.audit_object.add_policy(limit_list.get(str(max_value)))
+                    raise PolicyError(ERROR_ACTIVE_TYPE.format(tokentype))
+
+        # check maximum active tokens of user
+        limit_list = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.MAXACTIVETOKENUSER,
+                                user_object=user_object).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many active tokens the user already has assigned!
             tokenobject_list = get_tokens(user=user_object, active=True)
-            _token_allowed = False
-            if serial:
-                for tok in tokenobject_list:
-                    if tok.token.serial == serial:
-                        # If a serial is provided and this token already exists (and is active), the
-                        # token can be regenerated. If the token would be inactive, regenerating this
-                        # token would reactivate it and thus the user would have more tokens!
-                        _token_allowed = True
-            if not _token_allowed:
+            if serial and serial in [tok.token.serial for tok in tokenobject_list]:
+                # If a serial is provided and this token already exists (and is active), the
+                # token can be regenerated. If the token would be inactive, regenerating this
+                # token would reactivate it and thus the user would have more tokens!
+                pass
+            else:
                 already_assigned_tokens = len(tokenobject_list)
                 max_value = max([int(x) for x in limit_list])
                 if already_assigned_tokens >= max_value:
@@ -770,11 +859,8 @@ def check_max_token_realm(request=None, action=None):
         realm = params.get("realm")
 
     if realm:
-        policy_object = g.policy_object
-        limit_list = policy_object.get_action_values(ACTION.MAXTOKENREALM,
-                                                     scope=SCOPE.ENROLL,
-                                                     realm=realm,
-                                                     client=g.client_ip)
+        limit_list = Match.realm(g, scope=SCOPE.ENROLL, action=ACTION.MAXTOKENREALM,
+                                 realm=realm).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many tokens the realm already has assigned!
             tokenobject_list = get_tokens(realm=realm)
@@ -805,33 +891,23 @@ def set_realm(request=None, action=None):
     :type action: basestring
     :returns: Always true. Modified the parameter request
     """
-    #user_object = get_user_from_param(request.all_data)
-    user_object = request.User
     # At the moment a realm parameter with no user parameter returns a user
     # object like "@realm". If this is changed one day, we need to also fetch
     #  the realm
-    if user_object:
-        realm = user_object.realm
+    if request.User and request.User.login:
+        user_object = request.User
         username = user_object.login
-    else:  # pragma: no cover
-        realm = request.all_data.get("realm")
-        username = None
-
-    policy_object = g.policy_object
-    new_realm = policy_object.get_action_values(ACTION.SETREALM,
-                                                scope=SCOPE.AUTHZ,
-                                                user=username,
-                                                realm=realm,
-                                                client=g.client_ip,
-                                                audit_data=g.audit_object.audit_data)
-    if len(new_realm) > 1:
-        raise PolicyError("I do not know, to which realm I should set the "
-                          "new realm. Conflicting policies exist.")
-    elif len(new_realm) == 1:
-        # There is one specific realm, which we set in the request
-        request.all_data["realm"] = list(new_realm)[0]
-        # We also need to update the user
-        request.User = User(username, request.all_data["realm"])
+        policy_match = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.SETREALM,
+                                  user_object=user_object)
+        new_realm = policy_match.action_values(unique=False)
+        if len(new_realm) > 1:
+            raise PolicyError("I do not know, to which realm I should set the "
+                              "new realm. Conflicting policies exist.")
+        elif len(new_realm) == 1:
+            # There is one specific realm, which we set in the request
+            request.all_data["realm"] = list(new_realm)[0]
+            # We also need to update the user
+            request.User = User(username, request.all_data["realm"])
 
     return True
 
@@ -852,10 +928,7 @@ def required_email(request=None, action=None):
     """
     email = getParam(request.all_data, "email")
     email_found = False
-    email_pols = g.policy_object.\
-        get_action_values(ACTION.REQUIREDEMAIL, scope=SCOPE.REGISTER,
-                          client=g.client_ip,
-                          audit_data=g.audit_object.audit_data)
+    email_pols = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.REQUIREDEMAIL).action_values(unique=False)
     if email and email_pols:
         for email_pol in email_pols:
             # The policy is only "/regularexpr/".
@@ -867,6 +940,65 @@ def required_email(request=None, action=None):
                                     "register!")
 
     return True
+
+
+def check_custom_user_attributes(request=None, action=None):
+    """
+    This pre condition checks for the policies delete_custom_user_attributes and
+    set_custom_user_attributes, if the user or admin is allowed to set or deleted
+    the requested attribute.
+
+    It decorates POST /user/attribute and DELETE /user/attribute/...
+
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional action, (would be set/delete)
+    :return: Raises a PolicyError, if the wrong attribute is given.
+    """
+    ERROR = "You are not allowed to {0!s} the custom user attribute {1!s}!"
+    is_allowed = False
+    if action == "delete":
+        attr_pol_dict = Match.admin_or_user(g, action=ACTION.DELETE_USER_ATTRIBUTES,
+                                            user_obj=request.User).action_values(unique=False,
+                                                                                 allow_white_space_in_action=True)
+        attr_key = request.all_data.get("attrkey")
+        for attr_pol_val in attr_pol_dict:
+            attr_pol_list = [x.strip() for x in attr_pol_val.strip().split() if x]
+            if attr_key in attr_pol_list or "*" in attr_pol_list:
+                is_allowed = True
+                break
+        if is_allowed:
+            g.audit_object.add_policy(attr_pol_dict.get(attr_pol_val))
+        else:
+            raise PolicyError(ERROR.format(action, attr_key))
+    elif action == "set":
+        attr_pol_dict = Match.admin_or_user(g, action=ACTION.SET_USER_ATTRIBUTES,
+                                            user_obj=request.User).action_values(unique=False,
+                                                                                 allow_white_space_in_action=True)
+        attr_key = request.all_data.get("key")
+        attr_value = request.all_data.get("value")
+        for pol_string in attr_pol_dict:
+            pol_dict = parse_string_to_dict(pol_string)
+            if attr_value in pol_dict.get(attr_key, []):
+                # It is allowed to set the key to this value
+                is_allowed = True
+                break
+            if attr_value in pol_dict.get("*", []):
+                # this value can be set in any key
+                is_allowed = True
+                break
+            if "*" in pol_dict.get(attr_key, []):
+                # This key can be set to any value
+                is_allowed = True
+                break
+            if "*" in pol_dict.get("*", []):
+                # Any key can be set to any value
+                is_allowed = True
+                break
+        if is_allowed:
+            g.audit_object.add_policy(attr_pol_dict.get(pol_string))
+        else:
+            raise PolicyError(ERROR.format(action, attr_key))
 
 
 def auditlog_age(request=None, action=None):
@@ -884,28 +1016,7 @@ def auditlog_age(request=None, action=None):
     :type action: basestring
     :returns: Always true. Modified the parameter request
     """
-    user_object = request.User
-    policy_object = g.policy_object
-    role = g.logged_in_user.get("role")
-    if role == ROLE.ADMIN:
-        scope = SCOPE.ADMIN
-        adminrealm = g.logged_in_user.get("realm")
-        user = g.logged_in_user.get("username")
-        realm = user_object.realm
-    else:
-        scope = SCOPE.USER
-        adminrealm = None
-        user = user_object.login
-        realm = user_object.realm
-
-    audit_age = policy_object.get_action_values(ACTION.AUDIT_AGE,
-                                                scope=scope,
-                                                adminrealm=adminrealm,
-                                                realm=realm,
-                                                user=user,
-                                                client=g.client_ip,
-                                                unique=True,
-                                                audit_data=g.audit_object.audit_data)
+    audit_age = Match.admin_or_user(g, action=ACTION.AUDIT_AGE, user_obj=request.User).action_values(unique=True)
     timelimit = None
     timelimit_s = None
     for aa in audit_age:
@@ -920,6 +1031,29 @@ def auditlog_age(request=None, action=None):
 
         log.debug("auditlog_age: {0!s}".format(timelimit_s))
         request.all_data["timelimit"] = timelimit_s
+
+    return True
+
+
+def hide_audit_columns(request=None, action=None):
+    """
+    This pre condition checks for the policy hide_audit_columns and sets the
+    "hidden_columns" parameter for the audit search. The given columns will be
+    removed from the returned audit dict.
+
+    Check ACTION.HIDE_AUDIT_COLUMNS
+
+    The decorator should wrap GET /audit/
+
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional Action
+    :type action: basestring
+    :returns: Always true. Modified the parameter request
+    """
+    hidden_columns = Match.admin_or_user(g, action=ACTION.HIDE_AUDIT_COLUMNS,
+                                         user_obj=request.User).action_values(unique=False)
+    request.all_data["hidden_columns"] = list(hidden_columns)
 
     return True
 
@@ -944,11 +1078,8 @@ def mangle(request=None, action=None):
     """
     user_object = request.User
 
-    policy_object = g.policy_object
-    mangle_pols = policy_object.get_action_values(ACTION.MANGLE,
-                                                  scope=SCOPE.AUTH,
-                                                  user_object=user_object,
-                                                  client=g.client_ip)
+    mangle_pols = Match.user(g, scope=SCOPE.AUTH, action=ACTION.MANGLE,
+                             user_object=user_object).action_values(unique=False, write_to_audit_log=False)
     # We can have several mangle policies! One for user, one for realm and
     # one for pass. So we do no checking here.
     for mangle_pol_action in mangle_pols:
@@ -983,21 +1114,10 @@ def check_anonymous_user(request=None, action=None):
     ERROR = "User actions are defined, but this action is not allowed!"
     params = request.all_data
     policy_object = g.policy_object
-    scope = SCOPE.USER
     user_obj = get_user_from_param(params)
-    username = user_obj.login
-    realm = user_obj.realm
 
-    action = policy_object.match_policies(action=action,
-                                          user=username,
-                                          realm=realm,
-                                          scope=scope,
-                                          client=g.client_ip,
-                                          adminrealm=None,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.list_policies(scope=scope, active=True)
-    if action_at_all and len(action) == 0:
+    action_allowed = Match.user(g, scope=SCOPE.USER, action=action, user_object=user_obj).allowed()
+    if not action_allowed:
         raise PolicyError(ERROR)
     return True
 
@@ -1023,17 +1143,7 @@ def check_admin_tokenlist(request=None, action=None):
         return True
 
     policy_object = g.policy_object
-    username = g.logged_in_user.get("username")
-    admin_realm = g.logged_in_user.get("realm")
-
-    pols = policy_object.match_policies(action=ACTION.TOKENLIST,
-                                        user=username,
-                                        scope=SCOPE.ADMIN,
-                                        client=g.client_ip,
-                                        adminrealm=admin_realm,
-                                        active=True,
-                                        audit_data=g.audit_object.audit_data)
-
+    pols = Match.admin(g, action=ACTION.TOKENLIST).policies()
     pols_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
 
     if pols_at_all:
@@ -1056,10 +1166,11 @@ def check_base_action(request=None, action=None, anonymous=False):
     """
     This decorator function takes the request and verifies the given action
     for the SCOPE ADMIN or USER.
+
     :param request:
     :param action:
     :param anonymous: If set to True, the user data is taken from the request
-        parameters.
+                      parameters.
     :return: True otherwise raises an Exception
     """
     ERROR = {"user": "User actions are defined, but the action %s is not "
@@ -1067,48 +1178,37 @@ def check_base_action(request=None, action=None, anonymous=False):
              "admin": "Admin actions are defined, but the action %s is not "
                       "allowed!" % action}
     params = request.all_data
-    policy_object = g.policy_object
-    username = g.logged_in_user.get("username")
-    role = g.logged_in_user.get("role")
-    scope = SCOPE.ADMIN
-    admin_realm = g.logged_in_user.get("realm")
-    realm = None
-    resolver = None
-
-    if role == ROLE.USER:
-        scope = SCOPE.USER
-        # Reset the admin realm
-        admin_realm = None
-        realm = realm or g.logged_in_user.get("realm")
+    user_object = request.User
+    resolver = user_object.resolver if user_object else None
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
-    if action not in [ACTION.AUDIT]:
+    if action is ACTION.AUDIT:
+        # In case of audit requests, the parameters "realm" and "user" are used for
+        # filtering the audit log. So these values must not be taken from the request parameters,
+        # but rather be NONE. The restriction for the allowed realms in the audit log is determined
+        # in the decorator "allowed_audit_realm".
+        realm = username = resolver = None
+    else:
         realm = params.get("realm")
         if type(realm) == list and len(realm) == 1:
             realm = realm[0]
-        resolver = params.get("resolver")
+        resolver = resolver or params.get("resolver")
         # get the realm by the serial:
         if not realm and params.get("serial"):
             realm = get_realms_of_token(params.get("serial"),
                                         only_first_realm=True)
 
-        # get the realm by the serial, while the serial is part of the URL like
-        # DELETE /token/serial
-        if not realm and request.view_args and request.view_args.get("serial"):
-            realm = get_realms_of_token(request.view_args.get("serial"),
-                                        only_first_realm=True)
-
-    action = policy_object.match_policies(action=action,
-                                          user=username,
-                                          realm=realm,
-                                          scope=scope,
-                                          resolver=resolver,
-                                          client=g.client_ip,
-                                          adminrealm=admin_realm,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.list_policies(scope=scope, active=True)
-    if action_at_all and len(action) == 0:
+    # In this case we do not pass the user_object, since the realm is also determined
+    # by the pure serial number given.
+    action_allowed = Match.generic(g, scope=role,
+                                   action=action,
+                                   user=username,
+                                   resolver=resolver,
+                                   realm=realm,
+                                   adminrealm=adminrealm,
+                                   adminuser=adminuser).allowed()
+    if not action_allowed:
         raise PolicyError(ERROR.get(role))
     return True
 
@@ -1121,22 +1221,20 @@ def check_token_upload(request=None, action=None):
     :param filename:
     :return:
     """
-    params = request.all_data
-    policy_object = g.policy_object
-    username = g.logged_in_user.get("username")
-    admin_realm = g.logged_in_user.get("realm")
-    action = policy_object.match_policies(action=ACTION.IMPORT,
-                                          user=username,
-                                          realm=params.get("realm"),
-                                          scope=SCOPE.ADMIN,
-                                          client=g.client_ip,
-                                          adminrealm=admin_realm,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.list_policies(scope=SCOPE.ADMIN, active=True)
-    if action_at_all and len(action) == 0:
-        raise PolicyError("Admin actions are defined, but you are not allowed"
-                          " to upload token files.")
+    tokenrealms = request.all_data.get("tokenrealms")
+    upload_allowed = True
+    if tokenrealms:
+        for trealm in tokenrealms.split(","):
+            if not Match.generic(g, scope=SCOPE.ADMIN, action=ACTION.IMPORT,
+                                 adminuser=g.logged_in_user.get("username"),
+                                 adminrealm=g.logged_in_user.get("realm"), realm=trealm).allowed():
+                upload_allowed = False
+    else:
+        upload_allowed = Match.generic(g, scope=SCOPE.ADMIN, action=ACTION.IMPORT,
+                                       adminuser=g.logged_in_user.get("username"),
+                                       adminrealm=g.logged_in_user.get("realm")).allowed()
+    if not upload_allowed:
+        raise PolicyError("Admin actions are defined, but you are not allowed to upload token files.")
     return True
 
 
@@ -1154,49 +1252,19 @@ def check_token_init(request=None, action=None):
              "admin": "Admin actions are defined, but you are not allowed to "
                       "enroll this token type!"}
     params = request.all_data
-    policy_object = g.policy_object
-    role = g.logged_in_user.get("role")
-    if role == ROLE.USER:
-        # If the logged-in user enrolls the token, we pass a user object to match_policies
-        # to allow matching for userinfo attributes
-        scope = SCOPE.USER
-        username = resolver = realm = None
-        admin_realm = None
-        user_object = User(g.logged_in_user.get("username"),
-                           g.logged_in_user.get("realm"))
-    elif role == ROLE.ADMIN:
-        # If the logged-in admin enrolls the token, the "user"/"adminrealm" parameters match
-        # the administrator.  If the token is enrolled *for* a user, the "resolver" and "realm"
-        # fields match the token owner's resolver and realm.
-        scope = SCOPE.ADMIN
-        username = g.logged_in_user.get("username")
-        new_token_owner = get_user_from_param(params)
-        if new_token_owner:
-            resolver = new_token_owner.resolver
-            realm = new_token_owner.realm
-        else:
-            resolver = realm = None
-        admin_realm = g.logged_in_user.get("realm")
-        # ... but we cannot pass a user object to match_policies, because "username" is
-        # taken from the admin and "resolver"/"realm" are taken from the user.
-        user_object = None
-    else:
-        raise PolicyError(u"Unknown role: {}".format(role))
-
+    resolver = request.User.resolver if request.User else None
+    (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     tokentype = params.get("type", "HOTP")
     action = "enroll{0!s}".format(tokentype.upper())
-    action = policy_object.match_policies(action=action,
-                                          user=username,
-                                          realm=realm,
-                                          resolver=resolver,
-                                          scope=scope,
-                                          client=g.client_ip,
-                                          adminrealm=admin_realm,
-                                          user_object=user_object,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
-    action_at_all = policy_object.list_policies(scope=scope, active=True)
-    if action_at_all and len(action) == 0:
+    init_allowed = Match.generic(g, action=action,
+                                 user=username,
+                                 resolver=resolver,
+                                 realm=userrealm,
+                                 scope=role,
+                                 adminrealm=adminrealm,
+                                 adminuser=adminuser,
+                                 user_object=request.User).allowed()
+    if not init_allowed:
         raise PolicyError(ERROR.get(role))
     return True
 
@@ -1237,21 +1305,10 @@ def api_key_required(request=None, action=None):
     If so, the validate request will only performed, if a JWT token is passed
     with role=validate.
     """
-    ERROR = "The policy requires an API key to authenticate, " \
-            "but no key was passed."
-    params = request.all_data
-    policy_object = g.policy_object
-    #user_object = get_user_from_param(params)
     user_object = request.User
 
     # Get the policies
-    action = policy_object.match_policies(action=ACTION.APIKEY,
-                                          user=user_object.login,
-                                          realm=user_object.realm,
-                                          scope=SCOPE.AUTHZ,
-                                          client=g.client_ip,
-                                          active=True,
-                                          audit_data=g.audit_object.audit_data)
+    action = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.APIKEY, user_object=user_object).policies()
     # Do we have a policy?
     if action:
         # check if we were passed a correct JWT
@@ -1294,41 +1351,32 @@ def mock_fail(req, action):
     raise Exception("This is an Exception in an external check function")
 
 
-def is_remote_user_allowed(req):
+def is_remote_user_allowed(req, write_to_audit_log=True):
     """
     Checks if the REMOTE_USER server variable is allowed to be used.
 
     .. note:: This is not used as a decorator!
 
     :param req: The flask request, containing the remote user and the client IP
-    :return: a bool value
+    :param write_to_audit_log: whether the policy name should be added to the audit log entry
+    :type write_to_audit_log: bool
+    :return: Return a value or REMOTE_USER, can be "disable", "active" or "force".
+    :rtype: str
     """
-    res = False
     if req.remote_user:
         loginname, realm = split_user(req.remote_user)
         realm = realm or get_default_realm()
+        ruser_active = Match.generic(g, scope=SCOPE.WEBUI,
+                                     action=ACTION.REMOTE_USER,
+                                     user=loginname,
+                                     realm=realm).action_values(unique=False,
+                                                                write_to_audit_log=write_to_audit_log)
+        # there should be only one action value here
+        if ruser_active:
+            return list(ruser_active)[0]
 
-        # Check if the remote user is allowed
-        if "client_ip" not in g:
-            g.client_ip = get_client_ip(req,
-                                        get_from_config(SYSCONF.OVERRIDECLIENT))
-        if "policy_object" not in g:
-            g.policy_object = PolicyClass()
-        if "audit_object" in g:
-            audit_data = g.audit_object.audit_data
-        else:
-            audit_data = None
-
-        ruser_active = g.policy_object.get_action_values(ACTION.REMOTE_USER,
-                                                         scope=SCOPE.WEBUI,
-                                                         user=loginname,
-                                                         realm=realm,
-                                                         client=g.client_ip,
-                                                         audit_data=audit_data)
-
-        res = bool(ruser_active)
-
-    return res
+    # Return default "disable"
+    return REMOTE_USER.DISABLE
 
 
 def save_client_application_type(request, action):
@@ -1372,23 +1420,9 @@ def pushtoken_wait(request, action):
     :return:
     """
     user_object = request.User
-    if user_object:
-        token_user = user_object.login
-        token_realm = user_object.realm
-        token_resolver = user_object.resolver
-    else:
-        token_realm = token_resolver = token_user = None
-
-    waiting = g.policy_object.get_action_values(
-        action=PUSH_ACTION.WAIT,
-        scope=SCOPE.AUTH,
-        realm=token_realm,
-        user=token_user,
-        resolver=token_resolver,
-        client=g.client_ip,
-        audit_data=g.audit_object.audit_data,
-        allow_white_space_in_action=True,
-        unique=True)
+    waiting = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.WAIT,
+                         user_object=user_object if user_object else None)\
+        .action_values(unique=True, allow_white_space_in_action=True)
     if len(waiting) >= 1:
         request.all_data[PUSH_ACTION.WAIT] = int(list(waiting)[0])
     else:
@@ -1411,32 +1445,37 @@ def pushtoken_add_config(request, action):
         ttl = None
         registration_url = None
         # Get the firebase configuration from the policies
-        firebase_config = g.policy_object.get_action_values(
-            action=PUSH_ACTION.FIREBASE_CONFIG,
-            scope=SCOPE.ENROLL,
-            user_object=request.User if request.User else None,
-            client=g.client_ip,
-            audit_data=g.audit_object.audit_data,
-            allow_white_space_in_action=True,
-            unique=True)
+        firebase_config = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.FIREBASE_CONFIG,
+                                     user_object=request.User if request.User else None)\
+            .action_values(unique=True, allow_white_space_in_action=True)
         if len(firebase_config) == 1:
             request.all_data[PUSH_ACTION.FIREBASE_CONFIG] = list(firebase_config)[0]
         else:
             raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.FIREBASE_CONFIG))
 
         # Get the sslverify definition from the policies
-        ssl_verify = g.policy_object.get_action_values(
-            action=PUSH_ACTION.SSL_VERIFY,
-            scope=SCOPE.ENROLL,
-            user_object=request.User if request.User else None,
-            client=g.client_ip,
-            audit_data=g.audit_object.audit_data,
-            unique=True
-        )
+        ssl_verify = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.SSL_VERIFY,
+                                user_object=request.User if request.User else None).action_values(unique=True)
         if len(ssl_verify) == 1:
             request.all_data[PUSH_ACTION.SSL_VERIFY] = list(ssl_verify)[0]
         else:
             request.all_data[PUSH_ACTION.SSL_VERIFY] = "1"
+
+        # Get the TTL and the registration URL from the policies
+        registration_url = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.REGISTRATION_URL,
+                                      user_object=request.User if request.User else None) \
+            .action_values(unique=True, allow_white_space_in_action=True)
+        if len(registration_url) == 1:
+            request.all_data[PUSH_ACTION.REGISTRATION_URL] = list(registration_url)[0]
+        else:
+            raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.REGISTRATION_URL))
+        ttl = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.TTL,
+                         user_object=request.User if request.User else None) \
+            .action_values(unique=True, allow_white_space_in_action=True)
+        if len(ttl) == 1:
+            request.all_data[PUSH_ACTION.TTL] = list(ttl)[0]
+        else:
+            request.all_data[PUSH_ACTION.TTL] = "10"
 
 
 def u2ftoken_verify_cert(request, action):
@@ -1454,27 +1493,11 @@ def u2ftoken_verify_cert(request, action):
     # Get the registration data of the 2nd step of enrolling a U2F device
     ttype = request.all_data.get("type")
     if ttype and ttype.lower() == "u2f":
-        policy_object = g.policy_object
         # Add the default to verify the cert.
         request.all_data["u2f.verify_cert"] = True
         user_object = request.User
-
-        if user_object:
-            token_user = user_object.login
-            token_realm = user_object.realm
-            token_resolver = user_object.resolver
-        else:
-            token_realm = token_resolver = token_user = None
-
-        do_not_verify_the_cert = policy_object.match_policies(
-            action=U2FACTION.NO_VERIFY_CERT,
-            scope=SCOPE.ENROLL,
-            realm=token_realm,
-            user=token_user,
-            resolver=token_resolver,
-            active=True,
-            client=g.client_ip,
-            audit_data=g.audit_object.audit_data)
+        do_not_verify_the_cert = Match.user(g, scope=SCOPE.ENROLL, action=U2FACTION.NO_VERIFY_CERT,
+                                            user_object=user_object if user_object else None).policies()
         if do_not_verify_the_cert:
             request.all_data["u2f.verify_cert"] = False
 
@@ -1498,10 +1521,13 @@ def u2ftoken_allowed(request, action):
     :param action: 
     :return: 
     """
-    policy_object = g.policy_object
+
+    ttype = request.all_data.get("type")
+
     # Get the registration data of the 2nd step of enrolling a U2F device
     reg_data = request.all_data.get("regdata")
-    if reg_data:
+
+    if ttype and ttype.lower() == "u2f" and reg_data:
         # We have a registered u2f device!
         serial = request.all_data.get("serial")
 
@@ -1511,35 +1537,20 @@ def u2ftoken_allowed(request, action):
         signature, description = parse_registration_data(reg_data,
                                                          verify_cert=False)
 
-        cert_info = {
-            "attestation_issuer":
-                x509name_to_string(attestation_cert.get_issuer()),
-            "attestation_serial": "{!s}".format(
-                attestation_cert.get_serial_number()),
-            "attestation_subject": x509name_to_string(
-                attestation_cert.get_subject())}
+        allowed_certs_pols = Match.user(g, scope=SCOPE.ENROLL, action=U2FACTION.REQ,
+                                        user_object=request.User if request.User else None)\
+            .action_values(unique=False)
 
-        allowed_certs_pols = policy_object.get_action_values(
-            U2FACTION.REQ,
-            scope=SCOPE.ENROLL,
-            user_object=request.User if request.User else None,
-            client=g.client_ip,
-            audit_data=g.audit_object.audit_data)
-        for allowed_cert in allowed_certs_pols:
-            tag, matching, _rest = allowed_cert.split("/", 3)
-            tag_value = cert_info.get("attestation_{0!s}".format(tag))
-            # if we do not get a match, we bail out
-            m = re.search(matching, tag_value)
-            if not m:
-                log.warning("The U2F device {0!s} is not "
-                            "allowed to be registered due to policy "
-                            "restriction".format(
-                    serial))
-                raise PolicyError("The U2F device is not allowed "
-                                  "to be registered due to policy "
-                                  "restriction.")
-                # TODO: Maybe we should delete the token, as it is a not
-                # usable U2F token, now.
+        if len(allowed_certs_pols) and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
+            log.warning("The U2F device {0!s} is not "
+                        "allowed to be registered due to policy "
+                        "restriction".format(
+                serial))
+            raise PolicyError("The U2F device is not allowed "
+                              "to be registered due to policy "
+                              "restriction.")
+            # TODO: Maybe we should delete the token, as it is a not
+            # usable U2F token, now.
 
     return True
 
@@ -1553,26 +1564,605 @@ def allowed_audit_realm(request=None, action=None):
     :param action:
     :return: True
     """
-    admin_user = g.logged_in_user
-    policy_object = g.policy_object
-    pols = policy_object.match_policies(
-        action=ACTION.AUDIT,
-        scope=SCOPE.ADMIN,
-        user=admin_user.get("username"),
-        adminrealm=admin_user.get("realm"),
-        client=g.client_ip,
-        active=True,
-        audit_data=g.audit_object.audit_data)
-
-    if pols:
-        # get all values in realm:
-        allowed_audit_realms = []
-        for pol in pols:
-            if pol.get("realm"):
-                allowed_audit_realms += pol.get("realm")
-        request.all_data["allowed_audit_realm"] = list(set(
-            allowed_audit_realms))
+    # The endpoint is accessible to users, but we only set ``allowed_audit_realm``
+    # for admins, as users are only allowed to view their own realm anyway (this
+    # is ensured by the fixed "realm" parameter)
+    if g.logged_in_user["role"] == ROLE.ADMIN:
+        pols = Match.admin(g, action=ACTION.AUDIT).policies()
+        if pols:
+            # get all values in realm:
+            allowed_audit_realms = []
+            for pol in pols:
+                if pol.get("realm"):
+                    allowed_audit_realms += pol.get("realm")
+            request.all_data["allowed_audit_realm"] = list(set(
+                allowed_audit_realms))
 
     return True
 
 
+def indexedsecret_force_attribute(request, action):
+    """
+    This is a token specific wrapper for indexedsecret token for the endpoint
+    /token/init
+    The otpkey is overwritten with the value from
+    the user attribute specified in
+    policy scope=SCOPE.USER and SCOPE.ADMIN,
+    action=PIIXACTION.FORCE_ATTRIBUTE.
+    :param request:
+    :param action:
+    :return:
+    """
+    ttype = request.all_data.get("type")
+    if ttype and ttype.lower() == "indexedsecret" and request.User:
+        # We only need to check the policies, if the token is actually enrolled
+        # to a user.
+        attributes = Match.admin_or_user(g, "indexedsecret_{0!s}".format(PIIXACTION.FORCE_ATTRIBUTE),
+                                         user_obj=request.User).action_values(unique=True)
+        if not attributes:
+            # If there is no policy set, we simply do nothing
+            return True
+
+        attribute_value = request.User.info.get(list(attributes)[0])
+        request.all_data["otpkey"] = attribute_value
+
+    return True
+
+
+def webauthntoken_request(request, action):
+    """
+    This is a WebAuthn token specific wrapper for all endpoints using WebAuthn tokens.
+
+    This wraps the endpoints /token/init, /validate/triggerchallenge, /auth, and
+    /validate/check. It will add WebAuthn configuration information to the
+    requests, wherever a piece of information is needed for several different
+    requests and thus cannot be provided by one of the more specific wrappers
+    without adding unnecessary redundancy.
+
+    Depending on the type of request, the request will be augmented with some
+    (or all) of the authenticator timeout, user verification requirement and
+    list of allowed AAGUIDs for the current scope, as specified by the
+    policies with the determined scope and the actions WEBAUTHNACTION.TIMEOUT,
+    WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT, and
+    WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, respectively.
+
+    The value of the ORIGIN http header will also be added to the request for
+    the ENROLL and AUTHZ scopes. This is to make the unit tests not require
+    mocking.
+
+    :param request:
+    :type request:
+    :param action:
+    :type action:
+    :return:
+    :rtype:
+    """
+
+    webauthn = False
+    scope = None
+
+    # Check if this is an enrollment request for a WebAuthn token.
+    ttype = request.all_data.get("type")
+    if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type():
+        webauthn = True
+        scope = SCOPE.ENROLL
+
+    # Check if a WebAuthn token is being authorized.
+    if is_webauthn_assertion_response(request.all_data):
+        webauthn = True
+        scope = SCOPE.AUTHZ
+
+    # Check if this is an auth request (as opposed to an enrollment), and it
+    # is not a WebAuthn authorization, and the request is either for
+    # authentication with a WebAuthn token, or not for any particular token at
+    # all (since authentication requests contain almost no parameters, it is
+    # necessary to define them by what they are not, rather than by what they
+    # are).
+    #
+    # This logic means that we will add WebAuthn specific information to any
+    # unspecific authentication request, even if the user does not actually
+    # have any WebAuthn tokens enrolled, but  since this decorator is entirely
+    # passive and will just pull values from policies and add them to properly
+    # prefixed fields in the request data, this is not a problem.
+    if not request.all_data.get("type") \
+            and not is_webauthn_assertion_response(request.all_data) \
+            and ('serial' not in request.all_data
+                or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
+        webauthn = True
+        scope = SCOPE.AUTH
+
+    # If this is a WebAuthn token, or an authentication request for no particular token.
+    if webauthn:
+        actions = WebAuthnTokenClass.get_class_info('policy').get(scope)
+
+        if WEBAUTHNACTION.TIMEOUT in actions:
+            timeout_policies = Match \
+                .user(g,
+                      scope=scope,
+                      action=WEBAUTHNACTION.TIMEOUT,
+                      user_object=request.User if hasattr(request, 'User') else None) \
+                .action_values(unique=True)
+            timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT
+
+            request.all_data[WEBAUTHNACTION.TIMEOUT] \
+                = timeout * 1000
+
+        if WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT in actions:
+            user_verification_requirement_policies = Match \
+                .user(g,
+                      scope=scope,
+                      action=WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+                      user_object=request.User if hasattr(request, 'User') else None) \
+                .action_values(unique=True)
+            user_verification_requirement = list(user_verification_requirement_policies)[0] \
+                if user_verification_requirement_policies \
+                else DEFAULT_USER_VERIFICATION_REQUIREMENT
+            if user_verification_requirement not in USER_VERIFICATION_LEVELS:
+                raise PolicyError(
+                    "{0!s} must be one of {1!s}"
+                        .format(WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
+                                ", ".join(USER_VERIFICATION_LEVELS)))
+
+            request.all_data[WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT] \
+                = user_verification_requirement
+
+        if WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST in actions:
+            allowed_aaguids_pols = Match \
+                .user(g,
+                      scope=scope,
+                      action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
+                      user_object=request.User if hasattr(request, 'User') else None) \
+                .action_values(unique=False,
+                               allow_white_space_in_action=True)
+            allowed_aaguids = set(
+                aaguid
+                for allowed_aaguid_pol in allowed_aaguids_pols
+                for aaguid in allowed_aaguid_pol.split()
+            )
+
+            if allowed_aaguids:
+                request.all_data[WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST] \
+                    = list(allowed_aaguids)
+
+        request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
+
+    return True
+
+
+def webauthntoken_authz(request, action):
+    """
+    This is a WebAuthn token specific wrapper for the /auth, and /validate/check endpoints.
+
+    This will enrich the authorization request for WebAuthn tokens with the
+    necessary configuration information from policy actions with
+    scope=SCOPE.AUTHZ. This is currently the authorization pendant to
+    webauthntoken_allowed(), but maybe expanded to cover other authorization
+    policies in the future, should any be added. The request will as of now
+    simply be augmented with the policies the attestation certificate is to be
+    matched against.
+
+    :param request:
+    :type request:
+    :param action:
+    :type action:
+    :return:
+    :rtype:
+    """
+
+    # If a WebAuthn token is being authorized.
+    if is_webauthn_assertion_response(request.all_data):
+        allowed_certs_pols = Match\
+            .user(g,
+                  scope=SCOPE.AUTHZ,
+                  action=WEBAUTHNACTION.REQ,
+                  user_object=request.User if hasattr(request, 'User') else None) \
+            .action_values(unique=False)
+
+        request.all_data[WEBAUTHNACTION.REQ] \
+            = list(allowed_certs_pols)
+
+    return True
+
+
+def webauthntoken_auth(request, action):
+    """
+    This is a WebAuthn token specific wrapper for the endpoints /validate/triggerchallenge,
+    /validate/check, and /auth.
+
+    This will enrich the challenge creation request for WebAuthn tokens with the
+    necessary configuration information from policy actions with
+    scope=SCOPE.AUTH. The request will be augmented with the allowed
+    transports and the text to display to the user when asking to confirm
+    the challenge on the token, as specified by the actions
+    WEBAUTHNACTION.ALLOWED_TRANSPORTS, and ACTION.CHALLENGETEXT, respectively.
+
+    Both of these policies are optional, and have sensible defaults.
+
+    :param request:
+    :type request:
+    :param action:
+    :type action:
+    :return:
+    :rtype:
+    """
+
+    # Check if this is an auth request (as opposed to an enrollment), and it
+    # is not a WebAuthn authorization, and the request is either for
+    # authentication with a WebAuthn token, or not for any particular token at
+    # all (since authentication requests contain almost no parameters, it is
+    # necessary to define them by what they are not, rather than by what they
+    # are).
+    #
+    # This logic means that we will add WebAuthn specific information to any
+    # unspecific authentication request, even if the user does not actually
+    # have any WebAuthn tokens enrolled, but  since this decorator is entirely
+    # passive and will just pull values from policies and add them to properly
+    # prefixed fields in the request data, this is not a problem.
+    if not request.all_data.get("type") \
+            and not is_webauthn_assertion_response(request.all_data) \
+            and ('serial' not in request.all_data
+                 or request.all_data['serial'].startswith(WebAuthnTokenClass.get_class_prefix())):
+        allowed_transports_policies = Match\
+            .user(g,
+                  scope=SCOPE.AUTH,
+                  action=WEBAUTHNACTION.ALLOWED_TRANSPORTS,
+                  user_object=request.User if hasattr(request, 'User') else None) \
+            .action_values(unique=False,
+                           allow_white_space_in_action=True)
+        allowed_transports = set(
+            transport
+            for allowed_transports_policy in (
+                list(allowed_transports_policies)
+                if allowed_transports_policies
+                else [DEFAULT_ALLOWED_TRANSPORTS]
+            )
+            for transport in allowed_transports_policy.split()
+        )
+
+        challengetext_policies = Match\
+            .user(g,
+                  scope=SCOPE.AUTH,
+                  action="{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT),
+                  user_object=request.User if hasattr(request, 'User') else None) \
+            .action_values(unique=True,
+                           allow_white_space_in_action=True,
+                           write_to_audit_log=False)
+        challengetext = list(challengetext_policies)[0] \
+            if challengetext_policies \
+            else DEFAULT_CHALLENGE_TEXT_AUTH
+
+        request.all_data[WEBAUTHNACTION.ALLOWED_TRANSPORTS] \
+            = list(allowed_transports)
+        request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
+            = challengetext
+
+    return True
+
+
+def webauthntoken_enroll(request, action):
+    """
+    This is a token specific wrapper for the WebAuthn token for the endpoint /token/init.
+
+    This will enrich the initialization request for WebAuthn tokens with the
+    necessary configuration information from policy actions with
+    scope=SCOPE.ENROLL. The request will be augmented with a name and id for
+    the relying party, as specified by the with actions
+    WEBAUTHNACTION.RELYING_PARTY_NAME and WEBAUTHNACTION.RELYING_PARTY_ID,
+    respectively, authenticator attachment preference, public key credential
+    algorithm preferences, authenticator attestation requirement level,
+    authenticator attestation requirement form, allowed AAGUIDs, and the text
+    to display to the user when asking to confirm the challenge on the token,
+    as specified by the actions WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
+    WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
+    WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+    WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, and
+    ACTION.CHALLENGETEXT, respectively.
+
+    Setting WEBAUTHNACTION.RELYING_PARTY_NAME and
+    WEBAUTHNACTION.RELYING_PARTY_ID is mandatory, and if either of these is not
+    set, we bail out.
+
+    :param request:
+    :type request:
+    :param action:
+    :type action:
+    :return:
+    :rtype:
+    """
+
+    ttype = request.all_data.get("type")
+    if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type():
+        rp_id_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.RELYING_PARTY_ID,
+                  user_object=request.User if hasattr(request, 'User') else None) \
+            .action_values(unique=True)
+        if rp_id_policies:
+            rp_id = list(rp_id_policies)[0]
+        else:
+            raise PolicyError("Missing enrollment policy for WebauthnToken: " + WEBAUTHNACTION.RELYING_PARTY_ID)
+
+        rp_name_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.RELYING_PARTY_NAME,
+                  user_object=request.User if hasattr(request, 'User') else None) \
+            .action_values(unique=True,
+                           allow_white_space_in_action=True)
+        if rp_name_policies:
+            rp_name = list(rp_name_policies)[0]
+        else:
+            raise PolicyError("Missing enrollment policy for WebauthnToken: " + WEBAUTHNACTION.RELYING_PARTY_NAME)
+
+        # The RP ID is a domain name and thus may not contain any punctuation except '-' and '.'.
+        if not is_fqdn(rp_id):
+            log.warning(
+                "Illegal value for {0!s} (must be a domain name): {1!s}"
+                    .format(WEBAUTHNACTION.RELYING_PARTY_ID, rp_id))
+            raise PolicyError(
+                "Illegal value for {0!s} (must be a domain name)."
+                    .format(WEBAUTHNACTION.RELYING_PARTY_ID))
+
+        authenticator_attachment_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
+                  user_object=request.User if hasattr(request, 'User') else None) \
+            .action_values(unique=True)
+        authenticator_attachment = list(authenticator_attachment_policies)[0] \
+            if authenticator_attachment_policies \
+               and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES \
+            else None
+
+        public_key_credential_algorithm_preference_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+                  user_object=request.User if hasattr(request, 'User') else None) \
+            .action_values(unique=True)
+        public_key_credential_algorithm_preference = list(public_key_credential_algorithm_preference_policies)[0] \
+            if public_key_credential_algorithm_preference_policies \
+            else DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
+        if public_key_credential_algorithm_preference not in PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS.keys():
+            raise PolicyError(
+                "{0!s} must be one of {1!s}"
+                    .format(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+                            ', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS.keys())))
+
+        authenticator_attestation_level_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
+                  user_object=request.User if hasattr(request, 'User') else None) \
+            .action_values(unique=True)
+        authenticator_attestation_level = list(authenticator_attestation_level_policies)[0] \
+            if authenticator_attestation_level_policies \
+            else DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL
+        if authenticator_attestation_level not in ATTESTATION_LEVELS:
+            raise PolicyError(
+                "{0!s} must be one of {1!s}".format(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
+                                                    ', '.join(ATTESTATION_LEVELS)))
+
+        authenticator_attestation_form_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+                  user_object=request.User if hasattr(request, 'User') else None) \
+            .action_values(unique=True)
+        authenticator_attestation_form = list(authenticator_attestation_form_policies)[0] \
+            if authenticator_attestation_form_policies \
+            else DEFAULT_AUTHENTICATOR_ATTESTATION_FORM
+        if authenticator_attestation_form not in ATTESTATION_FORMS:
+            raise PolicyError(
+                "{0!s} must be one of {1!s}".format(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+                                                    ', '.join(ATTESTATION_FORMS)))
+
+        challengetext_policies = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action="{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT),
+                  user_object=request.User if hasattr(request, 'User') else None) \
+            .action_values(unique=True,
+                           allow_white_space_in_action=True,
+                           write_to_audit_log=False)
+        challengetext = list(challengetext_policies)[0] \
+            if challengetext_policies \
+            else DEFAULT_CHALLENGE_TEXT_ENROLL
+
+        request.all_data[WEBAUTHNACTION.RELYING_PARTY_ID] = rp_id
+        request.all_data[WEBAUTHNACTION.RELYING_PARTY_NAME] = rp_name
+
+        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT] \
+            = authenticator_attachment
+        request.all_data[WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE] \
+            = PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS[public_key_credential_algorithm_preference]
+        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL] \
+            = authenticator_attestation_level
+        request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] \
+            = authenticator_attestation_form
+        request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
+            = challengetext
+
+    return True
+
+
+def webauthntoken_allowed(request, action):
+    """
+    This is a token specific wrapper for WebAuthn token for the endpoint /token/init.
+
+    According to the policy scope=SCOPE.ENROLL,
+    action=WEBAUTHNACTION.REQ it checks, if the assertion certificate is
+    for an allowed WebAuthn token type. According to the policy
+    scope=SCOPE.ENROLL, action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST
+    it checks, whether the AAGUID is whitelisted. Note: If self-attestation
+    is allowed, it is – of course – possible to bypass the check for
+    WEBAUTHNACTION.REQ
+
+    If the token, which is being enrolled does not contain an allowed attestation
+    certificate, or does not have an allowed AAGUID, we bail out.
+
+    A very similar check (same policy actions, different policy scope) is
+    performed during authorization,  however due to architectural limitations,
+    this lives within the token implementation itself.
+
+    :param request:
+    :type request:
+    :param action:
+    :type action:
+    :return:
+    :rtype:
+    """
+
+    ttype = request.all_data.get("type")
+
+    # Get the registration data of the 2nd step of enrolling a WebAuthn token
+    reg_data = request.all_data.get("regdata")
+
+    # If a WebAuthn token is being enrolled.
+    if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type() and reg_data:
+        serial = request.all_data.get("serial")
+        att_obj = WebAuthnRegistrationResponse.parse_attestation_object(reg_data)
+        (
+            attestation_type,
+            trust_path,
+            credential_pub_key,
+            cred_id,
+            aaguid
+        ) = WebAuthnRegistrationResponse.verify_attestation_statement(fmt=att_obj.get('fmt'),
+                                                                      att_stmt=att_obj.get('attStmt'),
+                                                                      auth_data=att_obj.get('authData'))
+
+        attestation_cert = crypto.X509.from_cryptography(trust_path[0]) if trust_path else None
+        allowed_certs_pols = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.REQ,
+                  user_object=request.User if hasattr(request, 'User') else None) \
+            .action_values(unique=False)
+
+        allowed_aaguids_pols = Match \
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
+                  user_object=request.User if hasattr(request, 'User') else None) \
+            .action_values(unique=False,
+                           allow_white_space_in_action=True)
+        allowed_aaguids = set(
+            aaguid
+            for allowed_aaguid_pol in allowed_aaguids_pols
+            for aaguid in allowed_aaguid_pol.split()
+        )
+
+        # attestation_cert is of type X509. If you get a warning from your IDE
+        # here, it is because your IDE mistakenly assumes it to be of type PKey,
+        # due to a bug in pyOpenSSL 18.0.0. This bug is – however – purely
+        # cosmetic (a wrongly hinted return type in X509.from_cryptography()),
+        # and can be safely ignored.
+        #
+        # See also:
+        # https://github.com/pyca/pyopenssl/commit/4121e2555d07bbba501ac237408a0eea1b41f467
+        if allowed_certs_pols and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
+            log.warning(
+                "The WebAuthn token {0!s} is not allowed to be registered due to policy restriction {1!s}"
+                    .format(serial, WEBAUTHNACTION.REQ))
+            raise PolicyError("The WebAuthn token is not allowed to be registered due to a policy restriction.")
+
+        if allowed_aaguids and aaguid not in [allowed_aaguid.replace("-", "") for allowed_aaguid in allowed_aaguids]:
+            log.warning(
+                "The WebAuthn token {0!s} is not allowed to be registered due to policy restriction {1!s}"
+                    .format(serial, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST))
+            raise PolicyError("The WebAuthn token is not allowed to be registered due to a policy restriction.")
+
+    return True
+
+
+def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
+    """
+    Check a certificate against a set of policies.
+
+    This will check an attestation certificate of a U2F-, or WebAuthn-Token,
+    against a list of policies. It is used to verify, whether a token with the
+    given attestation may be enrolled, or authorized, respectively.
+
+    The certificate info may be None, in which case, true will be returned if
+    the policies are also empty.
+
+    This is a wrapper for attestation_certificate_allowed(). It is needed,
+    because during enrollment, we still have an actual certificate to check
+    against, while attestation_certificate_required() expects the plain fields
+    from the token info, containing just the issuer, serial and subject.
+
+    :param cert_info: The cert.
+    :type cert_info: X509 or None
+    :param allowed_certs_pols: The policies restricting enrollment, or authorization.
+    :type allowed_certs_pols: dict or None
+    :return: Whether the token should be allowed to complete enrollment, or authorization, based on its attestation.
+    :rtype: bool
+    """
+
+    cert_info = {
+        "attestation_issuer": x509name_to_string(attestation_cert.get_issuer()),
+        "attestation_serial": "{!s}".format(attestation_cert.get_serial_number()),
+        "attestation_subject": x509name_to_string(attestation_cert.get_subject())
+    } \
+        if attestation_cert \
+        else None
+
+    return attestation_certificate_allowed(cert_info, allowed_certs_pols)
+
+
+def required_piv_attestation(request, action=None):
+    """
+    This is a token specific decorator for certificate tokens for the endpoint
+    /token/init
+    According to the policy scope=SCOPE.ENROLL,
+    action=REQUIRE_ATTESTATION an exception is raised, if no attestation parameter is given.
+
+    It also checks the policy if the attestation should be verified and sets the
+    parameter verify_attestation accordingly.
+
+    :param request:
+    :param action:
+    :return:
+    """
+    from privacyidea.lib.tokens.certificatetoken import ACTION, REQUIRE_ACTIONS
+    ttype = request.all_data.get("type")
+    if ttype and ttype.lower() == "certificate":
+        # Get attestation certificate requirement
+        require_att = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.REQUIRE_ATTESTATION,
+                                     user_object=request.User if request.User else None).action_values(unique=True)
+        if REQUIRE_ACTIONS.REQUIRE_AND_VERIFY in list(require_att):
+            if not request.all_data.get("attestation"):
+                # There is no attestation certificate in the request, although it is required!
+                log.warning("The request is missing an attestation certificate. {0!s}".format(require_att))
+                raise PolicyError("A policy requires that you provide an attestation certificate.")
+
+        # Add parameter verify_attestation
+        request.all_data["verify_attestation"] = REQUIRE_ACTIONS.VERIFY in list(require_att) or \
+                                                 REQUIRE_ACTIONS.REQUIRE_AND_VERIFY in list(require_att)
+
+
+def hide_tokeninfo(request=None, action=None):
+    """
+    This decorator checks for the policy `hide_tokeninfo` and sets the
+    `hidden_tokeninfo` parameter.
+
+    The given tokeninfo keys will be removed from the response.
+
+    The decorator wraps GET /token/
+
+    :param request: The request that is intercepted during the API call
+    :type request: Request Object
+    :param action: An optional Action
+    :type action: str
+    :return: Always true. Modifies the parameter `request`
+    :rtype: bool
+    """
+    hidden_fields = Match.admin_or_user(g, action=ACTION.HIDE_TOKENINFO,
+                                        user_obj=request.User)\
+        .action_values(unique=False)
+
+    request.all_data['hidden_tokeninfo'] = list(hidden_fields)
+    return True

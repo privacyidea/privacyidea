@@ -38,16 +38,15 @@ enroll
 
 type: bool
 
-There are ``enroll`` actions per token type. Thus you can 
-create policies that allow the user to enroll
-SMS tokens but not to enroll HMAC tokens.
+There are enrollment actions per token type, e.g. ``enrollHOTP``.
+The user is only allowed to enroll such specified token types.
 
-assgin
+assign
 ~~~~~~
 
 type: bool
 
-The user is allowed to assgin an existing token, that is
+The user is allowed to assign an existing token, that is
 located in his realm and that does not belong to any other user,
 by entering the serial number.
 
@@ -106,6 +105,14 @@ type: bool
 
 The user is allowed to set the OTP PIN for his tokens.
 
+setrandompin
+~~~~~~~~~~~~
+
+type: bool
+
+If the ``setrandompin`` action is defined, the user
+is allowed to call the endpoint, that sets a random PIN on his
+specified token.
 
 setdescription
 ~~~~~~~~~~~~~~
@@ -123,6 +130,16 @@ If the action ``enrollpin`` is defined, the user
 can set a token PIN during enrollment. If the action is not defined and
 the user tries to set a PIN during enrollment, this PIN is deleted
 from the request.
+
+hide_tokeninfo
+~~~~~~~~~~~~~~
+
+type: string
+
+This specifies a blank-separated list of tokeninfo keys, which should be removed
+from the response and therefore will not be shown in the WebUI or JSON response.
+
+For example a value ``tokenkind auto_renew`` will hide these two tokeninfo entries.
 
 otp_pin_maxlength
 ~~~~~~~~~~~~~~~~~
@@ -161,40 +178,14 @@ contents: cns
 This defines what characters an OTP PIN should contain when the user
 sets it.
 
-**c** are letters matching [a-zA-Z].
+This takes the same values like the admin policy :ref:`admin_policies_otp_pin_contents`.
 
-**n** are digits matching [0-9].
+otp_pin_set_random
+~~~~~~~~~~~~~~~~~~
 
-**s** are special characters matching [.:,;-_<>+*!/()=?$§%&#~\^].
+type: int
 
-**Example:** The policy action ``otp_pin_contents=cn, otp_pin_minlength=8`` would
-require the user to choose OTP PINs that consist of letters and digits
-which have a minimum length of 8.
-
-``cn``
-
-   *test1234* and *test12$$* would be valid OTP PINs. *testABCD* would 
-   not be a valid OTP PIN.
-
-The logic of the ``otp_pin_contents`` can be enhanced and reversed using the
-characters ``+`` and ``-``.
-
-``-cn`` would still mean, that the OTP PIN needs to contain letters and digits
-and it must not contain any other characters.
-
-``-cn`` (substraction)
-
-   *test1234* would be a valid OTP PIN, but *test12$$* and *testABCS* would
-   not be valid OTP PINs. The later since it does not contain digits, the first 
-   (*test12$$*) since it does contain a special character ($), which it should not.
-
-``+cn`` (grouping)
-
-   combines the two required groups. I.e. the OTP PIN should contain
-   characters from the sum of the two groups.
-   *test1234*, *test12$$*, *test*
-   and *1234* would all be valid OTP PINs.
-
+The length of a random PIN set by the user.
 
 auditlog
 ~~~~~~~~
@@ -216,6 +207,17 @@ view older entries.
 
 Can be something like 10m (10 minutes), 10h (10 hours) or 10d (ten days).
 
+hide_audit_columns
+~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This species a blank separated list of audit columns, that should be removed
+from the response (:ref:`rest_audit`) and also from the WebUI.
+For example a value ``sig_check log_level`` will hide these two columns.
+
+The list of available columns can be checked by examining the response of the
+request to the :ref:`rest_audit`.
 
 updateuser
 ~~~~~~~~~~
@@ -230,6 +232,13 @@ attributes in the user store.
 .. note:: To be able to edit the attributes, the resolver must be defined as
    editable.
 
+userlist
+~~~~~~~~
+
+type: bool
+
+If the ``userlist`` action is defined, the user is
+allowed to view his own user information.
 
 revoke
 ~~~~~~
@@ -284,3 +293,107 @@ This policy takes a blank separated list of configured SMS gateways.
 It allows the user to define an individual SMS gateway during token enrollment.
 
 New in version 3.0.
+
+hotp_hashlib and totp_hashlib
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+Force the user to enroll HOTP/TOTP Tokens with the specified hashlib.
+The corresponding input selector will be disabled/hidden in the web UI.
+Possible values are *sha1*, *sha256* and *sha512*, default is *sha1*.
+
+hotp_otplen and totp_otplen
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: int
+
+Force the user to enroll HOTP/TOTP Tokens with the specified otp length.
+The corresponding input selector will be disabled/hidden in the web UI.
+Possible values are *6* or *8*, default is *6*.
+
+hotp_force_server_generate and totp_force_server_generate
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Enforce the key generation on the server.
+A corresponding input field for the key data will be disabled/hidden
+in the web UI.
+Default value is *false*.
+
+totp_timestep
+~~~~~~~~~~~~~
+
+type: int
+
+Enforce the timestep of the time-based OTP token.
+A corresponding input selection will be disabled/hidden in the web UI.
+Possible values are *30* or *60*, default is *30*.
+
+indexedsecret_force_attribute
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+If a user enrolls an indexedsecret token then the value of the given
+user attribute is set as the secret.
+The user does not see the value and can not change the value.
+
+For more details of this token type see :ref:`indexedsecret_token`.
+
+New in version 3.3.
+
+.. _user_trusted_attestation_CA:
+
+certificate_trusted_Attestation_CA_path
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+A user can enroll a certificate token.
+If an attestation certificate is provided in addition, this policy holds the
+path to a directory, that contains trusted CA paths.
+Each PEM encoded file in this directory needs to contain the root CA certificate
+at the first position and the consecutive intermediate certificates.
+
+An additional enrollment policy :ref:`require_attestation`, if an attestation certificate
+is required.
+
+New in version 3.5.
+
+
+.. _user_set_custom_user_attributes:
+
+set_custom_user_attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This defines how a user is allowed to set his own attributes.
+It uses the same setting as the admin policy :ref:`admin_set_custom_user_attributes`.
+
+.. note:: Using a '*' in this setting allows the user to set any attribute or any value and thus the user
+   can overwrite existing attributes from the user store. If policies, depending on user attributes
+   are defined, then the user would be able to change the matching of the policies.
+   Use with CAUTION!
+
+New in version 3.6
+
+.. _user_delete_custom_user_attributes:
+
+delete_custom_user_attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This defines how a user is allowed to delete his own attributes.
+It uses the same setting as the admin policy :ref:`admin_delete_custom_user_attributes`.
+
+.. note:: Using a '*' in this setting allows the user to delete any attribute and thus the user
+   can change overwritten attributes and revert to the user store attributes.
+   If policies, depending on user attributes
+   are defined, then the user would be able to change the matching of the policies.
+   Use with CAUTION!
+
+New in version 3.6

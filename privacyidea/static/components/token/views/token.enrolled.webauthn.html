@@ -1,0 +1,38 @@
+<div class="row">
+    <div class="col-sm-12">
+        <h4 translate ng-show="click_wait">Take action on your authenticator</h4>
+        <h4 translate ng-hide="click_wait">Token enrolled</h4>
+
+        <div class="row">
+            <div class="col-sm-4">
+                <img ng-show="webAuthnToken.vendor == 'Yubico'"
+                        src="{{ instanceUrl }}/static/img/FIDO-U2F-Security-Key-444x444.png"
+                        width="80">
+
+                <!-- Image copyright (C) 2020 Solokeys. License: CC-BY-SA 4.0 -->
+                <img ng-show="webAuthnToken.vendor == 'Solokeys'"
+                     src="{{ instanceUrl }}/static/img/solokeys.png"
+                     width="80">
+                <p>
+                    <!-- {{ webAuthnToken.vendor }} -->
+                    {{ webAuthnToken.subject }}
+                </p>
+            </div>
+            <div class="col-sm-6">
+                <div translate ng-show="click_wait">
+                    You need to confirm the registration with your
+                    authenticator. For an external authenticator, this usually
+                    means pushing the button on the authenticator, or replugging
+                    it (if there is no button on the authenticator). If you want
+                    to use an authenticator that is integrated into your device,
+                    look for a dialog box from your operating system. If you do
+                    not see anything, please make sure that your authenticator
+                    supports WebAuthn.
+                </div>
+                <div translate ng-hide="click_wait">
+                    The token is enrolled.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

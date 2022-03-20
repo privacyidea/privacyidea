@@ -19,8 +19,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 __doc__="""The SSHKeyTokenClass provides a TokenClass that stores the public
-SSH key and can give the public SSH key via the getotp function.
-This can be used to manage SSH keys and retrieve the public ssh key
+SSH key. This can be used to manage SSH keys and retrieve the public ssh key
 to import it to authorized keys files.
 
 The code is tested in tests/test_lib_tokens_ssh
@@ -28,11 +27,12 @@ The code is tested in tests/test_lib_tokens_ssh
 
 import logging
 from privacyidea.lib import _
-log = logging.getLogger(__name__)
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
+log = logging.getLogger(__name__)
 
 
 optional = True
@@ -47,8 +47,7 @@ required = False
 class SSHkeyTokenClass(TokenClass):
     """
     The SSHKeyTokenClass provides a TokenClass that stores the public
-    SSH key and can give the public SSH key via the getotp function.
-    This can be used to manage SSH keys and retrieve the public ssh key
+    SSH key. This can be used to manage SSH keys and retrieve the public ssh key
     to import it to authorized keys files.
     """
     mode = ['authenticate']
@@ -86,7 +85,21 @@ class SSHkeyTokenClass(TokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of SSH keys assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active SSH keys assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
         if key:
             ret = res.get(key, {})
@@ -110,8 +123,10 @@ class SSHkeyTokenClass(TokenClass):
         getParam(param, "sshkey", required)
             
         key_elem = param.get("sshkey").split(" ", 2)
-        if len(key_elem) != 3 or key_elem[0] != "ssh-rsa":
-            raise Exception("The key must consist of 'ssh-rsa BASE64 comment'")
+        if len(key_elem) != 3:
+            raise Exception("The key must consist of 'ssh-keytype BASE64 comment'")
+        if key_elem[0] not in ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256"]:
+            raise Exception("The keytype you specified is not supported.")
 
         key_type = key_elem[0]
         key = key_elem[1]

@@ -21,7 +21,7 @@ new account.
 If a register policy is defined, the login window of the Web UI gets a new
 link "Register".
 
-.. figure:: register.png
+.. figure:: images/register.png
    :width: 500
 
    *Next to the login button is a new link 'register', so that new users are
@@ -30,12 +30,12 @@ link "Register".
 A user who clicks the link to register a new account gets this registration
 dialog:
 
-.. figure:: register-dialog.png
+.. figure:: images/register-dialog.png
    :width: 500
 
    *Registration form*
 
-During registration the user is also enrolled :ref:`registration` token. This
+During registration the user is also enrolled :ref:`registration_token` token. This
 registration code is sent to the user via a notification email.
 
 .. note:: Thus - using the right policies in scope *webui* and
@@ -49,7 +49,7 @@ Policy settings
 In the scope *register* several settings define the behaviour of the
 registration process.
 
-.. figure:: register-policy.png
+.. figure:: images/register-policy.png
    :width: 500
 
    *Creating a new registration policy*
@@ -104,6 +104,14 @@ matter what OTP PIN he enters, a policy might look like this::
 This will allow all email addresses from the domains *mydomain.com*,
 *mydomain.net*
 etc...
+
+registration_body
+~~~~~~~~~~~~~~~~~
+
+type: str
+
+The body of the registration email. Use the ``{regkey}`` as tag for the
+registration key.
 
 
 .. [#pythonre] https://docs.python.org/2/library/re.html

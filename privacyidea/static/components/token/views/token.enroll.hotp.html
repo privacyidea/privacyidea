@@ -1,13 +1,16 @@
 <p class="help-block"
    ng-hide="$state.includes('token.wizard')"
-   translate>
-The HOTP token is an event based token. You can paste a secret key or
+   translate>The HOTP token is an event based token. You can paste a secret key or
     have the server generate the secret and scan the QR code with a smartphone
     app like the Google Authenticator turning your
     smartphone into an authentication device.
 </p>
 
+<ng-include src="instanceUrl + '/static/components/token/views/token.display.apps.html'">
+</ng-include>
+
 <h4 ng-hide="$state.includes('token.wizard')" translate>Token data</h4>
+
 <div class="form-group" ng-hide="$state.includes('token.wizard')">
     <div ng-hide="checkRight('hotp_force_server_generate')">
         <input type="checkbox" ng-model="form.genkey"
@@ -63,10 +66,4 @@ The HOTP token is an event based token. You can paste a secret key or
     <p class="help-block" ng-show="form.genkey" translate>
         The Google Authenticator only supports the SHA1 algorithm.
     </p>
-</div>
-<div class="form-group">
-    <label for="description" translate>Description</label>
-    <input type="text" class="form-control"
-            placeholder="{{ 'Some nice words...'|translate }}"
-            ng-model="form.description" />
 </div>

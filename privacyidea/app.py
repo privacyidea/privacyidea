@@ -24,8 +24,11 @@ import os.path
 import logging
 import logging.config
 import sys
+import yaml
 from flask import Flask, request, Response
-from privacyidea.lib import queue
+from flask_babel import Babel
+from flask_migrate import Migrate
+from flaskext.versioned import Versioned
 
 # we need this import to add the before/after request function to the blueprints
 import privacyidea.api.before_after
@@ -57,39 +60,12 @@ from privacyidea.api.smsgateway import smsgateway_blueprint
 from privacyidea.api.clienttype import client_blueprint
 from privacyidea.api.subscriptions import subscriptions_blueprint
 from privacyidea.api.monitoring import monitoring_blueprint
+from privacyidea.lib import queue
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
 from privacyidea.models import db
-from flask_migrate import Migrate
-from flask_babel import Babel
-
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
-MY_LOG_FORMAT = "[%(asctime)s][%(process)d][%(thread)d][%(levelname)s][%(" \
-                "name)s:%(lineno)d] %(message)s"
-
-PI_LOGGING_CONFIG = {
-    "version": 1,
-    "formatters": {"detail": {"class":
-                                  "privacyidea.lib.log.SecureFormatter",
-                              "format": "[%(asctime)s][%(process)d]"
-                                        "[%(thread)d][%(levelname)s]"
-                                        "[%(name)s:%(lineno)d] "
-                                        "%(message)s"}
-                   },
-    "handlers": {"file": {"formatter": "detail",
-                          "class":
-                              "logging.handlers.RotatingFileHandler",
-                          "backupCount": 5,
-                          "maxBytes": 10000000,
-                          "level": logging.DEBUG,
-                          "filename": "/var/log/privacyidea/privacyidea.log"}
-                 },
-    "loggers": {"privacyidea": {"handlers": ["file"],
-                                "qualname": "privacyidea",
-                                "level": logging.DEBUG}
-                }
-}
 
 
 class PiResponseClass(Response):
@@ -105,6 +81,8 @@ class PiResponseClass(Response):
         Caching of the json data is disabled.
         """
         return self.get_json(cache=False)
+
+    default_mimetype = 'application/json'
 
 
 def create_app(config_name="development",
@@ -133,12 +111,15 @@ def create_app(config_name="development",
     if os.environ.get(ENV_KEY):
         config_file = os.environ[ENV_KEY]
     if not silent:
-        print("Additional configuration can be read from the file {0!s}".format(
-              config_file))
+        print("Additional configuration will be read "
+              "from the file {0!s}".format(config_file))
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
     if config_name:
         app.config.from_object(config[config_name])
+
+    # Set up flask-versioned
+    versioned = Versioned(app, format='%(path)s?v=%(version)s')
 
     try:
         # Try to load the given config_file.
@@ -154,6 +135,10 @@ def create_app(config_name="development",
     # PRIVACYIDEA_CONFIG_FILE
     # If this file does not exist, we create an error!
     app.config.from_envvar(ENV_KEY, silent=True)
+
+    # We allow to set different static folders
+    app.static_folder = app.config.get("PI_STATIC_FOLDER", "static/")
+    app.template_folder = app.config.get("PI_TEMPLATE_FOLDER", "static/templates/")
 
     app.register_blueprint(validate_blueprint, url_prefix='/validate')
     app.register_blueprint(token_blueprint, url_prefix='/token')
@@ -190,38 +175,40 @@ def create_app(config_name="development",
 
     app.response_class = PiResponseClass
 
-    try:
-        # Try to read logging config from file
-        log_config_file = app.config.get("PI_LOGCONFIG",
-                                         "/etc/privacyidea/logging.cfg")
-        if os.path.isfile(log_config_file):
-            logging.config.fileConfig(log_config_file)
-            if not silent:
-                print("Reading Logging settings from {0!s}".format(log_config_file))
-        else:
-            raise Exception("The config file specified in PI_LOGCONFIG does "
-                            "not exist.")
-    except Exception as exx:
+    # Setup logging
+    log_read_func = {
+        'yaml': lambda x: logging.config.dictConfig(yaml.safe_load(open(x, 'r').read())),
+        'cfg': lambda x: logging.config.fileConfig(x)
+    }
+    have_config = False
+    log_exx = None
+    log_config_file = app.config.get("PI_LOGCONFIG", "/etc/privacyidea/logging.cfg")
+    if os.path.isfile(log_config_file):
+        for cnf_type in ['cfg', 'yaml']:
+            try:
+                log_read_func[cnf_type](log_config_file)
+                if not silent:
+                    print('Read Logging settings from {0!s}'.format(log_config_file))
+                have_config = True
+                break
+            except Exception as exx:
+                log_exx = exx
+                pass
+    if not have_config:
+        if log_exx:
+            sys.stderr.write("Could not use PI_LOGCONFIG: " + str(log_exx) + "\n")
         if not silent:
-            sys.stderr.write("{0!s}\n".format(exx))
-            sys.stderr.write("Could not use PI_LOGCONFIG. "
-                             "Using PI_LOGLEVEL and PI_LOGFILE.\n")
-        level = app.config.get("PI_LOGLEVEL", logging.DEBUG)
+            sys.stderr.write("Using PI_LOGLEVEL and PI_LOGFILE.\n")
+        level = app.config.get("PI_LOGLEVEL", logging.INFO)
         # If there is another logfile in pi.cfg we use this.
-        logfile = app.config.get("PI_LOGFILE")
-        if logfile:
-            if not silent:
-                sys.stderr.write("Using PI_LOGLEVEL {0!s}.\n".format(level))
-                sys.stderr.write("Using PI_LOGFILE {0!s}.\n".format(logfile))
-            PI_LOGGING_CONFIG["handlers"]["file"]["filename"] = logfile
-            PI_LOGGING_CONFIG["handlers"]["file"]["level"] = level
-            PI_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = level
-            logging.config.dictConfig(PI_LOGGING_CONFIG)
-        else:
-            if not silent:
-                sys.stderr.write("No PI_LOGFILE found. Using default "
-                                  "config.\n")
-            logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
+        logfile = app.config.get("PI_LOGFILE", '/var/log/privacyidea/privacyidea.log')
+        if not silent:
+            sys.stderr.write("Using PI_LOGLEVEL {0!s}.\n".format(level))
+            sys.stderr.write("Using PI_LOGFILE {0!s}.\n".format(logfile))
+        DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = logfile
+        DEFAULT_LOGGING_CONFIG["handlers"]["file"]["level"] = level
+        DEFAULT_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = level
+        logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
 
     babel = Babel(app)
 
@@ -234,9 +221,12 @@ def create_app(config_name="development",
         # otherwise try to guess the language from the user accept
         # header the browser transmits.  We support de/fr/en in this
         # example.  The best match wins.
-        return request.accept_languages.best_match(['de',
-                                                    'fr', 'it', 'es', 'en'])
+        return request.accept_languages.best_match(['de', 'nl',
+                                                    'fr', 'cs', 'it', 'es', 'en'])
 
     queue.register_app(app)
+
+    logging.debug(u"Reading application from the static folder {0!s} and "
+                  u"the template folder {1!s}".format(app.static_folder, app.template_folder))
 
     return app

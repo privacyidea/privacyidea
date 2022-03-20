@@ -3,7 +3,7 @@
 What happens in the tokenview?
 ------------------------------
 
-A question which comes up often is why you can not view hundrets of tokens in
+A question which comes up often is why you can not view hundreds of tokens in
 the tokenview. Well - you are doing - you are just paging through the list ;-)
 
 Ok, here it what happens in the tokenview.
@@ -16,7 +16,7 @@ But what really influences the performance is the user resolver part.
 privacyIDEA does not store username, givenname or surname of the token owner.
 The token table only contains a "pointer" to the user object in the userstore.
 This pointer consists of the userresolver ID and the user ID in this resolver.
-This is usefull, since the username or the surname of the user may change. At
+This is useful, since the username or the surname of the user may change. At
 least in Germany the givenname only changes in very rare cases.
 
 This means that privacyIDEA needs to contact the userstore, to resolve the

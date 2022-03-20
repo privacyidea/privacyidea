@@ -16,7 +16,7 @@ policies. See
 How do policies work anyway?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:ref:`policies` are just a set of definitions. These definitions are ment to
+:ref:`policies` are just a set of definitions. These definitions are meant to
 modify the way privacyIDEA reacts on requests. Different policies have
 different **scopes** where they act.
 
@@ -57,12 +57,12 @@ functions, methods, endpoints. The decorators are implemented in
 api/lib/prepolicy.py and api/lib/postpolicy.py.
 
 PrePolicy decorators are executed at the beginning of a request, PostPolicy
-decoratros at the end of the request.
+decorators at the end of the request.
 
 A policy decorator uses one of the methods get_action_value or get_policies.
 
 get_policies is used to determine boolean actions like
-:ref:`passonnotoken_policy`.
+:ref:`passonnotoken`.
 
 get_action_value is used to get the defined value of non-boolean policies
 like :ref:`otppin_policy`.

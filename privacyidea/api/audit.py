@@ -32,9 +32,9 @@ It only provides the method
   GET /audit
 """
 from flask import (Blueprint, request, current_app, stream_with_context)
-from .lib.utils import (send_result)
+from .lib.utils import (send_result, send_file)
 from ..api.lib.prepolicy import (prepolicy, check_base_action, auditlog_age,
-                                 allowed_audit_realm)
+                                 allowed_audit_realm, hide_audit_columns)
 from ..api.auth import admin_required
 from ..lib.policy import ACTION
 from flask import g
@@ -51,6 +51,7 @@ audit_blueprint = Blueprint('audit_blueprint', __name__)
 @prepolicy(check_base_action, request, ACTION.AUDIT)
 @prepolicy(allowed_audit_realm, request, ACTION.AUDIT)
 @prepolicy(auditlog_age, request)
+@prepolicy(hide_audit_columns, request)
 def search_audit():
     """
     return a paginated list of audit entries.
@@ -144,8 +145,6 @@ def download_csv(csvfile=None):
         del param["timelimit"]
     else:
         timelimit = None
-    return current_app.response_class(stream_with_context(audit.csv_generator(param=param,
-                                                                              timelimit=timelimit)),
-                                      mimetype='text/csv',
-                                      headers={"Content-Disposition": ("attachment; "
-                                                                       "filename=%s" % csvfile)})
+    return send_file(stream_with_context(audit.csv_generator(param=param,
+                                                             timelimit=timelimit)),
+                     csvfile)

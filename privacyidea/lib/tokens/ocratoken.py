@@ -41,6 +41,7 @@ from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
 from privacyidea.lib import _
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.crypto import get_alphanum_str
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 OCRA_DEFAULT_SUITE = "OCRA-1:HOTP-SHA1-8:QH40"
 
@@ -93,7 +94,20 @@ class OcraTokenClass(TokenClass):
                #'user':  ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': [],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of OCRA tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of active OCRA tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
 
         if key:
@@ -170,13 +184,13 @@ class OcraTokenClass(TokenClass):
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
         :type options: dict
-        :return: tuple of (bool, message, transactionid, attributes)
+        :return: tuple of (bool, message, transactionid, reply_dict)
         :rtype: tuple
 
         The return tuple builds up like this:
         ``bool`` if submit was successful;
         ``message`` which is displayed in the JSON response;
-        additional ``attributes``, which are displayed in the JSON response.
+        additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
         message = 'Please answer the challenge'
@@ -224,8 +238,9 @@ class OcraTokenClass(TokenClass):
         db_challenge.save()
 
         attributes["challenge"] = challenge
+        reply_dict = {"attributes": attributes}
 
-        return True, message, db_challenge.transaction_id, attributes
+        return True, message, db_challenge.transaction_id, reply_dict
 
     def verify_response(self, passw=None, challenge=None):
         """

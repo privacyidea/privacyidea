@@ -24,18 +24,17 @@ __doc__ = """This module writes statistics data to the SQL database table "monit
 import logging
 from privacyidea.lib.monitoringmodules.base import Monitoring as MonitoringBase
 from privacyidea.lib.pooling import get_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
 from privacyidea.lib.utils import censor_connect_string, convert_timestamp_to_utc
 from privacyidea.lib.lifecycle import register_finalizer
-log = logging.getLogger(__name__)
-from sqlalchemy import MetaData, cast, String
-from sqlalchemy import asc, desc, and_, or_
+from sqlalchemy import MetaData
+from sqlalchemy import and_
 from privacyidea.models import MonitoringStats
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 import traceback
-from dateutil.tz import tzlocal, tzutc
+from dateutil.tz import tzutc
 
+log = logging.getLogger(__name__)
 
 metadata = MetaData()
 
@@ -87,11 +86,11 @@ class Monitoring(MonitoringBase):
             if reset_values:
                 # Successfully saved the new stats entry, so remove old entries
                 self.session.query(MonitoringStats).filter(and_(MonitoringStats.stats_key == stats_key,
-                                                  MonitoringStats.timestamp < utc_timestamp)).delete()
+                                                                MonitoringStats.timestamp < utc_timestamp)).delete()
                 self.session.commit()
         except Exception as exx:  # pragma: no cover
             log.error(u"exception {0!r}".format(exx))
-            log.error(u"DATA: {0!s} -> {0!s}".format(stats_key, stats_value))
+            log.error(u"DATA: {0!s} -> {1!s}".format(stats_key, stats_value))
             log.debug(u"{0!s}".format(traceback.format_exc()))
             self.session.rollback()
 
@@ -128,7 +127,7 @@ class Monitoring(MonitoringBase):
         """
         keys = []
         try:
-            for monStat in MonitoringStats.query.with_entities(MonitoringStats.stats_key).distinct():
+            for monStat in self.session.query(MonitoringStats).with_entities(MonitoringStats.stats_key).distinct():
                 keys.append(monStat.stats_key)
         except Exception as exx:  # pragma: no cover
             log.error(u"exception {0!r}".format(exx))
@@ -151,7 +150,7 @@ class Monitoring(MonitoringBase):
             if end_timestamp:
                 utc_end_timestamp = convert_timestamp_to_utc(end_timestamp)
                 conditions.append(MonitoringStats.timestamp <= utc_end_timestamp)
-            for ms in MonitoringStats.query.filter(and_(*conditions)). \
+            for ms in self.session.query(MonitoringStats).filter(and_(*conditions)). \
                     order_by(MonitoringStats.timestamp.asc()):
                 aware_timestamp = ms.timestamp.replace(tzinfo=tzutc())
                 values.append((aware_timestamp, ms.stats_value))
@@ -169,7 +168,7 @@ class Monitoring(MonitoringBase):
     def get_last_value(self, stats_key):
         val = None
         try:
-            s = MonitoringStats.query.filter(MonitoringStats.stats_key == stats_key). \
+            s = self.session.query(MonitoringStats).filter(MonitoringStats.stats_key == stats_key). \
                 order_by(MonitoringStats.timestamp.desc()).first()
             if s:
                 val = s.stats_value
@@ -183,4 +182,3 @@ class Monitoring(MonitoringBase):
             self.session.close()
 
         return val
-

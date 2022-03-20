@@ -1,18 +1,23 @@
 <div class="row">
-    <div class="col-sm-6" ng-hide="form['2stepinit'] && enrolledToken.rollout_state !== 'clientwait'">
+    <div ng-hide="form['2stepinit'] && enrolledToken.rollout_state !== 'clientwait'"
+         ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'col-sm-12' : 'col-sm-6'">
         <img width="{{ qrCodeWidth }}"
+             ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'centered' : 'not-centered'"
              ng-src="{{ enrolledToken.googleurl.img }}"/>
     </div>
-    <div class="col-sm-6" ng-hide="form['2stepinit']">
-        <accordion close-others="oneAtATime" ng-show="show_seed">
-            <accordion-group heading="{{ 'The OTP key'|translate }}">
-                Hex: {{ enrolledToken.otpkey.value }}
+    <div ng-hide="form['2stepinit']"
+         ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'col-sm-12' : 'col-sm-6'">
+        <uib-accordion close-others="oneAtATime" ng-show="show_seed">
+            <div uib-accordion-group
+                 class="panel-default"
+                 heading="{{ 'The OTP key'|translate }}">
+                Hex: {{ enrolledToken.otpkey.value }}<br/>
                 Base32: {{ enrolledToken.otpkey.value_b32 }}
-            </accordion-group>
-        </accordion>
+            </div>
+        </uib-accordion>
 
         <div class="col-sm-12" ng-hide="$state.includes('token.wizard')">
-        <p translate>
+        <p translate ng-show="enrolledToken.googleurl.value">
             Click <a href="{{ enrolledToken.googleurl.value }}">here</a> or scan
             the QR Code, if you
             want to add the Token to your Google Authenticator.
@@ -20,14 +25,14 @@
         <p translate>
             The QR Code contains the secret key of your token. You need to
             protect it. <b>If you are in doubt, that someone else saw it, please
-            regenerate the QR Code, when noone else is watching.</b>
+            regenerate the QR Code, when no one else is watching.</b>
         </p>
         <button ng-click="regenerateToken()" class="btn btn-warning" translate>
             Regenerate QR Code
         </button>
         </div>
     </div>
-    <div class="col-sm-4 pull-right" ng-show="form['2stepinit'] && enrolledToken.rollout_state === 'clientwait'">
+    <div class="col-sm-6" ng-show="form['2stepinit'] && enrolledToken.rollout_state === 'clientwait'">
         <p translate>
             Your token {{ enrolledToken.serial }} is not completely enrolled, yet.
         </p>

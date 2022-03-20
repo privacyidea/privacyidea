@@ -12,14 +12,13 @@ from privacyidea.lib.error import UserError
 from tests import ldap3mock
 from tests.test_mock_ldap3 import LDAPDirectory
 from .base import MyTestCase
-from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.resolver import (save_resolver, delete_resolver, get_resolver_object)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, get_username, create_user)
 from privacyidea.lib.usercache import (get_cache_time,
                                        cache_username, delete_user_cache,
                                        EXPIRATION_SECONDS, retrieve_latest_entry, is_cache_enabled)
-from privacyidea.lib.config import set_privacyidea_config, get_from_config
+from privacyidea.lib.config import set_privacyidea_config
 from datetime import timedelta
 from datetime import datetime
 from privacyidea.models import UserCache
@@ -106,6 +105,8 @@ class UserCacheTestCase(MyTestCase):
         self.assertEqual(u_name, "")
 
     def test_02_get_resolvers(self):
+        # enable user cache
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
         # create realm
         self._create_realm()
         # delete user_cache
@@ -124,12 +125,14 @@ class UserCacheTestCase(MyTestCase):
         self.assertEqual(entry.user_id, self.uid)
         self.assertEqual(entry.username, self.username)
         self.assertEqual(entry.resolver, self.resolvername1)
+        ts = entry.timestamp
 
         # delete the resolver, which also purges the cache
         self._delete_realm()
 
         # manually re-add the entry from above
-        UserCache(entry.username, entry.username, entry.resolver, entry.user_id, entry.timestamp).save()
+        UserCache(self.username, self.username, self.resolvername1,
+                  self.uid, ts).save()
 
         # the username is fetched from the cache
         u_name = get_username(self.uid, self.resolvername1)
@@ -163,12 +166,14 @@ class UserCacheTestCase(MyTestCase):
         self.assertEqual(entry.user_id, self.uid)
         self.assertEqual(entry.username, self.username)
         self.assertEqual(entry.resolver, self.resolvername1)
+        ts = entry.timestamp
 
         # delete the resolver, which also purges the cache
         self._delete_realm()
 
         # manually re-add the entry from above
-        UserCache(entry.username, entry.username, entry.resolver, entry.user_id, entry.timestamp).save()
+        UserCache(self.username, self.username, self.resolvername1,
+                  self.uid, ts).save()
 
         # the username is fetched from the cache
         u_name = get_username(self.uid, self.resolvername1)
@@ -223,7 +228,7 @@ class UserCacheTestCase(MyTestCase):
         UserCache("hans1", "hans1", "resolver1", "uid1", now).save()
 
         r = UserCache.query.filter(UserCache.username == "hans1", UserCache.resolver == "resolver1")
-        self.assertEquals(r.count(), 2)
+        self.assertEqual(r.count(), 2)
 
         u_name = get_username("uid1", "resolver1")
         self.assertEqual(u_name, "hans1")
@@ -235,7 +240,7 @@ class UserCacheTestCase(MyTestCase):
         UserCache("hans1", "hans1", "resolver1", "uid1", now - timedelta(seconds=60)).save()
 
         r = UserCache.query.filter(UserCache.user_id == "uid1", UserCache.resolver == "resolver1")
-        self.assertEquals(r.count(), 2)
+        self.assertEqual(r.count(), 2)
 
         u_name = get_username("uid1", "resolver1")
         self.assertEqual(u_name, "hans2")
@@ -246,7 +251,7 @@ class UserCacheTestCase(MyTestCase):
     def test_06_implicit_cache_population(self):
         self._create_realm()
         # testing `get_username`
-        self.assertEquals(UserCache.query.count(), 0)
+        self.assertEqual(UserCache.query.count(), 0)
         # the cache is empty, so the username is read from the resolver
         u_name = get_username(self.uid, self.resolvername1)
         self.assertEqual(self.username, u_name)
@@ -258,7 +263,7 @@ class UserCacheTestCase(MyTestCase):
         r = delete_user_cache()
 
         # testing `User()`, but this time we add an already-expired entry to the cache
-        self.assertEquals(UserCache.query.count(), 0)
+        self.assertEqual(UserCache.query.count(), 0)
         UserCache(self.username, self.username,
                   self.resolvername1, 'fake_uid', datetime.now() - timedelta(weeks=50)).save()
         # cache contains an expired entry, uid is read from the resolver (we can verify
@@ -275,13 +280,13 @@ class UserCacheTestCase(MyTestCase):
         self._delete_realm()
 
     def _populate_cache(self):
-        self.assertEquals(UserCache.query.count(), 0)
+        self.assertEqual(UserCache.query.count(), 0)
         # initially populate the cache with three entries
         timestamp = datetime.now()
         UserCache("hans1", "hans1", self.resolvername1, "uid1", timestamp).save()
         UserCache("hans2", "hans2", self.resolvername1, "uid2", timestamp - timedelta(weeks=50)).save()
         UserCache("hans3", "hans3", "resolver2", "uid2", timestamp).save()
-        self.assertEquals(UserCache.query.count(), 3)
+        self.assertEqual(UserCache.query.count(), 3)
 
     def test_07_invalidate_save_resolver(self):
         self._create_realm()
@@ -294,12 +299,12 @@ class UserCacheTestCase(MyTestCase):
              "type.fileName": "string",
              "desc.fileName": "Some change"
         })
-        self.assertEquals(UserCache.query.count(), 1)
+        self.assertEqual(UserCache.query.count(), 1)
         # Only hans3 in resolver2 should still be in the cache
         # We can use get_username to ensure it is fetched from the cache
         # because resolver2 does not actually exist
         u_name = get_username("uid2", "resolver2")
-        self.assertEquals("hans3", u_name)
+        self.assertEqual("hans3", u_name)
         delete_user_cache()
         self._delete_realm()
 
@@ -308,10 +313,10 @@ class UserCacheTestCase(MyTestCase):
         self._populate_cache()
         # call delete_resolver on resolver1, which should invalidate all of its entries
         self._delete_realm()
-        self.assertEquals(UserCache.query.count(), 1)
+        self.assertEqual(UserCache.query.count(), 1)
         # Only hans3 in resolver2 should still be in the cache
         u_name = get_username("uid2", "resolver2")
-        self.assertEquals("hans3", u_name)
+        self.assertEqual("hans3", u_name)
         delete_user_cache()
 
     def _create_sql_realm(self):
@@ -330,10 +335,10 @@ class UserCacheTestCase(MyTestCase):
         # Validate that editing users actually invalidates the cache. For that, we first need an editable resolver
         self._create_sql_realm()
         # The cache is initially empty
-        self.assertEquals(UserCache.query.count(), 0)
+        self.assertEqual(UserCache.query.count(), 0)
         # The following adds an entry to the cache
         user = User(login="wordpressuser", realm=self.sql_realm)
-        self.assertEquals(UserCache.query.count(), 1)
+        self.assertEqual(UserCache.query.count(), 1)
         uinfo = user.info
         self.assertEqual(uinfo.get("givenname", ""), "")
 
@@ -356,10 +361,10 @@ class UserCacheTestCase(MyTestCase):
         # Validate that deleting users actually invalidates the cache. For that, we first need an editable resolver
         self._create_sql_realm()
         # The cache is initially empty
-        self.assertEquals(UserCache.query.count(), 0)
+        self.assertEqual(UserCache.query.count(), 0)
         # The following adds an entry to the cache
         user = User(login="wordpressuser", realm=self.sql_realm)
-        self.assertEquals(UserCache.query.count(), 1)
+        self.assertEqual(UserCache.query.count(), 1)
         uinfo = user.info
         user.delete()
         # This should have removed the entry from the cache
@@ -444,7 +449,7 @@ class UserCacheTestCase(MyTestCase):
         # Assert it was found in reso_b (as it does not have a phone number)!
         self.assertEqual(user1.resolver, 'reso_b')
         self.assertEqual(UserCache.query.filter(UserCache.username == 'wordpressuser',
-                                                UserCache.user_id == 6).one().resolver,
+                                                UserCache.user_id == '6').one().resolver,
                          'reso_b')
         # Add a phone number. We do not use the User API to do that to simulate that the change is performed
         # out of privacyIDEA's control. Using `update_user_info` would invalidate the cache, which would be unrealistic.
@@ -454,7 +459,7 @@ class UserCacheTestCase(MyTestCase):
         get_resolver_object('reso_a').update_user(user1.uid, new_info)
         # Ensure that the user's association with reso_b is still cached.
         self.assertEqual(UserCache.query.filter(UserCache.username == 'wordpressuser',
-                                                UserCache.user_id == 6).one().resolver,
+                                                UserCache.user_id == '6').one().resolver,
                          'reso_b')
         # Now, it should be located in reso_a!
         user2 = User('wordpressuser', self.sql_realm)
@@ -462,7 +467,7 @@ class UserCacheTestCase(MyTestCase):
         self.assertEqual(user2.resolver, 'reso_a')
         # ... but the cache still contains entries for both!
         resolver_query = UserCache.query.filter(UserCache.username == 'wordpressuser',
-                                                UserCache.user_id == 6).order_by(UserCache.timestamp.desc())
+                                                UserCache.user_id == '6').order_by(UserCache.timestamp.desc())
         cached_resolvers = [entry.resolver for entry in resolver_query.all()]
         self.assertEqual(cached_resolvers, ['reso_a', 'reso_b'])
         # Remove the phone number.
@@ -553,48 +558,48 @@ class TestUserCacheMultipleLoginAttributes(MyTestCase):
         self._create_ldap_realm()
         # Populate the user cache, check its contents
         user1 = User('alice', self.ldap_realm)
-        self.assertEquals(user1.resolver, self.ldap_resolver)
-        self.assertEquals(user1.uid, "cn=alice,ou=example,o=test")
-        self.assertEquals(user1.login, "alice")
-        self.assertEquals(user1.used_login, "alice")
+        self.assertEqual(user1.resolver, self.ldap_resolver)
+        self.assertEqual(user1.uid, "cn=alice,ou=example,o=test")
+        self.assertEqual(user1.login, "alice")
+        self.assertEqual(user1.used_login, "alice")
         entry = UserCache.query.one()
-        self.assertEquals(entry.user_id, user1.uid)
-        self.assertEquals(entry.used_login, "alice")
-        self.assertEquals(entry.username, "alice")
-        self.assertEquals(entry.resolver, self.ldap_resolver)
+        self.assertEqual(entry.user_id, user1.uid)
+        self.assertEqual(entry.used_login, "alice")
+        self.assertEqual(entry.username, "alice")
+        self.assertEqual(entry.resolver, self.ldap_resolver)
         # query again, user cache does not change
         user2 = User('alice', self.ldap_realm)
-        self.assertEquals(user2.resolver, self.ldap_resolver)
-        self.assertEquals(user2.uid, "cn=alice,ou=example,o=test")
-        self.assertEquals(user2.login, "alice")
-        self.assertEquals(user2.used_login, "alice")
-        self.assertEquals(UserCache.query.count(), 1)
+        self.assertEqual(user2.resolver, self.ldap_resolver)
+        self.assertEqual(user2.uid, "cn=alice,ou=example,o=test")
+        self.assertEqual(user2.login, "alice")
+        self.assertEqual(user2.used_login, "alice")
+        self.assertEqual(UserCache.query.count(), 1)
         # use secondary login attribute, usercache has a new entry with secondary login attribute
         user3 = User('alice@test.com', self.ldap_realm)
-        self.assertEquals(user3.resolver, self.ldap_resolver)
-        self.assertEquals(user3.uid, "cn=alice,ou=example,o=test")
-        self.assertEquals(user3.login, "alice")
-        self.assertEquals(user3.used_login, "alice@test.com")
+        self.assertEqual(user3.resolver, self.ldap_resolver)
+        self.assertEqual(user3.uid, "cn=alice,ou=example,o=test")
+        self.assertEqual(user3.login, "alice")
+        self.assertEqual(user3.used_login, "alice@test.com")
         entries = UserCache.query.filter_by(user_id="cn=alice,ou=example,o=test").order_by(UserCache.id).all()
-        self.assertEquals(len(entries), 2)
+        self.assertEqual(len(entries), 2)
         entry = entries[-1]
-        self.assertEquals(entry.user_id, user1.uid)
-        self.assertEquals(entry.used_login, "alice@test.com")
-        self.assertEquals(entry.username, "alice")
-        self.assertEquals(entry.resolver, self.ldap_resolver)
+        self.assertEqual(entry.user_id, user1.uid)
+        self.assertEqual(entry.used_login, "alice@test.com")
+        self.assertEqual(entry.username, "alice")
+        self.assertEqual(entry.resolver, self.ldap_resolver)
         # use secondary login attribute again, login name is fetched correctly
         user4 = User('alice@test.com', self.ldap_realm)
-        self.assertEquals(user4.resolver, self.ldap_resolver)
-        self.assertEquals(user4.uid, "cn=alice,ou=example,o=test")
-        self.assertEquals(user4.login, "alice")
-        self.assertEquals(user4.used_login, "alice@test.com")
+        self.assertEqual(user4.resolver, self.ldap_resolver)
+        self.assertEqual(user4.uid, "cn=alice,ou=example,o=test")
+        self.assertEqual(user4.login, "alice")
+        self.assertEqual(user4.used_login, "alice@test.com")
         # still only two entries in the cache
         entries = UserCache.query.filter_by(user_id="cn=alice,ou=example,o=test").order_by(UserCache.id).all()
-        self.assertEquals(len(entries), 2)
+        self.assertEqual(len(entries), 2)
         # get the primary login name
         login_name = get_username("cn=alice,ou=example,o=test", self.ldap_resolver)
-        self.assertEquals(login_name, "alice")
+        self.assertEqual(login_name, "alice")
         # still only two entries in the cache
         entries = UserCache.query.filter_by(user_id="cn=alice,ou=example,o=test").order_by(UserCache.id).all()
-        self.assertEquals(len(entries), 2)
+        self.assertEqual(len(entries), 2)
         self._delete_ldap_realm()

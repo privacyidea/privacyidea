@@ -19,9 +19,9 @@
  *
  */
 
-angular.module('privacyideaApp.userStates', ['ui.router']).config(
-    ['$stateProvider',
-        function ($stateProvider) {
+angular.module('privacyideaApp.userStates', ['ui.router', 'privacyideaApp.versioning']).config(
+    ['$stateProvider', 'versioningSuffixProviderProvider',
+        function ($stateProvider, versioningSuffixProviderProvider) {
             // get the instance, the pathname part
             var instance = window.location.pathname;
             if (instance === "/") {
@@ -31,15 +31,15 @@ angular.module('privacyideaApp.userStates', ['ui.router']).config(
             $stateProvider
                 .state('user', {
                     url: "/user",
-                    templateUrl: userpath + "user.html"
+                    templateUrl: userpath + "user.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('user.list', {
                     url: "/list",
-                    templateUrl: userpath + "user.list.html"
+                    templateUrl: userpath + "user.list.html" + versioningSuffixProviderProvider.$get().$get()
                 })
                 .state('user.details', {
                     url: "/details/{realmname:.*}/{username:.*}",
-                    templateUrl: userpath + "user.details.html",
+                    templateUrl: userpath + "user.details.html" + versioningSuffixProviderProvider.$get().$get(),
                     params: {resolvername: null,
                              editable: null},
                     controller: ['$scope', '$stateParams',
@@ -52,11 +52,11 @@ angular.module('privacyideaApp.userStates', ['ui.router']).config(
                 })
                 .state('user.password', {
                     url: "/password",
-                    templateUrl: userpath + "user.password.html",
+                    templateUrl: userpath + "user.password.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "userPasswordController"
                 })
                 .state('user.add', {
                     url: "/add",
-                    templateUrl: userpath + "user.add.html"
+                    templateUrl: userpath + "user.add.html" + versioningSuffixProviderProvider.$get().$get()
                 });
         }]);

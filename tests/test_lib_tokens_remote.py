@@ -9,6 +9,9 @@ from privacyidea.models import Token
 import responses
 import json
 from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.token import remove_token
+from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.privacyideaserver import add_privacyideaserver
 
 
 class RemoteTokenTestCase(MyTestCase):
@@ -110,6 +113,8 @@ class RemoteTokenTestCase(MyTestCase):
         otpcount = token.check_otp("123456")
         self.assertTrue(otpcount > 0, otpcount)
 
+        remote_serial = token.get_tokeninfo("last_matching_remote_serial")
+        self.assertEqual("PISP0000AB00", remote_serial)
 
     @responses.activate
     def test_05_do_request_fail(self):
@@ -202,3 +207,35 @@ class RemoteTokenTestCase(MyTestCase):
                                            options={"transactionid": "1234"})
 
         self.assertTrue(r)
+
+    def test_20_create_remote_token_non_existing_remote_server(self):
+        remove_token(self.serial3)
+        db_token = Token(self.serial3, tokentype="remote")
+        db_token.save()
+        token = RemoteTokenClass(db_token)
+        # Updating the token with a non-existing remote.server_id raises an error
+        self.assertRaises(ConfigAdminError, token.update, {"remote.server_id": 12})
+
+    @responses.activate
+    def test_21_create_remote_token_with_remote_server_id(self):
+        r_server_id = add_privacyideaserver("myRemote", "https://localhost")
+        self.assertTrue(r_server_id >= 0)
+        remove_token(self.serial3)
+        db_token = Token(self.serial3, tokentype="remote")
+        db_token.save()
+        token = RemoteTokenClass(db_token)
+        token.update({"remote.server_id": r_server_id,
+                      "remote.serial": "123456"})
+        ti = token.get_tokeninfo()
+        self.assertEqual(r_server_id, int(ti.get("remote.server_id")))
+
+        # now we verify the remote token with a server id.
+        responses.add(responses.POST,
+                      "https://localhost/validate/check",
+                      body=json.dumps(self.success_body),
+                      content_type="application/json")
+        r = token.authenticate("test")
+        # Result is True
+        self.assertEqual(True, r[0])
+        # OTP counter is 1
+        self.assertEqual(1, r[1])

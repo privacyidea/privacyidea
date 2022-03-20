@@ -123,7 +123,8 @@ class APIMachineResolverTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue(result["value"] == 1, result)
+            self.assertGreaterEqual(result["value"], 1, result)
+            mr_id = result["value"]
 
         with self.app.test_request_context('/machineresolver/',
                                            method='GET',
@@ -144,4 +145,4 @@ class APIMachineResolverTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue(result["value"] == 1, result)
+            self.assertEqual(result["value"], mr_id, result)

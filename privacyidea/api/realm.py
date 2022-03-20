@@ -53,11 +53,12 @@ from ..lib.realm import (set_default_realm,
                          get_default_realm,
                          set_realm,
                          delete_realm)
-from ..lib.policy import ACTION
+from ..lib.policy import ACTION, Match
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.utils import reduce_realms
 from flask import g
 from privacyidea.lib.auth import ROLE
+from privacyidea.lib.policy import CONDITION_CHECK
 from flask_babel import gettext as _
 import logging
 
@@ -196,11 +197,11 @@ def get_realms_api():
     g.audit_object.log({"success": True})
     # This endpoint is called by admins anyways
     luser = g.logged_in_user
-    policies = g.policy_object.match_policies(scope=luser.get("role", ROLE.ADMIN),
-                                              client=g.client_ip,
-                                              adminrealm=luser.get("realm"),
-                                              user=luser.get("username"),
-                                              active=True)
+    policies = Match.generic(g, scope=luser.get("role", ROLE.ADMIN),
+                             adminrealm=luser.get("realm"),
+                             adminuser=luser.get("username"),
+                             active=True,
+                             extended_condition_check=CONDITION_CHECK.DO_NOT_CHECK_AT_ALL).policies()
     realms = reduce_realms(all_realms, policies)
 
     return send_result(realms)

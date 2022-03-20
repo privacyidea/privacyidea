@@ -22,20 +22,20 @@ forward
 
 A request (usually an authentication request *validate_check*) can be
 forwarded to another privacyIDEA instance. The administrator can
-define privacyIDEA instances centrally at *conifg* -> *privacyIDEA servers*.
+define privacyIDEA instances centrally at *config* -> *privacyIDEA servers*.
 
 In addition to the privacyIDEA instance the action ``forward`` takes the
 following parameters:
 
-**client_ip** The originial client IP will be passed to the child privacyIDEA
+**client_ip** The original client IP will be passed to the child privacyIDEA
 server. Otherwise the child privacyIDEA server will use the parent
 privacyIDEA server as client.
 
 .. note:: You need to configure the allow override client in the child
    privacyIDEA server.
 
-**realm** The forwarding request will change the realm to the specified realm
-. This might be necessary since the child privacyIDEA server could have
+**realm** The forwarding request will change the realm to the specified realm.
+  This might be necessary since the child privacyIDEA server could have
   different realms than the parent privacyIDEA server.
 
 **resolver** The forwarding request will change the resolver to the specified

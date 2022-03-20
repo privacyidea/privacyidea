@@ -22,6 +22,7 @@ import logging
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import fetch_one_resource, to_unicode
 from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.utils.export import (register_import, register_export)
 import json
 import requests
 
@@ -52,6 +53,35 @@ class PrivacyIDEAServer(object):
         """
         self.config = db_privacyideaserver_object
 
+    def validate_check(self, user, password, serial=None, realm=None, transaction_id=None, resolver=None):
+        """
+        Perform an HTTP validate/check request to the remote privacyIDEA
+        Server.
+
+        :param serial: The serial number of a token
+        :param user: The username
+        :param password: The password
+        :param realm: an optional realm, if it is not contained in the username
+        :param transaction_id:  an optional transaction_id.
+        :return: Tuple (HTTP response object, JSON response content)
+        """
+        data = {"pass": password}
+        if user:
+            data["user"] = user
+        if serial:
+            data["serial"] = serial
+        if realm:
+            data["realm"] = realm
+        if transaction_id:
+            data["transaction_id"] = transaction_id
+        if resolver:
+            data["resolver"] = resolver
+        response = requests.post(self.config.url + "/validate/check",
+                                 data=data,
+                                 verify=self.config.tls)
+
+        return response
+
     @staticmethod
     def request(config, user, password):
         """
@@ -75,7 +105,7 @@ class PrivacyIDEAServer(object):
                   "{0!s}".format(response.status_code))
         if response.status_code != 200:
             log.warning("The request to the remote privacyIDEA server {0!s} "
-                        "returned a status code: {0!s}".format(config.url,
+                        "returned a status code: {1!s}".format(config.url,
                                                                response.status_code))
             return False
 
@@ -85,16 +115,29 @@ class PrivacyIDEAServer(object):
 
 
 @log_with(log)
-def get_privacyideaserver(identifier):
+def list_privacyideaservers(identifier=None, id=None):
+    res = {}
+    server_list = get_privacyideaservers(identifier=identifier, id=id)
+    for server in server_list:
+        res[server.config.identifier] = {"id": server.config.id,
+                                         "url": server.config.url,
+                                         "tls": server.config.tls,
+                                         "description": server.config.description}
+    return res
+
+
+@log_with(log)
+def get_privacyideaserver(identifier=None, id=None):
     """
-    This returns the RADIUSServer object of the RADIUSServer definition
+    This returns the privacyIDEA Server object of the privacyIDEA Server definition
     "identifier".
     In case the identifier does not exist, an exception is raised.
 
-    :param identifier: The name of the RADIUSserver definition
-    :return: A RADIUSServer Object
+    :param identifier: The name of the privacyIDEA Server definition
+    :param id: The database ID of the privacyIDEA Server definition
+    :return: A privacyIDEAServer Object
     """
-    server_list = get_privacyideaservers(identifier=identifier)
+    server_list = get_privacyideaservers(identifier=identifier, id=id)
     if not server_list:
         raise ConfigAdminError("The specified privacyIDEA Server configuration "
                                "does not exist.")
@@ -102,26 +145,30 @@ def get_privacyideaserver(identifier):
 
 
 @log_with(log)
-def get_privacyideaservers(identifier=None, url=None):
+def get_privacyideaservers(identifier=None, url=None, id=None):
     """
     This returns a list of all privacyIDEA Servers matching the criterion.
     If no identifier or url is provided, it will return a list of all 
     privacyIDEA server definitions.
 
-    :param identifier: The identifier or the name of the RADIUSServer
+    :param identifier: The identifier or the name of the privacyIDEA Server
         definition.
         As the identifier is unique, providing an identifier will return a
-        list with either one or no RADIUSServer
+        list with either one or no privacyIDEA Server
     :type identifier: basestring
-    :param server: The FQDN or IP address of the RADIUSServer
-    :type server: basestring
-    :return: list of RADIUSServer Objects.
+    :param url: The FQDN or IP address of the privacyIDEA Server
+    :type url: basestring
+    :param id: The database id of the server
+    :type id: integer
+    :return: list of privacyIDEA Server Objects.
     """
     res = []
     sql_query = PrivacyIDEAServerDB.query
-    if identifier:
+    if id is not None:
+        sql_query = sql_query.filter(PrivacyIDEAServerDB.id == id)
+    elif identifier:
         sql_query = sql_query.filter(PrivacyIDEAServerDB.identifier == identifier)
-    if url:
+    elif url:
         sql_query = sql_query.filter(PrivacyIDEAServerDB.server == url)
 
     for row in sql_query.all():
@@ -131,7 +178,7 @@ def get_privacyideaservers(identifier=None, url=None):
 
 
 @log_with(log)
-def add_privacyideaserver(identifier, url, tls=True, description=""):
+def add_privacyideaserver(identifier, url=None, tls=True, description=""):
     """
     This adds a privacyIDEA server to the privacyideaserver database table.
 
@@ -164,3 +211,25 @@ def delete_privacyideaserver(identifier):
     :return: The ID of the database entry, that was deleted
     """
     return fetch_one_resource(PrivacyIDEAServerDB, identifier=identifier).delete()
+
+
+@register_export('privacyideaserver')
+def export_privacyideaservers(name=None):
+    """ Export given or all privacyideaservers configuration """
+    # remove the id from the resulting objects
+    pids_list = list_privacyideaservers(identifier=name)
+    for _, pids in pids_list.items():
+        pids.pop('id')
+    return pids_list
+
+
+@register_import('privacyideaserver')
+def import_privacyideaservers(data, name=None):
+    """Import privacyideaservers configuration"""
+    log.debug('Import privacyideaservers config: {0!s}'.format(data))
+    for res_name, res_data in data.items():
+        if name and name != res_name:
+            continue
+        rid = add_privacyideaserver(res_name, **res_data)
+        log.info('Import of privacyideaservers "{0!s}" finished,'
+                 ' id: {1!s}'.format(res_name, rid))

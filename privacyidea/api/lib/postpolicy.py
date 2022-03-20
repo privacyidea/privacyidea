@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2020-02-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add QR codes for Authenticator Apps
 #  2016-02-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add tokenwizard
 #  2015-10-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -42,9 +44,11 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 import datetime
 import logging
 import traceback
-from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import PolicyError, ValidateError
 from flask import g, current_app, make_response
-from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE
+from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, AUTHORIZED
+from privacyidea.lib.policy import DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL
+from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
 from .prepolicy import check_max_token_user, check_max_token_realm
@@ -53,11 +57,14 @@ import json
 import re
 import netaddr
 from privacyidea.lib.crypto import Sign
-from privacyidea.api.lib.utils import get_all_params, getParam
+from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.user import (split_user, User)
+from privacyidea.lib.user import User
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.subscriptions import subscription_status
+from privacyidea.lib.utils import create_img
+from privacyidea.lib.config import get_privacyidea_node
+from privacyidea.lib.tokenclass import ROLLOUTSTATE
 
 log = logging.getLogger(__name__)
 
@@ -159,7 +166,7 @@ def sign_response(request, response):
         log.debug(traceback.format_exc())
         return response
 
-    request.all_data = get_all_params(request.values, request.data)
+    request.all_data = get_all_params(request)
     # response can be either a Response object or a Tuple (Response, ErrorID)
     response_value = 200
     response_is_tuple = False
@@ -202,14 +209,9 @@ def check_tokentype(request, response):
     :return: A new (maybe modified) response
     """
     tokentype = response.json.get("detail", {}).get("type")
-    policy_object = g.policy_object
     user_object = request.User
-    allowed_tokentypes = policy_object.get_action_values(
-        ACTION.TOKENTYPE,
-        scope=SCOPE.AUTHZ,
-        user_object=user_object,
-        client=g.client_ip,
-        audit_data=g.audit_object.audit_data)
+    allowed_tokentypes = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.TOKENTYPE,
+                                    user_object=user_object).action_values(unique=False)
     if tokentype and allowed_tokentypes and tokentype not in allowed_tokentypes:
         # If we have tokentype policies, but
         # the tokentype is not allowed, we raise an exception
@@ -232,13 +234,9 @@ def check_serial(request, response):
     :type response: Response object
     :return: A new (maybe modified) response
     """
-    policy_object = g.policy_object
     serial = response.json.get("detail", {}).get("serial")
     # get the serials from a policy definition
-    allowed_serials = policy_object.get_action_values(ACTION.SERIAL,
-                                                      scope=SCOPE.AUTHZ,
-                                                      client=g.client_ip,
-                                                      audit_data=g.audit_object.audit_data)
+    allowed_serials = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.SERIAL).action_values(unique=False)
 
     # If we can compare a serial and if we do serial matching!
     if serial and allowed_serials:
@@ -268,12 +266,8 @@ def check_tokeninfo(request, response):
     serial = response.json.get("detail", {}).get("serial")
 
     if serial:
-        tokeninfos_pol = g.policy_object.get_action_values(
-            ACTION.TOKENINFO,
-            scope=SCOPE.AUTHZ,
-            client=g.client_ip,
-            allow_white_space_in_action=True,
-            audit_data=g.audit_object.audit_data)
+        tokeninfos_pol = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.TOKENINFO)\
+            .action_values(unique=False, allow_white_space_in_action=True)
         if tokeninfos_pol:
             tokens = get_tokens(serial=serial)
             if len(tokens) == 1:
@@ -308,18 +302,15 @@ def no_detail_on_success(request, response):
     :return:
     """
     content = response.json
-    policy_object = g.policy_object
 
     # get the serials from a policy definition
-    detailPol = policy_object.match_policies(action=ACTION.NODETAILSUCCESS,
-                                             scope=SCOPE.AUTHZ,
-                                             client=g.client_ip,
-                                             active=True)
-
+    detailPol = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.NODETAILSUCCESS)\
+        .policies(write_to_audit_log=False)
     if detailPol and content.get("result", {}).get("value"):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
-        del content["detail"]
+        # None assures that we do not get an error, if "detail" does not exist.
+        content.pop("detail", None)
         response.set_data(json.dumps(content))
         g.audit_object.add_policy([p.get("name") for p in detailPol])
 
@@ -337,34 +328,27 @@ def add_user_detail_to_response(request, response):
     :return:
     """
     content = response.json
-    policy_object = g.policy_object
 
     # Check for ADD USER IN RESPONSE
-    detail_pol = policy_object.match_policies(action=ACTION.ADDUSERINRESPONSE,
-                                              scope=SCOPE.AUTHZ,
-                                              client=g.client_ip,
-                                              active=True)
-
+    detail_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDUSERINRESPONSE, user_object=request.User)\
+        .policies(write_to_audit_log=False)
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the user
         #  details
-        ui = request.User.info
+        ui = request.User.info.copy()
         ui["password"] = ""
         for key, value in ui.items():
             if type(value) == datetime.datetime:
                 ui[key] = str(value)
-        content["detail"]["user"] = ui
+        content.setdefault("detail", {})["user"] = ui
         g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
     # Check for ADD RESOLVER IN RESPONSE
-    detail_pol = policy_object.match_policies(action=ACTION.ADDRESOLVERINRESPONSE,
-                                              scope=SCOPE.AUTHZ,
-                                              client=g.client_ip,
-                                              active=True)
-
+    detail_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.ADDRESOLVERINRESPONSE, user_object=request.User)\
+        .policies(write_to_audit_log=False)
     if detail_pol and content.get("result", {}).get("value") and request.User:
         # The policy was set, we need to add the resolver and the realm
-        content["detail"]["user-resolver"] = request.User.resolver
+        content.setdefault("detail", {})["user-resolver"] = request.User.resolver
         content["detail"]["user-realm"] = request.User.realm
         g.audit_object.add_policy([p.get("name") for p in detail_pol])
 
@@ -384,14 +368,9 @@ def no_detail_on_fail(request, response):
     :return:
     """
     content = response.json
-    policy_object = g.policy_object
 
     # get the serials from a policy definition
-    detailPol = policy_object.match_policies(action=ACTION.NODETAILFAIL,
-                                             scope=SCOPE.AUTHZ,
-                                             client=g.client_ip,
-                                             active=True)
-
+    detailPol = Match.action_only(g, scope=SCOPE.AUTHZ, action=ACTION.NODETAILFAIL).policies(write_to_audit_log=False)
     if detailPol and content.get("result", {}).get("value") is False:
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
@@ -435,10 +414,8 @@ def save_pin_change(request, response, serial=None):
         realm = realm or get_default_realm()
 
         if g.logged_in_user.get("role") == ROLE.ADMIN:
-            pinpol = policy_object.match_policies(action=ACTION.CHANGE_PIN_FIRST_USE,
-                                                  scope=SCOPE.ENROLL, realm=realm,
-                                                  client=g.client_ip, active=True,
-                                                  audit_data=g.audit_object.audit_data)
+            pinpol = Match.realm(g, scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_FIRST_USE,
+                                 realm=realm).policies()
             if pinpol:
                 token = get_one_token(serial=serial)
                 token.set_next_pin_change(diff="0d")
@@ -454,10 +431,8 @@ def save_pin_change(request, response, serial=None):
 
                 # If there is a change_pin_every policy, we need to set the PIN
                 # anew.
-                pinpol = policy_object.get_action_values(
-                    ACTION.CHANGE_PIN_EVERY, scope=SCOPE.ENROLL,
-                    realm=realm, client=g.client_ip, unique=True,
-                    audit_data=g.audit_object.audit_data)
+                pinpol = Match.realm(g, scope=SCOPE.ENROLL, action=ACTION.CHANGE_PIN_EVERY,
+                                     realm=realm).action_values(unique=True)
                 if pinpol:
                     token = get_one_token(serial=serial)
                     token.set_next_pin_change(diff=list(pinpol)[0])
@@ -470,7 +445,7 @@ def offline_info(request, response):
     """
     This decorator is used with the function /validate/check.
     It is not triggered by an ordinary policy but by a MachineToken definition.
-    If for the given Client and Token an offline application is defined,
+    If for the given Token an offline application is defined,
     the response is enhanced with the offline information - the hashes of the
     OTP.
 
@@ -478,17 +453,10 @@ def offline_info(request, response):
     content = response.json
     # check if the authentication was successful
     if content.get("result").get("value") is True and g.client_ip:
-        # If there is no remote address, we can not determine
-        # offline information
-        client_ip = netaddr.IPAddress(g.client_ip)
         # check if there is a MachineToken definition
         serial = content.get("detail", {}).get("serial")
         try:
-            # if the hostname can not be identified, there might be no
-            # offline definition!
-            hostname = get_hostname(ip=client_ip)
-            auth_items = get_auth_items(hostname=hostname, ip=client_ip,
-                                        serial=serial, application="offline",
+            auth_items = get_auth_items(serial=serial, application="offline",
                                         challenge=request.all_data.get("pass"))
             if auth_items:
                 content["auth_items"] = auth_items
@@ -511,132 +479,63 @@ def get_webui_settings(request, response):
     if content.get("result").get("status") is True:
         role = content.get("result").get("value").get("role")
         loginname = content.get("result").get("value").get("username")
-        realm = content.get("result").get("value").get("realm")
-        realm = realm or get_default_realm()
+        realm = content.get("result").get("value").get("realm") or get_default_realm()
 
-        policy_object = g.policy_object
-        try:
-            client = g.client_ip
-        except Exception:
-            client = None
-        logout_time_pol = policy_object.get_action_values(
-            action=ACTION.LOGOUTTIME,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            unique=True,
-            audit_data=g.audit_object.audit_data)
-        timeout_action_pol = policy_object.get_action_values(
-            action=ACTION.TIMEOUT_ACTION,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            unique=True,
-            audit_data=g.audit_object.audit_data)
-        token_page_size_pol = policy_object.get_action_values(
-            action=ACTION.TOKENPAGESIZE,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            unique=True,
-            audit_data=g.audit_object.audit_data)
-        user_page_size_pol = policy_object.get_action_values(
-            action=ACTION.USERPAGESIZE,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            unique=True,
-            audit_data=g.audit_object.audit_data)
-        token_wizard_2nd = bool(role == ROLE.USER and
-            policy_object.match_policies(action=ACTION.TOKENWIZARD2ND,
-                                         scope=SCOPE.WEBUI,
-                                         realm=realm,
-                                         client=client,
-                                         active=True,
-                                         audit_data=g.audit_object.audit_data))
+        # At this point the logged in user is not necessarily a user object. It can
+        # also be a local admin.
+        logout_time_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.LOGOUTTIME,
+                                        user=loginname, realm=realm).action_values(unique=True)
+        timeout_action_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TIMEOUT_ACTION,
+                                           user=loginname, realm=realm).action_values(unique=True)
+        token_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TOKENPAGESIZE,
+                                            user=loginname, realm=realm).action_values(unique=True)
+        user_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.USERPAGESIZE,
+                                           user=loginname, realm=realm).action_values(unique=True)
+        token_wizard_2nd = bool(role == ROLE.USER
+                                and Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD2ND,
+                                                  user=loginname, realm=realm).policies())
+        admin_dashboard = (role == ROLE.ADMIN
+                           and Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.ADMIN_DASHBOARD,
+                                             user=loginname, realm=realm).any())
+        token_rollover = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TOKENROLLOVER,
+                                       user=loginname, realm=realm).action_values(unique=False)
         token_wizard = False
         dialog_no_token = False
         if role == ROLE.USER:
             user_obj = User(loginname, realm)
             user_token_num = get_tokens(user=user_obj, count=True)
-            token_wizard_pol = policy_object.match_policies(
-                action=ACTION.TOKENWIZARD,
-                scope=SCOPE.WEBUI,
-                realm=user_obj.realm,
-                resolver=user_obj.resolver,
-                user=user_obj.login,
-                client=client,
-                active=True,
-                audit_data=g.audit_object.audit_data
-            )
-
+            token_wizard_pol = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.TOKENWIZARD, user_object=user_obj).any()
             # We also need to check, if the user has not tokens assigned.
             # If the user has no tokens, we run the wizard. If the user
             # already has tokens, we do not run the wizard.
-            token_wizard = bool(token_wizard_pol) and (user_token_num == 0)
+            token_wizard = token_wizard_pol and (user_token_num == 0)
 
-            dialog_no_token_pol = policy_object.match_policies(
-                scope=SCOPE.WEBUI,
-                action=ACTION.DIALOG_NO_TOKEN,
-                client=client,
-                realm=user_obj.realm,
-                resolver=user_obj.resolver,
-                user=user_obj.login,
-                active=True,
-                audit_data=g.audit_object.audit_data
-            )
-            dialog_no_token = bool(dialog_no_token_pol) and (user_token_num == 0)
-        user_details_pol = policy_object.match_policies(
-            action=ACTION.USERDETAILS,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            active=True,
-            audit_data=g.audit_object.audit_data
-        )
-        search_on_enter = policy_object.match_policies(
-            action=ACTION.SEARCH_ON_ENTER,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            active=True,
-            audit_data=g.audit_object.audit_data
-        )
-        hide_welcome = policy_object.match_policies(
-            action=ACTION.HIDE_WELCOME,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            active=True,
-            audit_data=g.audit_object.audit_data
-        )
-        hide_welcome = bool(hide_welcome)
-        hide_buttons = policy_object.match_policies(
-            action=ACTION.HIDE_BUTTONS,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            active=True,
-        )
-        hide_buttons = bool(hide_buttons)
-        default_tokentype_pol = policy_object.get_action_values(
-            action=ACTION.DEFAULT_TOKENTYPE,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            unique=True,
-            audit_data=g.audit_object.audit_data
-        )
-        show_seed = policy_object.match_policies(
-            action=ACTION.SHOW_SEED,
-            scope=SCOPE.WEBUI,
-            realm=realm,
-            client=client,
-            active=True,
-            audit_data=g.audit_object.audit_data
-        )
-        show_seed = bool(show_seed)
+            dialog_no_token_pol = Match.user(g, scope=SCOPE.WEBUI, action=ACTION.DIALOG_NO_TOKEN,
+                                             user_object=user_obj).any()
+            dialog_no_token = dialog_no_token_pol and (user_token_num == 0)
+        user_details_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.USERDETAILS,
+                                         user=loginname, realm=realm).policies()
+        search_on_enter = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SEARCH_ON_ENTER,
+                                        user=loginname, realm=realm).policies()
+        hide_welcome = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.HIDE_WELCOME,
+                                     user=loginname, realm=realm).any()
+        hide_buttons = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.HIDE_BUTTONS,
+                                     user=loginname, realm=realm).any()
+        default_tokentype_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.DEFAULT_TOKENTYPE,
+                                              user=loginname, realm=realm).action_values(unique=True)
+        show_seed = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_SEED,
+                                  user=loginname, realm=realm).any()
+        show_node = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_NODE, realm=realm).any()
+        qr_ios_authenticator = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_IOS_AUTHENTICATOR,
+                                             user=loginname, realm=realm).any()
+        qr_android_authenticator = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_ANDROID_AUTHENTICATOR,
+                                                 user=loginname, realm=realm).any()
+        qr_custom_authenticator_url = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_CUSTOM_AUTHENTICATOR,
+                                                    user=loginname, realm=realm).action_values(unique=True)
 
+        qr_image_android = create_img(DEFAULT_ANDROID_APP_URL) if qr_android_authenticator else None
+        qr_image_ios = create_img(DEFAULT_IOS_APP_URL) if qr_ios_authenticator else None
+        qr_image_custom = create_img(list(qr_custom_authenticator_url)[0]) if qr_custom_authenticator_url else None
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
         default_tokentype = DEFAULT_TOKENTYPE
@@ -655,16 +554,21 @@ def get_webui_settings(request, response):
         if len(timeout_action_pol) == 1:
             timeout_action = list(timeout_action_pol)[0]
 
-        policy_template_url_pol = policy_object.get_action_values(
-            action=ACTION.POLICYTEMPLATEURL,
-            scope=SCOPE.WEBUI,
-            client=client,
-            unique=True,
-            audit_data=g.audit_object.audit_data)
-
+        policy_template_url_pol = Match.action_only(g, scope=SCOPE.WEBUI,
+                                                    action=ACTION.POLICYTEMPLATEURL).action_values(unique=True)
         policy_template_url = DEFAULT_POLICY_TEMPLATE_URL
         if len(policy_template_url_pol) == 1:
             policy_template_url = list(policy_template_url_pol)[0]
+
+        indexed_preset_attribute = Match.realm(g, scope=SCOPE.WEBUI, action="indexedsecret_preset_attribute",
+                                               realm=realm).action_values(unique=True)
+        if len(indexed_preset_attribute) == 1:
+            content["result"]["value"]["indexedsecret_preset_attribute"] = list(indexed_preset_attribute)[0]
+
+        # This only works for users, because the value of the policy does not change while logged in.
+        if role == ROLE.USER and \
+                Match.user(g, SCOPE.USER, "indexedsecret_force_attribute", user_obj).action_values(unique=False):
+            content["result"]["value"]["indexedsecret_force_attribute"] = 1
 
         content["result"]["value"]["logout_time"] = logout_time
         content["result"]["value"]["token_page_size"] = token_page_size
@@ -674,13 +578,21 @@ def get_webui_settings(request, response):
         content["result"]["value"]["user_details"] = len(user_details_pol) > 0
         content["result"]["value"]["token_wizard"] = token_wizard
         content["result"]["value"]["token_wizard_2nd"] = token_wizard_2nd
+        content["result"]["value"]["admin_dashboard"] = admin_dashboard
         content["result"]["value"]["dialog_no_token"] = dialog_no_token
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
+        content["result"]["value"]["token_rollover"] = token_rollover
         content["result"]["value"]["hide_welcome"] = hide_welcome
         content["result"]["value"]["hide_buttons"] = hide_buttons
         content["result"]["value"]["show_seed"] = show_seed
+        content["result"]["value"]["show_node"] = get_privacyidea_node() if show_node else ""
         content["result"]["value"]["subscription_status"] = subscription_status()
+        content["result"]["value"]["subscription_status_push"] = subscription_status("privacyidea authenticator",
+                                                                                     tokentype="push")
+        content["result"]["value"]["qr_image_android"] = qr_image_android
+        content["result"]["value"]["qr_image_ios"] = qr_image_ios
+        content["result"]["value"]["qr_image_custom"] = qr_image_custom
         response.set_data(json.dumps(content))
     return response
 
@@ -706,15 +618,8 @@ def autoassign(request, response):
             # If there is no user in the request (because it is a serial
             # authentication request) we immediately bail out
             # check if the policy is defined
-            policy_object = g.policy_object
-
-            autoassign_values = policy_object.\
-                get_action_values(action=ACTION.AUTOASSIGN,
-                                  scope=SCOPE.ENROLL,
-                                  user_object=user_obj,
-                                  client=g.client_ip,
-                                  unique=True)
-
+            autoassign_values = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.AUTOASSIGN,
+                                           user_object=user_obj).action_values(unique=True, write_to_audit_log=False)
             # check if the user has no token
             if autoassign_values and get_tokens(user=user_obj, count=True) == 0:
                 # Check if the token would match
@@ -780,7 +685,10 @@ def construct_radius_response(request, response):
                 # user was successfully authenticated
                 return_code = 204
         # send empty body
-        return make_response('', return_code)
+        resp = make_response('', return_code)
+        # tell other policies there is no JSON content
+        resp.mimetype = 'text/plain'
+        return resp
     else:
         return response
 
@@ -800,25 +708,12 @@ def mangle_challenge_response(request, response):
         # This can happen with the validate/radiuscheck endpoint
         return response
     content = response.json
-    policy_object = g.policy_object
     user_obj = request.User
 
-    header_pol = policy_object.get_action_values(action=ACTION.CHALLENGETEXT_HEADER,
-                                                 scope=SCOPE.AUTH,
-                                                 allow_white_space_in_action=True,
-                                                 client=g.client_ip,
-                                                 user_object=user_obj,
-                                                 audit_data=g.audit_object.audit_data,
-                                                 unique=True)
-
-    footer_pol = policy_object.get_action_values(action=ACTION.CHALLENGETEXT_FOOTER,
-                                                 scope=SCOPE.AUTH,
-                                                 allow_white_space_in_action=True,
-                                                 client=g.client_ip,
-                                                 user_object=user_obj,
-                                                 audit_data=g.audit_object.audit_data,
-                                                 unique=True)
-
+    header_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.CHALLENGETEXT_HEADER,
+                            user_object=user_obj).action_values(unique=True, allow_white_space_in_action=True)
+    footer_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.CHALLENGETEXT_FOOTER,
+                            user_object=user_obj).action_values(unique=True, allow_white_space_in_action=True)
     if header_pol:
         multi_challenge = content.get("detail", {}).get("multi_challenge")
         if multi_challenge:
@@ -844,3 +739,75 @@ def mangle_challenge_response(request, response):
 
     return response
 
+
+def is_authorized(request, response):
+    """
+    This policy decorator is used in the AUTHZ scope to
+    decorate the /validate/check and /validate/triggerchallenge endpoint.
+    I will cause authentication to fail, if the policy
+    authorized=deny_access is set.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    if not response.is_json:
+        # This can happen with the validate/radiuscheck endpoint
+        return response
+
+    authorized_pol = Match.user(g, scope=SCOPE.AUTHZ, action=ACTION.AUTHORIZED,
+                                user_object=request.User).action_values(unique=True, allow_white_space_in_action=True)
+
+    if authorized_pol:
+        if list(authorized_pol)[0] == AUTHORIZED.DENY:
+            raise ValidateError("User is not authorized to authenticate under these conditions.")
+
+    return response
+
+
+def check_verify_enrollment(request, response):
+    """
+    This policy decorator is used in the ENROLL scope to
+    decorate the /token/init
+    If will check for action=verify_enrollment and ask the user
+    in a 2nd step to provide information to verify, that the token was successfully enrolled.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    serial = response.json.get("detail").get("serial")
+    verify = request.all_data.get("verify")
+    if verify:
+        # In case we are in a 2nd step verification, we must early exit
+        return response
+    tokenobj_list = get_tokens(serial=serial)
+    if len(tokenobj_list) == 1:
+        tokenobj = tokenobj_list[0]
+        # check if this token type can do verify enrollment
+        if tokenobj.can_verify_enrollment:
+            # Get policies
+            verify_pol_dict = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.VERIFY_ENROLLMENT,
+                                         user_object=request.User).action_values(unique=False,
+                                                                                 allow_white_space_in_action=True,
+                                                                                 write_to_audit_log=False)
+            # verify_pol_dict.keys() is a list of actions from several policies. It
+            # could look like this:
+            # ["hotp totp", "hotp email"]
+            do_verify_enrollment = False
+            for toks in verify_pol_dict:
+                if tokenobj.get_tokentype().upper() in [x.upper() for x in toks.split(" ")]:
+                    # This token is supposed to do verify enrollment
+                    do_verify_enrollment = True
+                    g.audit_object.add_policy(verify_pol_dict.get(toks))
+            if do_verify_enrollment:
+                content = response.json
+                content["detail"]["verify"] = tokenobj.prepare_verify_enrollment()
+                content["detail"]["rollout_state"] = ROLLOUTSTATE.VERIFYPENDING
+                tokenobj.token.rollout_state = ROLLOUTSTATE.VERIFYPENDING
+                tokenobj.token.save()
+                response.set_data(json.dumps(content))
+    else:
+        log.warning("No distinct token object found in enrollment response!")
+
+    return response

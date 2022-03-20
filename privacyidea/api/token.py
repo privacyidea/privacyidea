@@ -3,6 +3,10 @@
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
+# 2020-11-11 Timo Sturm <timo.sturm@netknights.it>
+#            Select how to validate PSKC imports
+# 2020-01-28 Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
+#            Add WebAuthn token
 # 2018-06-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #            Add tantoken wrapper
 # 2017-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -81,6 +85,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_max_token_user,
                                            check_max_token_realm,
                                            init_tokenlabel, init_random_pin,
+                                           init_token_length_contents,
+                                           set_random_pin,
                                            encrypt_pin, check_otp_pin,
                                            check_external, init_token_defaults,
                                            enroll_pin, papertoken_count,
@@ -89,8 +95,13 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            twostep_enrollment_activation,
                                            twostep_enrollment_parameters,
                                            sms_identifiers, pushtoken_add_config,
-                                           check_admin_tokenlist)
-from privacyidea.api.lib.postpolicy import (save_pin_change,
+                                           check_admin_tokenlist,
+                                           verify_enrollment,
+                                           indexedsecret_force_attribute,
+                                           check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
+                                           webauthntoken_request, required_piv_attestation,
+                                           hide_tokeninfo)
+from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
 from privacyidea.api.auth import admin_required
@@ -106,7 +117,7 @@ You need to authenticate to gain access to these token
 functions.
 If you are authenticated as administrator, you can manage all tokens.
 If you are authenticated as normal user, you can only manage your own tokens.
-Some API calls are only allowed to be accessed by adminitrators.
+Some API calls are only allowed to be accessed by administrators.
 
 To see how to authenticate read :ref:`rest_auth`.
 """
@@ -125,13 +136,21 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(check_otp_pin, request)
 @prepolicy(check_external, request, action="init")
 @prepolicy(init_token_defaults, request)
+@prepolicy(init_token_length_contents, request)
 @prepolicy(papertoken_count, request)
 @prepolicy(sms_identifiers, request)
 @prepolicy(tantoken_count, request)
 @prepolicy(u2ftoken_allowed, request)
 @prepolicy(u2ftoken_verify_cert, request)
 @prepolicy(pushtoken_add_config, request)
+@prepolicy(indexedsecret_force_attribute, request)
+@prepolicy(webauthntoken_allowed, request)
+@prepolicy(webauthntoken_request, request)
+@prepolicy(webauthntoken_enroll, request)
+@prepolicy(required_piv_attestation, request)
+@prepolicy(verify_enrollment, request)
 @postpolicy(save_pin_change, request)
+@postpolicy(check_verify_enrollment, request)
 @CheckSubscription(request)
 @event("token_init", request, g)
 @log_with(log, log_entry=False)
@@ -159,6 +178,8 @@ def init():
                     see :ref:`2step_enrollment`.
     :jsonparam otpkeyformat: used to supply the OTP key in alternate formats, currently
                             hex or base32check (see :ref:`2step_enrollment`)
+    :jsonparam rollover: Set this to 1 or true to indicate, that you want to rollover a token.
+                    This is mandatory to rollover tokens, that are in the clientwait state.
 
     :return: a json result with a boolean "result": true
 
@@ -236,6 +257,34 @@ def init():
     Base Tokenclass contains an extremely simple way by concatenating the 
     two parts. See
     :func:`~privacyidea.lib.tokenclass.TokenClass.generate_symmetric_key`
+
+    **verify enrollment**
+
+    Some tokens can be configured via enrollment policy so that the user
+    needs to provide some verification that e.g. a QR code was scanned correctly or
+    the token works correctly in general.
+    The specific way depends on the token class.
+    The necessary token class functions are
+
+    * :func:`~privacyidea.lib.tokenclass.TokenClass.verify_enrollment`
+    * :func:`~privacyidea.lib.tokenclass.TokenClass.prepare_verify_enrollment`
+
+    The first API call to /token/init returns responses in::
+
+        {"detail": {"verify": {"message": "Please provide a valid OTP value."},
+                    "rollout_state": "verify"}}
+
+    The second API call then needs to send the serial number and a response
+
+       .. sourcecode:: http
+
+           POST /token/init
+
+           serial=<serial from the previous response>
+           verify=<e.g. the OTP value>
+
+    As long as the token is in state "verify" it can not be used for
+    authentication.
     """
     response_details = {}
     tokenrealms = None
@@ -328,6 +377,7 @@ def get_challenges_api(serial=None):
 
 @token_blueprint.route('/', methods=['GET'])
 @prepolicy(check_admin_tokenlist, request)
+@prepolicy(hide_tokeninfo, request)
 @event("token_list", request, g)
 @log_with(log)
 def list_api():
@@ -348,6 +398,7 @@ def list_api():
     :query sortdir: asc/desc
     :query page: request a certain page
     :query assigned: Only return assigned (True) or not assigned (False) tokens
+    :query active: Only return active (True) or inactive (False) tokens
     :query pagesize: limit the number of returned tokens
     :query user_fields: additional user fields from the userid resolver of
         the owner (user)
@@ -374,8 +425,16 @@ def list_api():
     ufields = getParam(param, "user_fields", optional)
     output_format = getParam(param, "outform", optional)
     assigned = getParam(param, "assigned", optional)
+    active = getParam(param, "active", optional)
+    tokeninfokey = getParam(param, "infokey", optional)
+    tokeninfovalue = getParam(param, "infovalue", optional)
+    tokeninfo = None
+    if tokeninfokey and tokeninfovalue:
+        tokeninfo = {tokeninfokey: tokeninfovalue}
     if assigned:
         assigned = assigned.lower() == "true"
+    if active:
+        active = active.lower() == "true"
     
     user_fields = []
     if ufields:
@@ -386,14 +445,19 @@ def list_api():
     allowed_realms = getattr(request, "pi_allowed_realms", None)
     g.audit_object.log({'info': "realm: {0!s}".format((allowed_realms))})
 
+    # get hide_tokeninfo setting from all_data
+    hidden_tokeninfo = getParam(request.all_data, 'hidden_tokeninfo', default=None)
+
     # get list of tokens as a dictionary
     tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,
                                  user=user, assigned=assigned, psize=psize,
-                                 sortby=sort, sortdir=sdir,
+                                 active=active, sortby=sort, sortdir=sdir,
                                  tokentype=tokentype,
                                  resolver=resolver,
                                  description=description,
-                                 userid=userid, allowed_realms=allowed_realms)
+                                 userid=userid, allowed_realms=allowed_realms,
+                                 tokeninfo=tokeninfo,
+                                 hidden_tokeninfo=hidden_tokeninfo)
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)
@@ -671,6 +735,41 @@ def setpin_api(serial=None):
     return send_result(res)
 
 
+@token_blueprint.route('/setrandompin', methods=['POST'])
+@token_blueprint.route('/setrandompin/<serial>', methods=['POST'])
+@prepolicy(check_base_action, request, action=ACTION.SETRANDOMPIN)
+@prepolicy(set_random_pin, request)
+@prepolicy(encrypt_pin, request)
+@postpolicy(save_pin_change, request)
+@event("token_setrandompin", request, g)
+@log_with(log)
+def setrandompin_api(serial=None):
+    """
+    Set the OTP PIN for a specific token to a random value.
+
+    The token is identified by the unique serial number.
+
+    :jsonparam basestring serial: the serial number of the single
+        token to reset
+    :return: In "value" returns the number of PINs set.
+        The detail-section contains the key "pin" with the set PIN.
+    :rtype: json object
+    """
+    if not serial:
+        serial = getParam(request.all_data, "serial", required)
+    g.audit_object.log({"serial": serial})
+    user = request.User
+    encrypt_pin = getParam(request.all_data, "encryptpin")
+    pin = getParam(request.all_data, "pin")
+    if not pin:
+        raise TokenAdminError("We have an empty PIN. Please check your policy 'otp_pin_set_random'.")
+
+    g.audit_object.add_to_log({'action_detail': "otppin, "})
+    res = set_pin(serial, pin, user=user, encrypt_pin=encrypt_pin)
+    g.audit_object.log({"success": True})
+    return send_result(res, details={"pin": pin})
+
+
 @token_blueprint.route('/description', methods=['POST'])
 @token_blueprint.route('/description/<serial>', methods=['POST'])
 @prepolicy(check_base_action, request, action=ACTION.SETDESCRIPTION)
@@ -849,8 +948,10 @@ def loadtokens_api(filename=None):
     :jsonparam filename: The name of the token file, that is imported
     :jsonparam type: The file type. Can be "aladdin-xml",
         "oathcsv" or "yubikeycsv".
-    :jsonparam tokenrealms: comma separated list of tokens.
+    :jsonparam tokenrealms: comma separated list of realms.
     :jsonparam psk: Pre Shared Key, when importing PSKC
+    :jsonparam pskcValidateMAC: Determines how invalid MACs should be handled when importing PSKC.
+               Allowed values are 'no_check', 'check_fail_soft' and 'check_fail_hard'.
     :return: The number of the imported tokens
     :rtype: int
     """
@@ -859,7 +960,7 @@ def loadtokens_api(filename=None):
     known_types = ['aladdin-xml', 'oathcsv', "OATH CSV", 'yubikeycsv',
                    'Yubikey CSV', 'pskc']
     file_type = getParam(request.all_data, "type", required)
-    hashlib = getParam(request.all_data, "aladdin_hashlib")
+    aes_validate_mac = getParam(request.all_data, "pskcValidateMAC", default='check_fail_hard')
     aes_psk = getParam(request.all_data, "psk")
     aes_password = getParam(request.all_data, "password")
     if aes_psk and len(aes_psk) != 32:
@@ -870,6 +971,7 @@ def loadtokens_api(filename=None):
     if trealms:
         tokenrealms = trealms.split(",")
 
+    not_imported_serials = []
     TOKENS = {}
     token_file = request.files['file']
     file_contents = ""
@@ -913,8 +1015,8 @@ def loadtokens_api(filename=None):
     elif file_type in ["yubikeycsv", "Yubikey CSV"]:
         TOKENS = parseYubicoCSV(file_contents)
     elif file_type in ["pskc"]:
-        TOKENS = parsePSKCdata(file_contents, preshared_key_hex=aes_psk,
-                               password=aes_password)
+        TOKENS, not_imported_serials = parsePSKCdata(file_contents, preshared_key_hex=aes_psk,
+                                                   password=aes_password, validate_mac=aes_validate_mac)
 
     # Now import the Tokens from the dictionary
     ret = ""
@@ -926,16 +1028,16 @@ def loadtokens_api(filename=None):
 
         import_token(serial,
                      TOKENS[serial],
-                     tokenrealms=tokenrealms,
-                     default_hashlib=hashlib)
+                     tokenrealms=tokenrealms)
 
     g.audit_object.log({'info': u"{0!s}, {1!s} (imported: {2:d})".format(file_type,
                                                            token_file,
                                                            len(TOKENS)),
-                        'serial': ', '.join(TOKENS)})
+                        'serial': ', '.join(TOKENS),
+                        'success': True})
     # logTokenNum()
 
-    return send_result(len(TOKENS))
+    return send_result({'n_imported': len(TOKENS), 'n_not_imported': len(not_imported_serials)})
 
 
 @token_blueprint.route('/copypin', methods=['POST'])

@@ -33,6 +33,7 @@ It provides functions to retrieve (get) and and set configuration.
 The code is tested in tests/test_lib_config
 """
 
+import copy
 import sys
 import logging
 import inspect
@@ -43,6 +44,8 @@ from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
                       save_config_timestamp, Policy, EventHandler)
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
+from privacyidea.lib.utils import to_list
+from privacyidea.lib.utils.export import (register_import, register_export)
 from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
@@ -131,7 +134,8 @@ class SharedConfigClass(object):
                 for realm in Realm.query.all():
                     if realm.default:
                         default_realm = realm.name
-                    realmdef = {"option": realm.option,
+                    realmdef = {"id": realm.id,
+                                "option": realm.option,
                                 "default": realm.default,
                                 "resolver": []}
                     for x in realm.resolver_list:
@@ -208,7 +212,7 @@ class LocalConfigClass(object):
             "admin" or "public". If "public", only values with type="public"
             are returned.
         :type role: string
-        :param return_bool: If the a boolean value should be returned. Returns
+        :param return_bool: If a boolean value should be returned. Returns
             True if value is "True", "true", 1, "1", True...
         :return: If key is None, then a dictionary is returned. If a certain key
             is given a string/bool is returned.
@@ -223,7 +227,7 @@ class LocalConfigClass(object):
         for ckey, cvalue in self.config.items():
             if role == "admin" or cvalue.get("Type") == "public":
                 reduced_config[ckey] = self.config[ckey]
-        if not reduced_config and role=="admin":
+        if not reduced_config and role == "admin":
             reduced_config = self.config
 
         for ckey, cvalue in reduced_config.items():
@@ -641,6 +645,7 @@ def get_resolver_list():
     module_list.add("privacyidea.lib.resolvers.LDAPIdResolver")
     module_list.add("privacyidea.lib.resolvers.SCIMIdResolver")
     module_list.add("privacyidea.lib.resolvers.SQLIdResolver")
+    module_list.add("privacyidea.lib.resolvers.HTTPResolver")
 
     # Dynamic Resolver modules
     # TODO: Migration
@@ -689,7 +694,6 @@ def get_token_list():
     """
     module_list = set()
 
-    # TODO: migrate the implementations and uncomment
     module_list.add("privacyidea.lib.tokens.daplugtoken")
     module_list.add("privacyidea.lib.tokens.hotptoken")
     module_list.add("privacyidea.lib.tokens.motptoken")
@@ -714,25 +718,15 @@ def get_token_list():
     module_list.add("privacyidea.lib.tokens.vascotoken")
     module_list.add("privacyidea.lib.tokens.tantoken")
     module_list.add("privacyidea.lib.tokens.pushtoken")
+    module_list.add("privacyidea.lib.tokens.indexedsecrettoken")
+    module_list.add("privacyidea.lib.tokens.webauthntoken")
 
-    #module_list.add(".tokens.tagespassworttoken")
-    #module_list.add(".tokens.vascotoken")
-
-    # Dynamic Resolver modules
-    # TODO: Migration
-    # config_modules = config.get("privacyideaResolverModules", '')
-    config_modules = None
-    log.debug("{0!s}".format(config_modules))
-    if config_modules:
-        # in the config *.ini files we have some line continuation slashes,
-        # which will result in ugly module names, but as they are followed by
-        # \n they could be separated as single entries by the following two
-        # lines
-        lines = config_modules.splitlines()
-        coco = ",".join(lines)
-        for module in coco.split(','):
-            if module.strip() != '\\':
-                module_list.add(module.strip())
+    # Dynamic token modules
+    dynamic_token_modules = get_app_config_value("PI_TOKEN_MODULES")
+    if dynamic_token_modules:
+        # In the pi.cfg you can specify a list or set of 3rd party token modules like
+        #    PI_TOKEN_MODULES = [ "myproj.tokens.tok1", "myproj.tokens.tok2" ]
+        module_list.update(to_list(dynamic_token_modules))
 
     return module_list
 
@@ -864,7 +858,7 @@ def get_machine_resolver_module_list():
 def set_privacyidea_config(key, value, typ="", desc=""):
     """
     Set a config value and writes it to the Config database table.
-    Can by of type "password" or "public". "password" gets encrypted.
+    Can be of type "password" or "public". "password" gets encrypted.
     """
     if not typ:
         # check if this is a token specific config and if it should be public
@@ -875,7 +869,6 @@ def set_privacyidea_config(key, value, typ="", desc=""):
         except Exception:
             log.debug("This seems to be no token specific setting")
 
-    ret = 0
     if typ == "password":
         # store value in encrypted way
         value = encryptPassword(value)
@@ -970,7 +963,7 @@ def get_privacyidea_node():
     This returns the node name of the privacyIDEA node as found in the pi.cfg
     file in PI_NODE.
     If it does not exist, the PI_AUDIT_SERVERNAME is used.
-    :return: the destinct node name
+    :return: the distinct node name
     """
     node_name = get_app_config_value("PI_NODE", get_app_config_value("PI_AUDIT_SERVERNAME", "localnode"))
     return node_name
@@ -987,3 +980,30 @@ def get_privacyidea_nodes():
         nodes.append(own_node_name)
     return nodes
 
+
+@register_export()
+def export_config(name=None):
+    """Export the global configuration"""
+    c = copy.copy(get_config_object().config)
+    if name:
+        c = {name: c[name]} if name in c.keys() else {}
+    return c
+
+
+@register_import()
+def import_config(data, name=None):
+    """Import given server configuration"""
+    log.debug('Import server config: {0!s}'.format(data))
+    res = {}
+    data.pop('__timestamp__', None)
+    for key, values in data.items():
+        if name and name != key:
+            continue
+        r = set_privacyidea_config(key, values['Value'],
+                                   desc=values['Description'] if 'Description' in values else None,
+                                   typ=values['Type'] if 'Type' in values else None)
+        res[key] = r
+    log.info('Added configuration: {0!s}'.format(
+        ', '.join([k for k, v in res.items() if v == 'insert'])))
+    log.info('Updated configuration: {0!s}'.format(
+        ', '.join([k for k, v in res.items() if v == 'update'])))

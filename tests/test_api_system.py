@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import print_function
 
 import os
@@ -62,7 +64,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertEquals(res.json['result']['value']['key3'], 'update',
+            self.assertEqual(res.json['result']['value']['key3'], 'update',
                               res.json)
 
     def test_03_set_and_del_default(self):
@@ -125,7 +127,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertEquals(result['value']['setPolicy pol1'], 1, res.json)
+            self.assertEqual(result['value']['setPolicy pol1'], 1, res.json)
 
         # Set a policy with a more complicated client which might interfere
         # with override client
@@ -146,7 +148,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json['result']
             self.assertTrue(result["status"], result)
-            self.assertEquals(result['value']['setPolicy pol1'], 1, result)
+            self.assertEqual(result['value']['setPolicy pol1'], 1, result)
         delete_privacyidea_config(SYSCONF.OVERRIDECLIENT)
 
         # setting policy with invalid name fails
@@ -350,7 +352,8 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue(result["value"] == 1, result)
+            self.assertGreaterEqual(result["value"], 1, result)
+            res_id = result["value"]
 
         with self.app.test_request_context('/resolver/',
                                            method='GET',
@@ -439,7 +442,7 @@ class APIConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(result["status"] is True, result)
-            self.assertTrue(result["value"] == 1, result)
+            self.assertEqual(result["value"], res_id, result)
 
         # delete a non existing resolver
         with self.app.test_request_context('/resolver/xycswwf',
@@ -466,7 +469,8 @@ class APIConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             # The resolver was created. The ID of the resolver is returend.
-            self.assertTrue(result["value"] > 0, result)
+            self.assertGreaterEqual(result["value"], 1, result)
+            res_id = result["value"]
 
         # create a realm
         with self.app.test_request_context('/realm/{0!s}'.format(realmname),
@@ -522,8 +526,9 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
-            # The realm is successfully deleted: value == 1
-            self.assertTrue(result["value"] == 1, result)
+            # The realm is successfully deleted: value is the id in
+            # the db, should be >= 1
+            self.assertGreaterEqual(result["value"], 1, result)
 
         # Now, we can delete the resolver
         with self.app.test_request_context('/resolver/{0!s}'.format(resolvername),
@@ -535,9 +540,7 @@ class APIConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             # The resolver was deleted = 1
-            self.assertTrue(result["value"] == 1, result)
-
-
+            self.assertEqual(result["value"], res_id, result)
 
     def test_10_default_realm(self):
         resolvername = "defresolver"
@@ -550,7 +553,7 @@ class APIConfigTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result["status"] is True, result)
+            self.assertTrue(result["status"], result)
 
         # create a realm
         with self.app.test_request_context('/realm/{0!s}'.format(realmname),
@@ -561,7 +564,7 @@ class APIConfigTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertTrue(result["status"] is True, result)
+            self.assertTrue(result["status"], result)
 
         # get the default realm
         with self.app.test_request_context('/defaultrealm',
@@ -840,6 +843,7 @@ class APIConfigTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(res.mimetype, 'text/plain', res)
             self.assertTrue(b"privacyIDEA configuration documentation" in
                             res.data)
 
@@ -1037,7 +1041,7 @@ class APIConfigTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertEquals(set(result["value"]), {"local", "remote"})
+            self.assertEqual(set(result["value"]), {"local", "remote"})
 
         # if an admin policy is defined and enrollRADIUS is not allowed, admins cannot access the RADIUS servers
         set_policy("admin", scope=SCOPE.ADMIN, action=ACTION.AUDIT)
@@ -1057,7 +1061,7 @@ class APIConfigTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertEquals(set(result["value"]), {"local", "remote"})
+            self.assertEqual(set(result["value"]), {"local", "remote"})
 
         self.setUp_user_realms()
         self.authenticate_selfservice_user()
@@ -1069,7 +1073,7 @@ class APIConfigTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertEquals(set(result["value"]), {"local", "remote"})
+            self.assertEqual(set(result["value"]), {"local", "remote"})
 
         # if a user policy is defined and enrollRADIUS is not allowed, users cannot access the RADIUS servers
         set_policy("user", scope=SCOPE.USER, action=ACTION.AUDIT)
@@ -1089,7 +1093,7 @@ class APIConfigTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = json.loads(res.data.decode('utf8')).get("result")
-            self.assertEquals(set(result["value"]), {"local", "remote"})
+            self.assertEqual(set(result["value"]), {"local", "remote"})
 
         delete_policy("user")
         delete_policy("admin")

@@ -18,18 +18,16 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("privacyideaServerController", function($scope, $stateParams,
-                                                    inform, gettextCatalog,
-                                                    $state, $location,
-                                                    ConfigFactory) {
+myApp.controller("privacyideaServerController", ["$scope", "$stateParams", "inform",
+                                                 "gettextCatalog", "$state",
+                                                 "$location", "ConfigFactory",
+                                                 function($scope, $stateParams,
+                                                          inform, gettextCatalog,
+                                                          $state, $location,
+                                                          ConfigFactory) {
+    // Set the default route
     if ($location.path() === "/config/privacyideaserver") {
         $location.path("/config/privacyideaserver/list");
-    }
-
-    $scope.identifier = $stateParams.identifier;
-    if ($scope.identifier) {
-        // We are editing an existing RADIUS Server
-        $scope.getPrivacyideaServers($scope.identifier);
     }
 
     // Get all servers
@@ -46,6 +44,22 @@ myApp.controller("privacyideaServerController", function($scope, $stateParams,
         });
     };
 
+    if ($location.path() === "/config/privacyideaserver/list") {
+    // in case of list we fetch all servers
+        $scope.getPrivacyideaServers();
+    }
+
+    $scope.identifier = $stateParams.identifier;
+    if ($scope.identifier) {
+        // We are editing an existing privacyIDEA Server
+        $scope.getPrivacyideaServers($scope.identifier);
+        } else {
+        // This is a new privacyIDEA server
+        $scope.params = {
+            tls: true
+        }
+    }
+
     $scope.delPrivacyideaServer = function (identifier) {
         ConfigFactory.delPrivacyidea(identifier, function(data) {
             $scope.getPrivacyideaServers();
@@ -57,8 +71,6 @@ myApp.controller("privacyideaServerController", function($scope, $stateParams,
             $scope.getPrivacyideaServers();
         });
     };
-
-    $scope.getPrivacyideaServers();
 
     $scope.testPrivacyideaServer = function() {
         ConfigFactory.testPrivacyidea($scope.params, function(data) {
@@ -84,4 +96,4 @@ myApp.controller("privacyideaServerController", function($scope, $stateParams,
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.getPrivacyideaServers);
 
-});
+}]);

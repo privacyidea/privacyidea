@@ -1,0 +1,15 @@
+handlers:
+  file:
+    backupCount: 5
+    class: logging.handlers.RotatingFileHandler
+    filename: privacyidea.log
+    formatter: detail
+    level: BLABLA
+    maxBytes: 10000000
+loggers:
+  privacyidea:
+    handlers:
+    - filehandler
+    level: INFO
+    qualname: privacyidea
+version: 1

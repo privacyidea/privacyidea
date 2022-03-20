@@ -62,7 +62,7 @@ Manual Setup
        chmod 0600 /etc/privacyidea/CA/ca.key
        touch /etc/privacyidea/CA/index.txt
        echo 01 > /etc/privacyidea/CA/serial
-       chown -R privacyidea /etc/privacyIDEA/CA
+       chown -R privacyidea /etc/privacyidea/CA
 
 3. Now set up a local CA connector within privacyIDEA with the directory
    */etc/privacyidea/CA* and the files accordingly.
@@ -72,7 +72,7 @@ Easy Setup
 
 Starting with privacyIDEA version 2.18 it gets easier to setup local CAs.
 
-You can use the :ref:`pi-manage` tool to setup a new CA like this:
+You can use the :ref:`pimanage` tool to setup a new CA like this:
 
    pi-manage ca create myCA
 
@@ -84,7 +84,7 @@ This will ask you for all necessary parameters for the CA and then automatically
 Management
 ..........
 
-There are different ways to enroll a certificate token. See :ref:`certificates`.
+There are different ways to enroll a certificate token. See :ref:`certificate_token`.
 
 When an administrator *revokes* a certificate token, the certificate is
 revoked and a CRL is created.

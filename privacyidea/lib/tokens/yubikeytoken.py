@@ -68,6 +68,7 @@ from hashlib import sha1
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TOKENKIND
 from privacyidea.lib import _
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 optional = True
 required = False
@@ -162,7 +163,26 @@ class YubikeyTokenClass(TokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {}
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of Yubikey tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active Yubikey tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       'yubikey_access_code': {
+                           'type': 'str',
+                           'desc': _("The Yubikey access code can be read by an enrollment client to "
+                                     "initialize Yubikeys.")
+                       },
+                   }
+               }
         }
 
         if key:
@@ -278,7 +298,7 @@ class YubikeyTokenClass(TokenClass):
 
         uid = msg_hex[0:12]
         log.debug("uid: {0!r}".format(uid))
-        log.debug("prefix: {0!r}".format(binascii.hexlify(modhex_decode(yubi_prefix))))
+        log.debug("prefix: {0!r}".format(yubi_prefix))
         # usage_counter can go from 1 – 0x7fff
         usage_counter = msg_hex[12:16]
         timestamp = msg_hex[16:22]

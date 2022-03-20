@@ -1,0 +1,31 @@
+# .readthedocs.yml
+# Read the Docs configuration file
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+# Required
+version: 2
+
+# Build html documentation in the doc/ directory with Sphinx
+sphinx:
+  builder: html
+  configuration: doc/conf.py
+
+# Build HTML, PDF and ePub
+formats: all
+
+# Use Python 2 to create the virtual environment, install privacyIDEA using setuptools, along with dependencies for the
+# documentation building process.  Also allow access to python packages that are globally installed by default, even if
+# they are not explicitly listed.
+python:
+  version: 3.6
+  install:
+    - requirements: doc/requirements.txt
+    - method: pip
+      path: .
+  system_packages: false
+
+# This is not currently needed, it is included so documentation will not break, if functionality is moved into
+# submodules.
+submodules:
+  include: all
+  recursive: true

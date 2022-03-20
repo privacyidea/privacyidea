@@ -3,6 +3,7 @@
 There are different ways to contribute. Some of them should
 be really easy.
 
+First of all:  
 **Thanks a lot for contributing to privacyIDEA!**
 
 ## Tell about it
@@ -58,11 +59,29 @@ Submit an issue and describe your idea in the best possible details.
 
 https://github.com/privacyidea/privacyidea/issues
 
+## Documentation
+
+The source code is pretty well documented. The main documentation resides in the
+`doc`-subfolder and can be build with:
+```
+pip install -r doc/requirements.txt
+cd doc/ && make html
+```
+This also pulls the API-documentation from the source code.
+The latest release documentation can be found here:
+
+http://privacyidea.readthedocs.io/en/latest/
+
 ## Translations
 
 If you have no programming skills you can still get involved
 directly with the software by providing translations into
 different languages.
+
+You can do it easily without technical skills in your browser at
+weblate.org https://hosted.weblate.org/engage/privacyidea/.
+
+Or use your own system:
 
 http://privacyidea.readthedocs.io/en/latest/faq/translation.html
 
@@ -115,11 +134,12 @@ Take a look at the issues. Maybe you can find something, you
 would like to start with?
 If you are sending a pull request, please note the following:
 
-* often it is a good idea to **create an issue**, that describes
+* Before coding you need to **create an issue**, that describes
   your problem or idea, which you want to solve with your
-  pull request.
-* in your pull request refer to the issue.
-* describe your changes in the commit message.
+  pull request. We want to discuss the functionality within the issue and
+  not guess the intention from the pull request!
+* In your pull request refer to the issue.
+* Describe your changes in the commit message.
 * At the beginning of the file, add the date, your name,
   your email address and a description of what you
   changed in the file!
@@ -184,6 +204,28 @@ For each planned release, we create a github milestone. We add issues to
 milestones in order to keep track of features that should be implemented or
 bugs that should be fixed for the respective release. This also helps with
 creating the release changelog later.
+
+### Projects
+
+We use *Github Projects* to organize our weekly develoment cycle.
+
+In a weekly meeting we decide, which issues will be handled during the
+following week. Issues are put into the
+[project](https://github.com/privacyidea/privacyidea/projects) in the state
+*Todo*.
+
+When a developer starts working on the issue, the developer puts the issue
+into the state *In progress*. When he is done he opens a pull requests,
+assigns a reviewer and puts the issue into the state *Review in progress*.
+
+When the reviewer is happy with the pull request, he can merge the PR
+into the master branch. The issue is closed and goes into the state
+*Nearly done*.
+
+The closes issue is again discussed in the next meeting and then finally
+moved to the state *Done*.
+
+(More details on each step further below)
 
 ### Branches
 

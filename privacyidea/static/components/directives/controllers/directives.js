@@ -18,7 +18,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.directive('tokenDataEdit', function(AuthFactory, instanceUrl) {
+myApp.directive('tokenDataEdit', ["AuthFactory", "instanceUrl",
+                                  "versioningSuffixProvider",
+                                  function(AuthFactory, instanceUrl,
+                                           versioningSuffixProvider) {
     return {
         scope: {
             text: '@',
@@ -34,21 +37,26 @@ myApp.directive('tokenDataEdit', function(AuthFactory, instanceUrl) {
             callback: '&',
             callbackCancel: '&'
         },
-        templateUrl: instanceUrl + "/static/components/directives/views/directive.tokendata.html",
+        templateUrl: instanceUrl
+            + "/static/components/directives/views/directive.tokendata.html"
+            + versioningSuffixProvider.$get(),
         link: function(scope, element, attr, ctrl) {
             scope.loggedInUser = AuthFactory.getUser();
             //debug: console.log("tokenDataEdit");
             //debug: console.log(scope.loggedInUser);
         }
     };
-});
+}]);
 
-myApp.directive("piFilter", function (instanceUrl) {
+myApp.directive("piFilter", ["instanceUrl", "versioningSuffixProvider",
+                             function (instanceUrl, versioningSuffixProvider) {
     return {
         require: 'ngModel',
         restrict: 'E',
         scope: {},
-        templateUrl: instanceUrl + "/static/components/directives/views/directive.filter.table.html",
+        templateUrl: instanceUrl
+            + "/static/components/directives/views/directive.filter.table.html"
+            + versioningSuffixProvider.$get(),
         link: function (scope, element, attr, ctrl) {
             scope.updateFilter = function() {
                 ctrl.$setViewValue(scope.filterValue);
@@ -58,9 +66,9 @@ myApp.directive("piFilter", function (instanceUrl) {
             });
         }
     };
-});
+}]);
 
-myApp.directive('focusMe', function($timeout) {
+myApp.directive('focusMe', ["$timeout", function($timeout) {
   return {
     link: function(scope, element, attrs) {
       scope.$watch(attrs.focusMe, function(value) {
@@ -73,7 +81,7 @@ myApp.directive('focusMe', function($timeout) {
       });
     }
   };
-});
+}]);
 
 myApp.directive("piSortBy", function(){
     return {
@@ -81,7 +89,7 @@ myApp.directive("piSortBy", function(){
         link: function(scope, element, attr) {
             element.on('click', function() {
                 var column = attr.piSortBy;
-                scope.params.sortby=column;
+                scope.sortby=column;
                 scope.reverse=!scope.reverse;
                 $(".sortUp").addClass("unsorted");
                 $(".sortDown").addClass("unsorted");
@@ -93,14 +101,20 @@ myApp.directive("piSortBy", function(){
                 } else {
                     element.addClass("sortUp");
                 }
-                scope.get();
+
+                // scope.get() is what we call, when sorting is done on the server. For client-side sorting $apply() is
+                // used to rerender the list with the new sorting.
+                scope.get ? scope.get() : scope.$apply();
             });
         }
     };
 });
 
 
-myApp.directive('assignUser', function($http, $rootScope, userUrl, AuthFactory, instanceUrl) {
+myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory",
+                               "instanceUrl", "versioningSuffixProvider",
+                               function($http, $rootScope, userUrl, AuthFactory,
+                                        instanceUrl, versioningSuffixProvider) {
     /*
     This directive is used to select a user from a realm
 
@@ -111,7 +125,9 @@ myApp.directive('assignUser', function($http, $rootScope, userUrl, AuthFactory, 
             newUserObject: '=',
             realms: '='
         },
-        templateUrl: instanceUrl + "/static/components/directives/views/directive.assignuser.html",
+        templateUrl: instanceUrl
+            + "/static/components/directives/views/directive.assignuser.html"
+            + versioningSuffixProvider.$get(),
         link: function (scope, element, attr) {
             //debug: console.log("Entering assignUser directive");
             //debug: console.log(scope.realms);
@@ -156,10 +172,12 @@ myApp.directive('assignUser', function($http, $rootScope, userUrl, AuthFactory, 
             };
         }
     };
-});
+}]);
 
-myApp.directive('assignToken', function($http, $rootScope, tokenUrl,
-                                        AuthFactory, instanceUrl) {
+myApp.directive('assignToken', ["$http", "$rootScope", "tokenUrl", "AuthFactory",
+                                "instanceUrl", "versioningSuffixProvider",
+                                function($http, $rootScope, tokenUrl, AuthFactory,
+                                         instanceUrl, versioningSuffixProvider) {
     /*
     This directive is used to select a serial number and assign it
     to the user.
@@ -170,7 +188,9 @@ myApp.directive('assignToken', function($http, $rootScope, tokenUrl,
         scope: {
             newTokenObject: '='
         },
-        templateUrl: instanceUrl + "/static/components/directives/views/directive.assigntoken.html",
+        templateUrl: instanceUrl
+            + "/static/components/directives/views/directive.assigntoken.html"
+            + versioningSuffixProvider.$get(),
         link: function (scope, element, attr) {
             // Toggle enable/disable loadSerials call
             scope.toggleLoadSerials = function($toggle) {
@@ -200,18 +220,24 @@ myApp.directive('assignToken', function($http, $rootScope, tokenUrl,
                 serial: "*" + $viewValue + "*"}
             }).then(function ($response) {
                 scope.newTokenObject.loadedSerials = $response.data.result.value.tokens.map(function (item) {
-                    return item.serial + " (" + item.tokentype + ")";
+                serial_string = item.serial + " (" + item.tokentype + ") "
+                if (item.description !=''){
+                    serial_string += "[" + item.description + "] "
+                }
+                    return serial_string;
                 });
                 return scope.newTokenObject.loadedSerials;
             });
             };
         }
     };
-});
+}]);
 
 
-myApp.directive('attachToken', function($http, tokenUrl,
-                                        AuthFactory, instanceUrl) {
+myApp.directive('attachToken', ["$http", "tokenUrl", "AuthFactory",
+                                "instanceUrl", "versioningSuffixProvider",
+                                function($http, tokenUrl, AuthFactory,
+                                         instanceUrl, versioningSuffixProvider) {
     /*
     This directive is used to select a serial number and attach it to a machine
 
@@ -221,7 +247,9 @@ myApp.directive('attachToken', function($http, tokenUrl,
         scope: {
             newTokenObject: '='
         },
-        templateUrl: instanceUrl + "/static/components/directives/views/directive.attachtoken.html",
+        templateUrl: instanceUrl
+            + "/static/components/directives/views/directive.attachtoken.html"
+            + versioningSuffixProvider.$get(),
         link: function (scope, element, attr) {
             scope.loadSerials = function($viewValue) {
             var auth_token = AuthFactory.getAuthToken();
@@ -232,17 +260,26 @@ myApp.directive('attachToken', function($http, tokenUrl,
                 params: {serial: "*" + $viewValue + "*"}
             }).then(function ($response) {
                 return $response.data.result.value.tokens.map(function (item) {
-                    return item.serial + " (" + item.tokentype + ")";
+                serial_string = item.serial + " (" + item.tokentype + ") "
+                if (item.username !=''){
+                    serial_string += "[" + item.username +"@"+ item.realms + "] "
+                }
+                if(item.description != '') {
+                    serial_string += "[" + item.description + "] "
+                }
+                return serial_string;
                 });
             });
             };
         }
     };
-});
+}]);
 
 
-myApp.directive('attachMachine', function($http, machineUrl,
-                                          AuthFactory, instanceUrl) {
+myApp.directive('attachMachine', ["$http", "machineUrl", "AuthFactory",
+                                  "instanceUrl", "versioningSuffixProvider",
+                                  function($http, machineUrl, AuthFactory,
+                                           instanceUrl, versioningSuffixProvider) {
     /*
     This directive is used to select a machine.
      */
@@ -250,7 +287,9 @@ myApp.directive('attachMachine', function($http, machineUrl,
         scope: {
             newMachine: '='
         },
-        templateUrl: instanceUrl + "/static/components/directives/views/directive.attachmachine.html",
+        templateUrl: instanceUrl
+            + "/static/components/directives/views/directive.attachmachine.html"
+            + versioningSuffixProvider.$get(),
         link: function (scope, element, attr) {
             scope.loadMachines = function($viewValue) {
             var auth_token = AuthFactory.getAuthToken();
@@ -269,7 +308,7 @@ myApp.directive('attachMachine', function($http, machineUrl,
             };
         }
     };
-});
+}]);
 
 
 myApp.directive('equals', function() {
@@ -318,10 +357,15 @@ myApp.directive('statusClass', function() {
 });
 
 // See http://blog.techdev.de/an-angularjs-directive-to-download-pdf-files/
-myApp.directive('csvDownload', function(AuthFactory, $http, instanceUrl) {
+myApp.directive('csvDownload', ["AuthFactory", "$http", "instanceUrl",
+                                "versioningSuffixProvider",
+                                function(AuthFactory, $http, instanceUrl,
+                                         versioningSuffixProvider) {
     return {
         restrict: 'E',
-        templateUrl: instanceUrl + "/static/components/directives/views/directive.csvdownload.html",
+        templateUrl: instanceUrl
+            + "/static/components/directives/views/directive.csvdownload.html"
+            + versioningSuffixProvider.$get(),
         scope: true,
         link: function (scope, element, attr) {
             var anchor = element.children()[0];
@@ -364,7 +408,7 @@ myApp.directive('csvDownload', function(AuthFactory, $http, instanceUrl) {
             };
         }]
     }
-});
+}]);
 
 myApp.directive('spinner', function() {
     return {
@@ -401,24 +445,22 @@ myApp.directive('spinner', function() {
     };
 });
 
-myApp.directive('focus', function($timeout){
-    return {
- scope : {
-   trigger : '@focus'
- },
- link : function(scope, element) {
-  scope.$watch('trigger', function(value) {
-    if (value === "true") {
-      $timeout(function() {
-       element[0].focus();
-      });
-   }
- });
- }
-};
-});
+myApp.directive('autofocus', ['$timeout',
+    function ($timeout) {
+        return {
+            restrict: 'A',
+            link: function ($scope, $element) {
+                $timeout(function () {
+                    $element[0].focus();
+                });
+            }
+        };
+    }
+]);
 
-myApp.directive("piPolicyConditions", function (instanceUrl) {
+myApp.directive("piPolicyConditions", ["instanceUrl", "versioningSuffixProvider",
+                                       function (instanceUrl,
+                                                 versioningSuffixProvider) {
     /* This directive is used to set the conditions of a policy.
        It supports adding, removing and editing conditions. */
     return {
@@ -430,7 +472,9 @@ myApp.directive("piPolicyConditions", function (instanceUrl) {
             // We only need a one-directional binding, because we will never change the definitions
             conditionDefs: "=defs"
         },
-        templateUrl: instanceUrl + "/static/components/directives/views/directive.policyconditions.html",
+        templateUrl: instanceUrl
+            + "/static/components/directives/views/directive.policyconditions.html"
+            + versioningSuffixProvider.$get(),
         link: function (scope, element, attr, ctrl) {
             // The index of the condition that is currently being edited,
             // or -1 if no condition is currently being edited
@@ -460,4 +504,4 @@ myApp.directive("piPolicyConditions", function (instanceUrl) {
             };
         },
     };
-});
+}]);

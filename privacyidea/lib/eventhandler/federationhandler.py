@@ -27,6 +27,7 @@ from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.privacyideaserver import (get_privacyideaservers,
                                                get_privacyideaserver)
 from privacyidea.lib import _
+from privacyidea.lib.utils import is_true
 import json
 import logging
 import requests
@@ -49,7 +50,7 @@ class FederationEventHandler(BaseEventHandler):
 
     It also returns a list of allowed action and conditions
 
-    It returns an identifier, which can be used in the eventhandlig definitions
+    It returns an identifier, which can be used in the eventhandling definitions
     """
 
     identifier = "Federation"
@@ -131,7 +132,7 @@ class FederationEventHandler(BaseEventHandler):
             tls = pi_server.config.tls
             # We also transfer the original payload
             data = request.all_data
-            if handler_options.get("forward_client_ip"):
+            if is_true(handler_options.get("forward_client_ip", False)):
                 data["client"] = g.client_ip
             if handler_options.get("realm"):
                 data["realm"] = handler_options.get("realm")
@@ -144,7 +145,7 @@ class FederationEventHandler(BaseEventHandler):
             headers = {}
 
             # We need to pass an authorization header if we forward administrative requests
-            if handler_options.get("forward_authorization_token"):
+            if is_true(handler_options.get("forward_authorization_token", False)):
                 auth_token = request.headers.get('PI-Authorization')
                 if not auth_token:
                     auth_token = request.headers.get('Authorization')

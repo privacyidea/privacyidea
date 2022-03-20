@@ -32,9 +32,13 @@ import logging
 from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
 from privacyidea.lib.log import log_with
-from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+
+# We use the old default length of 24 for registration tokens
+DEFAULT_LENGTH = 24
+DEFAULT_CONTENTS = 'cn'
 
 optional = True
 required = False
@@ -90,11 +94,14 @@ class RegistrationTokenClass(PasswordTokenClass):
 
     """
 
+    password_detail_key = "registrationcode"
+
     def __init__(self, aToken):
         PasswordTokenClass.__init__(self, aToken)
         self.hKeyRequired = False
+        self.otp_len = DEFAULT_LENGTH
+        self.otp_contents = DEFAULT_CONTENTS
         self.set_type(u"registration")
-        self.otp_len = 24
 
     @staticmethod
     def get_class_type():
@@ -127,7 +134,21 @@ class RegistrationTokenClass(PasswordTokenClass):
                'user':  [],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin"],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of registration tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active registration tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
 
         if key:
@@ -144,32 +165,14 @@ class RegistrationTokenClass(PasswordTokenClass):
         :type param: dict
         :return: None
         """
-        if "genkey" in param:
-            # We do not need the genkey! We generate anyway.
-            # Otherwise genkey and otpkey will raise an exception in
-            # PasswordTokenClass
-            del param["genkey"]
-        param["otpkey"] = generate_password(size=self.otp_len)
+        # We always generate the registration code, so we need to set this parameter
+        param["genkey"] = 1
         PasswordTokenClass.update(self, param)
 
     @log_with(log, log_entry=False)
     @check_token_locked
-    def inc_count_auth_success(self):
+    def post_success(self):
         """
-        Increase the counter, that counts successful authentications
-        In case of successful authentication the token does needs to be deleted.
+        Delete the registration token after successful authentication
         """
         self.delete_token()
-        return 1
-
-    @log_with(log)
-    def get_init_detail(self, params=None, user=None):
-        """
-        At the end of the initialization we return the registration code.
-        """
-        response_detail = PasswordTokenClass.get_init_detail(self, params, user)
-        params = params or {}
-        secretHOtp = self.token.get_otpkey()
-        registrationcode = secretHOtp.getKey()
-        response_detail["registrationcode"] = to_unicode(registrationcode)
-        return response_detail

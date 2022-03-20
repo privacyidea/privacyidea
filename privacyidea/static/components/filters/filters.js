@@ -20,3 +20,16 @@ myApp.filter('truncate', function () {
         return output;
         };
 });
+
+/**
+ * This is a copy of the highlight filter from angularjs ui.select which also
+ * escapes regex characters in the "query" parameter.
+ *
+ * @param matchItem {string} haystack to search through
+ * @param query {string} needle to search for
+ */
+myApp.filter('highlight', function () {
+  return function(matchItem, query) {
+    return query && matchItem ? ('' + matchItem).replace(new RegExp(escapeRegexp(query), 'gi'), '<span class="ui-highlight">$&</span>') : matchItem;
+  };
+});

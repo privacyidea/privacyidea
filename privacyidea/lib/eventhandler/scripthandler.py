@@ -36,6 +36,7 @@ from privacyidea.lib.utils import is_true
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.error import ServerError
 from privacyidea.lib import _
+from privacyidea.app import db
 import logging
 import subprocess
 import os
@@ -102,6 +103,13 @@ class ScriptEventHandler(BaseEventHandler):
                     "visibleValue": SCRIPT_WAIT,
                     "description": _("On script error raise exception in HTTP request.")
                 },
+                "sync_to_database": {
+                    "type": "bool",
+                    "description": _("Finish current transaction before running "
+                                     "the script. This is useful if changes to "
+                                     "the database should be made available to "
+                                     "the script or the running request.")
+                },
                 "serial": {
                     "type": "bool",
                     "description": _("Add '--serial <serial number>' as script "
@@ -165,31 +173,35 @@ class ScriptEventHandler(BaseEventHandler):
                  content.get("detail", {}).get("serial") or \
                  g.audit_object.audit_data.get("serial")
 
-        if handler_options.get("serial"):
+        if is_true(handler_options.get("serial")):
             proc_args.append("--serial")
             proc_args.append(serial or "none")
 
-        if handler_options.get("user"):
+        if is_true(handler_options.get("user")):
             proc_args.append("--user")
             proc_args.append(request.User.login or "none")
 
-        if handler_options.get("realm"):
+        if is_true(handler_options.get("realm")):
             proc_args.append("--realm")
             proc_args.append(request.User.realm or "none")
 
-        if handler_options.get("logged_in_user"):
+        if is_true(handler_options.get("logged_in_user")):
             proc_args.append("--logged_in_user")
             proc_args.append("{username}@{realm}".format(
                 **logged_in_user))
 
-        if handler_options.get("logged_in_role"):
+        if is_true(handler_options.get("logged_in_role")):
             proc_args.append("--logged_in_role")
             proc_args.append(logged_in_user.get("role", "none"))
 
         rcode = 0
         try:
             log.info("Starting script {script!r}.".format(script=script_name))
-            p = subprocess.Popen(proc_args, cwd=self.script_directory)
+            if is_true(handler_options.get('sync_to_database', False)):
+                log.debug('Committing current transaction for script '
+                          '{0!s}'.format(script_name))
+                db.session.commit()
+            p = subprocess.Popen(proc_args, cwd=self.script_directory, universal_newlines=True)
             if handler_options.get("background") == SCRIPT_WAIT:
                 rcode = p.wait()
 

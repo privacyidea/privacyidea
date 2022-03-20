@@ -16,7 +16,7 @@ Most web applications keep their users in a (My)SQL database.
 And you also need to create users in this very user database for the user to
 be able to use this application.
 
-Please read the sections :ref:`useridresolvers` and :ref:`userview` for more
+Please read the sections :ref:`useridresolvers` and :ref:`usersview` for more
 details.
 
 But you also can define and editable SQL resolver. I.e. you can edit and

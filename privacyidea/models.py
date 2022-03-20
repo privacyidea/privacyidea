@@ -52,9 +52,13 @@ from privacyidea.lib.crypto import (encrypt,
                                     get_rand_digit_str)
 from sqlalchemy import and_
 from sqlalchemy.schema import Sequence
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.expression import ColumnElement
 from .lib.log import log_with
 from privacyidea.lib.utils import (is_true, convert_column_to_unicode,
                                    hexlify_and_unicode)
+from privacyidea.lib.crypto import pass_hash, verify_pass_hash
+from privacyidea.lib.framework import get_app_config_value
 
 log = logging.getLogger(__name__)
 
@@ -66,8 +70,15 @@ log = logging.getLogger(__name__)
 
 implicit_returning = True
 PRIVACYIDEA_TIMESTAMP = "__timestamp__"
+SAFE_STORE = "PI_DB_SAFE_STORE"
 
 db = SQLAlchemy()
+
+
+# Add fractions to the MySQL DataTime column type
+@compiles(db.DateTime, "mysql")
+def compile_datetime_mysql(type_, compiler, **kw):  # pragma: no cover
+    return "DATETIME(6)"
 
 
 class MethodsMixin(object):
@@ -133,12 +144,18 @@ class TimestampMethodsMixin(object):
 
 class Token(MethodsMixin, db.Model):
     """
-    The table "token" contains the basic token data like
+    The "Token" table contains the basic token data.
+
+    It contains data like
      * serial number
-     * assigned user
-     * secret key...
-    while the table "tokeninfo" contains additional information that is specific
-    to the tokentype.
+     * secret key
+     * PINs
+     * ...
+
+    The table :py:class:`privacyidea.models.TokenOwner` contains the owner
+    information of the specified token.
+    The table :py:class:`privacyidea.models.TokenInfo` contains additional information
+    that is specific to the tokentype.
     """
     __tablename__ = 'token'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
@@ -190,9 +207,7 @@ class Token(MethodsMixin, db.Model):
                             default=1000)
     rollout_state = db.Column(db.Unicode(10),
                               default=u'')
-    info = db.relationship('TokenInfo',
-                           lazy='dynamic',
-                           backref='info')
+    info_list = db.relationship('TokenInfo', lazy='select', backref='token')
     # This creates an attribute "token" in the TokenOwner object
     owners = db.relationship('TokenOwner', lazy='dynamic', backref='token')
 
@@ -245,6 +260,15 @@ class Token(MethodsMixin, db.Model):
         db.session.query(TokenRealm)\
                   .filter(TokenRealm.token_id == self.id)\
                   .delete()
+        db.session.query(TokenOwner)\
+                  .filter(TokenOwner.token_id == self.id)\
+                  .delete()
+        db.session.query(MachineToken)\
+                  .filter(MachineToken.token_id == self.id)\
+                  .delete()
+        db.session.query(Challenge)\
+                  .filter(Challenge.serial == self.serial)\
+                  .delete()
         db.session.query(TokenInfo)\
                   .filter(TokenInfo.token_id == self.id)\
                   .delete()
@@ -286,12 +310,13 @@ class Token(MethodsMixin, db.Model):
     def set_realms(self, realms, add=False):
         """
         Set the list of the realms.
-        This is done by filling the tokenrealm table.
+
+        This is done by filling the :py:class:`privacyidea.models.TokenRealm` table.
+
         :param realms: realms
-        :type realms: list
-        :param add: If set, the realms are added. I.e. old realms are not
-            deleted
-        :type add: boolean
+        :type realms: list[str]
+        :param add: If set, the realms are added. I.e. old realms are not deleted
+        :type add: bool
         """
         # delete old TokenRealms
         if not add:
@@ -360,9 +385,7 @@ class Token(MethodsMixin, db.Model):
         :return: the hashed pin
         :rtype: str
         """
-        seed = geturandom(16)
-        self.pin_seed = hexlify_and_unicode(seed)
-        self.pin_hash = hash(pin, seed)
+        self.pin_hash = pass_hash(pin)
         return self.pin_hash
 
     def get_hashed_pin(self, pin):
@@ -383,11 +406,7 @@ class Token(MethodsMixin, db.Model):
         log.debug("hPin: {0!s}, pin: {1!r}, seed: {2!s}".format(hPin, pin,
                                                                 self.pin_seed))
         return hPin
-    
-    def check_hashed_pin(self, pin):
-        hp = self.get_hashed_pin(pin)
-        return hp == self.pin_hash
-        
+
     @log_with(log)
     def set_description(self, desc):
         if desc is None:
@@ -423,12 +442,16 @@ class Token(MethodsMixin, db.Model):
             else:
                 log.debug("we got a hashed PIN!")
                 if self.pin_hash:
-                    mypHash = self.get_hashed_pin(pin)
+                    try:
+                        # New PIN verification
+                        return verify_pass_hash(pin, self.pin_hash)
+                    except ValueError as _e:
+                        # old PIN verification
+                        mypHash = self.get_hashed_pin(pin)
                 else:
                     mypHash = pin
-                if (mypHash == self.pin_hash):
+                if mypHash == (self.pin_hash or u""):
                     res = True
-    
         return res
 
 #    def split_pin_pass(self, passwd, prepend=True):
@@ -451,7 +474,7 @@ class Token(MethodsMixin, db.Model):
     def is_pin_encrypted(self, pin=None):
         ret = False
         if pin is None:
-            pin = self.pin_hash
+            pin = self.pin_hash or u""
         if pin.startswith("@@"):
             ret = True
         return ret
@@ -649,10 +672,6 @@ class TokenInfo(MethodsMixin, db.Model):
     Description = db.Column(db.Unicode(2000), default=u'')
     token_id = db.Column(db.Integer(),
                          db.ForeignKey('token.id'), index=True)
-    # This creates an attribute "info_list" in the Token object
-    token = db.relationship('Token',
-                            lazy='joined',
-                            backref='info_list')
     __table_args__ = (db.UniqueConstraint('token_id',
                                           'Key',
                                           name='tiix_2'),
@@ -671,22 +690,84 @@ class TokenInfo(MethodsMixin, db.Model):
         self.Description = Description
 
     def save(self, persistent=True):
-        ti = TokenInfo.query.filter_by(token_id=self.token_id,
-                                           Key=self.Key).first()
+        ti_func = TokenInfo.query.filter_by(token_id=self.token_id,
+                                            Key=self.Key).first
+        ti = ti_func()
         if ti is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            if get_app_config_value(SAFE_STORE, False):
+                ti = ti_func()
+                ret = ti.id
+            else:
+                ret = self.id
+        else:
+            # update
+            TokenInfo.query.filter_by(token_id=self.token_id,
+                                      Key=self.Key).update({'Value': self.Value,
+                                                            'Description': self.Description,
+                                                            'Type': self.Type})
+            ret = ti.id
+        if persistent:
+            db.session.commit()
+        return ret
+
+
+class CustomUserAttribute(MethodsMixin, db.Model):
+    """
+    The table "customuserattribute" is used to store additional, custom attributes
+    for users.
+
+    A user is identified by the user_id,  the resolver_id and the realm_id.
+
+    The additional attributes are stored in Key and Value.
+    The Type can hold extra information like e.g. an encrypted value / password.
+
+    Note: Since the users are external, i.e. no objects in this database,
+          there is not logic reference on a database level.
+          Since users could be deleted from user stores
+          without privacyIDEA realizing that, this table could pile up
+          with remnants of attributes.
+    """
+    __tablename__ = 'customuserattribute'
+    id = db.Column(db.Integer(), Sequence("customuserattribute_seq"), primary_key=True)
+    user_id = db.Column(db.Unicode(320), default=u'', index=True)
+    resolver = db.Column(db.Unicode(120), default=u'', index=True)
+    realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
+    Key = db.Column(db.Unicode(255), nullable=False)
+    Value = db.Column(db.UnicodeText(), default=u'')
+    Type = db.Column(db.Unicode(100), default=u'')
+
+    def __init__(self, user_id, resolver, realm_id, Key, Value, Type=None):
+        """
+        Create a new customuserattribute for a user tuple
+        """
+        self.user_id = user_id
+        self.resolver = resolver
+        self.realm_id = realm_id
+        self.Key = Key
+        self.Value = convert_column_to_unicode(Value)
+        self.Type = Type
+
+    def save(self, persistent=True):
+        ua = CustomUserAttribute.query.filter_by(user_id=self.user_id,
+                                                 resolver=self.resolver,
+                                                 realm_id=self.realm_id,
+                                                 Key=self.Key).first()
+        if ua is None:
             # create a new one
             db.session.add(self)
             db.session.commit()
             ret = self.id
         else:
             # update
-            TokenInfo.query.filter_by(token_id=self.token_id,
-                                           Key=self.Key
-                                           ).update({'Value': self.Value,
-                                                     'Descrip'
-                                                     'tion': self.Description,
-                                                     'Type': self.Type})
-            ret = ti.id
+            CustomUserAttribute.query.filter_by(user_id=self.user_id,
+                                                resolver=self.resolver,
+                                                realm_id=self.realm_id,
+                                                Key=self.Key
+                                                ).update({'Value': self.Value, 'Type': self.Type})
+            ret = ua.id
         if persistent:
             db.session.commit()
         return ret
@@ -795,6 +876,9 @@ class Realm(TimestampMethodsMixin, db.Model):
                      unique=True, nullable=False)
     default = db.Column(db.Boolean(), default=False)
     option = db.Column(db.Unicode(40), default=u'')
+    resolver_list = db.relationship('ResolverRealm',
+                                    lazy='select',
+                                    foreign_keys='ResolverRealm.realm_id')
     
     @log_with(log)
     def __init__(self, realm):
@@ -841,12 +925,12 @@ class CAConnector(MethodsMixin, db.Model):
 
     def delete(self):
         ret = self.id
-        db.session.delete(self)
         # delete all CAConnectorConfig
-        # FIXME: Sometimes not all entries are deleted.
         db.session.query(CAConnectorConfig)\
                   .filter(CAConnectorConfig.caconnector_id == ret)\
                   .delete()
+        # Delete the CA itself
+        db.session.delete(self)
         db.session.commit()
         return ret
 
@@ -869,9 +953,6 @@ class CAConnectorConfig(db.Model):
     Value = db.Column(db.Unicode(2000), default=u'')
     Type = db.Column(db.Unicode(2000), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
-    cacon = db.relationship('CAConnector',
-                            lazy='joined',
-                            backref='config_list')
     __table_args__ = (db.UniqueConstraint('caconnector_id',
                                           'Key',
                                           name='ccix_2'),
@@ -929,9 +1010,12 @@ class Resolver(TimestampMethodsMixin, db.Model):
     rtype = db.Column(db.Unicode(255), default=u"",
                       nullable=False)
     # This creates an attribute "resolver" in the ResolverConfig object
-    rconfig = db.relationship('ResolverConfig',
-                              lazy='joined',
-                              backref='resolver')
+    config_list = db.relationship('ResolverConfig',
+                                  lazy='select',
+                                  backref='resolver')
+    realm_list = db.relationship('ResolverRealm',
+                                 lazy='select',
+                                 foreign_keys='ResolverRealm.resolver_id')
     
     def __init__(self, name, rtype):
         self.name = name
@@ -939,11 +1023,12 @@ class Resolver(TimestampMethodsMixin, db.Model):
         
     def delete(self):
         ret = self.id
-        db.session.delete(self)
         # delete all ResolverConfig
         db.session.query(ResolverConfig)\
                   .filter(ResolverConfig.resolver_id == ret)\
                   .delete()
+        # delete the Resolver itself
+        db.session.delete(self)
         save_config_timestamp()
         db.session.commit()
         return ret
@@ -967,10 +1052,6 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
     Value = db.Column(db.Unicode(2000), default=u'')
     Type = db.Column(db.Unicode(2000), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
-    # This creates an attribute "config_list" in the Resolver object
-    reso = db.relationship('Resolver',
-                           lazy='joined',
-                           backref='config_list')
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'Key',
                                           name='rcix_2'),
@@ -1026,16 +1107,12 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
     # If there are several resolvers in a realm, the priority is used the
     # find a user first in a resolver with a higher priority (i.e. lower number)
     priority = db.Column(db.Integer)
-    # this will create a "realm_list" in the resolver object
     resolver = db.relationship(Resolver,
                                lazy="joined",
-                               foreign_keys="ResolverRealm.resolver_id",
-                               backref="realm_list")
-    # this will create a "resolver_list" in the realm object
+                               foreign_keys="ResolverRealm.resolver_id")
     realm = db.relationship(Realm,
                             lazy="joined",
-                            foreign_keys="ResolverRealm.realm_id",
-                            backref="resolver_list")
+                            foreign_keys="ResolverRealm.realm_id")
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'realm_id',
                                           name='rrix_2'),
@@ -1102,15 +1179,20 @@ class TokenOwner(MethodsMixin, db.Model):
         self. user_id = user_id
 
     def save(self, persistent=True):
-        to = TokenOwner.query.filter_by(token_id=self.token_id,
-                                        user_id=self.user_id,
-                                        realm_id=self.realm_id,
-                                        resolver=self.resolver).first()
+        to_func = TokenOwner.query.filter_by(token_id=self.token_id,
+                                             user_id=self.user_id,
+                                             realm_id=self.realm_id,
+                                             resolver=self.resolver).first
+        to = to_func()
         if to is None:
             # This very assignment does not exist, yet:
             db.session.add(self)
             db.session.commit()
-            ret = self.id
+            if get_app_config_value(SAFE_STORE, False):
+                to = to_func()
+                ret = to.id
+            else:
+                ret = self.id
         else:
             ret = to.id
             # There is nothing to update
@@ -1164,14 +1246,20 @@ class TokenRealm(MethodsMixin, db.Model):
         """
         We only save this, if it does not exist, yet.
         """
-        tr = TokenRealm.query.filter_by(realm_id=self.realm_id,
-                                        token_id=self.token_id).first()
+        tr_func = TokenRealm.query.filter_by(realm_id=self.realm_id,
+                                             token_id=self.token_id).first
+        tr = tr_func()
         if tr is None:
             # create a new one
             db.session.add(self)
             db.session.commit()
-
-        ret = self.id
+            if get_app_config_value(SAFE_STORE, False):
+                tr = tr_func()
+                ret = tr.id
+            else:
+                ret = self.id
+        else:
+            ret = self.id
         return ret
 
 
@@ -1181,7 +1269,7 @@ class PasswordReset(MethodsMixin, db.Model):
     This table stores the recoverycodes sent to a given user
 
     The application should save the HASH of the recovery code. Just like the
-    password for the Admins the appliaction shall salt and pepper the hash of
+    password for the Admins the application shall salt and pepper the hash of
     the recoverycode. A database admin will not be able to inject a rogue
     recovery code.
 
@@ -1231,7 +1319,7 @@ class Challenge(MethodsMixin, db.Model):
     session = db.Column(db.Unicode(512), default=u'', quote=True, name="session")
     # The token serial number
     serial = db.Column(db.Unicode(40), default=u'', index=True)
-    timestamp = db.Column(db.DateTime, default=datetime.now())
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow())
     expiration = db.Column(db.DateTime)
     received_count = db.Column(db.Integer(), default=0)
     otp_valid = db.Column(db.Boolean, default=False)
@@ -1244,11 +1332,11 @@ class Challenge(MethodsMixin, db.Model):
         self.challenge = challenge
         self.serial = serial
         self.data = data
-        self.timestamp = datetime.now()
+        self.timestamp = datetime.utcnow()
         self.session = session
         self.received_count = 0
         self.otp_valid = False
-        self.expiration = datetime.now() + timedelta(seconds=validitytime)
+        self.expiration = datetime.utcnow() + timedelta(seconds=validitytime)
 
     @staticmethod
     def create_transaction_id(length=20):
@@ -1261,8 +1349,8 @@ class Challenge(MethodsMixin, db.Model):
         :rtype: bool
         """
         ret = False
-        c_now = datetime.now()
-        if c_now < self.expiration:
+        c_now = datetime.utcnow()
+        if self.timestamp <= c_now < self.expiration:
             ret = True
         return ret
 
@@ -1351,7 +1439,7 @@ def cleanup_challenges():
 
     :return: None
     """
-    c_now = datetime.now()
+    c_now = datetime.utcnow()
     Challenge.query.filter(Challenge.expiration < c_now).delete()
     db.session.commit()
 
@@ -1363,13 +1451,15 @@ def cleanup_challenges():
 
 class Policy(TimestampMethodsMixin, db.Model):
     """
-    The policy table contains policy definitions which control
-    the behaviour during
+    The policy table contains the policy definitions.
+
+    The Policies control the behaviour in the scopes
      * enrollment
      * authentication
      * authorization
      * administration
      * user actions
+     * webui
     """
     __tablename__ = "policy"
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
@@ -1381,7 +1471,9 @@ class Policy(TimestampMethodsMixin, db.Model):
     action = db.Column(db.Unicode(2000), default=u"")
     realm = db.Column(db.Unicode(256), default=u"")
     adminrealm = db.Column(db.Unicode(256), default=u"")
+    adminuser = db.Column(db.Unicode(256), default=u"")
     resolver = db.Column(db.Unicode(256), default=u"")
+    pinode = db.Column(db.Unicode(256), default=u"")
     user = db.Column(db.Unicode(256), default=u"")
     client = db.Column(db.Unicode(256), default=u"")
     time = db.Column(db.Unicode(64), default=u"")
@@ -1399,8 +1491,8 @@ class Policy(TimestampMethodsMixin, db.Model):
                                  cascade="save-update, merge, delete, delete-orphan")
     
     def __init__(self, name,
-                 active=True, scope="", action="", realm="", adminrealm="",
-                 resolver="", user="", client="", time="", priority=1,
+                 active=True, scope="", action="", realm="", adminrealm="", adminuser="",
+                 resolver="", user="", client="", time="", pinode="", priority=1,
                  check_all_resolvers=False, conditions=None):
         if isinstance(active, six.string_types):
             active = is_true(active.lower())
@@ -1410,7 +1502,9 @@ class Policy(TimestampMethodsMixin, db.Model):
         self.active = active
         self.realm = realm
         self.adminrealm = adminrealm
+        self.adminuser = adminuser
         self.resolver = resolver
+        self.pinode = pinode
         self.user = user
         self.client = client
         self.time = time
@@ -1468,14 +1562,16 @@ class Policy(TimestampMethodsMixin, db.Model):
              "scope": self.scope,
              "realm": self._split_string(self.realm),
              "adminrealm": self._split_string(self.adminrealm),
+             "adminuser": self._split_string(self.adminuser),
              "resolver": self._split_string(self.resolver),
+             "pinode": self._split_string(self.pinode),
              "check_all_resolvers": self.check_all_resolvers,
              "user": self._split_string(self.user),
              "client": self._split_string(self.client),
              "time": self.time,
              "conditions": self.get_conditions_tuples(),
              "priority": self.priority}
-        action_list = [x.strip().split("=") for x in (self.action or "").split(
+        action_list = [x.strip().split("=", 1) for x in (self.action or "").split(
             ",")]
         action_dict = {}
         for a in action_list:
@@ -1534,8 +1630,8 @@ class MachineToken(MethodsMixin, db.Model):
                    primary_key=True, nullable=False)
     token_id = db.Column(db.Integer(),
                          db.ForeignKey('token.id'))
-    machineresolver_id = db.Column(db.Integer(), nullable=False)
-    machine_id = db.Column(db.Unicode(255), nullable=False)
+    machineresolver_id = db.Column(db.Integer())
+    machine_id = db.Column(db.Unicode(255))
     application = db.Column(db.Unicode(64))
     # This connects the machine with the token and makes the machines visible
     # in the token as "machine_list".
@@ -1777,7 +1873,6 @@ class EventHandler(MethodsMixin, db.Model):
 
     def delete(self):
         ret = self.id
-        db.session.delete(self)
         # delete all EventHandlerOptions
         db.session.query(EventHandlerOption) \
             .filter(EventHandlerOption.eventhandler_id == ret) \
@@ -1786,13 +1881,15 @@ class EventHandler(MethodsMixin, db.Model):
         db.session.query(EventHandlerCondition) \
             .filter(EventHandlerCondition.eventhandler_id == ret) \
             .delete()
+        # delete the event handler itself
+        db.session.delete(self)
         save_config_timestamp()
         db.session.commit()
         return ret
 
     def get(self):
         """
-        Return the serialized policy object including the options
+        Return the serialized eventhandler object including the options
 
         :return: complete dict
         :rytpe: dict
@@ -1831,9 +1928,6 @@ class EventHandlerCondition(db.Model):
     Key = db.Column(db.Unicode(255), nullable=False)
     Value = db.Column(db.Unicode(2000), default=u'')
     comparator = db.Column(db.Unicode(255), default=u'equal')
-    evhdl = db.relationship('EventHandler',
-                            lazy='joined',
-                            backref='condition_list')
     __table_args__ = (db.UniqueConstraint('eventhandler_id',
                                           'Key',
                                           name='ehcix_1'),
@@ -1879,9 +1973,6 @@ class EventHandlerOption(db.Model):
     Value = db.Column(db.Unicode(2000), default=u'')
     Type = db.Column(db.Unicode(2000), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
-    evhdl = db.relationship('EventHandler',
-                            lazy='joined',
-                            backref='option_list')
     __table_args__ = (db.UniqueConstraint('eventhandler_id',
                                           'Key',
                                           name='ehoix_1'),
@@ -1942,11 +2033,12 @@ class MachineResolver(MethodsMixin, db.Model):
 
     def delete(self):
         ret = self.id
-        db.session.delete(self)
         # delete all MachineResolverConfig
         db.session.query(MachineResolverConfig)\
                   .filter(MachineResolverConfig.resolver_id == ret)\
                   .delete()
+        # delete the MachineResolver itself
+        db.session.delete(self)
         db.session.commit()
         return ret
 
@@ -1965,9 +2057,6 @@ class MachineResolverConfig(db.Model):
     Value = db.Column(db.Unicode(2000), default=u'')
     Type = db.Column(db.Unicode(2000), default=u'')
     Description = db.Column(db.Unicode(2000), default=u'')
-    reso = db.relationship('MachineResolver',
-                           lazy='joined',
-                           backref='config_list')
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'Key',
                                           name='mrcix_2'),
@@ -2029,9 +2118,9 @@ def get_machineresolver_id(resolvername):
     return mr.id
 
 
-def get_machinetoken_id(machine_id, resolver_name, serial, application):
+def get_machinetoken_ids(machine_id, resolver_name, serial, application):
     """
-    Returns the ID in the machinetoken table
+    Returns a list of the ID in the machinetoken table
 
     :param machine_id: The resolverdependent machine_id
     :type machine_id: basestring
@@ -2041,22 +2130,24 @@ def get_machinetoken_id(machine_id, resolver_name, serial, application):
     :type serial: basestring
     :param application: The application type
     :type application: basestring
-    :return: The ID of the machinetoken entry
-    :rtype: int
+    :return: A list of IDs of the machinetoken entry
+    :rtype: list of int
     """
-    ret = None
+    ret = []
     token_id = get_token_id(serial)
-    resolver = MachineResolver.query.filter(MachineResolver.name ==
-                                            resolver_name).first()
+    if resolver_name:
+        resolver = MachineResolver.query.filter(MachineResolver.name == resolver_name).first()
+        resolver_id = resolver.id
+    else:
+        resolver_id = None
 
-    mt = MachineToken.query.filter(and_(MachineToken.token_id == token_id,
-                                        MachineToken.machineresolver_id ==
-                                        resolver.id,
-                                        MachineToken.machine_id == machine_id,
-                                        MachineToken.application ==
-                                        application)).first()
-    if mt:
-        ret = mt.id
+    mtokens = MachineToken.query.filter(and_(MachineToken.token_id == token_id,
+                                             MachineToken.machineresolver_id == resolver_id,
+                                             MachineToken.machine_id == machine_id,
+                                             MachineToken.application == application)).all()
+    if mtokens:
+        for mt in mtokens:
+            ret.append(mt.id)
     return ret
 
 
@@ -2081,12 +2172,13 @@ class SMSGateway(MethodsMixin, db.Model):
     providermodule = db.Column(db.Unicode(1024), nullable=False)
     options = db.relationship('SMSGatewayOption',
                               lazy='dynamic',
-                              backref='ref_smsgateway')
+                              backref='smsgw')
 
     def __init__(self, identifier, providermodule, description=None,
-                 options=None):
+                 options=None, headers=None):
 
         options = options or {}
+        headers = headers or {}
         sql = SMSGateway.query.filter_by(identifier=identifier).first()
         if sql:
             self.id = sql.id
@@ -2095,16 +2187,20 @@ class SMSGateway(MethodsMixin, db.Model):
         self.description = description
         self.save()
         # delete non existing options in case of update
+        opts = {"option": options, "header": headers}
         if sql:
-            for option in sql.option_dict.keys():
-                # iterate through all existing options
-                if option not in options:
-                    # if the option is not contained anymore
-                    SMSGatewayOption.query.filter_by(gateway_id=self.id,
-                                                     Key=option).delete()
-        # add the options to the SMS Gateway
-        for k, v in options.items():
-            SMSGatewayOption(gateway_id=self.id, Key=k, Value=v).save()
+            sql_opts = {"option": sql.option_dict, "header": sql.header_dict}
+            for typ, vals in opts.items():
+                for key in sql_opts[typ].keys():
+                    # iterate through all existing options/headers
+                    if key not in vals:
+                        # if the option is not contained anymore
+                        SMSGatewayOption.query.filter_by(gateway_id=self.id,
+                                                         Key=key, Type=typ).delete()
+        # add the options and headers to the SMS Gateway
+        for typ, vals in opts.items():
+            for k, v in vals.items():
+                SMSGatewayOption(gateway_id=self.id, Key=k, Value=v, Type=typ).save()
 
     def save(self):
         if self.id is None:
@@ -2127,11 +2223,12 @@ class SMSGateway(MethodsMixin, db.Model):
         :return:
         """
         ret = self.id
-        db.session.delete(self)
         # delete all SMSGatewayOptions
         db.session.query(SMSGatewayOption)\
                   .filter(SMSGatewayOption.gateway_id == ret)\
                   .delete()
+        # delete the SMSGateway itself
+        db.session.delete(self)
         db.session.commit()
         return ret
 
@@ -2143,8 +2240,22 @@ class SMSGateway(MethodsMixin, db.Model):
         :return: dict
         """
         res = {}
-        for option in self.ref_option_list:
-            res[option.Key] = option.Value
+        for option in self.options:
+            if option.Type == "option" or not option.Type:
+                res[option.Key] = option.Value
+        return res
+
+    @property
+    def header_dict(self):
+        """
+        Return all connected headers as a dictionary
+
+        :return: dict
+        """
+        res = {}
+        for option in self.options:
+            if option.Type == "header":
+                res[option.Key] = option.Value
         return res
 
     def as_dict(self):
@@ -2158,27 +2269,25 @@ class SMSGateway(MethodsMixin, db.Model):
              "name": self.identifier,
              "providermodule": self.providermodule,
              "description": self.description,
-             "options": self.option_dict}
+             "options": self.option_dict,
+             "headers": self.header_dict}
 
         return d
 
 
 class SMSGatewayOption(MethodsMixin, db.Model):
     """
-    This table stores the options and parameters for an SMS Gateway definition.
+    This table stores the options, parameters and headers for an SMS Gateway definition.
     """
     __tablename__ = 'smsgatewayoption'
     id = db.Column(db.Integer, Sequence("smsgwoption_seq"), primary_key=True)
     Key = db.Column(db.Unicode(255), nullable=False)
     Value = db.Column(db.UnicodeText(), default=u'')
-    Type = db.Column(db.Unicode(100), default=u'')
+    Type = db.Column(db.Unicode(100), default=u'option')
     gateway_id = db.Column(db.Integer(),
                            db.ForeignKey('smsgateway.id'), index=True)
-    smsgw = db.relationship('SMSGateway',
-                            lazy='joined',
-                            backref='ref_option_list')
     __table_args__ = (db.UniqueConstraint('gateway_id',
-                                          'Key',
+                                          'Key', 'Type',
                                           name='sgix_1'),
                       {'mysql_row_format': 'DYNAMIC'})
 
@@ -2194,9 +2303,10 @@ class SMSGatewayOption(MethodsMixin, db.Model):
         self.save()
 
     def save(self):
-        # See, if there is this option for this this gateway
+        # See, if there is this option or header for this this gateway
+        # The first match takes precedence
         go = SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
-                                               Key=self.Key).first()
+                                               Key=self.Key, Type=self.Type).first()
         if go is None:
             # create a new one
             db.session.add(self)
@@ -2205,7 +2315,7 @@ class SMSGatewayOption(MethodsMixin, db.Model):
         else:
             # update
             SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
-                                              Key=self.Key
+                                              Key=self.Key, Type=self.Type
                                               ).update({'Value': self.Value,
                                                         'Type': self.Type})
             ret = go.id
@@ -2577,6 +2687,8 @@ class Audit(MethodsMixin, db.Model):
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("audit_seq"), primary_key=True)
     date = db.Column(db.DateTime)
+    startdate = db.Column(db.DateTime)
+    duration = db.Column(db.Interval(second_precision=6))
     signature = db.Column(db.Unicode(audit_column_length.get("signature")))
     action = db.Column(db.Unicode(audit_column_length.get("action")))
     success = db.Column(db.Integer)
@@ -2613,10 +2725,14 @@ class Audit(MethodsMixin, db.Model):
                  client="",
                  loglevel="default",
                  clearance_level="default",
-                 policies=""
+                 policies="",
+                 startdate=None,
+                 duration=None
                  ):
         self.signature = ""
         self.date = datetime.now()
+        self.startdate = startdate
+        self.duration = duration
         self.action = convert_column_to_unicode(action)
         self.success = success
         self.serial = convert_column_to_unicode(serial)
@@ -2665,9 +2781,10 @@ class AuthCache(MethodsMixin, db.Model):
     realm = db.Column(db.Unicode(120), default=u'', index=True)
     client_ip = db.Column(db.Unicode(40), default=u"")
     user_agent = db.Column(db.Unicode(120), default=u"")
+    auth_count = db.Column(db.Integer, default=0)
     # We can hash the password like this:
     # binascii.hexlify(hashlib.sha256("secret123456").digest())
-    authentication = db.Column(db.Unicode(64), default=u"")
+    authentication = db.Column(db.Unicode(255), default=u"")
 
     def __init__(self, username, realm, resolver, authentication,
                  first_auth=None, last_auth=None):
@@ -2675,8 +2792,8 @@ class AuthCache(MethodsMixin, db.Model):
         self.realm = realm
         self.resolver = resolver
         self.authentication = authentication
-        self.first_auth = first_auth
-        self.last_auth = last_auth
+        self.first_auth = first_auth if first_auth else datetime.utcnow()
+        self.last_auth = last_auth if last_auth else self.first_auth
 
 
 ### Periodic Tasks
@@ -2690,6 +2807,7 @@ class PeriodicTask(MethodsMixin, db.Model):
     id = db.Column(db.Integer, Sequence("periodictask_seq"), primary_key=True)
     name = db.Column(db.Unicode(64), unique=True, nullable=False)
     active = db.Column(db.Boolean, default=True, nullable=False)
+    retry_if_failed = db.Column(db.Boolean, default=True, nullable=False)
     interval = db.Column(db.Unicode(256), nullable=False)
     nodes = db.Column(db.Unicode(256), nullable=False)
     taskmodule = db.Column(db.Unicode(256), nullable=False)
@@ -2702,10 +2820,12 @@ class PeriodicTask(MethodsMixin, db.Model):
                                 lazy='dynamic',
                                 backref='periodictask')
 
-    def __init__(self, name, active, interval, node_list, taskmodule, ordering, options=None, id=None):
+    def __init__(self, name, active, interval, node_list, taskmodule, ordering, options=None, id=None,
+                 retry_if_failed=True):
         """
         :param name: Unique name of the periodic task as unicode
         :param active: a boolean
+        :param retry_if_failed: a boalean
         :param interval: a unicode specifying the periodicity of the task
         :param node_list: a list of unicodes, denoting the node names that should execute that task.
                           If we update an existing PeriodicTask entry, PeriodicTaskLastRun entries
@@ -2720,6 +2840,7 @@ class PeriodicTask(MethodsMixin, db.Model):
         self.id = id
         self.name = name
         self.active = active
+        self.retry_if_failed = retry_if_failed
         self.interval = interval
         self.nodes = u", ".join(node_list)
         self.taskmodule = taskmodule
@@ -2761,6 +2882,7 @@ class PeriodicTask(MethodsMixin, db.Model):
                 "interval": self.interval,
                 "nodes": [node.strip() for node in self.nodes.split(",")],
                 "taskmodule": self.taskmodule,
+                "retry_if_failed": self.retry_if_failed,
                 "last_update": self.aware_last_update,
                 "ordering": self.ordering,
                 "options": dict((option.key, option.value) for option in self.options),
@@ -2785,6 +2907,7 @@ class PeriodicTask(MethodsMixin, db.Model):
                 "nodes": self.nodes,
                 "taskmodule": self.taskmodule,
                 "ordering": self.ordering,
+                "retry_if_failed": self.retry_if_failed,
                 "last_update": self.last_update,
             })
         db.session.commit()
@@ -2945,3 +3068,4 @@ class MonitoringStats(MethodsMixin, db.Model):
         self.stats_key = key
         self.stats_value = value
         #self.save()
+

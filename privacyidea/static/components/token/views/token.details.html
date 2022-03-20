@@ -10,12 +10,19 @@
             <td translate>Type</td>
             <td>{{ token.tokentype }}</td>
             <td>
-                <button class="btn btn-danger" ng-click="delete()"
+                <button class="btn btn-danger" ng-click="deleteTokenAsk()"
                         id="deleteButton"
                         ng-disabled="!checkRight('delete')"
                         ng-hide="!checkRight('delete') && hide_buttons">
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
+                </button>
+                <button class="btn btn-danger"
+                        ng-show="rolloverTokenAllowed(token)"
+                        ui-sref="token.rollover({tokenSerial:token.serial, tokenType:token.tokentype})"
+                        id="rolloverButton">
+                    <span class="glyphicon glyphicon-refresh"></span>
+                    <span translate>Rollover</span>
                 </button>
             </td>
         </tr>
@@ -64,7 +71,14 @@
         <tr ng-if="token.rollout_state">
             <td translate>Rollout State</td>
             <td>{{ token.rollout_state }}</td>
-            <td></td>
+            <td>
+                <div ng-show="token.rollout_state === 'verify'">
+                    <input type="text" ng-model="token.verifyResponse" class="form-control"
+                           placeholder="{{ 'Enter code to verify enrollment' | translate }}">
+                    <button type="button" ng-click="sendVerifyResponse()"
+                            class="btn btn-primary" translate>Verify Token</button>
+                </div>
+            </td>
         </tr>
         <tr token-data-edit text="{{'Maxfail' | translate }}"
             button-text="{{ 'Set max fail'|translate}}"
@@ -80,7 +94,7 @@
         <tr>
             <td translate>Fail counter</td>
             <td><span class="label"
-                      ng-class="{'label-success': token.failcount==0,
+                      ng-class="{'label-success': token.failcount<=0,
                    'label-warning': token.failcount>0,
                    'label-danger': token.failcount>=token.maxfail}">
             {{ token.failcount }}
@@ -188,6 +202,7 @@
                         <input ng-model="max_auth_count"
                                class="form-control"
                                name="max_auth_count"
+                               id="max_auth_count"
                                type="number"
                                placeholder="Max allowed auths">
                     </div>
@@ -196,6 +211,7 @@
                                 translate>Maximum Success Auth Count
                         </label>
                         <input ng-model="max_success_auth_count"
+                               id="max_success_auth_count"
                                class="form-control"
                                type="number"
                                placeholder="Max allowed successful auths"
@@ -208,13 +224,13 @@
                         </label>
                         <p class="input-group">
                             <input type="text" class="form-control"
-                                   name="validity_start"
-                                   datepicker-popup="yyyy-MM-ddTHH:mmZ"
+                                   name="validity_start" id="validity_start"
+                                   uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="validity_period_start"
                                    is-open="startOpened"
                                    min-date="today"
                                    show-button-bar="false"
-                                   ng-required="true" close-text="Close"/>
+                                   close-text="Close"/>
                           <span class="input-group-btn">
                             <button type="button" class="btn btn-default"
                                     ng-click="startOpened = openDate($event)">
@@ -223,6 +239,11 @@
                           </span>
                         </p>
                     </div>
+                    <div class="alert alert-warning"
+                         ng-show="validity_period_start > validity_period_end"
+                         translate>
+                        End Date before Start Date!
+                    </div>
                     <div class="form-group">
                         <label for="validity_end"
                                 translate>Validity End
@@ -230,12 +251,13 @@
                         <p class="input-group">
                             <input type="text" class="form-control"
                                    name="validity_end"
-                                   datepicker-popup="yyyy-MM-ddTHH:mmZ"
+                                   id="validity_end"
+                                   uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="validity_period_end"
                                    is-open="endOpened"
                                    min-date="today"
                                    show-button-bar="false"
-                                   ng-required="true" close-text="Close"/>
+                                   close-text="Close"/>
                           <span class="input-group-btn">
                             <button type="button" class="btn btn-default"
                                     ng-click="endOpened = openDate($event)">
@@ -253,13 +275,13 @@
                             id="tiEditButton"
                             ng-hide="editTokenInfo || (!checkRight('set') && hide_buttons)"
                             ng-disable="!checkRight('set')"
-                            ng-click="editTokenInfo=1"
+                            ng-click="startEditTokenInfo()"
                             translate>Edit
                     </button>
                     <button class="btn btn-primary"
                             id="tiSaveButton"
                             ng-show="editTokenInfo"
-                            ng-click="editTokenInfo=0; saveTokenInfo()"
+                            ng-click="saveTokenInfo()"
                             translate>Save Token Info
                     </button>
                     <button class="btn btn-danger"
@@ -322,11 +344,13 @@
             <td>
                 <input type="text" ng-model="otp1"
                        class="form-control"
+                       autocomplete="new-password"
                        placeholder="{{ 'Enter first OTP value' | translate }}">
             </td>
             <td>
                 <input type="text" ng-model="otp2"
                        class="form-control"
+                       autocomplete="new-password"
                        placeholder="{{ 'Enter second OTP value' | translate }}">
             </td>
             <td>
@@ -343,12 +367,12 @@
         <tr ng-hide="token.locked || !checkRight('setpin')">
             <td>
                 <input type="password" ng-model="pin1"
-                       class="form-control" autocomplete="off"
+                       class="form-control" autocomplete="new-password"
                        placeholder="{{ 'Enter PIN for token'|translate }}">
             </td>
             <td>
                 <input type="password" ng-model="pin2"
-                       class="form-control" autocomplete="off"
+                       class="form-control" autocomplete="new-password"
                        placeholder="{{ 'Enter PIN again'|translate }}">
             </td>
             <td>
@@ -362,6 +386,23 @@
             </td>
         </tr>
 
+        <tr ng-hide="token.locked || !checkRight('setrandompin')">
+            <td>
+                <span ng-show="randomPin" translate>Random generated PIN</span>
+            </td>
+            <td>
+                {{ randomPin }}
+            </td>
+            <td>
+                <button class="btn btn-primary"
+                        id="setRandomPinButton"
+                        ng-click="setRandomPin()">
+                    <span class="glyphicon glyphicon-pushpin"></span>
+                    <span translate>Set random PIN</span>
+                </button>
+            </td>
+        </tr>
+
         <tr ng-hide="token.locked">
             <td><input type="checkbox" ng-model="showPassword"
                        id="showPassword"><label for="showPassword"
@@ -371,26 +412,27 @@
                        name="testPassword"
                        ng-show="showPassword"
                        class="form-control"
+                       autocomplete="new-password"
                        placeholder="{{ testTokenPlaceholder }}">
                 <input type="password" ng-model="testPassword"
                        ng-hide="showPassword"
                        name="testPassword"
                        class="form-control"
-                       autocomplete="off"
+                       autocomplete="new-password"
                        placeholder="{{ testTokenPlaceholder }}">
             </td>
             <td>
 
                 <button class="btn btn-primary" ng-disabled="!testPassword"
                         id="testOtpButton"
-                        tooltip="{{ 'Check with OTP PIN.'|translate }}"
+                        uib-tooltip="{{ 'Check with OTP PIN.'|translate }}"
                         ng-click="testOtp()">
                     <span class="glyphicon glyphicon-question-sign"></span>
                     <span translate>Test token</span>
                 </button>
                 <button class="btn btn-primary" ng-disabled="!testPassword"
                         id="testOtpOnlyButton"
-                        tooltip="{{ 'Check OTP only.'|translate }}"
+                        uib-tooltip="{{ 'Check OTP only.'|translate }}"
                         ng-click="testOtp('1')">
                     <span class="glyphicon glyphicon-question-sign"></span>
                     <span translate>Test OTP only</span>
@@ -477,15 +519,15 @@
     <h4 translate>Machines this token is attached to</h4>
 
 
-    <pagination ng-show="machineCount > machinesPerPage"
-                previous-text="{{ 'Previous'|translate }}"
-                next-text="{{ 'Next'|translate }}"
-                last-text="{{ 'Last'|translate }}"
-                first-text="{{ 'First'|translate }}"
-                total-items="machineCount" ng-model="params.page"
-                items-per-page="{{ machinesPerPage }}"
-                max-size="5"
-                boundary-links="true" ng-change="pageChanged()"></pagination>
+    <div uib-pagination ng-show="machineCount > machinesPerPage"
+         previous-text="{{ 'Previous'|translate }}"
+         next-text="{{ 'Next'|translate }}"
+         last-text="{{ 'Last'|translate }}"
+         first-text="{{ 'First'|translate }}"
+         total-items="machineCount" ng-model="params.page"
+         items-per-page="{{ machinesPerPage }}"
+         max-size="5"
+         boundary-links="true" ng-change="pageChanged()"></div>
 
     <div class="table-responsive">
         <table class="table table-bordered table-striped">
@@ -577,7 +619,6 @@
     <form name="formAttachMachine" role="form"
           ng-hide="token.locked"
           validate>
-        <div attach-machine new-machine="newMachine"></div>
 
         <div class="form-group">
             <label for="application" translate>Application</label>
@@ -589,6 +630,9 @@
                     >
             </select>
         </div>
+
+        <div ng-hide="form.application=='offline'"
+             attach-machine new-machine="newMachine"></div>
 
         <!-- Options for a new MachineToken -->
         <div class="form-group"
@@ -616,3 +660,7 @@
     </form>
     </div>
 </div>
+
+<ng-include src="instanceUrl + '/static/components/token/views/dialog.ask_token_delete.html'">
+</ng-include>
+

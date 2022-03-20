@@ -5,20 +5,19 @@ The lib.tokenclass depends on the DB model and lib.user
 """
 PWFILE = "tests/testdata/passwords"
 
-from .base import MyTestCase
+from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
-from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
-from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy,
-                                    SCOPE, ACTION)
+from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOPE)
 from privacyidea.models import (Token,
                                  Config,
                                  Challenge)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 import datetime
 import binascii
+import time
 
 
 class TOTPTokenTestCase(MyTestCase):
@@ -90,8 +89,8 @@ class TOTPTokenTestCase(MyTestCase):
         
         token.add_user(User(login="cornelius",
                             realm=self.realm1))
-        self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
-        self.assertEqual(token.token.owners.first().user_id, "1000")
+        self.assertEqual(token.token.first_owner.resolver, self.resolvername1)
+        self.assertEqual(token.token.first_owner.user_id, "1000")
         
         user_object = token.user
         self.assertTrue(user_object.login == "cornelius",
@@ -145,7 +144,7 @@ class TOTPTokenTestCase(MyTestCase):
         token.token.maxfail = 12
         self.assertTrue(token.get_max_failcount() == 12)
         
-        self.assertEqual(token.get_user_id(), token.token.owners.first().user_id)
+        self.assertEqual(token.get_user_id(), token.token.first_owner.user_id)
         
         self.assertTrue(token.get_serial() == "SE123456", token.token.serial)
         self.assertTrue(token.get_tokentype() == "totp",
@@ -296,7 +295,7 @@ class TOTPTokenTestCase(MyTestCase):
                                                                    30})
         # Found the counter 47251647
         self.assertTrue(res == 47251647, res)
-        
+
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
@@ -573,6 +572,23 @@ class TOTPTokenTestCase(MyTestCase):
                             options={"initTime": 47251645 * 30 })
         self.assertTrue(r == 47251650, r)
 
+        # counter = 47251640 => otp = 166325 is an old OTP value
+        # counter = 47251641 => otp = 432730 is an old OTP value
+        # Autoresync with two times the same old OTP value must not work out!
+        r = token.check_otp(anOtpVal="166325", window=30,
+                            options={"initTime": 47251644 * 30})
+        self.assertTrue(r == -1, r)
+        r = token.check_otp(anOtpVal="166325", window=30,
+                            options={"initTime": 47251645 * 30})
+        self.assertTrue(r == -1, r)
+        # Autoresync with two consecutive old OTP values must not work out!
+        r = token.check_otp(anOtpVal="166325", window=30,
+                            options={"initTime": 47251644 * 30})
+        self.assertTrue(r == -1, r)
+        r = token.check_otp(anOtpVal="432730", window=30,
+                            options={"initTime": 47251645 * 30})
+        self.assertTrue(r == -1, r)
+
         # Autosync with a gap in the next otp value will fail
         token.token.count = 47251640
         # Just try some bullshit config value
@@ -712,20 +728,70 @@ class TOTPTokenTestCase(MyTestCase):
         r = TotpTokenClass.get_setting_type("totp.blabla")
         self.assertEqual(r, "")
 
+    def test_26_is_previous_otp(self):
+        # check if the OTP was used previously
+        serial = "previous"
+        db_token = Token(serial, tokentype="totp")
+        db_token.save()
+        token = TotpTokenClass(db_token)
+        token.set_otpkey(self.otpkey)
+        token.set_hashlib("sha1")
+        token.set_otplen(6)
+        # Authenticate with the current OTP value
+        counter = token._time2counter(time.time(), timeStepping=30)
+        otp_now = token._calc_otp(counter)
+        r = token.check_otp(otp_now, window=180)
+        self.assertEqual(r, counter)
+        # Now we try several is_previous_otp and the timeShift must stay the same!
+        ts0 = float(token.get_tokeninfo("timeShift"))
+        self.assertTrue(-181 < ts0 < 181)
+        # Too old
+        r = token.is_previous_otp(token._calc_otp(counter - 3))
+        self.assertEqual(r, False)
+        ts = float(token.get_tokeninfo("timeShift"))
+        self.assertEqual(ts, ts0)
+        # The same OTP value
+        r = token.is_previous_otp(otp_now)
+        self.assertEqual(r, True)
+        ts = float(token.get_tokeninfo("timeShift"))
+        self.assertEqual(ts, ts0)
+        # Future value
+        r = token.is_previous_otp(token._calc_otp(counter + 8))
+        self.assertEqual(r, False)
+        ts = float(token.get_tokeninfo("timeShift"))
+        self.assertEqual(ts, ts0)
+
     def test_27_get_default_settings(self):
         params = {}
-        logged_in_user = {"user": "hans",
-                          "realm": "default",
-                          "role": "user"}
+        g = FakeFlaskG()
+        g.audit_object = FakeAudit()
+        g.logged_in_user = {"user": "hans",
+                            "realm": "default",
+                            "role": "user"}
         set_policy("pol1", scope=SCOPE.USER, action="totp_hashlib=sha256,"
                                                     "totp_timestep=60,"
                                                     "totp_otplen=8")
-        pol = PolicyClass()
-        p = TotpTokenClass.get_default_settings(params,
-                                                logged_in_user=logged_in_user,
-                                                policy_object=pol)
+        g.policy_object = PolicyClass()
+        p = TotpTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")
         self.assertEqual(p.get("hashlib"), "sha256")
         self.assertEqual(p.get("timeStep"), "60")
         delete_policy("pol1")
 
+        # the same should work for admins
+        g.logged_in_user = {"user": "admin",
+                            "realm": "super",
+                            "role": "admin"}
+        set_policy("pol1", scope=SCOPE.ADMIN, action="totp_hashlib=sha512,"
+                                                    "totp_timestep=60,"
+                                                    "totp_otplen=8")
+        g.policy_object = PolicyClass()
+        p = TotpTokenClass.get_default_settings(g, params)
+        self.assertEqual(p.get("otplen"), "8")
+        self.assertEqual(p.get("hashlib"), "sha512")
+        self.assertEqual(p.get("timeStep"), "60")
+        # test check if there is no logged in user
+        g.logged_in_user = None
+        p = TotpTokenClass.get_default_settings(g, params)
+        self.assertEqual(p, {})
+        delete_policy("pol1")

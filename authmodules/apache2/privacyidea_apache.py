@@ -65,7 +65,7 @@ def check_password(environ, username, password):
     value = rd.get(key)
     if value and passlib.hash.pbkdf2_sha512.verify(password, value):
         # update the timeout
-        rd.setex(key, _generate_digest(password), TIMEOUT)
+        rd.setex(key, value=_generate_digest(password), time=TIMEOUT)
         r_value = OK
 
     else:
@@ -86,7 +86,7 @@ def check_password(environ, username, password):
                 syslog.syslog(syslog.LOG_DEBUG, "{0!s}".format(traceback.format_exc()))
 
             if json_response.get("result", {}).get("value"):
-                rd.setex(key, _generate_digest(password), TIMEOUT)
+                rd.setex(key, value=_generate_digest(password), time=TIMEOUT)
                 r_value = OK
         else:
             syslog.syslog(syslog.LOG_ERR, "Error connecting to privacyIDEA: "
@@ -97,9 +97,8 @@ def check_password(environ, username, password):
 
 
 def _generate_digest(password):
-    pw_dig = passlib.hash.pbkdf2_sha512.encrypt(password,
-                                                rounds=ROUNDS,
-                                                salt_size=SALT_SIZE)
+    pw_dig = passlib.hash.pbkdf2_sha512.using(rounds=ROUNDS,
+                                              salt_size=SALT_SIZE).hash(password)
     return pw_dig
 
 

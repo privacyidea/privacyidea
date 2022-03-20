@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 #
+#  2021-02-04 Timo Sturm <timo.sturm@netknights.it>
+#             Fix import of yubikeys from yubico
+#  2020-11-11 Timo Sturm <timo.sturm@netknights.it>
+#             Select how to validate PSKC imports
 #  2018-05-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add fileversion to OATH CSV
 #  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -51,10 +55,9 @@ import defusedxml.ElementTree as etree
 import re
 import binascii
 import base64
-import cgi
+import html
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-
 from privacyidea.lib.utils import (modhex_decode, modhex_encode,
                                    hexlify_and_unicode, to_unicode, to_utf8,
                                    b64encode_and_unicode)
@@ -65,6 +68,7 @@ from bs4 import BeautifulSoup
 import traceback
 from passlib.crypto.digest import pbkdf2_hmac
 import gnupg
+from os import path
 
 import logging
 log = logging.getLogger(__name__)
@@ -111,8 +115,16 @@ def parseOATHcsv(csv):
     This function parses CSV data for oath token.
     The file format is
 
-        serial, key, [hotp,totp], [6,8], [30|60],
+    for HOTP
+        serial, key, hotp, [6|8], [counter]
+
+    for TOTP
+        serial, key, totp, [6|8], [30|60]
+
+    for OCRA
         serial, key, ocra, [ocra-suite]
+
+    for TAN
         serial, key, tan, tan1 tan2 tan3 tan4
 
     It imports sha1 hotp or totp token.
@@ -341,7 +353,11 @@ def parseSafeNetXML(xml):
     """
 
     TOKENS = {}
-    elem_tokencontainer = etree.fromstring(xml)
+    try:
+        elem_tokencontainer = etree.fromstring(xml)
+    except etree.ParseError as e:
+        log.debug(traceback.format_exc())
+        raise ImportException('Could not parse XML data: {0!s}'.format(e))
 
     if getTagName(elem_tokencontainer) != "Tokens":
         raise ImportException("No toplevel element Tokens")
@@ -424,7 +440,7 @@ def derive_key(xml, password):
         raise ImportException("The XML KeyContainer specifies a derived "
                               "encryption key, but no password given!")
 
-    keymeth= xml.keycontainer.encryptionkey.derivedkey.keyderivationmethod
+    keymeth = xml.keycontainer.encryptionkey.derivedkey.keyderivationmethod
     derivation_algo = keymeth["algorithm"].split("#")[-1]
     if derivation_algo.lower() != "pbkdf2":
         raise ImportException("We only support PBKDF2 as Key derivation "
@@ -441,6 +457,7 @@ def derive_key(xml, password):
 def parsePSKCdata(xml_data,
                   preshared_key_hex=None,
                   password=None,
+                  validate_mac='check_fail_hard',
                   do_checkserial=False):
     """
     This function parses XML data of a PSKC file, (RFC6030)
@@ -455,15 +472,24 @@ def parsePSKCdata(xml_data,
     :param password: The password that encrypted the keys
     :param do_checkserial: Check if the serial numbers conform to the OATH
         specification (not yet implemented)
+    :param validate_mac: Operation mode of hmac validation. Possible values:
+        - 'check_fail_hard' : If an invalid hmac is encountered no token gets parsed.
+        - 'check_fail_soft' : Skip tokens with invalid MAC.
+        - 'no_check' : Hmac of tokens are not checked, every token is parsed.
 
-    :return: a dictionary of token dictionaries
-        { serial : { otpkey , counter, .... }}
+    :return: tuple of a dictionary of token dictionaries and a list of serial of not imported tokens
+        { serial : { otpkey , counter, .... }}, [serial, serial, ...]
     """
 
+    abort = False
+
+    not_imported_serials = []
     tokens = {}
-    #xml = BeautifulSoup(xml_data, "lxml")
     xml = strip_prefix_from_soup(BeautifulSoup(xml_data, "lxml"))
 
+    if not xml.keycontainer:
+        raise ImportException("No KeyContainer found in PSKC data. Could not "
+                              "import any tokens.")
     if xml.keycontainer.encryptionkey and \
             xml.keycontainer.encryptionkey.derivedkey:
         # If we have a password we also need a tag EncryptionKey in the
@@ -478,19 +504,43 @@ def parsePSKCdata(xml_data,
             token["description"] = key_package.deviceinfo.manufacturer.string
         except Exception as exx:
             log.debug("Can not get manufacturer string {0!s}".format(exx))
-        serial = key["id"]
-        try:
-            serial = key_package.deviceinfo.serialno.string.strip()
-        except Exception as exx:
-            log.debug("Can not get serial string from device info {0!s}".format(exx))
+
         algo = key["algorithm"]
-        token["type"] = algo.split(":")[-1].lower()
+        serial = key["id"]
+
+        # Special treatment for pskc files exported from Yubico
+        yubi_mapping = {"http://www.yubico.com/#yubikey-aes": ("yubikey", "UBAM"),
+                        "urn:ietf:params:xml:ns:keyprov:pskc:hotp": ("hotp", "UBOM")}
+        if algo in yubi_mapping.keys() and re.match(r"\d+:\d+",
+                                                    serial):  # check if the serial fits the pattern "<SerialNo>:<Slot>
+            t_type = yubi_mapping[algo][0]
+            serial_split = serial.split(":")
+            serial_no = serial_split[0]
+            slot = serial_split[1]
+            serial = "{!s}{!s}_{!s}".format(yubi_mapping[algo][1], serial_no, slot)
+        else:
+            try:
+                serial = key_package.deviceinfo.serialno.string.strip()
+            except Exception as exx:
+                log.debug("Can not get serial string from device info {0!s}".format(exx))
+            t_type = algo.split(":")[-1].lower()
+
+        token["type"] = t_type
+
         parameters = key.algorithmparameters
         token["otplen"] = parameters.responseformat["length"] or 6
-        try:
-            token["hashlib"] = parameters.suite["hashalgo"] or "sha1"
-        except Exception as exx:
-            log.warning("No compatible suite contained.")
+        # token["hashlib"] = parameters.suite or "sha1"
+
+        hash_lib = "sha1"
+
+        # Check if hashlib is explicitly set in file
+        if parameters.suite and parameters.suite.string:
+            hash_lib = parameters.suite.string.lower()
+        else:
+            log.warning("No hashlib defined, falling back to default {}.".format(hash_lib))
+
+        token["hashlib"] = hash_lib
+
         try:
             if key.data.secret.plainvalue:
                 secret = key.data.secret.plainvalue.string
@@ -503,18 +553,43 @@ def parsePSKCdata(xml_data,
                                           "AES128-CBC.")
                 enc_data = key.data.secret.encryptedvalue.ciphervalue.text
                 enc_data = enc_data.strip()
-                secret = aes_decrypt_b64(binascii.unhexlify(preshared_key_hex), enc_data)
+
+                preshared_key = binascii.unhexlify(preshared_key_hex)
+
+                secret = aes_decrypt_b64(preshared_key, enc_data)
+
                 if token["type"].lower() in ["hotp", "totp"]:
                     token["otpkey"] = hexlify_and_unicode(secret)
                 elif token["type"].lower() in ["pw"]:
                     token["otpkey"] = to_unicode(secret)
                 else:
                     token["otpkey"] = to_unicode(secret)
+
+                if validate_mac != 'no_check':
+                    # Validate MAC:
+                    encrypted_mac_key = xml.keycontainer.find("mackey").text
+                    mac_key = aes_decrypt_b64(preshared_key, encrypted_mac_key)
+
+                    enc_data_bin = base64.b64decode(enc_data)
+                    hm = hmac.new(key=mac_key, msg=enc_data_bin, digestmod=hashlib.sha1)
+                    mac_value_calculated = b64encode_and_unicode(hm.digest())
+
+                    mac_value_xml = key.data.find('valuemac').text.strip()
+
+                    is_invalid = not hmac.compare_digest(mac_value_xml, mac_value_calculated)
+
+                    if is_invalid and validate_mac == 'check_fail_hard':
+                        abort = True
+                    elif is_invalid and validate_mac == 'check_fail_soft':
+                        not_imported_serials.append(serial)
+                        continue
+
         except Exception as exx:
             log.error("Failed to import tokendata: {0!s}".format(exx))
             log.debug(traceback.format_exc())
             raise ImportException("Failed to import tokendata. Wrong "
                                   "encryption key? %s" % exx)
+
         if token["type"] in ["hotp", "totp"] and key.data.counter:
             token["counter"] = key.data.counter.text.strip()
         if token["type"] == "totp":
@@ -524,7 +599,12 @@ def parsePSKCdata(xml_data,
                 token["timeShift"] = key.data.timedrift.text.strip()
 
         tokens[serial] = token
-    return tokens
+
+    if abort:
+        not_imported_serials = tokens.keys()
+        tokens = {}  # reset tokens
+
+    return tokens, not_imported_serials
 
 
 class GPGImport(object):
@@ -541,8 +621,13 @@ class GPGImport(object):
         self.config = config or {}
         self.gnupg_home = self.config.get("PI_GNUPG_HOME",
                                           "/etc/privacyidea/gpg")
-        self.gpg = gnupg.GPG(gnupghome=self.gnupg_home)
-        self.private_keys = self.gpg.list_keys(True)
+        if path.isdir(self.gnupg_home):
+            self.gpg = gnupg.GPG(gnupghome=self.gnupg_home)
+            self.private_keys = self.gpg.list_keys(True)
+        else:
+            log.warning(u"Directory {} does not exists!".format(self.gnupg_home))
+
+
 
     def get_publickeys(self):
         """
@@ -553,7 +638,12 @@ class GPGImport(object):
         :return: a dictionary of public keys with fingerprint
         """
         public_keys = {}
-        keys = self.gpg.list_keys(secret=True)
+        if path.isdir(self.gnupg_home):
+            keys = self.gpg.list_keys(secret=True)
+        else:
+            keys = []
+            log.warning(u"Directory {} does not exists!".format(self.gnupg_home))
+
         for key in keys:
             ascii_armored_public_key = self.gpg.export_keys(key.get("keyid"))
             public_keys[key.get("keyid")] = {"armor": ascii_armored_public_key,
@@ -649,7 +739,8 @@ def export_pskc(tokenobj_list, psk=None):
                 encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
             else:
                 encrypted_otpkey = aes_encrypt_b64(psk, otpkey)
-            hm = hmac.new(key=mackey, msg=otpkey, digestmod=hashlib.sha1)
+
+            hm = hmac.new(key=mackey, msg=base64.b64decode(encrypted_otpkey), digestmod=hashlib.sha1)
             mac_value = b64encode_and_unicode(hm.digest())
         except TypeError:
             # Some keys might be odd string length
@@ -675,8 +766,8 @@ def export_pskc(tokenobj_list, psk=None):
                                  <xenc:CipherValue>{encrypted_otpkey}</xenc:CipherValue>
                              </xenc:CipherData>
                          </EncryptedValue>
+                         <ValueMAC>{value_mac}</ValueMAC>
                      </Secret>
-                     <ValueMAC>{value_mac}</ValueMAC>
                     <Time>
                         <PlainValue>0</PlainValue>
                     </Time>
@@ -691,11 +782,11 @@ def export_pskc(tokenobj_list, psk=None):
                     </TimeDrift>
                 </Data>
         </Key>
-        </KeyPackage>""".format(serial=cgi.escape(serial), type=cgi.escape(type), otplen=otplen,
-                                issuer=cgi.escape(issuer), manufacturer=cgi.escape(manufacturer),
+        </KeyPackage>""".format(serial=html.escape(serial), type=html.escape(type), otplen=otplen,
+                                issuer=html.escape(issuer), manufacturer=html.escape(manufacturer),
                                 counter=counter, timestep=timestep, encrypted_otpkey=encrypted_otpkey,
                                 timedrift=timedrift, value_mac=mac_value,
-                                suite=cgi.escape(suite)), "html.parser")
+                                suite=html.escape(suite)), "html.parser")
 
             soup.macmethod.insert_after(kp2)
             number_of_exported_tokens += 1

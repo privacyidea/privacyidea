@@ -20,17 +20,23 @@
  *
  */
 angular.module("privacyideaApp")
-    .controller("machineDetailsController", function ($scope, MachineFactory) {
+    .controller("machineDetailsController", ['$scope', 'MachineFactory',
+                                             function ($scope, MachineFactory) {
         $scope.tokensPerPage = 5;
         $scope.newToken = {"serial": "", pin: ""};
         $scope.params = {page: 1};
+        $scope.form = {"options": {}};
         // scroll to the top of the page
         document.body.scrollTop = document.documentElement.scrollTop = 0;
         // read the application definition from the server
         MachineFactory.getApplicationDefinition(function(data){
             $scope.Applications = data.result.value;
             var applications = [];
-            for(var k in $scope.Applications) applications.push(k);
+            for (var k in $scope.Applications) {
+                    if (k !== "offline") {
+                        applications.push(k)
+                    };
+            }
             $scope.formInit = { application: applications};
         });
 
@@ -103,4 +109,4 @@ angular.module("privacyideaApp")
                 //debug: console.log(data);
             });
         };
-    });
+    }]);

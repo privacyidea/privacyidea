@@ -2,20 +2,36 @@
     <table class="table table-bordered table-responsive table-striped">
         <thead>
         <tr>
-            <th translate>Order</th>
-            <th translate>Active</th>
+            <th>
+                <button class="btn btn-default unsorted" pi-sort-by="ordering" translate>Order</button>
+            </th>
+            <th>
+                <button class="btn btn-default unsorted" pi-sort-by="active" translate>Active</button>
+            </th>
             <!--<th translate>Id</th>-->
-            <th translate>Description</th>
+            <th class="pifilter">
+                <button class="btn btn-default unsorted" pi-sort-by="name" translate>Description</button>
+                <pi-filter ng-model="filter.name" ng-change="$apply()"></pi-filter>
+            </th>
             <th translate>Events</th>
-            <th><span translate>Handlermodule</span><br>
-                <span translate>Position</span> </th>
+            <th class="pifilter">
+                <button class="btn btn-default unsorted" pi-sort-by="handlermodule" translate>Handlermodule</button>
+                <pi-filter ng-model="filter.handlermodule" ng-change="$apply()"></pi-filter>
+            </th>
+            <th class="pifilter">
+                <span class="btn btn-default unsorted" pi-sort-by="position" translate>Position</span>
+                <pi-filter ng-model="filter.position" ng-change="$apply()"></pi-filter>
+            </th>
             <th translate>Conditions</th>
-            <th translate>Action</th>
+            <th class="pifilter">
+                <button class="btn btn-default unsorted" pi-sort-by="action" translate>Action</button>
+                <pi-filter ng-model="filter.action" ng-change="$apply()"></pi-filter>
+            </th>
             <th translate>Options</th>
         </tr>
         </thead>
         <tbody>
-        <tr ng-repeat="event in events">
+        <tr ng-repeat="event in events | filter:filter | orderBy:sortby:reverse">
             <td>
                 <input type="number" ng-model="event.ordering"
                        class="form-control" min="0"
@@ -45,8 +61,10 @@
                 {{ event.event | json}}
             </td>
             <td>
-                {{ event.handlermodule }}<br>
-                <em>{{ event.position }}</em>
+                {{ event.handlermodule }}
+            </td>
+            <td>
+                {{ event.position }}
             </td>
             <td>
                 {{ event.conditions }}

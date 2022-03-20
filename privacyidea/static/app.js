@@ -20,23 +20,27 @@
  */
 myApp = angular.module("privacyideaApp",
     ['ui.router', 'ui.bootstrap', 'TokenModule',
-        'ngAnimate', 'ngIdle',
+        'ngIdle', 'ngSanitize',
         'privacyideaAuth',
         'privacyideaApp.auditStates',
         'privacyideaApp.configStates',
         'privacyideaApp.tokenStates',
+        'privacyideaApp.dashboardStates',
         'privacyideaApp.userStates',
         'privacyideaApp.machineStates',
         'privacyideaApp.registerStates',
         'privacyideaApp.recoveryStates',
         'privacyideaApp.loginStates',
         'privacyideaApp.componentStates',
-        'isteven-multi-select', 'angularFileUpload',
+        'privacyideaApp.versioning',
+        'isteven-multi-select', 'ngFileUpload',
         'inform', 'gettext', 'cfp.hotkeys']);
-myApp.config(function ($urlRouterProvider) {
+
+myApp.config(['$urlRouterProvider', function ($urlRouterProvider) {
     // For any unmatched url, redirect to /token
     $urlRouterProvider.otherwise("/token/list");
-});
+}]);
+
 myApp.config(['KeepaliveProvider', 'IdleProvider',
     function (KeepaliveProvider, IdleProvider) {
     // Logout configuration.
@@ -76,17 +80,29 @@ myApp.constant("smtpServerUrl", backendUrl + instance + "/smtpserver");
 myApp.constant("radiusServerUrl", backendUrl + instance + "/radiusserver");
 myApp.constant("privacyideaServerUrl", backendUrl + instance + "/privacyideaserver");
 myApp.constant("recoveryUrl", backendUrl + instance + "/recover");
+myApp.constant("resourceNamePatterns", {
+    simple: {pattern: "^[a-zA-Z0-9_.-]+$",
+        title: gettext("The resource name must consist of letters, numbers and '_', '-', '.'")},
+/* we have to ignore "test" and "test_request" as a resource name explicitly */
+    withoutTest: {pattern: "^(?!test$)([A-Za-z0-9_.-]+)$",
+        title: gettext("The resource name must consist of letters, numbers and '_', '-', '.' " +
+            "and must not be the word 'test'")},
+    withoutTestEmail: {pattern: "^(?!send_test_email$)([A-Za-z0-9_.-]+)$",
+        title: gettext("The resource name must consist of letters, numbers and '_', '-', '.' " +
+            "and must not be the word 'send_test_email'")},
+    withoutTestRequest: {pattern: "^(?!test_request$)([a-zA-Z0-9_.-]+)$",
+        title: gettext("The resource name must consist of letters, numbers and '_', '-', '.' " +
+            "and must not be the word 'test_request'")}});
 myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
         function ($rootScope, $state, $stateParams, gettextCatalog) {
 
             // It's very handy to add references to $state and $stateParams to the $rootScope
             // so that you can access them from any scope within your applications.For example,
             // <li ng-class="{ active: $state.includes('contacts.list') }"> will set the <li>
-            // to active whenever 'contacts.list' or one of its decendents is active.
+            // to active whenever 'contacts.list' or one of its descendents is active.
             $rootScope.$state = $state;
             $rootScope.$stateParams = $stateParams;
             gettextCatalog.setCurrentLanguage(browserLanguage);
-            gettextCatalog.debug = true;
 
             // we set this, so we can use it in templates
             $rootScope.browserLanguage = browserLanguage;
@@ -138,9 +154,24 @@ myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
 
 myApp.config(['$compileProvider',
     function ($compileProvider) {
+        // allow otpauth scheme in URLs
         $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|tel|file|blob|otpauth):/);
+        // allow only links to our readthedocs documentation
+        $compileProvider.aHrefSanitizationTrustedUrlList(/^\s*https:\/\/privacyidea.readthedocs.io\//);
 }]);
+
+// A function to escape regexp queries
+const esc_regex = /([.?*+^$[\]\\(){}|-])/;
+escapeRegexp = function (queryToEscape) {
+    return ('' + queryToEscape).replace(esc_regex, '\\$1');
+};
 
 isTrue = function (value) {
     return ["1", "true", true, "True"].indexOf(value) > -1;
 };
+
+// this is for the translation of the constants (see
+// https://github.com/rubenv/angular-gettext/issues/67 )
+function gettext (string) {
+  return string;
+}

@@ -1,11 +1,15 @@
-<p class="help-block" translate>
-The TOTP token is a time based token. You can paste a secret key or
+<p class="help-block"
+   ng-hide="$state.includes('token.wizard')"
+   translate>The TOTP token is a time based token. You can paste a secret key or
     have the server generate the secret and scan the QR code with a
     smartphone app like the Google Authenticator or FreeOTP turning your
     smartphone into an authentication device.
 </p>
 
-<h4 translate>Token data</h4>
+<ng-include src="instanceUrl + '/static/components/token/views/token.display.apps.html'">
+</ng-include>
+
+<h4 ng-hide="$state.includes('token.wizard')" translate>Token data</h4>
 
 <div class="form-group">
     <div ng-hide="checkRight('totp_force_server_generate')">
@@ -32,7 +36,7 @@ The TOTP token is a time based token. You can paste a secret key or
 </div>
 <div class="form-group" ng-hide="form.genkey">
     <label for="otpkey" translate>OTP Key</label>
-    <input type="text" ng-pattern="/^[0-9a-fA-F]*$/"
+    <input type="text" ng-pattern="/^[0-9a-fA-F]*$/" id="otpkey"
            autofocus
            class="form-control"
            placeholder="{{ 'Enter OTP key...'|translate }}"
@@ -53,7 +57,7 @@ The TOTP token is a time based token. You can paste a secret key or
 <div class="form-group"
     ng-hide="checkRight('totp_timestep')">
     <label for="timestep" translate>Timestep</label>
-    <select class="form-control"
+    <select class="form-control" id="timestep"
             ng-model="form.timeStep"
             name="timestep"
             ng-options="timestep for timestep in formInit.timesteps"></select>
@@ -71,10 +75,4 @@ The TOTP token is a time based token. You can paste a secret key or
     <p class="help-block" ng-show="form.genkey" translate>
         The Google Authenticator only supports the SHA1 algorithm.
     </p>
-</div>
-<div class="form-group">
-    <label for="description" translate>Description</label>
-    <input type="text" class="form-control"
-            placeholder="{{ 'Some nice words...'|translate }}"
-            ng-model="form.description" />
 </div>

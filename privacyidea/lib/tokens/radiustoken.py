@@ -62,10 +62,11 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.policydecorators import challenge_response_allowed
 
 import pyrad.packet
-from pyrad.client import Client
+from pyrad.client import Client, Timeout
 from pyrad.dictionary import Dictionary
 from pyrad.packet import AccessChallenge, AccessAccept, AccessReject
 from privacyidea.lib import _
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 optional = True
 required = False
@@ -109,7 +110,21 @@ class RadiusTokenClass(RemoteTokenClass):
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of RADIUS tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active RADIUS tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
 
         if key:
@@ -176,7 +191,7 @@ class RadiusTokenClass(RemoteTokenClass):
         # should we check the pin locally?
         if self.check_pin_local:
             # With a local PIN the challenge response is always a privacyIDEA challenge response!
-            res = self.check_pin(passw)
+            res = self.check_pin(passw, user=user, options=options)
             return res
 
         else:
@@ -205,14 +220,14 @@ class RadiusTokenClass(RemoteTokenClass):
                  bool, if submit was successful
                  message is submitted to the user
                  data is preserved in the challenge
-                 attributes - additional attributes, which are displayed in the
+                 reply_dict - additional attributes, which are displayed in the
                     output
         """
         if options is None:
             options = {}
         message = options.get('radius_message') or "Enter your RADIUS tokencode:"
-        state = binascii.hexlify(options.get('radius_state') or b'')
-        attributes = {'state': transactionid}
+        state = hexlify_and_unicode(options.get('radius_state') or b'')
+        reply_dict = {'attributes': {'state': transactionid}}
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
 
         db_challenge = Challenge(self.token.serial,
@@ -222,7 +237,7 @@ class RadiusTokenClass(RemoteTokenClass):
                                  validitytime=validity)
         db_challenge.save()
         self.challenge_janitor()
-        return True, message, db_challenge.transaction_id, attributes
+        return True, message, db_challenge.transaction_id, reply_dict
 
     @log_with(log)
     def is_challenge_response(self, passw, user=None, options=None):
@@ -391,7 +406,7 @@ class RadiusTokenClass(RemoteTokenClass):
             (_res, pin, otpval) = self.split_pin_pass(passw, user,
                                                       options=options)
 
-            if not self.check_pin(pin):
+            if not self.check_pin(pin, user=user, options=options):
                 return False, -1, {'message': "Wrong PIN"}
 
         # attempt to retrieve saved state/result
@@ -447,6 +462,8 @@ class RadiusTokenClass(RemoteTokenClass):
         radius_identifier = self.get_tokeninfo("radius.identifier")
         radius_user = self.get_tokeninfo("radius.user")
         system_radius_settings = self.get_tokeninfo("radius.system_settings")
+        radius_timeout = 5
+        radius_retries = 3
         if radius_identifier:
             # New configuration
             radius_server_object = get_radius(radius_identifier)
@@ -455,7 +472,8 @@ class RadiusTokenClass(RemoteTokenClass):
             radius_server = u"{0!s}:{1!s}".format(radius_server, radius_port)
             radius_secret = radius_server_object.get_secret()
             radius_dictionary = radius_server_object.config.dictionary
-
+            radius_timeout = int(radius_server_object.config.timeout or 10)
+            radius_retries = int(radius_server_object.config.retries or 1)
         elif system_radius_settings:
             # system configuration
             radius_server = get_from_config("radius.server")
@@ -499,6 +517,10 @@ class RadiusTokenClass(RemoteTokenClass):
                          secret=to_bytes(radius_secret),
                          dict=Dictionary(radius_dictionary))
 
+            # Set retries and timeout of the client
+            srv.timeout = radius_timeout
+            srv.retries = radius_retries
+
             req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
                                        User_Name=radius_user.encode('utf-8'),
                                        NAS_Identifier=nas_identifier.encode('ascii'))
@@ -509,7 +531,13 @@ class RadiusTokenClass(RemoteTokenClass):
                 req["State"] = radius_state
                 log.info(u"Sending saved challenge to radius server: {0!r} ".format(radius_state))
 
-            response = srv.SendPacket(req)
+            try:
+                response = srv.SendPacket(req)
+            except Timeout:
+                log.warning(u"The remote RADIUS server {0!s} timeout out for user {1!s}.".format(
+                    r_server, radius_user))
+                return AccessReject
+
             # handle the RADIUS challenge
             if response.code == pyrad.packet.AccessChallenge:
                 # now we map this to a privacyidea challenge

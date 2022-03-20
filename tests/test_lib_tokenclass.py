@@ -3,8 +3,7 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-
-from .base import MyTestCase
+from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User)
@@ -14,6 +13,7 @@ from privacyidea.lib.config import (set_privacyidea_config,
                                     delete_privacyidea_config)
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
+from privacyidea.lib.error import TokenAdminError
 from privacyidea.models import (Token,
                                 Config,
                                 Challenge)
@@ -173,7 +173,7 @@ class TokenBaseTestCase(MyTestCase):
         # reset failcount
         token.token.failcount = 8
         
-        self.assertTrue(token.get_user_id() == token.token.owners.first().user_id)
+        self.assertTrue(token.get_user_id() == token.token.first_owner.user_id)
         
         self.assertTrue(token.get_serial() == "SE123456", token.token.serial)
         self.assertTrue(token.get_tokentype() == "newtype",
@@ -306,18 +306,27 @@ class TokenBaseTestCase(MyTestCase):
         token.set_validity_period_end("2014-12-30T16:00+0400")
         end = token.get_validity_period_end()
         self.assertTrue(end == "2014-12-30T16:00+0400", end)
-        self.assertRaises(Exception,
+        self.assertRaises(TokenAdminError,
                           token.set_validity_period_end, "wrong date")
         # handle validity start date
         token.set_validity_period_start("2014-12-30T16:00+0400")
         start = token.get_validity_period_start()
         self.assertTrue(start == "2014-12-30T16:00+0400", start)
-        self.assertRaises(Exception,
+        self.assertRaises(TokenAdminError,
                           token.set_validity_period_start, "wrong date")
         
         self.assertFalse(token.check_validity_period())
-        # THe token is valid till 2021, this should be enough!
-        token.set_validity_period_end("2021-12-30T16:00+0200")
+        # delete the validity period end by passing an empty string
+        token.set_validity_period_end('')
+        end = token.get_validity_period_end()
+        self.assertTrue(end == "", end)
+        self.assertTrue(token.check_validity_period())
+
+        # try the same for the validity period start
+        start_date_5d = datetime.datetime.now(tzlocal()) + datetime.timedelta(5)
+        token.set_validity_period_start(start_date_5d.strftime(DATE_FORMAT))
+        self.assertFalse(token.check_validity_period())
+        token.set_validity_period_start('')
         self.assertTrue(token.check_validity_period())
 
         token.set_validity_period_end("2015-05-22T22:00:00.000Z")
@@ -540,26 +549,33 @@ class TokenBaseTestCase(MyTestCase):
         transaction_id = "123456789"
 
         db_token.set_pin("test")
-        # No challenge request
-        req = token.is_challenge_request("test", User(login="cornelius",
+        # No challenge request, since we have the wrong pin
+        req = token.is_challenge_request("testX", User(login="cornelius",
                                                       realm=self.realm1))
         self.assertFalse(req, req)
-        # A challenge request
+        # A challenge request, since we have the correct pin
         req = token.is_challenge_request("test",
                                          User(login="cornelius",
-                                              realm=self.realm1),
-                                         {"data": "a challenge"})
+                                              realm=self.realm1))
         self.assertTrue(req, req)
 
         resp = token.is_challenge_response(User(login="cornelius",
                                                 realm=self.realm1),
                                             "test123456")
         self.assertFalse(resp, resp)
+
+        # A the token has not DB entry in the challenges table, basically
+        # "is_cahllenge_response"
         resp = token.is_challenge_response(User(login="cornelius",
                                                 realm=self.realm1),
                                             "test123456",
                                             options={"transaction_id": transaction_id})
-        # The token has not DB entry in the challenges table
+        self.assertTrue(resp)
+        # ... but is does not "has_db_challenge_response"
+        resp = token.has_db_challenge_response(User(login="cornelius",
+                                                realm=self.realm1),
+                                               "test123456",
+                                               options={"transaction_id": transaction_id})
         self.assertFalse(resp)
 
         # Create a challenge
@@ -676,7 +692,7 @@ class TokenBaseTestCase(MyTestCase):
         self.assertEqual(r, "")
 
     def test_34_get_default_settings(self):
-        r = TokenClass.get_default_settings({})
+        r = TokenClass.get_default_settings(FakeFlaskG(), {})
         self.assertEqual(r, {})
 
     def test_35_next_pin_change(self):
@@ -782,6 +798,13 @@ class TokenBaseTestCase(MyTestCase):
         r = token_obj.check_last_auth_newer("10h")
         self.assertFalse(r)
         r = token_obj.check_last_auth_newer("2d")
+        self.assertTrue(r)
+
+        # Test a fault last_auth entry does not computer to True
+        token_obj.add_tokeninfo(ACTION.LASTAUTH, "faulty format")
+        r = token_obj.check_last_auth_newer("10h")
+        self.assertFalse(r)
+
         token_obj.delete_token()
 
     def test_39_generate_sym_key(self):
@@ -887,3 +910,10 @@ class TokenBaseTestCase(MyTestCase):
         # sha512
         r = TokenClass.get_import_csv(["ser1", geturandom(64, True), "totp", "8"])
         self.assertEqual(r["hashlib"], "sha512")
+
+    def test_42_has_further_challenge(self):
+        db_token = Token("furhterchallenge", tokentype="spass")
+        db_token.save()
+        token_obj = TokenClass(db_token)
+        self.assertFalse(token_obj.has_further_challenge())
+        token_obj.delete_token()

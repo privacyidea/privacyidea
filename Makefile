@@ -6,7 +6,7 @@ info:
 	@echo "make translate        - translate WebUI"
 	@echo "make translate-server - translate string in the server code."
 
-	
+
 SIGNING_KEY=53E66E1D2CABEFCDB1D3B83E106164552E8D8149
 
 clean:
@@ -25,19 +25,18 @@ setversion:
 	@echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 	@echo "Please set a tag like:  git tag 3.17"
 
+POS = $(wildcard po/*.po)
 translate:
 	grunt nggettext_extract
-	(cd po; msgmerge de.po template.pot > tmp.po; mv tmp.po de.po)
-#	(cd po; msgmerge it.po template.pot > tmp.po; mv tmp.po it.po)
-	poedit po/de.po
-#	poedit po/it.po
+	for language in $(POS); do \
+		msgmerge -U --backup=off $$language po/template.pot; \
+	done
 	grunt nggettext_compile
 
 translate-server:
 	(cd privacyidea; pybabel extract -F babel.cfg -o messages.pot .)
 	# pybabel init -i messages.pot -d translations -l de
 	(cd privacyidea; pybabel update -i messages.pot -d translations)
-	(poedit privacyidea/translations/de/LC_MESSAGES/messages.po)
 	# create the .mo file
 	(cd privacyidea; pybabel compile -d translations)
 
@@ -48,15 +47,17 @@ pypi:
 	gpg --detach-sign -a --default-key ${SIGNING_KEY} dist/*.tar.gz
 	twine upload dist/*.tar.gz dist/*.tar.gz.asc
 
-
-depdoc:
-	#sfood privacyidea | sfood-graph | dot -Tpng -o graph.png	
-	dot -Tpng dependencies.dot -o dependencies.png
-
 doc-man:
 	(cd doc; make man)
-	(cd doc/installation/system/pimanage; make man)
 
 doc-html:
 	(cd doc; make html)
 
+NPM_VERSION := $(shell npm --version 2>/dev/null)
+
+update-contrib:
+ifdef NPM_VERSION
+	(cd privacyidea/static && npm install && ./update_contrib.sh)
+else
+	@echo "Command 'npm' not found! It is needed to install the JS contrib libraries."
+endif

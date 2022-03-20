@@ -18,11 +18,17 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("componentController", function (ComponentFactory, $scope,
-                                              $stateParams, $http,
-                                              AuthFactory, instanceUrl,
-                                              SubscriptionFactory, subscriptionsUrl,
-                                              $location, $upload, inform) {
+myApp.controller("componentController", ["ComponentFactory", "$scope",
+                                         "$stateParams", "$http", "AuthFactory",
+                                         "instanceUrl", "SubscriptionFactory",
+                                         "subscriptionsUrl", "$location",
+                                         "Upload", "inform",
+                                         function (ComponentFactory, $scope,
+                                                   $stateParams, $http,
+                                                   AuthFactory, instanceUrl,
+                                                   SubscriptionFactory,
+                                                   subscriptionsUrl, $location,
+                                                   Upload, inform) {
     $scope.instanceUrl = instanceUrl;
 
     $scope.getClientType = function () {
@@ -50,19 +56,19 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
         if (files && files.length) {
             for (var i = 0; i < files.length; i++) {
                 var file = files[i];
-                $upload.upload({
+                Upload.upload({
                     url: subscriptionsUrl + "/",
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    file: file
-                }).success(function (data, status, headers, config) {
+                    data: {file: file},
+                }).then(function (resp) {
                     inform.add("File uploaded successfully.",
                         {type: "success", ttl: 3000});
                     $scope.getSubscriptions();
-                }).error(function (error) {
-                    if (error.result.error.code === -401) {
+                }, function (error) {
+                    if (error.data.result.error.code === -401) {
                         $state.go('login');
                     } else {
-                        inform.add(error.result.error.message,
+                        inform.add(error.data.result.error.message,
                                 {type: "danger", ttl: 10000});
                     }
                 });
@@ -94,4 +100,4 @@ myApp.controller("componentController", function (ComponentFactory, $scope,
         $scope.getSubscriptions();
         ComponentFactory.getClientType();
     });
-});
+}]);

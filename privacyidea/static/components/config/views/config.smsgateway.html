@@ -8,9 +8,10 @@
                         All SMS Gateways</a></li>
                 <li role="presentation"
                     ng-show="checkRight('smsgateway_write')"
-                    ng-class="{ active: $state.includes('config.smsgateway.edit')}">
-                    <a ui-sref="config.smsgateway.edit"
-                       translate>Create new SMS Gateway definition</a></li>
+                    ng-class="{ active: $state.includes('config.smsgateway.add')}">
+                    <a ui-sref="config.smsgateway.add" translate>
+                        Create new SMS Gateway definition
+                    </a></li>
             </ul>
         </div>
 

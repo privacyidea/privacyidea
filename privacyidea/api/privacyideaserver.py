@@ -38,7 +38,7 @@ import logging
 from privacyidea.lib.privacyideaserver import (add_privacyideaserver,
                                                PrivacyIDEAServer,
                                                delete_privacyideaserver,
-                                               get_privacyideaservers)
+                                               list_privacyideaservers)
 from privacyidea.models import PrivacyIDEAServer as PrivacyIDEAServerDB
 
 
@@ -66,7 +66,7 @@ def create(identifier=None):
     description = getParam(param, "description", default="")
 
     r = add_privacyideaserver(identifier, url=url, tls=tls,
-                              description=description,)
+                              description=description)
 
     g.audit_object.log({'success': r > 0,
                         'info':  r})
@@ -80,19 +80,7 @@ def list_privacyidea():
     """
     This call gets the list of privacyIDEA server definitions
     """
-    res = {}
-    server_list = get_privacyideaservers()
-    for server in server_list:
-        if g.logged_in_user.get("role") == "admin":
-            res[server.config.identifier] = {"url": server.config.url,
-                                             "tls": server.config.tls,
-                                             "description":
-                                                 server.config.description}
-        else:
-            # We do not pass any information to a normal user!
-            res[server.config.identifier] = {"url": "",
-                                             "tls": "",
-                                             "description": ""}
+    res = list_privacyideaservers()
 
     g.audit_object.log({'success': True})
     return send_result(res)

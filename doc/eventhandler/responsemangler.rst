@@ -21,9 +21,9 @@ delete
 
 This action simply deletes the given JSON pointer from the response.
 
-.. note:: All keys underneath a node are deleted, to. So if the event handler
-   deletes ``/detail``, the entries ``/detail/message`` and ``/detail/error``will
-   also be deleted.
+.. note:: All keys underneath a node are deleted as well. So if the event handler
+    deletes ``/detail``, the entries ``/detail/message`` and ``/detail/error``
+    will also be deleted.
 
 **Example**
 

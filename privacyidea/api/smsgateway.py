@@ -38,7 +38,7 @@ from ..lib.policy import ACTION
 from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_smsgateway,
                                                      set_smsgateway,
-                                                     delete_smsgateway_option,
+                                                     delete_smsgateway_key_generic,
                                                      delete_smsgateway,
                                                      get_sms_provider_class)
 
@@ -48,7 +48,7 @@ log = logging.getLogger(__name__)
 smsgateway_blueprint = Blueprint('smsgateway_blueprint', __name__)
 
 
-@smsgateway_blueprint.route('', methods=['GET'])
+@smsgateway_blueprint.route('/', methods=['GET'])
 @smsgateway_blueprint.route('/<gwid>', methods=['GET'])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.SMSGATEWAYREAD)
@@ -65,7 +65,7 @@ def get_gateway(gwid=None):
     res = {}
     # TODO: if the gateway definitions contains a password normal users should
     #  not be allowed to read the configuration. Normal users should only be
-    # allowed to read the identifier of the definitions!
+    #  allowed to read the identifier of the definitions!
     if gwid == "providers":
         for classname in SMS_PROVIDERS:
             smsclass = get_sms_provider_class(classname.rsplit(".", 1)[0],
@@ -88,7 +88,9 @@ def set_gateway():
     :jsonparam name: The unique identifier of the SMS gateway definition
     :jsonparam module: The providermodule name
     :jsonparam description: An optional description of the definition
-    :jsonparam options.*: Additional options for the provider module (module
+    :jsonparam option.*: Additional options for the provider module (module
+        specific)
+    :jsonparam header.*: Additional headers for the provider module (module
         specific)
     """
     param = request.all_data
@@ -96,12 +98,15 @@ def set_gateway():
     providermodule = getParam(param, "module", optional=False)
     description = getParam(param, "description", optional=True)
     options = {}
+    headers = {}
     for k, v in param.items():
         if k.startswith("option."):
             options[k[7:]] = v
+        elif k.startswith("header."):
+            headers[k[7:]] = v
 
     res = set_smsgateway(identifier, providermodule, description,
-                         options=options)
+                         options=options, headers=headers)
     g.audit_object.log({"success": True,
                         "info": res})
     return send_result(res)
@@ -124,22 +129,22 @@ def delete_gateway(identifier=None):
     return send_result(res)
 
 
-@smsgateway_blueprint.route('/option/<gwid>/<option>', methods=['DELETE'])
+@smsgateway_blueprint.route('/option/<gwid>/<key>', methods=['DELETE'])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.SMSGATEWAYWRITE)
-def delete_gateway_option(gwid=None, option=None):
+def delete_gateway_option(gwid=None, key=None):
     """
     this function deletes an option of a gateway definition
 
     :param gwid: The id of the sms gateway definition
     :return: json with success or fail
     """
-    if option.startswith("option."):
-        option = option[7:]
+    type = "option"
+    if "." in key:
+        type, key = key.split(".", 1)
 
-    res = delete_smsgateway_option(gwid, option)
+    res = delete_smsgateway_key_generic(gwid, key, Type=type)
     g.audit_object.log({"success": res,
-                        "info": u"{0!s}/{1!s}".format(gwid, option)})
+                        "info": u"{0!s}/{1!s}".format(gwid, key)})
 
     return send_result(res)
-

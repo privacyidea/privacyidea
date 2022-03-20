@@ -1,17 +1,16 @@
-
 privacyIDEA
 ===========
 
-.. image:: https://travis-ci.org/privacyidea/privacyidea.svg?branch=master
+.. image:: https://travis-ci.com/privacyidea/privacyidea.svg?branch=master
     :alt: Build Status
-    :target: https://travis-ci.org/privacyidea/privacyidea
+    :target: https://travis-ci.com/privacyidea/privacyidea
 
-.. image:: https://circleci.com/gh/privacyidea/privacyidea/tree/master.svg?style=shield&circle-token=:circle-token
-    :alt: CircleCI
-    :target: https://circleci.com/gh/privacyidea/privacyidea
+.. .. image:: https://circleci.com/gh/privacyidea/privacyidea/tree/master.svg?style=shield&circle-token=:circle-token
+..     :alt: CircleCI
+..     :target: https://circleci.com/gh/privacyidea/privacyidea
 
-.. image:: https://codecov.io/github/privacyidea/privacyidea/coverage.svg?branch=master
-    :target: https://codecov.io/github/privacyidea/privacyidea?branch=master
+.. image:: https://codecov.io/gh/privacyidea/privacyidea/coverage.svg?branch=master
+    :target: https://codecov.io/gh/privacyidea/privacyidea?branch=master
 
 .. .. image:: https://img.shields.io/pypi/dm/privacyidea.svg
 ..    :alt: Downloads
@@ -63,24 +62,25 @@ applications to privacyIDEA.
     :scale: 50 %
 
 privacyIDEA does not bind you to any decision of the authentication
-protocol or it does not dictate you where your user information should be
+protocol, nor does it dictate you where your user information should be
 stored. This is achieved by its totally modular architecture.
 privacyIDEA is not only open as far as its modular architecture is
 concerned. But privacyIDEA is completely licensed under the AGPLv3.
 
 It supports a wide variety of authentication devices like OTP tokens 
-(HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), FIDO U2F devices 
-like Yubikey and Plug-Up, smartphone
-Apps like Google Authenticator, FreeOTP, Token2  or TiQR,
-SMS, Email, SSH keys, x509 certificates 
+(HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), FIDO U2F, as well
+as FIDO2 WebAuthn devices like Yubikey and Plug-Up, smartphone Apps like Google
+Authenticator, FreeOTP, Token2  or TiQR, SMS, Email, SSH keys, x509 certificates
 and Registration Codes for easy deployment.
 
 privacyIDEA is based on Flask and SQLAlchemy as the python backend. The
 web UI is based on angularJS and bootstrap.
 A MachineToken design lets you assign tokens to machines. Thus you can use
-your Yubikey to unlock LUKS, assign SSH keys to SSH servers or use Offline OTP with PAM.
+your Yubikey to unlock LUKS, assign SSH keys to SSH servers or use Offline OTP
+with PAM.
 
-You may join the discourse discussion forum to give feedback, help other users, discuss questions and ideas:
+You may join the discourse discussion forum to give feedback, help other users,
+discuss questions and ideas:
 https://community.privacyidea.org
 
 
@@ -88,7 +88,8 @@ Setup
 =====
 
 For setting up the system to *run* it, please read install instructions 
-at http://privacyidea.readthedocs.io.
+at `privacyidea.readthedocs.io <http://privacyidea.readthedocs.io/en/latest/installation/index
+.html>`_.
 
 If you want to setup a development environment start like this::
 
@@ -98,9 +99,11 @@ If you want to setup a development environment start like this::
     source venv/bin/activate
     pip install -r requirements.txt
     
-You may additionally want to set up your environment for testing, by adding nose and the additional dependencies::
+.. _testing_env:
 
-    pip install nose
+You may additionally want to set up your environment for testing, by adding the
+additional dependencies::
+
     pip install -r tests/requirements.txt
 
 You may also want to read the blog post about development and debugging at
@@ -109,23 +112,34 @@ https://www.privacyidea.org/privacyidea-development-howto/
 Getting and updating submodules
 ===============================
 
-Some authentication modules and the admin client are located in git submodules.
-To fetch the latest release of these run::
+The client-side library for the registering and signing of WebAuthn-Credentials
+resides in a submodule.
 
-   git submodule init
-   git submodule update
+To fetch all submodules for this repository, run::
 
-Later you can update the submodules like this::
+   git submodule update --init --recursive
+
+When pulling changes from upstream later, you can automatically update any outdated
+submodules, by running::
 
    git pull --recurse-submodules
 
 Running it
 ==========
 
-Create the database and encryption key::
+First You need to create a `config-file <https://privacyidea.readthedocs
+.io/en/latest/installation/system/inifile.html>`_.
+
+Then create the database and encryption key::
 
     ./pi-manage createdb
     ./pi-manage create_enckey
+
+If You want to keep the development database upgradable, You should `stamp
+<https://privacyidea.readthedocs.io/en/latest/installation/upgrade.html>`_ it
+to simplify updates::
+
+    ./pi-manage db stamp head -d migrations/
 
 Create the key for the audit log::
 
@@ -145,14 +159,16 @@ as administrator.
 Run tests
 =========
 
-If you have followed the steps above to set up your environment for testing, running the test suite should be as easy as running nosetests(1) with the following options::
+If you have followed the steps above to set up your
+`environment for testing <#testing-env>`__, running the test suite should be as
+easy as running `pytest <http://pytest.org/>`_ with the following options::
 
-    nosetests -v --with-coverage --cover-package=privacyidea --cover-html
+    python -m pytest -v --cov=privacyidea --cov-report=html tests/
 
 Contributing
 ============
 
-There are a lot of different way to contribute to privacyIDEA, even
+There are a lot of different ways to contribute to privacyIDEA, even
 if you are not a developer.
 
 If you found a security vulnerability please report it to

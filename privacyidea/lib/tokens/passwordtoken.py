@@ -20,15 +20,22 @@ This file contains the definition of the password token class
 
 import logging
 
-from privacyidea.lib.crypto import zerome
+from privacyidea.lib.crypto import zerome, safe_compare
+from privacyidea.lib.utils import to_unicode
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.utils import to_bytes
 from privacyidea.lib import _
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP
+from privacyidea.api.lib.prepolicy import _generate_pin_from_policy
+
 
 optional = True
 required = False
+
+# We use an easier length of 12 for password tokens
+DEFAULT_LENGTH = 12
+DEFAULT_CONTENTS = 'cn'
 
 log = logging.getLogger(__name__)
 
@@ -39,6 +46,8 @@ class PasswordTokenClass(TokenClass):
     In addition, the OTP PIN can be used with this token.
     This Token can be used for a scenario like losttoken
     """
+
+    password_detail_key = "password"
 
     class SecretPassword(object):
 
@@ -62,7 +71,7 @@ class PasswordTokenClass(TokenClass):
             # getKey() returns bytes and since we can not assume, that the
             # password only contains printable characters, we need to compare
             # bytes strings here. This also avoids making another copy of 'key'.
-            if key == to_bytes(password):
+            if safe_compare(key, password):
                 res = 0
 
             zerome(key)
@@ -72,6 +81,8 @@ class PasswordTokenClass(TokenClass):
 
     def __init__(self, aToken):
         TokenClass.__init__(self, aToken)
+        self.otp_len = DEFAULT_LENGTH
+        self.otp_contents = DEFAULT_CONTENTS
         self.hKeyRequired = True
         self.set_type(u"pw")
 
@@ -106,7 +117,20 @@ class PasswordTokenClass(TokenClass):
                'user':  [],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': [],
-               'policy': {},
+               'policy': {
+                   SCOPE.ENROLL: {
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of password tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of active password tokens assigned."),
+                           'group': GROUP.TOKEN
+                       }
+                   }
+               },
                }
         # I don't think we need to define the lost token policies here...
 
@@ -117,6 +141,7 @@ class PasswordTokenClass(TokenClass):
                 ret = res
         return ret
 
+    @log_with(log, log_entry=False)
     def update(self, param):
         """
         This method is called during the initialization process.
@@ -124,28 +149,27 @@ class PasswordTokenClass(TokenClass):
         :type param: dict
         :return: None
         """
-        """
-        :param param:
-        :return:
-        """
+        if "genkey" in param:
+            # Otherwise genkey and otpkey will raise an exception in
+            # PasswordTokenClass
+            del param["genkey"]
+            type_prefix = self.get_class_type()
+            length_param = "{0!s}.length".format(type_prefix)
+            contents_param = "{0!s}.contents".format(type_prefix)
+            if length_param in param:
+                size = param[length_param]
+                del param[length_param]
+            else:
+                size = self.otp_len
+            if contents_param in param:
+                contents = param[contents_param]
+                del param[contents_param]
+            else:
+                contents = self.otp_contents
+            param["otpkey"] = _generate_pin_from_policy(contents, size=int(size))
+        if "otpkey" in param:
+            param["otplen"] = len(param["otpkey"])
         TokenClass.update(self, param)
-        self.set_otplen()
-
-    @log_with(log)
-    @check_token_locked
-    def set_otplen(self, otplen=0):
-        """
-        sets the OTP length to the length of the password
-
-        :param otplen: This is ignored in this class
-        :type otplen: int
-        :result: None
-        """
-        secretHOtp = self.token.get_otpkey()
-        sp = PasswordTokenClass.SecretPassword(secretHOtp)
-        pw_len = len(sp.get_password())
-        TokenClass.set_otplen(self, pw_len)
-        return
 
     @log_with(log, log_entry=False)
     @check_token_locked
@@ -163,3 +187,14 @@ class PasswordTokenClass(TokenClass):
         res = sp.check_password(anOtpVal)
 
         return res
+
+    @log_with(log)
+    def get_init_detail(self, params=None, user=None):
+        """
+        At the end of the initialization we return the registration code.
+        """
+        response_detail = TokenClass.get_init_detail(self, params, user)
+        secretHOtp = self.token.get_otpkey()
+        password = secretHOtp.getKey()
+        response_detail[self.password_detail_key] = to_unicode(password)
+        return response_detail

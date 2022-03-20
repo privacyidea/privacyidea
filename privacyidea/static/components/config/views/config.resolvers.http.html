@@ -1,0 +1,101 @@
+<div ng-controller="HTTPResolverController">
+
+    <h2 class="form-signin-heading" ng-show="resolvername" translate>Edit HTTP Resolver {{ resolvername }}</h2>
+
+    <h2 class="form-signin-heading" ng-hide="resolvername" translate>Create a new HTTP Resolver</h2>
+
+    <form name="formResolverAddHttp" role="form" validate>
+
+        <div class="form-group row">
+            <label for="resolvername" class="col-sm-3 control-label text-right" translate>Resolver name</label>
+
+            <div class="col-sm-9">
+                <input name="resolvername" id="resolvername" class="form-control" ng-model="resolvername" required
+                    placeholder="resolver1" pattern="{{ inputNamePatterns.withoutTest.pattern }}"
+                    title="{{ inputNamePatterns.withoutTest.title | translate }}" autofocus />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="resolverurl" class="col-sm-3 control-label text-right" translate>Endpoint (URL)</label>
+
+            <div class="col-sm-9">
+                <input type="url" name="resolverfile" id="resolverfile" class="form-control" ng-model="params.endpoint" required
+                    placeholder="http://example.com/path/to/users/:userid" />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="resolvermethod" class="col-sm-3 control-label text-right" translate>Method</label>
+
+            <div class="col-sm-9">
+                <select name="resolvermethod" id="resolvermethod" ng-model="params.method" class="form-control"
+                    required>
+                    <option value="get">GET</option>
+                    <option value="post">POST</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="requestmapping" class="col-sm-3 control-label text-right" translate>Request Mapping (JSON format)</label>
+
+            <div class="col-sm-9">
+                <input type="text" name="requestmapping" id="requestmapping" ng-model="params.requestMapping"
+                    placeholder='{"customerid": "{userid}", "accessKey": "secr3t!"}' class="form-control" required />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="headers" class="col-sm-3 control-label text-right" translate>Headers (JSON format)</label>
+            <div class="col-sm-9">
+                <input type="text" name="headers" id="headers" ng-model="params.headers"
+                    placeholder='{"Content-Type": "application/json; charset=UTF-8"}' class="form-control" required />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="responsemapping" class="col-sm-3 control-label text-right" translate>Response Mapping
+                (JSON format)</label>
+            <div class="col-sm-9">
+                <input type="text" name="responsemapping" id="responsemapping" ng-model="params.responseMapping"
+                       placeholder='{"username": "{Username}", "email": "{Email}"}' class="form-control" required />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="hasSpecialErrorHandler" class="col-sm-3 control-label text-right" translate>Special Error
+                Handling</label>
+            <div class="col-sm-3">
+                <input type="checkbox" name="hasSpecialErrorHandler" id="hasSpecialErrorHandler"
+                    ng-model="params.hasSpecialErrorHandler" />
+            </div>
+        </div>
+        <div class="form-group row" ng-if="params.hasSpecialErrorHandler">
+            <label for="errorResponse" class="col-sm-3 control-label text-right" translate>Response contains (JSON format):</label>
+            <div class="col-sm-9">
+                <input type="text" name="errorResponse" id="errorResponse" ng-model="params.errorResponse"
+                       placeholder='{"success": false, "message": "An error occurred!"}' class="form-control" required/>
+            </div>
+        </div>
+        <div class="text-center" ng-show="showResult">
+            <label class="label" ng-class="{'label-success':result.result,
+                       'label-danger':!result.result}">
+                {{ result.description }}<span class="glyphicon glyphicon-remove" ng-click="showResult=false"></span>
+            </label>
+        </div>
+        <div class="container-fluid">
+            <div class="text-right">
+                <div class="form-group row form-inline">
+                    <input name="testUser" id="testUser" class="form-control" ng-model="params.testUser"
+                        placeholder="foo@bar.com" />
+                    <button ng-click="testResolver()" ng-disabled="formResolverAddHttp.$invalid" class="btn btn-success"
+                        translate>
+                        Test HTTP Resolver
+                    </button>
+                </div>
+            </div>
+            <div class="text-right">
+                <button ng-click="setResolver()" ng-show="checkRight('resolverwrite')"
+                    ng-disabled="formResolverAddHttp.$invalid" class="btn btn-primary" translate>Save resolver
+                </button>
+            </div>
+        </div>
+
+    </form>
+
+</div>

@@ -60,21 +60,21 @@ class UtilsCompareTestCase(MyTestCase):
                                         "uid=[^,]+,cn=admins,dc=test,dc=intranet"))
 
     def test_05_parse_comma_separated_string(self):
-        self.assertEquals(parse_comma_separated_string("hello world"), ["hello world"])
+        self.assertEqual(parse_comma_separated_string("hello world"), ["hello world"])
         # whitespace immediately following a delimiter is skipped
-        self.assertEquals(parse_comma_separated_string("realm1,     realm2,realm3"),
+        self.assertEqual(parse_comma_separated_string("realm1,     realm2,realm3"),
                           ["realm1", "realm2", "realm3"])
         # whitespace before delimiters is not skipped
-        self.assertEquals(parse_comma_separated_string("  realm1  ,realm2"),
+        self.assertEqual(parse_comma_separated_string("  realm1  ,realm2"),
                           ["realm1  ", "realm2"])
         # strings can be quoted
-        self.assertEquals(parse_comma_separated_string('realm1, "realm2", " realm3"'),
+        self.assertEqual(parse_comma_separated_string('realm1, "realm2", " realm3"'),
                           ["realm1", "realm2", " realm3"])
         # even with commas
-        self.assertEquals(parse_comma_separated_string('realm1, "realm2, with a, strange, name", other stuff'),
+        self.assertEqual(parse_comma_separated_string('realm1, "realm2, with a, strange, name", other stuff'),
                           ["realm1", "realm2, with a, strange, name", "other stuff"])
         # double quotes can be escaped
-        self.assertEquals(parse_comma_separated_string(r'realm\", realm2'),
+        self.assertEqual(parse_comma_separated_string(r'realm\", realm2'),
                           ['realm"', 'realm2'])
         # error if a string is not properly quoted
         with self.assertRaises(CompareError):
@@ -83,7 +83,7 @@ class UtilsCompareTestCase(MyTestCase):
         with self.assertRaises(CompareError):
             parse_comma_separated_string('realm1\nrealm2')
         # but we can quote newlines
-        self.assertEquals(parse_comma_separated_string('"realm1\nrealm2"'),
+        self.assertEqual(parse_comma_separated_string('"realm1\nrealm2"'),
                           ["realm1\nrealm2"])
 
     def test_06_compare_in(self):
@@ -97,3 +97,10 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertTrue(compare_values("hello", "!in", "world"))
         self.assertFalse(compare_values("hello", "!in", " hello, world"))
         self.assertTrue(compare_values("hello", "!in", "hello world"))
+
+    def test_07_smaller_and_bigger(self):
+        self.assertTrue(compare_values("1", "<", 2))
+        self.assertTrue(compare_values(7, ">", 1))
+        self.assertFalse(compare_values("2", "<", "1"))
+        self.assertFalse(compare_values(2, "<", 1))
+        self.assertFalse(compare_values(2, ">", "2"))

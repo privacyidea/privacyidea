@@ -8,6 +8,7 @@ lib.resolvers.ldapresolver
 
 The lib.resolver.py only depends on the database model.
 """
+
 PWFILE = "tests/testdata/passwords"
 from .base import MyTestCase
 from . import ldap3mock
@@ -19,11 +20,14 @@ import responses
 import datetime
 import uuid
 import pytest
+import json
+import ssl
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver, LockingServerPool
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
+from privacyidea.lib.resolvers.HTTPResolver import HTTPResolver
 
 from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver,
@@ -34,7 +38,7 @@ from privacyidea.lib.resolver import (save_resolver,
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.models import ResolverConfig
 from privacyidea.lib.utils import to_bytes, to_unicode
-
+from requests import HTTPError
 
 objectGUIDs = [
     '039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d31',
@@ -1593,7 +1597,7 @@ class LDAPResolverTestCase(MyTestCase):
                   'UIDTYPE': 'unknownType',
                   'CACHE_TIMEOUT': 0,
                   'TLS_VERIFY': '1'
-        }
+                  }
         start_tls_resolver = LDAPResolver()
         start_tls_resolver.loadConfig(config)
         result = start_tls_resolver.getUserList({'username': '*'})
@@ -1602,6 +1606,86 @@ class LDAPResolverTestCase(MyTestCase):
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertTrue(kwargs['use_ssl'])
+            ldap3_tls_config = kwargs['tls'].__str__()
+            self.assertIn("protocol: 2", ldap3_tls_config)
+            self.assertIn("CA certificates file: present", ldap3_tls_config)
+            self.assertTrue("verify mode: VerifyMode.CERT_REQUIRED" in ldap3_tls_config
+                            or "verify mode: 2" in ldap3_tls_config
+                            or "verify mode: True" in ldap3_tls_config)
+
+    def test_24b_tls_options(self):
+        @ldap3mock.activate
+        def check_tls_version_ldap3(tls_version_pi, tls_version_ldap3):
+
+            # Check that START_TLS and TLS_VERIFY are actually passed to the ldap3 Connection
+            ldap3mock.setLDAPDirectory(LDAPDirectory)
+            config = {'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn"}',
+                      'UIDTYPE': 'unknownType',
+                      'CACHE_TIMEOUT': 0,
+                      'START_TLS': '1',
+                      'TLS_VERIFY': '1'
+                      }
+            config.update({"TLS_VERSION": tls_version_pi})
+            start_tls_resolver = LDAPResolver()
+            start_tls_resolver.loadConfig(config)
+            result = start_tls_resolver.getUserList({'username': '*'})
+            self.assertEqual(len(result), len(LDAPDirectory))
+            # We check two things:
+            # 1) start_tls has actually been called!
+            self.assertTrue(start_tls_resolver.l.start_tls_called)
+            # 2) All Server objects were constructed with a non-None TLS context and use_ssl=False
+            for _, kwargs in ldap3mock.get_server_mock().call_args_list:
+                self.assertIsNotNone(kwargs['tls'])
+                self.assertFalse(kwargs['use_ssl'])
+                ldap3_tls_config = kwargs['tls'].__str__()
+                self.assertIn(tls_version_ldap3, ldap3_tls_config)
+
+        tls_versions = {"": "protocol: 2",
+                        "5": "protocol: 5",
+                        "1234": "protocol: 1234"}
+        for tls_version_pi, tls_version_ldap3 in tls_versions.items():
+            check_tls_version_ldap3(tls_version_pi, tls_version_ldap3)
+        self.assertRaises(ValueError, check_tls_version_ldap3, "version is nonsense", "nothing to check")
+
+    @ldap3mock.activate
+    def test_24c_no_tls_verify(self):
+        # Check that tls should not verify the server
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        config = {'LDAPURI': 'ldaps://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn",'
+                                '"phone" : "telephoneNumber", '
+                                '"mobile" : "mobile"'
+                                ', "email" : "mail", '
+                                '"surname" : "sn", '
+                                '"givenname" : "givenName" }',
+                  'UIDTYPE': 'unknownType',
+                  'CACHE_TIMEOUT': 0,
+                  'TLS_CA_FILE': '/unknown/path/to/ca_certs.crt',
+                  'TLS_VERIFY': '0'
+                  }
+        start_tls_resolver = LDAPResolver()
+        start_tls_resolver.loadConfig(config)
+        result = start_tls_resolver.getUserList({'username': '*'})
+        self.assertEqual(len(result), len(LDAPDirectory))
+        # We check that all Server objects were constructed with a non-None TLS context and use_ssl=True
+        for _, kwargs in ldap3mock.get_server_mock().call_args_list:
+            self.assertIsNotNone(kwargs['tls'])
+            self.assertTrue(kwargs['use_ssl'])
+            self.assertEqual(2, kwargs['tls'].version, kwargs['tls'])
+            # the ca_certs_file should be None since we passed a non-existing path
+            self.assertIsNone(kwargs['tls'].ca_certs_file, kwargs['tls'])
+            self.assertEqual(ssl.CERT_NONE, kwargs['tls'].validate, kwargs['tls'])
 
     @ldap3mock.activate
     def test_25_LDAP_DN_with_utf8(self):
@@ -2122,7 +2206,6 @@ class BaseResolverTestCase(MyTestCase):
         self.assertEqual(r[0], False)
         self.assertEqual(r[1], "Not implemented")
 
-
 class ResolverTestCase(MyTestCase):
     """
     Test the Passwdresolver
@@ -2452,3 +2535,299 @@ class ResolverTestCase(MyTestCase):
         self.assertRaises(Exception, delete_resolver, self.resolvername1)
         delete_realm("myrealm")
         delete_resolver(self.resolvername1)
+
+
+class HTTPResolverTestCase(MyTestCase):
+
+    ENDPOINT = 'http://localhost:8080/get-data'
+    METHOD = responses.GET
+    REQUEST_MAPPING = """
+        {"id": "{userid}"}
+    """
+    HEADERS = """
+        {"Content-Type": "application/json", "charset": "UTF-8"}
+    """
+    RESPONSE_MAPPING = """
+        {
+            "username": "{data.the_username}",
+            "email": "{data.the_email}",
+            "mobile": "{data.the_phones.mobile}",
+            "a_static_key": "a static value"
+        }
+    """
+    HAS_SPECIAL_ERROR_HANDLER = True
+    ERROR_RESPONSE_MAPPING = """
+        {"success": false}
+    """
+
+    BODY_RESPONSE_OK = """
+    {
+        "success": true,
+        "data": {
+            "the_username": "PepePerez",
+            "the_email": "pepe@perez.com",
+            "the_full_name": "Pepe Perez",
+            "the_phones": {
+                "mobile": "+1123568974",
+                "other": "+1154525894"
+            }
+        }
+    }
+    """
+
+    BODY_RESPONSE_NOK = """
+    {
+        "success": false,
+        "data": null
+    }
+    """
+
+    def test_01_load_config(self):
+        params = {
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'headers': self.HEADERS,
+            'requestMapping': self.REQUEST_MAPPING,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
+        }
+
+        # Test with valid data
+        instance = HTTPResolver()
+        instance.loadConfig(params)
+        rid = instance.getResolverId()
+        self.assertEqual(rid, self.ENDPOINT)
+        r_type = instance.getResolverClassDescriptor()
+        self.assertTrue("httpresolver" in r_type)
+        r_type = instance.getResolverDescriptor()
+        self.assertTrue("httpresolver" in r_type)
+        r_type = instance.getResolverType()
+        self.assertEqual("httpresolver", r_type)
+
+    def test_02_get_user_list(self):
+        instance = HTTPResolver()
+        instance.loadConfig({
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'headers': self.HEADERS,
+            'requestMapping': self.REQUEST_MAPPING,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
+        })
+        users = instance.getUserList()
+        self.assertEqual(len(users), 0)
+
+    def test_03_get_username(self):
+        instance = HTTPResolver()
+        instance.loadConfig({
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'headers': self.HEADERS,
+            'requestMapping': self.REQUEST_MAPPING,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
+        })
+        username = instance.getUsername('pepe_perez')
+        self.assertEqual(username, 'pepe_perez')
+
+    def test_04_get_user_id(self):
+        instance = HTTPResolver()
+        instance.loadConfig({
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'headers': self.HEADERS,
+            'requestMapping': self.REQUEST_MAPPING,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
+        })
+        userid = instance.getUserId('pepe_perez')
+        self.assertEqual(userid, 'pepe_perez')
+
+    def test_05_get_resolver_id(self):
+        instance = HTTPResolver()
+        rid = instance.getResolverId()
+        self.assertEqual(rid, "")
+        instance.loadConfig({
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'headers': self.HEADERS,
+            'requestMapping': self.REQUEST_MAPPING,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
+        })
+        rid = instance.getResolverId()
+        self.assertEqual(rid, self.ENDPOINT)
+
+    @responses.activate
+    def test_06_get_user(self):
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_OK
+        )
+        responses.add(
+            responses.POST,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_OK
+        )
+
+        # Test with valid data (method get)
+        instance = HTTPResolver()
+        instance.loadConfig({
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'requestMapping': self.REQUEST_MAPPING,
+            'headers': self.HEADERS,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
+        })
+        response = instance._getUser('PepePerez')
+        self.assertEqual(response.get('username'), 'PepePerez')
+        self.assertEqual(response.get('email'), 'pepe@perez.com')
+        self.assertEqual(response.get('mobile'), '+1123568974')
+        self.assertEqual(response.get('a_static_key'), 'a static value')
+
+        # Test with valid data (method post)
+        instance = HTTPResolver()
+        instance.loadConfig({
+            'endpoint': self.ENDPOINT,
+            'method': 'POST',
+            'requestMapping': self.REQUEST_MAPPING,
+            'headers': self.HEADERS,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
+        })
+        response = instance._getUser('PepePerez')
+        self.assertEqual(response.get('username'), 'PepePerez')
+        self.assertEqual(response.get('email'), 'pepe@perez.com')
+        self.assertEqual(response.get('mobile'), '+1123568974')
+        self.assertEqual(response.get('a_static_key'), 'a static value')
+
+    @responses.activate
+    def test_06_get_user_especial_error_handling(self):
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_NOK
+        )
+        instance = HTTPResolver()
+        instance.loadConfig({
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'requestMapping': self.REQUEST_MAPPING,
+            'headers': self.HEADERS,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
+        })
+        self.assertRaises(Exception, instance._getUser, userid='PepePerez')
+
+    @responses.activate
+    def test_06_get_user_internal_error(self):
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=500,
+            adding_headers=json.loads(self.HEADERS),
+        )
+        instance = HTTPResolver()
+        instance.loadConfig({
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'requestMapping': self.REQUEST_MAPPING,
+            'headers': self.HEADERS,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
+        })
+        self.assertRaises(HTTPError, instance._getUser, userid='PepePerez')
+
+    @responses.activate
+    def test_07_testconnection(self):
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_OK
+        )
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_NOK
+        )
+        param = {
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'requestMapping': self.REQUEST_MAPPING,
+            'headers': self.HEADERS,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponse': self.ERROR_RESPONSE_MAPPING,
+            'testUser': 'PepePerez'
+        }
+        success, response = HTTPResolver.testconnection(param)
+        self.assertTrue(success)
+        self.assertEqual(response.get('username'), 'PepePerez')
+
+        # Test with invalid params
+        invalidParam = param.copy()
+        invalidParam['testUser'] = None
+        success, _ = HTTPResolver.testconnection(invalidParam)
+        self.assertFalse(success)
+
+    @responses.activate
+    def test_08_get_user_info(self):
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_OK
+        )
+        responses.add(
+            self.METHOD,
+            self.ENDPOINT,
+            status=200,
+            adding_headers=json.loads(self.HEADERS),
+            body=self.BODY_RESPONSE_NOK
+        )
+
+        # Test with valid response
+        instance = HTTPResolver()
+        instance.loadConfig({
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'headers': self.HEADERS,
+            'requestMapping': self.REQUEST_MAPPING,
+            'responseMapping': self.RESPONSE_MAPPING,
+            'hasSpecialErrorHandler': self.HAS_SPECIAL_ERROR_HANDLER,
+            'errorResponse': self.ERROR_RESPONSE_MAPPING
+        })
+        response = instance.getUserInfo('PepePerez')
+        self.assertEqual(response.get('username'), 'PepePerez')
+        self.assertEqual(response.get('email'), 'pepe@perez.com')
+        self.assertEqual(response.get('mobile'), '+1123568974')
+        self.assertEqual(response.get('a_static_key'), 'a static value')
+
+        # Test with invalid response
+        self.assertRaisesRegexp(
+            Exception,
+            'Received an error while searching for user: PepePerez',
+            instance.getUserInfo, 'PepePerez'
+        )

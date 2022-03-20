@@ -1,8 +1,8 @@
-<pagination ng-show="usercount > usersPerPage"
-            total-items="usercount" ng-model="params.page"
-            items-per-page="{{ usersPerPage }}"
-            max-size="5"
-            boundary-links="true" ng-change="pageChanged()"></pagination>
+<div uib-pagination ng-show="usercount > usersPerPage"
+     total-items="usercount" ng-model="params.page"
+     items-per-page="{{ usersPerPage }}"
+     max-size="5"
+     boundary-links="true" ng-change="pageChanged()"></div>
 
 <div class="table-responsive">
     <table class="table table-bordered table-striped" id="tableuserlist">

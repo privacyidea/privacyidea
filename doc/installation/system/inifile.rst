@@ -9,7 +9,7 @@ privacyIDEA reads its configuration from different locations:
 
    1. default configuration from the module ``privacyidea/config.py``
    2. then from the config file ``/etc/privacyidea/pi.cfg`` if it exists and then
-   3. from the file specified in the environment variable ``PRIVACYIDEA_CONFIGFILE``.
+   3. from the file specified in the environment variable ``PRIVACYIDEA_CONFIGFILE``::
 
          export PRIVACYIDEA_CONFIGFILE=/your/config/file
 
@@ -25,6 +25,8 @@ The file should contain the following contents::
    SUPERUSER_REALM = ['super', 'administrators']
    # Your database
    SQLALCHEMY_DATABASE_URI = 'sqlite:////etc/privacyidea/data.sqlite'
+   # Set maximum identifier length to 128
+   # SQLALCHEMY_ENGINE_OPTIONS = {"max_identifier_length": 128}
    # This is used to encrypt the auth_token
    SECRET_KEY = 't0p s3cr3t'
    # This is used to encrypt the admin passwords
@@ -36,12 +38,13 @@ The file should contain the following contents::
    PI_AUDIT_KEY_PUBLIC = '/home/cornelius/src/privacyidea/public.pem'
    # PI_AUDIT_MODULE = <python audit module>
    # PI_AUDIT_SQL_URI = <special audit log DB uri>
+   # Truncate Audit entries to fit into DB columns
+   PI_AUDIT_SQL_TRUNCATE = True
    # PI_LOGFILE = '....'
    # PI_LOGLEVEL = 20
    # PI_INIT_CHECK_HOOK = 'your.module.function'
    # PI_CSS = '/location/of/theme.css'
    # PI_UI_DEACTIVATED = True
-
 
 .. note:: The config file is parsed as python code, so you can use variables to
    set the path and you need to take care for indentations.
@@ -50,21 +53,62 @@ The file should contain the following contents::
 You may want to use the MySQL database or Maria DB. There are two possible
 drivers, to connect to this database. Please read :ref:`mysqldb`.
 
+``SQLALCHEMY_ENGINE_OPTIONS`` is a dictionary of keyword args to send
+to `create_engine() <https://docs.sqlalchemy.org/en/14/core/engines.html#sqlalchemy
+.create_engine>`_. The ``max_identifier_length`` is the database’s
+configured maximum number of characters that may be used in a SQL identifier
+such as a table name, column name, or label name. For Oracle version 19 and above
+the `max_identifier_length <https://docs.sqlalchemy.org/en/14/core/engines
+.html#sqlalchemy.create_engine.params.max_identifier_length>`_ should be set to 128.
+
+
 The ``SUPERUSER_REALM`` is a list of realms, in which the users get the role
 of an administrator.
 
 ``PI_INIT_CHECK_HOOK`` is a function in an external module, that will be
 called as decorator to ``token/init`` and ``token/assign``. This function
-takes the ``request`` and ``action`` (either "init" or "assing") as an
+takes the ``request`` and ``action`` (either "init" or "assign") as an
 arguments and can modify the request or raise an exception to avoid the
 request being handled.
+
+If you set ``PI_DB_SAFE_STORE`` to *True* the database layer will in the cases
+of ``tokenowner``, ``tokeinfo`` and ``tokenrealm`` read the id of the newly created
+database object in an additional SELECT statement and not return it directly. This is
+slower but more robust and can be necessary in large redundant setups.
+
+.. Note:: In certain cases (e.g. with Galera Cluster) it can happen that the database
+   node has no information about the object id directly during the write-process.
+   The database might respond with an error like "object has been deleted or its
+   row is otherwise not present". In this case setting ``PI_DB_SAFE_STORE``  to *True*
+   might help.
+
+``PI_HASH_ALGO_LIST`` is a user-defined list of hash algorithms which are used
+to verify passwords and pins. The first entry in ``PI_HASH_ALGO_LIST`` is used
+for hashing a new password/pin.
+If ``PI_HASH_ALGO_LIST`` is not defined, ``['argon2', 'pbkdf2_sha512']`` is the default.
+Further information can be found in the FAQ (:ref:`faq_crypto_pin_hashing`).
+
+.. note:: If you change the hash algorithm, take care that the previously used one is still
+   included in the ``PI_HASH_ALGO_LIST`` so already generated hashes can still be verified.
+
+
+``PI_HASH_ALGO_PARAMS`` is a user-defined dictionary where various parameters for the hash algorithm
+can be set, for example::
+
+   PI_HASH_ALGO_PARAMS = {'argon2__rounds': 5, 'argon2__memory_cost': 768'}
+
+Further information on possible parameters can be found in the
+`PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
+
+Logging
+-------
 
 There are three config entries, that can be used to define the logging. These
 are ``PI_LOGLEVEL``, ``PI_LOGFILE``, ``PI_LOGCONFIG``. These are described in
 :ref:`debug_log`.
 
 You can use ``PI_CSS`` to define the location of another cascading style
-sheet to customize the look and fell. Read more at :ref:`themes`.
+sheet to customize the look and feel. Read more at :ref:`themes`.
 
 .. note:: If you ever need passwords being logged in the log file, you may
    set ``PI_LOGLEVEL = 9``, which is a lower log level than ``logging.DEBUG``.
@@ -81,6 +125,9 @@ own UI and you do not want to present the UI to the user or the outside world.
 .. note:: The API calls are all still accessible, i.e. privacyIDEA is
    technically fully functional.
 
+The parameter ``PI_TRANSLATION_WARNING`` can be used to provide a prefix, that is
+set in front of every string in the UI, that is not translated to the language your browser
+is using.
 
 .. _engine-registry:
 
@@ -110,7 +157,7 @@ to the audit log using the variable ``PI_AUDIT_SERVERNAME``.
 You can run the database for the audit module on another database or even
 server. For this you can specify the database URI via ``PI_AUDIT_SQL_URI``.
 
-``PI_AUDIT_TRUNCATE = True`` lets you truncate audit entries, that to the length
+``PI_AUDIT_SQL_TRUNCATE = True`` lets you truncate audit entries to the length
 of the database fields.
 
 In certain cases when you experiencing problems you may use the parameters
@@ -156,3 +203,80 @@ all available nodes in the cluster.
 
 If ``PI_NODE`` is not set, then ``PI_AUDIT_SERVERNAME`` is used as node name.
 If this is also not set, the node name is returned as "localnode".
+
+.. _trusted_jwt:
+
+Trusted JWTs
+-------------
+
+Other applications can use the API without the need
+to call the ``/auth`` endpoint. This can be achieved by
+trusting private RSA keys to sign JWTs. You can define a list
+of corresponding public keys that are trusted for certain
+users and roles using the parameter ``PI_TRUSTED_JWT``::
+
+   PI_TRUSTED_JWT = [{"public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEF...",
+                      "algorithm": "RS256",
+                      "role": "user",
+                      "realm": "realm1",
+                      "username": "userA",
+                      "resolver": "resolverX"}]
+
+
+This entry means, that the private key, that corresponds to the given
+public key can sign a JWT, that can impersonate as the *userA* in resolver
+*resolverX* in *realmA*.
+
+.. note:: The ``username`` can be a regular expression like ".*".
+   This way you could allow a private signing key to impersonate every
+   user in a realm. (Starting with version 3.3)
+
+A JWT can be created like this::
+
+   auth_token = jwt.encode(payload={"role": "user",
+                                    "username": "userA",
+                                    "realm": "realm1",
+                                    "resolver": "resolverX"},
+                                    "key"=private_key,
+                                    "algorithm"="RS256")
+
+.. note:: The user and the realm do not necessarily need to exist in any
+   resolver!
+   But there probably must be certain policies defined for this user.
+   If you are using an administrative user, the realm for this administrative
+   must be defined in ``pi.cfg`` in the list ``SUPERUSER_REALM``.
+
+.. _picfg_3rd_party_tokens:
+
+3rd party token types
+---------------------
+
+You can add 3rd party token types to privacyIDEA. Read more about this
+at :ref:`customize_3rd_party_tokens`.
+
+To make the new token type available in privacyIDEA,
+you need to specify a list of your 3rd party token class modules
+in ``pi.cfg`` using the parameter ``PI_TOKEN_MODULES``::
+
+    PI_TOKEN_MODULES = [ "myproject.cooltoken", "myproject.lametoken" ]
+
+.. _custom_web_ui:
+
+Custom Web UI
+-------------
+
+The Web UI is a single page application, that is initiated from the file
+``static/templates/index.html``. This file pulls all CSS, the javascript framework
+and all the javascript business logic.
+
+You can configure privacyIDEA to use your own WebUI, which is completely different and stored at another location.
+
+You can do this using the following config values::
+
+    PI_INDEX_HTML = "myindex.html"
+    PI_STATIC_FOLDER = "mystatic"
+    PI_TEMPLATE_FOLDER = "mystatic/templates"
+
+In this example the file ``mystatic/templates/myindex.html`` would be loaded
+as the initial single page application.
+

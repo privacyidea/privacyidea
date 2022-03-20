@@ -1,4 +1,9 @@
-<h3 translate>Enroll a new token</h3>
+<h3 ng-if="$state.includes('token.enroll')" translate>Enroll a new token</h3>
+<div ng-if="$state.includes('token.rollover')">
+    <div class="alert alert-danger" role="alert" translate>You are about to rollover your token! This will invalidate your existing token
+        and create a new token with a new secret key!</div>
+    <h3 translate>Rollover token {{ form.serial }}</h3>
+</div>
 
 <!-- hide the form, after the token was enrolled -->
 <div ng-hide="enrolledToken">
@@ -8,23 +13,34 @@
          '/views/includes/token.enroll.pre.top.html'"></div>
 
     <form name="formEnrollToken" role="form" validate>
-
-        <select class="form-control"
-                ng-hide="$state.includes('token.wizard')"
-                id="tokentype"
-                ng-change="changeTokenType()"
-                ng-model="form.type"
-                ng-options="type as desc for (type, desc) in formInit.tokenTypes"
-                >
-        </select>
+        <!-- Do not display Type dropdown in case of rollover -->
+        <div ng-if="$state.includes('token.rollover') == false" class="form-group">
+            <select class="form-control"
+                    ng-hide="$state.includes('token.wizard')"
+                    id="tokentype"
+                    ng-change="changeTokenType()"
+                    ng-model="form.type"
+                    ng-options="type as desc for (type, desc) in formInit.tokenTypes"
+            >
+            </select>
+        </div>
         <!-- This is the token data section. It differs for every token type-->
         <ng-include src="instanceUrl +
         '/static/components/token/views/token.enroll.'
-         + form.type + '.html'">
+         + form.type + '.html' + fileVersionSuffix">
         </ng-include>
 
+        <!-- The description input field for all token types -->
+        <div class="form-group" ng-hide="loggedInUser.role == 'user' && !checkRight('setdescription')">
+            <label for="description" translate>Description</label>
+            <input type="text" class="form-control" id="description"
+                   autocomplete="new-password"
+                   placeholder="{{ 'Some nice words...'|translate }}"
+                   ng-model="form.description" />
+        </div>
+
         <!-- User Assignment -->
-        <div ng-if="loggedInUser.role == 'admin'">
+        <div ng-if="loggedInUser.role == 'admin' && $state.includes('token.rollover') == false">
             <h4 translate>Assign token to user</h4>
 
             <div assign-user new-user-object="newUser" realms="realms"
@@ -52,9 +68,11 @@
         </div>
 
         <!-- Extended attributes -->
-        <accordion ng-hide="$state.includes('token.wizard') ||
+        <uib-accordion ng-hide="$state.includes('token.wizard') ||
                         loggedInUser.role=='user'">
-            <accordion-group heading="{{ 'Extended Attributes'|translate }}">
+            <div uib-accordion-group
+                 class="panel-default"
+                 heading="{{ 'Extended Attributes'|translate }}">
                 <div class="form-group col-sm-6">
                     <label for="validity_start"
                            translate>Validity Start
@@ -62,7 +80,7 @@
                     <p class="input-group col-sm-12">
                             <input type="text" class="form-control"
                                    name="validity_start"
-                                   datepicker-popup="yyyy-MM-ddTHH:mmZ"
+                                   uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="form.validity_period_start"
                                    is-open="startOpened"
                                    min-date="today"
@@ -83,7 +101,7 @@
                     <p class="input-group col-sm-12">
                             <input type="text" class="form-control"
                                    name="validity_end"
-                                   datepicker-popup="yyyy-MM-ddTHH:mmZ"
+                                   uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                    ng-model="form.validity_period_end"
                                    is-open="endOpened"
                                    show-button-bar="false"
@@ -102,13 +120,20 @@
                     should be entered in the format
                     <em>YYYY-MM-DDThh:mm+oooo</em>.
                 </p>
-            </accordion-group>
-        </accordion>
+            </div>
+        </uib-accordion>
+
+        <!-- pass the rollover info in the form -->
+        <input type="checkbox" ng-show="false" name="rollover"
+               ng-init="form.rollover = $state.includes('token.rollover')"
+               ng-model="form.rollover" />
 
         <div class="text-center">
             <button type="button" ng-click="enrollToken()"
-                    ng-disabled="formEnrollToken.$invalid"
-                    class="btn btn-primary" translate>Enroll Token
+                    ng-disabled="!checkEnroll() || formEnrollToken.$invalid || enrolling"
+                    class="btn btn-primary">
+                <span ng-if="$state.includes('token.rollover') == false" translate>Enroll Token</span>
+                <span ng-if="$state.includes('token.rollover')" translate>Rollover Token</span>
             </button>
         </div>
     </form>
@@ -146,15 +171,33 @@
 
     <!-- This is the token data section. It differs for every token type-->
     <ng-include src="instanceUrl +
-    '/static/components/token/views/token.enrolled.' + form.type + '.html'">
+    '/static/components/token/views/token.enrolled.' + form.type + '.html' + fileVersionSuffix">
     </ng-include>
 
+    <!-- Verify Token enrollment -->
+    <div ng-show="enrolledToken.rollout_state === 'verify'">
+        <p translate>The token was enrolled, but you still need to verify it before you can use it!</p>
+        <div class="form-group">
+            <label for="verifyResponse" translate>{{ enrolledToken.verify.message }}</label>
+            <input type="text" ng-model="verifyResponse"
+                   autofocus
+                   class="form-control"
+                   name="verifyResponse">
+        </div>
+        <div class="text-center">
+            <button type="button" ng-click="sendVerifyResponse()"
+                    class="btn btn-primary" translate>Verify Token</button>
+        </div>
+    </div>
+
+    <!-- Token Wizard -->
     <div ng-if="$state.includes('token.wizard')"
          ng-include="instanceUrl+'/'+piCustomization+
          '/views/includes/token.enroll.post.bottom.html'"></div>
 
-    <div class="text-center" ng-hide="click_wait || enrolledToken.rollout_state === 'clientwait'">
-        <button ng-click="enrolledToken = null"
+    <div class="text-center" ng-hide="click_wait || enrolledToken.rollout_state === 'clientwait'
+        || enrolledToken.rollout_state === 'verify' ">
+        <button ng-click="enrolledToken = null; enrolling = false"
                 ng-hide="$state.includes('token.wizard')"
                 class="btn btn-primary" translate>Enroll a new token
         </button>

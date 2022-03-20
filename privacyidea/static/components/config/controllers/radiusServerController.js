@@ -18,18 +18,16 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("radiusServerController", function($scope, $stateParams,
-                                                    inform, gettextCatalog,
-                                                    $state, $location,
-                                                    ConfigFactory) {
+myApp.controller("radiusServerController", ["$scope", "$stateParams", "inform",
+                                            "gettextCatalog", "$state",
+                                            "$location", "ConfigFactory",
+                                            function($scope, $stateParams,
+                                                     inform, gettextCatalog,
+                                                     $state, $location,
+                                                     ConfigFactory) {
+    // Set the default route
     if ($location.path() === "/config/radius") {
         $location.path("/config/radius/list");
-    }
-
-    $scope.identifier = $stateParams.identifier;
-    if ($scope.identifier) {
-        // We are editing an existing RADIUS Server
-        $scope.getRadiusServers($scope.identifier);
     }
 
     // Get all servers
@@ -46,6 +44,20 @@ myApp.controller("radiusServerController", function($scope, $stateParams,
         });
     };
 
+    if ($location.path() === "/config/radius/list") {
+        // In the case of list, we fetch all radius servers
+        $scope.getRadiusServers();
+    }
+
+    $scope.identifier = $stateParams.identifier;
+    if ($scope.identifier) {
+        // We are editing an existing RADIUS Server
+        $scope.getRadiusServers($scope.identifier);
+    } else {
+        // This is a new RADIUS Server or the list
+        $scope.params = { };
+    }
+
     $scope.delRadiusServer = function (identifier) {
         ConfigFactory.delRadius(identifier, function(data) {
             $scope.getRadiusServers();
@@ -57,8 +69,6 @@ myApp.controller("radiusServerController", function($scope, $stateParams,
             $scope.getRadiusServers();
         });
     };
-
-    $scope.getRadiusServers();
 
     $scope.testRadiusRequest = function() {
         ConfigFactory.testRadius($scope.params, function(data) {
@@ -83,6 +93,6 @@ myApp.controller("radiusServerController", function($scope, $stateParams,
         });
     };
 
-        // listen to the reload broadcast
+    // listen to the reload broadcast
     $scope.$on("piReload", $scope.getRadiusServers);
-});
+}]);

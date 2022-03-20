@@ -6,7 +6,7 @@ Authentication policies
 .. index:: authentication policies
 
 The scope *authentication* gives you more detailed
-possibilities to authenticate the user or to define 
+possibilities to authenticate the user or to define
 what happens during authentication.
 
 Technically the authentication policies apply
@@ -14,7 +14,7 @@ to the REST API :ref:`rest_validate` and are checked
 using :ref:`code_policy` and
 :ref:`policy_decorators`.
 
-The following actions are available in the scope 
+The following actions are available in the scope
 *authentication*:
 
 .. _otppin_policy:
@@ -26,7 +26,7 @@ type: string
 
 This action defines how the fixed password part during
 authentication should be validated.
-Each token has its own OTP PIN, but you can choose 
+Each token has its own OTP PIN, but the administrator can choose
 how the authentication should be processed:
 
 ``otppin=tokenpin``
@@ -44,7 +44,7 @@ how the authentication should be processed:
    OTP value.
 
 .. note:: The domain password is checked with an LDAP
-   bind right at the moment of authentication. 
+   bind right at the moment of authentication.
    So if the user is locked or the password was
    changed authentication will fail.
 
@@ -68,7 +68,7 @@ I.e. the user needs to provide the LDAP- or SQL-password or valid credentials
 for the RADIUS server.
 
 .. note:: This is a good way to do a smooth enrollment.
-   Users having a token enrolled will have to use the 
+   Users having a token enrolled will have to use the
    token, users not having a token, yet, will be able
    to authenticate with their domain password.
 
@@ -78,11 +78,11 @@ for the RADIUS server.
 
 .. note:: The passthru policy overrides the authorization policy
    for :ref:`tokentype_policy`. I.e. a user may authenticate due
-   to the passthru    policy (since he has no token)
+   to the passthru policy (since he has no token)
    although a tokentype policy is active!
 
 .. warning:: If the user has the right to delete his
-   tokens in selfservice portal, the user could 
+   tokens in selfservice portal, the user could
    delete all his tokens and then authenticate with
    his static password again.
 
@@ -117,6 +117,8 @@ Examples are
 .. warning:: This can be very time consuming if the OTP values to check is set to high!
 
 
+.. _passonnotoken:
+
 passOnNoToken
 ~~~~~~~~~~~~~
 
@@ -142,6 +144,7 @@ If the user does not exist, the authentication request is successful.
 .. warning:: Only use this if you know exactly what you are doing.
 
 
+.. _smstext:
 
 smstext
 ~~~~~~~
@@ -151,14 +154,45 @@ smstext
 type: string
 
 This is the text that is sent via SMS to the user trying to
-authenticate with an SMS token.
-You can use the tags *<otp>* and *<serial>*.
+authenticate with an SMS token. This can contain the tags *<otp>* and *<serial>*.
+Texts containing whitespaces must be enclosed in single quotes.
 
 Starting with version 2.20 you can use the tag *{challenge}*. This will add
 the challenge data that was passed in the first authentication request in the
 challenge parameter. This could contain banking transaction data.
 
+Starting with version 3.6 the `smstext` can contain a lot more tags similar to the
+policy :ref:`emailtext`:
+
+  * {otp} or *<otp>* the One-Time-Password
+  * {serial} or *<serial>* the serial number of the token.
+  * {user} the given name of the token owner.
+  * {givenname} the given name of the token owner.
+  * {surname} the surname of the token owner.
+  * {username} the loginname of the token owner.
+  * {userrealm} the realm of the token owner.
+  * {tokentype} the type of the token.
+  * {recipient_givenname} the given name of the recipient.
+  * {recipient_surname} the surname of the recipient.
+  * {time} the current server time in the format HH:MM:SS.
+  * {date} the current server date in the format YYYY-MM-DD
+
+In the :ref:`sms_gateway_config` the tag *{otp}* will be replaced by the custom
+message, set with this policy.
+
 Default: *<otp>*
+
+.. note:: The length of an SMS is limited to 140 characters due to the definition of SMS.
+   You should take care, that the *smstext* does not exceed this limit. SMS gateways could
+   reject too long messages or the delivery could fail.
+
+.. note:: Some apps may be able to handle incoming OTPs as a so called
+   `origin-bound one-time code <https://github.com/wicg/sms-one-time-codes>`_
+   in the format::
+
+     Your OTP is {otp}
+     @privacyidea.mydomain.com #{otp}
+
 
 smsautosend
 ~~~~~~~~~~~
@@ -171,6 +205,7 @@ A new OTP value will be sent via SMS if the user authenticated
 successfully with his SMS token. Thus the user does not
 have to trigger a new SMS when he wants to login again.
 
+.. _emailtext:
 
 emailtext
 ~~~~~~~~~
@@ -180,11 +215,12 @@ emailtext
 type: string
 
 This is the text that is sent via Email to be used with Email Token. This
-text should contain the OTP value.
+text should contain the OTP tag.
 
 The text can contain the following tags, that will be filled:
 
-  * {serial} the serial number of the token.
+  * {otp} or *<otp>* the One-Time-Password
+  * {serial} or *<serial>* the serial number of the token.
   * {user} the given name of the token owner.
   * {givenname} the given name of the token owner.
   * {surname} the surname of the token owner.
@@ -291,8 +327,40 @@ This is a list of token types for which challenge response can
 be used during authentication. The list is separated by whitespaces like
 *"hotp totp"*.
 
-.. note:: The TiQR token does not need this setting, since it always works with
-   challenge response.
+.. _policy_change_pin_via_validate:
+
+change_pin_via_validate
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This works with the enrollment policies :ref:`policy_change_pin_first_use` and
+:ref:`policy_change_pin_every`. When a PIN change is due, then a successful authentication
+will start a challenge response mechanism in which the user is supposed to enter a new
+PIN two times.
+
+Only if the user successfully changes the PIN the authentication process is finished
+successfully. E.g. if the user enters two different new PINs, the authentication process will fail.
+
+.. note:: The application must support several consecutive challenge response requests.
+
+.. _policy_resync_via_multichallenge:
+
+resync_via_multichallenge
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This policy is based on the global setting :ref:`autosync`.
+If *AutoResync* is enabled and this policy is configured, a user can synchronize
+his token during authentication via challenge response.
+
+If privacyIDEA realizes, that the first given OTP value is within the syncwindow,
+a challenge will be presented to the user saying "To resync your token, please enter the next OTP value".
+In contrast to the generic AutoResync a user has to enter the token PIN only once.
+
+.. note:: The application must support several consecutive challenge response requests.
+
 
 .. _policy_u2f_facets:
 
@@ -306,9 +374,9 @@ also use a U2F device that was registered with privacyIDEA.
 
 You need to specify a list of FQDNs without the https scheme like:
 
-*"host1.example.com host2.exmaple.com firewall.example.com"*
+*"host1.example.com host2.example.com firewall.example.com"*
 
-For more information on configuring U2F see :ref:`u2f_otp_token`.
+For more information on configuring U2F see :ref:`u2f_token`.
 
 
 .. [#pythonre] https://docs.python.org/2/library/re.html
@@ -334,13 +402,20 @@ type: string
 
 The Authentication Cache caches the credentials of a successful
 authentication and allows to use the same credentials - also with an OTP
-value - for the specified amount of time.
+value - for the specified amount of time and optionally for a specified number
+of authentications.
 
-The time to cache the credentials can be specified like "4h", "5m", "2d"
-(hours, minutes days) or "4h/5m". The notation 4h/5m means, that credentials
-are cached for 4 hours, but only may be used again, if every 5 minutes the
+The time to cache the credentials can be specified like "4h", "5m", "2d", "3s"
+(hours, minutes, days, seconds). The number of allowed authentications can be
+specified as a whole number, greater than zero.
+
+The notation "4h/5m" means, that credentials
+are cached for 4 hours, but may only be used again, if every 5 minutes the
 authentication occurs. If the authentication with the same credentials would
 not occur within 5 minutes, the credentials can not be used anymore.
+
+The notation "2m/3" means, that credentials are cached for 2 minutes, but may only be used 3 times
+in this timeframe.
 
 In future implementations the caching of the credentials could also be
 dependent on the clients IP address and the user agent.
@@ -420,9 +495,53 @@ Sensible numbers might be 10 or 20 seconds.
    the number of available worker threads!
 
 
+.. _policy_auth_push_allow_poll:
+
+push_allow_polling
+~~~~~~~~~~~~~~~~~~
+
+.. index:: push token
+
+type: string
+
+This policy configures if push tokens are allowed to poll the server for open
+challenges (e.g. when the the third-party push service is unavailable or
+unreliable).
+
+The following options are available:
+
+``allow``
+
+    *Allow* push tokens to poll for challenges.
+
+``deny``
+
+    *Deny* push tokens to poll for challenges. This basically returns a ``403``
+    error when requesting the poll endpoint.
+
+``token``
+
+    *Allow* / *Deny* polling based on the individual token. The tokeninfo key
+    ``polling_allowed`` is checked. If the value evaluates to ``False``, polling
+    is denied for this token. If it evaluates to ``True`` or is not set, polling
+    is allowed for this token.
+
+The default is to ``allow`` polling
+
+.. _policy_push_ssl_verify_auth:
+
+push_ssl_verify
+~~~~~~~~~~~~~~~
+
+type: int
+
+The smartphone needs to verify the SSL certificate of the privacyIDEA server during
+the authentication with push tokens. By default, the verification is enabled. To disable
+verification during enrollment, see :ref:`policy_push_ssl_verify_enrollment`.
+
 .. _policy_challenge_text:
 
-challenge_text, challenge_text_header, challenge_test_footer
+challenge_text, challenge_text_header, challenge_text_footer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: Challenge Text Policy
@@ -442,3 +561,134 @@ In this case the *challenge_text_footer* also should contain the closing
 tag.
 
 .. note:: The footer will only be used, if the header is also set.
+
+.. _policy_indexedsecret:
+
+indexedsecret_challenge_text
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Indexed Secret Token asks the user to provide the characters of the
+secret from certain positions. The default text is:
+
+*Please enter the position 3,1,6,7 from your secret.*
+
+with *3,1,6,7* being the positions of the characters, the user is supposed to
+enter. This text can be changed with this policy setting.
+The text needs to contain the python formatting tag *{0!s}* which will
+be replaced with the list of the requested positions.
+
+For more details of this token type see :ref:`indexedsecret_token`.
+
+
+.. _policy_webauthn_challenge_text_auth:
+
+webauthn_challenge_text
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: str
+
+Use an alternate challenge text for requesting the user to confirm with
+his WebAuthn token during authentication. This might be different from the
+challenge text received during enrollment
+(see :ref:`policy_webauthn_challenge_text_enrollment`).
+
+
+email_challenge_text, sms_challenge_text, u2f_challenge_text
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: str
+
+With these actions the administrator may set alternative challenge texts for email, SMS
+and U2F tokens.
+
+
+indexedsecret_count
+~~~~~~~~~~~~~~~~~~~
+
+The Indexed Secret Token asks the used for a number of characters from
+a shared secret. The default number to ask is 2.
+
+The number of requested positions can be changed using this policy.
+
+
+.. _policy_webauthn_authn_allowed_transports:
+
+webauthn_allowed_transports
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action determines, which transports may be used to communicate with the
+authenticator, during authentication. For instance, if the authenticators used
+support both an USB connection and NFC wireless communication, they can be
+limited to USB only using this policy. The allowed transports are given as a
+space-separated list.
+
+The default is to allow all transports (equivalent to a value of `usb ble nfc
+internal`).
+
+.. _policy_webauthn_authn_timeout:
+
+webauthn_timeout
+~~~~~~~~~~~~~~~~
+
+type: integer
+
+This action sets the time in seconds the user has to confirm an authentication
+request on his WebAuthn authenticator.
+
+This is a client-side setting, that governs how long the client waits for the
+authenticator. It is independent of the time for which a challenge for a
+challenge response token is valid, which is governed by the server and
+controlled by a separate setting. This means, that if you want to increase this
+timeout beyond two minutes, you will have to also increase the challenge
+validity time, as documented in :ref:`challenge_validity_time`.
+
+This setting is a hint. It is interpreted by the client and may be adjusted by
+an arbitrary amount in either direction, or even ignored entirely.
+
+The default timeout is 60 seconds.
+
+.. note:: If you set this policy you may also want to set
+    :ref:`policy_webauthn_enroll_timeout`.
+
+.. _policy_webauthn_authn_user_verification_requirement:
+
+webauthn_user_verification_requirement
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action configures whether the user's identity should be checked when
+authenticating with a WebAuthn token. If this is set to required, any user
+signing in with their WebAuthn token will have to provide some form of
+verification. This might be biometric identification, or knowledge-based,
+depending on the authenticator used.
+
+This defaults to `preferred`, meaning user verification will be performed if
+supported by the token.
+
+.. note:: User verification is different from user presence checking. The
+    presence of a user will always be confirmed (by asking the user to take
+    action on the token, which is usually done by tapping a button on the
+    authenticator). User verification goes beyond this by ascertaining, that the
+    user is indeed the same user each time (for example through biometric
+    means), only set this to `required`, if you know for a fact, that you have
+    authenticators, that actually support some form of user verification (these
+    are still quite rare in practice).
+
+.. note:: If you configure this, you will likely also want to configure
+    :ref:`policy_webauthn_enroll_user_verification_requirement`.
+
+
+question_number
+~~~~~~~~~~~~~~~
+
+type: integer
+
+The questionnaire token can ask more than one question during one authentication process.
+It will ask the first question, verify the answer, ask the next question and verify the answer.
+This policy setting defines how many questions the user needs to answer. (default: 1)
+
+.. note:: A question will be asked only once, unless the policy requires more questions to be asked,
+   than the token has available answers.

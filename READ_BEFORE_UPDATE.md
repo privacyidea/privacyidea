@@ -1,5 +1,110 @@
 # Update Notes
 
+## Update from 3.5 to 3.6
+
+* Up to version 3.5 TLS autonegotiation was used for LDAP resolvers, if no specific
+  TLS_VERSION was specified. For security reasons this is not supported anymore, thus the
+  migration script sets resolvers without a configured TLS_VERSION to 1.2.
+
+  **WARNING**: On Ubuntu 20.04 using TLS 1.0 will fail and users will not be found.
+  Either change to TLS 1.2 before running the update or use a local admin to change 
+  the TLS version after the update.
+
+Be sure to run the schema update script!
+
+## Update from 3.4 to 3.5
+
+* The audit log table now also records the start date and the duration
+  of a request.
+
+* The authcache database table gets a longer column "authentication" 
+  to cope with the longer Argon2 hashes.
+
+Be sure to run the schema update script.
+The current database schema now is d5870fd2f2a4.
+
+## Update from 3.3 to 3.4
+
+* Policies can now contain the privacyIDEA node as condition.
+
+  Be sure to run the schema updates in you pip installation.
+  Ubuntu or CentOS installations will run the schema update automatically.
+
+* The SMS Gateway database tables have been enhanced with an additional
+  constraint on the type of the options.
+
+  The data in the column "Type" of the database table "smsgatewayoption"
+  will be migrated by the schema update script.
+  If you are using SMS Gateways, check your gateway configurtion
+  after the update.
+
+## Update from 3.2 to 3.3
+
+* Admin policies now do have a destinct admin username field.
+
+  The normal username field will not be used for the admin user
+  anymore but can be used for normal users.
+  The SQL migration script migrates existing admin policies by moving
+  the usernames of administrators to the new username field.
+
+* PostgreSQL database adapter removed from default installation
+
+  When installing privacyIDEA from github or via Pypi, the ``psycopg2`` package
+  won't be installed anymore. Instead one can use
+  ``pip install privacyIDEA[postgres]`` to also install the required packages.
+
+* Internal signature of the tokenclass method
+
+  ``get_default_settings`` changed.
+  If you added your own tokenclass, please assure to update
+  your function signature.
+
+* Output of Logger Audit changed
+
+  The log-message of the Logger Audit is now converted to a JSON-encoded string
+  sorted by keywords. This could potentially mess up subsequent reporting
+  configurations.
+
+* Update of some HTML templates due to update of UI components
+
+  Several HTML templates have changed and might render custom templates unusable.
+  Please check your custom templates and compare to these changes:
+   - File upload component changed
+   - Switch ``pattern`` to ``ng-pattern`` to avoid error message in console
+   - Accordion component changed
+   - Pagination component changed
+   - Tooltip component changed
+
+## Update from 3.1 to 3.2
+
+* Change to Python 3
+
+  The built Ubuntu und CentOS packages are now built with Python 3.
+  The virtual environments thus have changed.
+  If you have any changes like customizations under
+  /opt/privacyidea/lib/python2.7/ these will not be found anymore
+  and the WebUI could result in not being accessable.
+  This could be relevant when using ``PI_CUSTOM_CSS = True``
+  or ``PI_CUSTOMIZATION`` in your pi.cfg file.
+
+  You will have to move the corresponding files to
+  /opt/privacyidea/lib/python3.x/...
+
+* MySQL-python obsolete
+
+  With the change to Python 3 the MySQL DB driver has become
+  obsolete since it is not supported under Python 3 anymore.
+  If your current DB URI starts with "mysql://", the
+  update script will automatically change this to
+  "mysql+pymysql://" to assure further operation under Python 3.
+
+* REST API
+
+  The endpoints "GET /event" has been changed to "GET /event/"
+  since it returns a list of events.
+  The endpoints "GET /smsgateway" has been changed to
+  "GET /smsgateway/"  since it returns a list of events.
+
 ## Update from 3.0 to 3.1
 
 * Policies
@@ -29,7 +134,7 @@
   migrated to the "tokenowner" table.   
 
 * The packaging for ubuntu has changed. While privacyIDEA 2.23 was
-  installed into the system environment, the ubuntu packages 
+  installed into the system environment, the ubuntu packages
   starting with privacyIDEA 3.0 will install the software in the
   Python virtual environment at /opt/privacyidea.
   However, the debian package update process will take care of this.

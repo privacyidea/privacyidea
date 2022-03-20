@@ -1,11 +1,10 @@
+.. index:: Audit
 .. _audit:
 
 Audit
 =====
 
-.. index:: Audit
-
-The systems provides a sophisticated audit log, that can be viewed in the 
+The systems provides a sophisticated audit log, that can be viewed in the
 WebUI.
 
 .. figure:: auditlog.png
@@ -13,14 +12,22 @@ WebUI.
 
    *Audit Log*
 
-privacyIDEA comes with an SQL audit module. (see :ref:`code_audit`)
+privacyIDEA comes with a default SQL audit module (see :ref:`code_audit`).
 
+Starting with version 3.2 privacyIDEA also provides a :ref:`logger_audit` and
+a :ref:`container_audit` which can be used to send privacyIDEA audit log messages
+to services like splunk or logstash.
+
+.. _sql_audit:
+
+SQL Audit
+---------
+
+.. index:: Audit Log Rotate
 .. _audit_rotate:
 
 Cleaning up entries
--------------------
-
-.. index:: Audit Log Rotate
+~~~~~~~~~~~~~~~~~~~
 
 The ``sqlaudit`` module writes audit entries to an SQL database.
 For performance reasons the audit module does no log rotation during
@@ -28,29 +35,32 @@ the logging process.
 
 But you can set up a cron job to clean up old audit entries. Since version
 2.19 audit entries can be either cleaned up based on the number of entries or
-based on on the age.
+based on on the age. Cleaning based on the age takes precedence.
 
-Cleaning based on the age takes precedence:
+Cleaning based on the number of entries:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can specify a *highwatermark* and a *lowwatermark*. To clean
 up the audit log table, you can call ``pi-manage`` at command line::
-   
+
    pi-manage rotate_audit --highwatermark 20000 --lowwatermark 18000
 
 This will, if there are more than 20.000 log entries, clean all old
 log entries, so that only 18000 log entries remain.
 
 Cleaning based on the age:
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can specify the number of days, how old an audit entry may be at a max.
+You can specify the number of days, how old an audit entry may be at a max::
 
    pi-manage rotate_audit --age 365
 
 will delete all audit entries that are older than one year.
 
-Cleaning based on the config file:
-
 .. index:: retention time
+
+Cleaning based on the config file:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Using a config file you can define different retention times for the audit data.
 E.g. this way you can define, that audit entries about token listings can be deleted after
@@ -98,7 +108,7 @@ If is a good idea to have a *catch-all* rule at the end.
    "user", "realm"... for a complete list see the model definition.
    You may use Python regular expressions for matching.
 
-You can the add a call like
+You can the add a call like::
 
    pi-manage rotate_audit --config /etc/privacyidea/audit.yaml
 
@@ -127,10 +137,117 @@ This will read the configuration (only the database uri) from the config file
 Table size
 ~~~~~~~~~~
 
-Sometimes the entires to be written to the database may be longer than the
-column in the database. You can either enlarge the columns in the database or
-you can set
+Sometimes the entries to be written to the database may be longer than the
+column in the database. You should set::
 
    PI_AUDIT_SQL_TRUNCATE = True
 
 in ``pi.cfg``. This will truncate each entry to the defined column length.
+
+However, if you sill want to fetch more information in the audit log, you can
+increase the column length directly in the database by the usual database means.
+However, privacyIDEA does not know about this, and will still truncate the entries
+to the originally defined length.
+
+To avoid this, you need to tell privacyIDEA about the changes.
+In Your :ref:`config file <cfgfile>` add the setting like::
+
+    PI_AUDIT_SQL_COLUMN_LENGTH = {"user": 100,
+                                  "policies": 1000}
+
+which will increase truncation of the user column to 100 and the policies
+column to 1000. Check the database schema for the available columns.
+
+.. _logger_audit:
+
+Logger Audit
+------------
+
+The *Logger Audit* module can be used to write audit log information to
+the Python logging facility and thus write log messages to a plain file,
+a syslog daemon, an email address or any destination that is supported
+by the Python logging mechanism. The log message passed to the python logging
+facility is a JSON-encoded string of the fields of the audit entry.
+
+You can find more information about this in :ref:`advanced_logging`.
+
+To activate the *Logger Audit* module you need to configure the following
+settings in your :ref:`pi.cfg <cfgfile>` file::
+
+   PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.loggeraudit"
+   PI_AUDIT_SERVERNAME = "your choice"
+   PI_LOGCONFIG = "/etc/privacyidea/logging.cfg"
+
+You can optionally set a custom logging name for the logger audit with::
+
+   PI_AUDIT_LOGGER_QUALNAME = "pi-audit"
+
+It defaults to the module name ``privacyidea.lib.auditmodules.loggeraudit``.
+In contrast to the :ref:`sql_audit` you *need* a ``PI_LOGCONFIG`` otherwise
+the *Logger Audit* will not work correctly.
+
+In the ``logging.cfg`` you then need to define the audit logger::
+
+   [logger_audit]
+   handlers=audit
+   qualname=privacyidea.lib.auditmodules.loggeraudit
+   level=INFO
+
+   [handler_audit]
+   class=logging.handlers.RotatingFileHandler
+   backupCount=14
+   maxBytes=10000000
+   formatter=detail
+   level=INFO
+   args=('/var/log/privacyidea/audit.log',)
+
+Note, that the ``level`` always needs to be *INFO*. In this example the
+audit log will be written to the file ``/var/log/privacyidea/audit.log``.
+
+Finally you need to extend the following settings with the defined audit logger
+and audit handler::
+
+   [handlers]
+   keys=file,audit
+
+   [loggers]
+   keys=root,privacyidea,audit
+
+.. note:: The *Logger Audit* only allows to **write** audit information. It
+   can not be used to **read** data. So if you are only using the
+   *Audit Logger*, you will not be able to *view* audit information in the
+   privacyIDEA Web UI!
+   To still be able to *read* audit information, take a look at the
+   :ref:`container_audit`.
+
+.. note:: The policies :ref:`policy_auth_max_success`
+   and :ref:`policy_auth_max_fail`
+   depend on reading the audit log. If you use a non readable audit log
+   like the *Logger Audit* these policies will not work.
+
+.. _container_audit:
+
+Container Audit
+---------------
+
+The *Container Audit* module is a meta audit module, that can be used to
+write audit information to more than one audit module.
+
+It is configured in the ``pi.cfg`` like this::
+
+    PI_AUDIT_MODULE = 'privacyidea.lib.auditmodules.containeraudit'
+    PI_AUDIT_CONTAINER_WRITE = ['privacyidea.lib.auditmodules.sqlaudit','privacyidea.lib.auditmodules.loggeraudit']
+    PI_AUDIT_CONTAINER_READ = 'privacyidea.lib.auditmodules.sqlaudit'
+
+The key ``PI_AUDIT_CONTAINER_WRITE`` contains a list of audit modules,
+to which the audit information should be written. The listed
+audit modules need to be configured as mentioned in the corresponding audit
+module description.
+
+The key ``PI_AUDIT_CONTAINER_READ`` contains one single audit module, that
+is capable of reading information. In this case the :ref:`sql_audit` module can be
+used. The :ref:`logger_audit` module can **not** be used for reading!
+
+Using the *Container Audit* module you can on the one hand send audit information
+to external services using the :ref:`logger_audit` but also keep the
+audit information visible within privacyIDEA using the :ref:`sql_audit` module.

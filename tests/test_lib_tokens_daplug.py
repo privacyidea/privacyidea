@@ -79,8 +79,8 @@ class DaplugTokenTestCase(MyTestCase):
 
         token.add_user(User(login="cornelius",
                             realm=self.realm1))
-        self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
-        self.assertEqual(token.token.owners.first().user_id, "1000")
+        self.assertEqual(token.token.first_owner.resolver, self.resolvername1)
+        self.assertEqual(token.token.first_owner.user_id, "1000")
 
         user_object = token.user
         self.assertTrue(user_object.login == "cornelius",
@@ -134,7 +134,7 @@ class DaplugTokenTestCase(MyTestCase):
         token.token.maxfail = 12
         self.assertTrue(token.get_max_failcount() == 12)
 
-        self.assertEqual(token.get_user_id(), token.token.owners.first().user_id)
+        self.assertEqual(token.get_user_id(), token.token.first_owner.user_id)
 
         self.assertTrue(token.get_serial() == "SE123456", token.token.serial)
         self.assertTrue(token.get_tokentype() == "daplug",
@@ -326,10 +326,10 @@ class DaplugTokenTestCase(MyTestCase):
                       "pin": "test",
                       "otplen": 6})
         # OTP does not exist
-        self.assertEquals(token.check_otp_exist(_digi2daplug("222333")), -1)
+        self.assertEqual(token.check_otp_exist(_digi2daplug("222333")), -1)
         # OTP does exist
         res = token.check_otp_exist(_digi2daplug("969429"))
-        self.assertEquals(res, 3, res)
+        self.assertEqual(res, 3, res)
 
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

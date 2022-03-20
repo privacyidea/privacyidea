@@ -18,8 +18,9 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-angular.module("privacyideaAuth", [])
-    .factory("AuthFactory", function (inform, gettextCatalog, $state) {
+angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
+    .factory("AuthFactory", ["inform", "gettextCatalog", "$state",
+                             function (inform, gettextCatalog, $state) {
         /*
         Each service - just like this service factory - is a singleton.
         Here we just store the username of the authenticated user and his
@@ -38,6 +39,10 @@ angular.module("privacyideaAuth", [])
             },
             authError: function(error) {
                 var authErrorCodes = Array(403, 4031, 4032, 4033, 4034, 4035, 4036);
+                if (error === null) {
+                    console.warn('No error object available, maybe the request was aborted?')
+                    return
+                }
                 if (typeof (error) === "string") {
                     inform.add(gettextCatalog.getString("Failed to get a valid JSON response from the privacyIDEA server."),
                         {type: "danger", ttl: 10000});
@@ -75,18 +80,20 @@ angular.module("privacyideaAuth", [])
                 ////debug: console.log("checking right: " + action + ": " + res);
                 return res;
             },
-            getRightsValue: function (action) {
+            getRightsValue: function (action, defaultValue=false) {
                 // return the value of an action like otp_pin_minlength
-                var res = false;
-                user.rights.forEach(function(entry){
-                    if (entry.indexOf("=") >= 0) {
-                        // this is a value action
-                        var components = entry.split("=");
-                        if (components[0] === action) {
-                            res = components[1];
+                var res = defaultValue;
+                if (user.rights) {
+                    user.rights.forEach(function (entry) {
+                        if (entry.indexOf("=") >= 0) {
+                            // this is a value action
+                            var components = entry.split("=");
+                            if (components[0] === action) {
+                                res = components[1];
+                            }
                         }
-                    }
-                });
+                    });
+                }
                 return res;
             },
             checkMainMenu: function (menu) {
@@ -96,16 +103,18 @@ angular.module("privacyideaAuth", [])
             checkEnroll: function() {
                 // Check if any enroll* action is contained in user.rights
                 var res = false;
-                user.rights.forEach(function(entry){
-                    // check if the action starts with "enroll"
-                    if (entry.indexOf("enroll") === 0) {
-                        res = true;
-                    }
-                });
+                if (user.rights) {
+                    user.rights.forEach(function(entry){
+                        // check if the action starts with "enroll"
+                        if (entry.indexOf("enroll") === 0) {
+                            res = true;
+                        }
+                    });
+                }
                 return res;
             }
         };
-    });
+    }]);
 
 //
 // Taken from

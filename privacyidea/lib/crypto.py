@@ -57,7 +57,7 @@ import ctypes
 import base64
 import traceback
 from six import PY2
-
+from passlib.context import CryptContext
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
@@ -74,15 +74,31 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
 import passlib.hash
-if hasattr(passlib.hash.pbkdf2_sha512, "encrypt"):
-    hash_admin_pw = passlib.hash.pbkdf2_sha512.encrypt
-elif hasattr(passlib.hash.pbkdf2_sha512, "hash"):
-    hash_admin_pw = passlib.hash.pbkdf2_sha512.hash
-else:
-    raise Exception("No password hashing method available")
+from passlib.hash import argon2
+try:
+    # For Python 3.6 and above
+    from secrets import compare_digest
+except ImportError:
+    # For Python 2.7 and above
+    from hmac import compare_digest
+
+
+def safe_compare(a, b):
+    return compare_digest(to_bytes(a), to_bytes(b))
+
 
 if not PY2:
     long = int
+
+ROUNDS = 9
+
+# The CryptContext makes it easier to work with multiple password hash algorithms:
+# The first algorithm in the list is the default algorithm used for hashing.
+# When verifying a password hash, all algorithms in the context are checked
+# until one succeeds (or all fail).
+
+DEFAULT_HASH_ALGO_LIST = ['argon2', 'pbkdf2_sha512']
+DEFAULT_HASH_ALGO_PARAMS = {'argon2__rounds': ROUNDS}
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
 
@@ -107,7 +123,7 @@ class SecretObj(object):
     def compare(self, key):
         bhOtpKey = binascii.unhexlify(key)
         enc_otp_key = to_bytes(encrypt(bhOtpKey, self.iv))
-        return enc_otp_key == self.val
+        return safe_compare(enc_otp_key, self.val)
 
     def hmac_digest(self, data_input, hash_algo):
         self._setupKey_()
@@ -167,6 +183,39 @@ def hash(val, seed, algo=None):
     return hexlify_and_unicode(m.digest())
 
 
+@log_with(log, log_entry=False, log_exit=False)
+def pass_hash(password):
+    """
+    Hash password with crypt context
+    :param password: The password to hash
+    :type password: str
+    :return: The hash string of the password
+    """
+    DEFAULT_HASH_ALGO_PARAMS.update(get_app_config_value("PI_HASH_ALGO_PARAMS",
+                                                         default={}))
+    pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
+                                                 default=DEFAULT_HASH_ALGO_LIST),
+                            **DEFAULT_HASH_ALGO_PARAMS)
+    pw_dig = pass_ctx.hash(password)
+    return pw_dig
+
+
+@log_with(log, log_entry=False, log_exit=False)
+def verify_pass_hash(password, hvalue):
+    """
+    Verify the hashed password value
+    :param password: The plaintext password to verify
+    :type password: str
+    :param hvalue: The hashed password
+    :type hvalue: str
+    :return: True if the password matches
+    :rtype: bool
+    """
+    pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
+                                                 default=DEFAULT_HASH_ALGO_LIST))
+    return pass_ctx.verify(password, hvalue)
+
+
 def hash_with_pepper(password):
     """
     Hash function to hash with salt and pepper. The pepper is read from
@@ -180,8 +229,7 @@ def hash_with_pepper(password):
     :rtype: str
     """
     key = get_app_config_value("PI_PEPPER", "missing")
-    pw_dig = hash_admin_pw(key + password)
-    return pw_dig
+    return pass_hash(key + password)
 
 
 def verify_with_pepper(passwordhash, password):
@@ -198,8 +246,8 @@ def verify_with_pepper(passwordhash, password):
     # get the password pepper
     password = password or ""
     key = get_app_config_value("PI_PEPPER", "missing")
-    success = passlib.hash.pbkdf2_sha512.verify(key + password, passwordhash)
-    return success
+
+    return verify_pass_hash(key + password, passwordhash)
 
 
 def init_hsm():
@@ -648,7 +696,7 @@ def _slow_rsa_verify_raw(key, sig, msg):
     else:  # pragma: no cover
         raise TypeError('No public key')
 
-    # compute m**d (mod n)
+    # compute m**d (mod n) and compare the two integers
     return msg == pow(sig, pn.e, pn.n)
 
 
@@ -811,16 +859,28 @@ def generate_otpkey(key_size=20):
 
 
 def generate_password(size=6, characters=string.ascii_lowercase +
-                        string.ascii_uppercase + string.digits):
+                        string.ascii_uppercase + string.digits, requirements=[]):
     """
-    Generate a random password of the specified lenght of the given characters
+    Generate a random password of the specified length of the given characters
+    with optional requirements
 
-    :param size: The length of the password
+    :param size: The length of the password. If smaller than the number of requirements,
+    the requirements define the password length.
     :param characters: The characters the password may consist of
+    :param requirements: A list of strings from which the password must contain at least one character.
+    Note that the requirements are not automatically added to the base character set.
     :return: password
     :rtype: basestring
     """
-    return ''.join(urandom.choice(characters) for _x in range(size))
+    if len(requirements) > size:
+        log.info('The number of requirements is larger then the password length.')
+    # add one random character from each string in the requirements list
+    passwd = [urandom.choice(str) for str in requirements]
+    # fill the password until size with allowed characters
+    passwd.extend(urandom.choice(characters) for _x in range(size - len(requirements)))
+    # return shuffled password
+    random.shuffle(passwd)
+    return "".join(passwd)
 
 
 def generate_keypair(rsa_keysize=2048):

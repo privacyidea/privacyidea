@@ -52,6 +52,7 @@ import logging
 import traceback
 from privacyidea.lib.log import log_with
 import socket
+import datetime
 
 log = logging.getLogger(__name__)
 
@@ -69,46 +70,31 @@ class Paginate(object):
         self.next = None
         # the number of the current page
         self.current = 1
+        self.page = 1
         # the total entry numbers
         self.total = 0
     
 
 class Audit(object):  # pragma: no cover
 
-    def __init__(self, config=None):
+    is_readable = False
+
+    def __init__(self, config=None, startdate=None):
         """
         Create a new audit object.
 
         :param config: The web config is passed to the audit module, so that
         the special module implementation can get its configuration.
         :type config: dict
-        :return:
+        :param startdate: The datetime of the beginning of the request
+        :type startdate: datetime
+        :return: Audit object
         """
         self.name = "AuditBase"
-        self.audit_data = {}
+        self.audit_data = {'startdate': startdate or datetime.datetime.now()}
+        self.config = config or {}
         self.private = ""
         self.public = ""
-
-    @log_with(log)
-    def initialize(self):
-        # defaults
-        self.audit_data = {'action_detail': '',
-                   'info': '',
-                   'log_level': 'INFO',
-                   'administrator': '',
-                   'value': '',
-                   'key': '',
-                   'serial': '',
-                   'token_type': '',
-                   'clearance_level': 0,
-                   'privacyidea_server': socket.gethostname(),
-                   'realm': '',
-                   'user': '',
-                   'client': ''
-                   }
-        #controller = request.environ['pylons.routes_dict']['controller']
-        #action = request.environ['pylons.routes_dict']['action']
-        #c.audit['action'] = "%s/%s" % (controller, action)
 
     def log_token_num(self, count):
         """
@@ -147,16 +133,29 @@ class Audit(object):  # pragma: no cover
             log.debug(traceback.format_exc())
             raise e
 
-
     def get_audit_id(self):
         return self.name
 
-    def get_total(self, param, AND=True, display_error=True):
+    @property
+    def available_audit_columns(self):
+        return ['number', 'action', 'success', 'serial', 'date', 'startdate',
+                'duration', 'token_type', 'user', 'realm', 'administrator',
+                'action_detail', 'info', 'privacyidea_server', 'client',
+                'log_level', 'policies', 'clearance_level', 'sig_check',
+                'missing_line', 'resolver']
+
+    def get_total(self, param, AND=True, display_error=True, timelimit=None):
         """
         This method returns the total number of audit entries
         in the audit store
         """
         return None
+
+    @property
+    def has_data(self):
+        # We check if there is actually audit_data with an action.
+        # Since the audit_data is initialized with the startdate.
+        return bool(self.audit_data and "action" in self.audit_data)
 
     @log_with(log)
     def log(self, param):
@@ -227,7 +226,8 @@ class Audit(object):  # pragma: no cover
 #        """
 #        pass
 
-    def search(self, param, display_error=True, rp_dict=None, timelimit=None):
+    def search(self, search_dict, page_size=15, page=1, sortorder="asc",
+               timelimit=None):
         """
         This function is used to search audit events.
 
@@ -259,7 +259,8 @@ class Audit(object):  # pragma: no cover
         """
         pass
 
-    def search_query(self, search_dict, rp_dict):
+    def search_query(self, search_dict, page_size=15, page=1, sortorder="asc",
+                     sortname="number", timelimit=None):
         """
         This function returns the audit log as an iterator on the result
         """

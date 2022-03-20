@@ -1,14 +1,19 @@
 dist: xenial
 language: python
-sudo: false
 python:
   - "2.7"
   - "3.5"
   - "3.6"
   - "3.7"
+  - "3.8"
+  - "3.9"
+
+# check if we need to run travis
+before_install: ./.travis_check.sh; ret=$?; if [ $ret -eq 123 ]; then travis_terminate 0; elif [
+  $ret -ne 0 ]; then travis_terminate $ret; fi
+
 # command to install dependencies
 install:
-  - "pip install ."
   - "pip install -r tests/requirements.txt"
   - "pip install codecov"
 
@@ -21,7 +26,7 @@ env:
     - TESTS=tests/
 
 # command to run tests
-script: "python -b -m pytest -v --cov=privacyidea $TESTS"
+script: "python -b -m pytest -v --cov=privacyidea --cov-append --durations=100 $TESTS"
 
 after_success: 
     - codecov

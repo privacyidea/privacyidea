@@ -41,6 +41,7 @@ from hashlib import sha1
 
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.log import log_with
+from privacyidea.lib.crypto import safe_compare
 
 
 log = logging.getLogger(__name__)
@@ -133,11 +134,12 @@ class HmacOtp(object):
     def checkOtp(self, anOtpVal, window, symetric=False):
         """
 
-        :param anOtpVal:
-        :type anOtpVal: bytestring
+        :param anOtpVal: The OTP value to check
+        :type anOtpVal: str
         :param window:
         :param symetric:
-        :return:
+        :return: -1 if the OTP doesn't match or the current counter
+        :rtype: int
         """
         res = -1
         start = self.counter
@@ -153,7 +155,7 @@ class HmacOtp(object):
             otpval = self.generate(c)
             #log.debug("calculating counter {0!r}".format(c))
 
-            if otpval == anOtpVal:
+            if safe_compare(otpval, anOtpVal):
                 res = c
                 break
         # return -1 or the counter

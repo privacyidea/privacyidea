@@ -18,8 +18,10 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.controller("eventController", function($scope, $stateParams, $state,
-                                             $location, ConfigFactory) {
+myApp.controller("eventController", ["$scope", "$stateParams", "$state",
+                                     "$location", "ConfigFactory",
+                                     function($scope, $stateParams, $state,
+                                              $location, ConfigFactory) {
     if ($location.path() === "/config/events") {
         $location.path("/config/events/list");
     }
@@ -54,6 +56,7 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
             $scope.getEvents();
         });
     };
+
     $scope.orderChanged = function (event) {
         //debug: console.log(event);
         ConfigFactory.setEvent(event, function() {
@@ -67,9 +70,11 @@ myApp.controller("eventController", function($scope, $stateParams, $state,
 
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.getEvents);
-});
+}]);
 
-myApp.controller("eventDetailController", function($scope, $stateParams,
+myApp.controller("eventDetailController", ["$scope", "$stateParams",
+                                           "ConfigFactory", "$state",
+                                           function($scope, $stateParams,
                                                     ConfigFactory, $state) {
     // init
     $scope.form = {};
@@ -79,6 +84,7 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
     $scope.conds = {};
     $scope.actionCheckBox = {};
     $scope.conditionCheckBox = {};
+    $scope.condition_filter = "";
     $('html,body').scrollTop(0);
 
     $scope.getEvent = function () {
@@ -225,6 +231,8 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
         ConfigFactory.getHandlerConditions($scope.form.handlermodule,
             function (conditions) {
                 $scope.handlerConditions = conditions.result.value;
+                $scope.conditionGroups = []
+
                 // tick selected handlerConditions, if type===multi
                 angular.forEach($scope.handlerConditions, function(condition, name){
                      if (condition.type === "multi" && Object.keys($scope.conds).indexOf(name) >= 0) {
@@ -242,9 +250,14 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
                             }
                         }
                     }
+                    if ($scope.conditionGroups.indexOf(condition.group) < 0) {
+                        $scope.conditionGroups.push(condition.group)
+                    }
                 });
             });
     };
+
+
 
     $scope.handlerModuleChanged = function () {
         $scope.getHandlerActions();
@@ -259,4 +272,4 @@ myApp.controller("eventDetailController", function($scope, $stateParams,
     $scope.getAvailableEvents();
     $scope.getHandlerModules();
 
-});
+}]);

@@ -20,7 +20,8 @@
                 <button ng-click="authenticate_remote_user()"
                         class="btn btn-primary btn-block" translate>Log In
                 </button>
-                <button ng-click="loginWithCredentials = true"
+                <button ng-hide="forceRemoteUser === 'True'"
+                        ng-click="loginWithCredentials = true"
                         class="btn btn-info btn-block" translate>
                     Login with credentials
                 </button>
@@ -56,7 +57,7 @@
                        class="form-control round-top"
                        ng-model="login.username" required
                        placeholder="{{ 'Username'|translate }}"
-                       focus="true"/>
+                       autofocus/>
                 <label for="realm" class="sr-only" translate>Realm</label>
                 <select class="form-control round-none"
                         name="realm"
@@ -69,7 +70,7 @@
                     <option ng-hide="piRealms[0]===''" value="" selected translate>Choose a realm...</option>
                 </select>
                 <label for="password" class="sr-only" translate>Password</label>
-                <input name="password" type="password" autocomplete="off"
+                <input name="password" type="password"
                        id="password" class="form-control round-bottom"
                        ng-model="login.password" required
                        placeholder="{{ 'Password'|translate }}"/>

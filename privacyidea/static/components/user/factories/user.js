@@ -19,8 +19,10 @@
  *
  */
 
-myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
-                                       userUrl, inform, $q) {
+myApp.factory("UserFactory", ['AuthFactory', '$http', '$state', '$rootScope',
+                              'userUrl', 'inform', '$q',
+                              function (AuthFactory, $http, $state, $rootScope,
+                                        userUrl, inform, $q) {
 
         var canceller = $q.defer();
 
@@ -34,28 +36,30 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
                     headers: {'PI-Authorization': AuthFactory.getAuthToken() },
                     params: params,
                     timeout: canceller.promise
-                }).success(callback
-                ).error(AuthFactory.authError);
+                }).then(function(response) { callback(response.data)},
+                        function(error) { AuthFactory.authError(error.data) });
             },
             getUserDetails: function(params, callback) {
                 // get user information without cancelling the call.
                 $http.get(userUrl + "/", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken() },
                     params: params
-                }).success(callback
-                ).error(AuthFactory.authError);
+                }).then(function(response) { callback(response.data)},
+                        function(error) { AuthFactory.authError(error.data) });
             },
             updateUser: function(resolver, params, callback) {
                 params.resolver = resolver;
                 params.user = params.username;
                 $http.put(userUrl + "/", params,
                     {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                    }).success(callback).error(AuthFactory.authError);
+                    }).then(function(response) { callback(response.data)},
+                            function(error) { AuthFactory.authError(error.data) });
             },
             deleteUser: function(resolver, username, callback) {
                 $http.delete(userUrl + "/" + resolver + "/" + username,
                     {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                    }).success(callback).error(AuthFactory.authError);
+                    }).then(function(response) { callback(response.data)},
+                            function(error) { AuthFactory.authError(error.data) });
             },
             createUser: function(resolver, User, callback) {
                 var params = User;
@@ -63,8 +67,41 @@ myApp.factory("UserFactory", function (AuthFactory, $http, $state, $rootScope,
                 params.resolver = resolver;
                 $http.post(userUrl + "/", params,
                     {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                    }).success(callback).error(AuthFactory.authError);
+                    }).then(function(response) { callback(response.data)},
+                            function(error) { AuthFactory.authError(error.data) });
+            },
+            getEditableAttributes: function(params, callback) {
+                $http.get(userUrl + "/editable_attributes/", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken() },
+                    params: params
+                }).then(function(response) { callback(response.data)},
+                        function(error) { AuthFactory.authError(error.data) });
+            },
+            setCustomAttribute: function(username, realmname, key, value, callback) {
+                var params = {
+                    "user": username, "realm": realmname,
+                    "key": key, "value": value};
+                $http.post(userUrl + "/attribute", params,
+                    {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function(response) {callback(response.data)},
+                    function(error) {AuthFactory.authError(error.data)});
+            },
+            deleteCustomAttribute: function(username, realmname, key, callback) {
+                $http.delete(userUrl + "/attribute/" + key + "/" + username + "/" + realmname,
+                    {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function(response) {callback(response.data)},
+                    function(error) {AuthFactory.authError(error.data)});
+            },
+            getCustomAttributes: function(username, realmname, callback) {
+                var params = {
+                    "user": username, "realm": realmname};
+                $http.get(userUrl + "/attribute",
+                    {headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                     params: params
+                    }).then(function(response) {callback(response.data)},
+                    function(error) {AuthFactory.authError(error.data)});
             }
+
         };
 
-});
+}]);

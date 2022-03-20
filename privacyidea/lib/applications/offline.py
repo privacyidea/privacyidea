@@ -27,7 +27,7 @@ from privacyidea.lib.applications import MachineApplicationBase
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ValidateError, ParameterError
 import logging
-import passlib.hash
+from passlib.hash import pbkdf2_sha512
 from privacyidea.lib.token import get_tokens
 log = logging.getLogger(__name__)
 ROUNDS = 6549
@@ -81,10 +81,8 @@ class MachineApplication(MachineApplicationBase):
         otps = otp_dict.get("otp")
         for key in otps.keys():
             # Return the hash of OTP PIN and OTP values
-            otps[key] = passlib.hash. \
-                pbkdf2_sha512.encrypt(otppin + otps.get(key),
-                                      rounds=rounds,
-                                      salt_size=10)
+            otps[key] = pbkdf2_sha512.using(
+                rounds=rounds, salt_size=10).hash(otppin + otps.get(key))
         # We do not disable the token, so if all offline OTP values
         # are used, the token can be used the authenticate online again.
         # token_obj.enable(False)
@@ -176,7 +174,7 @@ class MachineApplication(MachineApplicationBase):
                         ret["username"] = uInfo.get("username")
 
         else:
-            log.info("Token %r, type %r is not supported by"
+            log.info("Token %r, type %r is not supported by "
                      "OFFLINE application module" % (serial, token_type))
 
         return ret

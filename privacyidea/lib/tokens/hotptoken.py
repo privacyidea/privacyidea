@@ -5,6 +5,8 @@
 #  License: AGPLv3
 #  contact: http://www.privacyidea.org
 #
+#  2022-02-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Add verified enrollment
 #  2018-06-06 Michael Becker <michael.becker@hs-niederrhein.de>
 #             Add get_setting_type to make hotp.hashlib public and
 #             therefore recognised in token enrollment with role user.
@@ -53,22 +55,20 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import (TokenClass,
                                         TWOSTEP_DEFAULT_DIFFICULTY,
                                         TWOSTEP_DEFAULT_CLIENTSIZE,
-                                        TOKENKIND)
+                                        TOKENKIND, ROLLOUTSTATE)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
-                                   hexlify_and_unicode)
-from privacyidea.lib.policydecorators import challenge_response_allowed
+                                   hexlify_and_unicode, determine_logged_in_userparams)
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.auth import ROLE
-from privacyidea.lib.policy import SCOPE, ACTION
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP, Match
 from privacyidea.lib import _
 import traceback
 import logging
 
-from passlib.utils.pbkdf2 import pbkdf2
+from passlib.crypto.digest import pbkdf2_hmac
 
 optional = True
 required = False
@@ -79,11 +79,18 @@ keylen = {'sha1': 20,
           'sha512': 64
           }
 
+VERIFY_ENROLLMENT_MESSAGE = _("Please enter a valid OTP value of the new token.")
+
 
 class HotpTokenClass(TokenClass):
     """
     hotp token class implementation
     """
+
+    previous_otp_offset = 1
+
+    # The HOTP token provides means to verify the enrollment
+    can_verify_enrollment = True
 
     @staticmethod
     def get_class_type():
@@ -120,8 +127,8 @@ class HotpTokenClass(TokenClass):
         desc_self1 = _('Specify the hashlib to be used. '
                        'Can be sha1 (1) or sha2-256 (2).')
         desc_self2 = _('Specify the otplen to be used. Can be 6 or 8 digits.')
-        desc_two_step_user =_('Specify whether users are allowed or forced to use '
-                              'two-step enrollment.')
+        desc_two_step_user = _('Specify whether users are allowed or forced to use '
+                               'two-step enrollment.')
         desc_two_step_admin = _('Specify whether admins are allowed or forced to use '
                                 'two-step enrollment.')
         res = {'type': 'hotp',
@@ -132,22 +139,30 @@ class HotpTokenClass(TokenClass):
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.ENROLL: {
-                       'yubikey_access_code': {
-                           'type': 'str',
-                           'desc': _("The Yubikey access code used to initialize Yubikeys.")
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of HOTP tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of active HOTP tokens assigned."),
+                           'group': GROUP.TOKEN
                        },
                        'hotp_2step_clientsize': {
                            'type': 'int',
-                           'desc': _("The size of the OTP seed part contributed by the client (in bytes)")
+                           'desc': _("The size of the OTP seed part contributed "
+                                     "by the client (in bytes)")
                        },
                        'hotp_2step_serversize': {
                            'type': 'int',
-                           'desc': _("The size of the OTP seed part contributed by the server (in bytes)")
+                           'desc': _("The size of the OTP seed part contributed "
+                                     "by the server (in bytes)")
                        },
                        'hotp_2step_difficulty': {
                            'type': 'int',
-                           'desc': _("The difficulty factor used for the OTP seed generation "
-                                     "(should be at least 10000)")
+                           'desc': _("The difficulty factor used for the OTP "
+                                     "seed generation (should be at least 10000)")
                        },
                        'hotp_' + ACTION.FORCE_APP_PIN: {
                            'type': 'bool',
@@ -164,15 +179,22 @@ class HotpTokenClass(TokenClass):
                        'hotp_otplen': {'type': 'int',
                                        'value': [6, 8],
                                        'desc': desc_self2},
-                       'hotp_force_server_generate': {'type': 'bool',
-                                                      'desc': _("Force the key to "
-                                                                "be generated on "
-                                                                "the server.")},
+                       'hotp_force_server_generate': {
+                           'type': 'bool',
+                           'desc': _("Force the key to be generated on the server.")},
                        'hotp_2step': {'type': 'str',
                                       'value': ['allow', 'force'],
                                       'desc': desc_two_step_user}
                    },
                    SCOPE.ADMIN: {
+                       'hotp_hashlib': {'type': 'str',
+                                        'value': ["sha1",
+                                                  "sha256",
+                                                  "sha512"],
+                                        'desc': desc_self1},
+                       'hotp_otplen': {'type': 'int',
+                                       'value': [6, 8],
+                                       'desc': desc_self2},
                        'hotp_2step': {'type': 'str',
                                       'value': ['allow', 'force'],
                                       'desc': desc_two_step_admin}
@@ -350,31 +372,23 @@ class HotpTokenClass(TokenClass):
                      get_from_config("hotp.hashlib", u'sha1')
         return hashlibStr
 
-    # challenge interfaces starts here
-    @log_with(log)
-    @challenge_response_allowed
-    def is_challenge_request(self, passw, user=None, options=None):
+    def _calc_otp(self, counter):
         """
-        check, if the request would start a challenge
-
-        - default: if the passw contains only the pin, this request would
-        trigger a challenge
-
-        - in this place as well the policy for a token is checked
-
-        :param passw: password, which might be pin or pin+otp
-        :param options: dictionary of additional request parameters
-
-        :return: returns true or false
+        Helper function to calculate the OTP value for the given counter
+        :param counter: The OTP counter
+        :return: OTP value as string
         """
-        trigger_challenge = False
-        options = options or {}
-        pin_match = self.check_pin(passw, user=user, options=options)
-        if pin_match is True:
-            trigger_challenge = True
+        otplen = int(self.token.otplen)
+        secretHOtp = self.token.get_otpkey()
+        hmac2Otp = HmacOtp(secretHOtp,
+                           self.get_otp_count(),
+                           otplen,
+                           self.get_hashlib(self.hashlib))
 
-        return trigger_challenge
-
+        otpval = hmac2Otp.generate(counter=counter,
+                                   inc_counter=False,
+                                   do_truncation=True)
+        return otpval
 
     @log_with(log)
     @check_token_locked
@@ -453,7 +467,7 @@ class HotpTokenClass(TokenClass):
         return res
 
     @log_with(log)
-    def is_previous_otp(self, otp, window=10):
+    def is_previous_otp(self, otp):
         """
         Check if the OTP values was previously used.
 
@@ -461,12 +475,17 @@ class HotpTokenClass(TokenClass):
         :param window:
         :return:
         """
-        res = False
-        r = self.check_otp_exist(otp, window=window, symetric=True,
-                                 inc_counter=False)
-        if 0 <= r < self.token.count:
-            res = True
-        return res
+        counter = int(self.get_otp_count())
+        if counter > 0:
+            previous_otp = self._calc_otp(counter - self.previous_otp_offset)
+            res = previous_otp == otp
+            if res:
+                log.info("Previous OTP used again. "
+                         "Serial {0!s} with counter {1!s}.".format(self.token.serial, counter))
+            return res
+        else:
+            # The internal counter is 0, the token was not used, yet.
+            return False
 
     @log_with(log)
     def _autosync(self, hmac2Otp, anOtpVal):
@@ -670,49 +689,43 @@ class HotpTokenClass(TokenClass):
         return settings.get(key, "")
 
     @classmethod
-    def get_default_settings(cls, params, logged_in_user=None,
-                             policy_object=None, client_ip=None):
+    def get_default_settings(cls, g, params):
         """
         This method returns a dictionary with default settings for token
         enrollment.
-        These default settings are defined in SCOPE.USER and are
+        These default settings are defined in SCOPE.USER or SCOPE.ADMIN and are
         hotp_hashlib, hotp_otplen.
-        If these are set, the user will only be able to enroll tokens with
-        these values.
+        If these are set, the user or admin will only be able to enroll tokens
+        with these values.
 
         The returned dictionary is added to the parameters of the API call.
+        :param g: context object, see documentation of ``Match``
         :param params: The call parameters
         :type params: dict
-        :param logged_in_user: The logged_in_user dictionary with "role",
-            "username" and "realm"
-        :type logged_in_user: dict
-        :param policy_object: The policy_object
-        :type policy_object: PolicyClass
-        :param client_ip: The client IP address
-        :type client_ip: basestring
         :return: default parameters
         """
         ret = {}
-        if logged_in_user.get("role") == ROLE.USER:
-            hashlib_pol = policy_object.get_action_values(
-                action="hotp_hashlib",
-                scope=SCOPE.USER,
-                user=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                client=client_ip,
-                unique=True)
-            if hashlib_pol:
-                ret["hashlib"] = list(hashlib_pol)[0]
+        if not g.logged_in_user:
+            return ret
+        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
+                                                                                            params)
+        hashlib_pol = Match.generic(g, scope=role,
+                                    action="hotp_hashlib",
+                                    user=username,
+                                    realm=userrealm,
+                                    adminrealm=adminrealm,
+                                    adminuser=adminuser).action_values(unique=True)
+        if hashlib_pol:
+            ret["hashlib"] = list(hashlib_pol)[0]
 
-            otplen_pol = policy_object.get_action_values(
-                action="hotp_otplen",
-                scope=SCOPE.USER,
-                user=logged_in_user.get("username"),
-                realm=logged_in_user.get("realm"),
-                client=client_ip,
-                unique=True)
-            if otplen_pol:
-                ret["otplen"] = list(otplen_pol)[0]
+        otplen_pol = Match.generic(g, scope=role,
+                                   action="hotp_otplen",
+                                   user=username,
+                                   realm=userrealm,
+                                   adminrealm=adminrealm,
+                                   adminuser=adminuser).action_values(unique=True)
+        if otplen_pol:
+            ret["otplen"] = list(otplen_pol)[0]
 
         return ret
 
@@ -744,8 +757,51 @@ class HotpTokenClass(TokenClass):
         # Based on the two components, we generate a symmetric key using PBKDF2
         # We pass the hex-encoded server component as the password and the
         # client component as the salt.
-        secret = pbkdf2(server_component.lower(),
-                        decoded_client_component,
-                        rounds,
-                        keysize)
+        secret = pbkdf2_hmac(digest='sha1',
+                             secret=server_component.lower(),
+                             salt=decoded_client_component,
+                             rounds=rounds,
+                             keylen=keysize)
         return hexlify_and_unicode(secret)
+
+    @staticmethod
+    def get_import_csv(l):
+        """
+        Read the list from a csv file and return a dictionary, that can be used
+        to do a token_init.
+
+        :param l: The list of the line of a csv file
+        :type l: list
+        :return: A dictionary of init params
+        """
+        params = TokenClass.get_import_csv(l)
+        # get Counter
+        if len(l) >= 5:
+            params["counter"] = int(l[4].strip())
+        return params
+
+    def prepare_verify_enrollment(self):
+        """
+        This is called, if the token should be enrolled in a way, that the user
+        needs to provide a proof, that the server can verify, that the token
+        was successfully enrolled. E.g. with HOTP tokens the user might need to provide
+        a correct OTP value.
+
+        The returned dictionary is added to the response in "detail" -> "verify".
+
+        :return: A dictionary with information that is needed to trigger the verification.
+        """
+        return {"message": VERIFY_ENROLLMENT_MESSAGE}
+
+    def verify_enrollment(self, verify):
+        """
+        This is called during the 2nd step of the verified enrollment.
+        This method verifies the actual response from the user.
+        Returns true, if the verification was successful.
+
+        :param verify: The response given by the user
+        :return: True
+        """
+        r = self.check_otp(verify)
+        log.debug("Enrollment verified: {0!s}".format(r))
+        return r >= 0

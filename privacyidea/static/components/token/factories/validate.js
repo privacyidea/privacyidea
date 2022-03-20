@@ -18,16 +18,18 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-myApp.factory("ValidateFactory", function ($http, $state, $rootScope,
-                                           validateUrl, inform) {
-        /**
-         Each service - just like this service factory - is a singleton.
-         */
-        return {
-            check: function (params, callback) {
-                $http.post(validateUrl + "/check", params
-                ).success(callback)
-                .error(AuthFactory.authError);
-            }
-        };
-        });
+myApp.factory("ValidateFactory", ['$http', '$state', '$rootScope',
+                                  'validateUrl', 'inform', 'AuthFactory',
+                                  function ($http, $state, $rootScope,
+                                            validateUrl, inform, AuthFactory) {
+    /**
+     Each service - just like this service factory - is a singleton.
+     */
+    return {
+        check: function (params, callback) {
+            $http.post(validateUrl + "/check", params
+            ).then(function (response) { callback(response.data) },
+                function(error) { AuthFactory.authError(error.data) });
+        }
+    };
+}]);

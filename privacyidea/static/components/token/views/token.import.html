@@ -69,15 +69,30 @@
         </p>
         <input class="form-control"
                placeholder="{{ 'Pre Shared Key' | translate }}"
-               ng-keypress="form.password =''"
+               ng-keypress="form.password = ''"
                ng-model="form.psk" minlength="0" maxlength="32">
         <input class="form-control"
                placeholder="{{ 'Password' | translate }}"
                ng-keypress="form.psk = ''"
                ng-model="form.password">
+        <div></div>
+        <div class="mt-5px">
+            <p class="help help-block" translate>
+                You can choose how the authenticity of the tokens to be imported should be verified.
+            </p>
+            <select class="form-control"
+                    ng-model="form.validateMAC">
+                <option ng-repeat="(key, desc) in {no_check: 'Do not verify the authenticity' | translate,
+                  check_fail_soft : 'Skip tokens that can not be verified' | translate,
+                  check_fail_hard : 'Abort operation on unverifiable token' | translate}"
+                        value="{{ key }}">
+                    {{ desc }}
+                </option>
+            </select>
+        </div>
     </div>
 
-    <div >
+    <div class="mt-5px">
         <p class="help help-block" translate>
             You can choose a realm to which the tokens should be imported.
             You can also change the realms of each token later.
@@ -89,11 +104,13 @@
         </select>
     </div>
     <div>
-        <accordion close-others="false">
-        <accordion-group ng-repeat="(keyid, key) in pgpkeys">
-            <accordion-heading>
+        <uib-accordion close-others="false">
+        <div uib-accordion-group
+             class="panel-default"
+             ng-repeat="(keyid, key) in pgpkeys">
+            <uib-accordion-heading>
                 <span translate>PGP Key</span> {{ keyid }}
-            </accordion-heading>
+            </uib-accordion-heading>
             <p class="help-block" translate>
                 Please pass the public key and the fingerprint to the token
                 provider.
@@ -101,26 +118,28 @@
             <pre>{{ key.armor }}</pre>
             <span translate>Fingerprint</span>:
             {{ key.fingerprint }}
-        </accordion-group>
-        </accordion>
+        </div>
+        </uib-accordion>
     </div>
 
     <div class="text-center">
-        <button class="btn btn-primary" ng-file-select
-                ng-file-change="upload($files)"
+        <button class="btn btn-primary" ngf-select="upload($file)"
                 translate>Select file and import
         </button>
     </div>
 </form>
 
 <div ng-show="uploadedFile">
-    <div translate>
-        Progress: {{ progressPercentage }}%
+    <div>
+        <span translate>Progress</span>: {{ uploadProgress }}%
     </div>
-    <div translate>
-        Uploaded File: {{ uploadedFile }}
+    <div>
+        <span translate>Uploaded File</span>: {{ uploadedFile }}
     </div>
-    <div translate>
-        Uploaded Tokens: {{ uploadedTokens }}
+    <div>
+        <span translate>Uploaded Tokens</span>: {{ uploadedTokens }}
+    </div>
+    <div>
+        <span translate>Skipped Tokens</span>: {{ notImportedTokens }}
     </div>
 </div>

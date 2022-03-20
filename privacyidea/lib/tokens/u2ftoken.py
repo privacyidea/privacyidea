@@ -27,9 +27,10 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from privacyidea.api.lib.utils import getParam
+from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
+from privacyidea.lib.token import get_tokens
 from privacyidea.lib.log import log_with
 import logging
 from privacyidea.models import Challenge
@@ -41,12 +42,12 @@ from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_response_data, check_response,
                                         x509name_to_string)
 from privacyidea.lib.error import ValidateError, PolicyError, ParameterError
-from privacyidea.lib.policy import (SCOPE, GROUP, ACTION,
-                                    get_action_values_from_options)
-from privacyidea.lib.utils import (is_true, hexlify_and_unicode,to_unicode)
+from privacyidea.lib.policy import SCOPE, GROUP, ACTION, get_action_values_from_options
+from privacyidea.lib.policy import Match
+from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.utils import is_true, hexlify_and_unicode, to_unicode
 import binascii
 import json
-import re
 
 __doc__ = """
 U2F is the "Universal 2nd Factor" specified by the FIDO Alliance.
@@ -100,6 +101,8 @@ This step returns a serial number.
 *clientdata* and *regdata* are the values returned by the U2F device.
 
 You need to call the javascript function
+
+.. sourcecode:: javascript
 
     u2f.register([registerRequest], [], function(u2fData) {} );
 
@@ -181,9 +184,15 @@ the signatureData and clientData returned by the U2F device in the *u2fResult*:
 
 """
 
+# Images of the keys shown during enrollment.
+#
+# The solokeys image is copyright (C) 2020 Solokeys. License: CC-BY-SA 4.0
+#
 IMAGES = {"yubico": "static/img/FIDO-U2F-Security-Key-444x444.png",
           "plug-up": "static/img/plugup.jpg",
-          "u2fzero.com": "static/img/u2fzero.png"}
+          "u2fzero.com": "static/img/u2fzero.png",
+          "solokeys": "static/img/solokeys.png"}
+
 U2F_Version = "U2F_V2"
 
 log = logging.getLogger(__name__)
@@ -201,6 +210,8 @@ class U2fTokenClass(TokenClass):
     """
     The U2F Token implementation.
     """
+
+    client_mode = CLIENTMODE.U2F
 
     @staticmethod
     def get_class_type():
@@ -257,7 +268,8 @@ class U2fTokenClass(TokenClass):
                        U2FACTION.REQ: {
                            'type': 'str',
                            'desc': _("Only specified U2F tokens are "
-                                     "authorized.")
+                                     "authorized."),
+                           'group': GROUP.CONDITIONS,
                        }
                    },
                    SCOPE.ENROLL: {
@@ -269,6 +281,17 @@ class U2fTokenClass(TokenClass):
                        U2FACTION.NO_VERIFY_CERT: {
                            'type': 'bool',
                            'desc': _("Do not verify the U2F attestation certificate."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXTOKENUSER: {
+                           'type': 'int',
+                           'desc': _("The user may only have this maximum number of U2F tokens assigned."),
+                           'group': GROUP.TOKEN
+                       },
+                       ACTION.MAXACTIVETOKENUSER: {
+                           'type': 'int',
+                           'desc': _(
+                               "The user may only have this maximum number of active U2F tokens assigned."),
                            'group': GROUP.TOKEN
                        }
                    }
@@ -293,7 +316,6 @@ class U2fTokenClass(TokenClass):
         TokenClass.__init__(self, db_token)
         self.set_type(u"u2f")
         self.hKeyRequired = False
-        self.init_step = 1
 
     def update(self, param, reset_failcount=True):
         """
@@ -304,13 +326,16 @@ class U2fTokenClass(TokenClass):
         :return: None
         """
         TokenClass.update(self, param)
-        description = "U2F initialization"
         reg_data = getParam(param, "regdata")
         verify_cert = is_true(getParam(param, "u2f.verify_cert", default=True))
-        if reg_data:
-            self.init_step = 2
+        if not reg_data:
+            self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+            # Set the description in the first enrollment step
+            if "description" in param:
+                self.set_description(getParam(param, "description", default=""))
+        elif reg_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             attestation_cert, user_pub_key, key_handle, \
-                signature, description = parse_registration_data(reg_data,
+                signature, automatic_description = parse_registration_data(reg_data,
                                                                  verify_cert=verify_cert)
             client_data = getParam(param, "clientdata", required)
             client_data_str = url_decode(client_data)
@@ -321,7 +346,7 @@ class U2fTokenClass(TokenClass):
                                     user_pub_key, key_handle, signature)
             self.set_otpkey(key_handle)
             self.add_tokeninfo("pubKey", user_pub_key)
-            # add attestation certificat info
+            # add attestation certificate info
             issuer = x509name_to_string(attestation_cert.get_issuer())
             serial = "{!s}".format(attestation_cert.get_serial_number())
             subject = x509name_to_string(attestation_cert.get_subject())
@@ -329,10 +354,14 @@ class U2fTokenClass(TokenClass):
             self.add_tokeninfo("attestation_issuer", issuer)
             self.add_tokeninfo("attestation_serial", serial)
             self.add_tokeninfo("attestation_subject", subject)
-
-        # If a description is given we use the given description
-        description = getParam(param, "description", default=description)
-        self.set_description(description)
+            # Reset rollout state
+            self.token.rollout_state = ""
+            # If no description has already been set, set the automatic description or the
+            # description given in the 2nd request
+            if not self.token.description:
+                self.set_description(getParam(param, "description", default=automatic_description))
+        else:
+            raise ParameterError("regdata provided but token not in clientwait rollout_state.")
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
@@ -340,7 +369,8 @@ class U2fTokenClass(TokenClass):
         At the end of the initialization we ask the user to press the button
         """
         response_detail = {}
-        if self.init_step == 1:
+        # get_init_details runs after "update" method. So in the first step clientwait has already been set
+        if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             # This is the first step of the init request
             app_id = get_from_config("u2f.appId", "").strip("/")
             from privacyidea.lib.error import TokenAdminError
@@ -355,8 +385,8 @@ class U2fTokenClass(TokenClass):
             response_detail["u2fRegisterRequest"] = register_request
             self.add_tokeninfo("appId", app_id)
 
-        elif self.init_step == 2:
-            # This is the second step of the init request
+        elif self.token.rollout_state == "":
+            # This is the second step of the init request, the clientwait rollout state has been reset
             response_detail["u2fRegisterResponse"] = {"subject":
                                                           self.token.description}
 
@@ -371,13 +401,11 @@ class U2fTokenClass(TokenClass):
 
         At the moment we do not think of other ways to trigger a challenge.
 
-        This function is not decorated with
-            @challenge_response_allowed
+        This function is not decorated with ``@challenge_response_allowed``
         as the U2F token is always a challenge response token!
 
         :param passw: The PIN of the token.
         :param options: dictionary of additional request parameters
-
         :return: returns true or false
         """
         trigger_challenge = False
@@ -406,7 +434,7 @@ class U2fTokenClass(TokenClass):
         The return tuple builds up like this:
         ``bool`` if submit was successful;
         ``message`` which is displayed in the JSON response;
-        additional ``attributes``, which are displayed in the JSON response.
+        additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
@@ -420,11 +448,26 @@ class U2fTokenClass(TokenClass):
         lookup_for = tokentype.capitalize() + 'ChallengeValidityTime'
         validity = int(get_from_config(lookup_for, validity))
 
-        challenge = geturandom(32)
+        # if a transaction id is given, check if there are other u2f token and
+        # reuse the challenge
+        challenge = None
+        if transactionid:
+            for c in get_challenges(transaction_id=transactionid):
+                if get_tokens(serial=c.serial, tokentype=self.get_class_type(),
+                              count=True):
+                    challenge = c.challenge
+                    break
+
+        if not challenge:
+            nonce = geturandom(32)
+            challenge = hexlify_and_unicode(nonce)
+        else:
+            nonce = binascii.unhexlify(challenge)
+
         # Create the challenge in the database
         db_challenge = Challenge(self.token.serial,
                                  transaction_id=transactionid,
-                                 challenge=hexlify_and_unicode(challenge),
+                                 challenge=challenge,
                                  data=None,
                                  session=options.get("session"),
                                  validitytime=validity)
@@ -433,23 +476,25 @@ class U2fTokenClass(TokenClass):
         key_handle_hex = sec_object.getKey()
         key_handle_bin = binascii.unhexlify(key_handle_hex)
         key_handle_url = url_encode(key_handle_bin)
-        challenge_url = url_encode(challenge)
+        challenge_url = url_encode(nonce)
         u2f_sign_request = {"appId": self.get_tokeninfo("appId"),
                             "version": U2F_Version,
                             "challenge": challenge_url,
                             "keyHandle": key_handle_url}
 
         image_url = IMAGES.get(self.token.description.lower().split()[0], "")
-        response_details = {"u2fSignRequest": u2f_sign_request,
-                            "hideResponseInput": True,
-                            "img": image_url}
+        reply_dict = {"attributes": {"u2fSignRequest": u2f_sign_request,
+                                     "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
+                                     "img": image_url},
+                      "image": image_url}
 
-        return True, message, db_challenge.transaction_id, response_details
+        return True, message, db_challenge.transaction_id, reply_dict
 
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
         """
         This checks the response of a previous challenge.
+
         :param otpval: N/A
         :param counter: The authentication counter
         :param window: N/A
@@ -492,28 +537,25 @@ class U2fTokenClass(TokenClass):
                     # At this point we can check, if the attestation
                     # certificate is authorized.
                     # If not, we can raise a policy exception
-                    g = options.get("g")
-                    user_object = self.user
-                    allowed_certs_pols = g.policy_object.get_action_values(
-                        U2FACTION.REQ,
-                        scope=SCOPE.AUTHZ,
-                        user_object=user_object if user_object else None,
-                        client=g.client_ip,
-                        audit_data=g.audit_object.audit_data)
-                    for allowed_cert in allowed_certs_pols:
-                        tag, matching, _rest = allowed_cert.split("/", 3)
-                        tag_value = self.get_tokeninfo(
-                            "attestation_{0!s}".format(tag))
-                        # if we do not get a match, we bail out
-                        m = re.search(matching, tag_value)
-                        if not m:
-                            log.warning("The U2F device {0!s} is not "
-                                        "allowed to authenticate due to policy "
-                                        "restriction".format(
-                                self.token.serial))
-                            raise PolicyError("The U2F device is not allowed "
-                                              "to authenticate due to policy "
-                                              "restriction.")
+                    if not attestation_certificate_allowed(
+                        {
+                            "attestation_issuer": self.get_tokeninfo("attestation_issuer"),
+                            "attestation_serial": self.get_tokeninfo("attestation_serial"),
+                            "attestation_subject": self.get_tokeninfo("attestation_subject")
+                        },
+                        Match
+                            .user(options.get("g"),
+                                  scope=SCOPE.AUTHZ,
+                                  action=U2FACTION.REQ,
+                                  user_object=self.user if self.user else None)
+                            .action_values(unique=False)
+                    ):
+                        log.warning(
+                            "The U2F device {0!s} is not allowed to authenticate due to policy restriction"
+                                .format(self.token.serial))
+                        raise PolicyError("The U2F device is not allowed "
+                                          "to authenticate due to policy "
+                                          "restriction.")
 
                 else:
                     log.warning("The signature of %s was valid, but contained "
@@ -542,10 +584,7 @@ class U2fTokenClass(TokenClass):
         app_id = configured_app_id.strip("/")
 
         # Read the facets from the policies
-        pol_facets = g.policy_object.get_action_values(U2FACTION.FACETS,
-                                                       scope=SCOPE.AUTH,
-                                                       client=g.client_ip,
-                                                       audit_data=g.audit_object.audit_data)
+        pol_facets = Match.action_only(g, scope=SCOPE.AUTH, action=U2FACTION.FACETS).action_values(unique=False)
         facet_list = ["https://{0!s}".format(x) for x in pol_facets]
         facet_list.append(app_id)
 
@@ -558,5 +597,3 @@ class U2fTokenClass(TokenClass):
                                  ]
                }
         return "fido.trusted-apps+json", res
-
-

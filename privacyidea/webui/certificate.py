@@ -27,7 +27,7 @@ __author__ = "Cornelius Kölbel, <cornelius@privacyidea.org>"
 
 from flask import (Blueprint, render_template, request)
 from privacyidea.api.lib.utils import (get_all_params,
-                                       verify_auth_token)
+                                       verify_auth_token, send_html)
 
 
 cert_blueprint = Blueprint('cert_blueprint', __name__)
@@ -40,7 +40,7 @@ def before_request():
     """
     # remove session from param and gather all parameters, either
     # from the Form data or from JSON in the request body.
-    request.all_data = get_all_params(request.values, request.data)
+    request.all_data = get_all_params(request)
     # Verify the authtoken!
     authtoken = request.all_data.get("authtoken")
     r = verify_auth_token(authtoken, ["user", "admin"])
@@ -58,9 +58,10 @@ def cert_form():
     backend_url = ""
     authtoken = request.all_data.get("authtoken")
     ca = request.all_data.get("ca")
-    return render_template("cert_request_form.html", instance=instance,
-                           backendUrl=backend_url, ca=ca,
-                           authtoken=authtoken)
+    return send_html(render_template("cert_request_form.html",
+                                     instance=instance,
+                                     backendUrl=backend_url, ca=ca,
+                                     authtoken=authtoken))
 
 
 @cert_blueprint.route('/enroll', methods=['POST'])
@@ -83,10 +84,10 @@ def cert_enroll():
 CN={1!s},CN={2!s},O={3!s}
 emailAddress={4!s}
 """.format(request_key,
-       request.PI_username,
-       request.PI_role,
-       request.PI_realm,
-       email)
+           request.PI_username,
+           request.PI_role,
+           request.PI_realm,
+           email)
     # Take the CSR and run a token init
     from privacyidea.lib.token import init_token
     tokenobject = init_token({"request": csr,
@@ -98,14 +99,12 @@ emailAddress={4!s}
     cert_pem = certificate.replace('\r', "").replace('\n', "")
     cert_pem = cert_pem.replace("-----BEGIN CERTIFICATE-----", "")
     cert_pem = cert_pem.replace("-----END CERTIFICATE-----", "")
-    return render_template("token_enrolled.html",
-                           instance=instance,
-                           backendUrl=backend_url,
-                           username="{0!s}@{1!s}".format(request.PI_username,
-                                               request.PI_realm),
-                           role=request.PI_role,
-                           serial=serial,
-                           certificate=certificate,
-                           cert_pem=cert_pem)
-
-
+    render_context = {'instance': instance,
+                      'backendUrl': backend_url,
+                      'username': "{0!s}@{1!s}".format(request.PI_username,
+                                                       request.PI_realm),
+                      'role': request.PI_role,
+                      'serial': serial,
+                      'certificate': certificate,
+                      'cert_pem': cert_pem }
+    return send_html(render_template("token_enrolled.html", **render_context))

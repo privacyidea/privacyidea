@@ -29,12 +29,14 @@ Token Hash Algorithms
 OTP values according to HOTP and TOTP can be calculated using SHA1, SHA2-256
 and SHA2-512.
 
+.. _faq_crypto_pin_hashing:
+
 PIN Hashing
 ~~~~~~~~~~~
 
 Token PINs are managed by privacyIDEA as the first of the two factors. Each
-token has its own token PIN. The token PIN is hashed with a seed with
-SHA2-256 and stored in the *Token* database table.
+token has its own token PIN. The token PIN is hashed with Argon2 (9 rounds)
+and stored in the *Token* database table.
 
 This PIN hashing is performed in *lib.crypto:hash*.
 
@@ -44,8 +46,8 @@ Administrator Passwords
 privacyIDEA can manage internal administrators using :ref:`pimanage`.
 Internal administrators are stored in the database table *Admin*.
 
-The password is stored using a PBKDF with SHA512 with 10023 rounds. The hash
-is salted and peppered. While the salt is stored in the *Admin* table
+The password is stored using Argon2 (9 rounds) with an additional pepper.
+While Argon2 uses a salt which is stored in the *Admin* table
 created randomly for each admin password the pepper is unique for one
 privacyIDEA installation and stored in the pi.cfg file.
 

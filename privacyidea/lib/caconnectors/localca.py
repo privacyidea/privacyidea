@@ -40,6 +40,7 @@ import logging
 import os
 from six import string_types
 from six.moves import input
+import traceback
 
 log = logging.getLogger(__name__)
 
@@ -84,7 +85,7 @@ crl		    = $dir/crl.pem 		# The current CRL
 private_key	= $dir/cakey.pem	# The private key
 RANDFILE	= $dir/.rand		# private random number file
 
-x509_extensions	= usr_cert		# The extentions to add to the cert
+x509_extensions	= usr_cert		# The extensions to add to the cert
 
 default_days	= {ca_days} 	# how long to certify for
 default_crl_days= {crl_days}	# how long before next CRL
@@ -107,7 +108,7 @@ default_bits		= 2048
 default_keyfile 	= privkey.pem
 distinguished_name	= req_distinguished_name
 attributes		= req_attributes
-x509_extensions	= v3_ca	# The extentions to add to the self signed cert
+x509_extensions	= v3_ca	# The extensions to add to the self signed cert
 string_mask = nombstr
 
 
@@ -407,7 +408,7 @@ class LocalCAConnector(BaseCAConnector):
         with open(os.path.join(csrdir, csr_filename), "w") as f:
             f.write(csr)
 
-        # TODO: use the template name to set the days and the extention!
+        # TODO: use the template name to set the days and the extension!
         if spkac:
             cmd = CA_SIGN_SPKAC.format(cakey=self.cakey, cacert=self.cacert,
                                        days=days, config=config,
@@ -423,7 +424,7 @@ class LocalCAConnector(BaseCAConnector):
                                                           certificate_filename))
         # run the command
         args = shlex.split(cmd)
-        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
+        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)
         result, error = p.communicate()
         if p.returncode != 0:  # pragma: no cover
             # Some error occurred
@@ -468,9 +469,14 @@ class LocalCAConnector(BaseCAConnector):
         """
         content = {}
         if self.template_file:
-            with open(self.template_file, 'r') as content_file:
-                file_content = content_file.read()
-                content = yaml.safe_load(file_content)
+            try:
+                with open(self.template_file, 'r') as content_file:
+                    file_content = content_file.read()
+                    content = yaml.safe_load(file_content)
+            except EnvironmentError:
+                log.warning("Template file {0!s} for {1!s} not found or "
+                            "not permitted.".format(self.template_file, self.name))
+                log.debug(u'{0!s}'.format(traceback.format_exc()))
         return content
 
     def publish_cert(self):
@@ -508,7 +514,7 @@ class LocalCAConnector(BaseCAConnector):
                                reason=reason)
         workingdir = self.config.get(ATTR.WORKING_DIR)
         args = shlex.split(cmd)
-        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
+        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)
         result, error = p.communicate()
         if p.returncode != 0:  # pragma: no cover
             # Some error occurred
@@ -553,7 +559,7 @@ class LocalCAConnector(BaseCAConnector):
                                          config=self.config.get(ATTR.OPENSSL_CNF),
                                          CRL=crl)
             args = shlex.split(cmd)
-            p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir)
+            p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)
             result, error = p.communicate()
             if p.returncode != 0:  # pragma: no cover
                 # Some error occurred
@@ -702,7 +708,7 @@ def _init_ca(config):
     print("Running command...")
     print(command)
     args = shlex.split(command)
-    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory)
+    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, universal_newlines=True)
     result, error = p.communicate()
     if p.returncode != 0:  # pragma: no cover
         # Some error occurred
@@ -716,7 +722,7 @@ def _init_ca(config):
     print("Running command...")
     print(command)
     args = shlex.split(command)
-    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory)
+    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, universal_newlines=True)
     result, error = p.communicate()
     if p.returncode != 0:  # pragma: no cover
         # Some error occurred

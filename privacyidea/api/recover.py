@@ -20,7 +20,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-__doc__ = """This module provides the REST API for th password recovery for a
+__doc__ = """This module provides the REST API for the password recovery for a
 user managed in privacyIDEA.
 
 The methods are also tested in the file tests/test_api_register.py

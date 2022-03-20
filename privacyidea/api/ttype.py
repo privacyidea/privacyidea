@@ -57,7 +57,7 @@ def before_request():
     This is executed before the request
     """
     ensure_no_config_object()
-    request.all_data = get_all_params(request.values, request.data)
+    request.all_data = get_all_params(request)
     privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
                          request.host
     # Create a policy_object, that reads the database audit settings
@@ -69,6 +69,7 @@ def before_request():
     # access_route contains the ip adresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request,
                                 get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.serial = getParam(request.all_data, "serial") or None
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,
@@ -103,7 +104,7 @@ def token(ttype=None):
         return current_app.response_class(res[1], mimetype="text/{0!s}".format(res[0]))
     elif len(res) == 2:
         return current_app.response_class(json.dumps(res[1]),
-                        mimetype="application/{0!s}".format(res[0]))
+                                          mimetype="application/{0!s}".format(res[0]))
     else:
         return current_app.response_class(res[1], mimetype="application/octet-binary",
-                        headers=res[2])
+                                          headers=res[2])

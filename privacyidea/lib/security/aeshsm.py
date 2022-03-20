@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2021-10-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Allow to set a default slot number
 #  2017-09-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add reinitialization of the PKCS11 module
 #  2016-09-01 Mathias Brossard <mathias@axiadids.com>
@@ -92,6 +94,8 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         self.max_retries = config.get("max_retries", MAX_RETRIES)
         log.debug("Setting max retries: {0!s}".format(self.max_retries))
         self.session = None
+        self.session_start_time = datetime.datetime.now()
+        self.session_lastused_time = datetime.datetime.now()
         self.key_handles = {}
 
         self.initialize_hsm()
@@ -133,16 +137,26 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
 
     def _login(self):
         slotlist = self.pkcs11.getSlotList()
+        log.debug("Found the slots: {0!s}".format(slotlist))
         if not len(slotlist):
-            raise HSMException("No HSM connected")
+            raise HSMException("No HSM connected. No slots found.")
+        if self.slot == -1 and len(slotlist) == 1:
+            # Use the first and only slot
+            self.slot = slotlist[0]
         if self.slot not in slotlist:
             raise HSMException("Slot {0:d} not present".format(self.slot))
 
         slotinfo = self.pkcs11.getSlotInfo(self.slot)
         log.debug("Setting up '{}'".format(slotinfo.slotDescription))
 
+        # Before starting the session, we log the old session time usage
+        log.debug("Starting new session now. The old session started {0!s} seconds ago.".format(
+            datetime.datetime.now() - self.session_start_time))
+        log.debug("Starting new session now. The old session was used {0!s} seconds ago.".format(
+            datetime.datetime.now() - self.session_lastused_time))
         # If the HSM is not connected at this point, it will fail
         self.session = self.pkcs11.openSession(slot=self.slot)
+        self.session_start_time = datetime.datetime.now()
 
         log.debug("Logging on to '{}'".format(slotinfo.slotDescription))
         self.session.login(self.password)
@@ -169,6 +183,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         while True:
             try:
                 r_integers = self.session.generateRandom(length)
+                self.session_lastused_time = datetime.datetime.now()
                 break
             except PyKCS11.PyKCS11Error as exx:
                 log.warning(u"Generate Random failed: {0!s}".format(exx))
@@ -188,7 +203,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
         :rtype: bytes
         """
         if len(data) == 0:
-            return bytes("")
+            return bytes()
         log.debug("Encrypting {} bytes with key {}".format(len(data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
         retries = 0
@@ -196,6 +211,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
             try:
                 k = self.key_handles[key_id]
                 r = self.session.encrypt(k, bytes(data), m)
+                self.session_lastused_time = datetime.datetime.now()
                 break
             except PyKCS11.PyKCS11Error as exx:
                 log.warning(u"Encryption failed: {0!s}".format(exx))
@@ -223,6 +239,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
             try:
                 k = self.key_handles[key_id]
                 r = self.session.decrypt(k, bytes(enc_data), m)
+                self.session_lastused_time = datetime.datetime.now()
                 break
             except PyKCS11.PyKCS11Error as exx:
                 log.warning(u"Decryption retry: {0!s}".format(exx))

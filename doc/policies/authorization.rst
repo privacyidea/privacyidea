@@ -20,6 +20,30 @@ using :ref:`code_policy` and
 The following actions are available in the scope 
 *authorization*:
 
+.. _authorized_policy:
+
+authorized
+~~~~~~~~~~
+
+This is the basic authorization, that either grants the user access or denies access via the ``/validate``
+endpoints (see :ref:`rest_validate`).
+The default behaviour is to grant access, if and after the user has authenticated successfully.
+
+Using ``authorized=deny_access`` specific authentication requests can be denied, even if the user has provided
+the correct credentials.
+
+In combination with different IP addresses and policy priorities the administrator can generically *deny_access* with the
+lowest policy priority and *grant_access* for specific requests e.g. originating from specific IP addresses to certain
+users by defining higher policy priorities.
+
+.. note:: Since *authorized* is checked as a *postpolicy* the OTP value used during an authentication attempt
+    will be invalidated even if the *authorized* policy denies the access.
+
+.. note:: The actual "success" of the authentication can be changed to "failed" by this postpolicy.
+    I.e. pre-event handlers
+    (:ref:`eventhandler_pre_and_post`) would still see the request as successful before it would be changed by
+    this policy and match the event handler condition ``result value == True``.
+
 .. _tokentype_policy:
 
 tokentype
@@ -29,7 +53,7 @@ type: string
 
 Users will only be authorized with this very tokentype.
 The string can hold a space separated list of
-case sensitive tokentypes. It should look like:
+case sensitive tokentypes. It should look like::
 
     hotp totp spass
 
@@ -43,6 +67,24 @@ this request
    sensitive areas only with one special token type
    while allowing access to less sensitive areas
    with other token types.
+
+.. _application_tokentype_policy:
+
+application_tokentype
+~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+If this policy is set, an application may add a parameter ``type`` as
+tokentype in the authentication request like ``validate/check``, ``validate/samlcheck``
+or ``validate/triggerchallenge``.
+
+Then the application can determine via this parameter, which tokens of a user
+should be checked.
+
+E.g. when using this in *triggerchallenge*, an application could assure, that only SMS tokens
+are used for authentication.
+
 
 serial
 ~~~~~~
@@ -77,11 +119,11 @@ of the token matches this regular expression.
 This is checked after the authentication request, so that a valid
 OTP value can not be used anymore, even if authorization is forbidden.
 
-A valid action could look like
+A valid action could look like::
 
    action = key/regexp/
 
-Example:
+Example::
 
    action = last_auth/^2018.*/
 
@@ -174,6 +216,10 @@ invalidated.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
+.. note:: This policy depends on reading the audit log. If you use a
+   non readable audit log like :ref:`logger_audit` this policy will not
+   work.
+
 .. _policy_auth_max_fail:
 
 auth_max_fail
@@ -196,6 +242,10 @@ performed the authentication request is discarded. The used OTP value is
 invalidated.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
+
+.. note:: This policy depends on reading the audit log. If you use a
+   non readable audit log like :ref:`logger_audit` this policy will not
+   work.
 
 last_auth
 ~~~~~~~~~
@@ -248,3 +298,47 @@ type: bool
 In case of a successful authentication the resolver and realm of the user are added
 to the response. The names are added in
 ``detail->user-resolver`` and ``detail->user-realm``.
+
+.. _policy_webauthn_authz_authenticator_selection_list:
+
+webauthn_authenticator_selection_list
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This action configures a whitelist of authenticator models which may be
+authorized. It is a space-separated list of AAGUIDs. An AAGUID is a
+hexadecimal string (usually grouped using dashes, although these are
+optional) identifying one particular model of authenticator. To limit
+enrollment to a few known-good authenticator models, simply specify the AAGUIDs
+for each model of authenticator that is acceptable. If multiple policies with
+this action apply, the set of acceptable authenticators will be the union off
+all authenticators allowed by the various policies.
+
+If this action is not configured, all authenticators will be deemed acceptable,
+unless limited through some other action.
+
+.. note:: If you configure this, you will likely also want to configure
+    :ref:`policy_webauthn_enroll_authenticator_selection_list`
+
+.. _policy_webauthn_authz_req:
+
+webauthn_req
+~~~~~~~~~~~~
+
+type: string
+
+This action allows filtering of WebAuthn tokens by the fields of the
+attestation certificate.
+
+The action can be specified like this:
+
+    webauthn_req=subject/.*Yubico.*/
+
+The the key word can be "subject", "issuer" or "serial". Followed by a
+regular expression. During registration of the WebAuthn authenticator the
+information is fetched from the attestation certificate. Only if the attribute
+in the attestation certificate matches accordingly the token can be enrolled.
+
+.. note:: If you configure this, you will likely also want to configure
+    :ref:`policy_webauthn_enroll_req`

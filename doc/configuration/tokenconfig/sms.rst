@@ -1,8 +1,8 @@
 
-.. _sms_otp_token:
+.. _sms_token_config:
 
-SMS OTP Token
-.............
+SMS Token Configuration
+.......................
 
 .. index:: SMS Token
 
@@ -22,14 +22,14 @@ Second step
 In the second step the user authenticates with the OTP PIN and the OTP value
 he received via SMS. The user is granted access.
 
-.. _index: transaction_id
+.. index:: transaction_id
 
 Alternatively the user can authenticate with the *transaction_id* that was
 sent to him in the response during the first step and only the OTP value. The
 *transaction_id* assures that the user already presented the first factor (OTP
 PIN) successfully.
 
-.. index:: Sipgate, Clickatel, SMS Gateway
+.. index:: Sipgate, Clickatel
 
 A python SMS provider module defines how the SMS is sent. This can be done
 using an HTTP SMS Gateway. Most services like Clickatel or sendsms.de provide
@@ -39,7 +39,7 @@ The third possibility is to send the SMS via an SMTP gateway. The provider
 receives a specially designed email and sends the SMS accordingly.
 The last possibility to send SMS is to use an attached GSM modem.
 
-.. _index: SMS Gateway
+.. index:: SMS Gateway
 
 Starting with version 2.13 the SMS configuration has been redesigned. You can
 now centrally define SMS gateways. These SMS gateways can be used for sending
@@ -55,7 +55,7 @@ Configuration Parameters
 
 **Concurrent Challenges**
 
-The config entry ``sms.concurrent_challenges`` will save the sent OTP
-value in the challenge database. This way several challenges can be open at the same
-time. The user can answer the challenges in an arbitrary order.
-Set this to a true value.
+If set to True in :ref:`cfgfile`, the config entry ``sms.concurrent_challenges``
+will save the sent OTP value in the challenge database. This way several challenges can
+be open at the same time. The user can answer the challenges in an arbitrary order.
+Defaults to off.

@@ -1,12 +1,13 @@
+# -*- coding: utf-8 -*-
+
 """
 This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+import warnings
 
-PWFILE = "tests/testdata/passwords"
-
-from .base import MyTestCase
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
@@ -23,10 +24,12 @@ from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
 import binascii
 import datetime
 import hashlib
-import base64
 from dateutil.tz import tzlocal
 
-from passlib.utils.pbkdf2 import pbkdf2
+from passlib.crypto.digest import pbkdf2_hmac
+
+PWFILE = "tests/testdata/passwords"
+
 
 class HOTPTokenTestCase(MyTestCase):
     """
@@ -87,8 +90,8 @@ class HOTPTokenTestCase(MyTestCase):
 
         token.add_user(User(login="cornelius",
                             realm=self.realm1))
-        self.assertEqual(token.token.owners.first().resolver, self.resolvername1)
-        self.assertEqual(token.token.owners.first().user_id, "1000")
+        self.assertEqual(token.token.first_owner.resolver, self.resolvername1)
+        self.assertEqual(token.token.first_owner.user_id, "1000")
 
         user_object = token.user
         self.assertTrue(user_object.login == "cornelius",
@@ -142,7 +145,7 @@ class HOTPTokenTestCase(MyTestCase):
         token.token.maxfail = 12
         self.assertTrue(token.get_max_failcount() == 12)
 
-        self.assertEqual(token.get_user_id(), token.token.owners.first().user_id)
+        self.assertEqual(token.get_user_id(), token.token.first_owner.user_id)
 
         self.assertTrue(token.get_serial() == "SE123456", token.token.serial)
         self.assertTrue(token.get_tokentype() == "hotp",
@@ -338,6 +341,9 @@ class HOTPTokenTestCase(MyTestCase):
         # OTP does exist
         res = token.check_otp_exist("969429")
         self.assertTrue(res == 3, res)
+        # check is_previous_otp
+        r = token.is_previous_otp("969429")
+        self.assertTrue(r)
 
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -649,7 +655,7 @@ class HOTPTokenTestCase(MyTestCase):
         token.check_otp("67062674")
 
     def test_26_is_previous_otp(self):
-        # check if the OTP was used prebiously
+        # check if the OTP was used previously
         serial = "previous"
         db_token = Token(serial, tokentype="hotp")
         db_token.save()
@@ -674,8 +680,13 @@ class HOTPTokenTestCase(MyTestCase):
         """
         r = token.check_otp("969429")
         self.assertEqual(r, 3)
+        # Too old
         r = token.is_previous_otp("755224")
+        self.assertEqual(r, False)
+        # The very previous OTP, that was just used in check_otp
+        r = token.is_previous_otp("969429")
         self.assertEqual(r, True)
+        # Future value
         r = token.is_previous_otp("254676")
         self.assertEqual(r, False)
         r = token.check_otp("254676")
@@ -683,17 +694,32 @@ class HOTPTokenTestCase(MyTestCase):
 
     def test_27_get_default_settings(self):
         params = {}
-        logged_in_user = {"user": "hans",
+        g = FakeFlaskG()
+        g.audit_object = FakeAudit()
+        g.logged_in_user = {"user": "hans",
                           "realm": "default",
                           "role": "user"}
         set_policy("pol1", scope=SCOPE.USER, action="hotp_hashlib=sha256,"
                                                     "hotp_otplen=8")
-        pol = PolicyClass()
-        p = HotpTokenClass.get_default_settings(params,
-                                                logged_in_user=logged_in_user,
-                                                policy_object=pol)
+        g.policy_object = PolicyClass()
+        p = HotpTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")
         self.assertEqual(p.get("hashlib"), "sha256")
+        delete_policy("pol1")
+        # the same should work for an admin user
+        g.logged_in_user = {"user": "admin",
+                            "realm": "super",
+                            "role": "admin"}
+        set_policy("pol1", scope=SCOPE.ADMIN, action="hotp_hashlib=sha512,"
+                                                     "hotp_otplen=8")
+        g.policy_object = PolicyClass()
+        p = HotpTokenClass.get_default_settings(g, params)
+        self.assertEqual(p.get("otplen"), "8")
+        self.assertEqual(p.get("hashlib"), "sha512")
+        # test check if there is no logged in user
+        g.logged_in_user = None
+        p = HotpTokenClass.get_default_settings(g, params)
+        self.assertEqual(p, {})
         delete_policy("pol1")
 
     def test_28_2step_generation_default(self):
@@ -715,7 +741,8 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(len(client_component), 8)
         self.assertEqual(len(secret), 20)
         # check the secret has been generated according to the specification
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, 20)
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 10000, 20)
         self.assertEqual(secret, expected_secret)
 
     def test_29_2step_generation_custom(self):
@@ -756,7 +783,8 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(len(client_component), 12)
         self.assertEqual(len(secret), 64) # because of SHA-512
         # check the secret has been generated according to the specification
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 12345, len(secret))
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 12345, len(secret))
         self.assertEqual(secret, expected_secret)
         self.assertTrue(token.token.active)
 
@@ -778,14 +806,16 @@ class HOTPTokenTestCase(MyTestCase):
         client_component = b'abcdefghijkl'
         checksum = hashlib.sha1(client_component).digest()[:4]
         # wrong checksum
-        self.assertRaisesRegexp(
-            ParameterError,
-            "Incorrect checksum",
-            token.update,
-            {
-                "otpkey": b32encode_and_unicode(b"\x37" + checksum[1:] + client_component).strip("="),
-                "otpkeyformat": "base32check",
-            })
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=DeprecationWarning)
+            self.assertRaisesRegexp(
+                ParameterError,
+                "Incorrect checksum",
+                token.update,
+                {
+                    "otpkey": b32encode_and_unicode(b"\x37" + checksum[1:] + client_component).strip("="),
+                    "otpkeyformat": "base32check",
+                })
         # construct a secret
         token.update({
             "otpkey": b32encode_and_unicode(checksum + client_component).strip("="),
@@ -802,6 +832,7 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(len(client_component), 12)
         self.assertEqual(len(secret), 64) # because of SHA-512
         # check the secret has been generated according to the specification
-        expected_secret = pbkdf2(binascii.hexlify(server_component), client_component, 10000, len(secret))
+        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
+                                      client_component, 10000, len(secret))
         self.assertEqual(secret, expected_secret)
         self.assertTrue(token.token.active)

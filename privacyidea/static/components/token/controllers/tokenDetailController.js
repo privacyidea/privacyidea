@@ -45,15 +45,19 @@ function string_to_date_object(s) {
     return date_obj;
 }
 
-myApp.controller("tokenDetailController", function ($scope,
-                                                    TokenFactory, UserFactory,
-                                                    $stateParams,
-                                                    $state, $rootScope,
-                                                    ValidateFactory,
-                                                    AuthFactory,
-                                                    ConfigFactory,
-                                                    MachineFactory, inform,
-                                                    gettextCatalog) {
+myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
+                                           'UserFactory', '$stateParams',
+                                           '$state', '$rootScope',
+                                           'ValidateFactory', 'AuthFactory',
+                                           'ConfigFactory', 'MachineFactory',
+                                           'inform', 'gettextCatalog',
+                                           function ($scope, TokenFactory,
+                                                     UserFactory, $stateParams,
+                                                     $state, $rootScope,
+                                                     ValidateFactory,
+                                                     AuthFactory, ConfigFactory,
+                                                     MachineFactory, inform,
+                                                     gettextCatalog) {
     $scope.tokenSerial = $stateParams.tokenSerial;
     // This is the parents object
     $scope.selectedToken.serial = $scope.tokenSerial;
@@ -64,6 +68,8 @@ myApp.controller("tokenDetailController", function ($scope,
     $scope.machinesPerPage = 15;
     $scope.params = {page: 1};
     $scope.form = {options: {}};
+    $scope.editTokenInfo = 0;
+    $scope.pin1 = $scope.pin2 = "";
     $scope.testTokenPlaceholder = gettextCatalog.getString('Enter PIN and OTP to check the' +
         ' token.');
     ConfigFactory.getSystemConfig(function(data) {
@@ -170,6 +176,12 @@ myApp.controller("tokenDetailController", function ($scope,
         $scope.cancelEditRealm();
     };
 
+    $scope.startEditTokenInfo = function() {
+        $scope.validity_period_start = string_to_date_object($scope.token.info.validity_period_start);
+        $scope.validity_period_end = string_to_date_object($scope.token.info.validity_period_end);
+        $scope.editTokenInfo = 1;
+    };
+
     $scope.saveTokenInfo = function () {
         var start = date_object_to_string($scope.validity_period_start);
         var end = date_object_to_string($scope.validity_period_end);
@@ -179,6 +191,7 @@ myApp.controller("tokenDetailController", function ($scope,
              validity_period_end: end,
              validity_period_start: start},
             $scope.get);
+        $scope.editTokenInfo = 0;
     };
 
     $scope.assignUser = function () {
@@ -190,8 +203,32 @@ myApp.controller("tokenDetailController", function ($scope,
         }, $scope.get);
     };
 
+    $scope.deleteTokenAsk = function() {
+        var tokenType = $scope.token.info.tokenkind;
+        if (tokenType == "hardware"){
+            $('#dialogTokenDelete').modal();
+        } else {
+            $scope.delete();
+        };
+     };
+
+
     $scope.delete = function () {
         TokenFactory.delete($scope.tokenSerial, $scope.return_to);
+    };
+
+
+    $scope.setRandomPin = function () {
+        TokenFactory.setrandompin($scope.tokenSerial, function (data) {
+                if (data.result.value >= 1) {
+                    inform.add(gettextCatalog.getString("PIN set successfully."),
+                        {type: "info", ttl: 5000})
+                } else {
+                    inform.add(gettextCatalog.getString("Failed to set PIN."),
+                        {type: "danger", ttl: 10000})
+                }
+                $scope.randomPin = data.detail.pin;
+            });
     };
 
     $scope.setPin = function () {
@@ -232,6 +269,27 @@ myApp.controller("tokenDetailController", function ($scope,
             $scope.get();
         });
     };
+
+    $scope.sendVerifyResponse = function () {
+        var params = {
+            "serial": $scope.token.serial,
+            "verify": $scope.token.verifyResponse,
+            "type": $scope.token.tokentype
+        };
+        TokenFactory.enroll($scope.newUser, params, function (data) {
+            $scope.token.verifyResponse = "";
+            if (data.result.value === true) {
+                inform.add(gettextCatalog.getString("Enrollment successfully verified."),
+                                {type: "info", ttl: 10000});
+            } else {
+                inform.add(gettextCatalog.getString("Enrollment verification failed."),
+                                {type: "danger", ttl: 10000});
+            }
+            $scope.get();
+        });
+    };
+
+
 
     $scope.testOtp = function (otponly) {
         var params = {
@@ -276,8 +334,14 @@ myApp.controller("tokenDetailController", function ($scope,
             var machineObject = fixMachine($scope.newMachine);
             params["serial"] = $scope.tokenSerial;
             params["application"] = $scope.form.application;
-            params["machineid"] = machineObject.id;
-            params["resolver"] = machineObject.resolver;
+            if ($scope.form.application === "offline") {
+                // We force to be not attached to a machine
+                params["machineid"] = 0;
+                params["resolver"] = "";
+            } else {
+                params["machineid"] = machineObject.id;
+                params["resolver"] = machineObject.resolver;
+            }
             MachineFactory.attachTokenMachine(params, function (data) {
                 // clear form
                 $scope.form.application = null;
@@ -353,5 +417,15 @@ myApp.controller("tokenDetailController", function ($scope,
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.get);
 
+    $scope.rolloverTokenAllowed = function(token) {
+        if ( typeof(token) != 'undefined' ) {
+            if ($scope.checkEnroll() && (token.tokentype in $scope.token_rollover) &&
+                token.info.tokenkind === 'software') {
+                return true;
+            }
+        }
+        return false;
+    };
 
-});
+
+}]);

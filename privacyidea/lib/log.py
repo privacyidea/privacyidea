@@ -34,13 +34,13 @@ log = logging.getLogger(__name__)
 
 DEFAULT_LOGGING_CONFIG = {
     "version": 1,
-    "formatters": {"detail": {"class":
+    "formatters": {"detail": {"()":
                                   "privacyidea.lib.log.SecureFormatter",
                               "format": "[%(asctime)s][%(process)d]"
                                         "[%(thread)d][%(levelname)s]"
                                         "[%(name)s:%(lineno)d] "
                                         "%(message)s"}
-                       },
+                   },
     "handlers": {"file": {"formatter": "detail",
                           "class":
                               "logging.handlers.RotatingFileHandler",
@@ -48,12 +48,13 @@ DEFAULT_LOGGING_CONFIG = {
                           "maxBytes": 10000000,
                           "level": logging.DEBUG,
                           "filename": "privacyidea.log"}
-                         },
+                 },
     "loggers": {"privacyidea": {"handlers": ["file"],
                                 "qualname": "privacyidea",
                                 "level": logging.INFO}
                 }
 }
+
 
 class SecureFormatter(Formatter):
 

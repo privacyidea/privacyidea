@@ -22,7 +22,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
 __doc__ = """This module contains the REST API for registering as a new user.
 This endpoint can be used without any authentication, since a new user can
 register.
@@ -37,6 +36,7 @@ from privacyidea.lib.policy import ACTION, SCOPE
 from privacyidea.lib.user import create_user
 from privacyidea.lib.user import User
 from privacyidea.lib.token import init_token
+from privacyidea.lib.policy import Match
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.error import RegistrationError
 from privacyidea.api.lib.prepolicy import required_email, prepolicy
@@ -61,11 +61,8 @@ def register_status():
 
     :return: JSON with value=True or value=False
     """
-    resolvername = g.policy_object.get_action_values(ACTION.RESOLVER,
-                                                     scope=SCOPE.REGISTER,
-                                                     unique=True,
-                                                     audit_data=g.audit_object.audit_data)
-
+    resolvername = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER)\
+        .action_values(unique=True)
     result = bool(resolvername)
     g.audit_object.log({"info": result,
                         "success": True})
@@ -121,28 +118,22 @@ def register_post():
                 options[key] = value
 
     # 0. check, if we can do the registration at all!
-    smtpconfig = g.policy_object.get_action_values(ACTION.EMAILCONFIG,
-                                                   scope=SCOPE.REGISTER,
-                                                   unique=True,
-                                                   audit_data=g.audit_object.audit_data)
+    smtpconfig = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.EMAILCONFIG)\
+        .action_values(unique=True)
     if not smtpconfig:
         raise RegistrationError("No SMTP server configuration specified!")
 
     # 1. determine, in which resolver/realm the user should be created
-    realm = g.policy_object.get_action_values(ACTION.REALM,
-                                              scope=SCOPE.REGISTER,
-                                              unique=True,
-                                              audit_data=g.audit_object.audit_data)
+    realm = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.REALM)\
+        .action_values(unique=True)
     if not realm:
         # No policy for realm, so we use the default realm
         realm = get_default_realm
     else:
         # we use the first realm in the list
         realm = list(realm)[0]
-    resolvername = g.policy_object.get_action_values(ACTION.RESOLVER,
-                                                     scope=SCOPE.REGISTER,
-                                                     unique=True,
-                                                     audit_data=g.audit_object.audit_data)
+    resolvername = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER)\
+        .action_values(unique=True)
     if not resolvername:
         raise RegistrationError("No resolver specified to register in!")
     resolvername = list(resolvername)[0]
@@ -167,10 +158,8 @@ def register_post():
 
     smtpconfig = list(smtpconfig)[0]
     # Send the registration key via email
-    body = g.policy_object.get_action_values(ACTION.REGISTERBODY,
-                                             scope=SCOPE.REGISTER,
-                                             unique=True,
-                                             audit_data=g.audit_object.audit_data)
+    body = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.REGISTERBODY)\
+        .action_values(unique=True)
     body = body or DEFAULT_BODY
     email_sent = send_email_identifier(
         smtpconfig, email,
@@ -179,7 +168,7 @@ def register_post():
     if not email_sent:
         log.warning("Failed to send registration email to {0!r}".format(email))
         # delete registration token
-        token.delete()
+        token.delete_token()
         # delete user
         user.delete()
         raise RegistrationError("Failed to send email!")

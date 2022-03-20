@@ -24,10 +24,13 @@
  *
  */
 angular.module("privacyideaApp")
-    .controller("userAddController", function ($scope, userUrl, $state,
-                                               $location, ConfigFactory,
-                                               UserFactory, inform,
-                                               gettextCatalog){
+    .controller("userAddController", ['$scope', 'userUrl', '$state',
+                                      '$location', 'ConfigFactory',
+                                      'UserFactory', 'inform', 'gettextCatalog',
+                                      function ($scope, userUrl, $state,
+                                                $location, ConfigFactory,
+                                                UserFactory, inform,
+                                                gettextCatalog){
 
         $scope.formInit = {};
         $scope.User = {};
@@ -67,12 +70,14 @@ angular.module("privacyideaApp")
 
         // listen to the reload broadcast
         $scope.$on("piReload", $scope.getEditableResolvers);
-    });
+    }]);
 
 angular.module("privacyideaApp")
-    .controller("userPasswordController", function ($scope, userUrl,
-                                                    UserFactory, inform,
-                                                    gettextCatalog) {
+    .controller("userPasswordController", ['$scope', 'userUrl', 'UserFactory',
+                                           'inform', 'gettextCatalog',
+                                           function ($scope, userUrl,
+                                                     UserFactory, inform,
+                                                     gettextCatalog) {
 
         // The user can fetch his own information.
         $scope.getUserDetails = function () {
@@ -98,16 +103,21 @@ angular.module("privacyideaApp")
 
         // listen to the reload broadcast
         $scope.$on("piReload", $scope.getUserDetails);
-    });
+    }]);
 
 angular.module("privacyideaApp")
-    .controller("userDetailsController", function ($scope, userUrl,
-                                                   realmUrl, tokenUrl,
-                                                   $rootScope, TokenFactory,
-                                                   UserFactory, $state,
-                                                   ConfigFactory,
-                                                   instanceUrl,  $location,
-                                                   inform, gettextCatalog) {
+    .controller("userDetailsController", ['$scope', 'userUrl', 'realmUrl',
+                                          'tokenUrl', '$rootScope',
+                                          'TokenFactory', 'UserFactory',
+                                          '$state', 'ConfigFactory',
+                                          'instanceUrl',  '$location', 'inform',
+                                          'gettextCatalog',
+                                          function ($scope, userUrl, realmUrl,
+                                                    tokenUrl, $rootScope,
+                                                    TokenFactory, UserFactory,
+                                                    $state, ConfigFactory,
+                                                    instanceUrl,  $location,
+                                                    inform, gettextCatalog) {
         $scope.tokensPerPage = 5;
         $scope.newToken = {"serial": "", pin: ""};
         $scope.params = {page: 1};
@@ -154,6 +164,60 @@ angular.module("privacyideaApp")
             });
         };
 
+        $scope.getEditableAttributes = function () {
+            UserFactory.getEditableAttributes({
+                user: $scope.username,
+                resolver: $scope.resolver,
+                realm: $scope.realmname
+            }, function(data) {
+                $scope.allowed_custom_attributes = data.result.value;
+            });
+        };
+
+        $scope.addCustomAttribute = function() {
+            var key = $scope.selected_attr_key;
+            var value = $scope.selected_attr_value;
+            if ($scope.selected_attr_key === '*') {
+                key = $scope.new_custom_attribute_key;
+            }
+            if ($scope.selected_attr_value === '*') {
+                value = $scope.new_custom_attribute_value;
+            }
+            UserFactory.setCustomAttribute($scope.username, $scope.realmname, key, value,
+                function(data) {
+                    $scope.getUserDetails();
+                    $scope.getCustomAttributes();
+                });
+        };
+
+        $scope.getCustomAttributes = function() {
+            UserFactory.getCustomAttributes($scope.username, $scope.realmname,
+                function(data) {
+                    $scope.custom_attributes = data.result.value;
+                });
+        };
+
+        $scope.deleteCustomAttribute = function(key) {
+            UserFactory.deleteCustomAttribute($scope.username, $scope.realmname, key,
+                function(data) {
+                    $scope.getUserDetails();
+                    $scope.getCustomAttributes();
+                });
+        }
+
+        $scope.onCustomAttributeKeyChange = function() {
+            $scope.new_custom_attribute_value = "";
+            $scope.selected_attr_value = "";
+            $scope.allowed_values = $scope.allowed_custom_attributes['set'][$scope.selected_attr_key]
+            $scope.customAttributeValueSelectVisible = true;
+            if ($scope.allowed_values.length === 1) {
+                // If there is only one value, set it!
+                $scope.selected_attr_value = $scope.allowed_values[0];
+                // if this value is "*", then we hide the
+                $scope.customAttributeValueSelectVisible = false;
+            }
+        }
+
         $scope.updateUser = function () {
             UserFactory.updateUser($scope.resolvername, $scope.User,
             function (data) {
@@ -161,6 +225,10 @@ angular.module("privacyideaApp")
                     inform.add(gettextCatalog.getString("User updated " +
                         "successfully."),
                                 {type: "info"});
+                    // in case we changed the username:
+                    $scope.username = $scope.User.username;
+                    $state.go("user.details", {realmname:$scope.realmname,
+                                               username:$scope.username});
                     // we also need to update the user list
                     $scope._getUsers();
                     // ...and update the user details
@@ -211,20 +279,25 @@ angular.module("privacyideaApp")
 
         $scope.getUserDetails();
         $scope._getUserToken();
+        $scope.getEditableAttributes();
+        $scope.getCustomAttributes();
 
         // listen to the reload broadcast
         $scope.$on("piReload", function() {
             $scope.getUserDetails();
             $scope._getUserToken();
+            $scope.getCustomAttributes();
         });
-    });
+    }]);
 
 angular.module("privacyideaApp")
-    .controller("userController", function ($scope, $location, userUrl,
-                                            realmUrl, $rootScope,
-                                            ConfigFactory, UserFactory,
-                                            gettextCatalog,
-                                            AuthFactory) {
+    .controller("userController", ['$scope', '$location', 'userUrl', 'realmUrl',
+                                   '$rootScope', 'ConfigFactory', 'UserFactory',
+                                   'gettextCatalog', 'AuthFactory',
+                                   function ($scope, $location, userUrl,
+                                             realmUrl, $rootScope, ConfigFactory,
+                                             UserFactory, gettextCatalog,
+                                             AuthFactory) {
 
         $scope.usersPerPage = $scope.user_page_size;
         $scope.params = {page: 1,
@@ -280,7 +353,13 @@ angular.module("privacyideaApp")
         $scope.getRealms = function () {
             ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
+                num_realms = Object.keys($scope.realms).length;
                 angular.forEach($scope.realms, function (realm, realmname) {
+                    if (num_realms === 1) {
+                        // If the admin is allowed to see only one realm, we make this the
+                        // default realm in the UI
+                        realm.default = true;
+                    }
                     if (realm.default) {
                         $scope.defaultRealm = realmname;
                         if (!$scope.selectedRealm) {
@@ -377,4 +456,4 @@ angular.module("privacyideaApp")
             $scope._getUsers(false);
         });
 
-    });
+    }]);

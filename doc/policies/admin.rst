@@ -14,8 +14,6 @@ API :ref:`rest_token`, :ref:`rest_system`, :ref:`rest_realm` and
 Admin policies are implemented as decorators in :ref:`code_policy` and
 :ref:`policy_decorators`.
 
-The ``user`` in the admin policies refers to the name of the administrator.
-
 Starting with privacyIDEA 2.4 admin policies can also store a field "admin
 realm". This is used, if you define realms to be superuser realms. See
 :ref:`cfgfile` for information how to do this. Read :ref:`faq_admins` for
@@ -24,10 +22,10 @@ more information on the admin realms.
 This way it is easy to define administrative rights for big groups of
 administrative users like help desk users in the IT department.
 
-.. figure:: admin_policies.png
+.. figure:: images/admin_policies.png
    :width: 500
 
-   *Admin scope provides and additional field 'admin realm'.*
+   *The Admin scope provides an additional field 'admin realm'.*
 
 All administrative actions also refer to the defined user realm. Meaning
 an administrator may have many rights in one user realm and only a few
@@ -40,6 +38,8 @@ to enable tokens in the user-realm *sales*.
 
 .. note:: As long as no admin policy is defined all administrators
    are allowed to do everything.
+
+.. note:: Admin policies are also checked for all local administrators.
 
 The following actions are available in the scope
 *admin*:
@@ -64,14 +64,14 @@ is not allowed to list any tokens.
    the admin will have list rights on all mentioned realms
    independent on the priority of the policies.
 
-init
-~~~~
+enroll
+~~~~~~
 
 type: bool
 
-There are ``init`` actions per token type. Thus you can 
-create policy that allow an administrator to enroll 
-SMS tokens but not to enroll HMAC tokens.
+There are enrollment actions per token type, e.g. ``enrollHOTP``. Only those token
+types are selectable in the WebUI during enrollment which are allowed by their
+corresponding enroll policy action.
 
 enable
 ~~~~~~
@@ -109,8 +109,10 @@ type: bool
 Tokens can have additional token information, which can be
 viewed in the :ref:`token_details`.
 
-If the ``set`` action is defined, the administrator allowed
-to set those token information.
+If the ``set`` action is defined, the is administrator allowed
+to set those token properties like ``description``, ``max_failcount``
+or ``validity_period_start`` at the ``/token/set`` endpoints
+(see :ref:`rest_token`).
 
 setpin
 ~~~~~~
@@ -119,6 +121,21 @@ type: bool
 
 If the ``setpin`` action is defined, the administrator
 is allowed to set the OTP PIN of a token.
+
+setrandompin
+~~~~~~~~~~~~
+
+type: bool
+
+If the ``setrandompin`` action is defined, the administrator
+is allowed to call the endpoint, that sets a random token PIN.
+
+settokeninfo
+~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to manually set and delete token info.
 
 enrollpin
 ~~~~~~~~~
@@ -129,6 +146,16 @@ If the action ``enrollpin`` is defined, the administrator
 can set a token PIN during enrollment. If the action is not defined and
 the administrator tries to set a PIN during enrollment, this PIN is deleted
 from the request.
+
+hide_tokeninfo
+~~~~~~~~~~~~~~
+
+type: string
+
+This specifies a blank-separated list of tokeninfo keys, which should be removed
+from the response and therefore will not be shown in the WebUI or JSON response.
+
+For example a value ``tokenkind auto_renew`` will hide these two tokeninfo entries.
 
 otp_pin_maxlength
 ~~~~~~~~~~~~~~~~~
@@ -157,6 +184,8 @@ range: 0 - 31
 This is the minimum required PIN the admin must use when setting the
 OTP PIN.
 
+.. _admin_policies_otp_pin_contents:
+
 otp_pin_contents
 ~~~~~~~~~~~~~~~~
 
@@ -171,7 +200,9 @@ sets it.
 
 **n** are digits matching [0-9].
 
-**s** are special characters matching [.:,;-_<>+*!/()=?$§%&#~\^].
+**s** are special characters matching [\[\].:,;-_<>+*!/()=?$§%&#~\^].
+
+**[allowedchars]** is a specific list of allowed characters.
 
 **Example:** The policy action ``otp_pin_contents=cn, otp_pin_minlength=8`` would
 require the admin to choose OTP PINs that consist of letters and digits
@@ -185,14 +216,16 @@ which have a minimum length of 8.
 The logic of the ``otp_pin_contents`` can be enhanced and reversed using the
 characters ``+`` and ``-``.
 
-``-cn`` would still mean, that the OTP PIN needs to contain letters and digits
-and it must not contain any other characters.
+``-cn`` (denial)
 
-``-cn`` (substraction)
+   The PIN must not contain a character and must not contain a number.
+   *test1234* would not be a valid PIN, since it does contains numbers and characters.
+   *test///* would not be a valid PIN, since it contains characters.
 
-   *test1234* would be a valid OTP PIN, but *test12$$* and *testABCS* would
-   not be valid OTP PINs. The later since it does not contain digits, the first
-   (*test12$$*) since it does contain a special character ($), which it should not.
+``-s`` (denial)
+
+   The PIN must not contain a special character.
+   *test1234* would be a valid PIN. *test12$$* would not.
 
 ``+cn`` (grouping)
 
@@ -200,6 +233,35 @@ and it must not contain any other characters.
    characters from the sum of the two groups.
    *test1234*, *test12$$*, *test*
    and *1234* would all be valid OTP PINs.
+   Note, how this is different to ``-s``, since it allows special characters to be
+   included.
+
+``[123456]``
+
+   allows the digtits 1-6 to be used.
+   *1122* would be a valid PIN.
+   *1177* would not be a valid PIN.
+
+
+otp_pin_set_random
+~~~~~~~~~~~~~~~~~~
+
+type: integer
+
+range: 1-31
+
+The administrator can set a random pin for a token
+with the endpoint ``token/setrandompin``.
+This policy is needed to define how long the PIN will be.
+
+.. note:: The PIN will consist of digits and letters.
+
+reset
+~~~~~
+
+type: bool
+
+The administrator is allowed to reset the fail counter of a token.
 
 resync
 ~~~~~~
@@ -232,26 +294,44 @@ is allowed to unassign tokens from a user. I.e. the
 administrator can remove the link between the token 
 and the user. The token still continues to exist in the system.
 
-import
-~~~~~~
+importtokens
+~~~~~~~~~~~~
 
 type: bool
 
-If the ``import`` action is defined, the administrator is 
+If the ``importtokens`` action is defined, the administrator is
 allowed to import token seeds from a token file, thus
 creating many new token objects in the systems database.
 
-remove
+The right to upload tokens can be limited to certain realms.
+Thus the administrator could only upload tokens into realm he is allowed to manage.
+
+delete
 ~~~~~~
 
 type: bool
 
-If the ``remove`` action is defined, the administrator is
+If the ``delete`` action is defined, the administrator is
 allowed to delete a token from the system. 
 
-.. note:: If a token is removed, it can not be recovered.
+.. note:: If a token is deleted, it can not be recovered.
 
 .. note:: All audit entries of this token still exist in the audit log.
+
+spass_otp_pin_contents
+~~~~~~~~~~~~~~~~~~~~~~
+
+type: str
+
+
+
+spass_otp_pin_minlength and spass_otp_pin_maxlength
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: int
+
+These policy actions define the required minimal and allowed maximal pin length
+for :ref:`spass_token`.
 
 userlist
 ~~~~~~~~
@@ -266,23 +346,21 @@ he should only work with tokens, but not see all users at once.
 .. note:: If an administrator has any right in a realm, the administrator
    is also allowed to view the token list.
 
-checkstatus
-~~~~~~~~~~~
+getchallenges
+~~~~~~~~~~~~~
 
 type: bool
 
-If the ``checkstatus`` action is defined, the administrator is 
+If the ``getchallenges`` action is defined, the administrator is
 allowed to check the status of open challenge requests.
 
-manageToken
+tokenrealms
 ~~~~~~~~~~~
 
 type: bool
 
-If the ``manageToken`` action is defined, the administrator is allowed
+If the ``tokenrealms`` action is defined, the administrator is allowed
 to manage the realms of a token.
-
-.. index:: realm administrator
 
 A token may be located in multiple realms. This can be interesting if
 you have a pool of spare tokens and several realms but want to 
@@ -416,14 +494,14 @@ smtpserver_read
 
 type: bool
 
-Allow the administrator to read the smtpserver configuration.
+Allow the administrator to read the :ref:`smtpserver`.
 
 smsgateway_write
 ~~~~~~~~~~~~~~~~
 
 type: bool
 
-To be able to define new :ref:`smsgateway` or delete existing ones, the
+To be able to define new :ref:`sms_gateway_config` or delete existing ones, the
 administrator needs the right ``smsgateway_write``.
 
 smsgateway_read
@@ -431,21 +509,21 @@ smsgateway_read
 
 type: bool
 
-Allow the administrator to read the smsgateway configuration.
+Allow the administrator to read the :ref:`sms_gateway_config`.
 
 periodictask_write
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 type: bool
 
-Allow the administrator to write or delete periodictask definitions.
+Allow the administrator to write or delete :ref:`periodic_tasks` definitions.
 
 periodictask_read
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 type: bool
 
-Allow the administrator to read the periodictask definitions.
+Allow the administrator to read the :ref:`periodic_tasks` definitions.
 
 eventhandling_write
 ~~~~~~~~~~~~~~~~~~~
@@ -459,11 +537,39 @@ eventhandling_read
 
 type: bool
 
-Allow the administrator to read event handlers.
+Allow the administrator to read :ref:`eventhandler`.
 
 .. note:: Currently the policies do not take into account resolvers,
    or realms. Having the right to read event handlers, will allow the
    administrator to see all event handler definitions.
+
+radiusserver_write
+~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write or delete :ref:`radiusserver_config` definitions.
+
+radiusserver_read
+~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to read the :ref:`radiusserver_config` definitions.
+
+privacyideaserver_write
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write or delete :ref:`privacyideaserver_config` definitions.
+
+privacyideaserver_read
+~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to read the :ref:`privacyideaserver_config` definitions.
 
 
 policywrite, policyread, policydelete
@@ -504,6 +610,30 @@ type: bool
 Allow the administrator to write, read or delete system configuration.
 
 
+caconnectorwrite, caconnectorread, caconnectordelete
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+Allow the administrator to write, read or delete CA connectors.
+
+
+statistics_read
+~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows the reading of the statistics at the :ref:`rest_monitoring`.
+
+
+statistics_delete
+~~~~~~~~~~~~~~~~~
+
+type: bool
+
+This action allows to delete statistics at the :ref:`rest_monitoring`.
+
+
 auditlog
 ~~~~~~~~
 
@@ -522,10 +652,10 @@ type: bool
 
 The administrator is allowed to download the audit log.
 
-.. note:: The download is not restricted to filters and audit age.
+.. note:: The download is **not** restricted to filters, hidden columns and audit age.
    Thus, if you want to avoid, that an administrator can see older
-   logs, you need to disallow downloading the data. Otherwise he
-   may download the audit log and look at older entries manually.
+   logs or columns, hidden by `hide_audit_columns`, you need to disallow downloading the data.
+   Otherwise he may download the audit log and look at older entries manually.
 
 auditlog_age
 ~~~~~~~~~~~~
@@ -538,7 +668,19 @@ view older entries.
 
 Can be something like 10m (10 minutes), 10h (10 hours) or 10d (ten days).
 
-trigger_challenge
+hide_audit_columns
+~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This species a blank separated list of audit columns, that should be removed
+from the response and also from the WebUI.
+For example a value ``sig_check log_level`` will hide these two columns.
+
+The list of available columns can be checked by examining the response of the
+request to the :ref:`rest_audit`.
+
+triggerchallenge
 ~~~~~~~~~~~~~~~~~
 
 type: bool
@@ -569,6 +711,39 @@ Such a policy can also be set for the user. See :ref:`user_policy_2step`.
 
 New in version 2.21
 
+hotp_hashlib and totp_hashlib
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+Force the admin to enroll HOTP/TOTP Tokens with the specified hashlib.
+The corresponding input selector will be disabled in the web UI.
+Possible values are *sha1*, *sha256* and *sha512*, default is *sha1*.
+
+New in 3.2
+
+hotp_otplen and totp_otplen
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: int
+
+Force the admin to enroll HOTP/TOTP Tokens with the specified otp length.
+The corresponding input selector will be disabled in the web UI.
+Possible values are *6* or *8*, default is *6*.
+
+New in 3.2
+
+totp_timestep
+~~~~~~~~~~~~~
+
+type: int
+
+Enforce the timestep of the time-based OTP token.
+A corresponding input selection will be disabled/hidden in the web UI.
+Possible values are *30* or *60*, default is *30*.
+
+New in 3.2
+
 system_documentation
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -588,3 +763,137 @@ This policy takes a blank-separated list of configured SMS gateways.
 It allows the administrator to define an individual SMS gateway during token enrollment.
 
 New in version 3.0.
+
+indexedsecret_force_attribute
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+If an administrator enrolls an indexedsecret token then the value of the given
+user attribute is set as the secret.
+The admin does not know the secret and can not change the secret.
+
+For more details of this token type see :ref:`indexedsecret_token`.
+
+New in version 3.3.
+
+.. _admin_trusted_attestation_CA:
+
+certificate_trusted_Attestation_CA_path
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+An administrator can enroll a certificate token for a user.
+If an attestation certificate is provided in addition, this policy holds the
+path to a directory, that contains trusted CA paths.
+Each PEM encoded file in this directory needs to contain the root CA certificate
+at the first position and the consecutive intermediate certificates.
+
+An additional enrollment policy :ref:`require_attestation`, if an attestation certificate
+is required.
+
+New in version 3.5.
+
+.. _admin_set_custom_user_attributes:
+
+set_custom_user_attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+New in version 3.6
+
+This policy defines which additional attributes an administrator is allowed to set.
+It can also define, to which value the admin is allowed to set such attribute.
+For allowing all values, the asterisk ("*") is used.
+
+.. note:: Commas are not allowed in policy actions value, so the setting has to
+   be defined by separating colons (":") and spaces.
+
+Each key is enclosed in colons and followed by a list of values separated by whitespaces,
+thus values are not allowed to contain whitespaces.
+
+Example:
+
+    ``:department: sales finance :city: * :*: 1 2``
+
+``:department: sales finance`` means that the administrator can set an additional
+attribute "department" with the allowed values of "sales" or "finance".
+
+``:city: *`` means that the administrator can set an additional attribute
+"city" to any value.
+
+``:*: 1 2`` means that the administrator can set any other additional attribute
+either to the value "1" or to the value "2".
+
+
+.. _admin_delete_custom_user_attributes:
+
+delete_custom_user_attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+This takes a space separated list of attributes that the administrator is allowed to
+delete. You can use the asterisk "*" to indicate, that this policy allows the
+administrator to delete any additional attribute.
+
+Example:
+
+    ``attr1 attr2 department``
+
+The administrator is allowed to delete the attributes "attr1", "attr2" and
+the attributes "department" of the corresponding users.
+
+.. note:: If this policy is not set, the admin is not allowed to delete any
+   custom user attributes.
+
+New in version 3.6
+
+.. _admin_machinelist:
+
+machinelist
+~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to list the machines.
+
+manage_machine_tokens
+~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to attach and detach tokens to machines to enable the use with
+one of the available appliactions. See :ref:`machines`.
+
+fetch_authentication_items
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is allowed to fetch authentication items of tokens assigned to machines.
+It grants access to the ``/machine/authitem`` endpoints (see :ref:`rest_machine`).
+
+clienttype
+~~~~~~~~~~
+
+type: bool
+
+This policy action allows the admin to view the list of clients which authenticate to privacyIDEA
+at the :ref:`rest_client`.
+
+managesubscription
+~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+The administrator is able to view and change the subscriptions.
+It grants access to the :ref:`rest_subscriptions`.
+
+set_hsm_password
+~~~~~~~~~~~~~~~~
+
+The administrator is able to set the password of the hardware security module.
+It grants access to the `/system/hsm` endpoint (see :ref:`rest_system`).

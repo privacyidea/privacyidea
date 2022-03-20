@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-2016-01-20 Cornelus Kölbel <cornelius@privacyidea.org>
+2016-01-20 Cornelius Kölbel <cornelius@privacyidea.org>
            Support STARTTLS mock
 
 2015-01-30 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -28,14 +28,13 @@ from __future__ import (
 )
 
 import six
-
+import smtplib
 
 try:
-    from six import cStringIO as BufferIO
+    from inspect import formatargspec, getfullargspec as getargspec
 except ImportError:
-    from six import StringIO as BufferIO
+    from inspect import formatargspec, getargspec
 
-import inspect
 from collections import namedtuple, Sequence, Sized
 from functools import update_wrapper
 from smtplib import SMTPException
@@ -53,15 +52,14 @@ def wrapper%(signature)s:
 def get_wrapped(func, wrapper_template, evaldict):
     # Preserve the argspec for the wrapped function so that testing
     # tools such as pytest can continue to use their fixture injection.
-    args, a, kw, defaults = inspect.getargspec(func)
-    values = args[-len(defaults):] if defaults else None
+    args = getargspec(func)
+    values = args.args[-len(args.defaults):] if args.defaults else None
 
-    signature = inspect.formatargspec(args, a, kw, defaults)
+    signature = formatargspec(*args)
     is_bound_method = hasattr(func, '__self__')
     if is_bound_method:
-        args = args[1:]     # Omit 'self'
-    callargs = inspect.formatargspec(args, a, kw, values,
-                                     formatvalue=lambda v: '=' + v)
+        args.args = args.args[1:]     # Omit 'self'
+    callargs = formatargspec(*args, formatvalue=lambda v: '=' + v)
 
     ctx = {'signature': signature, 'funcargs': callargs}
     six.exec_(wrapper_template % ctx, evaldict)
@@ -98,11 +96,15 @@ class SmtpMock(object):
     def __init__(self):
         self._calls = CallList()
         self.sent_message = None
+        self.smtp_ssl = False
         self.reset()
 
     def reset(self):
         self._request_data = {}
         self._calls.reset()
+
+    def get_smtp_ssl(self):
+        return self.smtp_ssl
 
     def setdata(self, response=None, authenticated=True,
                 config=None, exception=False, support_tls=True):
@@ -152,9 +154,16 @@ class SmtpMock(object):
             response = (535, "authentication failed (#5.7.1)")
         return {self._request_data.get("recipient"): response}
 
-    def _on_init(self, SMTP_instance, host, port=25, timeout=3):
+#    def _on_init(self, SMTP_instance, host, port=25, timeout=3):
+    def _on_init(self, *args, **kwargs):
+        SMTP_instance = args[0]
+        host = args[1]
+        if isinstance(SMTP_instance, smtplib.SMTP_SSL):
+            # in case we need sth. to do with SMTL_SSL
+            self.smtp_ssl = True
         # mangle request packet
-        self.timeout = timeout
+        self.timeout = kwargs.get("timeout", 10)
+        self.port = kwargs.get("port", 25)
         self.esmtp_features = {}
         return None
 

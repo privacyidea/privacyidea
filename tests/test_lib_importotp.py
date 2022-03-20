@@ -3,7 +3,7 @@
 This test file tests the lib.importotp
 
 """
-
+import pytest
 
 from .base import MyTestCase
 from privacyidea.lib.importotp import (parseOATHcsv, parseYubicoCSV,
@@ -12,9 +12,7 @@ from privacyidea.lib.importotp import (parseOATHcsv, parseYubicoCSV,
 from privacyidea.lib.token import remove_token
 from privacyidea.lib.token import init_token
 from privacyidea.lib.importotp import export_pskc
-from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
-import binascii
-
+from privacyidea.lib.utils import hexlify_and_unicode
 
 XML_PSKC_PASSWORD_PREFIX = """<?xml version="1.0" encoding="UTF-8"?>
   <KeyContainer
@@ -97,6 +95,7 @@ XML_PSKC = '''<?xml version="1.0" encoding="UTF-8"?>
     </DeviceInfo>
     <Key Id="1000133508267" Algorithm="urn:ietf:params:xml:ns:keyprov:pskc:hotp">
       <AlgorithmParameters>
+        <Suite>sha256</Suite>
         <ResponseFormat Length="6" Encoding="DECIMAL"/>
       </AlgorithmParameters>
       <Data>
@@ -338,8 +337,7 @@ sccTokenType: eToken-PASS-TS
 sccTokenData: sccKey=535CC2CB9DEA0B55B0A2D585EAB648EBCE73AC8B;sccMode=T;sccPwLen=6;sccVer=6.20;sccTick=30;sccPrTime=2013/03/12 00:00:00
 sccSignature: MC4CFQDju23MCRqmkWC7Z9sVDB0y0TeEOwIVAOIibmqMFxhPiY7mLlkt5qmRT/xn        '''
 
-
-YUBIKEYCSV= '''
+YUBIKEY_CSV = '''
         Static Password: Scan Code,17.04.12 12:25,1,051212172c092728,,,,,0,0,0,0,0,0,0,0,0,0
         Static Password: Scan Code,17.04.12 12:27,1,282828051212172c092728,,,,,0,0,0,0,0,0,0,0,0,0
         LOGGING START,17.04.12 12:29
@@ -378,6 +376,61 @@ Static Password,11.12.13 19:08,1,,d5a3d50327dc,0e8e37b0e38b314a56748c030f58d21d,
 # static mode
 508329,,,9e2fd386224a7f77e9b5aee775464033,,2013-12-12T08:44:34,
         '''
+
+# see https://github.com/privacyidea/privacyidea/issues/2594
+YUBIKEY_PSKC_TOTP = '''
+<?xml version="1.0" encoding="UTF-8"?>
+<KeyContainer Version="1.0"
+    xmlns="urn:ietf:params:xml:ns:keyprov:pskc">
+    <KeyPackage>
+        <DeviceInfo>
+            <Manufacturer>Yubico</Manufacturer>
+            <SerialNo>10944003</SerialNo>
+        </DeviceInfo>
+        <CryptoModuleInfo>
+            <Id>2</Id>
+        </CryptoModuleInfo>
+        <Key Id="10944003:2" Algorithm="http://www.yubico.com/#yubikey-aes">
+            <AlgorithmParameters>
+                <ResponseFormat Length="44" Encoding="ALPHANUMERIC"/>
+            </AlgorithmParameters>
+            <Data>
+                <Secret>
+                    <PlainValue>MueRkgTdEbfhBzkRMXgsug==</PlainValue>
+                </Secret>
+            </Data>
+            <UserId>CN=vvdbcihejbhd, UID=3a230e05b9b8</UserId>
+        </Key>
+    </KeyPackage>
+'''
+
+# see https://github.com/privacyidea/privacyidea/issues/2594
+YUBIKEY_PSKC_HOTP = '''
+<KeyContainer Version="1.0"
+    xmlns="urn:ietf:params:xml:ns:keyprov:pskc">
+    <KeyPackage>
+        <DeviceInfo>
+            <Manufacturer>Yubico</Manufacturer>
+            <SerialNo>10944003</SerialNo>
+        </DeviceInfo>
+        <CryptoModuleInfo>
+            <Id>1</Id>
+        </CryptoModuleInfo>
+        <Key Id="10944003:1" Algorithm="urn:ietf:params:xml:ns:keyprov:pskc:hotp">
+            <AlgorithmParameters>
+                <ResponseFormat Length="6" Encoding="DECIMAL"/>
+            </AlgorithmParameters>
+            <Data>
+                <Secret>
+                    <PlainValue>Sl+TPnYomz6VZSlbtDq7BxBNv0U=</PlainValue>
+                </Secret>
+                <Counter>
+                    <PlainValue>0</PlainValue>
+                </Counter>
+            </Data>
+        </Key>
+    </KeyPackage>
+'''
 
 ALADDINXML = '''
         <Tokens>
@@ -474,6 +527,8 @@ OATHCSV = '''
         # this is a comment
         # a serial without an OTP key will not create a token
         serialX
+        # A HOTP token with a counter
+        tok6, 1212, hotp, 6, 345
         '''
 OATHCSV_USER = """# version:2
 user1, resolver1, realm1, tok1, 1212, hotp
@@ -519,16 +574,21 @@ OvZnz1B26AngXLfkXPL7IHof
 """
 
 
-
 class ImportOTPTestCase(MyTestCase):
 
     def test_00_import_oath(self):
         tokens = parseOATHcsv(OATHCSV)
-        self.assertTrue(len(tokens) == 5, len(tokens))
+        self.assertTrue(len(tokens) == 6, len(tokens))
         self.assertTrue("tok1" in tokens, tokens)
         self.assertTrue("tok2" in tokens, tokens)
         self.assertTrue("tok3" in tokens, tokens)
         self.assertTrue("tok4" in tokens, tokens)
+        self.assertTrue("tok5" in tokens, tokens)
+        self.assertTrue("tok6" in tokens, tokens)
+        self.assertEqual(tokens["tok6"]["counter"], 345)
+        # The TOTP token does contain the timeStep but no counter
+        self.assertEqual(tokens["tok4"]["timeStep"], 60)
+        self.assertNotIn("counter", tokens["tok4"])
 
     def test_00_import_oath_user(self):
         tokens = parseOATHcsv(OATHCSV_USER)
@@ -540,6 +600,7 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens.get("tok3").get("user").get("resolver"), "resolver3")
 
     def test_01_import_aladdin_xml(self):
+        self.assertRaises(ImportException, parseSafeNetXML, 'no xml')
         tokens = parseSafeNetXML(ALADDINXML)
         self.assertTrue(len(tokens) == 2)
         self.assertTrue("00040008CFA52" in tokens, tokens)
@@ -549,35 +610,80 @@ class ImportOTPTestCase(MyTestCase):
                           ALADDINXML_WITHOUT_TOKENS)
 
     def test_02_import_yubikey(self):
-        tokens = parseYubicoCSV(YUBIKEYCSV)
+        tokens = parseYubicoCSV(YUBIKEY_CSV)
         self.assertTrue(len(tokens) == 7, len(tokens))
         self.assertTrue("UBAM00508326_1" in tokens, tokens)
 
+        tokens, _ = parsePSKCdata(YUBIKEY_PSKC_TOTP)
+        self.assertTrue(len(tokens) == 1, len(tokens))
+        self.assertTrue("UBAM10944003_2" in tokens, tokens)
+        self.assertEqual(tokens["UBAM10944003_2"]["type"], "yubikey")
+
+        tokens, _ = parsePSKCdata(YUBIKEY_PSKC_HOTP)
+        self.assertTrue(len(tokens) == 1, len(tokens))
+        self.assertTrue("UBOM10944003_1" in tokens, tokens)
+        self.assertEqual(tokens["UBOM10944003_1"]["type"], "hotp")
+
     def test_03_import_pskc(self):
-        tokens = parsePSKCdata(XML_PSKC)
+        self.assertRaises(ImportException, parsePSKCdata, 'not xml')
+
+        tokens, _ = parsePSKCdata(XML_PSKC)
         self.assertEqual(len(tokens), 7)
         self.assertEqual(tokens["1000133508267"].get("type"), "hotp")
+        self.assertEqual(tokens["1000133508267"].get("hashlib"), "sha256")
         self.assertEqual(tokens["2600135004013"].get("type"), "totp")
+        self.assertEqual(tokens["2600135004013"].get("hashlib"), "sha1")
+
         # Check the TOTP counter...
         self.assertEqual(tokens["2600135004013"].get("counter"), "121212")
         self.assertEqual(tokens["2600135004013"].get("timeShift"), "-122")
         self.assertEqual(tokens["2600135004013"].get("timeStep"), "60")
+
         # check the PW token
         self.assertEqual(tokens["PW001"].get("type"), "pw")
         self.assertEqual(tokens["PW001"].get("otplen"), "12")
+
         # The secret (password) of the pw token is "123456789012"
         self.assertEqual(tokens["PW001"].get("otpkey"), hexlify_and_unicode("123456789012"))
 
     def test_04_import_pskc_aes(self):
+        # Test default and all tokens are valid
         encryption_key_hex = "12345678901234567890123456789012"
-        tokens = parsePSKCdata(XML_PSKC_AES,
-                               preshared_key_hex=encryption_key_hex)
+        tokens, not_imported = parsePSKCdata(XML_PSKC_AES,
+                                             preshared_key_hex=encryption_key_hex)
         self.assertEqual(len(tokens), 1)
+        self.assertEqual(len(not_imported), 0)
         self.assertEqual(tokens["987654321"].get("type"), "hotp")
         self.assertEqual(tokens["987654321"].get("otplen"), "8")
         self.assertEqual(tokens["987654321"].get("otpkey"),
                          "3132333435363738393031323334353637383930")
         self.assertEqual(tokens["987654321"].get("description"), "Manufacturer")
+
+        # Test 'check_fail_hard' no token parsed
+        xml_wrong_mac = XML_PSKC_AES.replace("Su+NvtQfmvfJzF6bmQiJqoLRExc=", "Su+NvtQfmvfJzF6XYZiJqoLRExc=")
+        tokens, not_imported = parsePSKCdata(xml_wrong_mac,
+                                             preshared_key_hex=encryption_key_hex)
+        self.assertEqual(len(tokens), 0)
+        self.assertEqual(len(not_imported), 1)
+
+        # Test 'no_check' all tokens parsed and no exception
+        xml_wrong_mac = XML_PSKC_AES.replace("Su+NvtQfmvfJzF6bmQiJqoLRExc=", "Su+NvtQfmvfJzF6XYZiJqoLRExc=")
+        tokens, not_imported = parsePSKCdata(xml_wrong_mac,
+                                             preshared_key_hex=encryption_key_hex, validate_mac='no_check')
+        self.assertEqual(len(tokens), 1)
+        self.assertEqual(len(not_imported), 0)
+        self.assertEqual(tokens["987654321"].get("type"), "hotp")
+        self.assertEqual(tokens["987654321"].get("otplen"), "8")
+        self.assertEqual(tokens["987654321"].get("otpkey"),
+                         "3132333435363738393031323334353637383930")
+        self.assertEqual(tokens["987654321"].get("description"), "Manufacturer")
+
+        # Test 'check_fail_soft' no token parsed and no exception
+        xml_wrong_mac = XML_PSKC_AES.replace("Su+NvtQfmvfJzF6bmQiJqoLRExc=", "Su+NvtQfmvfJzF6XYZiJqoLRExc=")
+        tokens, not_imported = parsePSKCdata(xml_wrong_mac,
+                                             preshared_key_hex=encryption_key_hex, validate_mac='check_fail_soft')
+        self.assertEqual(len(tokens), 0)
+        self.assertEqual(len(not_imported), 1)
 
     def test_05_import_pskc_password(self):
         password = "qwerty"
@@ -585,7 +691,7 @@ class ImportOTPTestCase(MyTestCase):
         self.assertRaises(ImportException, parsePSKCdata,
                           XML_PSKC_PASSWORD_PREFIX)
 
-        tokens = parsePSKCdata(XML_PSKC_PASSWORD_PREFIX, password=password)
+        tokens, _ = parsePSKCdata(XML_PSKC_PASSWORD_PREFIX, password=password)
         self.assertEqual(len(tokens), 1)
         self.assertEqual(tokens["987654321"].get("type"), "hotp")
         self.assertEqual(tokens["987654321"].get("otplen"), "8")
@@ -606,7 +712,7 @@ class ImportOTPTestCase(MyTestCase):
         tlist = [t1, t2, t3, t4]
         # export the tokens
         psk, token_num, soup = export_pskc(tlist)
-        # Only 2 tokens exported, the spass token does not get exported!
+        # Only 3 tokens exported, the spass token does not get exported!
         self.assertEqual(token_num, 3)
         self.assertEqual(len(psk), 32)
         export = "{0!s}".format(soup)
@@ -616,7 +722,7 @@ class ImportOTPTestCase(MyTestCase):
         remove_token("t3")
         remove_token("t4")
         # import the tokens again
-        tokens = parsePSKCdata(export, preshared_key_hex=psk)
+        tokens, _ = parsePSKCdata(export, preshared_key_hex=psk)
         self.assertEqual(len(tokens), 3)
         self.assertEqual(tokens.get("t1").get("type"), "hotp")
         self.assertEqual(tokens.get("t1").get("otpkey"), "123456")

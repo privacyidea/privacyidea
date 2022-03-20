@@ -25,7 +25,13 @@ Events
 ------
 
 Each **API call** is an **event** and you can bind arbitrary actions to each
-event as you like.
+event as you like. You can bind several actions to one event. These actions are executed
+in the order of the priority one after another.
+
+.. Note:: An action, that is triggered by an event can not trigger a new action. Only **events** (API calls)
+   can trigger actions. E.g. if you are using the :ref:`tokenhandler` to create a new token, the creation
+   of the token is an *action*, not an *event*. This means this creation of the token can *not* trigger a new
+   action. For more complex actions, you might need to look into the :ref:`scripthandler`.
 
 Internally events are marked by a decorator "event" with an *event identifier*.
 At the moment not all events might be tagged. Please drop us a note to tag
@@ -35,6 +41,8 @@ all further API calls.
    :width: 500
 
    *An action is bound to the event* token_init.
+
+.. _eventhandler_pre_and_post:
 
 Pre and Post Handling
 ---------------------
@@ -86,6 +94,8 @@ module can require additional options.
 
    *The event* sendmail *requires the option* emailconfig.
 
+.. _handlerconditions:
+
 Conditions
 ----------
 
@@ -94,21 +104,100 @@ Conditions
 Added in version 2.14
 
 An event handler module may also contain conditions. Only if all conditions
-are fullfilled, the action is triggered. Conditions are defined in the class
-property *conditions* and checked in the method *check_condition*. The
-UserNotification Event Handler defines such conditions.
+are fulfilled, the action is triggered. Conditions are defined in the class
+property *conditions* and checked in the method *check_condition*. The base class
+for event handlers currently defines those conditions. So all event handlers come with
+the same conditions.
+
+.. note:: In contrast to other conditions, the condition checking for
+   ``tokenrealms``, ``tokenresolvers``, ``serial`` and ``user_token_number``
+   also evaluates to *true*, if this information
+   can not be checked. I.e. if a request does not contain a *serial* or if the serial
+   can not be determined, this condition will be evaluated as fulfilled.
+
+   Event Handlers are a mighty and complex tool to tweak the functioning of your
+   privacyIDEA system. We recommend to test your definitions thoroughly to assure
+   your expected outcome.
 
 Basic conditions
 ~~~~~~~~~~~~~~~~
 
 The basic event handler module has the following conditions.
 
+**client_ip**
+
+The action is triggered if the client IP matches this value. The value can be a comma-separated list
+of single addresses or networks. To exclude entries, put a minus
+sign::
+
+  192.168.0.0/24,-192.168.0.12,10.0.0.2
+
+**count_auth**
+
+This can be '>100', '<99', or '=100', to trigger the action, if the tokeninfo field 'count_auth'
+is bigger than 100, less than 99 or exactly 100.
+
+**count_auth_fail**
+
+This can be '>100', '<99', or '=100', to trigger the action, if the difference between
+the tokeninfo field 'count_auth' and 'count_auth_success is bigger than 100,
+less than 99 or exactly 100.
+
+**count_auth_success**
+
+This can be '>100', '<99', or '=100', to trigger the action, if the tokeninfo field
+'count_auth_success' is bigger than 100, less than 99 or exactly 100.
+
+**failcounter**
+
+This is the ``failcount`` of the token. It is increased on failed authentication
+attempts. If it reaches ``max_failcount`` increasing will stop and the token is locked.
+See :ref:`failcounter`.
+
+The condition can be set to '>9', '=10', or '<5' and it will trigger the action accordingly.
+
+**detail_error_message**
+
+This condition checks a regular expression against the ``detail`` section in
+the API response. The field ``detail->error->message`` is evaluated.
+
+Error messages can be manyfold. In case of authentication you could get error
+messages like:
+
+"The user can not be found in any resolver in this realm!"
+
+With ``token/init`` you could get:
+
+"missing Authorization header"
+
+.. note:: The field ``detail->error->message is only available in case of an
+   internal error, i.e. if the response status is ``False``.
+
+**detail_message**
+
+This condition checks a regular expression against the ``detail`` section in
+the API response. The field ``detail->message`` is evaluated.
+
+Those messages can be manyfold like::
+
+    "wrong otp pin"
+    "wrong otp value"
+    "Only 2 failed authentications per 1:00:00"
+
+.. note:: The field ``detail->message`` is available in case of status ``True``,
+   like an authentication request that was handled successfully but failed.
+
+**detail_message**
+
+Here you can enter a regular expression. The condition only applies if the regular
+expression matches the ``detail->message`` in the response.
+
 **last_auth**
 
 This condition checks if the last authentication is older than the specified
 time delta. The timedelta is specified with "h" (hours), "d" (days) or "y"
-(years). Specifying *180d* would mean, that the action is triggered if the
-last successful authentication witht he token was berformed more than 180
+(years). Specifying ``180d`` would mean, that the action is triggered if the
+last successful authentication with the token was performed more than 180
 days ago.
 
 This can be used to send notifications to users or administrators to inform
@@ -143,12 +232,28 @@ This way the administrator can bind certain actions to specific realms. E.g.
 some actions will only be triggered, if the event happens for normal users,
 but not for users in admin- or helpdesk realms.
 
+**resolver**
+
+The resolver of the user, for which this event should apply.
+
+**result_status**
+
+The result.status within the response is True or False.
+
 **result_value**
 
 This condition checks the result of an event.
 
 E.g. the result of the event *validate_check* can be a failed authentication.
 This can be the trigger to notify either the token owner or the administrator.
+
+**rollout_state**
+
+This is the rollout_state of a token. A token can be rolled out in several steps
+like the 2step HOTP/TOTP token. In this case the attribute "rollout_state" of the
+token contains certain values like ``clientwait`` or ``enrolled``.
+This way actions can be triggered, depending on the step during an enrollment
+process.
 
 **serial**
 
@@ -159,35 +264,6 @@ This is a good idea to combine with other conditions. E.g. only tokens with a
 certain kind of serial number like Google Authenticator will be deleted
 automatically.
 
-**tokenrealm**
-
-In contrast to the *realm* this is the realm of the token - the *tokenrealm*.
-The action is only triggerd, if the token within the event has the given
-tokenrealm. This can be used in workflows, when e.g. hardware tokens which
-are not assigned to a user are pushed into a kind of storage realm.
-
-**tokentype**
-
-The action is only triggered if the token in this event is of the given type.
-This way the administrator can design workflows for enrolling and reenrolling
-tokens. E.g. the tokentype can be a registration token and the registration
-code can be easily and automatically sent to the user.
-
-**token_locked**
-
-The action is only triggered, if the token in the event is locked, i.e. the
-maximum failcounter is reached. In such a case the user can not use the token
-to authenticate anymore. So an action to notify the user or enroll a new
-token can be triggered.
-
-**rollout_state**
-
-This is the rollout_state of a token. A token can be rolled out in several steps
-like the 2step HOTP/TOTP token. In this case the attribute "rollout_state" of the
-token contains certain values like 'clientwait' or 'enrolled'.
-This way actions can be triggered, depending on the step during an enrollment
-process.
-
 **token_has_owner**
 
 The action is only triggered, if the token is or is not assigned to a user.
@@ -197,8 +273,12 @@ The action is only triggered, if the token is or is not assigned to a user.
 The action is only triggered, if the user, to whom the token is assigned,
 does not exist anymore.
 
-This can be used to trigger the deletion of the token, if the token owner was
-removed from the userstore.
+**token_locked**
+
+The action is only triggered, if the token in the event is locked, i.e. the
+maximum failcounter is reached. In such a case the user can not use the token
+to authenticate anymore. So an action to notify the user or enroll a new
+token can be triggered.
 
 **token_validity_period**
 
@@ -206,22 +286,13 @@ Checks if the token is in the current validity period or not. Can be set to
 *True* or *False*.
 
 .. note:: ``token_validity_period==False`` will trigger an action if either the
-   validitiy period is either *over* or has not *started*, yet.
-
-**user_token_number**
-
-The action is only triggered, if the user in the event has the given number
-of tokens assigned.
-
-This can be used to e.g. automatically enroll a token for the user if the
-user has no tokens left (token_number == 0) of to notify the administrator if
-the user has to many tokens assigned.
+   validity period is either *over* or has not *started*, yet.
 
 **tokeninfo**
 
 The tokeninfo condition can compare any arbitrary tokeninfo field against a
 fixed value. You can compare strings and integers. Integers are converted
-automatically. Valid compares are:
+automatically. Valid compares are::
 
     myValue == 1000
     myValue > 1000
@@ -233,13 +304,13 @@ automatically. Valid compares are:
 "myValue" and "myTokenInfoField" being any possible tokeninfo fields.
 
 Starting with version 2.20 you can also compare dates in the isoformat like
-that:
+that::
 
     myValue > 2017-10-12T10:00+0200
     myValue < 2020-01-01T00:00+0000
 
-In addition you can also use the tag *{now}* to compare to the curren time
-*and* you can add offsets to *{now}* in seconds, minutes, hours or days:
+In addition you can also use the tag ``{now}`` to compare to the current time
+*and* you can add offsets to ``{now}`` in seconds, minutes, hours or days::
 
     myValue < {now}
     myValue > {now}+10d
@@ -249,40 +320,45 @@ Which would match if the tokeninfo *myValue* is a date, which is later than
 10 days from now or it the tokeninfo *myValue* is a date, which is 5 more
 than 5 hours in the past.
 
+**tokenrealm**
 
-**detail_error_message**
+In contrast to the *realm* this is the realm of the token - the *tokenrealm*.
+The action is only triggered, if the token within the event has the given
+tokenrealm. This can be used in workflows, when e.g. hardware tokens which
+are not assigned to a user are pushed into a kind of storage realm.
 
-This condition checks a regular expression against the ``detail`` section in
-the API response. The field ``detail->error->message`` is evaluated.
+**tokenresolver**
 
-Error messages can be manyfold. In case of authentication you could get error
-messages like:
+The resolver of the token, for which this event should apply.
 
-"The user can not be found in any resolver in this realm!"
+**tokentype**
 
-With ``token/init`` you could get:
+The action is only triggered if the token in this event is of the given type.
+This way the administrator can design workflows for enrolling and re-enrolling
+tokens. E.g. the tokentype can be a registration token and the registration
+code can be easily and automatically sent to the user.
 
-"missing Authorization header"
+**user_token_number**
 
-.. note:: The field ``detail->error->message is only available in case of an
-   internal error, i.e. if the response status is ``False``.
+The action is only triggered, if the user in the event has the given number
+of tokens assigned.
 
-**detail_message**
+This can be used to e.g. automatically enroll a token for the user if the
+user has no tokens left (``token_number == 0``) of to notify the administrator if
+the user has to many tokens assigned.
 
-This condition checks a regular expression against the ``detail`` section in
-the API response. The field ``detail->message`` is evaluated.
+**counter**
 
-Those messages can be manyfold like:
+The counter condition can compare the value of any arbitrary event counter against a fixed
+value. Valid compares are::
 
-"wrong otp pin"
+    myCounter == 1000
+    myCounter > 1000
+    myCounter < 1000
 
-"wrong otp value"
+"myCounter" being any event counter set with the :ref:`counterhandler`.
 
-"Only 2 failed authentications per 1:00:00"
-
-.. note:: The field ``detail->message`` is available in case of status ``True``,
-   like an authentication request that was handled successfully but failed.
-
+.. note:: A non-existing counter value will compare as 0 (zero).
 
 Managing Events
 ---------------
@@ -308,3 +384,5 @@ Available Handler Modules
    counterhandler
    federationhandler
    requestmangler
+   responsemangler
+   logginghandler

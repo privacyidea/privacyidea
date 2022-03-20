@@ -26,7 +26,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-__doc__="""This is the base class for SMS Modules, that can send SMS via
+__doc__ = """This is the base class for SMS Modules, that can send SMS via
 different means.
 The function get_sms_provider_class loads an SMS Provider Module dynamically
 and returns an instance.
@@ -34,8 +34,10 @@ and returns an instance.
 The code is tested in tests/test_lib_smsprovider
 """
 
+from privacyidea.lib.error import ConfigAdminError
 from privacyidea.models import SMSGateway, SMSGatewayOption
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
+from privacyidea.lib.utils.export import (register_import, register_export)
 import logging
 log = logging.getLogger(__name__)
 
@@ -45,7 +47,8 @@ SMS_PROVIDERS = [
     "privacyidea.lib.smsprovider.SipgateSMSProvider.SipgateSMSProvider",
     "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider",
     "privacyidea.lib.smsprovider.SmppSMSProvider.SmppSMSProvider",
-    "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider"]
+    "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider",
+    "privacyidea.lib.smsprovider.ScriptSMSProvider.ScriptSMSProvider"]
 
 
 class SMSError(Exception):
@@ -122,6 +125,7 @@ class ISMSProvider(object):
         :return: dict
         """
         params = {"options_allowed": False,
+                  "headers_allowed": False,
                   "parameters": {
                       "PARAMETER1": {
                           "required": True,
@@ -159,8 +163,8 @@ def get_sms_provider_class(packageName, className):
     return get_module_class(packageName, className, "submit_message")
 
 
-def set_smsgateway(identifier, providermodule, description=None,
-                   options=None):
+def set_smsgateway(identifier, providermodule=None, description=None,
+                   options=None, headers=None):
 
     """
     Set an SMS Gateway configuration
@@ -173,12 +177,14 @@ def set_smsgateway(identifier, providermodule, description=None,
     :type providermodule: basestring
     :param description: A description of this gateway definition
     :param options: Options and Parameter for this module
+    :param headers: Headers for this module
     :type options: dict
+    :type headers: dict
     :return: The id of the event.
     """
     smsgateway = SMSGateway(identifier, providermodule,
                             description=description,
-                            options=options)
+                            options=options, headers=headers)
     create_sms_instance(identifier).check_configuration()
     return smsgateway.id
 
@@ -201,7 +207,30 @@ def delete_smsgateway_option(id, option_key):
     :param option_key: The identifier/key of the option
     :return: True
     """
-    return fetch_one_resource(SMSGatewayOption, gateway_id=id, Key=option_key).delete()
+    return delete_smsgateway_key_generic(id, option_key, Type="option")
+
+
+def delete_smsgateway_header(id, header_key):
+    """
+    Delete the SMS gateway header
+
+    :param id: The id of the SMS Gateway definition
+    :param header_key: The identifier/key of the header
+    :return: True
+    """
+    return delete_smsgateway_key_generic(id, header_key, Type="header")
+
+
+def delete_smsgateway_key_generic(id, key, Type="option"):
+    """
+    Delete the SMS gateway header
+
+    :param id: The id of the SMS Gateway definition
+    :param key: The identifier/key
+    :param type: The type of the key
+    :return: True
+    """
+    return fetch_one_resource(SMSGatewayOption, gateway_id=id, Key=key, Type=Type).delete()
 
 
 def get_smsgateway(identifier=None, id=None, gwtype=None):
@@ -241,10 +270,13 @@ def create_sms_instance(identifier):
     :param identifier: The name of the SMS gateway configuration
     :return: SMS Provider object
     """
-    gateway_definition = get_smsgateway(identifier)[0]
-    package_name, class_name = gateway_definition.providermodule.rsplit(".", 1)
+    gateway_definition = get_smsgateway(identifier)
+    if not gateway_definition:
+        raise ConfigAdminError('Could not find gateway definition with '
+                               'identifier "{0!s}"'.format(identifier))
+    package_name, class_name = gateway_definition[0].providermodule.rsplit(".", 1)
     sms_klass = get_sms_provider_class(package_name, class_name)
-    sms_object = sms_klass(smsgateway=gateway_definition)
+    sms_object = sms_klass(smsgateway=gateway_definition[0])
     return sms_object
 
 
@@ -259,3 +291,46 @@ def send_sms_identifier(identifier, phone, message):
     """
     sms = create_sms_instance(identifier)
     return sms.submit_message(phone, message)
+
+
+def list_smsgateways(identifier=None, id=None, gwtype=None):
+    """
+    This returns a list of all sms gateways matching the criterion.
+    If no identifier or server is provided, it will return a list of all sms
+    gateway definitions.
+
+    :param identifier: The identifier or the name of the SMSGateway definition.
+        As the identifier is unique, providing an identifier will return a
+        list with either one or no sms gateway
+    :type identifier: basestring
+    :param id: The id of the sms gateway in the database
+    :type id: basestring
+    :return: dict of SMSGateway configurations with gateway identifiers as keys.
+    """
+    res = {}
+    for gw in get_smsgateway(identifier=identifier, id=id, gwtype=gwtype):
+        res[gw.identifier] = gw.as_dict()
+        res[gw.identifier].pop('name')
+        res[gw.identifier].pop('id')
+
+    return res
+
+
+@register_export('smsgateway')
+def export_smsgateway(name=None):
+    """ Export given or all sms gateway configuration """
+    res = list_smsgateways(identifier=name)
+
+    return res
+
+
+@register_import('smsgateway')
+def import_smsgateway(data, name=None):
+    """Import sms gateway configuration"""
+    log.debug('Import smsgateway config: {0!s}'.format(data))
+    for res_name, res_data in data.items():
+        if name and name != res_name:
+            continue
+        rid = set_smsgateway(res_name, **res_data)
+        log.info('Import of smsgateway "{0!s}" finished,'
+                 ' id: {1!s}'.format(res_name, rid))

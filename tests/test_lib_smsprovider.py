@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 __doc__="""
 This test file tests the modules:
@@ -5,6 +6,7 @@ This test file tests the modules:
  lib.smsprovider.sipgateprovider
  lib.smsprovider.smtpsmsprovider
  lib.smsprovider.smppsmsprovider
+ lib.smsprovider.scriptsmsprovider
 """
 
 from .base import MyTestCase
@@ -13,15 +15,19 @@ from privacyidea.lib.smsprovider.SipgateSMSProvider import SipgateSMSProvider
 from privacyidea.lib.smsprovider.SipgateSMSProvider import URL
 from privacyidea.lib.smsprovider.SmtpSMSProvider import SmtpSMSProvider
 from privacyidea.lib.smsprovider.SmppSMSProvider import SmppSMSProvider
+from privacyidea.lib.smsprovider.ScriptSMSProvider import ScriptSMSProvider, SCRIPT_WAIT
 from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      get_sms_provider_class,
                                                      set_smsgateway,
                                                      get_smsgateway,
                                                      delete_smsgateway,
                                                      delete_smsgateway_option,
+                                                     delete_smsgateway_header,
+                                                     delete_smsgateway_key_generic,
                                                      create_sms_instance)
 from privacyidea.lib.smtpserver import add_smtpserver
 import responses
+import os
 from . import smtpmock
 from . import smppmock
 
@@ -72,7 +78,9 @@ class SMSTestCase(MyTestCase):
         provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
         id = set_smsgateway(identifier, provider_module, description="test",
                             options={"HTTP_METHOD": "POST",
-                                     "URL": "example.com"})
+                                     "URL": "example.com"},
+                            headers={"Authorization": "QWERTZ",
+                                     "BANANA": "will be eaten"})
         self.assertTrue(id > 0)
 
         gw = get_smsgateway(id=id)
@@ -87,12 +95,19 @@ class SMSTestCase(MyTestCase):
         set_smsgateway(identifier, provider_module,
                        options={"HTTP_METHOD": "POST",
                                 "URL": "example.com",
-                                "new key": "value"})
+                                "IDENTICAL_KEY": "new option"},
+                       headers={"Authorization": "ValueChanged",
+                                "IDENTICAL_KEY": "new header",
+                                "URL": "URL_in_headers"})
         gw = get_smsgateway(id=id)
         self.assertEqual(len(gw[0].option_dict), 3)
         self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
         self.assertEqual(gw[0].option_dict.get("URL"), "example.com")
-        self.assertEqual(gw[0].option_dict.get("new key"), "value")
+        self.assertEqual(gw[0].option_dict.get("IDENTICAL_KEY"), "new option")
+        self.assertEqual(gw[0].header_dict.get("Authorization"), "ValueChanged")
+        self.assertEqual(gw[0].header_dict.get("BANANA"), None)
+        self.assertEqual(gw[0].header_dict.get("IDENTICAL_KEY"), "new header")
+        self.assertEqual(gw[0].header_dict.get("URL"), "URL_in_headers")
 
         # delete a single option
         r = delete_smsgateway_option(id, "URL")
@@ -100,7 +115,17 @@ class SMSTestCase(MyTestCase):
         self.assertEqual(len(gw[0].option_dict), 2)
         self.assertEqual(gw[0].option_dict.get("HTTP_METHOD"), "POST")
         self.assertEqual(gw[0].option_dict.get("URL"), None)
-        self.assertEqual(gw[0].option_dict.get("new key"), "value")
+        self.assertEqual(gw[0].option_dict.get("IDENTICAL_KEY"), "new option")
+
+        # delete a single header
+        r = delete_smsgateway_header(id, "IDENTICAL_KEY")
+        gw = get_smsgateway(id=id)
+        self.assertEqual(gw[0].header_dict.get("IDENTICAL_KEY"), None)
+
+        # delete a single header via generic function
+        r = delete_smsgateway_key_generic(id, "URL", Type="header")
+        gw = get_smsgateway(id=id)
+        self.assertEqual(gw[0].header_dict.get("URL"), None)
 
         # finally delete the gateway definition
         r = delete_smsgateway(identifier)
@@ -117,7 +142,8 @@ class SMSTestCase(MyTestCase):
                           ".HttpSMSProvider"
         id = set_smsgateway(identifier, provider_module, description="test",
                             options={"HTTP_METHOD": "POST",
-                                     "URL": "example.com"})
+                                     "URL": "example.com"},
+                            headers={"Authorization": "QWERTZ"})
         self.assertTrue(id > 0)
 
         sms = create_sms_instance(identifier)
@@ -125,6 +151,8 @@ class SMSTestCase(MyTestCase):
         self.assertEqual(sms.smsgateway.option_dict.get("URL"), "example.com")
         self.assertEqual(sms.smsgateway.option_dict.get("HTTP_METHOD"),
                          "POST")
+        self.assertEqual(sms.smsgateway.header_dict.get("Authorization"), "QWERTZ")
+        self.assertEqual(sms.smsgateway.option_dict.get("Authorization"), None)
 
 
 class SmtpSMSTestCase(MyTestCase):
@@ -269,6 +297,66 @@ class SipgateSMSTestCase(MyTestCase):
         self.assertTrue(r)
 
 
+class ScriptSMSTestCase(MyTestCase):
+
+    directory = "{0!s}/tests/testdata/scripts/".format(os.getcwd())
+
+    def test_01_fail_no_script(self):
+        # The script does not exist
+        identifier = "myScriptSMS"
+        config = {"background": SCRIPT_WAIT,
+                  "script": "sms-script-does-not-exist.sh"}
+        provider_module = "privacyidea.lib.smsprovider.ScriptSMSProvider" \
+                          ".ScriptSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options=config)
+        self.assertTrue(id > 0)
+        sms = ScriptSMSProvider(smsgateway=get_smsgateway(identifier)[0], directory=self.directory)
+        self.assertRaises(SMSError, sms.submit_message, "123456", "Hello")
+        delete_smsgateway(identifier)
+        
+        # We bail out, fi no smsgateway definition is given!
+        sms = ScriptSMSProvider(directory=self.directory)
+        self.assertRaises(SMSError, sms.submit_message, "123456", "Hello")
+
+
+    def test_02_success(self):
+        # the script runs successfully
+        identifier = "myScriptSMS"
+        config = {"background": SCRIPT_WAIT,
+                  "script": "success.sh"}
+        provider_module = "privacyidea.lib.smsprovider.ScriptSMSProvider" \
+                          ".ScriptSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options=config)
+        self.assertTrue(id > 0)
+        sms = ScriptSMSProvider(smsgateway=get_smsgateway(identifier)[0], directory=self.directory)
+        r = sms.submit_message("123456", "Hello")
+        self.assertTrue(r)
+        delete_smsgateway(identifier)
+
+    def test_02_fail(self):
+        # The script returns a failing rcode
+        identifier = "myScriptSMS"
+        config = {"background": SCRIPT_WAIT,
+                  "script": "fail.sh"}
+        provider_module = "privacyidea.lib.smsprovider.ScriptSMSProvider" \
+                          ".ScriptSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options=config)
+        self.assertTrue(id > 0)
+        sms = ScriptSMSProvider(smsgateway=get_smsgateway(identifier)[0], directory=self.directory)
+        self.assertRaises(SMSError, sms.submit_message, "123456", "Hello")
+        delete_smsgateway(identifier)
+
+    def test_03_parameters(self):
+        # check parameters
+        params = ScriptSMSProvider.parameters()
+        self.assertFalse(params.get("options_allowed"))
+        self.assertIn("script", params.get("parameters"))
+        self.assertIn("background", params.get("parameters"))
+
+
 class HttpSMSTestCase(MyTestCase):
 
     post_url = "http://smsgateway.com/sms_send_api.cgi"
@@ -380,22 +468,22 @@ class HttpSMSTestCase(MyTestCase):
         self.assertEqual("4912345678", p)
 
         # Replace + with 00
-        p = HttpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": "/\+/00/"})
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": r"/\+/00/"})
         self.assertEqual("0049 123/456-78", p)
-        p = self.regexp_provider._mangle_phone("+49 123/456-78", {"REGEXP": "/[\+/]//"})
+        p = self.regexp_provider._mangle_phone("+49 123/456-78", {"REGEXP": r"/[\+/]//"})
         self.assertEqual("49 123456-78", p)
 
         # An invalid regexp is caught and a log error is written. The same
         # phone number is returned
-        p = HttpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": "/+/00/"})
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": r"/+/00/"})
         self.assertEqual("+49 123/456-78", p)
 
         # Only use leading numbers and not the rest
-        p = HttpSMSProvider._mangle_phone("12345abcdef", {"REGEXP":  "/^([0-9]+).*/\\1/"})
+        p = HttpSMSProvider._mangle_phone("12345abcdef", {"REGEXP":  r"/^([0-9]+).*/\1/"})
         self.assertEqual("12345", p)
 
         # Known limitation: The slash in the replace statement does not work!
-        p = HttpSMSProvider._mangle_phone("12.34.56.78", {"REGEXP": "/\./\//"})
+        p = HttpSMSProvider._mangle_phone("12.34.56.78", {"REGEXP": r"/\./\//"})
         self.assertEqual("12.34.56.78", p)
 
     @responses.activate
@@ -474,7 +562,8 @@ class HttpSMSTestCase(MyTestCase):
                                      "URL": "http://example.com",
                                      "RETURN_SUCCESS": "ID",
                                      "text": "{otp}",
-                                     "phone": "{phone}"})
+                                     "phone": "{phone}"},
+                            headers={"Authorization": "QWERTZ"})
         self.assertTrue(id > 0)
 
         sms = create_sms_instance(identifier)

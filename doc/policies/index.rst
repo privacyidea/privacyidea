@@ -3,6 +3,9 @@
 Policies
 ========
 
+.. todo:: Policies may be outdated. How to check which components are missing?
+   And do we want to document all actions? I added a link to the :ref:`code_policy`.
+
 .. index:: policies, scope
 
 Policies can be used to define the reaction and behaviour of the system.
@@ -19,13 +22,12 @@ privacyIDEA knows the scopes:
    authorization
    enrollment
    webui
-   gettoken
    register
 
 You can define as many policies as you wish to.
 The logic of the policies in the scopes is additive.
 
-.. figure:: policies.png
+.. figure:: images/policies.png
    :width: 500
 
    *Policy Definition*
@@ -96,7 +98,7 @@ Each policy can contain the following attributes:
 
      If you also want to match a policy with ``resolver=resolver2``, you need
      to select *Check all possible resolvers* in this policy. Thus this
-     policy will match for all users, which are als contained in *resolver2*
+     policy will match for all users, which are also contained in *resolver2*
      as a secondary resolver.
 
 **realm**
@@ -114,8 +116,21 @@ Each policy can contain the following attributes:
   allowed to manage his tokens from different IP addresses like the internal
   network or remotely via the firewall.
 
-  You can enter several IP addresses or subnets divided by comma
-  (like ``10.2.0.0/16, 192.168.0.1``).
+  You can enter several IP addresses or subnets divided by comma. Exclude item
+  by prepending a minus sign (like ``10.2.0.0/16, -10.2.0.1, 192.168.0.1``).
+
+**privacyIDEA Node**
+
+  (added in privacyIDEA 3.4)
+
+  If you have a redundant setup requests can hit different dedicated nodes of
+  your privacyIDEA cluster. If you want a policy to only be valid for certain
+  privacyIDEA Nodes, you can set a list of allowed nodes.
+
+  This can be useful if you e.g. only want certain administrative actions on
+  dedicated nodes.
+
+  The nodes are configured in pi.cfg. See :ref:`cfgfile`.
 
 **time**
 
@@ -166,4 +181,9 @@ Each policy can contain the following attributes:
   Using conditions, you can specify more advanced rules that determine whether
   a policy is valid for a request.
 
-  Conditions are described in :ref:`policy_conditions`.
+  Conditions are described in
+
+.. toctree::
+    :maxdepth: 1
+
+    conditions

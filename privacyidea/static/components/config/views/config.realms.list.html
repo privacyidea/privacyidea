@@ -1,4 +1,4 @@
-<div>
+<div class="table-responsive">
     <table class="table table-bordered table-responsive table-striped">
         <thead>
         <tr>
@@ -95,6 +95,8 @@
                                class="form-control"
                                ng-model="realm.name" required
                                placeholder="{{ 'new realm'|translate }}"
+                               ng-pattern="inputNamePatterns.simple.pattern"
+                               title="{{ inputNamePatterns.simple.title | translate }}"
                                autofocus/>
                     </div>
                 </td>

@@ -9,9 +9,13 @@
     log file. You can change the debug level in
     pi.cfg. Afterwards be sure to remove the logfile!
 </div>
-<div class="navbar navbar-default navbar-fixed-top">
+<div class="navbar navbar-default">
     <div class="container">
-        <a class="navbar-brand" ui-sref="token.list">
+        <a class="navbar-brand" ui-sref="token.list" ng-show="loggedInUser.role">
+            <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
+                 class="pilogo" alt="privacyIDEA">
+        </a>
+        <a class="navbar-brand" ng-hide="loggedInUser.role">
             <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
                  class="pilogo" alt="privacyIDEA">
         </a>
@@ -26,61 +30,63 @@
 
         <div class="navbar-collapse collapse myMainNavbar">
             <ul class="nav navbar-nav" ng-hide="token_wizard">
-                <li ng-class="{active: $state.includes('token')}"
-                    ng-show="loggedInUser.role &&
-                            checkMainMenu('tokens')">
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role == 'admin' && admin_dashboard">
+                    <a ui-sref="dashboard">
+                    <span class="glyphicon glyphicon-dashboard"
+                          aria-hidden="true"></span>
+                        <translate>Dashboard</translate>
+                    </a></li>
+
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role && checkMainMenu('tokens')">
                     <a ui-sref="token.list">
                     <span class="glyphicon glyphicon-phone"
                           aria-hidden="true"></span>
                         <translate>Tokens</translate>
                     </a></li>
-                <li ng-class="{active: $state.includes('user')}"
-                    ng-show="loggedInUser.role == 'admin' &&
-                            checkMainMenu('users')">
+
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role == 'admin' && checkMainMenu('users')">
                     <a ui-sref="user.list">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
                         <translate>Users</translate>
                     </a></li>
 
-                <li ng-class="{active: $state.includes('user')}"
-                    ng-show="loggedInUser.role == 'user' &&
-                            checkMainMenu('users')">
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role == 'user' && checkMainMenu('users')">
                     <a ui-sref="user.password">
                     <span class="glyphicon glyphicon-user"
                           aria-hidden="true"></span>
                         <translate>User</translate>
                     </a></li>
 
-                <li ng-class="{active: $state.includes('machine')}"
-                    ng-show="loggedInUser.role == 'admin' &&
-                            checkMainMenu('machines')">
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role == 'admin' && checkMainMenu('machines')">
                     <a ui-sref="machine.list">
                     <span class="glyphicon glyphicon-tasks"
                           aria-hidden="true"></span>
                         <translate>Machines</translate>
                     </a></li>
-                <li ng-class="{active: $state.includes('config')}"
-                    ng-show="loggedInUser.role == 'admin' &&
-                            checkMainMenu('config')">
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role == 'admin' && checkMainMenu('config')">
                     <a ui-sref="config.system">
                         <span class="glyphicon glyphicon-cog"
                               aria-hidden="true"></span>
                         <translate>Config</translate>
                     </a>
                 </li>
-                <li ng-class="{active: $state.includes('audit')}"
-                    ng-show="loggedInUser.role &&
-                            checkMainMenu('audit')">
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role && checkMainMenu('audit')">
                     <a ui-sref="audit.log">
                         <span class="glyphicon glyphicon-search"
                               aria-hidden="true"></span>
                         <translate>Audit</translate>
                     </a>
                 </li>
-                <li ng-class="{active: $state.includes('component')}"
-                    ng-show="loggedInUser.role == 'admin' &&
-                            checkMainMenu('components')">
+                <li ui-sref-active="active"
+                    ng-show="loggedInUser.role == 'admin' && checkMainMenu('components')">
                     <a ui-sref="component.clienttype">
                         <span class="glyphicon glyphicon-calendar"
                               aria-hidden="true"></span>
@@ -89,11 +95,15 @@
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
+                <li ng-show="show_node">
+                    <a>
+                        <b>{{ show_node }}</b>
+                    </a>
+                </li>
                 <li>
                     <spinner name="spinner" show="false"></spinner>
                 </li>
-                <li ng-show="reloadListeners && loggedInUser.role &&
-                showReload">
+                <li ng-show="loggedInUser.role && showReload">
                     <a ng-click="reload()" style="cursor: pointer">
                     <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
                     <translate>Refresh</translate>
@@ -151,4 +161,11 @@
 
 <div class="alert alert-warning" ng-show="logoutWarning" translate>
     You will be logged out in {{ myCountdown }} second(s).
+</div>
+<div class="alert alert-warning {{ class_subscription_expired }}"
+    ng-show="subscription_state === 2">
+    <div translate>
+        Your subscription is not valid anymore. Either you exceeded the number of tokens or the
+        subscription expired. Please check, if you need to renew your <a ui-sref="component.subscriptions">subscription</a>.
+    </div>
 </div>

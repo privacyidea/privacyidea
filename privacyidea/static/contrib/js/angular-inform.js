@@ -151,7 +151,7 @@ angular.module('inform-exception', ['inform'])
           inform = inform || $injector.get('inform');
           inform.add(exception.toString(), { type: 'danger', ttl: 0 });
         } catch(ex) {
-          //debug: console.log('$exceptionHandler', ex);
+          console.log('$exceptionHandler', ex);
         }
         $delegate(exception, cause);
       };
@@ -167,7 +167,7 @@ angular.module('inform-http-exception', ['inform'])
         var msg = 'Network error (' + rejection.status + '): ' + rejection.statusText;
         inform.add(msg, { type: 'danger', ttl: 0});
       } catch(ex) {
-        //debug: console.log('$httpProvider', ex);
+        console.log('$httpProvider', ex);
       }
 
       return $q.reject(rejection);

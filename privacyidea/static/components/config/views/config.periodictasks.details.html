@@ -34,6 +34,7 @@
             <input id="name" class="form-control"
                    ng-model="form.name"
                    placeholder="Name"
+                   autofocus
                    required/>
         </div>
     </div>
@@ -49,15 +50,17 @@
                 Please use crontab notation to specify the times at which the periodic task
                 should be run.
             </p>
-            <accordion>
-                <accordion-group heading="{{ 'Examples'|translate}}">
+            <uib-accordion>
+                <div uib-accordion-group
+                     class="panel-default"
+                     heading="{{ 'Examples'|translate}}">
                     <ul translate>
                         <li><b>"5 10 * * *"</b> runs the task every day at 10:05 am.</li>
                         <li><b>"*/10 * * * *"</b> runs the task every ten minutes.</li>
                         <li><b>"1 23 * * 7"</b> runs the task at 11:01pm on Sundays.</li>
                     </ul>
-                </accordion-group>
-            </accordion>
+                </div>
+            </uib-accordion>
         </div>
     </div>
     <div class="form-group">
@@ -76,6 +79,20 @@
             </div>
         </div>
     </div>
+
+    <div class="form-group">
+        <label for="retry_if_failed" class="col-sm-3 control-label"
+        translate>Retry If Failed</label>
+        <div class="col-sm-6">
+            <input type="checkbox" id="retry_if_failed" name="retry-periodic-task"
+            ng-model = "form.retry_if_failed">
+            <p class="help help-block" translate>
+                true if privacyidea should retry to execute this periodic task if it fails
+                false if privacyidea should just try onetime regardless the failing of the task
+            </p>
+        </div>
+    </div>
+
 
     <div class="form-group" ng-show="ptaskid">
         <label for="last_runs" class="col-sm-3 control-label"

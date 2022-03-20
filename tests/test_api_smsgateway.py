@@ -1,13 +1,15 @@
-import json
+# -*- coding: utf-8 -*-
+
 from .base import MyApiTestCase
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION
+
 
 class APISmsGatewayTestCase(MyApiTestCase):
 
     def test_01_crud_smsgateway(self):
 
         # list empty sms gateway definitions
-        with self.app.test_request_context('/smsgateway',
+        with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
 
@@ -16,6 +18,10 @@ class APISmsGatewayTestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertEqual(result.get("value"), [])
+
+        # check that we have an entry in the audit log
+        audit_entry = self.find_most_recent_audit_entry(action="GET /smsgateway*")
+        self.assertEqual(audit_entry['success'], 1, audit_entry)
 
         # create an sms gateway definition
         param = {
@@ -35,7 +41,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), 1)
 
         # check the gateway
-        with self.app.test_request_context('/smsgateway',
+        with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={
                                                'Authorization': self.at}):
@@ -84,7 +90,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
             sms_gw = result.get("value")[0]
             self.assertEqual(sms_gw.get("description"), "new description")
 
-
         # delete gateway
         with self.app.test_request_context('/smsgateway/myGW',
                                            method='DELETE',
@@ -98,7 +103,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), 1)
 
         # list empty gateways
-        with self.app.test_request_context('/smsgateway',
+        with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -114,7 +119,8 @@ class APISmsGatewayTestCase(MyApiTestCase):
             "name": "myGW",
             "module": "privacyidea.lib.smsprovider.SMSProvider.ISMSProvider",
             "description": "myGateway",
-            "option.URL": "http://example.com"
+            "option.URL": "http://example.com",
+            "header.header1": "headervalue1"
         }
         with self.app.test_request_context('/smsgateway',
                                            data=param,
@@ -123,12 +129,14 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
-            self.assertEqual(result.get("value"), 1)
+            self.assertGreaterEqual(result.get("value"), 1, result)
+            smsgw_id = result.get("value")
 
         # add option
         param["option.HTTP_METHOD"] = "POST"
-        param["id"] = 1
+        # add header
+        param["header.header2"] = "headervalue2"
+        param["id"] = smsgw_id
         with self.app.test_request_context('/smsgateway',
                                            method='POST',
                                            data=param,
@@ -136,10 +144,9 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
 
-        # check options
-        with self.app.test_request_context('/smsgateway',
+        # check options and headers
+        with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={
                                                    'Authorization': self.at}):
@@ -150,19 +157,35 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertEqual(sms_gw.get("options").get("URL"),
                              "http://example.com")
             self.assertEqual(sms_gw.get("options").get("HTTP_METHOD"), "POST")
+            self.assertEqual(sms_gw.get("headers").get("header1"), "headervalue1")
+            self.assertEqual(sms_gw.get("headers").get("header2"), "headervalue2")
 
         # delete option "URL"
-        with self.app.test_request_context('/smsgateway/option/1/URL',
+        with self.app.test_request_context('/smsgateway/option/{0!s}/option.URL'.format(smsgw_id),
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            detail = res.json.get("detail")
+
+        # try to delete header "header1" at the wrong endpoint
+        with self.app.test_request_context('/smsgateway/option/{0!s}/option.header1'.format(smsgw_id),
+                                           method='DELETE',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 404, res)
+
+        # delete header "header1"
+        with self.app.test_request_context('/smsgateway/option/{0!s}/header.header1'.format(smsgw_id),
+                                           method='DELETE',
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
 
         # check options
-        with self.app.test_request_context('/smsgateway',
+        with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={
                                                'Authorization': self.at}):
@@ -173,6 +196,8 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertEqual(sms_gw.get("options").get("URL"), None)
             self.assertEqual(sms_gw.get("options").get("HTTP_METHOD"),
                              "POST")
+            self.assertEqual(sms_gw.get("headers").get("header1"), None)
+            self.assertEqual(sms_gw.get("headers").get("header2"), "headervalue2")
 
     def test_04_sms_provider_modules(self):
         with self.app.test_request_context('/smsgateway/providers',
@@ -181,7 +206,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             value = res.json.get("result").get("value")
-            self.assertEqual(len(value), 5)
+            self.assertEqual(len(value), 6)
             self.assertTrue('privacyidea.lib.smsprovider.HttpSMSProvider'
                             '.HttpSMSProvider' in value)
             self.assertTrue('privacyidea.lib.smsprovider.SmtpSMSProvider'
@@ -190,6 +215,8 @@ class APISmsGatewayTestCase(MyApiTestCase):
                             '.SipgateSMSProvider' in value)
             self.assertTrue('privacyidea.lib.smsprovider.SmppSMSProvider'
                             '.SmppSMSProvider' in value)
+            self.assertIn('privacyidea.lib.smsprovider.ScriptSMSProvider'
+                          '.ScriptSMSProvider', value)
             http_parameters = value.get('privacyidea.lib.smsprovider.'
                                         'HttpSMSProvider.HttpSMSProvider')
             smtp_parameters = value.get('privacyidea.lib.smsprovider.'
@@ -236,7 +263,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
         # delete the read policy
         delete_policy("pol_read")
 
-        with self.app.test_request_context('/smsgateway',
+        with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={
                                                'Authorization': self.at}):

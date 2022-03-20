@@ -19,28 +19,31 @@
  *
  */
 
-myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
-                                          $rootScope, machineUrl,
-                                          applicationUrl, inform) {
+myApp.factory("MachineFactory", ['AuthFactory', '$http', '$state', '$rootScope',
+                                 'machineUrl', 'applicationUrl',
+                                 function (AuthFactory, $http, $state,
+                                           $rootScope, machineUrl,
+                                           applicationUrl) {
         return {
             getMachines: function(params, callback) {
                 $http.get(machineUrl + "/", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken() },
                     params: params
-                }).success(callback
-                ).error(AuthFactory.authError);
+                }).then(function(response) { callback(response.data) },
+                    function(error) { AuthFactory.authError(error.data) });
             },
             getMachineTokens: function(params, callback) {
                 $http.get(machineUrl + "/token", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                     params: params
-            }).success(callback
-                ).error(AuthFactory.authError);
+                }).then(function(response) { callback(response.data) },
+                    function(error) { AuthFactory.authError(error.data) });
             },
             attachTokenMachine: function(params, callback) {
                 $http.post(machineUrl + "/token", params, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                }).success(callback).error(AuthFactory.authError);
+                }).then(function(response) { callback(response.data) },
+                    function(error) { AuthFactory.authError(error.data) });
             },
             detachTokenMachine: function(params, callback) {
                 // /token/<serial>/<machineid>/<resolver>/<application>
@@ -48,19 +51,21 @@ myApp.factory("MachineFactory", function (AuthFactory, $http, $state,
                     params.machineid + "/" + params.resolver + "/" +
                     params.application,
                     { headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                }).success(callback).error(AuthFactory.authError);
+                }).then(function(response) { callback(response.data) },
+                    function(error) { AuthFactory.authError(error.data) });
             },
             getApplicationDefinition: function(callback) {
                 $http.get(applicationUrl + "/", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-            }).success(callback
-                ).error(AuthFactory.authError);
+            }).then(function(response) { callback(response.data) },
+                    function(error) { AuthFactory.authError(error.data) });
             },
             saveOptions: function(params, callback) {
                 $http.post(machineUrl + "/tokenoption", params, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                }).success(callback).error(AuthFactory.authError);
+                }).then(function(response) { callback(response.data) },
+                    function(error) { AuthFactory.authError(error.data) });
             }
         };
 
-});
+}]);

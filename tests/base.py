@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-import json
 import mock
+from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
@@ -12,6 +12,7 @@ from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import User
 from privacyidea.lib.auth import create_db_admin
 from privacyidea.lib.auditmodules.base import Audit
+from privacyidea.lib.lifecycle import call_finalizers
 
 
 PWFILE = "tests/testdata/passwords"
@@ -22,6 +23,9 @@ class FakeFlaskG(object):
     policy_object = None
     logged_in_user = {}
     audit_object = None
+    client_ip = None
+    request_headers = None
+    serial = None
 
 
 class FakeAudit(Audit):
@@ -37,6 +41,9 @@ class MyTestCase(unittest.TestCase):
     realm1 = "realm1"
     realm2 = "realm2"
     realm3 = "realm3"
+    testadmin = 'testadmin'
+    testadminpw = 'testpw'
+    testadminmail = "admin@test.tld"
     serials = ["SE1", "SE2", "SE3"]
     otpkey = "3132333435363738393031323334353637383930"
     valid_otp_values = ["755224",
@@ -62,7 +69,7 @@ class MyTestCase(unittest.TestCase):
         save_config_timestamp()
         db.session.commit()
         # Create an admin for tests.
-        create_db_admin(cls.app, "testadmin", "admin@test.tld", "testpw")
+        create_db_admin(cls.app, cls.testadmin, cls.testadminmail, cls.testadminpw)
 
     def setUp_user_realms(self):
         # create user realm
@@ -142,16 +149,42 @@ class MyTestCase(unittest.TestCase):
         expected = "User(login='root', realm='realm3', resolver='reso3')"
         self.assertTrue(user_repr == expected, user_repr)
 
+    def setUp_sqlite_resolver_realm(self, sqlite_file, realm):
+        parameters = {'resolver': "sqlite_resolver",
+                      "type": "sqlresolver",
+                      'Driver': 'sqlite',
+                      'Server': '/tests/testdata/',
+                      'Database': sqlite_file,
+                      'Table': 'users',
+                      'Encoding': 'utf8',
+                      'Editable': True,
+                      'Map': """{ "username": "username",
+                        "userid" : "id",
+                        "email" : "email",
+                        "surname" : "name",
+                        "givenname" : "givenname",
+                        "password" : "password",
+                        "phone": "phone",
+                        "mobile": "mobile"}"""
+                      }
+        r = save_resolver(parameters)
+        self.assertTrue(r)
+        success, fail = set_realm(realm, ["sqlite_resolver"])
+        self.assertEqual(len(success), 1)
+        self.assertEqual(len(fail), 0)
+
     @classmethod
     def tearDownClass(cls):
-        db.session.remove()
+        call_finalizers()
+        close_all_sessions()
         db.drop_all()
+        db.engine.dispose()
         cls.app_context.pop()
 
     def authenticate(self):
         with self.app.test_request_context('/auth',
-                                           data={"username": "testadmin",
-                                                 "password": "testpw"},
+                                           data={"username": self.testadmin,
+                                                 "password": self.testadminpw},
                                            method='POST'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -189,6 +222,10 @@ class MyTestCase(unittest.TestCase):
                                            data=sorted_filter,
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.data)
+            self.assertTrue(res.is_json, res)
+            result = res.json['result']
+            self.assertIn('auditdata', result['value'])
             # return the last entry
             return res.json["result"]["value"]["auditdata"][0]
 
@@ -212,8 +249,8 @@ class OverrideConfigTestCase(MyTestCase):
 class MyApiTestCase(MyTestCase):
     @classmethod
     def cls_auth(cls, app):
-        with app.test_request_context('/auth', data={"username": "testadmin",
-                                                     "password": "testpw"},
+        with app.test_request_context('/auth', data={"username": cls.testadmin,
+                                                     "password": cls.testadminpw},
                                       method='POST'):
             res = app.full_dispatch_request()
             assert res.status_code == 200

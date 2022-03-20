@@ -56,9 +56,10 @@ from ..api.lib.utils import required
 from ..api.lib.utils import getParam
 from .error import ConfigAdminError
 from sqlalchemy import func
-from .crypto import encryptPassword, decryptPassword
-from privacyidea.lib.utils import sanity_name_check
-from privacyidea.lib.utils import is_true
+from .crypto import encryptPassword
+from privacyidea.lib.utils import (sanity_name_check, get_data_from_params,
+                                   is_true)
+from privacyidea.lib.utils.export import (register_import, register_export)
 import copy
 
 CENSORED = "__CENSORED__"
@@ -95,7 +96,7 @@ def save_resolver(params):
     # check the type
     resolvertypes = get_resolver_types()
     if resolvertype not in resolvertypes:
-            raise Exception("resolver type : {0!s} not in {1!s}".format(resolvertype, unicode(resolvertypes)))
+        raise Exception("resolver type : {0!s} not in {1!s}".format(resolvertype, str(resolvertypes)))
 
     # check the name
     resolvers = get_resolver_list(filter_resolver_name=resolvername)
@@ -112,38 +113,9 @@ def save_resolver(params):
     resolver_config = get_resolver_config_description(resolvertype)
     config_description = resolver_config.get(resolvertype).get('config', {})
 
-    types = {}
-    desc = {}
-    data = {}
-    for k in params:
-        if k not in ['resolver', 'type']:
-            if k.startswith('type.') is True:
-                key = k[len('type.'):]
-                types[key] = params.get(k)
-            elif k.startswith('desc.') is True:
-                key = k[len('desc.'):]
-                desc[key] = params.get(k)
-            else:
-                data[k] = params.get(k)
-                if k in config_description:
-                    types[k] = config_description.get(k)
-                else:
-                    log.warn("the passed key %r is not a "
-                             "parameter for the resolver %r" % (k,
-                                                                resolvertype))
-                        
-    # Check that there is no type or desc without the data itself.
-    # i.e. if there is a type.BindPW=password, then there must be a
-    # BindPW=....
-    _missing = False
-    for t in types:
-        if t not in data:
-            _missing = True
-    for t in desc:
-        if t not in data:
-            _missing = True
-    if _missing:
-        raise Exception("type or description without necessary data! {0!s}".format(params))
+    data, types, desc = get_data_from_params(params, ['resolver', 'type'],
+                                             config_description, resolvertype,
+                                             resolvername)
 
     # Everything passed. So lets actually create the resolver in the DB
     if update_resolver:
@@ -312,7 +284,7 @@ def get_resolver_class(resolver_type):
     """
     return the class object for a resolver type
     :param resolver_type: string specifying the resolver
-                          fully qualified or abreviated
+                          fully qualified or abbreviated
     :return: resolver object class
     """
     ret = None
@@ -394,3 +366,33 @@ def pretestresolver(resolvertype, params):
     r_obj_class = get_resolver_class(resolvertype)
     (success, desc) = r_obj_class.testconnection(params)
     return success, desc
+
+
+@register_export('resolver')
+def export_resolver(name=None, censor=False):
+    """ Export given or all resolver configuration """
+    return get_resolver_list(filter_resolver_name=name, censor=censor)
+
+
+@register_import('resolver', prio=10)
+def import_resolver(data, name=None):
+    """Import resolver configuration"""
+    # TODO: Currently this functions does not check for the plausibility of the
+    #  given data. We could use "pretestresolver() / testconnection()" (which
+    #  doesn't check the input) or "loadConfig()" (which also doesn't check the
+    #  parameter, at least for LDAP/SQL-resolver).
+    log.debug('Import resolver config: {0!s}'.format(data))
+    for res_name, res_data in data.items():
+        if name and name != res_name:
+            continue
+        # remove the 'censor_keys' entry from data since it is not necessary
+        res_data.pop('censor_keys', None)
+        # save_resolver() needs the resolver name at key 'resolver'
+        res_data['resolver'] = res_data.pop('resolvername')
+        # also all the 'data' entries need to be in the first dict level
+        res_data.update(res_data.pop('data'))
+        rid = save_resolver(res_data)
+        # TODO: we have no information if a new resolver was created or an
+        #  existing resolver updated. We would need to enhance "save_resolver()".
+        log.info('Import of resolver "{0!s}" finished,'
+                 ' id: {1!s}'.format(res_data['resolver'], rid))

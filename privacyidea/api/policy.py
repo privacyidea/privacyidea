@@ -34,33 +34,30 @@ __doc__ = """
 The code of this module is tested in tests/test_api_system.py
 """
 from flask import (Blueprint,
-                   request,
-                   url_for)
+                   request)
 from .lib.utils import (getParam,
                         getLowerParams,
                         optional,
                         required,
                         send_result,
-                        check_policy_name)
+                        check_policy_name, send_file)
 from ..lib.log import log_with
-from ..lib.policy import (set_policy,
-                          PolicyClass, ACTION,
+from ..lib.policy import (set_policy, ACTION,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
-                          enable_policy, get_policy_condition_sections, get_policy_condition_comparators)
+                          enable_policy, get_policy_condition_sections,
+                          get_policy_condition_comparators, Match)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import to_unicode, is_true
+from privacyidea.lib.config import get_privacyidea_nodes
 from ..api.lib.prepolicy import prepolicy, check_base_action
 
-from flask import (g,
-                    make_response)
-from flask_babel import gettext as _
+from flask import g
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 
 import logging
-import re
 
 
 log = logging.getLogger(__name__)
@@ -116,6 +113,7 @@ def set_policy_api(name=None):
     :jsonparam scope: the scope of the policy like "admin", "system",
         "authentication" or "selfservice"
     :jsonparam adminrealm: Realm of the administrator. (only for admin scope)
+    :jsonparam adminuser: Username of the administrator. (only for admin scope)
     :jsonparam action: which action may be executed
     :jsonparam realm: For which realm this policy is valid
     :jsonparam resolver: This policy is valid for this resolver
@@ -154,6 +152,12 @@ def set_policy_api(name=None):
        realm=realm1
        action=enroll, disable
 
+    The policy POST request can also take the parameter of conditions. This is a list of conditions sets:
+    [ [ "userinfo", "memberOf", "equals", "groupA", "true" ], [ ... ] ]
+    With the entries being the ``section``, the ``key``, the ``comparator``, the ``value`` and ``active``.
+    For more on conditions see :ref:`policy_conditions`.
+
+
     **Example response**:
 
     .. sourcecode:: http
@@ -182,12 +186,14 @@ def set_policy_api(name=None):
     scope = getParam(param, "scope", required)
     realm = getParam(param, "realm", required)
     resolver = getParam(param, "resolver", optional)
+    pinode = getParam(param, "pinode", optional)
     user = getParam(param, "user", optional)
     time = getParam(param, "time", optional)
     client = getParam(param, "client", optional)
     active = getParam(param, "active", optional)
     check_all_resolvers = getParam(param, "check_all_resolvers", optional)
     admin_realm = getParam(param, "adminrealm", optional)
+    admin_user = getParam(param, "adminuser", optional)
     priority = int(getParam(param, "priority", optional, default=1))
     conditions = getParam(param, "conditions", optional)
 
@@ -196,6 +202,7 @@ def set_policy_api(name=None):
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client, time=time,
                      active=active or True, adminrealm=admin_realm,
+                     adminuser=admin_user, pinode=pinode,
                      check_all_resolvers=check_all_resolvers or False,
                      priority=priority, conditions=conditions)
     log.debug("policy {0!s} successfully saved.".format(name))
@@ -287,10 +294,7 @@ def get_policy(name=None, export=None):
     else:
         # We want to export all policies
         pol = P.list_policies()
-        response = make_response(export_policies(pol))
-        response.headers["Content-Disposition"] = ("attachment; "
-                                                   "filename=%s" % export)
-        ret = response
+        ret = send_file(export_policies(pol), export, content_type='text/plain')
 
     g.audit_object.log({"success": True,
                         'info': u"name = {0!s}, realm = {1!s}, scope = {2!s}".format(name, realm, scope)})
@@ -489,10 +493,8 @@ def check_policy_api():
     client = getParam(param, "client", optional)
     resolver = getParam(param, "resolver", optional)
 
-    P = g.policy_object
-    policies = P.match_policies(user=user, realm=realm, resolver=resolver,
-                                scope=scope, action=action, client=client,
-                                active=True)
+    policies = Match.generic(g, scope=scope, user=user, resolver=resolver, realm=realm,
+                             action=action, client=client, active=True).policies()
     if policies:
         res["allowed"] = True
         res["policy"] = policies
@@ -528,6 +530,8 @@ def get_policy_defs(scope=None):
      * ``"comparators"``, containing a dictionary mapping each comparator to a dictionary with the following keys:
          * ``"description"``, a human-readable description of the comparator
 
+    if the scope is "pinodes", it returns a list of the configured privacyIDEA nodes.
+
     :query scope: if given, the function will only return policy
                   definitions for the given scope.
 
@@ -544,6 +548,8 @@ def get_policy_defs(scope=None):
             "sections": section_descriptions,
             "comparators": comparator_descriptions,
         }
+    elif scope == 'pinodes':
+        result = get_privacyidea_nodes()
     else:
         static_pol = get_static_policy_definitions()
         dynamic_pol = get_dynamic_policy_definitions()

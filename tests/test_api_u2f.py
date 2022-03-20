@@ -1,14 +1,20 @@
+# -*- coding: utf-8 -*-
+
 from .base import MyApiTestCase
-import json
 import binascii
-from privacyidea.lib.token import assign_token, remove_token
+import struct
+from hashlib import sha256
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import hashes
+
+from privacyidea.lib.token import assign_token, remove_token, get_tokens
 from privacyidea.lib.user import User
 from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.lib.tokens.u2f import (sign_challenge, check_response,
-                                        url_encode)
+from privacyidea.lib.tokens.u2f import (check_response, url_encode)
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.tokens.u2ftoken import U2FACTION
 from privacyidea.models import Challenge
+from privacyidea.lib.utils import hexlify_and_unicode, to_bytes
 from privacyidea.lib.error import ERROR
 from privacyidea.lib import _
 
@@ -20,6 +26,44 @@ YUBICOFILE = "tests/testdata/yubico-oath.csv"
 OTPKEY = "3132333435363738393031323334353637383930"
 OTPKEY2 = "010fe88d31948c0c2e3258a4b0f7b11956a258ef"
 OTPVALUES2 = ["551536", "703671", "316522", "413789"]
+
+
+def sign_challenge(user_priv_key, app_id, client_data, counter,
+                   user_presence_byte=b'\x01'):
+    """
+    This creates a signature for the U2F data.
+    Only used in test scenario
+
+    The calculation of the signature is described here:
+    https://fidoalliance.org/specs/fido-u2f-v1.0-nfc-bt-amendment-20150514/fido-u2f-raw-message-formats.html#authentication-response-message-success
+
+    The input_data is a concatenation of:
+        * AppParameter: sha256(app_id)
+        * The user presence [1byte]
+        * counter [4byte]
+        * ChallengeParameter: sha256(client_data)
+
+    :param user_priv_key: The private key
+    :type user_priv_key: hex string
+    :param app_id: The application id
+    :type app_id: str
+    :param client_data: the stringified JSON
+    :type client_data: str
+    :param counter: the authentication counter
+    :type counter: int
+    :param user_presence_byte: one byte 0x01
+    :type user_presence_byte: char
+    :return: The DER encoded signature
+    :rtype: hex string
+    """
+    app_id_hash = sha256(to_bytes(app_id)).digest()
+    client_data_hash = sha256(to_bytes(client_data)).digest()
+    counter_bin = struct.pack(">L", counter)
+    input_data = app_id_hash + user_presence_byte + counter_bin + client_data_hash
+
+    sk = ec.derive_private_key(int(user_priv_key, 16), ec.SECP256R1())
+    signature = sk.sign(input_data, ec.ECDSA(hashes.SHA256()))
+    return hexlify_and_unicode(signature)
 
 
 class APIU2fTestCase(MyApiTestCase):
@@ -99,6 +143,53 @@ class APIU2fTestCase(MyApiTestCase):
             result = response.get("result")
             self.assertEqual(result.get("value"), True)
 
+        # In this case we get the automatic description
+        self.assertEqual(get_tokens(serial=serial)[0].token.description, "Yubico U2F EE Serial 13831167861")
+        remove_token(self.serial)
+
+    def test_01a_register_u2f_with_custom_description(self):
+        # step 1
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "u2f",
+                                                 "serial": self.serial,
+                                                 "description": "my description"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            response = res.json
+            result = response.get("result")
+            details = response.get("detail")
+            self.assertEqual(result.get("value"), True)
+
+            serial = details.get("serial")
+            self.assertEqual(serial[:3], "U2F")
+            self.assertEqual(details.get("u2fRegisterRequest").get(
+                "version"), "U2F_V2")
+            challenge = details.get("u2fRegisterRequest").get("challenge")
+            self.assertTrue(len(challenge) > 20)
+
+        # step 2
+        # We need to send back regData and clientData.
+        # from the registration example
+        reg_data = "BQRFnd8XtfZzsTK68VPK64Bcjiog_ZzyYNuzjaaGwpPnSpifxaqQV4_4IMxVlGS3CLoQmNAR41MSMxZHG0dENLRmQGnk4OqRxGRHmUOOLmDkGgdIJycQe79JCERV1gqGnWAOFBg_bH4WFSxZwnX-IMRcl3zW_X442QNrrdFySvXrba4wggIcMIIBBqADAgECAgQ4Zt91MAsGCSqGSIb3DQEBCzAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJvb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwMDAwMFowKzEpMCcGA1UEAwwgWXViaWNvIFUyRiBFRSBTZXJpYWwgMTM4MzExNjc4NjEwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQ3jfx0DHOblHJO09Ujubh2gQZWwT3ob6-uzzjZD1XiyAob_gsw3FOzXefQRblty48r-U-o4LkDFjx_btwuSHtxoxIwEDAOBgorBgEEAYLECgEBBAAwCwYJKoZIhvcNAQELA4IBAQIaR2TKAInPkq24f6hIU45yzD79uzR5KUMEe4IWqTm69METVio0W2FHWXlpeUe85nGqanwGeW7U67G4_WAnGbcd6zz2QumNsdlmb_AebbdPRa95Z8BG1ub_S04JoxQYNLaa8WRlzN7POgqAnAqkmnsZQ_W9Tj2uO9zP3mpxOkkmnqz7P5zt4Lp5xrv7p15hGOIPD5V-ph7tUmiCJsq0LfeRA36X7aXi32Ap0rt_wyfnRef59YYr7SmwaMuXKjbIZSLesscZZTMzXd-uuLb6DbUCasqEVBkGGqTRfAcOmPov1nHUrNDCkOR0obR4PsJG4PiamIfApNeoXGYpGbok6nucMEYCIQC_yerJqB3mnuAJGfbdKuOIx-Flxr-VSQ2nAkUUE_50dQIhAJE2NL1Xs2oVEG4bFzEM86TfS7nkHxad89aYmUrII49V"
+        client_data = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZmluaXNoRW5yb2xsbWVudCIsImNoYWxsZW5nZSI6ImdXbndtYnFSMl9YOE91RFhId0dyQWNmUTBUajN4YTVfZ2RJMjBYcVlsdTg9Iiwib3JpZ2luIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiY2lkX3B1YmtleSI6IiJ9"
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "type": "u2f",
+                                                 "regdata": reg_data,
+                                                 "clientdata": client_data},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            response = res.json
+            result = response.get("result")
+            self.assertEqual(result.get("value"), True)
+
+        # In this case we get the automatic description
+        self.assertEqual(get_tokens(serial=serial)[0].token.description, "my description")
+
     def test_02_validate(self):
         # assign token to user
         r = assign_token(self.serial, User("cornelius", self.realm1),
@@ -117,6 +208,8 @@ class APIU2fTestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertEqual(result.get("value"), False)
             transaction_id = detail.get("transaction_id")
+            multi_challenge = detail.get("multi_challenge")
+            self.assertEqual("u2f", multi_challenge[0].get("client_mode"))
             self.assertEqual(len(transaction_id), len('01350277175811850842'))
             self.assertEqual(detail.get("message"), detail.get("message"),
                             _("Please confirm with your U2F token ({0!s})").format("Yubico U2F EE Serial 13831167861"))

@@ -9,10 +9,10 @@ privacyIDEA offers an appliance tool to manage your token administrators, RADIUS
 also setup MySQL master-master replication.
 It can be found in a Github repository [#applianceGithub]_.
 
-This tool is supposed to run on Ubuntu 16.04 LTS.
-You can find a ready install ISO at another Github reposity [#applianceISO]_.
+This tool is supposed to run on Ubuntu 16.04 LTS or 18.04 LTS.
+You can find a ready install ISO at another Github repository [#applianceISO]_.
 
-.. note:: The ready made Ubuntu package is only available with a Service Level Agreement from
+.. note:: The ready made Ubuntu package for the appliance tool is only available with a Service Level Agreement from
    the company NetKnights [#applianceNetKnights]_.
 
 To configure the system, login as the user root on your machine and
@@ -22,27 +22,27 @@ run the command::
 
 This will bring you to this start screen.
 
-.. figure:: appliance/start-screen.png
-   :scale: 50 %
+.. figure:: images/appliance/start-screen.png
+   :scale: 80 %
 
    Start screen of the appliance setup tool.
 
 You can configure privacyidea settings, the log level, administrators, encryption key and
 much more. You can configure the webserver settings and RADIUS clients.
 
-.. figure:: appliance/configure-privacyidea.png
-   :scale: 40 %   
+.. figure:: images/appliance/configure-privacyidea.png
+   :width: 400px
 
    Configure privacyidea
 
-.. figure:: appliance/manage-admins.png
-   :scale: 40 %   
+.. figure:: images/appliance/manage-admins.png
+   :width: 400px
 
    You can create new token administrators, delete them and change
    their passwords.
 
-.. figure:: appliance/manage-radius-clients.png
-   :scale: 40 %   
+.. figure:: images/appliance/manage-radius-clients.png
+   :width: 400px
 
    In the FreeRADIUS settings you can create and delete RADIUS
    clients.
@@ -72,18 +72,18 @@ administrators, the complete token database (MySQL) and Audit log.
 Furthermore if you are running FreeRADIUS the backup also contains
 the `/etc/freeradius/clients.conf` file.
 
-.. figure:: appliance/backup1.png
-   :scale: 50%
+.. figure:: images/appliance/backup1.png
+   :width: 400px
 
-Schedulded backup
-~~~~~~~~~~~~~~~~~
+Scheduled backup
+~~~~~~~~~~~~~~~~
 
 At the configuration point *Configure Backup* you can define times
 when a scheduled backup should be performed. This information is
 written to the file `/etc/crontab`.
 
-.. figure:: appliance/backup2.png
-   :scale: 50%
+.. figure:: images/appliance/backup2.png
+   :width: 400px
 
    Scheduled backup
 
@@ -111,8 +111,8 @@ Restore
 
 The entry `View Backups` will list all the backups available.
 
-.. figure:: appliance/backup3.png
-   :scale: 50%
+.. figure:: images/appliance/backup3.png
+   :width: 550px
 
    All available backups
 
@@ -120,6 +120,52 @@ You can select a backup and you are asked if you want to restore the data.
 
 .. warning:: Existing data is overwritten and will be lost.
 
+.. _database:
+
+Database: Setup Redundancy
+..........................
+
+The appliance-tool is also capable of setting up a redundant setup between
+two privacyIDEA nodes in master-master replication. The administrator sets
+up redundancy on the first configured node. On the second node the same version
+of privacyIDEA needs to be installed. No configuration needs to be done on the 
+second node. The configuration and the token database is completely copied from the
+first node to the second node. Possible existing configuration on the second node will 
+be overwritten during the setup. 
+The appliance-tool can also set up an encrypted VPN that is used for the replication
+of the database.
+
+.. figure:: images/appliance/database.png
+   :width: 400px
+
+.. note:: If you choose to use the tinc VPN connection between
+   the nodes and an SSH root login, make sure the services are installed.
+
+.. warning:: Existing data on the second node is overwritten and will be lost.
+
+.. figure:: images/appliance/redundancy-successful.png
+   :width: 450px
+
+.. _pi-appliance_updates:
+
+Updates
+.......
+
+In this menu, you can setup cronjobs for automatic updates which is seldom
+used in productive setups.
+
+.. _pi-appliance_audit:
+
+Audit Rotation
+..............
+
+In the `Audit Rotation` menu, you can setup cronjobs for the audit rotation conditioned
+by age or the number of entries. The syntax follows the crontab syntax as explained
+in :ref:`backup_and_restore`.
+
+.. note:: Keep in mind that the audit log is synchronized between the nodes in a redundant
+   setup. If you chose to rotate both audit logs, make sure you do it at different times to
+   avoid synchronisation issues.
 
 .. [#applianceGithub] https://github.com/NetKnights-GmbH/privacyidea-appliance
 .. [#applianceISO] https://github.com/NetKnights-GmbH/privacyidea-appliance-iso

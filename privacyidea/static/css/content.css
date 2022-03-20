@@ -23,6 +23,13 @@
    background-color: #FA787E;
 }
 
+.inform-fixed {
+    /* set the space from the top */
+    top: 45px;
+    /* move inform in front of navbar (with z-index 1030) */
+    z-index: 1032;
+}
+
 /*
 .ng-invalid.radio label,
 .ng-invalid.checkbox label,
@@ -56,4 +63,28 @@ select.ng-invalid:focus:not(#username):not(#password){
     .container {
         width: 95%;
     }
+}
+
+/* Style checkboxes to match up with their labels */
+input[type="radio"],
+input[type="checkbox"] {
+    margin-bottom: 5px;
+    vertical-align: bottom;
+
+    /* 14px font-size * 1.42857143 line-height */
+    height: 20px;
+}
+
+.mt-5px {
+    margin-top: 5px;
+}
+
+.centered {
+    display: table;
+    margin: auto;
+}
+
+/* for YubiKey otplen input */
+input[type=number]#otplen {
+    width: 3em;
 }

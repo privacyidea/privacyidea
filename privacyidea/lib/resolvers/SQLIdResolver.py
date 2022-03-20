@@ -356,12 +356,14 @@ class IdResolver (UserIdResolver):
     
     def _get_userid_filter(self, userId):
         column = getattr(self.TABLE, self.map.get("userid"))
-        if isinstance(column.type, Integer):
+        if isinstance(column.type, String):
+            return column == str(userId)
+        elif isinstance(column.type, Integer):
             # since our user ID is usually a string we need to cast
             return column == int(userId)
-        else:
-            # otherwise we cast the column to string (in case of postgres UUIDs)
-            return cast(column, String).like(userId)
+
+        # otherwise we cast the column to string (in case of postgres UUIDs)
+        return cast(column, String).like(userId)
 
     def getUsername(self, userId):
         """
@@ -617,15 +619,15 @@ class IdResolver (UserIdResolver):
             password = u":{0!s}".format(param.get("Password"))
         if param.get("conParams"):
             conParams = u"?{0!s}".format(param.get("conParams"))
-        connect_string = u"{0!s}://{1!s}{2!s}{3!s}{4!s}{5!s}/{6!s}{7!s}".format(param.get("Driver", ""),
-                                                   param.get("User", ""),
+        connect_string = u"{0!s}://{1!s}{2!s}{3!s}{4!s}{5!s}/{6!s}{7!s}".format(param.get("Driver") or "",
+                                                   param.get("User") or "",
                                                    password,
                                                    "@" if (param.get("User")
                                                            or
                                                            password) else "",
-                                                   param.get("Server", ""),
+                                                   param.get("Server") or "",
                                                    port,
-                                                   param.get("Database", ""),
+                                                   param.get("Database") or "",
                                                    conParams)
         # SQLAlchemy does not like a unicode connect string!
 #        if param.get("Driver").lower() == "sqlite":

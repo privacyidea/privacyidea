@@ -28,11 +28,10 @@ from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib import _
 import logging
-from oauth2client.service_account import ServiceAccountCredentials
-import requests
+from google.oauth2 import service_account
+from google.auth.transport.requests import AuthorizedSession
 import json
 import time
-import datetime
 
 FIREBASE_URL_SEND = 'https://fcm.googleapis.com/v1/projects/{0!s}/messages:send'
 SCOPES = ['https://www.googleapis.com/auth/cloud-platform',
@@ -45,44 +44,39 @@ SCOPES = ['https://www.googleapis.com/auth/cloud-platform',
 log = logging.getLogger(__name__)
 
 
-class AccessToken(object):
-
-    def __init__(self, access_token, validity):
-        self.access_token = access_token
-        self.expires_at = time.time() + validity - 10
-
-
 def get_firebase_access_token(config_file_name):
     """
     This returns the access token for a given JSON config file name
 
-    :param config_file_name:
-    :return:
+    :param config_file_name: The json file with the Service account credentials
+    :type config_file_name: str
+    :return: Firebase credentials
+    :rtype: google.oauth2.service_account.Credentials
     """
     fbt = "firebase_token"
-    now = time.time()
     app_store = get_app_local_store()
 
     if fbt not in app_store or not isinstance(app_store[fbt], dict):
         # initialize the firebase_token in the app_store as dict
         app_store[fbt] = {}
 
-    if not isinstance(app_store[fbt].get(config_file_name), AccessToken) or \
-            now > app_store[fbt].get(config_file_name).expires_at:
-        # If the type of the config is not class AccessToken or
-        # if the token has expired
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(config_file_name, SCOPES)
-        log.debug("Fetching a new access_token for {!r} from firebase...".format(config_file_name))
-        access_token_info = credentials.get_access_token()
-        # Now we set the expiration date for the new access_token with a margin of 10 seconds
-        At = AccessToken(access_token_info.access_token, access_token_info.expires_in)
-        # We do not use a lock here: The worst that could happen is that two threads
-        # fetch new auth tokens concurrently. In this case, one of them wins and is written to the dictionary.
-        app_store[fbt][config_file_name] = At
-        readable_time = datetime.datetime.fromtimestamp(At.expires_at).isoformat()
-        log.debug(u"Setting the expiration for {!r} of the new access_token to {!s}.".format(config_file_name, readable_time))
+    if not isinstance(app_store[fbt].get(config_file_name), service_account.Credentials) or \
+            app_store[fbt].get(config_file_name).expired:
+        # If the type of the config is not of class Credentials or if the token
+        # has expired we get new scoped access token credentials
+        credentials = service_account.Credentials.from_service_account_file(config_file_name,
+                                                                            scopes=SCOPES)
 
-    return app_store[fbt][config_file_name].access_token
+        log.debug("Fetching a new access_token for {!r} from firebase...".format(config_file_name))
+        # We do not use a lock here: The worst that could happen is that two threads
+        # fetch new auth tokens concurrently. In this case, one of them wins and
+        # is written to the dictionary.
+        app_store[fbt][config_file_name] = credentials
+        readable_time = credentials.expiry.isoformat() if credentials.expiry else 'Never'
+        log.debug(u"Setting the expiration for {!r} of the new access_token "
+                  u"to {!s}.".format(config_file_name, readable_time))
+
+    return app_store[fbt][config_file_name]
 
 
 class FIREBASE_CONFIG:
@@ -95,6 +89,7 @@ class FIREBASE_CONFIG:
     API_KEY = "apikey"
     APP_ID_IOS = "appidios"
     API_KEY_IOS = "apikeyios"
+    HTTPS_PROXY = "httpsproxy"
 
 
 class FirebaseProvider(ISMSProvider):
@@ -117,22 +112,50 @@ class FirebaseProvider(ISMSProvider):
         """
         res = False
 
-        bearer_token = get_firebase_access_token(self.smsgateway.option_dict.get(
+        credentials = get_firebase_access_token(self.smsgateway.option_dict.get(
             FIREBASE_CONFIG.JSON_CONFIG))
 
+        authed_session = AuthorizedSession(credentials)
+
         headers = {
-            'Authorization': u'Bearer {0!s}'.format(bearer_token),
             'Content-Type': 'application/json; UTF-8',
         }
         fcm_message = {
             "message": {
                         "data": data,
-                        "token": firebase_token
+                        "token": firebase_token,
+                        "android": {
+                                    "priority": "HIGH",
+                                    "ttl": "120s",
+                                    "fcm_options": {"analytics_label": "AndroidPushToken"}
+                                   },
+                        "apns": {
+                                 "headers": {
+                                             "apns-priority": "10",
+                                             "apns-push-type": "alert",
+                                             "apns-collapse-id": "privacyidea.pushtoken",
+                                             "apns-expiration": str(int(time.time()) + 120)
+                                            },
+                                 "payload": {
+                                             "aps": {
+                                                     "alert": {
+                                                               "title": data.get("title"),
+                                                               "body": data.get("question"),
+                                                              },
+                                                     "sound": "default",
+                                                     "category": "PUSH_AUTHENTICATION"
+                                                    },
+                                            },
+                                 "fcm_options": {"analytics_label": "iOSPushToken"}
+                                }
                        }
             }
 
+        proxies = {}
+        if self.smsgateway.option_dict.get(FIREBASE_CONFIG.HTTPS_PROXY):
+            proxies["https"] = self.smsgateway.option_dict.get(FIREBASE_CONFIG.HTTPS_PROXY)
         url = FIREBASE_URL_SEND.format(self.smsgateway.option_dict.get(FIREBASE_CONFIG.PROJECT_ID))
-        resp = requests.post(url, data=json.dumps(fcm_message), headers=headers)
+        resp = authed_session.post(url, data=json.dumps(fcm_message), headers=headers, proxies=proxies)
 
         if resp.status_code == 200:
             log.debug("Message sent successfully to Firebase service.")
@@ -184,15 +207,8 @@ class FirebaseProvider(ISMSProvider):
         :return: dict
         """
         params = {"options_allowed": False,
+                  "headers_allowed": False,
                   "parameters": {
-                      FIREBASE_CONFIG.REGISTRATION_URL: {
-                          "required": True,
-                          "description": _('The URL the Push App should contact in the second enrollment step.'
-                                     ' Usually it is the endpoint /ttype/push of the privacyIDEA server.')},
-                      FIREBASE_CONFIG.TTL: {
-                          "required": True,
-                          "description": _('The second enrollment step must be completed within this time (in minutes).')
-                      },
                       FIREBASE_CONFIG.PROJECT_ID: {
                           "required": True,
                           "description": _("The project ID, that the client should use. Get it from your Firebase console.")
@@ -226,8 +242,11 @@ class FirebaseProvider(ISMSProvider):
                           "required": True,
                           "description": _("The filename of the JSON config file, that allows privacyIDEA to talk"
                                            " to the Firebase REST API.")
+                      },
+                      FIREBASE_CONFIG.HTTPS_PROXY: {
+                          "required": False,
+                          "description": _("Proxy setting for HTTPS connections to googleapis.com.")
                       }
                   }
                   }
         return params
-        
