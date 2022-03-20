@@ -1,3 +1,21 @@
+Version 3.7dev4
+
+  Features:
+  * Security: Add security module to decrypt encryption keys using HSM (#3003)
+
+  Enhancements:
+  * UI: Policy to exclude tokeninfo in token details (#2819)
+  * UI: Highlight policy search term (#2577)
+  * Token: Policy for Password token can create human readable passwords (#2864)
+  * Security and Speed: Allow to choosing hashing algorithms in pi.cfg (#2981)
+  * Add documentation about importance of time in privacyIDEA (#3026)
+  * Allow to login to WebUI using Push-Tokens (#2893)
+
+  Fixes:
+  * Failures in submission to Firebase will not block Push-Poll (#2904)
+  * Fix problems with CA certificate and StartTLS (#2892)
+  * Dependency update (Pillow)
+
 Version 3.7dev3, 2022-02-22
 
   Features:
