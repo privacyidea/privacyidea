@@ -350,9 +350,9 @@ class SmsTokenClass(HotpTokenClass):
                 transactionid = transactionid or db_challenge.transaction_id
             except Exception as e:
                 info = _("The PIN was correct, but the "
-                         "SMS could not be sent.")
+                         "SMS could not be sent!")
                 log.warning(info + " ({0!s})".format(e))
-                log.debug(u"{0!s}".format(traceback.format_exc()))
+                log.debug("{0!s}".format(traceback.format_exc()))
                 return_message = info
                 if is_true(options.get("exception")):
                     raise Exception(info)
