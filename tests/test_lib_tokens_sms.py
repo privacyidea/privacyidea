@@ -489,7 +489,7 @@ class SMSTokenTestCase(MyTestCase):
         self.assertTrue(c[1].startswith("The PIN was correct, but"), c[1])
         capture.check_present(
             ('privacyidea.lib.tokens.smstoken', 'WARNING',
-             'The PIN was correct, but the SMS could not be sent. '
+             'The PIN was correct, but the SMS could not be sent! '
              '(privacyidea.lib.smsprovider.HttpSMSProvider has no '
              'attribute HttpSMSProviderWRONG)')
         )
@@ -503,7 +503,7 @@ class SMSTokenTestCase(MyTestCase):
         self.assertTrue(c[1].startswith("The PIN was correct, but"), c[1])
         capture.check_present(
             ('privacyidea.lib.tokens.smstoken', 'WARNING',
-             'The PIN was correct, but the SMS could not be sent. '
+             'The PIN was correct, but the SMS could not be sent! '
              '(Failed to load sms.providerConfig: JSONDecodeError(\''
              'Expecting value: line 1 column 1 (char 0)\'))')
         )
