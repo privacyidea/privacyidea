@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-03-21 09:57+0000\n"
+"PO-Revision-Date: 2022-03-23 07:55+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/nl/>\n"
@@ -621,7 +621,7 @@ msgstr "Certificaat sjabloon"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:211
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr "Certificaat: een x509 certificaat-token aanmelden."
+msgstr "Certificaat: een x509 certificaat-token registreren."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:69
 msgid "Certificates Templates file"
@@ -1239,29 +1239,29 @@ msgstr "Eindpunt (URL)"
 
 #: privacyidea/static/components/user/views/user.details.html:189
 msgid "Enroll New Token"
-msgstr "Nieuw token aanmelden"
+msgstr "Nieuw token registreren"
 
 #: privacyidea/static/components/token/views/token.enroll.html:135
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:49
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:49
 #: privacyidea/static/components/token/views/token.html:25
 msgid "Enroll Token"
-msgstr "Token aanmelden"
+msgstr "Token registreren"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:101
 #: privacyidea/static/components/token/controllers/tokenControllers.js:137
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:200
 msgid "Enroll a new token"
-msgstr "Een nieuw token aanmelden"
+msgstr "Een nieuw token registreren"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:282
 msgid "Enrollment successfully verified."
-msgstr "Aanmelding geverifieerd."
+msgstr "Registratie geverifieerd."
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:285
 msgid "Enrollment verification failed."
-msgstr "Aanmeldingsverificatie mislukt."
+msgstr "Registratieverificatie mislukt."
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:79
 msgid "Enter OTP + PIN to check the token."
