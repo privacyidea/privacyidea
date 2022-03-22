@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-03-17 16:57+0100\n"
-"PO-Revision-Date: 2022-03-21 09:59+0000\n"
+"PO-Revision-Date: 2022-03-23 07:58+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/nl/>\n"
@@ -162,7 +162,7 @@ msgstr "Admin mag manueel token)info instellen en verwijderen."
 
 #: lib/policy.py:1582
 msgid "Admin is allowed to set the OTP PIN during enrollment."
-msgstr "Admin mag manueel de OTP-Pin instellen tijdens aanmelding."
+msgstr "Admin mag manueel de OTP-Pin instellen tijdens registratie."
 
 #: lib/policy.py:1587
 msgid "Admin is allowed to resync tokens."
@@ -521,7 +521,7 @@ msgstr "De gebruiker mag een beschrijving bij een token zetten."
 
 #: lib/policy.py:2016
 msgid "The user is allowed to set the OTP PIN during enrollment."
-msgstr "De gebruiker mag de OTP PIN instellen tijdens de aanmelding."
+msgstr "De gebruiker mag de OTP PIN instellen tijdens de registratie."
 
 #: lib/policy.py:2039
 msgid "Allow the user to view his own token history."
@@ -600,8 +600,8 @@ msgid ""
 "Set a random OTP PIN with this length for a token during the enrollment "
 "process."
 msgstr ""
-"Stel een willekeurige OTP PIN in met deze lengte voor een token, "
-"toegekend tijdens het aanmeldingsproces."
+"Stel een willekeurige OTP PIN in met deze lengte voor een token, toegekend "
+"tijdens het registratieproces."
 
 #: lib/policy.py:2109
 msgid "In case of a random OTP PIN use this python module to process the PIN."
@@ -614,8 +614,8 @@ msgid ""
 "If the administrator sets the OTP PIN during enrollment or later, the "
 "user will have to change the PIN during first use."
 msgstr ""
-"Als de beheerder de OTP PIN instelt tijdens de aanmelding of later, dan "
-"zal de gebruiker die PIN moeten wijzigen tijdens het eerste gebruik."
+"Als de beheerder de OTP PIN instelt tijdens de registratie of later, dan zal "
+"de gebruiker die PIN moeten wijzigen tijdens het eerste gebruik."
 
 #: lib/policy.py:2121
 msgid ""
@@ -638,12 +638,13 @@ msgid ""
 "Set label for a new enrolled Google Authenticator. Possible tags are <u> "
 "(user), <r> (realm), <s> (serial)."
 msgstr ""
-"Stel een label in voor een nieuw aangemelde Google Authenticator. "
+"Stel een label in voor een nieuw geregistreerde Google Authenticator. "
 "Mogelijke tags zijn <u> (user), <r> (realm), <s> (serial)."
 
 #: lib/policy.py:2139
 msgid "This is the issuer label for new enrolled Google Authenticators."
-msgstr "Dit is het uitgeverslabel voor nieuw aangemelde Google Authenticators."
+msgstr ""
+"Dit is het uitgeverslabel voor nieuw geregistreerde Google Authenticators."
 
 #: lib/policy.py:2145
 msgid "This is the URL to the token image for smartphone apps like FreeOTP."
@@ -708,7 +709,7 @@ msgid ""
 "verified during enrollment."
 msgstr ""
 "Dit is een door spaties gescheiden lijst van token-types die tijdens de "
-"aanmelding geverifieerd zouden moeten worden."
+"registratie geverifieerd zouden moeten worden."
 
 #: lib/policy.py:2206
 msgid ""
@@ -1084,7 +1085,7 @@ msgstr ""
 
 #: lib/policy.py:2485
 msgid "This is the default token type in the token enrollment dialog."
-msgstr "Dit is het standaard token-type in de token aanmeldingsdialoog."
+msgstr "Dit is het standaard token-type in de token registratiedialoog."
 
 #: lib/policy.py:2491
 msgid ""
@@ -1114,8 +1115,8 @@ msgstr ""
 #: lib/policy.py:2507
 msgid "If this is checked, the seed will be displayed as text during enrollment."
 msgstr ""
-"Indien dit is ingeschakeld, dan zal de seed getoond worden als tekst "
-"tijdens de aanmelding."
+"Indien dit is ingeschakeld, dan zal de seed getoond worden als tekst tijdens "
+"de registratie."
 
 #: lib/policy.py:2512
 msgid ""
@@ -1131,9 +1132,9 @@ msgid ""
 "will contain a QR code that leads to the privacyIDEA Authenticator in the"
 " Google Play Store."
 msgstr ""
-"Indien dit is ingeschakeld, dan zal de aanmeldingspagina voor HOTP, TOTP "
-"en Push tokens een QR-code bevatten die naar de privacyIDEA Authenticator"
-" in de Google Play Store leidt."
+"Indien dit is ingeschakeld, dan zal de registratiepagina voor HOTP, TOTP en "
+"Push tokens een QR-code bevatten die naar de privacyIDEA Authenticator in de "
+"Google Play Store leidt."
 
 #: lib/policy.py:2524
 msgid ""
@@ -1141,17 +1142,17 @@ msgid ""
 "will contain a QR code that leads to the privacyIDEA Authenticator in the"
 " iOS App Store."
 msgstr ""
-"Indien dit is ingeschakeld, dan zal de aanmeldingspagina voor HOTP, TOTP "
-"en Push tokens een QR-code bevatten die naar de privacyIDEA Authenticator"
-" in de IOS App Store leidt."
+"Indien dit is ingeschakeld, dan zal de registratiepagina voor HOTP, TOTP en "
+"Push tokens een QR-code bevatten die naar de privacyIDEA Authenticator in de "
+"IOS App Store leidt."
 
 #: lib/policy.py:2531
 msgid ""
 "This action adds a QR code in the enrollment page for HOTP, TOTP and Push"
 " tokens, that lead to this given URL."
 msgstr ""
-"Deze actie voegt een QR-code toe in de aanmeldingspagina voor HOTP, TOTP "
-"en Push tokens die je naar deze URL leidt."
+"Deze actie voegt een QR-code toe in de registratiepagina voor HOTP, TOTP en "
+"Push tokens die je naar deze URL leidt."
 
 #: lib/policy.py:2576
 msgid ""
@@ -1203,7 +1204,7 @@ msgstr "Admin mag {0!s} tokens initialiseren."
 
 #: lib/token.py:2457
 msgid "The user is allowed to enroll a {0!s} token."
-msgstr "De gebruiker mag een {0!s} token aanmelden."
+msgstr "De gebruiker mag een {0!s} token registreren."
 
 #: lib/token.py:2488
 msgid "Set the maximum allowed PIN length of the {0!s} token."
@@ -1633,7 +1634,7 @@ msgid ""
 "value for enrolling MOTP tokens."
 msgstr ""
 "Stel de MOTP PIN van het MOTP token in tijdens de aanmelding. Dis is een "
-"vereiste waarde voor het aanmelden van MOTP tokens."
+"vereiste waarde voor het registreren van MOTP tokens."
 
 #: lib/eventhandler/tokenhandler.py:212
 msgid "The new description of the token."
@@ -1975,7 +1976,7 @@ msgstr "Aantal gebruikers met een toegewezen token"
 
 #: lib/tokens/certificatetoken.py:273
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr "Certificaat: een x509 certificaat-token aanmelden."
+msgstr "Certificaat: een x509 certificaat-token registreren."
 
 #: lib/tokens/certificatetoken.py:284
 msgid "The user may only have this maximum number of certificates assigned."
@@ -1996,7 +1997,7 @@ msgid ""
 "Enrolling a certificate token can require an attestation certificate. "
 "(Default: ignore)"
 msgstr ""
-"Het aanmelden van een certificaat-token kan een attest-certificaat "
+"Het registreren van een certificaat-token kan een attest-certificaat "
 "vereisten. (Standaard: negeer)"
 
 #: lib/tokens/certificatetoken.py:305 lib/tokens/certificatetoken.py:312
@@ -2116,14 +2117,14 @@ msgstr "Geeft de te gebruiken OTP-lengte. Kan 6 of 8 cijfers zijn."
 #: lib/tokens/hotptoken.py:130 lib/tokens/totptoken.py:134
 msgid "Specify whether users are allowed or forced to use two-step enrollment."
 msgstr ""
-"Geef op of gebruikers mogen of gedwongen worden om de twee-"
-"stapsaanmelding te gebruiken."
+"Geef op of gebruikers mogen of gedwongen worden om de twee-stapsregistratie "
+"te gebruiken."
 
 #: lib/tokens/hotptoken.py:132 lib/tokens/totptoken.py:154
 msgid "Specify whether admins are allowed or forced to use two-step enrollment."
 msgstr ""
-"Geef op of admins mogen of gedwongen worden om de twee-stapsaanmelding te"
-" gebruiken."
+"Geef op of admins mogen of gedwongen worden om de twee-stapsregistratie "
+"gebruiken."
 
 #: lib/tokens/hotptoken.py:136
 msgid "HOTP: Event based One Time Passwords."
@@ -2205,13 +2206,13 @@ msgstr "Aantal vereiste posities die door de gebruiker beantwoord moeten worden.
 
 #: lib/tokens/indexedsecrettoken.py:119
 msgid "Preset the enrollment with the value of the given attribute."
-msgstr "Voorinstelling van de aanmelding met de waarde van het gegeven attribuut."
+msgstr ""
+"Voorinstelling van de registratie met de waarde van het gegeven attribuut."
 
 #: lib/tokens/indexedsecrettoken.py:126 lib/tokens/indexedsecrettoken.py:133
 msgid "The attribute whose value should be force set during enrollment."
 msgstr ""
-"Het attribuut waarvan de waarde moet ingesteld worden tijdens de "
-"aanmelding."
+"Het attribuut waarvan de waarde moet ingesteld worden tijdens de registratie."
 
 #: lib/tokens/indexedsecrettoken.py:140
 msgid ""
@@ -2247,7 +2248,7 @@ msgstr "URL voor mOTP-token"
 
 #: lib/tokens/ocratoken.py:91
 msgid "OCRA: Enroll an OCRA token."
-msgstr "OCRA: een OCRA token aanmelden."
+msgstr "OCRA: een OCRA token registreren."
 
 #: lib/tokens/ocratoken.py:101
 msgid "The user may only have this maximum number of OCRA tokens assigned."
@@ -2334,21 +2335,19 @@ msgid ""
 "The URL the Push App should contact in the second enrollment step. "
 "Usually it is the endpoint /ttype/push of the privacyIDEA server."
 msgstr ""
-"De URL die de Push App moet contacteren tijdens de tweede "
-"aanmeldingsstap. Gewoonlijk is dit enpoint/ttype/push van de privacyIDEA-"
-"server."
+"De URL die de Push App moet contacteren tijdens de tweede registratiestap. "
+"Gewoonlijk is dit enpoint/ttype/push van de privacyIDEA-server."
 
 #: lib/tokens/pushtoken.py:321
 msgid ""
 "The second enrollment step must be completed within this time (in "
 "minutes)."
 msgstr ""
-"De tweede aanmeldingsstap moet voltooid worden binnen deze tijd (in "
-"minuten)."
+"De tweede registratiestap moet voltooid worden binnen deze tijd (in minuten)."
 
 #: lib/tokens/pushtoken.py:325
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
-msgstr "De smartphone moet SSL verifiëren tijdens de aanmelding. (standaard 1)"
+msgstr "De smartphone moet SSL verifiëren tijdens de registratie. (standaard 1)"
 
 #: lib/tokens/pushtoken.py:331
 msgid "The user may only have this maximum number of Push tokens assigned."
@@ -2394,7 +2393,7 @@ msgstr "URL voor privacyIDEA Push Token"
 
 #: lib/tokens/questionnairetoken.py:98
 msgid "Questionnaire: Enroll Questions for the user."
-msgstr "Enquête: aanmelden met vragen voor de gebruiker."
+msgstr "Enquête: registreren met vragen voor de gebruiker."
 
 #: lib/tokens/questionnairetoken.py:109
 msgid "The user has to answer this number of questions during authentication."
@@ -2583,7 +2582,7 @@ msgstr ""
 
 #: lib/tokens/tiqrtoken.py:159
 msgid "TiQR: Enroll a TiQR token."
-msgstr "TiQR: een TiQR-token aanmelden."
+msgstr "TiQR: een TiQR-token registreren."
 
 #: lib/tokens/tiqrtoken.py:169
 msgid "The user may only have this maximum number of TiQR tokens assigned."
@@ -2599,7 +2598,7 @@ msgstr ""
 
 #: lib/tokens/tiqrtoken.py:239
 msgid "URL for TiQR enrollment"
-msgstr "URL voor TiQR aanmelding"
+msgstr "URL voor TiQR registratie"
 
 #: lib/tokens/tiqrtoken.py:397
 msgid "Please scan the QR Code"
@@ -2752,9 +2751,9 @@ msgid ""
 "token. Note: You will want to increase the ChallengeValidityTime along "
 "with this. Default: 60"
 msgstr ""
-"De tijd in seconden die de gebruiker krijgt om de aanmelding te "
-"bevestigen op zijn WebAuthn token. Opmerking: je met de "
-"ChallengeValidityTime gelijktijdig hiermee aanpassen. Standaard: 60"
+"De tijd in seconden die de gebruiker krijgt om de registratie te bevestigen "
+"op zijn WebAuthn token. Opmerking: je met de ChallengeValidityTime "
+"gelijktijdig hiermee aanpassen. Standaard: 60"
 
 #: lib/tokens/webauthntoken.py:628
 msgid ""
@@ -2770,9 +2769,9 @@ msgid ""
 "space-separated list of AAGUIDs. Per default all authenticators are "
 "acceptable."
 msgstr ""
-"Een lijst met WebAuthn authenticators die aanvaard worden voor "
-"authorisatie, ingegeven als een spatie gescheiden lijst met AAGUID's. "
-"Standaard worden alle authenticators aanvaard."
+"Een lijst met WebAuthn authenticators die aanvaard worden voor registratie, "
+"ingegeven als een spatie gescheiden lijst met AAGUID's. Standaard worden "
+"alle authenticators aanvaard."
 
 #: lib/tokens/webauthntoken.py:645
 msgid ""
@@ -2799,8 +2798,8 @@ msgid ""
 "Default: direct (ask for non-anonymized attestation data)"
 msgstr ""
 "Moet er attesteringsgegevens gevraagd worden wanneer een WebAuthn-token "
-"aangemeld wordt. Merk op: om u2f_req te laten werken met WebAuthn kan dit"
-" niet op geen gezet worden. Standaard: rechtstreeks (vraag voor niet "
+"geregistreerd wordt. Merk op: om u2f_req te laten werken met WebAuthn kan "
+"dit niet op geen gezet worden. Standaard: rechtstreeks (vraag voor niet "
 "geanonimiseerde attesteringsgegevens)"
 
 #: lib/tokens/webauthntoken.py:680
@@ -2880,7 +2879,7 @@ msgid ""
 "The Yubikey access code can be read by an enrollment client to initialize"
 " Yubikeys."
 msgstr ""
-"De Yubikey toegangscode kan gelezen worden door een aanmeldingsclient om "
+"De Yubikey toegangscode kan gelezen worden door een registratieclient om "
 "Yubikeys te initialiseren."
 
 #: lib/utils/compare.py:191
