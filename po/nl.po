@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-02-04 07:54+0000\n"
+"PO-Revision-Date: 2022-03-23 07:55+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/nl/>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.11-dev\n"
+"X-Generator: Weblate 4.12-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -621,7 +621,7 @@ msgstr "Certificaat sjabloon"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:211
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr "Certificaat: een x509 certificaat-token aanmelden."
+msgstr "Certificaat: een x509 certificaat-token registreren."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:69
 msgid "Certificates Templates file"
@@ -1239,31 +1239,29 @@ msgstr "Eindpunt (URL)"
 
 #: privacyidea/static/components/user/views/user.details.html:189
 msgid "Enroll New Token"
-msgstr "Nieuw token aanmelden"
+msgstr "Nieuw token registreren"
 
 #: privacyidea/static/components/token/views/token.enroll.html:135
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:49
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:49
 #: privacyidea/static/components/token/views/token.html:25
 msgid "Enroll Token"
-msgstr "Token aanmelden"
+msgstr "Token registreren"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:101
 #: privacyidea/static/components/token/controllers/tokenControllers.js:137
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:200
 msgid "Enroll a new token"
-msgstr "Een nieuw token aanmelden"
+msgstr "Een nieuw token registreren"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:282
-#, fuzzy
 msgid "Enrollment successfully verified."
-msgstr "Test e-mail met succes verzonden."
+msgstr "Registratie geverifieerd."
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:285
-#, fuzzy
 msgid "Enrollment verification failed."
-msgstr "Authenticatie mislukt."
+msgstr "Registratieverificatie mislukt."
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:79
 msgid "Enter OTP + PIN to check the token."
@@ -1288,7 +1286,7 @@ msgstr "Geef PIN voor token"
 
 #: privacyidea/static/components/token/views/token.details.html:77
 msgid "Enter code to verify enrollment"
-msgstr ""
+msgstr "Geef code om aanmelding te verifiëren"
 
 #: privacyidea/static/components/token/views/token.details.html:348
 msgid "Enter first OTP value"
@@ -3838,16 +3836,13 @@ msgstr ""
 "          die je kunt scannen."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
-#, fuzzy
 msgid ""
 "The server will create the private RSA key and store it in\n"
 "                    the database. You can later download the PKCS#12 file."
 msgstr ""
-"De server zal een private RSA-sleutel make en die\n"
-"                    bewaren in de databank.\n"
-"                    Als je het sleutelpaar aan de kant van de cliënt\n"
-"                    wil maken, haal dan het vinkje weg\n"
-"                    bij deze optie."
+"De server zal een private RSA-sleutel maken en die\n"
+"                          bewaren in de databank. Je kunt het PKCS#12-"
+"bestand later downloaden."
 
 #: privacyidea/static/components/token/views/token.enroll.motp.html:14
 msgid ""
@@ -3894,6 +3889,8 @@ msgid ""
 "The token was enrolled, but you still need to verify it before you can use "
 "it!"
 msgstr ""
+"Het token was aangemeld, maar je moet het nog verifiëren voor je het kunt "
+"gebruiken!"
 
 #: privacyidea/static/components/token/views/token.lost.html:34
 msgid "The token was marked lost successfully."
@@ -4572,9 +4569,8 @@ msgstr "Verifieer TLS"
 
 #: privacyidea/static/components/token/views/token.details.html:78
 #: privacyidea/static/components/token/views/token.enroll.html:188
-#, fuzzy
 msgid "Verify Token"
-msgstr "Verifieer TLS"
+msgstr "Verifieer token"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:64
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:81
@@ -5193,7 +5189,7 @@ msgstr "{{ auditdata.count }} items gevonden."
 
 #: privacyidea/static/components/token/views/token.enroll.html:181
 msgid "{{ enrolledToken.verify.message }}"
-msgstr ""
+msgstr "{{ enrolledToken.verify.message }}"
 
 #~ msgid "Generate the Key Pair on the Server"
 #~ msgstr "Genereer het sleutelpaar op de server"
