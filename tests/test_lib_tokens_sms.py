@@ -494,9 +494,10 @@ class SMSTokenTestCase(MyTestCase):
                            "(u'privacyidea.lib.smsprovider.HttpSMSProvider has no attribute HttpSMSProviderWRONG',)"
             else:
                 expected = "Failed to load SMSProvider: ImportError" \
-                           "('privacyidea.lib.smsprovider.HttpSMSProvider has no attribute HttpSMSProviderWRONG')"
+                           "('privacyidea.lib.smsprovider.HttpSMSProvider has no attribute HttpSMSProviderWRONG'"
             mock_log.mock_called()
-            mock_log.assert_called_once_with(expected)
+            mocked_str = mock_log
+            self.assertTrue(mocked_str.startswith(expected), mocked_str)
         capture.clear()
 
         with mock.patch("logging.Logger.error") as mock_log:
@@ -509,10 +510,11 @@ class SMSTokenTestCase(MyTestCase):
             if six.PY2:
                 expected = "Failed to load sms.providerConfig: ValueError('No JSON object could be decoded',)"
             else:
-                expected = "Failed to load SMSProvider: ImportError" \
-                           "('privacyidea.lib.smsprovider.HttpSMSProvider has no attribute HttpSMSProviderWRONG')"
+                expected = "Failed to load sms.providerConfig: " \
+                           "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
             mock_log.mock_called()
-            mock_log.assert_called_once_with(expected)
+            mocked_str = mock_log
+            self.assertTrue(mocked_str.startswith(expected), mocked_str)
         capture.clear()
 
         #test with the parameter exception=1
