@@ -62,30 +62,34 @@ def int_list_to_bytestring(int_list):  # pragma: no cover
 
 import os
 import time
-DIR = "/dev/shm/pilock"
+DEFAULT_LOCK_DIR = "/dev/shm/pilock"
 DEFAULT_TIMEOUT = 15
 
 
 @contextlib.contextmanager
-def hsm_lock(timeout=DEFAULT_TIMEOUT):
+def hsm_lock(timeout=DEFAULT_TIMEOUT, lock_dir=DEFAULT_LOCK_DIR):
     # Wait, that we are free to go
+    i_created_the_lock = False
     while timeout > 0:
         timeout -= 1
         try:
             # Try to get the Lock, since we are acting.
             log.debug("Requesting lock")
-            os.mkdir(DIR)
+            os.mkdir(lock_dir)
             log.debug("Lock acquired")
+            i_created_the_lock = True
             yield
-            # Cleanup
-            log.debug("Going to release lock")
-            os.rmdir(DIR)
-            log.debug("Lock released")
             break
         except FileExistsError:
             # Some other process got the lock in the meantime.
-            log.info("Can not get the lock on {0!s}. Can not initialize the HSM, yet.".format(DIR))
+            log.info("Can not get the lock on {0!s}. Can not initialize the HSM, yet.".format(lock_dir))
             time.sleep(1)
+        finally:
+            # Cleanup
+            if i_created_the_lock:
+                log.debug("Going to release lock")
+                os.rmdir(lock_dir)
+                log.debug("Lock released")
 
 
 class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cover
@@ -148,9 +152,10 @@ class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cov
         self.is_ready = False
 
         timeout = self.config.get("timeout") or DEFAULT_TIMEOUT
+        lock_dir = self.config.get("lock_dir") or DEFAULT_LOCK_DIR
 
         log.debug("Starting Lock")
-        with hsm_lock(timeout=timeout):
+        with hsm_lock(timeout=timeout, lock_dir=lock_dir):
             log.info("Initializing PKCS11")
             self.pkcs11 = PyKCS11.PyKCS11Lib()
             self.pkcs11.load(self.config.get("module"))
