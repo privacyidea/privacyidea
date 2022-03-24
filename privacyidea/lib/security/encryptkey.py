@@ -310,7 +310,7 @@ if __name__ == "__main__":  # pragma: no cover
         sys.exit(1)
 
     infile = outfile = None
-    config = {"dump_private_keys": True}
+    config = {}
     listkeys = False
 
     for o, a in opts:
