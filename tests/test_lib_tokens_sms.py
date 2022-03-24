@@ -16,6 +16,7 @@ from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 from privacyidea.lib import _
 import datetime
 import mock
+import six
 import responses
 from testfixtures import log_capture
 
@@ -484,31 +485,37 @@ class SMSTokenTestCase(MyTestCase):
                                "privacyidea.lib.smsprovider."
                                "HttpSMSProvider.HttpSMSProviderWRONG")
 
-        c = token.create_challenge(transactionid)
-        self.assertFalse(c[0], c)
-        self.assertTrue(c[1].startswith("The PIN was correct, but"), c[1])
-        capture.check_present(
-            ('privacyidea.lib.tokens.smstoken', 'WARNING',
-             'The PIN was correct, but the SMS could not be sent! '
-             '(privacyidea.lib.smsprovider.HttpSMSProvider has no '
-             'attribute HttpSMSProviderWRONG)')
-        )
+        with mock.patch("logging.Logger.error") as mock_log:
+            c = token.create_challenge(transactionid)
+            self.assertFalse(c[0], c)
+            self.assertTrue(c[1].startswith("The PIN was correct, but"), c[1])
+            if six.PY2:
+                expected = "Failed to load SMSProvider: ImportError" \
+                           "(u'privacyidea.lib.smsprovider.HttpSMSProvider has no attribute HttpSMSProviderWRONG',)"
+            else:
+                expected = "Failed to load SMSProvider: ImportError" \
+                           "('privacyidea.lib.smsprovider.HttpSMSProvider has no attribute HttpSMSProviderWRONG')"
+            mock_log.mock_called()
+            mock_log.assert_called_once_with(expected)
         capture.clear()
 
-        set_privacyidea_config("sms.provider",
-                               "privacyidea.lib.smsprovider."
-                               "HttpSMSProvider.HttpSMSProvider")
-        c = token.create_challenge(transactionid)
-        self.assertFalse(c[0], c)
-        self.assertTrue(c[1].startswith("The PIN was correct, but"), c[1])
-        capture.check_present(
-            ('privacyidea.lib.tokens.smstoken', 'WARNING',
-             'The PIN was correct, but the SMS could not be sent! '
-             '(Failed to load sms.providerConfig: JSONDecodeError(\''
-             'Expecting value: line 1 column 1 (char 0)\'))')
-        )
+        with mock.patch("logging.Logger.error") as mock_log:
+            set_privacyidea_config("sms.provider",
+                                   "privacyidea.lib.smsprovider."
+                                   "HttpSMSProvider.HttpSMSProvider")
+            c = token.create_challenge(transactionid)
+            self.assertFalse(c[0], c)
+            self.assertTrue(c[1].startswith("The PIN was correct, but"), c[1])
+            if six.PY2:
+                expected = "Failed to load sms.providerConfig: ValueError('No JSON object could be decoded',)"
+            else:
+                expected = "Failed to load SMSProvider: ImportError" \
+                           "('privacyidea.lib.smsprovider.HttpSMSProvider has no attribute HttpSMSProviderWRONG')"
+            mock_log.mock_called()
+            mock_log.assert_called_once_with(expected)
+        capture.clear()
 
-        # test with the parameter exception=1
+        #test with the parameter exception=1
         self.assertRaises(Exception, token.create_challenge, transactionid, {"exception": "1"})
 
         remove_token(token.get_serial())
