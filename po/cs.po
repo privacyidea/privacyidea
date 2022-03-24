@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-01-19 10:03+0000\n"
+"PO-Revision-Date: 2022-03-24 02:54+0000\n"
 "Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/cs/>\n"
@@ -9,7 +9,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
-"X-Generator: Weblate 4.11-dev\n"
+"X-Generator: Weblate 4.12-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -2186,7 +2186,7 @@ msgstr "Předchozí"
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:57
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:57
 msgid "Print the OTP list"
-msgstr ""
+msgstr "Vytisknout seznam jednorázových kódů"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:99
 #: privacyidea/static/components/config/views/config.policies.list.html:6
@@ -3017,7 +3017,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:6
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:6
 msgid "The OTP values"
-msgstr ""
+msgstr "Jednorázové kódy"
 
 #: privacyidea/static/components/token/views/token.enroll.paper.html:1
 msgid ""
