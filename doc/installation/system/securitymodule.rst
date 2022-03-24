@@ -160,3 +160,21 @@ If your key in the HSM is identified by a key label, then you can encrypt the ex
     python encryptkey.py --module /usr/lib/libykcs11.so --keylabel "my secret key" --slotname "Yubico YubiKey" \
                          --infile enckey --outfile enckey.enc
 
+Preloading of encryption keys
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This security module allows you to preload the encryption keys. I.e. privacyIDEA can use the HSM to decrypt
+the keys before the first request is sent to privacyIDEA. To do so, you need to modify the wsgi script
+(See :ref:`wsgiscript`) and add the parameter `init_hsm`::
+
+    application = create_app(config_name="production",
+                             config_file="/etc/privacyidea/pi.cfg", init_hsm=True)
+
+Moreover, you need to add the `WSGIImportScript` statement to your Apache2 configuration::
+
+    WSGIApplicationGroup %{GLOBAL}
+    WSGIImportScript /etc/privacyidea/privacyideaapp.wsgi process-group=privacyidea application-group=%{GLOBAL}
+
+.. note:: Please note, that this security module uses a lock file, to handle concurrent access to the HSM.
+   In certain cases of errors the log file could remain and not cleaned up.
+   Ensure, that the directory `/dev/shm/pilock/` does *not* exist at Apache2 startup.
