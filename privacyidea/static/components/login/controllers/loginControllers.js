@@ -27,7 +27,7 @@ String.prototype.mysplit = function(separator) {
 
 
 angular.module("privacyideaApp")
-    .controller("mainController", ["Idle", "$scope", "$http", "$location",
+    .controller("mainController", ["Idle", "$scope", "$sce", "$http", "$location",
                                    "authUrl", "validateUrl", "AuthFactory", "$rootScope",
                                    "$state", "ConfigFactory", "inform",
                                    "PolicyTemplateFactory", "gettextCatalog",
@@ -35,7 +35,7 @@ angular.module("privacyideaApp")
                                    "U2fFactory", "webAuthnToken", "instanceUrl",
                                    "PollingAuthFactory", "$transitions",
                                    "resourceNamePatterns",
-                                   function (Idle, $scope, $http, $location,
+                                   function (Idle, $scope, $sce, $http, $location,
                                              authUrl, validateUrl, AuthFactory, $rootScope,
                                              $state, ConfigFactory, inform,
                                              PolicyTemplateFactory, gettextCatalog,
@@ -78,7 +78,8 @@ angular.module("privacyideaApp")
     obj = angular.element(document.querySelector('#SHOW_NODE'));
     $scope.show_node = obj.val();
     obj = angular.element(document.querySelector('#GDPR_LINK'));
-    $scope.piGDPRLink = obj.val();
+    // we need to trust the GDPR URI explicitly since an admin can change this via policy.
+    $scope.piGDPRLink = $sce.trustAsUrl(obj.val());
     obj = angular.element(document.querySelector('#PI_TRANSLATION_WARNING'));
     $scope.piTranslationWarning = obj.val() !== "False";
     $scope.piTranslationPrefix = obj.val();
