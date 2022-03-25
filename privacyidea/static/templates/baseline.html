@@ -9,7 +9,7 @@
 
         <a class="navbar-btn btn btn-success pull-right"
            ng-show="piExternalLinks !== 'False'"
-           href="{{ privacyideaSupportLink }}"
+           ng-href="{{ privacyideaSupportLink }}"
            target="_external">
             <translate>Support</translate>
         </a>
@@ -21,13 +21,13 @@
 
         <a class="navbar-text pull-right"
            ng-show="privacyideaVersionNumber"
-                href="http://privacyidea.readthedocs.org/en/v{{ privacyideaVersionNumber }}"
+                ng-href="https://privacyidea.readthedocs.io/en/v{{ privacyideaVersionNumber }}"
                 target="documentation">
             <translate>Online Documentation</translate>
         </a>
        <a class="navbar-text pull-right pull-right"
            ng-show="piGDPRLink"
-           href="{{ piGDPRLink }}"
+           ng-href="{{ piGDPRLink }}"
            target="_external">
             <translate>Privacy Statement</translate>
         </a>
