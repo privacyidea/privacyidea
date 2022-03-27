@@ -258,7 +258,7 @@ class EmailTokenClass(HotpTokenClass):
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
             You can pass ``exception=1`` to raise an exception, if
-            the SMS could not be sent. Otherwise the message is contained in the response.
+            the Email could not be sent.
         :return: tuple
             of (success, message, transactionid, attributes)
 
@@ -310,9 +310,9 @@ class EmailTokenClass(HotpTokenClass):
                     mimetype=mimetype)
 
             except Exception as e:
-                info = ("The PIN was correct, but the "
-                        "EMail could not be sent: %r" % e)
-                log.warning(info)
+                info = _("The PIN was correct, but the "
+                         "EMail could not be sent!")
+                log.warning(info + " ({0!s})".format(e))
                 log.debug(u"{0!s}".format(traceback.format_exc()))
                 return_message = info
                 if is_true(options.get("exception")):
