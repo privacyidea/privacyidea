@@ -8,16 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-03-28 10:32+0200\n"
-"PO-Revision-Date: 2022-03-18 15:52+0000\n"
+"PO-Revision-Date: 2022-03-28 10:06+0000\n"
 "Last-Translator: Eric <alchemillatruth@purelymail.com>\n"
+"Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
+"privacyidea/privacyidea-ui/zh_Hans/>\n"
 "Language: zh_Hans\n"
-"Language-Team: Chinese (Simplified) "
-"<https://hosted.weblate.org/projects/privacyidea/privacyidea-ui/zh_Hans/>"
-"\n"
-"Plural-Forms: nplurals=1; plural=0\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.12-dev\n"
 "Generated-By: Babel 2.9.1\n"
 
 #: api/auth.py:222
@@ -221,11 +221,10 @@ msgid "Admin is allowed to copy the PIN of one token to another token."
 msgstr "管理员可以将一个令牌的PIN复制到另一个令牌。"
 
 #: lib/policy.py:1670
-#, fuzzy
 msgid ""
 "Admin is allowed to copy the assigned user to another token, i.e. assign "
 "a user to another token."
-msgstr "允许管理员将分配的用户复制到另一个令牌，即，将一个用户分配给另一个令牌。"
+msgstr "管理员被允许复制分配的用户到另一个令牌，即分配一个用户到另一个令牌。"
 
 #: lib/policy.py:1676
 msgid "Admin is allowed to trigger the lost token workflow."
@@ -1725,19 +1724,19 @@ msgid "EMail: Send a One Time Password to the users email address."
 msgstr "电子邮件：向用户的电子邮件地址发送一次性密码。"
 
 #: lib/tokens/emailtoken.py:165
-#, fuzzy
 msgid ""
 "The text that will be sent via EMail for an EMail-token. Several tags "
 "like {otp} and {serial} can be used as parameters. You may also specify a"
 " filename as email template starting with \"file:\"."
-msgstr "将通过电子邮件发送的有关电子邮件令牌的文本。使用<otp>和<serial>作为参数。您也可以将文件名指定为以“ file：”开头的电子邮件模板。"
+msgstr ""
+"将通过电子邮件发送的电子邮件令牌的文本。可以使用如 <otp> 和 <serial> "
+"等标签作为参数。你也可以将文件名指定为以“ file：”开头的电子邮件模板。"
 
 #: lib/tokens/emailtoken.py:172
-#, fuzzy
 msgid ""
 "The subject of the EMail for an EMail token. Use tags like {otp} and "
 "{serial} as parameters."
-msgstr "电子邮件令牌的电子邮件主题。使用<otp>和<serial>作为参数。"
+msgstr "电子邮件令牌的电子邮件主题。使用 <otp> 和 <serial> 等标签作为参数。"
 
 #: lib/tokens/emailtoken.py:177
 msgid ""
@@ -2097,11 +2096,10 @@ msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr "SMS：向用户手机发送一次性密码。"
 
 #: lib/tokens/smstoken.py:210
-#, fuzzy
 msgid ""
 "The text that will be send via SMS for an SMS token. Use tags like {otp} "
 "and {serial} as parameters."
-msgstr "将通过SMS发送的SMS令牌文本。使用<otp>和<serial>作为参数。"
+msgstr "将通过 SMS 发送的 SMS令牌文本。使用 <otp> 和 <serial> 等标签作为参数。"
 
 #: lib/tokens/smstoken.py:215
 msgid ""
@@ -2494,4 +2492,3 @@ msgstr ""
 #~ "'*'. For more details, check the "
 #~ "documentation."
 #~ msgstr ""
-
