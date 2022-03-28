@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-03-28 10:32+0200\n"
-"PO-Revision-Date: 2022-03-18 15:58+0000\n"
-"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
+"PO-Revision-Date: 2022-03-28 10:06+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/de/>\n"
 "Language: de\n"
-"Language-Team: German <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/de/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.12-dev\n"
 "Generated-By: Babel 2.9.1\n"
 
 #: api/auth.py:222
@@ -128,8 +129,8 @@ msgid ""
 "Only users with this email address are allowed to register. This is a "
 "regular expression."
 msgstr ""
-"Nur Benutzer mit dieser Email-Adresse können sich registrieren. "
-"(Regulärer Ausdruck)"
+"Nur Benutzer mit dieser EMail-Adresse können sich registrieren. Dies ist ein "
+"Regulärer Ausdruck."
 
 #: lib/policy.py:1549
 msgid ""
@@ -242,14 +243,12 @@ msgid "Admin is allowed to copy the PIN of one token to another token."
 msgstr "Der Administrator kann die OTP PIN eines Tokens zu einem anderen kopieren."
 
 #: lib/policy.py:1670
-#, fuzzy
 msgid ""
 "Admin is allowed to copy the assigned user to another token, i.e. assign "
 "a user to another token."
 msgstr ""
-"Der Administrator kann die Zuweisung eines Benutzer zu einem Token von "
-"einem Token zu einem anderen Token übertragen. D.h. den Benutzer noch "
-"einem anderen Token zuweisen."
+"Der Administrator kann die Zuweisung eines Benutzer von einem Token zu einem "
+"anderen Token übertragen. D.h. dem Benutzer einen anderen Token zuweisen."
 
 #: lib/policy.py:1676
 msgid "Admin is allowed to trigger the lost token workflow."
@@ -343,9 +342,9 @@ msgid ""
 "Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
 msgstr ""
-"Geben Sie den geforderten Inhalt der OTP PIN an. (c) für Zeichen, (n) für"
-" Zahlen, (s) für Sonderzeichen. Sie können die Modifizierer +/- verwenden"
-" oder eine dedizierte Liste an Zeichen [1234565890] angeben."
+"Geben Sie den geforderten Inhalt der OTP PIN an. (c) für Buchstaben, (n) für "
+"Zahlen, (s) für Sonderzeichen. Sie können die Attribute +/- verwenden oder "
+"eine dedizierte Liste von Zeichen angeben, z.B. [1234565890]"
 
 #: lib/policy.py:1789
 msgid "The length of a random PIN set by the administrator."
@@ -514,9 +513,7 @@ msgstr "Der Benutzer darf seine eigenen Token löschen."
 
 #: lib/policy.py:1976
 msgid "The user is allowed to unassign his own tokens."
-msgstr ""
-"Der Benutzer darf die Zuweisung seiner eigenen Token aufheben. (Danach "
-"ist dies nicht mehr sein Token!)"
+msgstr "Der Benutzer darf die eigene Zuweisung zu seinen Token aufheben."
 
 #: lib/policy.py:1981
 msgid "The user is allowed to resyncronize his tokens."
@@ -717,10 +714,9 @@ msgid ""
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
 "[1234567890]"
 msgstr ""
-"Definiert den erforderlichen Inhalt des Registrierungscodes. Zeichen (c),"
-" Nummern (n) und Sonderzeichen (s). Die Modifikatoren +/- können "
-"verwendet werden. Alternativ kann eine definierte Liste an Zeichen "
-"[1234567890] angegeben werden."
+"Definiert den erforderlichen Inhalt des Registrierungscodes. (c) Buchstaben, "
+"(n) Nummern und (s) Sonderzeichen. Sie können die Attribute +/- verwenden "
+"oder eine dedizierte Liste von Zeichen angegeben, z.B. [1234567890]"
 
 #: lib/policy.py:2182
 msgid "Set the length of the password of generated password tokens."
@@ -732,10 +728,9 @@ msgid ""
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of "
 "allowed characters [1234567890]"
 msgstr ""
-"Geben Sie den geforderten Inhalt des Passwortes eines Passwort-Tokens an."
-" (c) für Zeichen, (n) für Zahlen, (s) für Sonderzeichen. Sie können die "
-"Modifizierer +/- verwenden oder eine dedizierte Liste an Zeichen "
-"[1234565890] angeben."
+"Geben Sie den geforderten Inhalt des Passwortes eines Passwort-Tokens an. (c)"
+" Buchstaben, (n) Zahlen und (s) Sonderzeichen. Sie können die Attribute +/- "
+"verwenden oder eine dedizierte Liste von Zeichen angeben, z.B. [1234565890]"
 
 #: lib/policy.py:2194
 msgid ""
@@ -758,8 +753,8 @@ msgid ""
 "This is a whitespace separated list of tokentypes, that can be used with "
 "challenge response."
 msgstr ""
-"Liste von Tokentypen, die für Challenge Response verwendet werden können."
-" (Trennung durch Leerzeichen)"
+"Liste von Tokentypen, die für das Challenge-Response Verfahren verwendet "
+"werden können (durch Leerzeichen getrennt)."
 
 #: lib/policy.py:2213
 msgid ""
@@ -874,9 +869,8 @@ msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
 msgstr ""
-"Der Benutzer darf sich anmelden (Standardeinstellung). Wenn dies auf "
-"'{0!s}' gesetzt wird, wird dem Benutzer die Authentifierung verweigert, "
-"auch wenn er die korrekten Credentials angegeben hat."
+"Der Benutzer darf sich anmelden (Standardeinstellung). Wenn dies auf '{0!s}' "
+"gesetzt ist, wird dem Benutzer die Authentifizierung verweigert."
 
 #: lib/policy.py:2291
 msgid ""
@@ -2071,25 +2065,23 @@ msgid "EMail: Send a One Time Password to the users email address."
 msgstr "E-Mail: Ein Einmalpasswort an die E-Mail-Adresse des Benutzers versenden."
 
 #: lib/tokens/emailtoken.py:165
-#, fuzzy
 msgid ""
 "The text that will be sent via EMail for an EMail-token. Several tags "
 "like {otp} and {serial} can be used as parameters. You may also specify a"
 " filename as email template starting with \"file:\"."
 msgstr ""
-"Dieser Text wird beim Email-Token via Email versendet. Sie können <otp> "
-"und <serial> als Tags verwenden. Alternativ können Sie einen Dateinamen "
-"einer Email-Template-Datei angeben. Dies muss dann mit \"file:\" "
-"beginnen."
+"Der Text der beim EMail-Token via EMail versendet wird. Sie können die "
+"Schlagworte {otp} und {serial} als Parameter verwenden. Alternativ können "
+"Sie eine EMail-Vorlage als Datei verwenden indem Sie den Dateinamen mit "
+"\"file:\" angeben."
 
 #: lib/tokens/emailtoken.py:172
-#, fuzzy
 msgid ""
 "The subject of the EMail for an EMail token. Use tags like {otp} and "
 "{serial} as parameters."
 msgstr ""
-"Die Betreff-Zeile der Email. Es können die Tags <otp> und <serial> "
-"verwendet werden."
+"Die Betreff-Zeile der EMail eines EMail-Tokens. Es können die Schlagworte "
+"{otp} und {serial} verwendet werden."
 
 #: lib/tokens/emailtoken.py:177
 msgid ""
@@ -2127,7 +2119,7 @@ msgstr "Bitte geben Sie das Einmalpasswort aus der Email ein:"
 
 #: lib/tokens/emailtoken.py:313
 msgid "The PIN was correct, but the EMail could not be sent!"
-msgstr ""
+msgstr "Die PIN ist korrekt aber die EMail konnte nicht gesendet werden!"
 
 #: lib/tokens/foureyestoken.py:132
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
@@ -2422,7 +2414,7 @@ msgstr ""
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr ""
 "Push Token können den privacyIDEA Server nach "
-"Authentifizierungsanforderungen pollen."
+"Authentifizierungsanforderungen abfragen."
 
 #: lib/tokens/pushtoken.py:496
 msgid "URL for privacyIDEA Push Token"
@@ -2530,11 +2522,12 @@ msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr "SMS: Ein Einmalpasswort per SMS an das Mobiltelefon des Benutzers senden."
 
 #: lib/tokens/smstoken.py:210
-#, fuzzy
 msgid ""
 "The text that will be send via SMS for an SMS token. Use tags like {otp} "
 "and {serial} as parameters."
-msgstr "Der Text der SMS. <otp> und <serial> können als Tags verwendet werden."
+msgstr ""
+"Der Text der als SMS für ein SMS-Token versendet wird. Es können die "
+"Schlagwörter {otp} und {serial} verwendet werden."
 
 #: lib/tokens/smstoken.py:215
 msgid ""
@@ -2577,7 +2570,7 @@ msgstr "Bitte geben Sie das Einmalpasswort aus der SMS ein:"
 
 #: lib/tokens/smstoken.py:354
 msgid "The PIN was correct, but the SMS could not be sent!"
-msgstr ""
+msgstr "Die PIN ist korrekt aber die SMS konnte nicht gesendet werden!"
 
 #: lib/tokens/spasstoken.py:87
 msgid "SPass: Simple Pass token. Static passwords."
@@ -2740,8 +2733,8 @@ msgid ""
 " token. Note: You will want to increase the ChallengeValidityTime along "
 "with this. Default: 60"
 msgstr ""
-"Die Zeit in Sekunden in der der Benutzer die Autorisierung mit seinem "
-"WebAuthn Token bestätigen soll. Sie sollten die ChallengeValidityTime "
+"Die Zeit in Sekunden in welcher der Benutzer die Autorisierung mit seinem "
+"WebAuthn Token bestätigen muss. Sie sollten die ChallengeValidityTime "
 "entsprechend anpassen. Standard: 60"
 
 #: lib/tokens/webauthntoken.py:580
@@ -2983,7 +2976,7 @@ msgid ""
 "true if the integer value of the left attribute is smaller than the right"
 " integer value"
 msgstr ""
-"Ist Wahr, wenn der Zahlenwert des linken Attributes kleiner ist als der "
+"Wahr, wenn der Zahlenwert des linken Attributes kleiner ist als der "
 "Zahlenwert auf der rechten Seite."
 
 #: lib/utils/compare.py:204
@@ -2991,7 +2984,7 @@ msgid ""
 "true if the integer value of the left attribute is bigger than the right "
 "integer value"
 msgstr ""
-"Ist Wahr, wenn der Zahlenwert des linken Attributes größer ist als der "
+"Wahr, wenn der Zahlenwert des linken Attributes größer ist als der "
 "Zahlenwert auf der rechten Seite."
 
 #~ msgid ""
@@ -3107,4 +3100,3 @@ msgstr ""
 #~ "können soll, dann geben Sie hier "
 #~ "'*' ein. Für weitere Details lesen "
 #~ "Sie bitte die Dokumentation."
-
