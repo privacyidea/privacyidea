@@ -134,7 +134,11 @@ To use the correct key in this slot you can either specify the key by providing
 ``PI_HSM_MODULE_KEYID`` with the integer id of the key or
 ``PI_HSM_MODULE_KEYLABEL``  with the descriptive label of the key.
 
-The ``PI_HSM_MODULE_TIMEOUT`` can be used to define an integer value for a HSM lock timeout.
+The ``PI_HSM_MODULE_TIMEOUT`` can be used to define an integer value for a HSM lock timeout. The default is 15 seconds.
+
+Using the key ``PI_HSM_MODULE_LOCK_DIR`` you can define a different locking directory.
+The default is ``/dev/shm/pilock/``. Note, that the locking directory is created or removed by privacyIDEA
+when acquiring or releasing the lock on the HSM and you must not create this directory manually!
 
 .. note:: Some HSM fail to provide a correct keyid and it is necessary to use the key label.
 
@@ -160,3 +164,21 @@ If your key in the HSM is identified by a key label, then you can encrypt the ex
     python encryptkey.py --module /usr/lib/libykcs11.so --keylabel "my secret key" --slotname "Yubico YubiKey" \
                          --infile enckey --outfile enckey.enc
 
+Preloading of encryption keys
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This security module allows you to preload the encryption keys. I.e. privacyIDEA can use the HSM to decrypt
+the keys before the first request is sent to privacyIDEA. To do so, you need to modify the wsgi script
+(See :ref:`wsgiscript`) and add the parameter `init_hsm`::
+
+    application = create_app(config_name="production",
+                             config_file="/etc/privacyidea/pi.cfg", init_hsm=True)
+
+Moreover, you need to add the `WSGIImportScript` statement to your Apache2 configuration::
+
+    WSGIApplicationGroup %{GLOBAL}
+    WSGIImportScript /etc/privacyidea/privacyideaapp.wsgi process-group=privacyidea application-group=%{GLOBAL}
+
+.. note:: Please note, that this security module uses a lock file, to handle concurrent access to the HSM.
+   In certain cases of errors the log file could remain and not cleaned up.
+   Ensure, that the directory `/dev/shm/pilock/` does *not* exist at Apache2 startup.
