@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-03-18 16:52+0000\n"
+"PO-Revision-Date: 2022-03-28 10:06+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -718,7 +718,7 @@ msgstr "Schließen"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:303
 msgid "Close all groups"
-msgstr ""
+msgstr "Alle Gruppen zuklappen"
 
 #: privacyidea/static/templates/menu.html:140
 msgid "Community"
@@ -1386,7 +1386,7 @@ msgid ""
 "a>!"
 msgstr ""
 "Damit Yubico-Token richtig funktionieren, müssen Sie die <a ui-sref=\"config."
-"tokens({tokentype:'yubico'})\">Yubico-Token Konfiguration</a> setzen."
+"tokens({tokentype:'yubico'})\">Yubico-Token Konfiguration</a> setzen!"
 
 #: privacyidea/static/components/token/views/token.enroll.push.html:6
 msgid ""
@@ -2084,7 +2084,7 @@ msgstr "Online Dokumentation"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:298
 msgid "Open all groups"
-msgstr ""
+msgstr "Alle Gruppen aufklappen"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:56
 msgid "OpenSSL config file"
@@ -3509,7 +3509,6 @@ msgstr ""
 "anderem:"
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:7
-#, fuzzy
 msgid ""
 "The authentication request can be handled by the default privacyIDEA\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/api/"
@@ -3520,12 +3519,12 @@ msgid ""
 "YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
 "        Yubico Validation Protocol</a>."
 msgstr ""
-"Die Authentifizierung kann von der normalen   <a href=\"http://privacyidea."
-"readthedocs.org/en/latest/modules/api/validate.html\">privacyIDEA-API</a> "
-"aber auch vom <a href=\"http://privacyidea.readthedocs.org/en/latest/modules/"
-"lib/tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
-"YubikeyTokenClass.api_endpoint\">Yubico Validation Protokoll</a> "
-"durchgeführt werden."
+"Die Authentifizierung kann von der normalen privacyIDEA <a href=\"http"
+"://privacyidea.readthedocs.org/en/latest/modules/api/validate.html\" target="
+"\"_blank\">validate API</a> aber auch vom <a href=\"http://privacyidea."
+"readthedocs.org/en/latest/modules/lib/tokentypes/yubikey.html#privacyidea.lib"
+".tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" target=\"_blank\""
+">Yubico Validation Protokoll</a> durchgeführt werden."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
 msgid ""
@@ -3549,7 +3548,8 @@ msgid ""
 "                a trusted certificate. Do not uncheck this in productive use!"
 msgstr ""
 "Das Zertifikat wird auf einen gültigen Hostname und auf eine gültige "
-"Signatur einer vertrauten Zertifizierungsstelle hin überprüft."
+"Signatur einer vertrauten Zertifizierungsstelle hin überprüft. Im "
+"produktiven Umfeld nicht deaktivieren!"
 
 #: privacyidea/static/components/config/views/config.system.html:260
 msgid "The challenge validity time"
@@ -3614,7 +3614,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:57
 msgid "The number of lookahead OTP values. Default 10."
-msgstr "Die Anzahl der untersuchten OTP-Werte (Standard 10)"
+msgstr "Die Anzahl der untersuchten OTP-Werte (Standard 10)."
 
 #: privacyidea/static/components/token/views/token.lost.html:17
 msgid ""
@@ -3670,7 +3670,7 @@ msgstr ""
 #: privacyidea/static/app.js:141
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
-"Das privacyIDEA-System scheint offline zu sein. Die API ist nicht erreichbar."
+"Das privacyIDEA-System scheint offline zu sein. Die API ist nicht erreichbar!"
 
 #: privacyidea/static/components/config/views/config.token.question.html:3
 msgid ""
@@ -4043,8 +4043,8 @@ msgid ""
 "This is the service identifier that will be passed to the TiQR app.\n"
 "        This should contain a reverse FQDN (defaults to org.privacyidea)."
 msgstr ""
-"Dies ist die Dienste ID, die der TiQR App übergeben wird. Dieser sollte der "
-"umgekehrte DNS-Name des Systems sein. (Standard: org.privacyidea)"
+"Dies ist die Dienste ID, die der TiQR App übergeben wird. Dieser sollte die "
+"umgekehrte DNS-Namensauflösung des Systems sein (Standard: org.privacyidea)."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:22
 msgid ""
@@ -4496,7 +4496,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:219
 msgid "WebAuthn: Web Authentication hardware token."
-msgstr "WebAuthn: Web Authentication Hardware Token / FIDO2"
+msgstr "WebAuthn: Web Authentication Hardware Token / FIDO2."
 
 #: privacyidea/static/components/dialogs/views/dialog.no.token.html:15
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:13
@@ -4664,8 +4664,9 @@ msgid ""
 "            might also cancel this and narrow down the search!"
 msgstr ""
 "Die Suche würde sich über {{ count }} Token erstrecken. Dies kann eine lange "
-"Zeit dauern undsogar zu einem Timeout führen. Wollen Sie die Suche starten? "
-"Sie können auch abbrechen unddie Suchkriterien weiter einschränken."
+"Zeit dauern und sogar zu einer Zeitüberschreitung führen. Wollen Sie die "
+"Suche starten? Sie können auch abbrechen und die Suchkriterien weiter "
+"einschränken!"
 
 #: privacyidea/static/components/token/views/token.enroll.indexedsecret.html:14
 msgid "Your secret phrase."
@@ -4716,7 +4717,7 @@ msgstr "Yubikey AES Mode: Einmalpasswort mit dem Yubikey."
 #: privacyidea/static/components/token/controllers/tokenControllers.js:203
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud"
 msgstr ""
-"Yubikey Cloud Mode: Die Authentifisierungsanfrage wird an den YubiCloud "
+"Yubikey Cloud Mode: Die Authentifizierungsanfrage wird an den YubiCloud "
 "Dienst weitergeleitet."
 
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:14
@@ -4851,7 +4852,7 @@ msgstr "mOTP-PIN"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:197
 msgid "mOTP: classical mobile One Time Passwords"
-msgstr "mOTP: Klassischer Mobiles Einmal-Passwort."
+msgstr "mOTP: Klassisches Mobiles Einmal-Passwort."
 
 #: privacyidea/static/components/user/views/user.details.html:154
 msgid "maxfail"
@@ -4904,7 +4905,7 @@ msgstr "privacyIDEA Single Page Web Client"
 
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:10
 msgid "privacyIDEA UI is locked"
-msgstr "privacyIDEA UI ist gesperrt."
+msgstr "Die privacyIDEA UI ist gesperrt."
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:33
 msgid "privacyIDEA authentication backend"
@@ -4993,7 +4994,7 @@ msgstr "Fangen Sie an, eine Seriennummer zu tippen."
 
 #: privacyidea/static/components/directives/views/directive.assignuser.html:17
 msgid "start typing a username"
-msgstr "Fangen Sie an, einen Benutzernamen zu tippen."
+msgstr "Geben Sie einen Benutzernamen ein..."
 
 #: privacyidea/static/components/audit/views/audit.log.html:27
 msgid "startdate"
