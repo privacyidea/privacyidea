@@ -137,7 +137,8 @@ To use the correct key in this slot you can either specify the key by providing
 The ``PI_HSM_MODULE_TIMEOUT`` can be used to define an integer value for a HSM lock timeout. The default is 15 seconds.
 
 Using the key ``PI_HSM_MODULE_LOCK_DIR`` you can define a different locking directory.
-The default is ``/dev/shm/pilock/``.
+The default is ``/dev/shm/pilock/``. Note, that the locking directory is created or removed by privacyIDEA
+when acquiring or releasing the lock on the HSM and you must not create this directory manually!
 
 .. note:: Some HSM fail to provide a correct keyid and it is necessary to use the key label.
 
