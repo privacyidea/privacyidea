@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-03-17 16:57+0100\n"
+"POT-Creation-Date: 2022-03-28 12:10+0200\n"
 "PO-Revision-Date: 2022-01-21 06:54+0000\n"
 "Last-Translator: Gennady Oshnurov <gercogoge@mail.ru>\n"
 "Language: ru\n"
@@ -188,27 +188,27 @@ msgstr ""
 "Администратору разрешено удалить токен у пользователя, т.е. отменить "
 "назначение токена."
 
-#: lib/policy.py:1614
+#: lib/policy.py:1613
 msgid "Admin is allowed to import token files."
 msgstr "Администратору разрешено импортировать файлы токенов."
 
-#: lib/policy.py:1619
+#: lib/policy.py:1618
 msgid "Admin is allowed to remove tokens from the database."
 msgstr "Администратору разрешено удалять токены из базы данных."
 
-#: lib/policy.py:1625
+#: lib/policy.py:1624
 msgid "Admin is allowed to view the list of the users."
 msgstr "Администратору разрешено просматривать список пользователей."
 
-#: lib/policy.py:1631
+#: lib/policy.py:1630
 msgid "The Admin is allowed to list the machines."
 msgstr "Администратору разрешено перечислять машины."
 
-#: lib/policy.py:1636
+#: lib/policy.py:1635
 msgid "The Admin is allowed to attach and detach tokens to machines."
 msgstr "Администратору разрешено прикреплять и откреплять токены к машинам."
 
-#: lib/policy.py:1643
+#: lib/policy.py:1642
 msgid ""
 "The Admin is allowed to fetch authentication items of tokens assigned to "
 "machines."
@@ -216,51 +216,52 @@ msgstr ""
 "Администратору разрешено получать элементы аутентификации токенов, "
 "назначенных машинам."
 
-#: lib/policy.py:1648
+#: lib/policy.py:1647
 msgid "Admin is allowed to manage the realms of a token."
 msgstr "Администратору разрешено управлять областями токена."
 
-#: lib/policy.py:1653
+#: lib/policy.py:1652
 msgid "Admin is allowed to list tokens."
 msgstr "Администратору разрешено перечислять токены."
 
-#: lib/policy.py:1657
+#: lib/policy.py:1656
 msgid "Admin is allowed to retrieve a serial for a given OTP value."
 msgstr "Администратору разрешено получать серийный номер для данного значения OTP."
 
-#: lib/policy.py:1662
+#: lib/policy.py:1661
 msgid "Admin is allowed to retrieve random keys from privacyIDEA."
 msgstr "Администратору разрешено извлекать случайные ключи из privacyIDEA."
 
-#: lib/policy.py:1666
+#: lib/policy.py:1665
 msgid "Admin is allowed to copy the PIN of one token to another token."
 msgstr "Администратору разрешено копировать ПИН-код одного токена на другой токен."
 
-#: lib/policy.py:1672
+#: lib/policy.py:1670
+#, fuzzy
 msgid ""
 "Admin is allowed to copy the assigned user to another token, i.e. assign "
-"a user ot another token."
+"a user to another token."
 msgstr ""
 "Администратору разрешено копировать назначенного пользователя на другой "
 "токен, то есть назначать пользователю другой токен."
 
-#: lib/policy.py:1679
+#: lib/policy.py:1676
 msgid "Admin is allowed to trigger the lost token workflow."
 msgstr "Администратору разрешено запускать рабочий процесс по утерянному токену."
 
-#: lib/policy.py:1685
+#: lib/policy.py:1682
 msgid "Admin is allowed to write and modify the system configuration."
 msgstr "Администратору разрешено записывать и изменять конфигурацию системы."
 
-#: lib/policy.py:1690
+#: lib/policy.py:1687
 msgid "Admin is allowed to delete keys in the system configuration."
 msgstr "Администратору разрешено удалять ключи в конфигурации системы."
 
-#: lib/policy.py:1696
+#: lib/policy.py:1693
 msgid "Admin is allowed to read basic system configuration."
 msgstr "Администратору разрешено читать базовую конфигурацию системы."
 
-#: lib/policy.py:1701
+#: lib/policy.py:1698
 msgid ""
 "Admin is allowed to export a documentation of the complete configuration "
 "including resolvers and realm."
@@ -268,33 +269,33 @@ msgstr ""
 "Администратору разрешено экспортировать полную конфигурацию системы, "
 "включая резолверы и область."
 
-#: lib/policy.py:1709
+#: lib/policy.py:1706
 msgid "Admin is allowed to write and modify the policies."
 msgstr "Администратору разрешено создавать и изменять политики."
 
-#: lib/policy.py:1714
+#: lib/policy.py:1711
 msgid "Admin is allowed to delete policies."
 msgstr "Администратору разрешено удалять политики."
 
-#: lib/policy.py:1719
+#: lib/policy.py:1716
 msgid "Admin is allowed to read policies."
 msgstr "Администратору разрешено читать политики."
 
-#: lib/policy.py:1723
+#: lib/policy.py:1720
 msgid "Admin is allowed to write and modify the resolver and realm configuration."
 msgstr ""
 "Администратору разрешено писать и изменять конфигурацию резолвера и "
 "области."
 
-#: lib/policy.py:1730
+#: lib/policy.py:1727
 msgid "Admin is allowed to delete resolvers and realms."
 msgstr "Администратору разрешено удалять резолверы и области."
 
-#: lib/policy.py:1735
+#: lib/policy.py:1732
 msgid "Admin is allowed to read resolvers."
 msgstr "Администратору разрешено просматривать резолверы."
 
-#: lib/policy.py:1739
+#: lib/policy.py:1736
 msgid ""
 "Admin is allowed to create new CA Connector definitions and modify "
 "existing ones."
@@ -302,35 +303,35 @@ msgstr ""
 "Администратору разрешено создавать новые соеденителя УЦ и изменять "
 "существующие."
 
-#: lib/policy.py:1745
+#: lib/policy.py:1742
 msgid "Admin is allowed to delete CA Connector definitions."
 msgstr "Администратору разрешено удалять коннекторы УЦ."
 
-#: lib/policy.py:1750
+#: lib/policy.py:1747
 msgid "Admin is allowed to read CA Connector definitions."
 msgstr "Администратору разрешено просматривать коннекторы УЦ."
 
-#: lib/policy.py:1755
+#: lib/policy.py:1752
 msgid "Admin is allowed to write and modify the machine resolvers."
 msgstr "Администратору разрешено писать и изменять резолверы машин."
 
-#: lib/policy.py:1761
+#: lib/policy.py:1758
 msgid "Admin is allowed to delete machine resolvers."
 msgstr "Администратору разрешено удалять резолверы машин."
 
-#: lib/policy.py:1767
+#: lib/policy.py:1764
 msgid "Admin is allowed to read machine resolvers."
 msgstr "Администратору разрешено просматривать резолверы машин."
 
-#: lib/policy.py:1774 lib/policy.py:2021
+#: lib/policy.py:1771 lib/policy.py:2018
 msgid "Set the maximum allowed length of the OTP PIN."
 msgstr "Установить максимально допустимую длину ПИН-кода OTP."
 
-#: lib/policy.py:1779 lib/policy.py:2026
+#: lib/policy.py:1776 lib/policy.py:2023
 msgid "Set the minimum required length of the OTP PIN."
 msgstr "Установить минимально необходимую длину ПИН-кода OTP."
 
-#: lib/policy.py:1783 lib/policy.py:2030
+#: lib/policy.py:1780 lib/policy.py:2027
 msgid ""
 "Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
@@ -339,129 +340,129 @@ msgstr ""
 "(s)специальные. Используйте модификаторы +/- или список разрешенных "
 "символов [1234567890]"
 
-#: lib/policy.py:1792
+#: lib/policy.py:1789
 msgid "The length of a random PIN set by the administrator."
 msgstr "Длина случайного PIN-кода, установленного администратором."
 
-#: lib/policy.py:1795
+#: lib/policy.py:1792
 msgid "Admin is allowed to view the Audit log."
 msgstr "Администратору разрешено просматривать журнал аудита."
 
-#: lib/policy.py:1799
+#: lib/policy.py:1796
 msgid "The admin will only see audit entries of the last 10d, 3m or 2y."
 msgstr ""
 "Администратор будет видеть записи аудита только за последние 10 дней, 3 "
 "месяца или 2 года."
 
-#: lib/policy.py:1804
+#: lib/policy.py:1801
 msgid "The admin will not see the specified columns in the audit."
 msgstr "Администратор не увидит указанные столбцы в аудите."
 
-#: lib/policy.py:1809
+#: lib/policy.py:1806
 msgid "The admin is allowed to download the complete auditlog."
 msgstr "Администратору разрешено загрузить полный журнал аудита."
 
-#: lib/policy.py:1814
+#: lib/policy.py:1811
 msgid "Admin is allowed to add users in a userstore/UserIdResolver."
 msgstr ""
 "Администратору разрешено добавлять пользователей в хранилище "
 "пользователей."
 
-#: lib/policy.py:1819
+#: lib/policy.py:1816
 msgid "Admin is allowed to update the users data in a userstore."
 msgstr ""
 "Администратору разрешено обновлять данные пользователей в хранилище "
 "пользователей."
 
-#: lib/policy.py:1824
+#: lib/policy.py:1821
 msgid "Admin is allowed to delete a user object in a userstore."
 msgstr ""
 "Администратору разрешено удалять объект пользователя в хранилище "
 "пользователей."
 
-#: lib/policy.py:1829
+#: lib/policy.py:1826
 msgid "Admin is allowed to set the password of the HSM/Security Module."
 msgstr "Администратору разрешено устанавливать пароль для HSM/модуля безопасности."
 
-#: lib/policy.py:1833
+#: lib/policy.py:1830
 msgid "Admin is allowed to retrieve the list of active challenges."
 msgstr "Администратору разрешено получать список активных задач."
 
-#: lib/policy.py:1839
+#: lib/policy.py:1836
 msgid "Admin is allowed to write new SMTP server definitions."
 msgstr "Администратору разрешено писать новые определения SMTP-сервера."
 
-#: lib/policy.py:1844
+#: lib/policy.py:1841
 msgid "Admin is allowed to read SMTP server definitions."
 msgstr "Администратору разрешено просматривать определения SMTP-сервера."
 
-#: lib/policy.py:1849
+#: lib/policy.py:1846
 msgid "Admin is allowed to write new RADIUS server definitions."
 msgstr "Администратору разрешено писать новые определения сервера RADIUS."
 
-#: lib/policy.py:1855
+#: lib/policy.py:1852
 msgid "Admin is allowed to read RADIUS server definitions."
 msgstr "Администратору разрешено просматривать определения сервера RADIUS."
 
-#: lib/policy.py:1860
+#: lib/policy.py:1857
 msgid "Admin is allowed to write remote privacyIDEA server definitions."
 msgstr ""
 "Администратору разрешено писать определения удаленного сервера "
 "privacyIDEA."
 
-#: lib/policy.py:1867
+#: lib/policy.py:1864
 msgid "Admin is allowed to read remote privacyIDEA server definitions."
 msgstr ""
 "Администратору разрешено читать определения удаленного сервера "
 "privacyIDEA."
 
-#: lib/policy.py:1874
+#: lib/policy.py:1871
 msgid "Admin is allowed to write periodic task definitions."
 msgstr "Администратору разрешено писать периодические задачи."
 
-#: lib/policy.py:1879
+#: lib/policy.py:1876
 msgid "Admin is allowed to read periodic task definitions."
 msgstr "Администратору разрешено читать периодические задачи."
 
-#: lib/policy.py:1884
+#: lib/policy.py:1881
 msgid "Admin is allowed to read statistics data."
 msgstr "Администратору разрешено читать статистические данные."
 
-#: lib/policy.py:1887
+#: lib/policy.py:1884
 msgid "Admin is allowed to delete statistics data."
 msgstr "Администратору разрешено удалять статистические данные."
 
-#: lib/policy.py:1890
+#: lib/policy.py:1887
 msgid "Admin is allowed to write and modify the event handling configuration."
 msgstr "Администратору разрешено писать и изменять конфигурацию обработки событий."
 
-#: lib/policy.py:1896
+#: lib/policy.py:1893
 msgid "Admin is allowed to read event handling configuration."
 msgstr "Администратору разрешено просматривать конфигурацию обработки событий."
 
-#: lib/policy.py:1901
+#: lib/policy.py:1898
 msgid "Admin is allowed to write and modify SMS gateway definitions."
 msgstr "Администратору разрешено писать и изменять определения шлюза SMS."
 
-#: lib/policy.py:1907
+#: lib/policy.py:1904
 msgid "Admin is allowed to read SMS gateway definitions."
 msgstr "Администратору разрешено просматривать определения шлюза SMS."
 
-#: lib/policy.py:1912
+#: lib/policy.py:1909
 msgid "Admin is allowed to get the list of authenticated clients and their types."
 msgstr ""
 "Администратору разрешено получать список аутентифицированных клиентов и "
 "их типы."
 
-#: lib/policy.py:1919
+#: lib/policy.py:1916
 msgid "Admin is allowed to add and delete component subscriptions."
 msgstr "Администратору разрешено добавлять и удалять подписки на компоненты."
 
-#: lib/policy.py:1925
+#: lib/policy.py:1922
 msgid "The Admin is allowed to trigger a challenge for e.g. SMS OTP token."
 msgstr "Администратору разрешено инициировать вызов, например, SMS OTP токен."
 
-#: lib/policy.py:1931
+#: lib/policy.py:1928
 msgid ""
 "The Admin is allowed to set certain custom user attributes. If the Admin "
 "should be allowed to set any attribute, set this to '*:*'. For more "
@@ -472,7 +473,7 @@ msgstr ""
 "какой-либо атрибут, установите для него значение '*: *'. Подробности "
 "смотрите в документации."
 
-#: lib/policy.py:1939
+#: lib/policy.py:1936
 msgid ""
 "The Admin is allowed to delete certain custom user attributes. If the "
 "Admin should be allowed to delete any attribute, set this to '*'. For "
@@ -483,13 +484,13 @@ msgstr ""
 "какой-либо атрибут, установите для него значение '*'. Подробности "
 "смотрите в документации."
 
-#: lib/policy.py:1947
+#: lib/policy.py:1944
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the admin."
 msgstr ""
 
-#: lib/policy.py:1955
+#: lib/policy.py:1952
 msgid ""
 "The user is allowed to assign an existing token that is not yet assigned "
 "using the token serial number."
@@ -497,73 +498,73 @@ msgstr ""
 "Пользователь может назначить существующий токен, который еще не назначен,"
 " с использованием серийного номера токена."
 
-#: lib/policy.py:1961
+#: lib/policy.py:1958
 msgid "The user is allowed to disable his own tokens."
 msgstr "Пользователь может отключить свои собственные токены."
 
-#: lib/policy.py:1967
+#: lib/policy.py:1964
 msgid "The user is allowed to enable his own tokens."
 msgstr "Пользователь может активировать свои собственные токены."
 
-#: lib/policy.py:1973
+#: lib/policy.py:1970
 msgid "The user is allowed to delete his own tokens."
 msgstr "Пользователь может удалить свои собственные токены."
 
-#: lib/policy.py:1979
+#: lib/policy.py:1976
 msgid "The user is allowed to unassign his own tokens."
 msgstr "Пользователь может отключить свои собственные токены."
 
-#: lib/policy.py:1984
+#: lib/policy.py:1981
 msgid "The user is allowed to resyncronize his tokens."
 msgstr "Пользователь может повторно синхронизировать свои собственные токены."
 
-#: lib/policy.py:1989
+#: lib/policy.py:1986
 msgid "The user is allowed to revoke a token"
 msgstr "Пользователь может отозвать токен"
 
-#: lib/policy.py:1994
+#: lib/policy.py:1991
 msgid "The user is allowed to reset the failcounter of his tokens."
 msgstr "Пользователь может обнулить счетчик ошибок своего токена."
 
-#: lib/policy.py:1999
+#: lib/policy.py:1996
 msgid "The user is allowed to set the OTP PIN of his tokens."
 msgstr "Пользователь может установить PIN своих токенов."
 
-#: lib/policy.py:2004
+#: lib/policy.py:2001
 msgid "The user is allowed to set a random OTP PIN of his tokens."
 msgstr "Пользователь может установить случайный PIN своих токенов."
 
-#: lib/policy.py:2009
+#: lib/policy.py:2006
 msgid "The length of a random PIN set by the user."
 msgstr "Длина случайного PIN-кода устанавливается пользователем."
 
-#: lib/policy.py:2012
+#: lib/policy.py:2009
 msgid "The user is allowed to set the token description."
 msgstr "Пользователь может указать описание токена."
 
-#: lib/policy.py:2016
+#: lib/policy.py:2013
 msgid "The user is allowed to set the OTP PIN during enrollment."
 msgstr "Пользователь может указать PIN-код во время создания токена."
 
-#: lib/policy.py:2039
+#: lib/policy.py:2036
 msgid "Allow the user to view his own token history."
 msgstr "Позволить пользователю просматривать историю собственных токенов."
 
-#: lib/policy.py:2042
+#: lib/policy.py:2039
 msgid "The user will only see audit entries of the last 10d, 3m or 2y."
 msgstr ""
 "Пользователь будет видеть записи аудита за последние 10 дней, 3 месяца "
 "или 2 года."
 
-#: lib/policy.py:2046
+#: lib/policy.py:2043
 msgid "The user will not see the specified columns in the audit."
 msgstr "Пользователь не будет видеть указанные поля на странице аудита."
 
-#: lib/policy.py:2051
+#: lib/policy.py:2048
 msgid "The user is allowed to view his own user information."
 msgstr "Пользователь может видеть информацию о своей учетной записи."
 
-#: lib/policy.py:2055
+#: lib/policy.py:2052
 msgid ""
 "The user is allowed to update his own user information, like changing his"
 " password."
@@ -571,11 +572,11 @@ msgstr ""
 "Пользователь может обновлять информацию о себе, например менять "
 "собственный пароль."
 
-#: lib/policy.py:2060
+#: lib/policy.py:2057
 msgid "The user is allowed to do a password reset in an editable UserIdResolver."
 msgstr "Пользователь может сбрасывать пароль в редактируемом UserIdResolver."
 
-#: lib/policy.py:2066
+#: lib/policy.py:2063
 msgid ""
 "The user is allowed to set certain custom user attributes. If the user "
 "should be allowed to set any attribute, set this to '*:*'. Use '*' with "
@@ -585,7 +586,7 @@ msgstr ""
 "'*:*' если пользователю должно быть доступно изменение любых атрибутов. "
 "Используйте '*' с ОСТОРОЖНОСТЬЮ! Подробности в документации."
 
-#: lib/policy.py:2074
+#: lib/policy.py:2071
 msgid ""
 "The user is allowed to delete certain custom user attributes. If the user"
 " should be allowed to delete any attribute, set this to '*'. Use '*' with"
@@ -595,25 +596,25 @@ msgstr ""
 "'*:*' если пользователю должно быть доступно удаление любых атрибутов. "
 "Используйте '*' с ОСТОРОЖНОСТЬЮ! Подробности в документации."
 
-#: lib/policy.py:2082
+#: lib/policy.py:2079
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the user."
 msgstr ""
 
-#: lib/policy.py:2090
+#: lib/policy.py:2087
 msgid "Limit the number of allowed tokens in a realm."
 msgstr "Ограничить количество допустимых токенов при realm."
 
-#: lib/policy.py:2094
+#: lib/policy.py:2091
 msgid "Limit the number of tokens a user may have assigned."
 msgstr "Ограничить количество токенов пользователя."
 
-#: lib/policy.py:2099
+#: lib/policy.py:2096
 msgid "Limit the number of active tokens a user may have assigned."
 msgstr "Ограничить количество активных допустимых токенов пользователя."
 
-#: lib/policy.py:2104
+#: lib/policy.py:2101
 msgid ""
 "Set a random OTP PIN with this length for a token during the enrollment "
 "process."
@@ -621,13 +622,13 @@ msgstr ""
 "При регистрации токена установить случайный PIN-код с этим количеством "
 "символов."
 
-#: lib/policy.py:2109
+#: lib/policy.py:2106
 msgid "In case of a random OTP PIN use this python module to process the PIN."
 msgstr ""
 "Использовать модуль на языке Python для формирования PIN-кода если "
 "используется случайный PIN-код."
 
-#: lib/policy.py:2114
+#: lib/policy.py:2111
 msgid ""
 "If the administrator sets the OTP PIN during enrollment or later, the "
 "user will have to change the PIN during first use."
@@ -635,7 +636,7 @@ msgstr ""
 "Если администратор установил PIN во время формирования или позже, то "
 "пользователю должен поменять его при первом использовании."
 
-#: lib/policy.py:2121
+#: lib/policy.py:2118
 msgid ""
 "The user needs to change his PIN on a regular basis. To change the PIN "
 "every 180 days, enter '180d'."
@@ -643,7 +644,7 @@ msgstr ""
 "Пользователь менять его PIN на регулярной основе. Для смены PIN каждые "
 "180 дней введите '180d'."
 
-#: lib/policy.py:2128
+#: lib/policy.py:2125
 msgid ""
 "The OTP PIN can be hashed or encrypted. Hashing the PIN is the default "
 "behaviour."
@@ -651,7 +652,7 @@ msgstr ""
 "PIN-код может быть хэширован или шифрован. Хэширование PIN-кода включено "
 "по умолчанию."
 
-#: lib/policy.py:2133
+#: lib/policy.py:2130
 msgid ""
 "Set label for a new enrolled Google Authenticator. Possible tags are <u> "
 "(user), <r> (realm), <s> (serial)."
@@ -659,15 +660,15 @@ msgstr ""
 "Введите название для сформированного токена в Google Authenticator. "
 "Возможные метки - <u> (пользователь), <r> - realm, <s> (серийный номер)."
 
-#: lib/policy.py:2139
+#: lib/policy.py:2136
 msgid "This is the issuer label for new enrolled Google Authenticators."
 msgstr "Название издателя для новых токенов Google Authenticator."
 
-#: lib/policy.py:2145
+#: lib/policy.py:2142
 msgid "This is the URL to the token image for smartphone apps like FreeOTP."
 msgstr "Ссылка на изображение токена для приложения смартфона, например FreeOTP."
 
-#: lib/policy.py:2152
+#: lib/policy.py:2149
 msgid ""
 "Users can assign a token just by using the unassigned token to "
 "authenticate."
@@ -675,25 +676,25 @@ msgstr ""
 "Пользователи могут добавить токен только используя отключенные токены для"
 " аутентификации."
 
-#: lib/policy.py:2158
+#: lib/policy.py:2155
 msgid "The length of the password in case of temporary token (lost token)."
 msgstr "Длина пароля в случае временного токена (токен утерян)."
 
-#: lib/policy.py:2162
+#: lib/policy.py:2159
 msgid ""
 "The contents of the temporary password, described by the characters C, c,"
 " n, s, 8."
 msgstr "Состав временного пароля, описанное символами C, c, n, s, 8."
 
-#: lib/policy.py:2167
+#: lib/policy.py:2164
 msgid "The length of the validity for the temporary token (in days)."
 msgstr "Срок действия временного токена (в днях)."
 
-#: lib/policy.py:2172
+#: lib/policy.py:2169
 msgid "Set the length of registration codes."
 msgstr "Установить длину кодов регистрации."
 
-#: lib/policy.py:2176
+#: lib/policy.py:2173
 msgid ""
 "Specify the required contents of the registration code. (c)haracters, "
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
@@ -703,12 +704,12 @@ msgstr ""
 "(s)pecial. Используйте модификаторы +/- или список допустимых символов "
 "[1234567890]"
 
-#: lib/policy.py:2185
+#: lib/policy.py:2182
 #, fuzzy
 msgid "Set the length of the password of generated password tokens."
 msgstr "Длина пароля в случае временного токена (токен утерян)."
 
-#: lib/policy.py:2189
+#: lib/policy.py:2186
 #, fuzzy
 msgid ""
 "Specify the required contents of the password of a password token. "
@@ -719,7 +720,7 @@ msgstr ""
 "(s)специальные. Используйте модификаторы +/- или список разрешенных "
 "символов [1234567890]"
 
-#: lib/policy.py:2197
+#: lib/policy.py:2194
 #, fuzzy
 msgid ""
 "Specify a white space separated list of token types, that should be "
@@ -728,7 +729,7 @@ msgstr ""
 "Список типов токенов, которые могут использоваться для ответа, "
 "разделенный пробелами."
 
-#: lib/policy.py:2206
+#: lib/policy.py:2203
 msgid ""
 "Either use the Token PIN , use the Userstore Password or use no fixed "
 "password component."
@@ -736,7 +737,7 @@ msgstr ""
 "Используйте PIN-код для токена, или пользовательский пароль, или "
 "нефиксированную часть пароля."
 
-#: lib/policy.py:2211
+#: lib/policy.py:2208
 msgid ""
 "This is a whitespace separated list of tokentypes, that can be used with "
 "challenge response."
@@ -744,7 +745,7 @@ msgstr ""
 "Список типов токенов, которые могут использоваться для ответа, "
 "разделенный пробелами."
 
-#: lib/policy.py:2216
+#: lib/policy.py:2213
 msgid ""
 "Use an alternate challenge text for telling the user to enter an OTP "
 "value."
@@ -752,38 +753,38 @@ msgstr ""
 "Использовать альтернативный текст для запроса пользователя на ввод "
 "значения OTP-кода."
 
-#: lib/policy.py:2221
+#: lib/policy.py:2218
 msgid ""
 "If there are several different challenges, this text precedes the list of"
 " the challenge texts."
 msgstr ""
 
-#: lib/policy.py:2226
+#: lib/policy.py:2223
 msgid ""
 "If there are several different challenges, this text follows the list of "
 "the challenge texts."
 msgstr ""
 
-#: lib/policy.py:2231
+#: lib/policy.py:2228
 msgid ""
 "If the PIN of a token is to be changed, this will allow the user to "
 "change the PIN during a validate/check request via challenge / response."
 msgstr ""
 
-#: lib/policy.py:2236
+#: lib/policy.py:2233
 msgid ""
 "The autoresync of a token can be done via a challenge response "
 "message.You need to activate 'Automatic resync' in the general settings!"
 msgstr ""
 
-#: lib/policy.py:2242
+#: lib/policy.py:2239
 msgid ""
 "If set, the user in this realm will be authenticated against the "
 "userstore or against the given RADIUS config, if the user has no tokens "
 "assigned."
 msgstr ""
 
-#: lib/policy.py:2249
+#: lib/policy.py:2246
 msgid ""
 "This allows to automatically assign a Token within privacyIDEA, if the "
 "user was authenticated via passthru against a RADIUS server. The OTP "
@@ -791,44 +792,44 @@ msgid ""
 "length of the OTP value and where the PIN is set like 8:pin or pin:6."
 msgstr ""
 
-#: lib/policy.py:2256
+#: lib/policy.py:2253
 msgid ""
 "If the user has no token, the authentication request for this user will "
 "always be true."
 msgstr ""
 
-#: lib/policy.py:2261
+#: lib/policy.py:2258
 msgid ""
 "If the user user does not exist, the authentication request for this non-"
 "existing user will always be true."
 msgstr ""
 
-#: lib/policy.py:2267
+#: lib/policy.py:2264
 msgid ""
 "Can be used to modify the parameters pass, user and realm in an "
 "authentication request. See the documentation for an example."
 msgstr ""
 
-#: lib/policy.py:2273
+#: lib/policy.py:2270
 msgid ""
 "If a user authenticates successfully reset the failcounter of all of his "
 "tokens."
 msgstr ""
 
-#: lib/policy.py:2278
+#: lib/policy.py:2275
 msgid ""
 "Cache the password used for authentication and allow authentication with "
 "the same credentials for a certain amount of time. Specify timeout like "
 "4h or 4h/5m."
 msgstr ""
 
-#: lib/policy.py:2287
+#: lib/policy.py:2284
 msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
 msgstr ""
 
-#: lib/policy.py:2294
+#: lib/policy.py:2291
 msgid ""
 "Allow the application to choose which token types should be used for "
 "authentication. Application may set the parameter 'type' in the request. "
@@ -836,93 +837,93 @@ msgid ""
 "validate/triggerchallenge."
 msgstr ""
 
-#: lib/policy.py:2301
+#: lib/policy.py:2298
 msgid ""
 "You can specify how many successful authentication requests a user is "
 "allowed to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h "
 "being second, minute and hour."
 msgstr ""
 
-#: lib/policy.py:2309
+#: lib/policy.py:2306
 msgid ""
 "You can specify how many failed authentication requests a user is allowed"
 " to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h being "
 "second, minute and hour."
 msgstr ""
 
-#: lib/policy.py:2317
+#: lib/policy.py:2314
 msgid ""
 "You can specify in which time frame the user needs to authenticate again "
 "with this token. If the user authenticates later, authentication will "
 "fail. Specify like 30h, 7d or 1y."
 msgstr ""
 
-#: lib/policy.py:2325
+#: lib/policy.py:2322
 msgid "The user will only be authenticated with this very tokentype."
 msgstr ""
 
-#: lib/policy.py:2332
+#: lib/policy.py:2329
 msgid ""
 "The user will only be authenticated if the serial number of the token "
 "matches this regexp."
 msgstr ""
 
-#: lib/policy.py:2338
+#: lib/policy.py:2335
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
 "regexp. key/<regexp>/"
 msgstr ""
 
-#: lib/policy.py:2345
+#: lib/policy.py:2342
 msgid ""
 "The Realm of the user is set to this very realm. This is important if the"
 " user is not contained in the default realm and can not pass his realm."
 msgstr ""
 
-#: lib/policy.py:2352
+#: lib/policy.py:2349
 msgid ""
 "In case of successful authentication additional no detail information "
 "will be returned."
 msgstr ""
 
-#: lib/policy.py:2358
+#: lib/policy.py:2355
 msgid ""
 "In case of failed authentication additional no detail information will be"
 " returned."
 msgstr ""
 
-#: lib/policy.py:2364
+#: lib/policy.py:2361
 msgid ""
 "In case of successful authentication user data will be added in the "
 "detail branch of the authentication response."
 msgstr ""
 
-#: lib/policy.py:2371
+#: lib/policy.py:2368
 msgid ""
 "In case of successful authentication the user resolver and realm will be "
 "added in the detail branch of the authentication response."
 msgstr ""
 
-#: lib/policy.py:2378
+#: lib/policy.py:2375
 msgid ""
 "The sending of an API Auth Key is required duringauthentication. This "
 "avoids rogue authenticate requests against the /validate/check interface."
 msgstr ""
 
-#: lib/policy.py:2388
+#: lib/policy.py:2385
 msgid ""
 "If set, administrators will see a dashboard as start screen when logging "
 "in to privacyIDEA WebUI."
 msgstr ""
 
-#: lib/policy.py:2393
+#: lib/policy.py:2390
 msgid ""
 "If set to \"privacyIDEA\" the users and admins need to authenticate "
 "against privacyIDEA when they log in to the Web UI. Defaults to "
 "\"userstore\"."
 msgstr ""
 
-#: lib/policy.py:2402
+#: lib/policy.py:2399
 msgid ""
 "An alternative text to display on the WebUI login dialog instead of "
 "\"Please sign in\"."
@@ -930,25 +931,25 @@ msgstr ""
 "Альтернативный текст для отображения на странице авторизации вместо "
 "\"Пожалуйста авторизуйтесь\"."
 
-#: lib/policy.py:2406
+#: lib/policy.py:2403
 msgid ""
 "When searching in the user list, the search will only performed when "
 "pressing enter."
 msgstr ""
 
-#: lib/policy.py:2411
+#: lib/policy.py:2408
 msgid ""
 "The action taken when a user is idle beyond the logout_time limit. "
 "Defaults to \"lockscreen\"."
 msgstr ""
 
-#: lib/policy.py:2419
+#: lib/policy.py:2416
 msgid ""
 "The REMOTE_USER set by the webserver can be used to login to privacyIDEA "
 "or it will be ignored. Defaults to \"disable\"."
 msgstr ""
 
-#: lib/policy.py:2425
+#: lib/policy.py:2422
 msgid ""
 "Set the time in seconds after which the user will be logged out from the "
 "WebUI. Default: 120"
@@ -956,64 +957,64 @@ msgstr ""
 "Количество секунд до завершения автоматического выхода пользователя из "
 "WebUI. По умолчанию: 120"
 
-#: lib/policy.py:2430
+#: lib/policy.py:2427
 msgid "Set how many tokens should be displayed in the token view on one page."
 msgstr ""
 
-#: lib/policy.py:2435
+#: lib/policy.py:2432
 msgid "Set how many users should be displayed in the user view on one page."
 msgstr ""
 
-#: lib/policy.py:2440
+#: lib/policy.py:2437
 msgid "Use your own html template for the web UI menu."
 msgstr ""
 
-#: lib/policy.py:2444
+#: lib/policy.py:2441
 msgid "Use your own html template for the web UI baseline/footer."
 msgstr ""
 
-#: lib/policy.py:2448
+#: lib/policy.py:2445
 msgid "Link your privacy statement to be displayed in the baseline/footer."
 msgstr ""
 
-#: lib/policy.py:2452
+#: lib/policy.py:2449
 msgid ""
 "Whether the user ID and the resolver should be displayed in the token "
 "list."
 msgstr ""
 
-#: lib/policy.py:2457
+#: lib/policy.py:2454
 msgid ""
 "The URL of a repository, where the policy templates can be found.  "
 "(Default https: //raw.githubusercontent.com/ privacyidea/policy-templates"
 " /master/templates/)"
 msgstr ""
 
-#: lib/policy.py:2464
+#: lib/policy.py:2461
 msgid "As long as a user has no token, he will only see a token wizard in the UI."
 msgstr ""
 
-#: lib/policy.py:2469
+#: lib/policy.py:2466
 msgid ""
 "The tokenwizard will be displayed in the token menu, even if the user "
 "already has a token."
 msgstr ""
 
-#: lib/policy.py:2474
+#: lib/policy.py:2471
 msgid ""
 "This is a whitespace separated list of tokentypes, for which a rollover "
 "button is displayed in the token details."
 msgstr ""
 
-#: lib/policy.py:2481
+#: lib/policy.py:2478
 msgid "The welcome dialog will be displayed if the user has no tokens assigned."
 msgstr ""
 
-#: lib/policy.py:2485
+#: lib/policy.py:2482
 msgid "This is the default token type in the token enrollment dialog."
 msgstr "Данный тип токена будет установлен по умолчанию в окне генерации."
 
-#: lib/policy.py:2491
+#: lib/policy.py:2488
 msgid ""
 "A list of realm names, which are displayed in a drop down menu in the "
 "WebUI login screen. Realms are separated by white spaces."
@@ -1021,7 +1022,7 @@ msgstr ""
 "Список имён realm, отображаемых в выпадающем меню на экране авторизации в"
 " WebUI. Значения разделяются пробелами."
 
-#: lib/policy.py:2497
+#: lib/policy.py:2494
 msgid ""
 "If this checked, the administrator will not see the welcome dialog "
 "anymore."
@@ -1029,23 +1030,23 @@ msgstr ""
 "Если отмечено, то приветственный диалог не будет отображаться для "
 "администратора."
 
-#: lib/policy.py:2502
+#: lib/policy.py:2499
 msgid ""
 "Per default disabled actions result in disabled buttons. When checking "
 "this action, buttons of disabled actions are hidden."
 msgstr ""
 
-#: lib/policy.py:2507
+#: lib/policy.py:2504
 msgid "If this is checked, the seed will be displayed as text during enrollment."
 msgstr ""
 
-#: lib/policy.py:2512
+#: lib/policy.py:2509
 msgid ""
 "If this is checked, the privacyIDEA Node name will be displayed in the "
 "menu bar."
 msgstr "Показывать название ноды privacyIDEA в меню."
 
-#: lib/policy.py:2517
+#: lib/policy.py:2514
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens "
 "will contain a QR code that leads to the privacyIDEA Authenticator in the"
@@ -1055,7 +1056,7 @@ msgstr ""
 "Push-токена будет содержать QR-код, ведущий на приложение privacyIDEA "
 "Authenticator в магазине Google Play."
 
-#: lib/policy.py:2524
+#: lib/policy.py:2521
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens "
 "will contain a QR code that leads to the privacyIDEA Authenticator in the"
@@ -1065,7 +1066,7 @@ msgstr ""
 "Push-токена будет содержать QR-код, ведущий на приложение privacyIDEA "
 "Authenticator в магазине iOS App Store."
 
-#: lib/policy.py:2531
+#: lib/policy.py:2528
 msgid ""
 "This action adds a QR code in the enrollment page for HOTP, TOTP and Push"
 " tokens, that lead to this given URL."
@@ -1073,31 +1074,31 @@ msgstr ""
 "Это действие добавляет QR-код на страницу формирования HOTP, TOTP и Push "
 "токенов, который ведет на указанный URL."
 
-#: lib/policy.py:2576
+#: lib/policy.py:2573
 msgid ""
 "The policy only matches if certain conditions on the user info are "
 "fulfilled."
 msgstr ""
 
-#: lib/policy.py:2579
+#: lib/policy.py:2576
 msgid ""
 "The policy only matches if certain conditions of the token attributes are"
 " fulfilled."
 msgstr ""
 
-#: lib/policy.py:2582
+#: lib/policy.py:2579
 msgid ""
 "The policy only matches if certain conditions on the token info are "
 "fulfilled."
 msgstr ""
 
-#: lib/policy.py:2585
+#: lib/policy.py:2582
 msgid ""
 "The policy only matches if certain conditions on the HTTP Request header "
 "are fulfilled."
 msgstr ""
 
-#: lib/policy.py:2588
+#: lib/policy.py:2585
 msgid ""
 "The policy only matches if certain conditions on the HTTP Environment are"
 " fulfilled."
@@ -1819,41 +1820,45 @@ msgstr ""
 
 #: lib/tokens/emailtoken.py:165
 msgid ""
-"The text that will be sent via EMail for an EMail token. Use <otp> and "
-"<serial> as parameters. You may also specify a filename as email template"
-" starting with \"file:\"."
+"The text that will be sent via EMail for an EMail-token. Several tags "
+"like {otp} and {serial} can be used as parameters. You may also specify a"
+" filename as email template starting with \"file:\"."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:171
+#: lib/tokens/emailtoken.py:172
 msgid ""
-"The subject of the EMail for an EMail token. Use <otp> and <serial> as "
-"parameters."
+"The subject of the EMail for an EMail token. Use tags like {otp} and "
+"{serial} as parameters."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:176
+#: lib/tokens/emailtoken.py:177
 msgid ""
 "If set, a new EMail OTP will be sent after successful authentication with"
 " one EMail OTP."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:181
+#: lib/tokens/emailtoken.py:182
 msgid ""
 "Use an alternate challenge text for telling the user to enter the code "
 "from the eMail."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:188
+#: lib/tokens/emailtoken.py:189
 msgid "The user may only have this maximum number of email tokens assigned."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:193
+#: lib/tokens/emailtoken.py:194
 msgid ""
 "The user may only have this maximum number of active email tokens "
 "assigned."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:275
+#: lib/tokens/emailtoken.py:276
 msgid "Enter the OTP from the Email:"
+msgstr ""
+
+#: lib/tokens/emailtoken.py:313
+msgid "The PIN was correct, but the EMail could not be sent!"
 msgstr ""
 
 #: lib/tokens/foureyestoken.py:132
@@ -2189,8 +2194,8 @@ msgstr ""
 
 #: lib/tokens/smstoken.py:210
 msgid ""
-"The text that will be send via SMS for an SMS token. Use <otp> and "
-"<serial> as parameters."
+"The text that will be send via SMS for an SMS token. Use tags like {otp} "
+"and {serial} as parameters."
 msgstr ""
 
 #: lib/tokens/smstoken.py:215
@@ -2223,6 +2228,10 @@ msgstr ""
 
 #: lib/tokens/smstoken.py:324
 msgid "Enter the OTP from the SMS:"
+msgstr ""
+
+#: lib/tokens/smstoken.py:354
+msgid "The PIN was correct, but the SMS could not be sent!"
 msgstr ""
 
 #: lib/tokens/spasstoken.py:87
@@ -2547,5 +2556,25 @@ msgid ""
 msgstr ""
 
 #~ msgid "The Yubikey access code used to initialize Yubikeys."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The text that will be sent via "
+#~ "EMail for an EMail token. Use "
+#~ "<otp> and <serial> as parameters. You"
+#~ " may also specify a filename as "
+#~ "email template starting with \"file:\"."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The subject of the EMail for an"
+#~ " EMail token. Use <otp> and <serial>"
+#~ " as parameters."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The text that will be send via "
+#~ "SMS for an SMS token. Use <otp>"
+#~ " and <serial> as parameters."
 #~ msgstr ""
 
