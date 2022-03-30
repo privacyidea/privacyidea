@@ -1,6 +1,4 @@
-Version 3.7dev6, 2022-03-29
-
-  Release Candidate / combined changelog
+Version 3.7, 2022-03-31
 
   Features:
   * Allow Offline Token without assigning to a specific IP address (#2926)
