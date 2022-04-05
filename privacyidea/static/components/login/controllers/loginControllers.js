@@ -240,7 +240,7 @@ angular.module("privacyideaApp")
                     "Authentication. You" +
                     " are not completely authenticated, yet."),
                     {type: "warning", ttl:5000});
-                $scope.hideResponseInput = true;
+                $scope.hideResponseInput = false;
                 $scope.u2fSignRequests = Array();
                 $scope.webAuthnSignRequests = [];
                 $scope.transactionid = error.detail["transaction_id"];
@@ -260,8 +260,8 @@ angular.module("privacyideaApp")
                     }
                     let challenge = multi_challenge[i];
                     let attributes = challenge.attributes ? challenge.attributes : null;
-                    if (challenge === null || (attributes && attributes.hideResponseInput !== true)) {
-                        $scope.hideResponseInput = false;
+                    if (attributes && attributes.hideResponseInput) {
+                        $scope.hideResponseInput = attributes.hideResponseInput;
                     }
                     if (challenge !== null) {
                         if (attributes && attributes.u2fSignRequest) {
