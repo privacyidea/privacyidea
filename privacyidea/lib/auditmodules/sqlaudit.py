@@ -419,7 +419,7 @@ class Audit(AuditBase):
         """
         filter_condition = self._create_filter(param,
                                                timelimit=timelimit)
-        logentries = self.session.query(LogEntry).filter(filter_condition).all()
+        logentries = self.session.query(LogEntry).filter(filter_condition).order_by(LogEntry.date).all()
 
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
