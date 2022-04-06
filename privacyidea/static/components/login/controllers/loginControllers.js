@@ -240,7 +240,7 @@ angular.module("privacyideaApp")
                     "Authentication. You" +
                     " are not completely authenticated, yet."),
                     {type: "warning", ttl:5000});
-                $scope.hideResponseInput = false;
+                $scope.hideResponseInput = true;
                 $scope.u2fSignRequests = Array();
                 $scope.webAuthnSignRequests = [];
                 $scope.transactionid = error.detail["transaction_id"];
@@ -259,13 +259,14 @@ angular.module("privacyideaApp")
                         $scope.challenge_message = $scope.challenge_message + ' ' + multi_challenge[i].serial;
                     }
                     let challenge = multi_challenge[i];
-                    let attributes = challenge.attributes ? challenge.attributes : null;
-                    if (attributes && attributes.hideResponseInput) {
-                        $scope.hideResponseInput = attributes.hideResponseInput;
-                    }
                     if (challenge !== null) {
+                        if (challenge.client_mode === 'interactive') {
+                            // if we have at least one interactive token, we need to shoe the input field
+                            $scope.hideResponseInput = false;
+                        }
+                        let attributes = challenge.attributes ? challenge.attributes : null;
                         if (attributes && attributes.u2fSignRequest) {
-                           $scope.u2fSignRequests.push(attributes.u2fSignRequest);
+                            $scope.u2fSignRequests.push(attributes.u2fSignRequest);
                         }
                         if (attributes && attributes.webAuthnSignRequest) {
                             $scope.webAuthnSignRequests.push(attributes.webAuthnSignRequest);
