@@ -1,5 +1,14 @@
 # Update Notes
 
+## Update from 3.6 to 3.7
+
+* The database schema in table "machinetoken" was changed to support a new way of 
+  handling offline tokens.
+* The notification handler can contain more complex reply_to emails.
+  The handler optiones were adapted in the database.
+
+Be sure to run the schema update script!
+
 ## Update from 3.5 to 3.6
 
 * Up to version 3.5 TLS autonegotiation was used for LDAP resolvers, if no specific
