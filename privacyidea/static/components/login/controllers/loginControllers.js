@@ -261,7 +261,7 @@ angular.module("privacyideaApp")
                     let challenge = multi_challenge[i];
                     if (challenge !== null) {
                         if (challenge.client_mode === 'interactive') {
-                            // if we have at least one interactive token, we need to shoe the input field
+                            // if we have at least one interactive token, we need to show the input field
                             $scope.hideResponseInput = false;
                         }
                         let attributes = challenge.attributes ? challenge.attributes : null;
