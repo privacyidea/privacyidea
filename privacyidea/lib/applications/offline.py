@@ -171,7 +171,7 @@ class MachineApplication(MachineApplicationBase):
                 if user_object:
                     uInfo = user_object.info
                     if "username" in uInfo:
-                        ret["username"] = uInfo.get("username")
+                        ret["user"] = ret["username"] = uInfo.get("username")
 
         else:
             log.info("Token %r, type %r is not supported by "
@@ -185,4 +185,4 @@ class MachineApplication(MachineApplicationBase):
         returns a dictionary with a list of required and optional options
         """
         return {'required': [],
-                'optional': ['user', 'count', 'rounds']}
+                'optional': ['count', 'rounds']}
