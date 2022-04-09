@@ -43,6 +43,7 @@ import threading
 from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
                       save_config_timestamp, Policy, EventHandler)
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
 from privacyidea.lib.utils import to_list
 from privacyidea.lib.utils.export import (register_import, register_export)
@@ -450,6 +451,9 @@ def get_token_class(tokentype):
         if tclass.get_class_type().lower() == tokentype.lower():
             tokenclass = tclass
             break
+
+    if tokenclass is None:
+        raise ParameterError(u"Invalid tokentype provided. ttype: {}".format(tokentype.lower()))
 
     return tokenclass
 
