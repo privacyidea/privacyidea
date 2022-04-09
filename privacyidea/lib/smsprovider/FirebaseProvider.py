@@ -124,6 +124,10 @@ class FirebaseProvider(ISMSProvider):
             "message": {
                         "data": data,
                         "token": firebase_token,
+                        "notification": {
+                            "title": data.get("title"),
+                            "body": data.get("question")
+                        },
                         "android": {
                                     "priority": "HIGH",
                                     "ttl": "120s",
