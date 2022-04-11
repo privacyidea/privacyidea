@@ -58,6 +58,24 @@ def _create_credential_mock():
                           access_token='my_new_bearer_token')
 
 
+def _check_firebase_params(request):
+    payload = json.loads(request.body)
+    # check the signature in the payload!
+    data = payload.get("message").get("data")
+
+    sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**data)
+    token_obj = get_tokens(serial=data.get("serial"))[0]
+    pem_pubkey = token_obj.get_tokeninfo(PUBLIC_KEY_SERVER)
+    pubkey_obj = load_pem_public_key(to_bytes(pem_pubkey), backend=default_backend())
+    signature = b32decode(data.get("signature"))
+    # If signature does not match it will raise InvalidSignature exception
+    pubkey_obj.verify(signature, sign_string.encode("utf8"),
+                      padding.PKCS1v15(),
+                      hashes.SHA256())
+    headers = {'request-id': '728d329e-0e86-11e4-a748-0c84dc037c13'}
+    return (200, headers, json.dumps({}))
+
+
 class PushTokenTestCase(MyTestCase):
 
     serial1 = "PUSH00001"
@@ -592,23 +610,6 @@ class PushTokenTestCase(MyTestCase):
         tokenobj.set_pin("pushpin")
         tokenobj.add_user(User("cornelius", self.realm1))
 
-        def check_firebase_params(request):
-            payload = json.loads(request.body)
-            # check the signature in the payload!
-            data = payload.get("message").get("data")
-
-            sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**data)
-            token_obj = get_tokens(serial=data.get("serial"))[0]
-            pem_pubkey = token_obj.get_tokeninfo(PUBLIC_KEY_SERVER)
-            pubkey_obj = load_pem_public_key(to_bytes(pem_pubkey), backend=default_backend())
-            signature = b32decode(data.get("signature"))
-            # If signature does not match it will raise InvalidSignature exception
-            pubkey_obj.verify(signature, sign_string.encode("utf8"),
-                              padding.PKCS1v15(),
-                              hashes.SHA256())
-            headers = {'request-id': '728d329e-0e86-11e4-a748-0c84dc037c13'}
-            return (200, headers, json.dumps({}))
-
         # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
                         '.from_service_account_file') as mySA:
@@ -617,7 +618,7 @@ class PushTokenTestCase(MyTestCase):
 
             # add responses, to simulate the communication to firebase
             responses.add_callback(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
-                          callback=check_firebase_params,
+                          callback=_check_firebase_params,
                           content_type="application/json")
 
             # Send the first authentication request to trigger the challenge
@@ -760,6 +761,75 @@ class PushTokenTestCase(MyTestCase):
             jsonresp = res.json
             # Result-Value is True
             self.assertTrue(jsonresp.get("result").get("value"))
+
+    def test_04_decline_auth_request(self):
+        # get enrolled push token
+        toks = get_tokens(tokentype="push")
+        self.assertEqual(len(toks), 1)
+        tokenobj = toks[0]
+
+        # set PIN
+        tokenobj.set_pin("pushpin")
+        tokenobj.add_user(User("cornelius", self.realm1))
+
+        # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
+                        '.from_service_account_file') as mySA:
+            # alternative: side_effect instead of return_value
+            mySA.from_json_keyfile_name.return_value = _create_credential_mock()
+
+            # add responses, to simulate the communication to firebase
+            responses.add_callback(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                                   callback=_check_firebase_params,
+                                   content_type="application/json")
+
+            # Send the first authentication request to trigger the challenge
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                jsonresp = res.json
+                self.assertFalse(jsonresp.get("result").get("value"))
+                self.assertTrue(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+                self.assertTrue("transaction_id" in jsonresp.get("detail"))
+                transaction_id = jsonresp.get("detail").get("transaction_id")
+
+            # Our ServiceAccountCredentials mock has not been called because we use a cached token
+            self.assertEqual(len(mySA.from_json_keyfile_name.mock_calls), 0)
+            self.assertIn(FIREBASE_FILE, get_app_local_store()["firebase_token"])
+
+        # The challenge is sent to the smartphone via the Firebase service, so we do not know
+        # the challenge from the /validate/check API.
+        # So lets read the challenge from the database!
+
+        challengeobject_list = get_challenges(serial=tokenobj.token.serial,
+                                              transaction_id=transaction_id)
+        challenge = challengeobject_list[0].challenge
+
+        sign_data = "{0!s}|{1!s}|decline".format(challenge, tokenobj.token.serial)
+        signature = b32encode_and_unicode(
+            self.smartphone_private_key.sign(sign_data.encode("utf-8"),
+                                             padding.PKCS1v15(),
+                                             hashes.SHA256()))
+        # Now decline the auth request
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": challenge,
+                                                 "decline": 1,
+                                                 "signature": signature}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            self.assertTrue(res.json['result']['value'])
+        # check, that the challenge does not exist anymore.
+        challengeobject_list = get_challenges(serial=tokenobj.token.serial,
+                                              transaction_id=transaction_id)
+        self.assertEqual(0, len(challengeobject_list))
 
     def test_05_strip_key(self):
         stripped_pubkey = strip_key(self.smartphone_public_key_pem)

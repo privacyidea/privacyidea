@@ -567,6 +567,7 @@ class PushTokenClass(TokenClass):
             log.debug("Handling the authentication response from the smartphone.")
             challenge = getParam(request_data, "nonce")
             signature = getParam(request_data, "signature")
+            decline = is_true(getParam(request_data, "decline", default=False))
 
             # get the token_obj for the given serial:
             token_obj = get_one_token(serial=serial, tokentype="push")
@@ -580,6 +581,8 @@ class PushTokenClass(TokenClass):
                 for chal in challengeobject_list:
                     # verify the signature of the nonce
                     sign_data = u"{0!s}|{1!s}".format(challenge, serial)
+                    if decline:
+                        sign_data += u"|decline"
                     try:
                         pubkey_obj.verify(b32decode(signature),
                                           sign_data.encode("utf8"),
@@ -587,8 +590,12 @@ class PushTokenClass(TokenClass):
                                           hashes.SHA256())
                         # The signature was valid
                         log.debug("Found matching challenge {0!s}.".format(chal))
-                        chal.set_otp_status(True)
-                        chal.save()
+                        if decline:
+                            # If the challenge is decline, we delete it from the DB
+                            chal.delete()
+                        else:
+                            chal.set_otp_status(True)
+                            chal.save()
                         result = True
                     except InvalidSignature as _e:
                         pass
@@ -732,7 +739,20 @@ class PushTokenClass(TokenClass):
 
               serial=<token serial>
               nonce=<the actual challenge>
-              signature=<the signed nonce>
+              signature=<signature over {nonce}|{serial}>
+
+        - The smartphone can also decline the authentication request, by sending
+          a response to the server:
+
+            .. sourcecode:: http
+
+              POST /ttype/push HTTP/1.1
+              Host: https://yourprivacyideaserver
+
+              serial=<token serial>
+              nonce=<the actualce challenge>
+              decline=1
+              signature=<signature over {nonce}|{serial}|decline
 
         - In some cases the Firebase service changes the token of a device. This
           needs to be communicated to privacyIDEA through this endpoint
