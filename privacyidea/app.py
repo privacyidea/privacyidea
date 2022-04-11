@@ -226,7 +226,7 @@ def create_app(config_name="development",
         # header the browser transmits.  We support de/fr/en in this
         # example.  The best match wins.
         return request.accept_languages.best_match(['de', 'nl',
-                                                    'fr', 'cs', 'it', 'es', 'en'])
+                                                    'fr', 'cs', 'it', 'es', 'en','tr'])
 
     queue.register_app(app)
 
