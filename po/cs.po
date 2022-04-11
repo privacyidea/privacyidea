@@ -1,11 +1,12 @@
 # Lukáš Krejza <gryffus@hkfree.org>, 2023.
 # Dominik František Bučík <bucik@ics.muni.cz>, 2024.
+# Pavel Břoušek <brousek@ics.muni.cz>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Dominik František Bučík <bucik@ics.muni.cz>\n"
+"Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/cs/>\n"
 "Language: cs\n"
@@ -1037,8 +1038,8 @@ msgid ""
 "Do you really want to delete the Token {{ tokenSerial }} from user {{ token."
 "username }}?"
 msgstr ""
-"Opravdu chcete odstranit token {{ tokenSerial }} od uživatele {{ token."
-"username }}?"
+"Opravdu chcete odstranit token {{ tokenSerial }} od uživatele {{ "
+"token.username }}?"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:19
 msgid "Do you really want to delete the Token {{ tokenSerial }}?"
@@ -2391,8 +2392,8 @@ msgid ""
 "            smartphone."
 msgstr ""
 "Naskenujte QR kód aplikací privacyIDEA Authenticator\n"
-"            nebo klikněte na <a href=\"{{ enrolledToken.pushurl."
-"value }}\">tento odkaz</a> ze svého\n"
+"            nebo klikněte na <a href=\"{{ enrolledToken.pushurl.value }}\""
+">tento odkaz</a> ze svého\n"
 "            chytrého telefonu."
 
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:46
@@ -3980,12 +3981,12 @@ msgid ""
 "            {{ newUser.realm }}."
 msgstr ""
 "Token byl úspěšně přidán se sériovým číslem\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
+"\n"
 "                {{ enrolledToken.serial }}</a>\n"
 "            pro uživatele\n"
-"            <a ui-sref=\"user.details({username:newUser.user, realmname:"
-"newUser.realm})\">{{ newUser.user }}</a> v doméně\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> v doméně\n"
 "            {{ newUser.realm }}."
 
 #: privacyidea/static/components/token/views/token.enroll.html:168
@@ -3996,8 +3997,8 @@ msgid ""
 "                {{ enrolledToken.serial }}</a>."
 msgstr ""
 "Token byl úspěšně přidán se sériovým číslem\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
+"\n"
 "                {{ enrolledToken.serial }}</a>."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
