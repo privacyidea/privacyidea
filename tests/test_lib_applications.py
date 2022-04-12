@@ -105,7 +105,7 @@ class OfflineApplicationTestCase(MyTestCase):
         # Can run as class
         options = OfflineApplication.get_options()
         self.assertEqual(options["required"], [])
-        self.assertEqual(options["optional"], ['user', 'count', 'rounds'])
+        self.assertEqual(options["optional"], ['count', 'rounds'])
 
     def test_02_get_auth_item(self):
         serial = "OATH1"
