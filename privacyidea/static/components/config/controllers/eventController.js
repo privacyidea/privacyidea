@@ -257,6 +257,13 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
             });
     };
 
+    // test if the accordion group should be open or closed
+    $scope.checkOpenConditionGroup = function(conditionname, pattern) {
+        let pat = escapeRegexp(pattern);
+        let re = RegExp(pat, 'i');
+        return ($scope.conditionCheckBox[conditionname] ||
+                !$scope.onlySelectedVisible);
+    };
 
 
     $scope.handlerModuleChanged = function () {
@@ -271,5 +278,4 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
 
     $scope.getAvailableEvents();
     $scope.getHandlerModules();
-
 }]);
