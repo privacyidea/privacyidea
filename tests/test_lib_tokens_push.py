@@ -815,7 +815,22 @@ class PushTokenTestCase(MyTestCase):
             self.smartphone_private_key.sign(sign_data.encode("utf-8"),
                                              padding.PKCS1v15(),
                                              hashes.SHA256()))
-        # Now decline the auth request
+
+        # Simulate the decline request to a pre privacyIDEA 3.8 system.
+        # It will ignore the "decline" parameter, so we do not add it in the
+        # request. The request should fail due to an invalid signature
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": challenge,
+                                                 "signature": signature}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            rj = res.json
+            self.assertTrue(rj['result']['status'])
+            self.assertFalse(rj['result']['value'])
+
+        # Now decline the auth request for real
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
                                            data={"serial": tokenobj.token.serial,
