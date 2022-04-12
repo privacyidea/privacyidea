@@ -85,6 +85,17 @@ class TtypeAPITestCase(MyApiTestCase):
             self.assertTrue(len(auditdata) > 0)
             self.assertEqual(auditdata[0].get("token_type"), "u2f")
 
+    def test_03_wrong(self):
+        # Test the ttype endpoint for wrong ttype, here /ttype/wrong
+        init_token({"serial": "TIQR1",
+                    "type": "tiqr"}, User("cornelius", self.realm1))
+        with self.app.test_request_context('/ttype/wrong',
+                                           method='POST',
+                                           data={"action": "metadata",
+                                                 "serial": "TIQR1",
+                                                 "session": "12345"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res.status_code)
 
 class TtypePushAPITestCase(MyApiTestCase):
     """
