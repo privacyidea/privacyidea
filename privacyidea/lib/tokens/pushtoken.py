@@ -750,7 +750,7 @@ class PushTokenClass(TokenClass):
               Host: https://yourprivacyideaserver
 
               serial=<token serial>
-              nonce=<the actualce challenge>
+              nonce=<the actual challenge>
               decline=1
               signature=<signature over {nonce}|{serial}|decline
 
