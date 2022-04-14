@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-03-28 12:10+0200\n"
-"PO-Revision-Date: 2022-03-23 07:58+0000\n"
+"PO-Revision-Date: 2022-04-12 17:12+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
+"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/nl/>\n"
 "Language: nl\n"
-"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/nl/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.12-dev\n"
 "Generated-By: Babel 2.9.1\n"
 
 #: api/auth.py:222
@@ -232,11 +233,12 @@ msgid "Admin is allowed to copy the PIN of one token to another token."
 msgstr "Admin mag de PIN van het ene naar het andere token kopiëren."
 
 #: lib/policy.py:1670
-#, fuzzy
 msgid ""
 "Admin is allowed to copy the assigned user to another token, i.e. assign "
 "a user to another token."
-msgstr "Admin mag de een andere gebruiker aan een token toewijzen."
+msgstr ""
+"Admin mag de toegewezen gebruiker naar een ander token kopiëren, dit is een "
+"gebruiker aan een ander token toewijzen."
 
 #: lib/policy.py:1676
 msgid "Admin is allowed to trigger the lost token workflow."
@@ -2031,24 +2033,23 @@ msgid "EMail: Send a One Time Password to the users email address."
 msgstr "E-mail: stuur een One Time Password naar het e-mailadres van de gebruiker."
 
 #: lib/tokens/emailtoken.py:165
-#, fuzzy
 msgid ""
 "The text that will be sent via EMail for an EMail-token. Several tags "
 "like {otp} and {serial} can be used as parameters. You may also specify a"
 " filename as email template starting with \"file:\"."
 msgstr ""
 "De test die verstuurd zal worden via e-mail voor een e-mail token. "
-"Gebruik <otp> en <serial> als parameters. Je kunt ook een bestandsnaam "
-"opgeven als e-mail sjabloon, te beginnen met \"file\"."
+"Verschillende tags zoals {otp} en {serial} kunnen als parameters gebruikt "
+"worden. Je kunt ook een bestandsnaam opgeven als e-mail sjabloon, te "
+"beginnen met \"file:\"."
 
 #: lib/tokens/emailtoken.py:172
-#, fuzzy
 msgid ""
 "The subject of the EMail for an EMail token. Use tags like {otp} and "
 "{serial} as parameters."
 msgstr ""
-"Het onderwerp van de e-mail voor een e-mail token. Gebruik <otp> en "
-"<serial> als parameters."
+"Het onderwerp van de e-mail voor een e-mail token. Gebruik {otp} en {serial} "
+"als parameters."
 
 #: lib/tokens/emailtoken.py:177
 msgid ""
@@ -2086,7 +2087,7 @@ msgstr "Geef het OTP van de e-mail:"
 
 #: lib/tokens/emailtoken.py:313
 msgid "The PIN was correct, but the EMail could not be sent!"
-msgstr ""
+msgstr "De PIN-code was juist, maar de e-mail kon niet verzonden worden!"
 
 #: lib/tokens/foureyestoken.py:132
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
@@ -2499,13 +2500,12 @@ msgstr ""
 "gebruikers."
 
 #: lib/tokens/smstoken.py:210
-#, fuzzy
 msgid ""
 "The text that will be send via SMS for an SMS token. Use tags like {otp} "
 "and {serial} as parameters."
 msgstr ""
-"De tekst die verstuurd zal worden via SMS voor een SMS-token. Gebruik "
-"<otp> en <serial> als parameters."
+"De tekst die verstuurd zal worden via SMS voor een SMS-token. Gebruik {otp}> "
+"en {serial} als parameters."
 
 #: lib/tokens/smstoken.py:215
 msgid ""
@@ -2547,7 +2547,7 @@ msgstr "Geeft het OTP van de SMS:"
 
 #: lib/tokens/smstoken.py:354
 msgid "The PIN was correct, but the SMS could not be sent!"
-msgstr ""
+msgstr "De PIN-code was juist, maar de SMS kon niet verzonden worden!"
 
 #: lib/tokens/spasstoken.py:87
 msgid "SPass: Simple Pass token. Static passwords."
@@ -3053,4 +3053,3 @@ msgstr ""
 #~ "'*'. For more details, check the "
 #~ "documentation."
 #~ msgstr ""
-
