@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-03-24 02:54+0000\n"
+"PO-Revision-Date: 2022-04-12 20:12+0000\n"
 "Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/cs/>\n"
@@ -216,7 +216,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.list.html:19
 #: privacyidea/static/components/dashboard/views/dashboard.html:82
 msgid "Action"
-msgstr ""
+msgstr "Akce"
 
 #: privacyidea/static/components/config/views/config.events.list.html:9
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:6
@@ -229,15 +229,15 @@ msgstr "Aktivní"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:146
 msgid "Active Events"
-msgstr ""
+msgstr "Aktivní události"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:109
 msgid "Active Policies"
-msgstr ""
+msgstr "Aktivní politiky"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:74
 msgid "Add a condition"
-msgstr ""
+msgstr "Přidat podmínku"
 
 #: privacyidea/static/components/user/views/user.add.html:3
 msgid "Add a new user"
@@ -245,11 +245,11 @@ msgstr "Přidat uživatele"
 
 #: privacyidea/static/components/user/views/user.details.html:96
 msgid "Add custom attribute"
-msgstr ""
+msgstr "Přidat vlastní atribut"
 
 #: privacyidea/static/components/config/views/config.token.question.html:56
 msgid "Add new question"
-msgstr ""
+msgstr "Přidat otázku"
 
 #: privacyidea/static/components/user/views/user.html:40
 msgid "Add user"
@@ -257,23 +257,23 @@ msgstr "Přidat uživatele"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:268
 msgid "Additional conditions"
-msgstr ""
+msgstr "Další podmínky"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:157
 msgid "Admin"
-msgstr ""
+msgstr "Admin"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:140
 msgid "Admin-Realm"
-msgstr ""
+msgstr "Administrátorská doména"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:75
 msgid "Administration"
-msgstr ""
+msgstr "Administrace"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:81
 msgid "Administrator"
-msgstr ""
+msgstr "Administrátor"
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:8
 msgid "All CA Connectors"
@@ -297,11 +297,11 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.html:8
 msgid "All Policies"
-msgstr ""
+msgstr "Všechny politiky"
 
 #: privacyidea/static/components/config/views/config.realms.html:7
 msgid "All Realms"
-msgstr ""
+msgstr "Všechny domény"
 
 #: privacyidea/static/components/config/views/config.resolvers.html:7
 msgid "All Resolvers"
@@ -571,11 +571,11 @@ msgstr "Zkontrolovat jednorázový kód a PIN."
 
 #: privacyidea/static/components/login/views/login.html:70
 msgid "Choose a realm..."
-msgstr "Zvolte realm..."
+msgstr "Zvolte doménu..."
 
 #: privacyidea/static/components/config/views/config.realms.html:9
 msgid "Clear default realm"
-msgstr "Zrušit výchozí realm"
+msgstr "Zrušit výchozí doménu"
 
 #: privacyidea/static/components/config/views/config.system.html:87
 msgid ""
@@ -686,12 +686,12 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:119
 msgid "Count"
-msgstr ""
+msgstr "Počitadlo"
 
 #: privacyidea/static/components/token/views/token.details.html:124
 #: privacyidea/static/components/token/views/token.getserial.html:52
 msgid "Count Window"
-msgstr ""
+msgstr "Rozsah tolerance"
 
 #: privacyidea/static/components/config/views/config.system.html:222
 msgid ""
@@ -767,7 +767,7 @@ msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:12
 msgid "Create default realm"
-msgstr ""
+msgstr "Vytvořit výchozí doménu"
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:52
 msgid "Create new API key"
@@ -792,7 +792,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.realms.list.html:122
 #: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:22
 msgid "Create realm"
-msgstr ""
+msgstr "Vytvořit doménu"
 
 #: privacyidea/static/components/user/views/user.details.html:107
 msgid "Custom attribute name"
@@ -800,7 +800,7 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.details.html:79
 msgid "Custom attributes for user {{ username }}"
-msgstr ""
+msgstr "Vlastní atributy uživatele {{ username }}"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:238
 msgid "DN of a new created user object"
@@ -820,7 +820,7 @@ msgstr ""
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:80
 msgid "Date"
-msgstr ""
+msgstr "Datum"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:5
 msgid "Default"
@@ -909,7 +909,7 @@ msgstr "Odpojit"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:83
 msgid "Detail"
-msgstr ""
+msgstr "Detail"
 
 #: privacyidea/static/components/machine/views/machine.details.html:2
 msgid ""
@@ -919,7 +919,7 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.details.html:14
 msgid "Details for user {{ username }} in realm"
-msgstr ""
+msgstr "Detaily uživatele {{ username }} v doméně"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/components/config/views/config.radius.list.html:7
@@ -1086,7 +1086,7 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.html:46
 msgid "Edit realms"
-msgstr ""
+msgstr "Upravit domény"
 
 #: privacyidea/static/components/user/views/user.details.html:48
 msgid "Edit user"
@@ -1215,7 +1215,7 @@ msgstr "Chyba v odpovědi WebAuthn."
 #: privacyidea/static/components/config/views/config.html:32
 #: privacyidea/static/components/dashboard/views/dashboard.html:141
 msgid "Events"
-msgstr ""
+msgstr "Události"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:56
 msgid "Examples"
@@ -1270,7 +1270,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:526
 #: privacyidea/static/components/token/views/token.list.html:6
 msgid "First"
-msgstr ""
+msgstr "První"
 
 #: privacyidea/static/components/token/views/token.enroll.email.html:6
 msgid ""
@@ -1370,7 +1370,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:194
 msgid "HOTP: event based One Time Passwords"
-msgstr ""
+msgstr "HOTP: jednorázové kódy založené na počitadle"
 
 #: privacyidea/static/components/config/views/config.events.details.html:61
 #: privacyidea/static/components/config/views/config.events.list.html:18
@@ -1418,6 +1418,8 @@ msgid ""
 "Here you can select how many tokens of which realm are required to\n"
 "        perform a successful authentication."
 msgstr ""
+"Zde můžete zvolit, kolik tokenů v jakých doménách je potřeba\n"
+"        pro úspěšnou autentizaci."
 
 #: privacyidea/static/components/token/views/token.import.html:20
 msgid ""
@@ -1499,6 +1501,9 @@ msgid ""
 "the\n"
 "    same."
 msgstr ""
+"Pokud je token ztracený, můžete zaregistrovat dočasný token na bázi hesla a\n"
+"   předat heslo uživateli. PIN jednorázového kódu starého tokenu zůstává\n"
+"   stejný."
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:42
 msgid ""
@@ -1533,7 +1538,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:53
 msgid "Import Tokens"
-msgstr ""
+msgstr "Import tokenů"
 
 #: privacyidea/static/components/token/views/token.import.html:1
 msgid "Import tokens from a file"
@@ -1544,14 +1549,15 @@ msgid ""
 "In case of conflicting policies, the policy with the lowest priority number "
 "will take precedence."
 msgstr ""
+"V případě konfliktu mezi politikami se uplatní ta s nižší hodnotou priority."
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:158
 msgid "Inactive Events"
-msgstr ""
+msgstr "Neaktivní události"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:121
 msgid "Inactive Policies"
-msgstr ""
+msgstr "Neaktivní politiky"
 
 #: privacyidea/static/components/config/views/config.system.html:133
 msgid "Include SAML attributes even if the user failed to authenticate."
@@ -1599,7 +1605,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:525
 #: privacyidea/static/components/token/views/token.list.html:5
 msgid "Last"
-msgstr ""
+msgstr "Poslední"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:113
 msgid "Last Definition Update"
@@ -1641,7 +1647,7 @@ msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:110
 msgid "List tokens"
-msgstr ""
+msgstr "Zobrazit seznam tokenů"
 
 #: privacyidea/static/components/directives/views/directive.attachmachine.html:14
 msgid "Loading Machines..."
@@ -1743,7 +1749,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:83
 msgid "Maxfail"
-msgstr ""
+msgstr "Limit chybných pokusů"
 
 #: privacyidea/static/components/token/views/token.details.html:199
 msgid "Maximum Authentication Count"
@@ -1910,7 +1916,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:12
 msgid "OTP Value"
-msgstr ""
+msgstr "Jednorázový kód"
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:47
 #: privacyidea/static/components/token/views/token.enroll.totp.html:47
@@ -1946,6 +1952,8 @@ msgid ""
 "Obviously you have no realms defined. Do you want me to create a\n"
 "          default realm for you from the machines /etc/passwd?"
 msgstr ""
+"Nemáte vytvořenou žádnou doménu. Chcete vytvořit\n"
+"          výchozí doménu ze souboru /etc/passwd?"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:165
 msgid "Okay"
@@ -2127,7 +2135,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.html:26
 #: privacyidea/static/components/dashboard/views/dashboard.html:104
 msgid "Policies"
-msgstr ""
+msgstr "Politiky"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:30
 #: privacyidea/static/components/config/views/config.policies.list.html:12
@@ -2244,7 +2252,7 @@ msgstr ""
 #: privacyidea/static/components/machine/views/machine.html:15
 #: privacyidea/static/components/user/views/user.html:44
 msgid "Quick links"
-msgstr ""
+msgstr "Rychlé odkazy"
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
 msgid "RADIUS Config saved."
@@ -2277,7 +2285,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:205
 msgid "RADIUS: Forward authentication request to a RADIUS server"
-msgstr ""
+msgstr "RADIUS: Vzdálená autentizace serverem RADIUS"
 
 #: privacyidea/static/components/token/views/token.details.html:391
 msgid "Random generated PIN"
@@ -2300,19 +2308,19 @@ msgstr ""
 #: privacyidea/static/components/login/views/login.html:61
 #: privacyidea/static/components/token/views/token.details.html:469
 msgid "Realm"
-msgstr "Realm"
+msgstr "Doména"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:603
 msgid "Realm defrealm created."
-msgstr ""
+msgstr "Doména defrealm byla vytvořena."
 
 #: privacyidea/static/components/config/views/config.realms.list.html:6
 msgid "Realm name"
-msgstr ""
+msgstr "Název domény"
 
 #: privacyidea/static/components/config/views/config.html:66
 msgid "Realms"
-msgstr ""
+msgstr "Domény"
 
 #: privacyidea/static/components/token/views/token.challenges.html:48
 msgid "Received"
@@ -2347,7 +2355,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:44
 msgid "Remote Realm"
-msgstr ""
+msgstr "Vzdálená doména"
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:50
 msgid "Remote Resolver"
@@ -2367,7 +2375,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:201
 msgid "Remote Token: Forward authentication request to another server"
-msgstr ""
+msgstr "Remote Token: Vzdálená autentizace jiným serverem"
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:36
 msgid "Remote User"
@@ -2396,7 +2404,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:22
 msgid "Required Realms"
-msgstr ""
+msgstr "Povinné domény"
 
 #: privacyidea/static/components/token/views/token.list.html:100
 msgid "Reset Failcounter"
@@ -2513,7 +2521,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:209
 msgid "SMS: Send a One Time Password to the users mobile phone."
-msgstr ""
+msgstr "SMS: Jednorázový kód odeslaný na mobilní telefon."
 
 #: privacyidea/static/components/config/controllers/smtpServerController.js:89
 msgid "SMTP Config saved."
@@ -2533,11 +2541,11 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:196
 msgid "SPass: Simple Pass token. Static passwords"
-msgstr ""
+msgstr "SPass: Jednoduché, statické heslo"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:198
 msgid "SSH Public Key: The public SSH key"
-msgstr ""
+msgstr "SSH Public Key: Veřejný SSH klíč"
 
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:9
 msgid "SSH public Key"
@@ -2603,7 +2611,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:324
 msgid "Save realms"
-msgstr ""
+msgstr "Uložit domény"
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:40
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:208
@@ -2645,7 +2653,7 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.html:24
 msgid "Select Realm"
-msgstr ""
+msgstr "Zvolte doménu"
 
 #: privacyidea/static/components/config/views/config.system.html:200
 msgid ""
@@ -2718,11 +2726,11 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:5
 #: privacyidea/static/components/machine/views/machine.details.html:50
 msgid "Serial"
-msgstr ""
+msgstr "Sériové číslo"
 
 #: privacyidea/static/components/token/views/token.getserial.html:44
 msgid "Serial Substring"
-msgstr ""
+msgstr "Část sériového čísla"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:40
 msgid "Server"
@@ -2851,7 +2859,7 @@ msgstr "Příjmení"
 
 #: privacyidea/static/components/token/views/token.details.html:136
 msgid "Sync Window"
-msgstr ""
+msgstr "Rozsah pro synchronizaci"
 
 #: privacyidea/static/components/config/views/config.system.html:247
 msgid ""
@@ -2948,6 +2956,9 @@ msgid ""
 "    present at once. You can define how many existing tokens of the given\n"
 "    realms need to be present to perform a successful authentication."
 msgstr ""
+"Token pro čtyři oči lze použít pouze pokud jsou přítomní\n"
+"    dva nebo více uživatelů. Můžete určit, kolik existujících tokenů\n"
+"    v dané doméně je potřeba pro úspěšnou autentizaci."
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:27
 msgid "The AppID must not end with a \"/\"."
@@ -3335,7 +3346,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:57
 msgid "The number of lookahead OTP values. Default 10."
-msgstr ""
+msgstr "Počet dopředu vyhledaných jednorázových kódů. Výchozí hodnota je 10."
 
 #: privacyidea/static/components/token/views/token.lost.html:17
 msgid ""
@@ -3534,12 +3545,12 @@ msgid ""
 "            {{ newUser.realm }}."
 msgstr ""
 "Token byl úspěšně přidán se sériovým číslem\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
+"\n"
 "                {{ enrolledToken.serial }}</a>\n"
 "            pro uživatele\n"
-"            <a ui-sref=\"user.details({username:newUser.user, realmname:"
-"newUser.realm})\">{{ newUser.user }}</a> v realmu\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> v doméně\n"
 "            {{ newUser.realm }}."
 
 #: privacyidea/static/components/token/views/token.enroll.html:160
@@ -3579,6 +3590,9 @@ msgid ""
 "The user will have to authenticate with the old OTP PIN he knows and this\n"
 "    newly generated password."
 msgstr ""
+"Uživatel se bude muset autentizovat původním PIN jednorázového kódu, který "
+"zná,\n"
+"   a nově vygenerovaným heslem."
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:51
 msgid "The username on the RADIUS server"
@@ -3867,7 +3881,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.list.html:65
 msgid "Token realms"
-msgstr ""
+msgstr "Domény tokenu"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:266
 msgid "Token resync failed."
@@ -3955,11 +3969,11 @@ msgstr "Odebrat uživatele"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:26
 msgid "Unassigned Hardware"
-msgstr ""
+msgstr "Nepřiřazené hardware"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:30
 msgid "Unassigned Software"
-msgstr ""
+msgstr "Nepřiřazené software"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:22
 msgid "Upload Certificate"
@@ -3986,6 +4000,8 @@ msgid ""
 "Use @ sign to split the username\n"
 "                and the realm."
 msgstr ""
+"Použít @ jako oddělovač uživatelského jména\n"
+"                a domény."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:48
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:45
@@ -4037,7 +4053,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:172
 msgid "User-Realm"
-msgstr ""
+msgstr "Uživatelova doména"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:188
 msgid "User-Resolver"
@@ -4124,7 +4140,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:3
 #: privacyidea/static/components/token/views/token.lost.html:4
 msgid "View token in Audit log"
-msgstr ""
+msgstr "Zobrazit token v protokolu"
 
 #: privacyidea/static/components/user/views/user.details.html:17
 msgid "View user in Audit log"
@@ -4209,6 +4225,8 @@ msgid ""
 "You can choose a realm to which the tokens should be imported.\n"
 "            You can also change the realms of each token later."
 msgstr ""
+"Můžete zvolit doménu, do které budou tokeny importovány.\n"
+"            Doménu každého tokenu můžete změnit později."
 
 #: privacyidea/static/components/token/views/token.import.html:80
 msgid ""
@@ -4333,11 +4351,11 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:199
 msgid "Yubikey AES mode: One Time Passwords with Yubikey"
-msgstr ""
+msgstr "Yubikey AES mode: Jednorázové kódy z Yubikey"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:203
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud"
-msgstr ""
+msgstr "Yubikey Cloud mode: Vzdálená autentizace pomocí YubiCloud"
 
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:14
 msgid "Yubikey Identifier"
@@ -4349,11 +4367,11 @@ msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:45
 msgid "action"
-msgstr ""
+msgstr "akce"
 
 #: privacyidea/static/components/audit/views/audit.log.html:57
 msgid "action detail"
-msgstr ""
+msgstr "detaily akce"
 
 #: privacyidea/static/components/token/views/token.details.html:32
 #: privacyidea/static/components/token/views/token.list.html:39
@@ -4371,7 +4389,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:48
 msgid "an optional serial substring"
-msgstr ""
+msgstr "volitelné hledání v sériovém čísle"
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:9
 msgid "appId"
@@ -4387,7 +4405,7 @@ msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:105
 msgid "client"
-msgstr ""
+msgstr "klient"
 
 #: privacyidea/static/components/token/views/token.list.html:46
 #: privacyidea/static/components/user/views/user.details.html:152
@@ -4406,19 +4424,19 @@ msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:39
 msgid "duration"
-msgstr ""
+msgstr "trvání"
 
 #: privacyidea/static/components/user/views/user.list.html:29
 msgid "email"
-msgstr ""
+msgstr "e-mail"
 
 #: privacyidea/static/components/audit/views/audit.log.html:33
 msgid "enddate"
-msgstr ""
+msgstr "konec"
 
 #: privacyidea/static/components/token/views/token.getserial.html:18
 msgid "enter some OTP value"
-msgstr ""
+msgstr "vložte jednorázový kód"
 
 #: privacyidea/static/components/token/views/token.list.html:57
 #: privacyidea/static/components/user/views/user.details.html:153
@@ -4443,7 +4461,7 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.list.html:23
 msgid "givenname"
-msgstr ""
+msgstr "křestní jméno"
 
 #: privacyidea/static/components/machine/views/machine.list.html:15
 msgid "hostname"
@@ -4471,11 +4489,11 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:197
 msgid "mOTP: classical mobile One Time Passwords"
-msgstr ""
+msgstr "mOTP: mobilní jednorázové kódy"
 
 #: privacyidea/static/components/user/views/user.details.html:154
 msgid "maxfail"
-msgstr ""
+msgstr "max. chyb"
 
 #: privacyidea/static/components/audit/views/audit.log.html:117
 msgid "missing_line"
@@ -4483,19 +4501,19 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.list.html:36
 msgid "mobile"
-msgstr ""
+msgstr "mobil"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:97
 msgid "new realm"
-msgstr ""
+msgstr "nová doména"
 
 #: privacyidea/static/components/audit/views/audit.log.html:25
 msgid "number"
-msgstr ""
+msgstr "číslo"
 
 #: privacyidea/static/components/user/views/user.details.html:155
 msgid "otplen"
-msgstr ""
+msgstr "délka"
 
 #. Translation in dynamic user creation
 #: privacyidea/static/components/user/controllers/userControllers.js:40
@@ -4504,11 +4522,11 @@ msgstr "heslo"
 
 #: privacyidea/static/components/user/views/user.list.html:35
 msgid "phone"
-msgstr ""
+msgstr "telefon"
 
 #: privacyidea/static/components/audit/views/audit.log.html:99
 msgid "policies"
-msgstr ""
+msgstr "politiky"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:226
 msgid "privacyIDEA Node"
@@ -4554,7 +4572,7 @@ msgstr ""
 #: privacyidea/static/components/audit/views/audit.log.html:87
 #: privacyidea/static/components/token/views/token.list.html:64
 msgid "realm"
-msgstr ""
+msgstr "doména"
 
 #: privacyidea/static/components/audit/views/audit.log.html:93
 msgid "resolver"
@@ -4601,7 +4619,7 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
 msgid "start typing a serial number of a token that is notassigned, yet."
-msgstr ""
+msgstr "Začněte psát sériové číslo tokenu, který ještě není přiřazen."
 
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:8
 msgid "start typing a serial number of a token."
@@ -4613,16 +4631,16 @@ msgstr "začněte psát uživatelské jméno"
 
 #: privacyidea/static/components/audit/views/audit.log.html:27
 msgid "startdate"
-msgstr ""
+msgstr "začátek"
 
 #: privacyidea/static/components/audit/views/audit.log.html:51
 #: privacyidea/static/components/dashboard/views/dashboard.html:47
 msgid "success"
-msgstr ""
+msgstr "úspěch"
 
 #: privacyidea/static/components/user/views/user.list.html:17
 msgid "surname"
-msgstr ""
+msgstr "příjmení"
 
 #: privacyidea/static/components/token/views/token.challenges.html:20
 msgid "timestamp"
@@ -4680,11 +4698,11 @@ msgstr "uživatelské jméno"
 
 #: privacyidea/static/components/user/views/user.details.html:151
 msgid "window"
-msgstr ""
+msgstr "tolerance"
 
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
-msgstr ""
+msgstr "Nalezeno {{ auditdata.count }} záznamů."
 
 #: privacyidea/static/components/token/views/token.enroll.html:181
 msgid "{{ enrolledToken.verify.message }}"

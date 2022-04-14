@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-03-23 07:55+0000\n"
+"PO-Revision-Date: 2022-04-12 20:12+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/nl/>\n"
@@ -747,7 +747,7 @@ msgstr "Sluit"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:303
 msgid "Close all groups"
-msgstr ""
+msgstr "Sluit alle groepen"
 
 #: privacyidea/static/templates/menu.html:140
 msgid "Community"
@@ -2137,7 +2137,7 @@ msgstr "Online documentatie"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:298
 msgid "Open all groups"
-msgstr ""
+msgstr "Open alle groepen"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:56
 msgid "OpenSSL config file"
@@ -3571,7 +3571,6 @@ msgstr ""
 "                    zijn"
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:7
-#, fuzzy
 msgid ""
 "The authentication request can be handled by the default privacyIDEA\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/api/"
@@ -3584,11 +3583,11 @@ msgid ""
 msgstr ""
 "De authenticatievraag kan afgehandeld worden door de standaard privacyIDEA\n"
 "    <a href=\"http://privacyidea.readthedocs.org/en/latest/modules/api/"
-"validate.html\">\n"
+"validate.html\" target =\"_blank\">\n"
 "        validatie API</a> maar kan ook afgehandeld worden door het\n"
 "    <a href=\"http://privacyidea.readthedocs.org/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
-"YubikeyTokenClass.api_endpoint\">\n"
+"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass"
+".api_endpoint\" target=\"_blank\">\n"
 "        Yubico Validatieprotocol</a>."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
