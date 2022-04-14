@@ -3277,7 +3277,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": "test{0!s}".format(password)}):
+                                                 "pass": quote(u"test{0!s}".format(password))}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
