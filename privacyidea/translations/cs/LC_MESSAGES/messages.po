@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-03-28 12:10+0200\n"
-"PO-Revision-Date: 2022-04-12 17:12+0000\n"
+"PO-Revision-Date: 2022-04-22 15:14+0000\n"
 "Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/cs/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
-"X-Generator: Weblate 4.12-dev\n"
+"X-Generator: Weblate 4.12.1-dev\n"
 "Generated-By: Babel 2.9.1\n"
 
 #: api/auth.py:222
@@ -74,7 +74,7 @@ msgstr "Prosím vložte nový PIN"
 
 #: lib/challengeresponsedecorators.py:201
 msgid "To resync your token, please enter the next OTP value"
-msgstr ""
+msgstr "Pro synchronizaci tokenu zadejte další jednorázový kód"
 
 #: lib/decorators.py:43 lib/token.py:2187
 msgid "This action is not possible, since the token is locked"
@@ -130,47 +130,47 @@ msgstr ""
 
 #: lib/policy.py:1555
 msgid "Admin is allowed to enable tokens."
-msgstr ""
+msgstr "Admin může povolovat tokeny."
 
 #: lib/policy.py:1559
 msgid "Admin is allowed to disable tokens."
-msgstr ""
+msgstr "Admin může zakazovat tokeny."
 
 #: lib/policy.py:1563
 msgid "Admin is allowed to set token properties."
-msgstr ""
+msgstr "Armin může nastavovat vlastnosti tokenů."
 
 #: lib/policy.py:1568
 msgid "Admin is allowed to set the OTP PIN of tokens."
-msgstr ""
+msgstr "Admin může nastavovat PIN tokenů."
 
 #: lib/policy.py:1574
 msgid "Admin is allowed to set a random OTP PIN of tokens."
-msgstr ""
+msgstr "Admin může nastavovat náhodný PIN tokenům."
 
 #: lib/policy.py:1578
 msgid "Admin is allowed to manually set and delete token info."
-msgstr ""
+msgstr "Admin může ručně upravovat a mazat podrobnosti tokenů."
 
 #: lib/policy.py:1582
 msgid "Admin is allowed to set the OTP PIN during enrollment."
-msgstr ""
+msgstr "Admin může nastavit PIN jednorázového kódu během registrace."
 
 #: lib/policy.py:1587
 msgid "Admin is allowed to resync tokens."
-msgstr ""
+msgstr "Admin může provádět synchronizaci tokenů."
 
 #: lib/policy.py:1591
 msgid "Admin is allowed to reset the Failcounter of a token."
-msgstr ""
+msgstr "Admin může vynulovat počítadlo chyb tokenu."
 
 #: lib/policy.py:1597
 msgid "Admin is allowed to revoke a token"
-msgstr ""
+msgstr "Admin může revokovat token"
 
 #: lib/policy.py:1601
 msgid "Admin is allowed to assign a token to a user."
-msgstr ""
+msgstr "Admin může přiřadit token uživateli."
 
 #: lib/policy.py:1607
 msgid "Admin is allowed to remove the token from a user, i.e. unassign a token."
@@ -1051,7 +1051,7 @@ msgstr ""
 
 #: lib/eventhandler/base.py:177
 msgid "The type of the token."
-msgstr ""
+msgstr "Typ tokenu."
 
 #: lib/eventhandler/base.py:183
 msgid "The logged in user is of the following type."
@@ -1165,11 +1165,11 @@ msgstr ""
 #: lib/eventhandler/counterhandler.py:69 lib/eventhandler/counterhandler.py:74
 #: lib/eventhandler/counterhandler.py:82
 msgid "The identifier/key of the counter."
-msgstr ""
+msgstr "Identifikátor/klíč počitadla."
 
 #: lib/eventhandler/counterhandler.py:77
 msgid "Don't stop counter if it reaches zero."
-msgstr ""
+msgstr "Nezastavovat počítadlo když dojde k nule."
 
 #: lib/eventhandler/customuserattributeshandler.py:61
 msgid "The user for whom the custom attribute should be set."
@@ -1265,7 +1265,7 @@ msgstr ""
 
 #: lib/eventhandler/responsemangler.py:94
 msgid "The type of the value."
-msgstr ""
+msgstr "Typ hodnoty."
 
 #: lib/eventhandler/responsemangler.py:100
 msgid "The value of the JSON key that should be set."
@@ -1315,7 +1315,7 @@ msgstr ""
 
 #: lib/eventhandler/tokenhandler.py:128
 msgid "set a new realm of the token"
-msgstr ""
+msgstr "nastavit novou doménu tokenu"
 
 #: lib/eventhandler/tokenhandler.py:132
 msgid ""
@@ -1323,14 +1323,16 @@ msgid ""
 "will be removed from this token. Otherwise the realm will be added to the"
 " token."
 msgstr ""
+"Nová doména bude jedinou doménou tokenu. To znamená, že všechny ostatní "
+"domény budou z tokenu odstraněny. Jinak bude doména k tokenu přidána."
 
 #: lib/eventhandler/tokenhandler.py:147
 msgid "set the PIN of the token to a random PIN of this length."
-msgstr ""
+msgstr "nastavit PIN tokenu na náhodnou hodnotu této délky."
 
 #: lib/eventhandler/tokenhandler.py:154
 msgid "Token type to create"
-msgstr ""
+msgstr "Typ tokenu"
 
 #: lib/eventhandler/tokenhandler.py:159
 msgid "Assign token to user in request or to tokenowner."
@@ -1338,7 +1340,7 @@ msgstr ""
 
 #: lib/eventhandler/tokenhandler.py:164
 msgid "Set the realm of the newly created token."
-msgstr ""
+msgstr "Nastavit doménu nově vytvořeného tokenu."
 
 #: lib/eventhandler/tokenhandler.py:171
 msgid "Dynamically read the mobile number from the user store."
@@ -1368,7 +1370,7 @@ msgstr ""
 
 #: lib/eventhandler/tokenhandler.py:212
 msgid "The new description of the token."
-msgstr ""
+msgstr "Nový popis tokenu."
 
 #: lib/eventhandler/tokenhandler.py:219
 msgid ""
@@ -1430,7 +1432,7 @@ msgstr ""
 
 #: lib/eventhandler/usernotification.py:143
 msgid "The Reply-To header in the sent email."
-msgstr ""
+msgstr "Hlavička Reply-To v odeslaném e-mailu."
 
 #: lib/eventhandler/usernotification.py:165
 #: lib/eventhandler/usernotification.py:197
@@ -1439,12 +1441,12 @@ msgstr ""
 
 #: lib/eventhandler/usernotification.py:172
 msgid "The body of the mail that is sent."
-msgstr ""
+msgstr "Tělo odeslaného e-mailu."
 
 #: lib/eventhandler/usernotification.py:176
 #: lib/eventhandler/usernotification.py:214
 msgid "Send notification to this user."
-msgstr ""
+msgstr "Poslat notifikaci tomuto uživateli."
 
 #: lib/eventhandler/usernotification.py:206
 msgid "Send the user notification via a predefined SMS gateway."
@@ -1452,7 +1454,7 @@ msgstr ""
 
 #: lib/eventhandler/usernotification.py:211
 msgid "The text of the SMS."
-msgstr ""
+msgstr "Text SMS zprávy."
 
 #: lib/eventhandler/usernotification.py:221
 msgid ""
@@ -1583,7 +1585,7 @@ msgstr ""
 
 #: lib/smsprovider/HttpSMSProvider.py:283
 msgid "The timeout in seconds."
-msgstr ""
+msgstr "Časová prodleva v sekundách."
 
 #: lib/smsprovider/ScriptSMSProvider.py:112
 msgid ""
@@ -1705,11 +1707,11 @@ msgstr ""
 
 #: lib/tokens/emailtoken.py:155
 msgid "EMail Token"
-msgstr ""
+msgstr "E-mail token"
 
 #: lib/tokens/emailtoken.py:157
 msgid "EMail: Send a One Time Password to the users email address."
-msgstr ""
+msgstr "E-mail: Jednorázové heslo odeslané na e-mailovou adresu."
 
 #: lib/tokens/emailtoken.py:165
 msgid ""
@@ -1748,11 +1750,11 @@ msgstr ""
 
 #: lib/tokens/emailtoken.py:276
 msgid "Enter the OTP from the Email:"
-msgstr ""
+msgstr "Vložte jednorázový kód z e-mailu:"
 
 #: lib/tokens/emailtoken.py:313
 msgid "The PIN was correct, but the EMail could not be sent!"
-msgstr ""
+msgstr "PIN je správný, ale e-mail se nepodařilo odeslat."
 
 #: lib/tokens/foureyestoken.py:132
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
@@ -1770,7 +1772,7 @@ msgstr ""
 
 #: lib/tokens/hotptoken.py:82
 msgid "Please enter a valid OTP value of the new token."
-msgstr ""
+msgstr "Prosím vložte jednorázový kód nového tokenu."
 
 #: lib/tokens/hotptoken.py:127
 msgid "Specify the hashlib to be used. Can be sha1 (1) or sha2-256 (2)."
@@ -1832,7 +1834,7 @@ msgstr ""
 
 #: lib/tokens/indexedsecrettoken.py:51
 msgid "Please enter the positions {0!s} from your secret."
-msgstr ""
+msgstr "Prosím vložte znaky na pozicích {0!s} z Vašeho hesla."
 
 #: lib/tokens/indexedsecrettoken.py:97
 msgid "Indexed Secret Token"
@@ -1942,11 +1944,11 @@ msgstr "Chcete potvrdit přihlášení?"
 
 #: lib/tokens/pushtoken.py:297
 msgid "PUSH Token"
-msgstr ""
+msgstr "Push autentizace"
 
 #: lib/tokens/pushtoken.py:299
 msgid "PUSH: Send a push notification to a smartphone."
-msgstr ""
+msgstr "PUSH: Autentizace push notifikací zaslanou do chytrého telefonu."
 
 #: lib/tokens/pushtoken.py:307
 msgid "The configuration of your Firebase application."
@@ -2121,11 +2123,11 @@ msgstr "Vložte jednorázový kód z SMS:"
 
 #: lib/tokens/smstoken.py:354
 msgid "The PIN was correct, but the SMS could not be sent!"
-msgstr ""
+msgstr "PIN je správný, ale SMS zprávu se nepodařilo odeslat."
 
 #: lib/tokens/spasstoken.py:87
 msgid "SPass: Simple Pass token. Static passwords."
-msgstr ""
+msgstr "SPass: Jednoduchý token se statickým heslem."
 
 #: lib/tokens/spasstoken.py:99
 msgid "The user may only have this maximum number of SPASS tokens assigned."
