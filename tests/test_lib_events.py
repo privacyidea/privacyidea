@@ -6,7 +6,7 @@ This file contains the event handlers tests. It tests:
 lib/eventhandler/usernotification.py (one event handler module)
 lib/event.py (the decorator)
 """
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import responses
 import os
 import mock
@@ -2633,3 +2633,31 @@ class WebhookTestCase(MyTestCase):
             text = 'Unknown content type value: False_Type'
             mock_log.assert_any_call(text)
 
+
+    @patch('requests.post')
+    def test_05_connection_error(self, mock_post):
+        mock_post.post = MagicMock(side_effect='unknown_content_type')
+        with mock.patch("logging.Logger.warning") as mock_log:
+                # Setup realm and user
+                self.setUp_user_realms()
+
+                user = User("hans", self.realm1)
+                g = FakeFlaskG()
+                g.logged_in_user = {'username': 'hans',
+                                    'realm': self.realm1}
+
+                t_handler = WebHookHandler()
+                options = {"g": g,
+                           "handler_def": {
+                               "options": {"URL":
+                                               'http://test.com',
+                                           "content_type":
+                                               'False_Type',
+                                           "data":
+                                               'This is a test'
+                                            }
+                                }
+                            }
+                res = t_handler.do("post_webhook", options=options)
+                self.assertFalse(res)
+                mock_log.assert_any_call('Unknown content type value: False_Type')
