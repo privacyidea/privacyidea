@@ -50,7 +50,9 @@ from .crypto import encryptPassword
 from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
 from .machines.base import BaseMachineResolver
-from .caconnectors.localca import BaseCAConnector
+from .caconnectors.baseca import BaseCAConnector
+from .caconnectors import localca, msca
+import privacyidea.lib.caconnectors
 from .utils import reload_db, is_true
 import importlib
 import datetime
@@ -371,7 +373,16 @@ def get_caconnector_types():
     Returns a list of valid CA connector types
     :return:
     """
-    return ["local"]
+
+    #return ["local"]
+
+    # temporary implementation of a dynamic approach of getting the CA types
+    # TODO: integrate into the code better
+
+    caconnector_types = []
+    for cacon in BaseCAConnector.__subclasses__():
+        caconnector_types.append(cacon.connector_type)
+    return caconnector_types
 
 
 #@cache.cached(key_prefix="classes")
@@ -806,6 +817,7 @@ def get_caconnector_module_list():
     """
     module_list = set()
     module_list.add("privacyidea.lib.caconnectors.localca.LocalCAConnector")
+    module_list.add("privacyidea.lib.caconnectors.msca.MSCAConnector")
 
     modules = []
     for mod_name in module_list:
