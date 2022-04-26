@@ -1,0 +1,77 @@
+<div ng-controller="MicrosoftCAConnectorController">
+
+    <h2 class="form-signin-heading"
+        ng-show="connectorname" translate>Edit Microsoft CA Connector
+        {{ connectorname }}</h2>
+
+    <h2 class="form-signin-heading"
+        ng-hide="connectorname" translate>Create a new Microsoft CA Connector</h2>
+
+    <form name="formAddLocal" role="form" validate
+          class="form-horizontal">
+
+        <div class="form-group">
+            <label for="connectorname" class="col-sm-3
+            control-label" translate>Connector name</label>
+
+            <div class="col-sm-9">
+                <input name="connectorname" id="connectorname"
+                       class="form-control"
+                       ng-model="connectorname" required
+                       placeholder="MyConnector1"
+                       ng-pattern="inputNamePatterns.simple.pattern"
+                       title="{{ inputNamePatterns.simple.title | translate }}"
+                       autofocus/>
+            </div>
+        </div>
+
+        <h3 translate>Base Config</h3>
+
+        <div class="form-group">
+            <label for="hostname"
+                   class="col-sm-3 control-label" translate>
+                Microsoft CA worker hostname</label>
+
+            <div class="col-sm-9">
+                <input name="hostname" id="hostname"
+                       class="form-control"
+                       ng-model="params.hostname" required
+                       placeholder="example.net"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="port"
+                   class="col-sm-3 control-label" translate>Microsoft CA worker port</label>
+
+            <div class="col-sm-9">
+                <input name="port" id="port"
+                       class="form-control"
+                       ng-model="params.port" required
+                       placeholder="1234"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="http_proxy"
+                   class="col-sm-3 control-label" translate>
+                Is a HTTP proxy being used</label>
+
+            <div class="col-sm-9">
+                <input name="http_proxy" id="http_proxy"
+                       class="form-control"
+                       ng-model="params['http_proxy']" required
+                       placeholder="0"/>
+            </div>
+        </div>
+
+        <div class="text-center" ng-show="checkRight('caconnectorwrite')">
+            <button ng-click="setCAConnector()"
+                    ng-disabled="forAddLocal.$invalid"
+                    class="btn btn-primary" translate>Save CA
+            </button>
+        </div>
+
+    </form>
+
+</div>

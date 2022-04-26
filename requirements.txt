@@ -95,3 +95,6 @@ urllib3==1.26.6
 Werkzeug==1.0.1
 zipp==1.2.0; python_version <= '3.5'
 zipp==3.5.0; python_version > '3.5'
+grpcio==1.44.0
+grpcio-tools==1.44.0
+protobuf==3.20.0
