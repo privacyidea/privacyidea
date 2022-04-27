@@ -1331,7 +1331,7 @@ def set_pin(serial, pin, user=None, encrypt_pin=False):
         # check if by accident the wrong parameter (like PIN)
         # is put into the user attribute
         log.warning("Parameter user must not be a string: {0!r}".format(user))
-        raise ParameterError("Parameter user must not be a string: {0!r}".format(
+        raise ParameterError(_("Parameter user must not be a string: {0!r}").format(
                              user), id=1212)
 
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
@@ -1870,7 +1870,7 @@ def lost_token(serial, new_serial=None, password=None,
     log.debug("doing lost token for serial {0!r} and user {1!r}".format(serial, user))
 
     if user is None or user.is_empty():
-        err = "You can only define a lost token for an assigned token."
+        err = _("You can only define a lost token for an assigned token.")
         log.warning("{0!s}".format(err))
         raise TokenAdminError(err, id=2012)
 
