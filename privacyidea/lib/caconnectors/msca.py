@@ -180,13 +180,16 @@ class MSCAConnector(BaseCAConnector):
         """
         conn = self.connect_to_worker()
         if conn:
-            reply = conn.SubmitCR(SubmitCRRequest(cr=csr, templateName=options["template"], caName=options["ca"]))
+            reply = conn.SubmitCR(SubmitCRRequest(cr=csr, templateName=options.get("template"), caName=conn.GetCAs(GetCAsRequest()).caName[0])) # options.get("ca")))
             if reply.disposition == 3:
-                return conn.GetCertificate(GetCertificateRequest(id=reply.requestId, caName=options["ca"])).cert
+                log.info("cert rolled out")
+                certificate = conn.GetCertificate(GetCertificateRequest(id=reply.requestId, caName=conn.GetCAs(GetCAsRequest()).caName[0])).cert
+                return  crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
             if reply.disposition == 5:
                 log.info("cert still under submission")
             else:
                 log.error("certification request could not be fullfilled!")
+
 
     def view_pending_certs(self):
         """
