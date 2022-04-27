@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-03-28 12:10+0200\n"
-"PO-Revision-Date: 2022-04-27 14:36+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2022-04-27 14:55+0000\n"
+"Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/es/>\n"
 "Language: es\n"
@@ -1246,27 +1246,27 @@ msgstr "El secreto de RADIUS es demasiado largo"
 
 #: lib/token.py:2449
 msgid "Admin is allowed to initalize {0!s} tokens."
-msgstr "El administrador puede inicializar {0! S} tokens."
+msgstr "El administrador puede inicializar {0!s} tokens."
 
 #: lib/token.py:2457
 msgid "The user is allowed to enroll a {0!s} token."
-msgstr "El usuario puede inscribir un token {0! S}."
+msgstr "El usuario puede inscribir un token {0!s}."
 
 #: lib/token.py:2488
 msgid "Set the maximum allowed PIN length of the {0!s} token."
-msgstr "Establezca la longitud máxima permitida del PIN del token {0! S}."
+msgstr "Establezca la longitud máxima permitida del PIN del token {0!s}."
 
 #: lib/token.py:2495
 msgid "Set the minimum required PIN length of the {0!s} token."
-msgstr "Establezca la longitud mínima requerida del PIN del token {0! S}."
+msgstr "Establezca la longitud mínima requerida del PIN del token {0!s}."
 
 #: lib/token.py:2501
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr ""
-"Especifique el contenido del PIN requerido del token {0! S}. "
-"(c)aracteres, (n)uméricos, e(s)peciales, (o)tros. [+/-]!"
+"Especifique el contenido del PIN requerido del token {0!s}. (c)aracteres, (n)"
+"uméricos, e(s)peciales, (o)tros. [+/-]!"
 
 #: lib/tokenclass.py:1599
 msgid "please enter otp: "
@@ -1810,14 +1810,13 @@ msgid ""
 "Your LDAP config found {0!s} user objects, but only {1!s} with the "
 "specified uidtype"
 msgstr ""
-"Su configuración LDAP encontró {0! S} usuarios, pero solo {1! S} con el "
-"tipo de uid especificado"
+"Su configuración LDAP encontró {0!s} usuarios, pero solo {1!s} con el tipo "
+"de uid especificado"
 
 #: lib/resolvers/LDAPIdResolver.py:1090
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr ""
-"Su configuración de LDAP parece estar bien, se encontraron {0! S} "
-"usuarios."
+"Su configuración de LDAP parece estar bien, se encontraron {0!s} usuarios."
 
 #: lib/smsprovider/FirebaseProvider.py:214
 msgid ""
@@ -2240,7 +2239,7 @@ msgstr "URL del token OATH"
 
 #: lib/tokens/indexedsecrettoken.py:51
 msgid "Please enter the positions {0!s} from your secret."
-msgstr "Introduzca las posiciones {0! S} de su secreto."
+msgstr "Introduzca las posiciones {0!s} de su secreto."
 
 #: lib/tokens/indexedsecrettoken.py:97
 msgid "Indexed Secret Token"
@@ -2711,7 +2710,7 @@ msgstr "¡Debe definir el \"appId\" en la configuración del token!"
 
 #: lib/tokens/u2ftoken.py:443
 msgid "Please confirm with your U2F token ({0!s})"
-msgstr "Confirme con su token U2F ({0! S})"
+msgstr "Confirme con su token U2F ({0!s})"
 
 #: lib/tokens/vascotoken.py:101
 msgid "VASCO Token: Authentication using VASCO tokens"
@@ -2737,7 +2736,7 @@ msgstr "Token genérico WebAuthn"
 
 #: lib/tokens/webauthntoken.py:424
 msgid "Please confirm with your WebAuthn token ({0!s})"
-msgstr "Confirme con su \"token WebAuthn\" ({0! S})"
+msgstr "Confirme con su \"token WebAuthn\" ({0!s})"
 
 #: lib/tokens/webauthntoken.py:425
 msgid "Please confirm with your WebAuthn token"
