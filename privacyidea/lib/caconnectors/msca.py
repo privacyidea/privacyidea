@@ -20,6 +20,8 @@ __doc__ = """This module contains the connectors to Certificate Authorities.
 This implementation is for the Microsoft CA via our middleware.
 
 This module is tested in tests/test_lib_caconnector.py
+
+TODO: write tests
 """
 
 from privacyidea.lib.error import CAError
@@ -101,7 +103,7 @@ class MSCAConnector(BaseCAConnector):
             
     def connect_to_worker(self):
         """
-        creates a connection to the worker and returns it.
+        creates a connection to the middleware and returns it.
         """
         channel = grpc.insecure_channel(f'{self.hostname}:{self.port}', options=(('grpc.enable_http_proxy', int(self.http_proxy)),))
         try:
@@ -158,7 +160,7 @@ class MSCAConnector(BaseCAConnector):
 
     def sign_request(self, csr, options=None):
         """
-        Signs a certificate request with the key of the CA.
+        Send a signing request to the Microsoft CA
 
         options can be
         WorkingDir: The directory where the configuration like openssl.cnf
@@ -173,12 +175,18 @@ class MSCAConnector(BaseCAConnector):
         :param options: Additional options like the validity time or the
             template or spkac=1
         :type options: dict
-        :return: Returns the certificate object
-        :rtype: X509
+        :return: Returns the certificate object if cert was provided instantly
+        :rtype: X509 or None
         """
         conn = self.connect_to_worker()
-
-        pass
+        if conn:
+            reply = conn.SubmitCR(SubmitCRRequest(cr=csr, templateName=options["template"], caName=options["ca"]))
+            if reply.disposition == 3:
+                return conn.GetCertificate(GetCertificateRequest(id=reply.requestId, caName=options["ca"])).cert
+            if reply.disposition == 5:
+                log.info("cert still under submission")
+            else:
+                log.error("certification request could not be fullfilled!")
 
     def view_pending_certs(self):
         """
@@ -201,14 +209,15 @@ class MSCAConnector(BaseCAConnector):
 
     def get_templates(self):
         """
-        Return the dict of available templates, which are read from the
-        template YAML file.
+        Return the dict of available templates
 
-        :return: dict
+        :return: String
         """
         conn = self.connect_to_worker()
         if conn:
-            templ = conn.GetTemplates(GetTemplatesRequest()).SerializeToString()
+            templ = {}
+            for template in conn.GetTemplates(GetTemplatesRequest()).ListFields()[0][1]:
+                templ[template] = ""
             return templ
 
     def publish_cert(self):
