@@ -7,17 +7,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-03-28 12:10+0200\n"
+"POT-Creation-Date: 2022-04-28 12:09+0200\n"
 "PO-Revision-Date: 2022-04-09 12:10+0000\n"
 "Last-Translator: Salih Kiraz <salihk06@gmail.com>\n"
-"Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-ui/tr/>\n"
 "Language: tr\n"
+"Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea"
+"/privacyidea-ui/tr/>\n"
+"Plural-Forms: nplurals=2; plural=n != 1\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.12-dev\n"
 "Generated-By: Babel 2.9.1\n"
 
 #: api/auth.py:222
@@ -235,7 +234,8 @@ msgstr "Yöneticinin privacyıdea'dan rasgele anahtarlar almasına izin verilir.
 #: lib/policy.py:1665
 msgid "Admin is allowed to copy the PIN of one token to another token."
 msgstr ""
-"Yöneticinin bir jetonun PIN'ini başka bir jetona kopyalamasına izin verilir."
+"Yöneticinin bir jetonun PIN'ini başka bir jetona kopyalamasına izin "
+"verilir."
 
 #: lib/policy.py:1670
 msgid ""
@@ -255,8 +255,7 @@ msgstr "Yönetici, sistem yapılandırmasını yazıp değiştirmeye izin verili
 
 #: lib/policy.py:1687
 msgid "Admin is allowed to delete keys in the system configuration."
-msgstr ""
-"Yönetici, sistem yapılandırmasında anahtarları silmek için izin verilir."
+msgstr "Yönetici, sistem yapılandırmasında anahtarları silmek için izin verilir."
 
 #: lib/policy.py:1693
 msgid "Admin is allowed to read basic system configuration."
@@ -267,8 +266,8 @@ msgid ""
 "Admin is allowed to export a documentation of the complete configuration "
 "including resolvers and realm."
 msgstr ""
-"Yönetici, çözücüler ve bölge içeren eksiksiz yapılandırmanın bir belgesini "
-"dışa aktarmaya izin verilir."
+"Yönetici, çözücüler ve bölge içeren eksiksiz yapılandırmanın bir "
+"belgesini dışa aktarmaya izin verilir."
 
 #: lib/policy.py:1706
 msgid "Admin is allowed to write and modify the policies."
@@ -301,8 +300,8 @@ msgid ""
 "Admin is allowed to create new CA Connector definitions and modify "
 "existing ones."
 msgstr ""
-"Yönetici'nin yeni CA konektörü tanımları oluşturmasına ve mevcut olanları "
-"değiştirmesine izin verilir."
+"Yönetici'nin yeni CA konektörü tanımları oluşturmasına ve mevcut olanları"
+" değiştirmesine izin verilir."
 
 #: lib/policy.py:1742
 msgid "Admin is allowed to delete CA Connector definitions."
@@ -351,8 +350,7 @@ msgstr "Yöneticinin Denetim günlüğünü görüntülemesine izin verilir."
 
 #: lib/policy.py:1796
 msgid "The admin will only see audit entries of the last 10d, 3m or 2y."
-msgstr ""
-"Yönetici yalnızca son 10D, 3M veya 2Y'nin denetim girişlerini görecektir."
+msgstr "Yönetici yalnızca son 10D, 3M veya 2Y'nin denetim girişlerini görecektir."
 
 #: lib/policy.py:1801
 msgid "The admin will not see the specified columns in the audit."
@@ -371,13 +369,14 @@ msgstr ""
 #: lib/policy.py:1816
 msgid "Admin is allowed to update the users data in a userstore."
 msgstr ""
-"Yönetici, kullanıcı mağazasındaki kullanıcıların verilerini güncellemesine "
-"izin verilir."
+"Yönetici, kullanıcı mağazasındaki kullanıcıların verilerini "
+"güncellemesine izin verilir."
 
 #: lib/policy.py:1821
 msgid "Admin is allowed to delete a user object in a userstore."
 msgstr ""
-"Yönetici, bir UserDore'daki bir kullanıcı nesnesini silmek için izin verilir."
+"Yönetici, bir UserDore'daki bir kullanıcı nesnesini silmek için izin "
+"verilir."
 
 #: lib/policy.py:1826
 msgid "Admin is allowed to set the password of the HSM/Security Module."
@@ -438,7 +437,8 @@ msgstr "Yönetici, olay işleme yapılandırmasını okumasına izin verilir."
 #: lib/policy.py:1898
 msgid "Admin is allowed to write and modify SMS gateway definitions."
 msgstr ""
-"Yönetici, SMS ağ geçidi tanımlarını yazmaya ve değiştirmesine izin verilir."
+"Yönetici, SMS ağ geçidi tanımlarını yazmaya ve değiştirmesine izin "
+"verilir."
 
 #: lib/policy.py:1904
 msgid "Admin is allowed to read SMS gateway definitions."
@@ -466,9 +466,10 @@ msgid ""
 "should be allowed to set any attribute, set this to '*:*'. For more "
 "details, check the documentation."
 msgstr ""
-"Yönetici, belirli özel kullanıcı özelliklerini ayarlamasına izin verilir. "
-"Yönetici herhangi bir özelliği ayarlamasına izin verilmesi gerekiyorsa, bunu "
-"'*: *' olarak ayarlayın. Daha fazla bilgi için, belgeleri kontrol edin."
+"Yönetici, belirli özel kullanıcı özelliklerini ayarlamasına izin verilir."
+" Yönetici herhangi bir özelliği ayarlamasına izin verilmesi gerekiyorsa, "
+"bunu '*: *' olarak ayarlayın. Daha fazla bilgi için, belgeleri kontrol "
+"edin."
 
 #: lib/policy.py:1936
 msgid ""
@@ -477,15 +478,16 @@ msgid ""
 "more details, check the documentation."
 msgstr ""
 "Yönetici belirli özel kullanıcı özelliklerini silmek için izin verilir. "
-"Yönetici herhangi bir özelliği silmeye izin verilmesi gerekiyorsa, bunu '*' "
-"olarak ayarlayın. Daha fazla bilgi için, belgeleri kontrol edin."
+"Yönetici herhangi bir özelliği silmeye izin verilmesi gerekiyorsa, bunu "
+"'*' olarak ayarlayın. Daha fazla bilgi için, belgeleri kontrol edin."
 
 #: lib/policy.py:1944
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the admin."
 msgstr ""
-"Yönetici için gösterilmeyen bir TOKENINFO alanlarının boşluksal bir listesi."
+"Yönetici için gösterilmeyen bir TOKENINFO alanlarının boşluksal bir "
+"listesi."
 
 #: lib/policy.py:1952
 msgid ""
@@ -521,8 +523,7 @@ msgstr "Kullanıcının bir belirteç iptal edilmesine izin verilir"
 
 #: lib/policy.py:1991
 msgid "The user is allowed to reset the failcounter of his tokens."
-msgstr ""
-"Kullanıcının belirteçlerinin başarısızlığını sıfırlamasına izin verilir."
+msgstr "Kullanıcının belirteçlerinin başarısızlığını sıfırlamasına izin verilir."
 
 #: lib/policy.py:1996
 msgid "The user is allowed to set the OTP PIN of his tokens."
@@ -531,7 +532,8 @@ msgstr "Kullanıcının belirteçlerinin OTP PIN'ini ayarlamasına izin verilir.
 #: lib/policy.py:2001
 msgid "The user is allowed to set a random OTP PIN of his tokens."
 msgstr ""
-"Kullanıcının, jetonlarının rastgele bir OTP pinini ayarlamasına izin verilir."
+"Kullanıcının, jetonlarının rastgele bir OTP pinini ayarlamasına izin "
+"verilir."
 
 #: lib/policy.py:2006
 msgid "The length of a random PIN set by the user."
@@ -551,8 +553,7 @@ msgstr "Kullanıcının kendi belirteci geçmişini görmesine izin verin."
 
 #: lib/policy.py:2039
 msgid "The user will only see audit entries of the last 10d, 3m or 2y."
-msgstr ""
-"Kullanıcı yalnızca son 10D, 3M veya 2Y'nin denetim girişlerini görecektir."
+msgstr "Kullanıcı yalnızca son 10D, 3M veya 2Y'nin denetim girişlerini görecektir."
 
 #: lib/policy.py:2043
 msgid "The user will not see the specified columns in the audit."
@@ -582,10 +583,10 @@ msgid ""
 "should be allowed to set any attribute, set this to '*:*'. Use '*' with "
 "CAUTION! For more details, check the documentation."
 msgstr ""
-"Kullanıcının belirli özel kullanıcı özelliklerini ayarlamasına izin verilir. "
-"Kullanıcının herhangi bir özelliği ayarlamasına izin verilmesi gerekiyorsa, "
-"bunu '*: *' olarak ayarlayın. Dikkatle kullanın! Daha fazla bilgi için, "
-"belgeleri kontrol edin."
+"Kullanıcının belirli özel kullanıcı özelliklerini ayarlamasına izin "
+"verilir. Kullanıcının herhangi bir özelliği ayarlamasına izin verilmesi "
+"gerekiyorsa, bunu '*: *' olarak ayarlayın. Dikkatle kullanın! Daha fazla "
+"bilgi için, belgeleri kontrol edin."
 
 #: lib/policy.py:2071
 msgid ""
@@ -593,9 +594,9 @@ msgid ""
 " should be allowed to delete any attribute, set this to '*'. Use '*' with"
 " CAUTION! For more details, check the documentation."
 msgstr ""
-"Kullanıcının belirli özel kullanıcı özelliklerini silmesine izin verilir. "
-"Kullanıcının herhangi bir özelliği silmesine izin verilmesi gerekiyorsa, "
-"bunu '*' olarak ayarlayın. Dikkatle kullanın! Daha fazla bilgi için, "
+"Kullanıcının belirli özel kullanıcı özelliklerini silmesine izin verilir."
+" Kullanıcının herhangi bir özelliği silmesine izin verilmesi gerekiyorsa,"
+" bunu '*' olarak ayarlayın. Dikkatle kullanın! Daha fazla bilgi için, "
 "belgeleri kontrol edin."
 
 #: lib/policy.py:2079
@@ -603,7 +604,8 @@ msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the user."
 msgstr ""
-"Kullanıcıya görüntülenmeyen bir TOKENINFO alanlarının boşluksal bir listesi."
+"Kullanıcıya görüntülenmeyen bir TOKENINFO alanlarının boşluksal bir "
+"listesi."
 
 #: lib/policy.py:2087
 msgid "Limit the number of allowed tokens in a realm."
@@ -622,8 +624,8 @@ msgid ""
 "Set a random OTP PIN with this length for a token during the enrollment "
 "process."
 msgstr ""
-"Kayıt işlemi sırasında bir belirteç için bu uzunlukta rasgele bir OTP pimi "
-"ayarlayın."
+"Kayıt işlemi sırasında bir belirteç için bu uzunlukta rasgele bir OTP "
+"pimi ayarlayın."
 
 #: lib/policy.py:2106
 msgid "In case of a random OTP PIN use this python module to process the PIN."
@@ -636,23 +638,24 @@ msgid ""
 "If the administrator sets the OTP PIN during enrollment or later, the "
 "user will have to change the PIN during first use."
 msgstr ""
-"Yönetici kayıt pimini kayıt sırasında veya daha sonra ayarlarsa, kullanıcı "
-"ilk kullanımda PIN'i değiştirmek zorunda kalacaktır."
+"Yönetici kayıt pimini kayıt sırasında veya daha sonra ayarlarsa, "
+"kullanıcı ilk kullanımda PIN'i değiştirmek zorunda kalacaktır."
 
 #: lib/policy.py:2118
 msgid ""
 "The user needs to change his PIN on a regular basis. To change the PIN "
 "every 180 days, enter '180d'."
 msgstr ""
-"Kullanıcının pinini düzenli olarak değiştirmesi gerekir. Pimi 180 günde bir "
-"değiştirmek için '180d' girin."
+"Kullanıcının pinini düzenli olarak değiştirmesi gerekir. Pimi 180 günde "
+"bir değiştirmek için '180d' girin."
 
 #: lib/policy.py:2125
 msgid ""
 "The OTP PIN can be hashed or encrypted. Hashing the PIN is the default "
 "behaviour."
 msgstr ""
-"OTP pimi hasara ya da şifrelenebilir. Klashing PIN, varsayılan davranışdır."
+"OTP pimi hasara ya da şifrelenebilir. Klashing PIN, varsayılan "
+"davranışdır."
 
 #: lib/policy.py:2130
 msgid ""
@@ -688,8 +691,7 @@ msgstr "Geçici belirteç durumunda parolanın uzunluğu (Kayıp belirteç)."
 msgid ""
 "The contents of the temporary password, described by the characters C, c,"
 " n, s, 8."
-msgstr ""
-"C, C, N, S, 8 karakterleri tarafından açıklanan geçici şifrenin içeriği."
+msgstr "C, C, N, S, 8 karakterleri tarafından açıklanan geçici şifrenin içeriği."
 
 #: lib/policy.py:2164
 msgid "The length of the validity for the temporary token (in days)."
@@ -705,8 +707,8 @@ msgid ""
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
 "[1234567890]"
 msgstr ""
-"Kayıt kodunun gerekli içeriğini belirtin. (c) haracters, (n) hakem, (ler) "
-"özgü. Değiştiricileri +/- veya izin verilen karakterlerin bir listesini "
+"Kayıt kodunun gerekli içeriğini belirtin. (c) haracters, (n) hakem, (ler)"
+" özgü. Değiştiricileri +/- veya izin verilen karakterlerin bir listesini "
 "kullanın [1234567890]"
 
 #: lib/policy.py:2182
@@ -719,33 +721,33 @@ msgid ""
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of "
 "allowed characters [1234567890]"
 msgstr ""
-"Bir şifre belirteci şifresinin gerekli içeriğini belirtin. (c) haracters, (n)"
-" hakem, (ler) özgü. Değiştiricileri +/- veya izin verilen karakterlerin bir "
-"listesini kullanın [1234567890]"
+"Bir şifre belirteci şifresinin gerekli içeriğini belirtin. (c) haracters,"
+" (n) hakem, (ler) özgü. Değiştiricileri +/- veya izin verilen "
+"karakterlerin bir listesini kullanın [1234567890]"
 
 #: lib/policy.py:2194
 msgid ""
 "Specify a white space separated list of token types, that should be "
 "verified during enrollment."
 msgstr ""
-"Kayıt sırasında doğrulanması gereken beyaz boşluk ayrılmış belirteç türleri "
-"listesi belirtin."
+"Kayıt sırasında doğrulanması gereken beyaz boşluk ayrılmış belirteç "
+"türleri listesi belirtin."
 
 #: lib/policy.py:2203
 msgid ""
 "Either use the Token PIN , use the Userstore Password or use no fixed "
 "password component."
 msgstr ""
-"Token PIN kodunu kullanın, Kullanıcı Maddesi şifresini kullanın veya sabit "
-"bir şifre bileşeni kullanın."
+"Token PIN kodunu kullanın, Kullanıcı Maddesi şifresini kullanın veya "
+"sabit bir şifre bileşeni kullanın."
 
 #: lib/policy.py:2208
 msgid ""
 "This is a whitespace separated list of tokentypes, that can be used with "
 "challenge response."
 msgstr ""
-"Bu, zorluk yanıtıyla kullanılabilecek bir TOKENTYPES'in bir boşluk ayrılmış "
-"listesidir."
+"Bu, zorluk yanıtıyla kullanılabilecek bir TOKENTYPES'in bir boşluk "
+"ayrılmış listesidir."
 
 #: lib/policy.py:2213
 msgid ""
@@ -760,8 +762,8 @@ msgid ""
 "If there are several different challenges, this text precedes the list of"
 " the challenge texts."
 msgstr ""
-"Birkaç farklı zorluk varsa, bu metin meydan okuma metinlerinin listesinden "
-"geçer."
+"Birkaç farklı zorluk varsa, bu metin meydan okuma metinlerinin "
+"listesinden geçer."
 
 #: lib/policy.py:2223
 msgid ""
@@ -776,8 +778,9 @@ msgid ""
 "If the PIN of a token is to be changed, this will allow the user to "
 "change the PIN during a validate/check request via challenge / response."
 msgstr ""
-"Bir jetonun pimi değiştirilecekse, bu, kullanıcının Hakaret / Yanıt yoluyla "
-"doğrulama / kontrol isteği sırasında PIN'i değiştirmesine izin verecektir."
+"Bir jetonun pimi değiştirilecekse, bu, kullanıcının Hakaret / Yanıt "
+"yoluyla doğrulama / kontrol isteği sırasında PIN'i değiştirmesine izin "
+"verecektir."
 
 #: lib/policy.py:2233
 msgid ""
@@ -793,8 +796,9 @@ msgid ""
 "userstore or against the given RADIUS config, if the user has no tokens "
 "assigned."
 msgstr ""
-"Ayarlandıysa, bu alandaki kullanıcı, kullanıcıya atanmış bir belirteç yoksa, "
-"kullanıcıya karşı veya verilen RADIUS yapılandırmasına karşı doğrulanacaktır."
+"Ayarlandıysa, bu alandaki kullanıcı, kullanıcıya atanmış bir belirteç "
+"yoksa, kullanıcıya karşı veya verilen RADIUS yapılandırmasına karşı "
+"doğrulanacaktır."
 
 #: lib/policy.py:2246
 msgid ""
@@ -805,24 +809,24 @@ msgid ""
 msgstr ""
 "Bu, kullanıcı PASSTHRU üzerinden RADIUS sunucusuna karşı doğrulanmışsa, "
 "PrivacyIDE'de bir belirteç atamayı sağlar. OTP değeri, PrivAcididea'daki "
-"Atanmamış Simgeyi bulmak için kullanılır. OTP değerinin uzunluğunu girin ve "
-"PIN 8 gibi ayarlandığı yer: PIN veya PIN: 6."
+"Atanmamış Simgeyi bulmak için kullanılır. OTP değerinin uzunluğunu girin "
+"ve PIN 8 gibi ayarlandığı yer: PIN veya PIN: 6."
 
 #: lib/policy.py:2253
 msgid ""
 "If the user has no token, the authentication request for this user will "
 "always be true."
 msgstr ""
-"Kullanıcının belirteci yoksa, bu kullanıcının kimlik doğrulama talebi her "
-"zaman doğru olacaktır."
+"Kullanıcının belirteci yoksa, bu kullanıcının kimlik doğrulama talebi her"
+" zaman doğru olacaktır."
 
 #: lib/policy.py:2258
 msgid ""
 "If the user user does not exist, the authentication request for this non-"
 "existing user will always be true."
 msgstr ""
-"Kullanıcı kullanıcısı yoksa, mevcut olmayan kullanıcının kimlik doğrulama "
-"talebi her zaman doğru olacaktır."
+"Kullanıcı kullanıcısı yoksa, mevcut olmayan kullanıcının kimlik doğrulama"
+" talebi her zaman doğru olacaktır."
 
 #: lib/policy.py:2264
 msgid ""
@@ -847,16 +851,16 @@ msgid ""
 "4h or 4h/5m."
 msgstr ""
 "Kimlik doğrulaması için kullanılan şifreyi önbelleğe alın ve belirli bir "
-"süre için aynı kimlik bilgileriyle kimlik doğrulamasına izin verin. 4H veya "
-"4H / 5M gibi zaman aşımı belirtin."
+"süre için aynı kimlik bilgileriyle kimlik doğrulamasına izin verin. 4H "
+"veya 4H / 5M gibi zaman aşımı belirtin."
 
 #: lib/policy.py:2284
 msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
 msgstr ""
-"Kullanıcının kimlik doğrulaması yapmasına izin verin (varsayılan). '{0! S}' "
-"olarak ayarlanırsa, kullanıcının kimlik doğrulaması reddedilir."
+"Kullanıcının kimlik doğrulaması yapmasına izin verin (varsayılan). '{0! "
+"S}' olarak ayarlanırsa, kullanıcının kimlik doğrulaması reddedilir."
 
 #: lib/policy.py:2291
 msgid ""
@@ -876,9 +880,9 @@ msgid ""
 "allowed to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h "
 "being second, minute and hour."
 msgstr ""
-"Bir kullanıcının belirli bir zamanda ne kadar başarılı kimlik doğrulamasına "
-"izin verileceğini belirleyebilirsiniz. 1 / 5S, 2 / 10M, 10 / 1H - S, M, H "
-"ikinci, dakika ve saat gibi belirtin."
+"Bir kullanıcının belirli bir zamanda ne kadar başarılı kimlik "
+"doğrulamasına izin verileceğini belirleyebilirsiniz. 1 / 5S, 2 / 10M, 10 "
+"/ 1H - S, M, H ikinci, dakika ve saat gibi belirtin."
 
 #: lib/policy.py:2306
 msgid ""
@@ -887,8 +891,8 @@ msgid ""
 "second, minute and hour."
 msgstr ""
 "Bir kullanıcının belirli bir zamanda nasıl yapmasına izin verildiğini "
-"belirleyebilirsiniz. 1 / 5S, 2 / 10M, 10 / 1H - S, M, H ikinci, dakika ve "
-"saat gibi belirtin."
+"belirleyebilirsiniz. 1 / 5S, 2 / 10M, 10 / 1H - S, M, H ikinci, dakika ve"
+" saat gibi belirtin."
 
 #: lib/policy.py:2314
 msgid ""
@@ -897,9 +901,9 @@ msgid ""
 "fail. Specify like 30h, 7d or 1y."
 msgstr ""
 "Kullanıcının bu belirteç ile tekrar kimlik doğrulaması yapılması gereken "
-"zamanın hangi zaman diliminin olduğunu belirleyebilirsiniz. Kullanıcı daha "
-"sonra doğrularsa, kimlik doğrulama başarısız olur. 30H, 7D veya 1Y gibi "
-"belirtin."
+"zamanın hangi zaman diliminin olduğunu belirleyebilirsiniz. Kullanıcı "
+"daha sonra doğrularsa, kimlik doğrulama başarısız olur. 30H, 7D veya 1Y "
+"gibi belirtin."
 
 #: lib/policy.py:2322
 msgid "The user will only be authenticated with this very tokentype."
@@ -918,8 +922,8 @@ msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
 "regexp. key/<regexp>/"
 msgstr ""
-"Kullanıcı yalnızca TokenInfo alanı Regexp ile eşleşiyorsa, doğrulanacaktır. "
-"Anahtar / <regexp> /"
+"Kullanıcı yalnızca TokenInfo alanı Regexp ile eşleşiyorsa, "
+"doğrulanacaktır. Anahtar / <regexp> /"
 
 #: lib/policy.py:2342
 msgid ""
@@ -934,16 +938,16 @@ msgid ""
 "In case of successful authentication additional no detail information "
 "will be returned."
 msgstr ""
-"Başarılı bir kimlik doğrulaması durumunda ilave daha ayrıntılı bilgi iade "
-"edilmez."
+"Başarılı bir kimlik doğrulaması durumunda ilave daha ayrıntılı bilgi iade"
+" edilmez."
 
 #: lib/policy.py:2355
 msgid ""
 "In case of failed authentication additional no detail information will be"
 " returned."
 msgstr ""
-"Başarısız olan kimlik doğrulaması durumunda ilave daha ayrıntılı bilgi iade "
-"edilmez."
+"Başarısız olan kimlik doğrulaması durumunda ilave daha ayrıntılı bilgi "
+"iade edilmez."
 
 #: lib/policy.py:2361
 msgid ""
@@ -958,16 +962,16 @@ msgid ""
 "In case of successful authentication the user resolver and realm will be "
 "added in the detail branch of the authentication response."
 msgstr ""
-"Başarılı bir kimlik doğrulaması durumunda, kullanıcı çözücü ve alem, kimlik "
-"doğrulama tepkisinin detay şubesine eklenecektir."
+"Başarılı bir kimlik doğrulaması durumunda, kullanıcı çözücü ve alem, "
+"kimlik doğrulama tepkisinin detay şubesine eklenecektir."
 
 #: lib/policy.py:2375
 msgid ""
 "The sending of an API Auth Key is required duringauthentication. This "
 "avoids rogue authenticate requests against the /validate/check interface."
 msgstr ""
-"Bir API Auth anahtarının gönderilmesi gereklidir. Bu, / Doğrulama / Kontrol "
-"Etme arayüzüne karşı Rogue Doğrulama isteklerini önler."
+"Bir API Auth anahtarının gönderilmesi gereklidir. Bu, / Doğrulama / "
+"Kontrol Etme arayüzüne karşı Rogue Doğrulama isteklerini önler."
 
 #: lib/policy.py:2385
 msgid ""
@@ -992,8 +996,8 @@ msgid ""
 "An alternative text to display on the WebUI login dialog instead of "
 "\"Please sign in\"."
 msgstr ""
-"\"Lütfen oturum aç\" yerine WebUI giriş iletişim kutusunda görüntülenecek "
-"alternatif bir metin."
+"\"Lütfen oturum aç\" yerine WebUI giriş iletişim kutusunda görüntülenecek"
+" alternatif bir metin."
 
 #: lib/policy.py:2403
 msgid ""
@@ -1008,8 +1012,8 @@ msgid ""
 "The action taken when a user is idle beyond the logout_time limit. "
 "Defaults to \"lockscreen\"."
 msgstr ""
-"Bir kullanıcı Logout_Time sınırının ötesinde boşta olduğunda alınan işlem. "
-"Varsayılanlar \"Lockscreen\"."
+"Bir kullanıcı Logout_Time sınırının ötesinde boşta olduğunda alınan "
+"işlem. Varsayılanlar \"Lockscreen\"."
 
 #: lib/policy.py:2416
 msgid ""
@@ -1017,8 +1021,8 @@ msgid ""
 "or it will be ignored. Defaults to \"disable\"."
 msgstr ""
 "Web sunucusu tarafından belirlenen Remote_Userver, PriVaYidea'ya giriş "
-"yapmak için kullanılabilir veya göz ardı edilecektir. Varsayılanlar \"Devre "
-"Dışı Bırak\"."
+"yapmak için kullanılabilir veya göz ardı edilecektir. Varsayılanlar "
+"\"Devre Dışı Bırak\"."
 
 #: lib/policy.py:2422
 msgid ""
@@ -1035,7 +1039,8 @@ msgstr "Bir sayfadaki Token görünümünde kaç belirteç gösterilmelidir."
 #: lib/policy.py:2432
 msgid "Set how many users should be displayed in the user view on one page."
 msgstr ""
-"Kullanıcı görünümünde bir sayfada kaç kullanıcı görüntüleneceğini belirleyin."
+"Kullanıcı görünümünde bir sayfada kaç kullanıcı görüntüleneceğini "
+"belirleyin."
 
 #: lib/policy.py:2437
 msgid "Use your own html template for the web UI menu."
@@ -1047,15 +1052,13 @@ msgstr "Web UI Temel / Altbilgisi için kendi HTML şablonunuzu kullanın."
 
 #: lib/policy.py:2445
 msgid "Link your privacy statement to be displayed in the baseline/footer."
-msgstr ""
-"Gizlilik bildiriminizi temel / altbilgide görüntülenecek şekilde bağlayın."
+msgstr "Gizlilik bildiriminizi temel / altbilgide görüntülenecek şekilde bağlayın."
 
 #: lib/policy.py:2449
 msgid ""
 "Whether the user ID and the resolver should be displayed in the token "
 "list."
-msgstr ""
-"Kullanıcı kimliğinin ve çözümleyici belirteç listesinde gösterilmelidir."
+msgstr "Kullanıcı kimliğinin ve çözümleyici belirteç listesinde gösterilmelidir."
 
 #: lib/policy.py:2454
 msgid ""
@@ -1063,9 +1066,9 @@ msgid ""
 "(Default https: //raw.githubusercontent.com/ privacyidea/policy-templates"
 " /master/templates/)"
 msgstr ""
-"Politika şablonlarının bulunabileceği bir depo URL'si. (Varsayılan https: "
-"//raw.githubusercontent.com/ PrivaciDiDea / Politika-şablonlar / Master / "
-"Şablonlar /)"
+"Politika şablonlarının bulunabileceği bir depo URL'si. (Varsayılan https:"
+" //raw.githubusercontent.com/ PrivaciDiDea / Politika-şablonlar / Master "
+"/ Şablonlar /)"
 
 #: lib/policy.py:2461
 msgid "As long as a user has no token, he will only see a token wizard in the UI."
@@ -1092,8 +1095,8 @@ msgstr ""
 #: lib/policy.py:2478
 msgid "The welcome dialog will be displayed if the user has no tokens assigned."
 msgstr ""
-"Kullanıcının belirsiz bir şekilde atanması yoksa, karşılama iletişim kutusu "
-"görüntülenecektir."
+"Kullanıcının belirsiz bir şekilde atanması yoksa, karşılama iletişim "
+"kutusu görüntülenecektir."
 
 #: lib/policy.py:2482
 msgid "This is the default token type in the token enrollment dialog."
@@ -1104,15 +1107,16 @@ msgid ""
 "A list of realm names, which are displayed in a drop down menu in the "
 "WebUI login screen. Realms are separated by white spaces."
 msgstr ""
-"WebUI giriş ekranında bir açılır menüde görüntülenen bir bölge adlarının bir "
-"listesi. Alemler beyaz boşluklarla ayrılır."
+"WebUI giriş ekranında bir açılır menüde görüntülenen bir bölge adlarının "
+"bir listesi. Alemler beyaz boşluklarla ayrılır."
 
 #: lib/policy.py:2494
 msgid ""
 "If this checked, the administrator will not see the welcome dialog "
 "anymore."
 msgstr ""
-"Bu kontrol edilirse, yönetici artık karşılama iletişim kutusunu görmeyecek."
+"Bu kontrol edilirse, yönetici artık karşılama iletişim kutusunu "
+"görmeyecek."
 
 #: lib/policy.py:2499
 msgid ""
@@ -1124,15 +1128,13 @@ msgstr ""
 
 #: lib/policy.py:2504
 msgid "If this is checked, the seed will be displayed as text during enrollment."
-msgstr ""
-"Bu kontrol edilirse, tohum kayıt sırasında metin olarak gösterilecektir."
+msgstr "Bu kontrol edilirse, tohum kayıt sırasında metin olarak gösterilecektir."
 
 #: lib/policy.py:2509
 msgid ""
 "If this is checked, the privacyIDEA Node name will be displayed in the "
 "menu bar."
-msgstr ""
-"Bu kontrol edilirse, PrivacyIDEA düğümü adı menü çubuğunda görüntülenir."
+msgstr "Bu kontrol edilirse, PrivacyIDEA düğümü adı menü çubuğunda görüntülenir."
 
 #: lib/policy.py:2514
 msgid ""
@@ -1141,8 +1143,8 @@ msgid ""
 " Google Play Store."
 msgstr ""
 "Bu kontrol edilirse, HotP, TOTP ve Push belirteçleri için kayıt sayfası, "
-"Google Play Store'daki PrivacyIDEA kimlik doğrulamasına yol açan bir QR kodu "
-"içerecektir."
+"Google Play Store'daki PrivacyIDEA kimlik doğrulamasına yol açan bir QR "
+"kodu içerecektir."
 
 #: lib/policy.py:2521
 msgid ""
@@ -1150,9 +1152,9 @@ msgid ""
 "will contain a QR code that leads to the privacyIDEA Authenticator in the"
 " iOS App Store."
 msgstr ""
-"Bu kontrol edilirse, Hotp, TOTP ve Push belirteçleri için kayıt sayfası, IOS "
-"App Store'daki PrivaciDIDEA kimlik doğrulamasına yol açan bir QR kodu "
-"içerecektir."
+"Bu kontrol edilirse, Hotp, TOTP ve Push belirteçleri için kayıt sayfası, "
+"IOS App Store'daki PrivaciDIDEA kimlik doğrulamasına yol açan bir QR kodu"
+" içerecektir."
 
 #: lib/policy.py:2528
 msgid ""
@@ -1206,6 +1208,118 @@ msgstr ""
 msgid "The RADIUS secret is too long"
 msgstr "Yarıçap sırrı çok uzun"
 
+#: lib/token.py:153
+msgid "create_tokenclass_object failed:  {0!r}"
+msgstr ""
+
+#: lib/token.py:307
+msgid "I can only create SQL filters from tokeninfo of length 1."
+msgstr ""
+
+#: lib/token.py:564
+msgid "The requested token could not be found."
+msgstr ""
+
+#: lib/token.py:566
+msgid "More than one matching token were found."
+msgstr ""
+
+#: lib/token.py:880
+msgid "multiple tokens are matching this OTP value!"
+msgstr ""
+
+#: lib/token.py:1040
+msgid "init token failed: unknown token type {0!r}"
+msgstr ""
+
+#: lib/token.py:1061
+msgid "initToken failed: {0!s}"
+msgstr ""
+
+#: lib/token.py:1100
+msgid "token create failed {0!r}"
+msgstr ""
+
+#: lib/token.py:1216
+#, fuzzy
+msgid "Token already assigned to user {0!r}"
+msgstr "Kullanıcılara atanan belirteçlerin sayısı"
+
+#: lib/token.py:1230
+msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
+msgstr ""
+
+#: lib/token.py:1258
+msgid "Token unassign failed for {0!r}/{1!r}: {2!r}"
+msgstr ""
+
+#: lib/token.py:1334
+msgid "Parameter user must not be a string: {0!r}"
+msgstr ""
+
+#: lib/token.py:1873
+msgid "You can only define a lost token for an assigned token."
+msgstr ""
+
+#: lib/token.py:1899
+msgid "temporary replacement for {0!s}"
+msgstr ""
+
+#: lib/token.py:1955
+msgid "There is no active and assigned token in this realm"
+msgstr ""
+
+#: lib/token.py:1967
+msgid ""
+"There is no active and assigned token in this realm, included types: "
+"{0!s}, excluded types: {1!s}"
+msgstr ""
+
+#: lib/token.py:2021
+msgid "OTP verification failed."
+msgstr ""
+
+#: lib/token.py:2054
+#, fuzzy
+msgid "The user has no tokens assigned"
+msgstr "Tükenen belirteçli kullanıcının sayısı"
+
+#: lib/token.py:2270
+msgid "matching {0:d} tokens"
+msgstr ""
+
+#: lib/token.py:2322
+msgid "Challenge matches, but token is not fit for challenge"
+msgstr ""
+
+#: lib/token.py:2332
+msgid "Found matching challenge"
+msgstr ""
+
+#: lib/token.py:2374
+msgid "Response did not match the challenge."
+msgstr ""
+
+#: lib/token.py:2376
+msgid "Response did not match for {0!s} tokens."
+msgstr ""
+
+#: lib/token.py:2384
+msgid "No active challenge response token found"
+msgstr ""
+
+#: lib/token.py:2398
+msgid "wrong otp value"
+msgstr ""
+
+#: lib/token.py:2405
+msgid ". previous otp used again"
+msgstr ""
+
+#: lib/token.py:2419
+msgid "wrong otp pin"
+msgstr ""
+
 #: lib/token.py:2449
 msgid "Admin is allowed to initalize {0!s} tokens."
 msgstr "Yönetici'nin {0! S} belirteçlerini inalitalize etmesine izin verilir."
@@ -1239,8 +1353,8 @@ msgid ""
 "The rollout_state of the token has a certain value like 'clientwait' or "
 "'enrolled'."
 msgstr ""
-"Tokunun rollut_state, 'Clientwait' veya 'kayıtlı' gibi belirli bir değeri "
-"var."
+"Tokunun rollut_state, 'Clientwait' veya 'kayıtlı' gibi belirli bir değeri"
+" var."
 
 #: lib/eventhandler/base.py:151
 msgid "The realm of the user, for which this event should apply."
@@ -1276,8 +1390,7 @@ msgstr "Sonuç. Tepki içindeki status doğru veya yanlıştır."
 
 #: lib/eventhandler/base.py:203
 msgid "Check if the max failcounter of the token is reached."
-msgstr ""
-"Belirteçinin maksimum başarısızlığının ulaşılıp ulaşmadığını kontrol edin."
+msgstr "Belirteçinin maksimum başarısızlığının ulaşılıp ulaşmadığını kontrol edin."
 
 #: lib/eventhandler/base.py:210
 msgid "The token has a user assigned."
@@ -1301,8 +1414,7 @@ msgstr "Seri bu normal ifadeyle eşleşirse, eylem tetiklenir."
 
 #: lib/eventhandler/base.py:235
 msgid "Action is triggered, if the user has this number of tokens assigned."
-msgstr ""
-"Kullanıcı, atanan bu tür belirteçlerin sayısına sahipse, eylem tetiklenir."
+msgstr "Kullanıcı, atanan bu tür belirteçlerin sayısına sahipse, eylem tetiklenir."
 
 #: lib/eventhandler/base.py:241
 msgid ""
@@ -1326,9 +1438,9 @@ msgid ""
 "tokeninfo field 'count_auth' is bigger than 100, less than 99 or exactly "
 "100."
 msgstr ""
-"Bu, '> 100', '<99' veya '= 100' olabilir, eylemi tetiklemek için, TOKENINFO "
-"alanı 'Count_Auth', 100'den daha büyükse, 99 veya tam olarak 100'den daha "
-"büyükse."
+"Bu, '> 100', '<99' veya '= 100' olabilir, eylemi tetiklemek için, "
+"TOKENINFO alanı 'Count_Auth', 100'den daha büyükse, 99 veya tam olarak "
+"100'den daha büyükse."
 
 #: lib/eventhandler/base.py:261
 msgid ""
@@ -1347,8 +1459,8 @@ msgid ""
 "'count_auth_success is bigger than 100, less than 99 or exactly 100."
 msgstr ""
 "Bu, '> 100', '<99' veya '= 100' olabilir, eylemi tetiklemek için, "
-"'Count_Auth' ve 'Count_Auth_Success arasındaki fark, 100'den daha büyük, 99 "
-"veya tam olarak 100'den daha büyükse."
+"'Count_Auth' ve 'Count_Auth_Success arasındaki fark, 100'den daha büyük, "
+"99 veya tam olarak 100'den daha büyükse."
 
 #: lib/eventhandler/base.py:277
 msgid ""
@@ -1356,8 +1468,8 @@ msgid ""
 "failcounter of a token matches this value. Note that the failcounter "
 "stops increasing, if the max_failcount is reached."
 msgstr ""
-"Bu '> 9', '<9' veya '= 10' olabilir, eğer bir belirteç'in başarısızlığı bu "
-"değerle eşleşirse, eylemi tetiklemek için olabilir. Max_failCount'a "
+"Bu '> 9', '<9' veya '= 10' olabilir, eğer bir belirteç'in başarısızlığı "
+"bu değerle eşleşirse, eylemi tetiklemek için olabilir. Max_failCount'a "
 "ulaşıldığında, başarısızlığın artan durduğunu unutmayın."
 
 #: lib/eventhandler/base.py:285
@@ -1366,9 +1478,9 @@ msgid ""
 " something like '<fieldname> == <fieldvalue>', '<fieldname> > "
 "<fieldvalue>' or '<fieldname> < <fieldvalue>'."
 msgstr ""
-"Bu durum herhangi bir keyfi TOKENINFO alanını kontrol edebilir. '<FieldName> "
-"== <fieldValue>', '<fieldName >> <fieldValue>' veya '<fieldName> << "
-"FieldValue>' gibi bir şey girmeniz gerekir."
+"Bu durum herhangi bir keyfi TOKENINFO alanını kontrol edebilir. "
+"'<FieldName> == <fieldValue>', '<fieldName >> <fieldValue>' veya "
+"'<fieldName> << FieldValue>' gibi bir şey girmeniz gerekir."
 
 #: lib/eventhandler/base.py:293
 msgid ""
@@ -1376,8 +1488,9 @@ msgid ""
 "compare it like 'myCounter == 1000', 'myCounter > 1000' or 'myCounter < "
 "1000'."
 msgstr ""
-"Bu durum, keyfi bir olay sayacının değerini kontrol edebilir ve 'MyCounter "
-"== 1000', 'MyCounter> 1000' veya 'MyCounter <1000' gibi karşılaştırılabilir."
+"Bu durum, keyfi bir olay sayacının değerini kontrol edebilir ve "
+"'MyCounter == 1000', 'MyCounter> 1000' veya 'MyCounter <1000' gibi "
+"karşılaştırılabilir."
 
 #: lib/eventhandler/base.py:300
 msgid ""
@@ -1446,16 +1559,16 @@ msgid ""
 "Forward the client IP to the child privacyIDEA server. Otherwise this "
 "server will be the client."
 msgstr ""
-"İstemci IP'yi Çocuk PrivacyIDEA sunucusuna iletin. Aksi takdirde bu sunucu "
-"müşteri olacaktır."
+"İstemci IP'yi Çocuk PrivacyIDEA sunucusuna iletin. Aksi takdirde bu "
+"sunucu müşteri olacaktır."
 
 #: lib/eventhandler/federationhandler.py:100
 msgid ""
 "Forward the authorization header. This allows to also forward request "
 "like token- and system-requests."
 msgstr ""
-"Yetkilendirme başlığını iletin. Bu, belirteç ve sistem istekleri gibi talebi "
-"de iletmenizi sağlar."
+"Yetkilendirme başlığını iletin. Bu, belirteç ve sistem istekleri gibi "
+"talebi de iletmenizi sağlar."
 
 #: lib/eventhandler/logginghandler.py:87
 msgid "The name of the logging facility"
@@ -1482,8 +1595,8 @@ msgid ""
 "The new value of the parameter. Can contain tags like {0}, {1} for the "
 "matched sub strings."
 msgstr ""
-"Parametrenin yeni değeri. Eşleşen alt dizeler için {0}, {1} gibi etiketler "
-"içerebilir."
+"Parametrenin yeni değeri. Eşleşen alt dizeler için {0}, {1} gibi "
+"etiketler içerebilir."
 
 #: lib/eventhandler/requestmangler.py:116
 msgid "The parameter, that should match some values."
@@ -1494,8 +1607,8 @@ msgid ""
 "The value of the match_parameter. It can contain a regular expression and"
 " '()' to transfer values to the new parameter."
 msgstr ""
-"Match_parameter değeri. Değerleri yeni parametreye aktarmak için normal bir "
-"ifade ve '()' içerebilir."
+"Match_parameter değeri. Değerleri yeni parametreye aktarmak için normal "
+"bir ifade ve '()' içerebilir."
 
 #: lib/eventhandler/responsemangler.py:81
 msgid ""
@@ -1542,8 +1655,8 @@ msgid ""
 "running request."
 msgstr ""
 "Komut dosyasını çalıştırmadan önce mevcut işlemi bitirin. Bu, "
-"veritabanındaki değişiklikler komut dosyası veya çalışma isteğine uygun hale "
-"getirilmelidir."
+"veritabanındaki değişiklikler komut dosyası veya çalışma isteğine uygun "
+"hale getirilmelidir."
 
 #: lib/eventhandler/scripthandler.py:115
 msgid "Add '--serial <serial number>' as script parameter."
@@ -1570,8 +1683,8 @@ msgid ""
 "Add the role (either admin or user) of the logged in user as script "
 "parameter like '--logged_in_role <role>'."
 msgstr ""
-"Giriş yapmış kullanıcının rolünü (yönetici veya kullanıcı) '- logged_in_role "
-"<rol>' gibi komut dosyası parametresi olarak ekleyin."
+"Giriş yapmış kullanıcının rolünü (yönetici veya kullanıcı) '- "
+"logged_in_role <rol>' gibi komut dosyası parametresi olarak ekleyin."
 
 #: lib/eventhandler/tokenhandler.py:128
 msgid "set a new realm of the token"
@@ -1584,7 +1697,8 @@ msgid ""
 " token."
 msgstr ""
 "Yeni bölge, belirteçlerin tek alemi olacak. Yani Diğer tüm alemler bu "
-"belirteçten kaldırılacaktır. Aksi takdirde, bölge belirteç'e eklenecektir."
+"belirteçten kaldırılacaktır. Aksi takdirde, bölge belirteç'e "
+"eklenecektir."
 
 #: lib/eventhandler/tokenhandler.py:147
 msgid "set the PIN of the token to a random PIN of this length."
@@ -1639,16 +1753,16 @@ msgid ""
 "The token will be valid starting at the given date. Can be a fixed date "
 "or an offset like +10m, +24h, +7d."
 msgstr ""
-"Belirteç verilen tarihten başlayarak geçerli olacaktır. Sabit bir tarih veya "
-"+ 10M, + 24 saat + 7D gibi bir ofset olabilir."
+"Belirteç verilen tarihten başlayarak geçerli olacaktır. Sabit bir tarih "
+"veya + 10M, + 24 saat + 7D gibi bir ofset olabilir."
 
 #: lib/eventhandler/tokenhandler.py:226
 msgid ""
 "The token will be valid until the given date. Can be a fixed date or an "
 "offset like +10m, +24h, +7d."
 msgstr ""
-"Belirteç verilen tarihe kadar geçerli olacaktır. Sabit bir tarih veya + 10M, "
-"+ 24 saat + 7D gibi bir ofset olabilir."
+"Belirteç verilen tarihe kadar geçerli olacaktır. Sabit bir tarih veya + "
+"10M, + 24 saat + 7D gibi bir ofset olabilir."
 
 #: lib/eventhandler/tokenhandler.py:239
 msgid "Set the new count window of the token."
@@ -1663,8 +1777,8 @@ msgid ""
 "Increase or decrease the fail counter of the token. Values of +n, -n with"
 " n being an integer are accepted."
 msgstr ""
-"Belirteç'in başarısızlığını arttırın veya azaltın. + N'nin değerleri, bir "
-"tamsayı olan n ile birlikte kabul edilir."
+"Belirteç'in başarısızlığını arttırın veya azaltın. + N'nin değerleri, bir"
+" tamsayı olan n ile birlikte kabul edilir."
 
 #: lib/eventhandler/tokenhandler.py:269
 msgid "Set the maximum failcounter of the token."
@@ -1718,8 +1832,7 @@ msgstr "Bu kullanıcıya bildirim gönder."
 
 #: lib/eventhandler/usernotification.py:206
 msgid "Send the user notification via a predefined SMS gateway."
-msgstr ""
-"Kullanıcı bildirimini önceden tanımlanmış bir SMS ağ geçidi ile gönderin."
+msgstr "Kullanıcı bildirimini önceden tanımlanmış bir SMS ağ geçidi ile gönderin."
 
 #: lib/eventhandler/usernotification.py:211
 msgid "The text of the SMS."
@@ -1764,15 +1877,13 @@ msgstr "LDAP yapılandırmanız iyi görünüyor, {0! S} Kullanıcı nesneleri b
 msgid ""
 "The project ID, that the client should use. Get it from your Firebase "
 "console."
-msgstr ""
-"Müşterinin kullanması gereken proje kimliği. Firebase konsolunuzdan alın."
+msgstr "Müşterinin kullanması gereken proje kimliği. Firebase konsolunuzdan alın."
 
 #: lib/smsprovider/FirebaseProvider.py:218
 msgid ""
 "The project number, that the client should use. Get it from your Firebase"
 " console."
-msgstr ""
-"Müşterinin kullanması gereken proje numarası. Firebase konsolunuzdan alın."
+msgstr "Müşterinin kullanması gereken proje numarası. Firebase konsolunuzdan alın."
 
 #: lib/smsprovider/FirebaseProvider.py:223
 msgid ""
@@ -1795,15 +1906,16 @@ msgid ""
 "The App ID, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr ""
-"IOS istemcisinin kullanması gereken uygulama kimliği. Firebase konsolunuzdan "
-"alın."
+"IOS istemcisinin kullanması gereken uygulama kimliği. Firebase "
+"konsolunuzdan alın."
 
 #: lib/smsprovider/FirebaseProvider.py:238
 msgid ""
 "The API Key, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr ""
-"API tuşu, iOS istemcisinin kullanması gerektiği. Firebase konsolunuzdan alın."
+"API tuşu, iOS istemcisinin kullanması gerektiği. Firebase konsolunuzdan "
+"alın."
 
 #: lib/smsprovider/FirebaseProvider.py:243
 msgid ""
@@ -1823,8 +1935,7 @@ msgstr "HTTP ağ geçidinin temel URL'si"
 
 #: lib/smsprovider/HttpSMSProvider.py:244
 msgid "Should the HTTP Gateway be connected via an HTTP GET or POST request."
-msgstr ""
-"HTTP ağ geçidi bir HTTP GET veya POST isteği aracılığıyla bağlanmalıdır."
+msgstr "HTTP ağ geçidi bir HTTP GET veya POST isteği aracılığıyla bağlanmalıdır."
 
 #: lib/smsprovider/HttpSMSProvider.py:249
 msgid ""
@@ -1854,8 +1965,8 @@ msgid ""
 "provider. Enter something like '/[\\+/]//' to remove pluses and slashes."
 msgstr ""
 "Teklif ile uyumlu hale getirmek için telefon numarasını değiştirmek için "
-"düzenli ifade. Artıları ve keseleri kaldırmak için '/ [\\ + /] //' gibi bir "
-"şey girin."
+"düzenli ifade. Artıları ve keseleri kaldırmak için '/ [\\ + /] //' gibi "
+"bir şey girin."
 
 #: lib/smsprovider/HttpSMSProvider.py:276
 msgid ""
@@ -1884,8 +1995,8 @@ msgid ""
 "The script in script directory PI_SCRIPT_SMSPROVIDER_DIRECTORY to call. "
 "Expects phone as the parameter and the message from stdin."
 msgstr ""
-"Script dizininde komut dosyası pi_script_smsprovider_directory aramak için. "
-"Telefonun parametre ve STDIN'den mesajı bekler."
+"Script dizininde komut dosyası pi_script_smsprovider_directory aramak "
+"için. Telefonun parametre ve STDIN'den mesajı bekler."
 
 #: lib/smsprovider/SmppSMSProvider.py:129
 msgid "SMSC Host IP"
@@ -1936,8 +2047,8 @@ msgid ""
 "Whether to reset the event_counter, if it is read and written to the "
 "MonitoringStats table."
 msgstr ""
-"Event_Counter'ı, okunursa ve MonitoringStats tablosuna yazılmışsa sıfırlanıp "
-"sıfırlanmayacaktır."
+"Event_Counter'ı, okunursa ve MonitoringStats tablosuna yazılmışsa "
+"sıfırlanıp sıfırlanmayacaktır."
 
 #: lib/task/simplestats.py:48
 msgid "Total number of tokens"
@@ -2018,8 +2129,9 @@ msgid ""
 " filename as email template starting with \"file:\"."
 msgstr ""
 "Bir e-posta belirteci için e-posta yoluyla gönderilecek metin. {OTP} ve "
-"{Serial} gibi birkaç etiket parametre olarak kullanılabilir. Ayrıca \"Dosya:"
-"\" ile başlayan e-posta şablonu olarak bir dosya adı belirleyebilirsiniz."
+"{Serial} gibi birkaç etiket parametre olarak kullanılabilir. Ayrıca "
+"\"Dosya:\" ile başlayan e-posta şablonu olarak bir dosya adı "
+"belirleyebilirsiniz."
 
 #: lib/tokens/emailtoken.py:172
 msgid ""
@@ -2034,29 +2146,30 @@ msgid ""
 "If set, a new EMail OTP will be sent after successful authentication with"
 " one EMail OTP."
 msgstr ""
-"Eğer ayarlanmışsa, bir e-posta OTP ile başarılı bir kimlik doğrulamasından "
-"sonra yeni bir e-posta bir OTP gönderilecektir."
+"Eğer ayarlanmışsa, bir e-posta OTP ile başarılı bir kimlik "
+"doğrulamasından sonra yeni bir e-posta bir OTP gönderilecektir."
 
 #: lib/tokens/emailtoken.py:182
 msgid ""
 "Use an alternate challenge text for telling the user to enter the code "
 "from the eMail."
 msgstr ""
-"Kullanıcıya kodu e-postadan girmesini söylemek için alternatif bir meydan "
-"okuma metni kullanın."
+"Kullanıcıya kodu e-postadan girmesini söylemek için alternatif bir meydan"
+" okuma metni kullanın."
 
 #: lib/tokens/emailtoken.py:189
 msgid "The user may only have this maximum number of email tokens assigned."
 msgstr ""
-"Kullanıcı yalnızca bu maksimum e-posta belirleyici sayısını atanmış olabilir."
+"Kullanıcı yalnızca bu maksimum e-posta belirleyici sayısını atanmış "
+"olabilir."
 
 #: lib/tokens/emailtoken.py:194
 msgid ""
 "The user may only have this maximum number of active email tokens "
 "assigned."
 msgstr ""
-"Kullanıcı, yalnızca bu maksimum aktif e-posta belirleyici sayısına atanmış "
-"olabilir."
+"Kullanıcı, yalnızca bu maksimum aktif e-posta belirleyici sayısına "
+"atanmış olabilir."
 
 #: lib/tokens/emailtoken.py:276
 msgid "Enter the OTP from the Email:"
@@ -2081,8 +2194,8 @@ msgid ""
 "The user may only have this maximum number of active 4eyes tokens "
 "assigned."
 msgstr ""
-"Kullanıcı yalnızca bu maksimum aktif 4eyes belirteci atanmış sayısına sahip "
-"olabilir."
+"Kullanıcı yalnızca bu maksimum aktif 4eyes belirteci atanmış sayısına "
+"sahip olabilir."
 
 #: lib/tokens/hotptoken.py:82
 msgid "Please enter a valid OTP value of the new token."
@@ -2099,14 +2212,14 @@ msgstr "Kullanılacak Otplen'i belirtin. 6 veya 8 basamak olabilir."
 #: lib/tokens/hotptoken.py:130 lib/tokens/totptoken.py:134
 msgid "Specify whether users are allowed or forced to use two-step enrollment."
 msgstr ""
-"Kullanıcıların izin verilip verilmeyeceğini veya iki adımlı kaydı kullanmaya "
-"zorlandığını belirtin."
+"Kullanıcıların izin verilip verilmeyeceğini veya iki adımlı kaydı "
+"kullanmaya zorlandığını belirtin."
 
 #: lib/tokens/hotptoken.py:132 lib/tokens/totptoken.py:154
 msgid "Specify whether admins are allowed or forced to use two-step enrollment."
 msgstr ""
-"Yönetimlerin izin verilip verilmediğini veya iki aşamalı kaydı kullanmaya "
-"zorlandığını belirtin."
+"Yönetimlerin izin verilip verilmediğini veya iki aşamalı kaydı kullanmaya"
+" zorlandığını belirtin."
 
 #: lib/tokens/hotptoken.py:136
 msgid "HOTP: Event based One Time Passwords."
@@ -2134,8 +2247,7 @@ msgstr "Sunucu tarafından sağlanan OTP tohum bölümünün boyutu (bayt olarak
 msgid ""
 "The difficulty factor used for the OTP seed generation (should be at "
 "least 10000)"
-msgstr ""
-"OTP tohumu üretimi için kullanılan zorluk faktörü (en az 10000 olmalıdır)"
+msgstr "OTP tohumu üretimi için kullanılan zorluk faktörü (en az 10000 olmalıdır)"
 
 #: lib/tokens/hotptoken.py:169 lib/tokens/totptoken.py:171
 msgid "Enforce setting an app pin for the privacyIDEA Authenticator App"
@@ -2172,8 +2284,8 @@ msgid ""
 "Use an alternate challenge text for telling the user which positions of "
 "the secret he should enter."
 msgstr ""
-"Kullanıcıya sıranın hangi pozisyonlarını girmesi gerektiğini söylemek için "
-"alternatif bir meydan okuma metni kullanın."
+"Kullanıcıya sıranın hangi pozisyonlarını girmesi gerektiğini söylemek "
+"için alternatif bir meydan okuma metni kullanın."
 
 #: lib/tokens/indexedsecrettoken.py:112
 msgid "Number of necessary positions to be answered by the user."
@@ -2192,8 +2304,8 @@ msgid ""
 "The user may only have this maximum number of indexed secret tokens "
 "assigned."
 msgstr ""
-"Kullanıcı yalnızca bu maksimum dizinlenmiş gizli belirteç atanmış sayısına "
-"sahip olabilir."
+"Kullanıcı yalnızca bu maksimum dizinlenmiş gizli belirteç atanmış "
+"sayısına sahip olabilir."
 
 #: lib/tokens/indexedsecrettoken.py:145
 msgid ""
@@ -2242,8 +2354,8 @@ msgid ""
 "The user may only have this maximum number of active paper tokens "
 "assigned."
 msgstr ""
-"Kullanıcı yalnızca bu maksimum aktif kağıt belirteç atanmış sayısına sahip "
-"olabilir."
+"Kullanıcı yalnızca bu maksimum aktif kağıt belirteç atanmış sayısına "
+"sahip olabilir."
 
 #: lib/tokens/passwordtoken.py:112
 msgid ""
@@ -2256,7 +2368,8 @@ msgstr ""
 #: lib/tokens/passwordtoken.py:124
 msgid "The user may only have this maximum number of password tokens assigned."
 msgstr ""
-"Kullanıcı yalnızca bu maksimum şifre belirleyici sayısını atanmış olabilir."
+"Kullanıcı yalnızca bu maksimum şifre belirleyici sayısını atanmış "
+"olabilir."
 
 #: lib/tokens/passwordtoken.py:129
 msgid ""
@@ -2309,7 +2422,8 @@ msgstr "İkinci kayıt adım bu süre içinde tamamlanmalıdır (dakikalar için
 #: lib/tokens/pushtoken.py:325
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
 msgstr ""
-"Akıllı telefonun kayıt sırasında SSL'yi doğrulaması gerekir. (Varsayılan 1)"
+"Akıllı telefonun kayıt sırasında SSL'yi doğrulaması gerekir. (Varsayılan "
+"1)"
 
 #: lib/tokens/pushtoken.py:331
 msgid "The user may only have this maximum number of Push tokens assigned."
@@ -2320,8 +2434,8 @@ msgstr ""
 #: lib/tokens/pushtoken.py:336
 msgid "The user may only have this maximum number of active Push tokens assigned."
 msgstr ""
-"Kullanıcı yalnızca bu maksimum aktif push belirteç atanmış sayısına sahip "
-"olabilir."
+"Kullanıcı yalnızca bu maksimum aktif push belirteç atanmış sayısına sahip"
+" olabilir."
 
 #: lib/tokens/pushtoken.py:343
 msgid "The question the user sees on his mobile phone."
@@ -2334,15 +2448,14 @@ msgstr "Bildirimin başlığı, kullanıcı cep telefonunu görür."
 #: lib/tokens/pushtoken.py:353
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr ""
-"Akıllı telefonun kimlik doğrulaması sırasında SSL'yi doğrulaması gerekir. ("
-"Varsayılan 1)"
+"Akıllı telefonun kimlik doğrulaması sırasında SSL'yi doğrulaması gerekir."
+" (Varsayılan 1)"
 
 #: lib/tokens/pushtoken.py:359
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
-msgstr ""
-"Kullanıcının ilk talepte meydan okumayı onaylaması için saniye bekleyin."
+msgstr "Kullanıcının ilk talepte meydan okumayı onaylaması için saniye bekleyin."
 
 #: lib/tokens/pushtoken.py:365
 msgid "Configure whether to allow push tokens to poll for challenges"
@@ -2371,8 +2484,8 @@ msgid ""
 "The user may only have this maximum number of active questionaire tokens "
 "assigned."
 msgstr ""
-"Kullanıcı yalnızca bu maksimum aktif anket belirteci atanmış sayısına sahip "
-"olabilir."
+"Kullanıcı yalnızca bu maksimum aktif anket belirteci atanmış sayısına "
+"sahip olabilir."
 
 #: lib/tokens/questionnairetoken.py:166
 #, python-format
@@ -2394,8 +2507,8 @@ msgid ""
 "The user may only have this maximum number of active RADIUS tokens "
 "assigned."
 msgstr ""
-"Kullanıcı, yalnızca bu maksimum aktif yarıçapı belirleyici sayısına sahip "
-"olabilir."
+"Kullanıcı, yalnızca bu maksimum aktif yarıçapı belirleyici sayısına sahip"
+" olabilir."
 
 #: lib/tokens/registrationtoken.py:129
 msgid ""
@@ -2418,8 +2531,8 @@ msgid ""
 "The user may only have this maximum number of active registration tokens "
 "assigned."
 msgstr ""
-"Kullanıcı, yalnızca bu maksimum aktif kayıt belirteçlerinin atanmasına sahip "
-"olabilir."
+"Kullanıcı, yalnızca bu maksimum aktif kayıt belirteçlerinin atanmasına "
+"sahip olabilir."
 
 #: lib/tokens/remotetoken.py:114
 msgid "Remote Token: Forward authentication request to another server."
@@ -2460,16 +2573,16 @@ msgid ""
 "If set, a new SMS OTP will be sent after successful authentication with "
 "one SMS OTP."
 msgstr ""
-"SET ise, bir SMS OTP ile başarılı bir kimlik doğrulamasından sonra yeni bir "
-"SMS OTP gönderilecektir."
+"SET ise, bir SMS OTP ile başarılı bir kimlik doğrulamasından sonra yeni "
+"bir SMS OTP gönderilecektir."
 
 #: lib/tokens/smstoken.py:220
 msgid ""
 "Use an alternate challenge text for telling the user to enter the code "
 "from the SMS."
 msgstr ""
-"Kullanıcıya Kodu SMS'ten girmesini söylemek için alternatif bir meydan okuma "
-"metni kullanın."
+"Kullanıcıya Kodu SMS'ten girmesini söylemek için alternatif bir meydan "
+"okuma metni kullanın."
 
 #: lib/tokens/smstoken.py:228
 msgid "Choose the gateways the administrator is allowed to set."
@@ -2519,8 +2632,7 @@ msgstr "SSH Genel Anahtarı: Halka açık SSH tuşu."
 
 #: lib/tokens/sshkeytoken.py:92
 msgid "The user may only have this maximum number of SSH keys assigned."
-msgstr ""
-"Kullanıcı yalnızca bu maksimum SSH tuşuna atanmış sayısına sahip olabilir."
+msgstr "Kullanıcı yalnızca bu maksimum SSH tuşuna atanmış sayısına sahip olabilir."
 
 #: lib/tokens/sshkeytoken.py:97
 msgid "The user may only have this maximum number of active SSH keys assigned."
@@ -2535,8 +2647,8 @@ msgstr "Kullanıcı, yalnızca bu maksimum tanks sayısını atanmış olabilir.
 #: lib/tokens/tantoken.py:117
 msgid "The user may only have this maximum number of active TAN tokens assigned."
 msgstr ""
-"Kullanıcı, yalnızca bu maksimum aktif tanıtım belirleyici sayısını atanmış "
-"olabilir."
+"Kullanıcı, yalnızca bu maksimum aktif tanıtım belirleyici sayısını "
+"atanmış olabilir."
 
 #: lib/tokens/tiqrtoken.py:159
 msgid "TiQR: Enroll a TiQR token."
@@ -2564,16 +2676,15 @@ msgstr "TOTP: Zaman tabanlı bir zaman şifreleri."
 
 #: lib/tokens/u2ftoken.py:259
 msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
-msgstr ""
-"Bu, kayıtlı U2F belirteçlerine güvenilen FQDN Hostnames'in bir listesidir."
+msgstr "Bu, kayıtlı U2F belirteçlerine güvenilen FQDN Hostnames'in bir listesidir."
 
 #: lib/tokens/u2ftoken.py:263
 msgid ""
 "Use an alternate challenge text for telling the user to confirm with his "
 "U2F device."
 msgstr ""
-"Kullanıcıya U2F cihazını onaylamasını söylemek için alternatif bir meydan "
-"okuma metni kullanın."
+"Kullanıcıya U2F cihazını onaylamasını söylemek için alternatif bir meydan"
+" okuma metni kullanın."
 
 #: lib/tokens/u2ftoken.py:270
 msgid "Only specified U2F tokens are authorized."
@@ -2590,8 +2701,8 @@ msgstr "U2F onay sertifikasını doğrulamayın."
 #: lib/tokens/u2ftoken.py:288
 msgid "The user may only have this maximum number of U2F tokens assigned."
 msgstr ""
-"Kullanıcı, yalnızca bu maksimum U2F belirteçlerinin atandığı sayısına sahip "
-"olabilir."
+"Kullanıcı, yalnızca bu maksimum U2F belirteçlerinin atandığı sayısına "
+"sahip olabilir."
 
 #: lib/tokens/u2ftoken.py:293
 msgid "The user may only have this maximum number of active U2F tokens assigned."
@@ -2618,8 +2729,8 @@ msgid ""
 "The user may only have this maximum number of active Vasco tokens "
 "assigned."
 msgstr ""
-"Kullanıcı, yalnızca bu maksimum aktif Vasco belirteçlerinin atanmasına sahip "
-"olabilir."
+"Kullanıcı, yalnızca bu maksimum aktif Vasco belirteçlerinin atanmasına "
+"sahip olabilir."
 
 #: lib/tokens/webauthntoken.py:414
 msgid "Generic WebAuthn Token"
@@ -2666,8 +2777,8 @@ msgid ""
 "Use an alternative challenge text for telling the user to confirm with "
 "his WebAuthn token."
 msgstr ""
-"Kullanıcıya webAuthn belirteci ile onaylamasını söylemek için alternatif bir "
-"meydan okuma metni kullanın."
+"Kullanıcıya webAuthn belirteci ile onaylamasını söylemek için alternatif "
+"bir meydan okuma metni kullanın."
 
 #: lib/tokens/webauthntoken.py:597
 msgid ""
@@ -2676,8 +2787,8 @@ msgid ""
 "acceptable."
 msgstr ""
 "AAGUID'lerin boşluk listesi olarak verilen yetkilendirme için kabul "
-"edilebilir WebAuthn Kimlik Doğrulamacılarının bir listesi. Varsayılan başına "
-"tüm kimlik doğrulamaları kabul edilebilir."
+"edilebilir WebAuthn Kimlik Doğrulamacılarının bir listesi. Varsayılan "
+"başına tüm kimlik doğrulamaları kabul edilebilir."
 
 #: lib/tokens/webauthntoken.py:603
 msgid "Only the specified WebAuthn-tokens are authorized."
@@ -2692,8 +2803,8 @@ msgid ""
 "A domain name that is a subset of the respective FQDNs for all the "
 "webservices the users should be able to sign in to using WebAuthn tokens."
 msgstr ""
-"Tüm Web Servisleri için ilgili FQDN'lerin bir alt kümesi olan bir etki alanı "
-"adı, kullanıcıların WebAuthn belirteçlerini kullanmak için oturum "
+"Tüm Web Servisleri için ilgili FQDN'lerin bir alt kümesi olan bir etki "
+"alanı adı, kullanıcıların WebAuthn belirteçlerini kullanmak için oturum "
 "açabilmelidir."
 
 #: lib/tokens/webauthntoken.py:621
@@ -2702,17 +2813,18 @@ msgid ""
 "token. Note: You will want to increase the ChallengeValidityTime along "
 "with this. Default: 60"
 msgstr ""
-"Saniye cinsinden zaman, kullanıcının webAuthn belirteci üzerine kaydolmayı "
-"onaylaması gerekir. Not: Bununla birlikte, meydan okuma zamanını artırmak "
-"isteyeceksiniz. Varsayılan: 60"
+"Saniye cinsinden zaman, kullanıcının webAuthn belirteci üzerine "
+"kaydolmayı onaylaması gerekir. Not: Bununla birlikte, meydan okuma "
+"zamanını artırmak isteyeceksiniz. Varsayılan: 60"
 
 #: lib/tokens/webauthntoken.py:628
 msgid ""
 "Whether to limit roll out of WebAuthn tokens to either only platform "
 "authenticators, or only cross-platform authenticators. Default: either"
 msgstr ""
-"Yalnızca Platform Kimlik Doğrulamacılarına WebAuthn Jeton'unu veya sadece "
-"platformun bir platformu doğrulamacılarına sınırlandırılması. Varsayılan: ya"
+"Yalnızca Platform Kimlik Doğrulamacılarına WebAuthn Jeton'unu veya sadece"
+" platformun bir platformu doğrulamacılarına sınırlandırılması. "
+"Varsayılan: ya"
 
 #: lib/tokens/webauthntoken.py:639
 msgid ""
@@ -2721,8 +2833,8 @@ msgid ""
 "acceptable."
 msgstr ""
 "AAGUID'lerin boşluk listesi olarak verilen kayıt için kabul edilebilir "
-"WebAuthn Kimlik Doğrulamacılarının bir listesi. Varsayılan başına tüm kimlik "
-"doğrulamaları kabul edilebilir."
+"WebAuthn Kimlik Doğrulamacılarının bir listesi. Varsayılan başına tüm "
+"kimlik doğrulamaları kabul edilebilir."
 
 #: lib/tokens/webauthntoken.py:645
 msgid ""
@@ -2730,8 +2842,8 @@ msgid ""
 "WebAuthn token. Default: preferred (verify the user if supported by the "
 "token)"
 msgstr ""
-"Yeni bir WebAuthn belirteci çıkarken kullanıcının kimliğinin doğrulanması "
-"gerektiği. Varsayılan: Tercih Edilen (TOKEN tarafından destekleniyorsa "
+"Yeni bir WebAuthn belirteci çıkarken kullanıcının kimliğinin doğrulanması"
+" gerektiği. Varsayılan: Tercih Edilen (TOKEN tarafından destekleniyorsa "
 "kullanıcıyı doğrulayın)"
 
 #: lib/tokens/webauthntoken.py:656
@@ -2739,8 +2851,8 @@ msgid ""
 "Which algorithm to use for creating public key credentials for WebAuthn "
 "tokens. Default: ecdsa_preferred"
 msgstr ""
-"WebAuthn belirteçleri için ortak anahtar kimlik bilgilerini oluşturmak için "
-"hangi algoritma kullanıyor? Varsayılan: ECDSA_Preferred"
+"WebAuthn belirteçleri için ortak anahtar kimlik bilgilerini oluşturmak "
+"için hangi algoritma kullanıyor? Varsayılan: ECDSA_Preferred"
 
 #: lib/tokens/webauthntoken.py:668
 msgid ""
@@ -2750,8 +2862,8 @@ msgid ""
 msgstr ""
 "Yeni bir webauthn belirteci kaydolurken teminat verileri isteyip "
 "istemediğiniz. Not: U2F_REQ için WebAuthn ile çalışmak için bu hiçbiri "
-"olarak ayarlanamaz. Varsayılan: Doğrudan (anonim olmayan bildirim verilerini "
-"isteyin)"
+"olarak ayarlanamaz. Varsayılan: Doğrudan (anonim olmayan bildirim "
+"verilerini isteyin)"
 
 #: lib/tokens/webauthntoken.py:680
 msgid ""
@@ -2775,8 +2887,7 @@ msgstr "Kullanıcı yalnızca bu sayıda WebAuthn belirteçleri atanmış olabil
 
 #: lib/tokens/webauthntoken.py:702
 msgid "The user may only have this number of active WebAuthn tokens assigned."
-msgstr ""
-"Kullanıcı yalnızca bu sayıda aktif WebAuthn belirteçleri atanmış olabilir."
+msgstr "Kullanıcı yalnızca bu sayıda aktif WebAuthn belirteçleri atanmış olabilir."
 
 #: lib/tokens/webauthntoken.py:707
 msgid ""
@@ -2799,8 +2910,8 @@ msgid ""
 "The user may only have this maximum number of active Yubico tokens "
 "assigned."
 msgstr ""
-"Kullanıcı, yalnızca bu maksimum aktif Yubico belirteçinin atandığı sayısına "
-"sahip olabilir."
+"Kullanıcı, yalnızca bu maksimum aktif Yubico belirteçinin atandığı "
+"sayısına sahip olabilir."
 
 #: lib/tokens/yubikeytoken.py:161
 msgid "Yubikey AES mode: One Time Passwords with Yubikey."
@@ -2817,16 +2928,16 @@ msgid ""
 "The user may only have this maximum number of active Yubikey tokens "
 "assigned."
 msgstr ""
-"Kullanıcı, yalnızca bu maksimum aktif Yubikey belirteçinin atandığı sayısına "
-"sahip olabilir."
+"Kullanıcı, yalnızca bu maksimum aktif Yubikey belirteçinin atandığı "
+"sayısına sahip olabilir."
 
 #: lib/tokens/yubikeytoken.py:181
 msgid ""
 "The Yubikey access code can be read by an enrollment client to initialize"
 " Yubikeys."
 msgstr ""
-"Yubikey Erişim Kodu Yubikeys'i başlatmak için bir kayıt istemcisi tarafından "
-"okunabilir."
+"Yubikey Erişim Kodu Yubikeys'i başlatmak için bir kayıt istemcisi "
+"tarafından okunabilir."
 
 #: lib/utils/compare.py:191
 msgid "true if the value of the left attribute contains the right value"
@@ -2857,8 +2968,8 @@ msgid ""
 "false if the value of the left attribute completely matches the given "
 "regular expression pattern on the right"
 msgstr ""
-"FALSE Sol niteliğin değeri, sağdaki verilen düzenli ifade deseniyle tamamen "
-"eşleşiyorsa"
+"FALSE Sol niteliğin değeri, sağdaki verilen düzenli ifade deseniyle "
+"tamamen eşleşiyorsa"
 
 #: lib/utils/compare.py:200
 msgid ""
@@ -2878,15 +2989,15 @@ msgstr "Sol niteliğin değeri, sağdaki virgülle ayrılmış değerlerde bulun
 msgid ""
 "true if the integer value of the left attribute is smaller than the right"
 " integer value"
-msgstr ""
-"Sol niteliğin tamsayı değeri, doğru tamsayı değerinden daha küçükse doğru"
+msgstr "Sol niteliğin tamsayı değeri, doğru tamsayı değerinden daha küçükse doğru"
 
 #: lib/utils/compare.py:204
 msgid ""
 "true if the integer value of the left attribute is bigger than the right "
 "integer value"
 msgstr ""
-"Sol niteliğin tamsayı değeri doğru tamsayı değerinden daha büyükse doğrudur."
+"Sol niteliğin tamsayı değeri doğru tamsayı değerinden daha büyükse "
+"doğrudur."
 
 #~ msgid "The Yubikey access code used to initialize Yubikeys."
 #~ msgstr ""
@@ -2916,3 +3027,4 @@ msgstr ""
 #~ "SMS for an SMS token. Use <otp>"
 #~ " and <serial> as parameters."
 #~ msgstr ""
+

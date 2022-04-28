@@ -7,17 +7,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-03-28 12:10+0200\n"
+"POT-Creation-Date: 2022-04-28 12:09+0200\n"
 "PO-Revision-Date: 2022-04-22 15:14+0000\n"
 "Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
-"Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-ui/cs/>\n"
 "Language: cs\n"
+"Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea"
+"/privacyidea-ui/cs/>\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
-"X-Generator: Weblate 4.12.1-dev\n"
 "Generated-By: Babel 2.9.1\n"
 
 #: api/auth.py:222
@@ -999,6 +998,118 @@ msgstr ""
 
 #: lib/radiusserver.py:225 lib/radiusserver.py:257
 msgid "The RADIUS secret is too long"
+msgstr ""
+
+#: lib/token.py:153
+msgid "create_tokenclass_object failed:  {0!r}"
+msgstr ""
+
+#: lib/token.py:307
+msgid "I can only create SQL filters from tokeninfo of length 1."
+msgstr ""
+
+#: lib/token.py:564
+msgid "The requested token could not be found."
+msgstr ""
+
+#: lib/token.py:566
+msgid "More than one matching token were found."
+msgstr ""
+
+#: lib/token.py:880
+msgid "multiple tokens are matching this OTP value!"
+msgstr ""
+
+#: lib/token.py:1040
+msgid "init token failed: unknown token type {0!r}"
+msgstr ""
+
+#: lib/token.py:1061
+msgid "initToken failed: {0!s}"
+msgstr ""
+
+#: lib/token.py:1100
+msgid "token create failed {0!r}"
+msgstr ""
+
+#: lib/token.py:1216
+#, fuzzy
+msgid "Token already assigned to user {0!r}"
+msgstr "Počet tokenů přiřazených uživatelům"
+
+#: lib/token.py:1230
+msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
+msgstr ""
+
+#: lib/token.py:1258
+msgid "Token unassign failed for {0!r}/{1!r}: {2!r}"
+msgstr ""
+
+#: lib/token.py:1334
+msgid "Parameter user must not be a string: {0!r}"
+msgstr ""
+
+#: lib/token.py:1873
+msgid "You can only define a lost token for an assigned token."
+msgstr ""
+
+#: lib/token.py:1899
+msgid "temporary replacement for {0!s}"
+msgstr ""
+
+#: lib/token.py:1955
+msgid "There is no active and assigned token in this realm"
+msgstr ""
+
+#: lib/token.py:1967
+msgid ""
+"There is no active and assigned token in this realm, included types: "
+"{0!s}, excluded types: {1!s}"
+msgstr ""
+
+#: lib/token.py:2021
+msgid "OTP verification failed."
+msgstr ""
+
+#: lib/token.py:2054
+#, fuzzy
+msgid "The user has no tokens assigned"
+msgstr "Počet uživatelů s přiřazenými tokeny"
+
+#: lib/token.py:2270
+msgid "matching {0:d} tokens"
+msgstr ""
+
+#: lib/token.py:2322
+msgid "Challenge matches, but token is not fit for challenge"
+msgstr ""
+
+#: lib/token.py:2332
+msgid "Found matching challenge"
+msgstr ""
+
+#: lib/token.py:2374
+msgid "Response did not match the challenge."
+msgstr ""
+
+#: lib/token.py:2376
+msgid "Response did not match for {0!s} tokens."
+msgstr ""
+
+#: lib/token.py:2384
+msgid "No active challenge response token found"
+msgstr ""
+
+#: lib/token.py:2398
+msgid "wrong otp value"
+msgstr ""
+
+#: lib/token.py:2405
+msgid ". previous otp used again"
+msgstr ""
+
+#: lib/token.py:2419
+msgid "wrong otp pin"
 msgstr ""
 
 #: lib/token.py:2449
@@ -2474,3 +2585,4 @@ msgstr ""
 #~ "SMS for an SMS token. Use <otp>"
 #~ " and <serial> as parameters."
 #~ msgstr ""
+
