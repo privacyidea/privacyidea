@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "grunt": "^1.5.2",
+    "grunt-angular-gettext": "^2.5.3"
+  }
+}
