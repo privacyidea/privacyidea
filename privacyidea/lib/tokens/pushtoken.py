@@ -339,8 +339,7 @@ class PushTokenClass(TokenClass):
                        'push_' + ACTION.FORCE_APP_PIN: {
                            'type': 'bool',
                            'group': "PUSH",
-                           'desc': _('Enforce setting an app pin for the privacyIDEA '
-                                     'Authenticator App')
+                           'desc': _('Require to unlock the Smartphone before Push requests can be accepted')
                        }
                    },
                    SCOPE.AUTH: {
