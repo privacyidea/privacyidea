@@ -173,7 +173,7 @@
                                  ng-repeat="conditionGroup in conditionGroups">
                                 <table class="table table-hover">
                                     <tr ng-repeat="(conditionname, condition) in handlerConditions"
-                                        ng-show="checkOpenConditionGroup(conditionname, condition_filter)"
+                                        ng-show="checkOpenConditionGroup(condition, conditionname, condition_filter)"
                                         ng-if="condition.group===null || conditionGroup===condition.group">
                                         <td>
                                             <input type="checkbox"
@@ -216,9 +216,7 @@
                                                    ng-if="(condition.type==='str' && !condition.value)
                                     || condition.type==='regexp'">
                                             <p class="help help-block"
-                                               ng-bind-html="condition.desc | highlight: condition_filter"
-                                               ng-disabled="!conditionCheckBox[conditionname]">
-                                                {{ condition.desc }}
+                                               ng-bind-html="condition.desc | highlight: condition_filter">
                                             </p>
                                         </td>
                                     </tr>
