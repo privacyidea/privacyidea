@@ -120,7 +120,7 @@
         <div class="tab-pane active" id="condition">
             <h3 translate>Condition</h3>
             <div class="row">
-                <div class="col-sm-3">
+                <div class="col-sm-6">
                     <label for="condition">
                         <button class="btn btn-sm btn-success"
                                 ng-show="!onlySelectedVisible"
@@ -133,10 +133,24 @@
                             <translate>Show all conditions</translate>
                         </button>
                     </label>
+                    <label for="toggleAccordion">
+                        <button class="btn btn-sm btn-success"
+                                ng-show="!isOpen"
+                                ng-click="isOpen = true">
+                            <translate>Open all groups</translate>
+                        </button>
+                        <button class="btn btn-sm btn-success"
+                                ng-show="isOpen"
+                                ng-click="isOpen = false">
+                            <translate>Close all groups</translate>
+                        </button>
+                    </label>
                 </div>
-                <div class="col-sm-9">
+                <div class="col-sm-6">
                     <div class="input-group">
+                        <label for="conditionfilter"></label>
                         <input type="text" ng-model="condition_filter"
+                               id="conditionfilter"
                                placeholder="{{ 'filter condition...'|translate }}"
                                ng-change="isOpen = (condition_filter.length > 0)"
                                class="form-control"
@@ -159,19 +173,18 @@
                                  ng-repeat="conditionGroup in conditionGroups">
                                 <table class="table table-hover">
                                     <tr ng-repeat="(conditionname, condition) in handlerConditions"
-                                     ng-show="(conditionCheckBox[conditionname] ||
-                                            !onlySelectedVisible) &&
-                                            conditionname.toLowerCase().match(condition_filter.toLowerCase()) !== null"
-                                                ng-if="condition.group===null || conditionGroup===condition.group">
+                                        ng-show="checkOpenConditionGroup(condition, conditionname, condition_filter)"
+                                        ng-if="condition.group===null || conditionGroup===condition.group">
                                         <td>
-                                            <label for="cb_{{ conditionname }}">
-                                                <input type="checkbox"
-                                                       name="{{ conditionname }}"
-                                                       ng-model="conditionCheckBox[conditionname]"
-                                                       id="cb_{{ conditionname }}">
-                                                {{ conditionname }}
+                                            <input type="checkbox"
+                                                   name="conditionname"
+                                                   ng-model="conditionCheckBox[conditionname]"
+                                                   id="cb_{{ conditionname }}">
+                                            <label for="cb_{{ conditionname }}"
+                                                   ng-bind-html="conditionname | highlight: condition_filter">
                                             </label>
                                         </td>
+
                                         <td>
                                             <select class="form-control"
                                                     ng-if="condition.type!=='multi' && condition.value"
@@ -203,8 +216,7 @@
                                                    ng-if="(condition.type==='str' && !condition.value)
                                     || condition.type==='regexp'">
                                             <p class="help help-block"
-                                               ng-disabled="!conditionCheckBox[conditionname]">
-                                                {{ condition.desc }}
+                                               ng-bind-html="condition.desc | highlight: condition_filter">
                                             </p>
                                         </td>
                                     </tr>
