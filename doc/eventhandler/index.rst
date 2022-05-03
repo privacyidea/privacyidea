@@ -386,3 +386,4 @@ Available Handler Modules
    requestmangler
    responsemangler
    logginghandler
+   customuserattributehandler
