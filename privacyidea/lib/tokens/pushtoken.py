@@ -335,6 +335,11 @@ class PushTokenClass(TokenClass):
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of active Push tokens assigned."),
                            'group': GROUP.TOKEN
+                       },
+                       'push_' + ACTION.FORCE_APP_PIN: {
+                           'type': 'bool',
+                           'group': "PUSH",
+                           'desc': _('Require to unlock the Smartphone before Push requests can be accepted')
                        }
                    },
                    SCOPE.AUTH: {
@@ -483,6 +488,11 @@ class PushTokenClass(TokenClass):
             extra_data["v"] = 1
             extra_data["serial"] = self.get_serial()
             extra_data["sslverify"] = sslverify
+
+            # enforce App pin
+            if params.get(ACTION.FORCE_APP_PIN):
+                extra_data.update({'pin': True})
+
             # We display this during the first enrollment step!
             qr_url = create_push_token_url(url=registration_url,
                                            user=user.login,
@@ -500,7 +510,7 @@ class PushTokenClass(TokenClass):
 
             response_detail["enrollment_credential"] = self.get_tokeninfo("enrollment_credential")
 
-        elif self.token.rollout_state == "enrolled":
+        elif self.token.rollout_state == ROLLOUTSTATE.ENROLLED:
             # in the second enrollment step we return the public key of the server to the smartphone.
             pubkey = strip_key(self.get_tokeninfo(PUBLIC_KEY_SERVER))
             response_detail["public_key"] = pubkey

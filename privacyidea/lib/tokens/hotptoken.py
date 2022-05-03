@@ -247,7 +247,7 @@ class HotpTokenClass(TokenClass):
         imageurl = params.get("appimageurl")
         if imageurl:
             extra_data.update({"image": imageurl})
-        force_app_pin = params.get('force_app_pin')
+        force_app_pin = params.get(ACTION.FORCE_APP_PIN)
         if force_app_pin:
             extra_data.update({'pin': True})
         if otpkey:
