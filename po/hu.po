@@ -1,15 +1,21 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
+"PO-Revision-Date: 2022-05-06 17:13+0000\n"
+"Last-Translator: Kayhan Kaynak <kayhankaynak@gmail.com>\n"
+"Language-Team: Hungarian <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-server/hu/>\n"
 "Language: hu\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.12.1\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
 msgctxt "subscription"
 msgid "Level"
-msgstr ""
+msgstr "Szint"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -22,7 +28,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:21
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:23
 msgid "#"
-msgstr ""
+msgstr "#"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:108
 msgid "(none)"
