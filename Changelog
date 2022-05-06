@@ -1,4 +1,4 @@
-Version 3.7.1, 2022-05-09
+Version 3.7.1, 2022-05-11
 
   Fixes:
   * Fix WebUI login with HOTP/TOTP challenge-response token (#3038)
