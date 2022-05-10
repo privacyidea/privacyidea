@@ -31,3 +31,8 @@ Glossary
         The amount of time in which each totp is valid is called a timestep. Possible values are
         30 or 60(seconds), default is 30. If you haven’t used your otp within that window, it will
         no longer be valid, and you’ll need to request a new one to gain access to your application.
+
+   Revoked Token
+        Tokens can be revoked. Usually this means the token is disabled and locked. A locked token can
+        not be modified anymore. It can only be deleted. Certain token types like certificate may
+        define special actions when revoking a token.
