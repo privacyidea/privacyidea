@@ -1319,7 +1319,7 @@ class Challenge(MethodsMixin, db.Model):
     session = db.Column(db.Unicode(512), default=u'', quote=True, name="session")
     # The token serial number
     serial = db.Column(db.Unicode(40), default=u'', index=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow())
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow(), index=True)
     expiration = db.Column(db.DateTime)
     received_count = db.Column(db.Integer(), default=0)
     otp_valid = db.Column(db.Boolean, default=False)
@@ -2514,7 +2514,7 @@ class ClientApplication(MethodsMixin, db.Model):
     ip = db.Column(db.Unicode(255), nullable=False, index=True)
     hostname = db.Column(db.Unicode(255))
     clienttype = db.Column(db.Unicode(255), nullable=False, index=True)
-    lastseen = db.Column(db.DateTime)
+    lastseen = db.Column(db.DateTime, index=True, default=datetime.utcnow())
     node = db.Column(db.Unicode(255), nullable=False)
     __table_args__ = (db.UniqueConstraint('ip',
                                           'clienttype',
@@ -2686,7 +2686,7 @@ class Audit(MethodsMixin, db.Model):
     __tablename__ = AUDIT_TABLE_NAME
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("audit_seq"), primary_key=True)
-    date = db.Column(db.DateTime)
+    date = db.Column(db.DateTime, index=True)
     startdate = db.Column(db.DateTime)
     duration = db.Column(db.Interval(second_precision=6))
     signature = db.Column(db.Unicode(audit_column_length.get("signature")))
@@ -2760,7 +2760,7 @@ class UserCache(MethodsMixin, db.Model):
     used_login = db.Column(db.Unicode(64), default=u"", index=True)
     resolver = db.Column(db.Unicode(120), default=u'')
     user_id = db.Column(db.Unicode(320), default=u'', index=True)
-    timestamp = db.Column(db.DateTime)
+    timestamp = db.Column(db.DateTime, index=True)
 
     def __init__(self, username, used_login, resolver, user_id, timestamp):
         self.username = username
@@ -2774,8 +2774,8 @@ class AuthCache(MethodsMixin, db.Model):
     __tablename__ = 'authcache'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("usercache_seq"), primary_key=True)
-    first_auth = db.Column(db.DateTime)
-    last_auth = db.Column(db.DateTime)
+    first_auth = db.Column(db.DateTime, index=True)
+    last_auth = db.Column(db.DateTime, index=True)
     username = db.Column(db.Unicode(64), default=u"", index=True)
     resolver = db.Column(db.Unicode(120), default=u'', index=True)
     realm = db.Column(db.Unicode(120), default=u'', index=True)
@@ -3045,7 +3045,7 @@ class MonitoringStats(MethodsMixin, db.Model):
     id = db.Column(db.Integer, Sequence("monitoringstats_seq"),
                    primary_key=True)
     # We store this as a naive datetime in UTC
-    timestamp = db.Column(db.DateTime(False), nullable=False)
+    timestamp = db.Column(db.DateTime(False), nullable=False, index=True)
     stats_key = db.Column(db.Unicode(128), nullable=False)
     stats_value = db.Column(db.Integer, nullable=False, default=0)
 
