@@ -26,3 +26,8 @@ Glossary
    Count
         The token property ``count`` in privacyIDEA is used to calculate the :term:`OTP` value
         using the HMAC-type algorithms HOTP or TOTP.
+
+   Time Step
+        The amount of time in which each totp is valid is called a timestep. Possible values are
+        30 or 60(seconds), default is 30. If you haven’t used your otp within that window, it will
+        no longer be valid, and you’ll need to request a new one to gain access to your application.
