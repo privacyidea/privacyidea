@@ -9,8 +9,6 @@ Version 3.7.1, 2022-05-11
   * Add documentation for the CustomUserAttributeHandler (#3075)
   * Send Push message as notification and data to FireBase (#3117)
   * Fix translation issue in PSKC-import (#3126)
-
-  Enhancements:
   * Add App-PIN policy for Push token (#3116)
 
 Version 3.7, 2022-03-31
