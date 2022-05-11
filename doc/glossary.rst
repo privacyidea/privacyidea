@@ -41,6 +41,10 @@ Glossary
         An orphaned token means, that it has a user assigned, but the user does not exist in the
         user store (anymore).
 
+   Disabled Token
+        Tokens can be disabled. Disabled tokens still belong to the assigned user but those tokens
+        can not be used to authenticate. Disabled tokens can be enabled again.
+
    Resolver(UserId)
         UserIdResolvers are connectors to those user stores, the locations,
         where the users are managed. Nowadays this can be LDAP directories or
