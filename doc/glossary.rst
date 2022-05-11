@@ -110,3 +110,19 @@ Glossary
         * :ref:`authentication_modes`
         * :ref:`supported_tokens`
         * :ref:`tokentypes`
+
+   Audit
+        The systems provides a sophisticated audit log, that can be viewed in the WebUI.
+
+        The Audit log lists all events the server registers.
+
+        .. figure:: /audit/auditlog.png
+           :width: 500
+
+           *Audit Log*
+
+        privacyIDEA comes with a default SQL audit module (see :ref:`code_audit`).
+
+        Starting with version 3.2 privacyIDEA also provides a :ref:`logger_audit` and
+        a :ref:`container_audit` which can be used to send privacyIDEA audit log messages
+        to services like splunk or logstash.
