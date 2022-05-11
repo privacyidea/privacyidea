@@ -80,3 +80,19 @@ Glossary
         Therefore privacyIDEA can define application types.
         At the moment privacyIDEA knows the application
         ``luks``, ``offline`` and ``ssh``.
+
+   Tokeninfo
+        The table “tokeninfo” is used to store additional, long information that is
+        specific to the tokentype. E.g. the tokentype “TOTP” has additional entries
+        in the tokeninfo table for “timeStep” and “timeWindow”, which are stored in the
+        column “Key” and “Value”.
+
+        The tokeninfo is reference by the foreign key to the “token” table.
+
+        Token info can be viewed and partially edited in the GUI. In addition, the
+        Token-Janitor can be used to output token info, filter for tokens that have
+        specific tokeninfo and set user-defined tokeninfos.
+
+
+
+
