@@ -126,3 +126,6 @@ Glossary
         Starting with version 3.2 privacyIDEA also provides a :ref:`logger_audit` and
         a :ref:`container_audit` which can be used to send privacyIDEA audit log messages
         to services like splunk or logstash.
+
+   Tokenowner
+        The owner of a token is the user for whom the token was rolled out.
