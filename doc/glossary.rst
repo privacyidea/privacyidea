@@ -157,4 +157,13 @@ Glossary
         like ‘clientwait’ or ‘enrolled’. This way actions can be triggered, depending
         on the step during an enrollment process.
 
+   Custom User Attributes
+        The table “customuserattribute” is used to store additional, custom attributes for users.
 
+        A user is identified by the user_id, the resolver_id and the realm_id.
+        The additional attributes are stored in Key and Value.
+        The Type can hold extra information like e.g. an encrypted value / password.
+
+        .. note:: Since the users are external, i.e. no objects in this database, there is not
+            logic reference on a database level. Since users could be deleted from user stores without
+            privacyIDEA realizing that, this table could pile up with remnants of attributes.
