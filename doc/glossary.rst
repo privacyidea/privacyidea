@@ -129,3 +129,12 @@ Glossary
 
    Tokenowner
         The owner of a token is the user for whom the token was rolled out.
+
+   MaxFail and FailCount
+        The FailCount count the number of failed login attempts.
+
+        If the login fail counter reaches the ``MaxFail`` the user can not login
+        with this token anymore.
+
+        The Failcounter ``FailCount`` has to be reset to zero.
+
