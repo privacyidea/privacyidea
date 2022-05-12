@@ -151,4 +151,10 @@ Glossary
 
         This option also affects the login via the :ref:`rest_auth`
 
+   Rollout State
+        A token can be rolled out in several steps like the 2step HOTP/TOTP token.
+        In this case the attribute “rollout_state” of the token contains certain values
+        like ‘clientwait’ or ‘enrolled’. This way actions can be triggered, depending
+        on the step during an enrollment process.
+
 
