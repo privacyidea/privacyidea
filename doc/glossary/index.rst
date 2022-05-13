@@ -195,3 +195,25 @@ Glossary
         .. note:: Since the users are external, i.e. no objects in this database, there is not
             logic reference on a database level. Since users could be deleted from user stores without
             privacyIDEA realizing that, this table could pile up with remnants of attributes.
+
+   Scope
+        A scope is the area, where a policy is meant for.
+        This can be values like:
+
+        * ADMIN = 'admin'
+
+        * AUDIT = 'audit'
+
+        * AUTH = 'authentication'
+
+        * AUTHZ = 'authorization'
+
+        * ENROLL = 'enrollment'
+
+        * REGISTER = 'register'
+
+        * USER = 'user'
+
+        * WEBUI = 'webui'
+
+        scope takes only one value.
