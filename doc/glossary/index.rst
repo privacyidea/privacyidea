@@ -70,3 +70,39 @@ Glossary
    Disabled Token
         Tokens can be ``disabled``. Disabled tokens still belong to the assigned user but those tokens
         can not be used to authenticate. ``Disabled tokens can be enabled again``.
+
+   Resolver(UserId)
+        UserIdResolvers are connectors to those user stores, the locations,
+        where the users are managed. Nowadays this can be LDAP directories or
+        especially Active Directory, some times FreeIPA or the Redhat 389 service.
+        But classically users are also located in files like ``/etc/passwd`` on
+        standalone unix systems. Web services often use SQL databases as
+        user store.
+
+        Today with many more online cloud services SCIM is also an uprising
+        protocol to access userstores.
+
+        privacyIDEA already comes with :ref:`useridresolvers` to talk to all these
+        user stores:
+
+        * :ref:`flatfile_resolver`
+        * :ref:`ldap_resolver`
+        * :ref:`sql_resolver`
+        * :ref:`scim_resolver`
+        * :ref:`http_resolver`
+
+   Resolver(Machine)
+        Machine Resolvers are used to find machines in directories like LDAP,
+        Active Directory, puppet, salt, or the /etc/hosts file.
+
+        The idea is for users to be able to authenticate on those client machines.
+        Not in all cases an online authentication request is possible,
+        so that authentication items can be passed to those client machines.
+
+        In addition you need to define, which application on the client machine
+        the user should authenticate to.
+        Different application require different authentication items.
+
+        Therefore privacyIDEA can define application types.
+        At the moment privacyIDEA knows the application
+        ``luks``, ``offline`` and ``ssh``.
