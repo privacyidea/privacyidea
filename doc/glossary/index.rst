@@ -62,3 +62,7 @@ Glossary
         Tokens can be ``revoked``. Usually this means the token is ``disabled and locked``. A locked token can
         not be modified anymore. It can only be deleted. Certain token types like certificate may
         define special actions when revoking a token.
+
+   Orphaned Token
+        An orphaned token means, that it has a user assigned, but the user does not exist in the
+        user store (anymore).
