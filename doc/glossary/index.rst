@@ -46,3 +46,10 @@ Glossary
         * :ref:`config`
         * :ref:`audit`
         * :ref:`components`
+
+   Time Step
+        A TOTP token can have a timestep of 30/60 seconds. It can still be used, if this 30/60 seconds are over.
+        Technically the timestep is the divider by which the seconds since 1.1.1970 (unix system time)
+        are devided to calculate the OTP value.
+
+        The ``timestep`` is different to the :term:`Time Window`.
