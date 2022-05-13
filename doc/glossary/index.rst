@@ -154,3 +154,14 @@ Glossary
 
    Tokenowner
         The owner of a token is the user for whom the token was rolled out.
+
+   FailCount
+   MaxFail
+        The FailCount count the number of failed login attempts.
+
+        If the login fail counter reaches the ``MaxFail`` the user can not login
+        with this token anymore.
+
+        The administrator or help desk user can select those tokens and
+        click the button ``reset failcounter`` to reset the fail counter to zero.
+        The tokens can be used for authentication again.
