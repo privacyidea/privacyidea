@@ -53,3 +53,7 @@ Glossary
         are devided to calculate the OTP value.
 
         The ``timestep`` is different to the :term:`Time Window`.
+
+   Time Window
+        Timewindow in which the given OTP value is valid for authentication.
+        ``Timestep and timewindow`` are completely similar to the ``counter and window`` of HOTP tokens.
