@@ -217,3 +217,18 @@ Glossary
         * WEBUI = 'webui'
 
         scope takes only one value.
+
+   Realms
+        Users need to be in realms to have tokens assigned. A user, who is not
+        member of a realm can not have a token assigned and can not authenticate.
+
+        You can combine several different UserIdResolvers (see :ref:`useridresolvers`)
+        into a realm.
+
+        The system knows one default realm. Users within this default realm can
+        authenticate with their username.
+
+        Users in realms, that are not the default realm, need to be additionally identified.
+        Therefor the users need to authenticate with their username and the realm like this::
+
+            user@realm
