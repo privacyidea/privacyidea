@@ -432,13 +432,31 @@ PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS = {
     'ecdsa_only': [
         COSE_ALGORITHM.ES256
     ],
+    'ecdsa_with_rsapkcs1': [
+        COSE_ALGORITHM.ES256,
+        COSE_ALGORITHM.RS256
+    ],
+    'ecdsa_preferred_with_rsapkcs1': [
+        COSE_ALGORITHM.ES256,
+        COSE_ALGORITHM.PS256,
+        COSE_ALGORITHM.RS256
+    ],
     'rsassa-pss_preferred': [
         COSE_ALGORITHM.PS256,
         COSE_ALGORITHM.ES256
     ],
     'rsassa-pss_only': [
         COSE_ALGORITHM.PS256
-    ]
+    ],
+    'rsassa-pss_with_rsapkcs1': [
+        COSE_ALGORITHM.PS256,
+        COSE_ALGORITHM.RS256
+    ],
+    'rsassa-pss_preferred_with_rsapkcs1': [
+        COSE_ALGORITHM.PS256,
+        COSE_ALGORITHM.ES256,
+        COSE_ALGORITHM.RS256
+    ],
 }
 
 log = logging.getLogger(__name__)
@@ -659,8 +677,12 @@ class WebAuthnTokenClass(TokenClass):
                         'value': [
                             "ecdsa_preferred",
                             "ecdsa_only",
+                            "ecdsa_with_rsapkcs1",
+                            "ecdsa_preferred_with_rsapkcs1",
                             "rsassa-pss_preferred",
-                            "rsassa-pss_only"
+                            "rsassa-pss_only",
+                            "rsassa-pss_with_rsapkcs1",
+                            "rsassa-pss_preferred_with_rsapkcs1"
                         ]
                     },
                     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM: {
