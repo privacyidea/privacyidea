@@ -66,3 +66,7 @@ Glossary
    Orphaned Token
         An orphaned token means, that it has a user assigned, but the user does not exist in the
         user store (anymore).
+
+   Disabled Token
+        Tokens can be ``disabled``. Disabled tokens still belong to the assigned user but those tokens
+        can not be used to authenticate. ``Disabled tokens can be enabled again``.
