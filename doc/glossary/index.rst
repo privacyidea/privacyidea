@@ -31,3 +31,18 @@ Glossary
    Counter
         The token property ``count`` in privacyIDEA is used to calculate the :term:`OTP Value`
         using the HMAC-type algorithms HOTP or TOTP.
+
+   WebUI
+        privacyIDEA comes with a web-based user interface which is used to manage and
+        configure the privacyIDEA server.
+
+        It is also used a self-service portal for the average user, who manages his own tokens.
+        This section gives an overview on the interface and links the respective sections in the documentation.
+
+        * :ref:`dashboard`
+        * :ref:`tokensview`
+        * :ref:`usersview`
+        * :ref:`machines`
+        * :ref:`config`
+        * :ref:`audit`
+        * :ref:`components`

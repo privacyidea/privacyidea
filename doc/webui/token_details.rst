@@ -204,7 +204,7 @@ You can set the OTP PIN or the mOTP PIN for tokens.
 Reset Fail counter
 ------------------
 
-If a used locked his token, since he entered wrong OTP values or
+If a user locked his token, since he entered wrong OTP values or
 wrong OTP PINs, the fail counter has reached the mail failcount.
 The administrator or help desk user can select those tokens and
 click the button ``reset failcounter`` to reset the fail counter
