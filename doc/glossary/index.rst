@@ -165,3 +165,16 @@ Glossary
         The administrator or help desk user can select those tokens and
         click the button ``reset failcounter`` to reset the fail counter to zero.
         The tokens can be used for authentication again.
+
+   SplitAtSign
+        ``splitAtSign`` defines if the username like *user@company*
+        given during authentication should
+        be split into the loginname *user* and the realm name *company*.
+        In most cases this is the wanted behaviour so this is enabled by default.
+
+        But given your users log in with email addresses like *user@gmail.com* and
+        *otheruser@outlook.com* you probably do not want to split.
+
+        How a user is related to a realm is described here: :ref:`relate_realm`
+
+        This option also affects the login via the :ref:`rest_auth`
