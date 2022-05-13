@@ -57,3 +57,8 @@ Glossary
    Time Window
         Timewindow in which the given OTP value is valid for authentication.
         ``Timestep and timewindow`` are completely similar to the ``counter and window`` of HOTP tokens.
+
+   Revoked Token
+        Tokens can be ``revoked``. Usually this means the token is ``disabled and locked``. A locked token can
+        not be modified anymore. It can only be deleted. Certain token types like certificate may
+        define special actions when revoking a token.
