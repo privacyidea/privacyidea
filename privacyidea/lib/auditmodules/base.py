@@ -51,7 +51,6 @@ storage.
 import logging
 import traceback
 from privacyidea.lib.log import log_with
-import socket
 import datetime
 
 log = logging.getLogger(__name__)
@@ -84,7 +83,7 @@ class Audit(object):  # pragma: no cover
         Create a new audit object.
 
         :param config: The web config is passed to the audit module, so that
-        the special module implementation can get its configuration.
+                       the special module implementation can get its configuration.
         :type config: dict
         :param startdate: The datetime of the beginning of the request
         :type startdate: datetime
@@ -112,10 +111,12 @@ class Audit(object):  # pragma: no cover
     def read_keys(self, pub, priv):
         """
         Set the private and public key for the audit class. This is achieved by
-        passing the entries.
+        passing the values:
 
-        #priv = config.get("privacyideaAudit.key.private")
-        #pub = config.get("privacyideaAudit.key.public")
+        .. code-block:: python
+
+            priv = config.get("privacyideaAudit.key.private")
+            pub = config.get("privacyideaAudit.key.public")
 
         :param pub: Public key, used for verifying the signature
         :type pub: string with filename
@@ -175,7 +176,8 @@ class Audit(object):  # pragma: no cover
 
     def add_to_log(self, param, add_with_comma=False):
         """
-        Add to existing log entry
+        Add to existing log entry.
+
         :param param:
         :param add_with_comma: If set to true, new values will be appended comma separated
         :return:
@@ -192,6 +194,7 @@ class Audit(object):  # pragma: no cover
     def add_policy(self, policyname):
         """
         This method adds a triggered policyname to the list of triggered policies.
+
         :param policyname: A string or a list of strings as policynames
         :return:
         """
@@ -215,7 +218,7 @@ class Audit(object):  # pragma: no cover
         """
         This method initialized the log state.
         The fact, that the log state was initialized, also needs to be logged.
-        Therefor the same params are passed as i the log method.
+        Therefor the same parameters are passed as in the log method.
         """
         pass
 
@@ -231,12 +234,8 @@ class Audit(object):  # pragma: no cover
         """
         This function is used to search audit events.
 
-        param: Search parameters can be passed.
-
-        return: A pagination object
-
-
-        This function is deprecated.
+        :param: Search parameters can be passed.
+        :return: A pagination object
         """
         return Paginate()
 
