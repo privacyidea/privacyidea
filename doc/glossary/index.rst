@@ -118,3 +118,20 @@ Glossary
         Token info can be viewed and partially edited in the GUI. In addition, the
         Token-Janitor can be used to output token info, filter for tokens that have
         specific tokeninfo and set user-defined tokeninfos.
+
+   Token
+        All token information is stored in an SQL database, while you may choose, which database
+        you want to use. privacyIDEA uses SQLAlchemy to map the database to internal objects.
+        Thus you may choose to run privacyIDEA with SQLite, MySQL, PostgreSQL, Oracle,
+        DB2 or other database.
+
+        PrivacyIDEA supports a great variety of different token types.
+        They each have different requirements concerning configuration and how
+        the authentication works. This chapter explains the authentication modes, lists the
+        supported hardware and software tokens and explains how the token types can be used
+        with privacyIDEA.
+        Tools which facilitate and automate token enrollment are found in :ref:`enrollment_tools`.
+
+        * :ref:`authentication_modes`
+        * :ref:`supported_tokens`
+        * :ref:`tokentypes`
