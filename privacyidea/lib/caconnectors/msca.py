@@ -167,21 +167,6 @@ class MSCAConnector(BaseCAConnector):
         self.templates = self.get_templates()
         log.error(self.http_proxy)
 
-    @staticmethod
-    def _filename_from_x509(x509_name, file_extension="pem"):
-        """
-        return a filename from the subject from an x509 object
-        :param x509_name: The X509Name object
-        :type x509_name: X509Name object
-        :param file_extension:
-        :type file_extension: str
-        :return: filename
-        :rtype: str
-        """
-        name_components = x509_name.get_components()
-        filename = "_".join([to_unicode(value) for (key, value) in name_components])
-        return '.'.join([filename, file_extension])
-
     def sign_request(self, csr, options=None):
         """
         Send a signing request to the Microsoft CA
@@ -246,10 +231,6 @@ class MSCAConnector(BaseCAConnector):
         """
         conn = self.connect_to_worker()
         if conn:
-            log.error("fetching CAs")
-            # returns a list of machine names\CAnames
-            cas = [x[1] for x in conn.GetCAs(GetCAsRequest()).ListFields()]
-            log.error(cas)
             templ = {}
             for template in conn.GetTemplates(GetTemplatesRequest()).ListFields()[0][1]:
                 templ[template] = ""
@@ -308,14 +289,22 @@ class MSCAConnector(BaseCAConnector):
         :return: The LocalCAConnector configuration
         :rtype: dict
         """
-        # FIXME
         config = CONFIG(name)
 
         while True:
-            hostname = input("Whats the hostname of the Microsoft CA middleware ".format(config.hostname))
-            port = input("Whats the port of the Microsoft CA middleware ".format(config.port))
-            http_proxy = input("Is a http proxy being used ".format(config.http_proxy))
-            ca = input("The name of the CA in the Microsoft domain ".format(config.ca))
+            config.hostname = input("Hostname of the privacyIDEA MS CA worker: ")
+            config.port = input("Port of the privacyIDEA MS CA worker: ")
+            config.http_proxy = input("Use HTTP proxy [0/1]: ")
+            dummy_ca = MSCAConnector("dummy", {ATTR.HOSTNAME: config.hostname,
+                                               ATTR.PORT: config.port,
+                                               ATTR.HTTP_PROXY: config.http_proxy})
+            conn = dummy_ca.connect_to_worker()
+            # returns a list of machine names\CAnames
+            cas = [x[1] for x in conn.GetCAs(GetCAsRequest()).ListFields()]
+            print("Available CAs: \n")
+            for c in cas:
+                print("     {0!s}".format(c))
+            config.ca = input("Choose CA: ".format(config.ca))
             print("=" * 60)
             print("{0!s}".format(config))
             answer = input("Is this configuration correct? [y/n] ")
@@ -326,10 +315,10 @@ class MSCAConnector(BaseCAConnector):
         # connector can be created in the database
         caparms = {u"caconnector": name,
                    u"type": u"microsoft",
-                   ATTR.HOSTNMAE: hostname,
-                   ATTR.PORT: port,
-                   ATTR.HTTP_PROXY: http_proxy,
-                   ATTR.CA: ca
+                   ATTR.HOSTNAME: config.hostname,
+                   ATTR.PORT: config.port,
+                   ATTR.HTTP_PROXY: config.http_proxy,
+                   ATTR.CA: config.ca
                    }
         return caparms
 
