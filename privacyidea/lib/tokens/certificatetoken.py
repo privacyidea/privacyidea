@@ -441,7 +441,7 @@ class CertificateTokenClass(TokenClass):
                                                       x509object)
             except CSRError:
                 # Mark the token as broken
-                self.token.rollout_state =  ROLLOUTSTATE.FAILED
+                self.token.rollout_state = ROLLOUTSTATE.FAILED
                 # Reraise the error
                 raise CSRError()
             except CSRPending:

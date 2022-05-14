@@ -119,3 +119,4 @@ class BaseCAConnector(object):
         :return:
         """
         return {}
+    

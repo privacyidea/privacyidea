@@ -67,6 +67,7 @@ class CONFIG(object):
         self.hostname = "foo.bar"
         self.port = 5000
         self.http_proxy = 0
+        self.ca = "hostname\\caname"
 
     def __str__(self):
         s = """
@@ -88,7 +89,7 @@ class ATTR(object):
 
 class MSCAConnector(BaseCAConnector):
     """
-    This connector connects to our middleware for the Microsoft CA. 
+    This connector connects to our middleware for the Microsoft CA.
     """
 
     connector_type = "microsoft"
@@ -119,7 +120,7 @@ class MSCAConnector(BaseCAConnector):
         """
         config[ATTR.HTTP_PROXY] = is_true(config.get(ATTR.HTTP_PROXY))
         return config
-            
+
     def connect_to_worker(self):
         """
         creates a connection to the middleware and returns it.
@@ -203,10 +204,13 @@ class MSCAConnector(BaseCAConnector):
         """
         conn = self.connect_to_worker()
         if conn:
-            reply = conn.SubmitCR(SubmitCRRequest(cr=csr, templateName=options.get("template"), caName=conn.GetCAs(GetCAsRequest()).caName[0])) # options.get("ca")))
+            reply = conn.SubmitCR(SubmitCRRequest(cr=csr, templateName=options.get("template"),
+                                                  caName=conn.GetCAs(GetCAsRequest()).caName[0]))
             if reply.disposition == 3:
                 log.info("cert rolled out")
-                certificate = conn.GetCertificate(GetCertificateRequest(id=reply.requestId, caName=conn.GetCAs(GetCAsRequest()).caName[0])).cert
+                certificate = conn.GetCertificate(GetCertificateRequest(id=reply.requestId,
+                                                                        caName=conn.GetCAs(GetCAsRequest())
+                                                                        .caName[0])).cert
                 return crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
             if reply.disposition == 5:
                 log.info("cert still under submission")
@@ -304,28 +308,28 @@ class MSCAConnector(BaseCAConnector):
         :return: The LocalCAConnector configuration
         :rtype: dict
         """
+        # FIXME
         config = CONFIG(name)
 
         while True:
             hostname = input("Whats the hostname of the Microsoft CA middleware ".format(config.hostname))
             port = input("Whats the port of the Microsoft CA middleware ".format(config.port))
             http_proxy = input("Is a http proxy being used ".format(config.http_proxy))
+            ca = input("The name of the CA in the Microsoft domain ".format(config.ca))
             print("="*60)
             print("{0!s}".format(config))
             answer = input("Is this configuration correct? [y/n] ")
             if answer.lower() == "y":
                 break
 
-        _init_ca(config)
-
         # return the configuration to the upper level, so that the CA
         # connector can be created in the database
         caparms = {u"caconnector": name,
-                   u"type": u"msca",
-                   ATTR.HOSTNMAE: config.hostname,
-                   ATTR.PORT: config.port,
-                   ATTR.HTTP_PROXY: config.http_proxy,
-                   ATTR.CA: config.ca
+                   u"type": u"microsoft",
+                   ATTR.HOSTNMAE: hostname,
+                   ATTR.PORT: port,
+                   ATTR.HTTP_PROXY: http_proxy,
+                   ATTR.CA: ca
                    }
         return caparms
 
@@ -340,12 +344,3 @@ class MSCAConnector(BaseCAConnector):
             # returns a list of machine names\CAnames
             cas = [x[1][0] for x in conn.GetCAs(GetCAsRequest()).ListFields()]
         return {"available_cas": cas}
-
-
-def _init_ca(config):
-    """
-    Generate the CA certificate
-    :param config:
-    :return:
-    """
-    pass
