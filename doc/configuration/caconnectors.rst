@@ -141,3 +141,43 @@ The file can look like this, defining three templates "user", "webserver" and
         extensions: "user"
 
 
+.. _msca_caconnector:
+
+Microsoft CA Connector
+~~~~~~~~~~~~~~~~~~~~~~
+
+This CA connector communicates to the privacyIDEA MS CA worker, that is installed
+on a Windows server in the Windows Domain. Through this worker, privacyIDEA can connect
+potentially to all Microsoft CAs in the Windows Domain.
+
+The Microsoft CA Connector has the following options.
+
+**Hostname**
+
+The hostname (FQDN) or IP address where the privacyIDEA MS CA worker is running.
+
+**Port**
+
+The port on which the worker listens.
+
+**Connect via Proxy**
+
+Whether the worker is situated behind a HTTP proxy.
+
+**CA**
+
+The real CA to which privacyIDEA shall communicate. After providing the initial
+connection information `hostname` and `Port`, privacyIDEA can fetch the available
+CAs in the Windows Dowmain. The CA is identified by the hostname where the Microsoft CA is
+running and the name of the CA like `<hostname>\\<name of CA>`.
+
+Setup from the command line
+---------------------------
+
+Of cours the MS CA Connector can be configured in the privacyIDEA Web UI.
+For quick setup, you can also configure a connector at the command line using
+:ref:`pimange` like this::
+
+    pi-manage ca create -t microsoft <name-of-connector>
+
+It will ask you all relevant questions and setup a connector in privacyIDEA.
