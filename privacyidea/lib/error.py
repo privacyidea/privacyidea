@@ -49,6 +49,8 @@ class ERROR:
     AUTHENTICATE_TOKEN_EXPIRED = 4305
     AUTHENTICATE_MISSING_RIGHT = 4306
     CA = 503
+    CA_CSR_INVALID = 504
+    CA_CSR_PENDING = 505
     RESOURCE_NOT_FOUND = 601
     HSM = 707
     SELFSERVICE = 807
@@ -143,6 +145,16 @@ class ConfigAdminError(privacyIDEAError):
 
 class CAError(privacyIDEAError):
     def __init__(self, description="CA error!", id=ERROR.CA):
+        privacyIDEAError.__init__(self, description=description, id=id)
+
+
+class CSRError(privacyIDEAError):
+    def __init__(self, description="CSR invalid", id=ERROR.CA_CSR_INVALID):
+        privacyIDEAError.__init__(self, description=description, id=id)
+
+
+class CSRPending(privacyIDEAError):
+    def __init__(self, description="CSR pending", id=ERROR.CA_CSR_PENDING):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
