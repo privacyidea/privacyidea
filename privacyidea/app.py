@@ -43,7 +43,6 @@ from privacyidea.api.user import user_blueprint
 from privacyidea.api.audit import audit_blueprint
 from privacyidea.api.application import application_blueprint
 from privacyidea.api.caconnector import caconnector_blueprint
-from privacyidea.api.caconnectortypes import caconnectortypes_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.auth import jwtauth
 from privacyidea.webui.login import login_blueprint
@@ -161,7 +160,6 @@ def create_app(config_name="development",
     app.register_blueprint(machine_blueprint, url_prefix='/machine')
     app.register_blueprint(application_blueprint, url_prefix='/application')
     app.register_blueprint(caconnector_blueprint, url_prefix='/caconnector')
-    app.register_blueprint(caconnectortypes_blueprint, url_prefix='/caconnectortypes')
     app.register_blueprint(cert_blueprint, url_prefix='/certificate')
     app.register_blueprint(ttype_blueprint, url_prefix='/ttype')
     app.register_blueprint(register_blueprint, url_prefix='/register')
