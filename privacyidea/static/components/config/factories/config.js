@@ -305,6 +305,13 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                            'Content-Type': 'application/json'}
                 }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
         },
+        getCASpecificOptions: function(catype, params, callback) {
+            //encodeURI("/random?len=" + len + "&encode=" + encode)
+            var pstring = new URLSearchParams(params).toString()
+            $http.get(CAConnectorUrl + "/specific/" + catype + "?" + pstring,
+                {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
+        },
         testResolver: function (params, callback) {
             $http.post(resolverUrl + "/test", params,
                 {headers: {'PI-Authorization': AuthFactory.getAuthToken(),

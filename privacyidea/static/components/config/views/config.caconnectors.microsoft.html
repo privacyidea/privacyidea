@@ -7,7 +7,7 @@
     <h2 class="form-signin-heading"
         ng-hide="connectorname" translate>Create a new Microsoft CA Connector</h2>
 
-    <form name="formAddLocal" role="form" validate
+    <form name="formAddCA" role="form" validate
           class="form-horizontal">
 
         <div class="form-group">
@@ -55,19 +55,44 @@
         <div class="form-group">
             <label for="http_proxy"
                    class="col-sm-3 control-label" translate>
-                Is a HTTP proxy being used</label>
-
+                Use HTTP proxy</label>
             <div class="col-sm-9">
-                <input name="http_proxy" id="http_proxy"
-                       class="form-control"
-                       ng-model="params['http_proxy']" required
-                       placeholder="0"/>
+                <input type="checkbox"
+                       name="http_proxy"
+                       ng-model="params['http_proxy']"
+                       id="http_proxy">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-3 control-label" translate>
+                CA specific options</label>
+            <div class="col-sm-9">
+                <button ng-click="getCASpecificOptions('microsoft')"
+                        ng-enabled="params.port && params.hostname"
+                        class="btn btn-success" translate>Get available CAs
+                </button>
+            </div>
+        </div>
+
+        <div class="form-group" ng-show="available_cas">
+            <label for="available_cas"
+                   class="col-sm-3 control-label" translate>
+                Domain CA</label>
+            <div class="col-sm-9">
+                <select class="form-control"
+                    id="available_cas"
+                    ng-model="params.ca" required
+                    ng-options="ca as ca for ca in available_cas"
+                    ng-change="getHandlerActions()"
+                    >
+            </select>
             </div>
         </div>
 
         <div class="text-center" ng-show="checkRight('caconnectorwrite')">
             <button ng-click="setCAConnector()"
-                    ng-disabled="forAddLocal.$invalid"
+                    ng-disabled="formAddCA.$invalid"
                     class="btn btn-primary" translate>Save CA
             </button>
         </div>
