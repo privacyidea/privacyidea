@@ -169,7 +169,8 @@ def get_caconnector_list(filter_caconnector_type=None,
             c_obj = c_obj_class(conn.name, data)
             if c_obj:
                 c["templates"] = templates = c_obj.get_templates()
-                c["data"] = c_obj.get_config(data)
+                if return_config:
+                    c["data"] = c_obj.get_config(data)
 
         Connectors.append(c)
 

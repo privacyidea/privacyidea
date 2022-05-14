@@ -84,7 +84,8 @@ class CAConnectorTestCase(MyTestCase):
     """
     def test_01_base_functions(self):
         types = get_caconnector_types()
-        self.assertEqual(types, ["local"])
+        self.assertIn("local", types)
+        self.assertIn("microsoft", types)
 
         calist = get_caconnector_list()
         self.assertEqual(calist, [])
