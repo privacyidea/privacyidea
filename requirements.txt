@@ -44,6 +44,7 @@ Flask-Script==2.0.6
 Flask-SQLAlchemy==2.5.1
 Flask-Versioned==0.9.4.post20101221
 future==0.18.2; python_version < '3.0'
+google-auth==1.35.0; python_version < '3.0'
 google-auth==1.23.0; python_version == '3.5'
 google-auth==2.6.6; python_version != '3.5'
 huey==2.4.3

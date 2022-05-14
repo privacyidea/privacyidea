@@ -41,11 +41,15 @@ import traceback
 import grpc
 import privacyidea.lib.caconnectors.caservice_pb2_grpc
 from privacyidea.lib.caconnectors.caservice_pb2 import *
+from privacyidea.lib.utils import is_true
+from privacyidea.lib import _
+
 
 log = logging.getLogger(__name__)
 
 CRL_REASONS = ["unspecified", "keyCompromise", "CACompromise",
                "affiliationChanged", "superseded", "cessationOfOperation"]
+
 
 def _get_crl_next_update(filename):
     """
@@ -68,6 +72,7 @@ class CONFIG(object):
         Worker HostName  : {ca.hostname}
         Worker Port      : {ca.port}
         Connect via HTTP Proxy      : {ca.http_proxy}
+        CA               : {ca.ca}
         """.format(ca=self)
         return s
 
@@ -77,6 +82,8 @@ class ATTR(object):
     HOSTNAME = "hostname"
     PORT = "port"
     HTTP_PROXY = "http_proxy"
+    CA = "ca"
+
 
 class MSCAConnector(BaseCAConnector):
     """
@@ -98,21 +105,32 @@ class MSCAConnector(BaseCAConnector):
         self.hostname = None
         self.port = None
         self.http_proxy = None
+        self.ca = None
         if config:
             self.set_config(config)
+
+    def get_config(self, config):
+        """
+        This method helps to format the config values of the CA Connector.
+        :param config: The configuration as it is stored in the database
+        :type config: dict
+        :return:
+        """
+        config[ATTR.HTTP_PROXY] = is_true(config.get(ATTR.HTTP_PROXY))
+        return config
             
     def connect_to_worker(self):
         """
         creates a connection to the middleware and returns it.
         """
-        channel = grpc.insecure_channel(f'{self.hostname}:{self.port}', options=(('grpc.enable_http_proxy', int(self.http_proxy)),))
+        channel = grpc.insecure_channel(f'{self.hostname}:{self.port}',
+                                        options=(('grpc.enable_http_proxy', int(is_true(self.http_proxy))),))
         try:
             grpc.channel_ready_future(channel).result(timeout=3)
         except grpc.FutureTimeoutError:
-            log.info("Worker seems to be offline. No connection could be established!")
+            log.warning("Worker seems to be offline. No connection could be established!")
         else:
             return privacyidea.lib.caconnectors.caservice_pb2_grpc.CAServiceStub(channel)
-
 
     @classmethod
     def get_caconnector_description(cls):
@@ -126,7 +144,8 @@ class MSCAConnector(BaseCAConnector):
         typ = cls.connector_type
         config = {ATTR.HOSTNAME: 'string',
                   ATTR.PORT: 'string',
-                  ATTR.HTTP_PROXY: 'string'}
+                  ATTR.HTTP_PROXY: 'string',
+                  ATTR.CA: 'string'}
         return {typ: config}
 
     def _check_attributes(self):
@@ -137,11 +156,14 @@ class MSCAConnector(BaseCAConnector):
 
     def set_config(self, config=None):
         self.config = config or {}
+
         self._check_attributes()
         self.hostname = self.config.get(ATTR.HOSTNAME)
         self.port = self.config.get(ATTR.PORT)
-        self.http_proxy = self.config.get(ATTR.HTTP_PROXY)
+        log.error(config)
+        self.http_proxy = int(is_true(self.config.get(ATTR.HTTP_PROXY)))
         self.templates = self.get_templates()
+        log.error(self.http_proxy)
 
     @staticmethod
     def _filename_from_x509(x509_name, file_extension="pem"):
@@ -190,7 +212,6 @@ class MSCAConnector(BaseCAConnector):
             else:
                 log.error("certification request could not be fullfilled!")
 
-
     def view_pending_certs(self):
         """
         CA Manager approval
@@ -218,6 +239,10 @@ class MSCAConnector(BaseCAConnector):
         """
         conn = self.connect_to_worker()
         if conn:
+            log.error("fetching CAs")
+            # returns a list of machine names\CAnames
+            cas = [x[1] for x in conn.GetCAs(GetCAsRequest()).ListFields()]
+            log.error(cas)
             templ = {}
             for template in conn.GetTemplates(GetTemplatesRequest()).ListFields()[0][1]:
                 templ[template] = ""
@@ -249,8 +274,8 @@ class MSCAConnector(BaseCAConnector):
         Create and Publish the CRL.
 
         :param publish: Whether the CRL should be published at its CDPs
-        :param check_validity: Onle create a new CRL, if the old one is about to
-            expire. Therfore the overlap period and the remaining runtime of
+        :param check_validity: Only create a new CRL, if the old one is about to
+            expire. Therefore the overlap period and the remaining runtime of
             the CRL is checked. If the remaining runtime is smaller than the
             overlap period, we recreate the CRL.
         :return: the CRL location or None, if no CRL was created
@@ -296,9 +321,23 @@ class MSCAConnector(BaseCAConnector):
                    u"type": u"msca",
                    ATTR.HOSTNMAE: config.hostname,
                    ATTR.PORT: config.port,
-                   ATTR.HTTP_PROXY: config.http_proxy
+                   ATTR.HTTP_PROXY: config.http_proxy,
+                   ATTR.CA: config.ca
                    }
         return caparms
+
+    def get_specific_options(self):
+        """
+
+        :return: return the list of available CAs in the domain
+        """
+        conn = self.connect_to_worker()
+        cas = []
+        if conn:
+            # returns a list of machine names\CAnames
+            cas = [x[1][0] for x in conn.GetCAs(GetCAsRequest()).ListFields()]
+        return {"available_cas": cas}
+
 
 def _init_ca(config):
     """

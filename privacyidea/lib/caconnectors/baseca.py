@@ -103,3 +103,19 @@ class BaseCAConnector(object):
         :return:
         """
         return {}
+
+    def get_config(self, config):
+        """
+        This method helps to format the config values of the CA Connector.
+        :param config: The configuration as it is stored in the database
+        :type config: dict
+        :return:
+        """
+        return config
+
+    def get_specific_options(self):
+        """
+        Returns a dict of additional options for a specific connector instance.
+        :return:
+        """
+        return {}

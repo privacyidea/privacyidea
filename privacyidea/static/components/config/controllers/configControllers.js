@@ -915,6 +915,7 @@ myApp.controller("MicrosoftCAConnectorController", ["$scope", "$stateParams",
             var caconnector = data.result.value[0];
             $scope.params = caconnector.data;
             $scope.params.type = 'microsoft';
+            $scope.getCASpecificOptions($scope.params.type);
         });
     }
 
@@ -926,6 +927,14 @@ myApp.controller("MicrosoftCAConnectorController", ["$scope", "$stateParams",
             $state.go("config.caconnectors.list");
         });
     };
+
+    $scope.getCASpecificOptions = function (catype) {
+        ConfigFactory.getCASpecificOptions(catype,
+            $scope.params, function (data) {
+            $scope.available_cas = data.result.value.available_cas;
+        });
+    }
+
 
 }]);
 
