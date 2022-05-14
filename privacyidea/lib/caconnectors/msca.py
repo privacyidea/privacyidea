@@ -316,7 +316,7 @@ class MSCAConnector(BaseCAConnector):
             port = input("Whats the port of the Microsoft CA middleware ".format(config.port))
             http_proxy = input("Is a http proxy being used ".format(config.http_proxy))
             ca = input("The name of the CA in the Microsoft domain ".format(config.ca))
-            print("="*60)
+            print("=" * 60)
             print("{0!s}".format(config))
             answer = input("Is this configuration correct? [y/n] ")
             if answer.lower() == "y":
