@@ -36,7 +36,7 @@ The code is tested in test_lib_tokens_certificate.py.
 import logging
 
 from privacyidea.lib.utils import to_unicode, b64encode_and_unicode, to_byte_string
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
 from privacyidea.lib.log import log_with
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.caconnector import get_caconnector_object
@@ -49,7 +49,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, ACTION as BASE_ACTION, GROUP, Match
-from privacyidea.lib.error import privacyIDEAError
+from privacyidea.lib.error import privacyIDEAError, CSRError, CSRPending
 import traceback
 
 optional = True
@@ -433,14 +433,23 @@ class CertificateTokenClass(TokenClass):
             # req.get_subject().localityName = 'xxx'
             # req.get_subject().organizationName = 'xxx'
             req.set_pubkey(key)
-            req.sign(key, "sha256")
+            r = req.sign(key, "sha256")
             csr = to_unicode(crypto.dump_certificate_request(crypto.FILETYPE_PEM, req))
-            x509object = cacon.sign_request(csr, options={"template": template_name})
-            certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
-                                                  x509object)
-            # Save the private key to the encrypted key field of the token
-            s = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
-            self.add_tokeninfo("privatekey", s, value_type="password")
+            try:
+                x509object = cacon.sign_request(csr, options={"template": template_name})
+                certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
+                                                      x509object)
+            except CSRError:
+                # Mark the token as broken
+                self.token.rollout_state =  ROLLOUTSTATE.FAILED
+                # Reraise the error
+                raise CSRError()
+            except CSRPending:
+                self.token.rollout_state = ROLLOUTSTATE.PENDING
+            finally:
+                # Save the private key to the encrypted key field of the token
+                s = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+                self.add_tokeninfo("privatekey", s, value_type="password")
 
         if "pin" in param:
             self.set_pin(param.get("pin"), encrypt=True)
@@ -458,10 +467,14 @@ class CertificateTokenClass(TokenClass):
         params = params or {}
         certificate = self.get_tokeninfo("certificate")
         response_detail["certificate"] = certificate
+        response_detail["rollout_state"] = self.token.rollout_state
         privatekey = self.get_tokeninfo("privatekey")
         # If there is a private key, we dump a PKCS12
         if privatekey:
-            response_detail["pkcs12"] = b64encode_and_unicode(self._create_pkcs12_bin())
+            try:
+                response_detail["pkcs12"] = b64encode_and_unicode(self._create_pkcs12_bin())
+            except Exception:
+                log.warning("Can not create PCKS12 for token {0!s}.".format(self.token.serial))
 
         return response_detail
 
@@ -499,7 +512,10 @@ class CertificateTokenClass(TokenClass):
         token_dict = self.token.get()
 
         if "privatekey" in token_dict.get("info"):
-            token_dict["info"]["pkcs12"] = b64encode_and_unicode(self._create_pkcs12_bin())
+            try:
+                token_dict["info"]["pkcs12"] = b64encode_and_unicode(self._create_pkcs12_bin())
+            except Exception:
+                log.warning("Can not create PKCS12 for token {0!s}.".format(self.token.serial))
 
         return token_dict
 

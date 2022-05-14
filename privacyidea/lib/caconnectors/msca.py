@@ -42,6 +42,7 @@ import grpc
 import privacyidea.lib.caconnectors.caservice_pb2_grpc
 from privacyidea.lib.caconnectors.caservice_pb2 import *
 from privacyidea.lib.utils import is_true
+from privacyidea.lib.error import CSRError, CSRPending
 from privacyidea.lib import _
 
 
@@ -206,11 +207,13 @@ class MSCAConnector(BaseCAConnector):
             if reply.disposition == 3:
                 log.info("cert rolled out")
                 certificate = conn.GetCertificate(GetCertificateRequest(id=reply.requestId, caName=conn.GetCAs(GetCAsRequest()).caName[0])).cert
-                return  crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
+                return crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
             if reply.disposition == 5:
                 log.info("cert still under submission")
+                raise CSRPending()
             else:
                 log.error("certification request could not be fullfilled!")
+                raise CSRError()
 
     def view_pending_certs(self):
         """
