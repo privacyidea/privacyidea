@@ -303,3 +303,8 @@ Glossary
         You can also address different sections in the privacyIDEA detail response by
         changing the keyword in ``rlm_perl.ini`` to ``[Mapping other_section]``.
 
+   UserID
+        The id of the user in a :term:`Resolver(UserId)`.
+        A user is identified by the user_id.
+
+
