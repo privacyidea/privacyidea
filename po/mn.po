@@ -1,9 +1,10 @@
+# Ishdorj Idree <ishdorjidree@gmail.com>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"Last-Translator: Ishdorj Idree <ishdorjidree@gmail.com>\n"
 "Language-Team: Mongolian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/mn/>\n"
 "Language: mn\n"
@@ -64,8 +65,8 @@ msgid ""
 msgstr ""
 "li><b>\"5 10 * * *\"</b> даалгаврыг өдөр бүр 10:05 цагт гүйцэтгэдэг.</li>\n"
 "<li><b>\"*/10 * * * *\"</b> runs the task every ten minutes.</li>\n"
-"<li><b>\"1 23 * * 7\"</b> даалгаврыг ням гарагийн 23:01 цагт гүйцэтгэдэг.</"
-"li>"
+"<li><b>\"1 23 * * 7\"</b> даалгаврыг ням гарагийн 23:01 цагт "
+"гүйцэтгэдэг.</li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
 msgid ""
