@@ -52,11 +52,11 @@ Glossary
         Technically the timestep is the divider by which the seconds since 1.1.1970 (unix system time)
         are divided to calculate the OTP value.
 
-        The ``timestep`` is different to the :term:`Time Window`.
+        The ``timestep`` is different to the :ref:`Time Window`.
 
    Time Window
         Timewindow in which the given OTP value is valid for authentication.
-        ``Timestep and timewindow`` are completely similar to the ``counter and window`` of HOTP tokens.
+        ``Timestep and timewindow`` are completely similar to the ``counter and countwindow`` (:ref:`tokeninfo`) of HOTP tokens.
 
    Revoked Token
         Tokens can be ``revoked``. Usually this means the token is ``disabled and locked``. A locked token can
@@ -342,6 +342,7 @@ Glossary
         As for all other users, you can use the :ref:`policy_login_mode` to define,
         if these administrators should login to the WebUI with their userstore password
         or with an OTP token.
+
 
 
 

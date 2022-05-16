@@ -71,6 +71,8 @@ You can change the following token settings.
    The token description is also displayed in the tokenview. You can 
    set a description to make it easier to identify a token.
 
+.. _countwindow:
+
 **CountWindow**
 
    The ``CountWindow``  is the look ahead window of event based tokens.
