@@ -343,6 +343,12 @@ Glossary
         if these administrators should login to the WebUI with their userstore password
         or with an OTP token.
 
+   Userstore
+        Are the locations, where the users are managed. This can be LDAP directories
+        or especially Active Directory, some times FreeIPA or the Redhat 389 service.
+        But classically users are also located in files like /etc/passwd on standalone unix systems.
+        Web services often use SQL databases as user store.
+
 
 
 
