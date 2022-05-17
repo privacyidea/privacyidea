@@ -349,6 +349,10 @@ Glossary
         But classically users are also located in files like /etc/passwd on standalone unix systems.
         Web services often use SQL databases as user store.
 
+   Userinfo
+        These are the user attributes as they are determined by the respective resolver.
+        This is configured via the attribute mappings of resolvers (see :ref:`useridresolvers`).
+
 
 
 
