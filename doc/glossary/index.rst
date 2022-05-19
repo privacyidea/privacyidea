@@ -353,6 +353,16 @@ Glossary
         These are the user attributes as they are determined by the respective resolver.
         This is configured via the attribute mappings of resolvers (see :ref:`useridresolvers`).
 
+   Challenge
+   Multi Challenge
+        If a user wants to authenticate with his username and password, privacyIDEA will check whether an active
+        challenge response token exists for this user. In this case, the challenge is triggered and privacyIDEA expects a response.
+        If the user now gives the answer expected from the server, the response is accepted and the authentication is successful.
+
+        Multi Challenge is basically a chain of challenges. If, for example, a PIN is stored for a challenge response token, after
+        the first successful challenge, a second one is triggered, in which the PIN is expected as an answer.
+        If the PIN matches, the second challenge is also successful and the user is successfully authenticated.
+
 
 
 
