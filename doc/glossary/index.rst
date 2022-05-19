@@ -375,6 +375,18 @@ Glossary
         conditions are defined, only the ordinary policy attributes are taken into
         account.
 
+   Application Plugins
+        privacyIDEA comes with application plugins. These are plugins for
+        applications like PAM, OTRS, Apache2, FreeRADIUS, ownCloud, simpleSAMLphp
+        or Keycloak which enable these
+        application to authenticate users against privacyIDEA.
+
+        You may also write your own application plugin or connect your own application
+        to privacyIDEA. This is quite simple using a REST API
+        :ref:`rest_validate`. In order to support more sophisticated token types like
+        challenge-response or out-of-band tokens, you should take a look at the
+        various :ref:`authentication_modes`.
+
 
 
 
