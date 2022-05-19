@@ -259,13 +259,14 @@ angular.module("privacyideaApp")
                         $scope.challenge_message = $scope.challenge_message + ' ' + multi_challenge[i].serial;
                     }
                     let challenge = multi_challenge[i];
-                    let attributes = challenge.attributes ? challenge.attributes : null;
-                    if (challenge === null || (attributes && attributes.hideResponseInput !== true)) {
-                        $scope.hideResponseInput = false;
-                    }
                     if (challenge !== null) {
+                        if (challenge.client_mode === 'interactive') {
+                            // if we have at least one interactive token, we need to show the input field
+                            $scope.hideResponseInput = false;
+                        }
+                        let attributes = challenge.attributes ? challenge.attributes : null;
                         if (attributes && attributes.u2fSignRequest) {
-                           $scope.u2fSignRequests.push(attributes.u2fSignRequest);
+                            $scope.u2fSignRequests.push(attributes.u2fSignRequest);
                         }
                         if (attributes && attributes.webAuthnSignRequest) {
                             $scope.webAuthnSignRequests.push(attributes.webAuthnSignRequest);

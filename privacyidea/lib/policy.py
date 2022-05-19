@@ -2128,8 +2128,8 @@ def get_static_policy_definitions(scope=None):
             ACTION.TOKENLABEL: {
                 'type': 'str',
                 'desc': _("Set label for a new enrolled Google Authenticator. "
-                          "Possible tags are <u> (user), <r> ("
-                          "realm), <s> (serial)."),
+                          "Possible tags are &lt;u&gt; (user), &lt;r&gt; ("
+                          "realm), &lt;s&gt; (serial)."),
                 'group': GROUP.TOKEN},
             ACTION.TOKENISSUER: {
                 'type': 'str',
@@ -2333,7 +2333,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.TOKENINFO: {
                 'type': 'str',
                 'desc': _("The user will only be authenticated if the tokeninfo "
-                          "field matches the regexp. key/<regexp>/"),
+                          "field matches the regexp. key/&lt;regexp&gt;/"),
                 'group': GROUP.CONDITIONS,
             },
             ACTION.SETREALM: {

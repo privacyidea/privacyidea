@@ -38,6 +38,7 @@ from ..lib.log import log_with
 from flask import g, jsonify, current_app
 import logging
 from privacyidea.api.lib.utils import get_all_params
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import (get_token_class, get_from_config,
@@ -90,6 +91,9 @@ def token(ttype=None):
     :return: Token Type dependent
     """
     tokenc = get_token_class(ttype)
+    if tokenc is None:
+        log.error(u"Invalid tokentype provided. ttype: {}".format(ttype.lower()))
+        raise ParameterError(u"Invalid tokentype provided. ttype: {}".format(ttype.lower()))
     res = tokenc.api_endpoint(request, g)
     serial = getParam(request.all_data, "serial")
     user = get_user_from_param(request.all_data)

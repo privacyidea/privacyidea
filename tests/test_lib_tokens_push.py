@@ -12,7 +12,7 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               DEFAULT_CHALLENGE_TEXT, strip_key,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
                                               PUBLIC_KEY_SERVER,
-                                              PushAllowPolling, POLLING_ALLOWED)
+                                              PushAllowPolling, POLLING_ALLOWED, POLL_ONLY)
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.token import get_tokens, remove_token, init_token
 from privacyidea.lib.challenge import get_challenges
@@ -193,6 +193,7 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(detail.get("rollout_state"), "clientwait")
         enrollment_credential = detail.get("enrollment_credential")
         self.assertTrue("pushurl" in detail)
+        self.assertNotIn('pin=True', detail['pushurl']['value'])
         self.assertFalse("otpkey" in detail)
 
         # Run enrollment step 2
@@ -225,6 +226,16 @@ class PushTokenTestCase(MyTestCase):
             default_backend())
         self.assertEqual(parsed_server_pubkey.public_numbers(), parsed_stripped_server_pubkey.public_numbers())
         remove_token(self.serial1)
+
+    def test_01a_enroll_with_app_pin(self):
+        tparams = {'type': 'push', 'genkey': 1}
+        tparams.update(FB_CONFIG_VALS)
+        tok = init_token(param=tparams)
+        detail = tok.get_init_detail(params={PUSH_ACTION.FIREBASE_CONFIG: POLL_ONLY,
+                                             PUSH_ACTION.REGISTRATION_URL: "https://privacyidea.com/enroll",
+                                             ACTION.FORCE_APP_PIN: True})
+        self.assertIn('pin=True', detail['pushurl']['value'])
+        remove_token(tok.get_serial())
 
     def test_02a_lib_enroll(self):
         r = set_smsgateway(self.firebase_config_name,
