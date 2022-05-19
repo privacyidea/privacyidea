@@ -387,6 +387,17 @@ Glossary
         challenge-response or out-of-band tokens, you should take a look at the
         various :ref:`authentication_modes`.
 
+   Subscription
+        privacyIDEA is enterprise software. Managing lots of authentication devices for lots of users is a task that occurs in a company network.
+        privacyIDEA is licensed under an Open Source license. This guarantees, that a company using the Open Source software privacyIDEA can use this
+        software for life. In contrast prorpietary software or software-as-a-service (SaaS) can be changed, billed differently or even completely deleted.
+        You could not do anything about it. The Open Source privacyIDEA is under your control – forever.
+        The Open Source license dos not mean that a company has no costs in regards to two factor authentication.
+        At least they need to pay the administrator.
+        In any case the Open Source license states that this software comes without any warranty. A company using privacyIDEA needs to be aware of this.
+
+        For the product privacyIDEA we provide the suitable `support <https://netknights.it/en/produkte/privacyidea/>`_ with a defined response time and with fixed costs.
+
 
 
 
