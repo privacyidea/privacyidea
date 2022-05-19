@@ -2139,8 +2139,8 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.APPIMAGEURL: {
                 'type': 'str',
-                'desc': _("This is the URL to the token image for smartphone apps "
-                          "like FreeOTP."),
+                'desc': _("This is the URL to the token image for the privacyIDEA Authenticator "
+                          "and some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."),
                 'group': GROUP.TOKEN
             },
             ACTION.AUTOASSIGN: {

@@ -114,7 +114,7 @@ type: string
 
 With this action the administrator may specify the URL to a token image which is included in the
 QR code during enrollment (key in otpauth URL: ``image``). It is used by the privacyIDEA Authenticator
-and some other smartphone apps like FreeOTP (Supported file formats: PNG, JPG and GIF).
+and some other smartphone apps like FreeOTP (supported file formats: PNG, JPG and GIF).
 
 .. _autoassignment:
 
