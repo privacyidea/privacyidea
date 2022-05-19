@@ -1124,10 +1124,14 @@ class WebAuthnRegistrationResponse(object):
                     cred_id,
                     aaguid
                 )
-            elif 'ecdaaKeyId' in att_stmt:
+            else:  # ECDAA or self-attestation
                 # We do not support this. If attestation is optional, have it go through anyways.
                 if none_attestation_permitted:
-                    attestation_type = ATTESTATION_TYPE.ECDAA
+                    attestation_type = (
+                        ATTESTATION_TYPE.ECDAA
+                        if "ecdaaKeyId" in att_stmt
+                        else ATTESTATION_TYPE.SELF_ATTESTATION
+                    )
                     trust_path = []
                     return (
                         attestation_type,
@@ -1147,7 +1151,10 @@ class WebAuthnRegistrationResponse(object):
                 #     identified by ecdaaKeyId (see  [FIDOEcdaaAlgorithm]).
                 #   * If successful, return attestation type ECDAA and
                 #     attestation trust path ecdaaKeyId.
-                raise RegistrationRejectedException('ECDAA attestation type is not currently supported.')
+                if 'ecdaaKeyId' in att_stmt:
+                    raise RegistrationRejectedException('ECDAA attestation type is not currently supported.')
+                else:
+                    raise RegistrationRejectedException('Self-attestation is not currently supported.')
         else:
             # Attestation is either none, or unsupported.
             if not none_attestation_permitted:
