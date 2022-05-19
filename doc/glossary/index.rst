@@ -363,6 +363,19 @@ Glossary
         the first successful challenge, a second one is triggered, in which the PIN is expected as an answer.
         If the PIN matches, the second challenge is also successful and the user is successfully authenticated.
 
+   Policy Conditions
+        Since privacyIDEA 3.1, :ref:`policy_conditions` allow to define more advanced rules
+        for policy matching, i.e. for determining which policies are valid for a
+        specific request.
+
+        Conditions can be added to a policy via the WebUI. In order for a policy to
+        take effect during the processing of a request, the request has to match not
+        only the ordinary policy attributes (see :ref:`policies`), but also *all*
+        additionally defined conditions that are currently active. If no active
+        conditions are defined, only the ordinary policy attributes are taken into
+        account.
+
+
 
 
 
