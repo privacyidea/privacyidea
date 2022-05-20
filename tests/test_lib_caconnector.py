@@ -2,17 +2,21 @@
 This test file tests the lib.caconnector.py and
 lib.caconnectors.localca.py
 """
+import OpenSSL.crypto
+
 from .base import MyTestCase
 import os
 import glob
 import six
 import shutil
+import mock
 from io import StringIO
 from mock import patch
 from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
+from privacyidea.lib.caconnectors.msca import MSCAConnector, ATTR as MS_ATTR
 from OpenSSL import crypto
 from privacyidea.lib.utils import int_to_hex, to_unicode
-from privacyidea.lib.error import CAError
+from privacyidea.lib.error import CAError, CSRError, CSRPending
 from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_class,
                                          get_caconnector_config,
@@ -21,6 +25,8 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_type,
                                          get_caconnector_types,
                                          save_caconnector, delete_caconnector)
+from privacyidea.lib.caconnectors.caservice_pb2_grpc import CAServiceStub
+
 
 CAKEY = "cakey.pem"
 CACERT = "cacert.pem"
@@ -329,6 +335,115 @@ class LocalCATestCase(MyTestCase):
         # but an empty value is returned
         cacon.template_file = "nonexistent"
         self.assertEquals(cacon.get_templates(), {})
+
+
+class MyTemplateRequest(object):
+    pass
+
+
+class MyTemplateReply(object):
+    def __init__(self, templates):
+        self.templateName = templates
+
+class MyCARequest(object):
+    pass
+
+
+class MyCAReply(object):
+    caName = ["computer1\\ca1", "computer2\\ca2"]
+
+
+class CAServiceMock(object):
+
+    def __init__(self):
+        pass
+
+    def GetTemplates(self, templateRequest):
+        return MyTemplateReply(["templ1", "templ2"])
+
+
+class ChannelReadyMock(object):
+    def result(self, x):
+        return True
+
+class InsecureChannelMock(object):
+    def __init__(self, x, options=None):
+        pass
+
+MY_CA_NAME = "10.0.5.100"
+
+CONF = {MS_ATTR.HOSTNAME: MY_CA_NAME,
+        MS_ATTR.PORT: 50061,
+        MS_ATTR.HTTP_PROXY: "0",
+        MS_ATTR.CA: "CA03.nilsca.com\\nilsca-CA03-CA"}
+
+
+class MSCATestCase(MyTestCase):
+    """
+    Test the MS CA connector
+    """
+
+    def test_01_create_ca_connector(self):
+
+        self.cacon = MSCAConnector("billsCA", CONF)
+        self.assertEqual(self.cacon.connector_type, "microsoft")
+
+        r = self.cacon.get_config(CONF)
+        self.assertEqual(r["hostname"], MY_CA_NAME)
+        self.assertEqual(r["port"], 50061)
+        self.assertEqual(r["http_proxy"], False)
+        self.assertEqual(r["ca"], "CA03.nilsca.com\\nilsca-CA03-CA")
+
+        # Check the description of the CA Connector
+        r = MSCAConnector.get_caconnector_description()
+        description = r.get("microsoft")
+        for key in [MS_ATTR.CA, MS_ATTR.HOSTNAME, MS_ATTR.PORT, MS_ATTR.HTTP_PROXY]:
+            self.assertEqual(description[key], "string")
+
+        # Check, if an error is raised if a required attribute is missing:
+        self.assertRaisesRegexp(CAError, "required argument 'port' is missing.",
+                                MSCAConnector, "billsCA", {MS_ATTR.HOSTNAME: "hans"})
+        self.assertRaisesRegexp(CAError, "required argument 'hostname' is missing.",
+                                MSCAConnector, "billsCA", {MS_ATTR.PORT: "shanghai"})
+
+    #@patch('grpc.insecure_channel', autospec=True)
+    #@patch('grpc.channel_ready_future', autospec=True)
+    #@patch('privacyidea.lib.caconnectors.caservice_pb2_grpc.CAServiceStub', autospec=True)
+    #def test_02_test_get_templates(self, mock_caservice, mock_channel_ready, mock_insecure_channel):
+    #def test_02_test_get_templates(self, mock_caservice, mock_channel_ready):
+    def test_02_test_get_templates(self):
+        #channelready_instance = mock_channel_ready.return_value
+        #channelready_instance.return_value = ChannelReadyMock()
+
+        #insecurechannel_instance = mock_insecure_channel.return_value
+        #insecurechannel_instance.return_value = InsecureChannelMock("x")
+
+        # Test getting CAs
+        r = MSCAConnector("billsCA", CONF).get_specific_options()
+        self.assertIn("available_cas", r)
+        available_cas = r.get("available_cas")
+        self.assertIn('WIN-GG7JP259HMQ.nilsca.com\\nilsca-WIN-GG7JP259HMQ-CA', available_cas)
+        self.assertIn('CA03.nilsca.com\\nilsca-CA03-CA', available_cas)
+
+        # Create a connector to CA03
+        cacon = MSCAConnector("billsCA", CONF)
+        templates = cacon.get_templates()
+        # check for some templates
+        self.assertIn("User", templates)
+        self.assertIn("SmartcardLogon", templates)
+
+    def test_03_test_sign_request(self):
+        # Successfull
+        cacon = MSCAConnector("billsCA", CONF)
+        r = cacon.sign_request(REQUEST_USER, {"template": "User"})
+        self.assertIsInstance(r, OpenSSL.crypto.X509)
+        # Pending
+        self.assertRaisesRegexp(CSRPending, "ERR505: CSR pending",
+                                cacon.sign_request, REQUEST, {"template": "ApprovalRequired"})
+        # Failed
+        self.assertRaisesRegexp(CSRError, "ERR504: CSR invalid",
+                                cacon.sign_request, REQUEST, {"template": "NonExisting"})
+
 
 class CreateLocalCATestCase(MyTestCase):
     """
