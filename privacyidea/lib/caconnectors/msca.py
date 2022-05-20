@@ -38,9 +38,16 @@ import os
 from six import string_types
 from six.moves import input
 import traceback
-import grpc
-import privacyidea.lib.caconnectors.caservice_pb2_grpc
-from privacyidea.lib.caconnectors.caservice_pb2 import *
+try:
+    import grpc
+    from privacyidea.lib.caconnectors.caservice_pb2_grpc import CAServiceStub
+    from privacyidea.lib.caconnectors.caservice_pb2 import (GetCAsRequest,
+                                                            GetTemplatesRequest,
+                                                            SubmitCRRequest,
+                                                            GetCertificateRequest)
+    GRPC_AVAILABLE = True
+except ImportError:
+    GRPC_AVAILABLE = False
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.error import CSRError, CSRPending
 from privacyidea.lib import _
@@ -50,15 +57,6 @@ log = logging.getLogger(__name__)
 
 CRL_REASONS = ["unspecified", "keyCompromise", "CACompromise",
                "affiliationChanged", "superseded", "cessationOfOperation"]
-
-
-def _get_crl_next_update(filename):
-    """
-    Read the CRL file and return the next update as datetime
-    :param filename:
-    :return:
-    """
-    pass
 
 
 class CONFIG(object):
@@ -110,6 +108,7 @@ class MSCAConnector(BaseCAConnector):
         self.ca = None
         if config:
             self.set_config(config)
+        # Note: We can create an empty CA connector object and later configure it using self.set_config().
 
     def get_config(self, config):
         """
@@ -121,10 +120,13 @@ class MSCAConnector(BaseCAConnector):
         config[ATTR.HTTP_PROXY] = is_true(config.get(ATTR.HTTP_PROXY))
         return config
 
-    def connect_to_worker(self):
+    def _connect_to_worker(self):
         """
         creates a connection to the middleware and returns it.
         """
+        if not GRPC_AVAILABLE:
+            raise CAError("The Python grpc module is not available in your Python version. "
+                          "MSCA Connector not supported.")
         channel = grpc.insecure_channel(f'{self.hostname}:{self.port}',
                                         options=(('grpc.enable_http_proxy', int(is_true(self.http_proxy))),))
         try:
@@ -132,7 +134,7 @@ class MSCAConnector(BaseCAConnector):
         except grpc.FutureTimeoutError:
             log.warning("Worker seems to be offline. No connection could be established!")
         else:
-            return privacyidea.lib.caconnectors.caservice_pb2_grpc.CAServiceStub(channel)
+            return CAServiceStub(channel)
 
     @classmethod
     def get_caconnector_description(cls):
@@ -165,6 +167,7 @@ class MSCAConnector(BaseCAConnector):
         log.error(config)
         self.http_proxy = int(is_true(self.config.get(ATTR.HTTP_PROXY)))
         self.templates = self.get_templates()
+        self.ca = self.config.get(ATTR.CA)
         log.error(self.http_proxy)
 
     def sign_request(self, csr, options=None):
@@ -187,21 +190,20 @@ class MSCAConnector(BaseCAConnector):
         :return: Returns the certificate object if cert was provided instantly
         :rtype: X509 or None
         """
-        conn = self.connect_to_worker()
+        conn = self._connect_to_worker()
         if conn:
             reply = conn.SubmitCR(SubmitCRRequest(cr=csr, templateName=options.get("template"),
-                                                  caName=conn.GetCAs(GetCAsRequest()).caName[0]))
+                                                  caName=self.ca))
             if reply.disposition == 3:
                 log.info("cert rolled out")
                 certificate = conn.GetCertificate(GetCertificateRequest(id=reply.requestId,
-                                                                        caName=conn.GetCAs(GetCAsRequest())
-                                                                        .caName[0])).cert
+                                                                        caName=self.ca)).cert
                 return crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
             if reply.disposition == 5:
                 log.info("cert still under submission")
                 raise CSRPending()
             else:
-                log.error("certification request could not be fullfilled!")
+                log.error("certification request could not be fullfilled! {0!s}".format(reply))
                 raise CSRError()
 
     def view_pending_certs(self):
@@ -229,10 +231,12 @@ class MSCAConnector(BaseCAConnector):
 
         :return: String
         """
-        conn = self.connect_to_worker()
+        conn = self._connect_to_worker()
         if conn:
             templ = {}
-            for template in conn.GetTemplates(GetTemplatesRequest()).ListFields()[0][1]:
+            templateRequest = GetTemplatesRequest()
+            templateReply = conn.GetTemplates(templateRequest)
+            for template in templateReply.templateName:
                 templ[template] = ""
             return templ
 
@@ -271,7 +275,7 @@ class MSCAConnector(BaseCAConnector):
         pass
 
     @staticmethod
-    def create_ca(name):
+    def create_ca(name):  # pragma: no cover
         """
         Create parameters for a new CA connector.
         The configuration is requested at the command line in questions and
@@ -298,9 +302,11 @@ class MSCAConnector(BaseCAConnector):
             dummy_ca = MSCAConnector("dummy", {ATTR.HOSTNAME: config.hostname,
                                                ATTR.PORT: config.port,
                                                ATTR.HTTP_PROXY: config.http_proxy})
-            conn = dummy_ca.connect_to_worker()
+            conn = dummy_ca._connect_to_worker()
             # returns a list of machine names\CAnames
-            cas = [x[1] for x in conn.GetCAs(GetCAsRequest()).ListFields()]
+            cARequest = GetCAsRequest()
+            cAReply = conn.GetCAs(cARequest)
+            cas = [x for x in cAReply.caName]
             print("Available CAs: \n")
             for c in cas:
                 print("     {0!s}".format(c))
@@ -327,9 +333,11 @@ class MSCAConnector(BaseCAConnector):
 
         :return: return the list of available CAs in the domain
         """
-        conn = self.connect_to_worker()
+        conn = self._connect_to_worker()
         cas = []
         if conn:
             # returns a list of machine names\CAnames
-            cas = [x[1][0] for x in conn.GetCAs(GetCAsRequest()).ListFields()]
+            cARequest = GetCAsRequest()
+            cAReply = conn.GetCAs(cARequest)
+            cas = [x for x in cAReply.caName]
         return {"available_cas": cas}
