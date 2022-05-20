@@ -1619,15 +1619,15 @@ class TokenOutOfBandTestCase(MyTestCase):
         self.assertEqual(r, 0)
 
         r, r_dict = check_token_list([token1], pin1, user=user, options={})
-        self.assertFalse(r)
+        self.assertFalse(r, r_dict)
         transaction_id = r_dict.get("transaction_id")
 
         # Now we check the status of the challenge several times and verify that the
         # failcounter is not increased:
         for i in range(1, 10):
             r, r_dict = check_token_list([token1], "", user=user, options={"transaction_id": transaction_id})
-            self.assertFalse(r)
-            self.assertEqual(r_dict.get("type"), "tiqr")
+            self.assertFalse(r, r_dict)
+            self.assertEqual(r_dict.get("type"), "tiqr", r_dict)
 
         r = token1.get_failcount()
         self.assertEqual(r, 0)
@@ -1635,8 +1635,8 @@ class TokenOutOfBandTestCase(MyTestCase):
         # Now set the challenge to be answered and recheck:
         Challenge.query.filter(Challenge.transaction_id == transaction_id).update({"otp_valid": 1})
         r, r_dict = check_token_list([token1], "", user=user, options={"transaction_id": transaction_id})
-        self.assertTrue(r)
-        self.assertEqual(r_dict.get("message"), "Found matching challenge")
+        self.assertTrue(r, r_dict)
+        self.assertEqual(r_dict.get("message"), "Found matching challenge", r_dict)
 
         remove_token(pin1)
 
