@@ -14,6 +14,7 @@ import mock
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import USER_TYPE
+from privacyidea.lib.eventhandler.webhookevanthandler import ACTION_TYPE, WebHookHandler, CONTENT_TYPE
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.config import get_config_object
@@ -2519,3 +2520,31 @@ class CustomUserAttributesTestCase(MyTestCase):
         a = user.attributes
         self.assertIn('test', a, user)
         self.assertEqual('new', a.get('test'), user)
+
+class WebhookTestCase(MyTestCase):
+
+    def test_01_sending_webhook(self):
+
+        # Setup realm and user
+        self.setUp_user_realms()
+
+        user = User("hans", self.realm1)
+        g = FakeFlaskG()
+        g.logged_in_user = {'username': 'hans',
+                            'realm': self.realm1}
+
+        #Testing webhook aganst beeceptor. Beecaptor is a website were you can get an URL to send your webhook to
+        #and beecaptor will catche the webhook for you
+        options = {"g": g,
+                        "handler_def": {
+                            "options": {"URL":
+                                "https://privacyideawebhook.free.beeceptor.com",
+                            "content_type":
+                                CONTENT_TYPE.URLENCODED,
+                            "data":
+                                "This is a test"
+                            }
+                        }
+        }
+        t_handler = WebHookHandler()
+        res = t_handler.do("post_webhook", options=options)
