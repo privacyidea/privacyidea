@@ -115,7 +115,7 @@ Glossary
 
         The ``tokeninfo`` is reference by the foreign key to the “token” table.
 
-        Token info can be viewed and partially edited in the GUI. In addition, the
+        Token info can be viewed and partially edited in the WebUI. In addition, the
         Token-Janitor can be used to output token info, filter for tokens that have
         specific tokeninfo and set user-defined tokeninfos.
 
