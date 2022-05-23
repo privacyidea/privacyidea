@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-05-23 09:40+0000\n"
+"PO-Revision-Date: 2022-05-25 04:17+0000\n"
 "Last-Translator: Kayhan Kaynak <kayhankaynak@gmail.com>\n"
 "Language-Team: Hungarian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/hu/>\n"
@@ -164,7 +164,7 @@ msgstr "API Ügyfél ID"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
-msgstr ""
+msgstr "A privacyIDEA Web Clientről"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:81
 msgid ""
