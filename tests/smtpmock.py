@@ -35,7 +35,12 @@ try:
 except ImportError:
     from inspect import formatargspec, getargspec
 
-from collections import namedtuple, Sequence, Sized
+try:
+    from collections import Sequence, Sized
+except ImportError:
+    from collections.abc import Sequence, Sized
+
+from collections import namedtuple
 from functools import update_wrapper
 from smtplib import SMTPException
 

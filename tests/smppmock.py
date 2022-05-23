@@ -24,7 +24,13 @@ from __future__ import (
     absolute_import, print_function, division, unicode_literals
 )
 
-from collections import namedtuple, Sequence, Sized
+from collections import namedtuple
+
+try:
+    from collections import Sequence, Sized
+except ImportError:
+    from collections.abc import Sequence, Sized
+
 from smpplib.exceptions import ConnectionError
 
 from .smtpmock import get_wrapped
