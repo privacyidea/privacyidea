@@ -79,7 +79,7 @@ pycparser==2.21
 pydash==4.9.3; python_version <= '3.5'
 pydash==5.1.0; python_version > '3.5'
 PyJWT==1.7.1; python_version <= '3.5'
-PyJWT==2.3.0; python_version > '3.5'
+PyJWT==2.4.0; python_version > '3.5'
 PyMySQL==0.10.1; python_version <= '3.5'
 PyMySQL==1.0.2; python_version > '3.5'
 pyOpenSSL==21.0.0; python_version < '3.0'
