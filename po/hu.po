@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-05-06 17:13+0000\n"
+"PO-Revision-Date: 2022-05-25 04:17+0000\n"
 "Last-Translator: Kayhan Kaynak <kayhankaynak@gmail.com>\n"
 "Language-Team: Hungarian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/hu/>\n"
@@ -9,7 +9,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.12.1\n"
+"X-Generator: Weblate 4.13-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -32,11 +32,11 @@ msgstr "#"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:108
 msgid "(none)"
-msgstr ""
+msgstr "(semmi)"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:8
 msgid "45% Complete"
-msgstr ""
+msgstr "45% Kész"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:114
 msgid ""
@@ -149,22 +149,22 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:36
 msgid "A token specific SMS gateway"
-msgstr ""
+msgstr "Token-specifikus SMS-átjáró"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
 #: privacyidea/static/components/config/views/config.token.yubikey.html:21
 #: privacyidea/static/components/config/views/config.token.yubikey.html:44
 msgid "API Key"
-msgstr ""
+msgstr "API kulcs"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:16
 msgid "API client ID"
-msgstr ""
+msgstr "API Ügyfél ID"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
-msgstr ""
+msgstr "A privacyIDEA Web Clientről"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:81
 msgid ""
@@ -181,7 +181,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.list.html:19
 #: privacyidea/static/components/dashboard/views/dashboard.html:82
 msgid "Action"
-msgstr ""
+msgstr "Akció"
 
 #: privacyidea/static/components/config/views/config.events.list.html:9
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:6
@@ -190,35 +190,35 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:30
 #: privacyidea/static/components/user/views/user.details.html:150
 msgid "Active"
-msgstr ""
+msgstr "Aktív"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:146
 msgid "Active Events"
-msgstr ""
+msgstr "Aktív Események"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:109
 msgid "Active Policies"
-msgstr ""
+msgstr "Aktív Házirendek"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:74
 msgid "Add a condition"
-msgstr ""
+msgstr "Adjon hozzá egy feltételt"
 
 #: privacyidea/static/components/user/views/user.add.html:3
 msgid "Add a new user"
-msgstr ""
+msgstr "Adjon hozzá egy új felhasználót"
 
 #: privacyidea/static/components/user/views/user.details.html:96
 msgid "Add custom attribute"
-msgstr ""
+msgstr "Egyéni attribútum hozzáadása"
 
 #: privacyidea/static/components/config/views/config.token.question.html:56
 msgid "Add new question"
-msgstr ""
+msgstr "Új kérdés hozzáadása"
 
 #: privacyidea/static/components/user/views/user.html:40
 msgid "Add user"
-msgstr ""
+msgstr "Felhasználó hozzáadása"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:268
 msgid "Additional conditions"
@@ -226,7 +226,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:157
 msgid "Admin"
-msgstr ""
+msgstr "Admin"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:140
 msgid "Admin-Realm"
@@ -234,11 +234,11 @@ msgstr ""
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:75
 msgid "Administration"
-msgstr ""
+msgstr "Adminisztráció"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:81
 msgid "Administrator"
-msgstr ""
+msgstr "Adminisztrátor"
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:8
 msgid "All CA Connectors"

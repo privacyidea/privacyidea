@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-05-17 10:13+0000\n"
+"PO-Revision-Date: 2022-05-25 04:17+0000\n"
 "Last-Translator: Ishdorj Idree <ishdorjidree@gmail.com>\n"
 "Language-Team: Mongolian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/mn/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
 msgctxt "subscription"
 msgid "Level"
-msgstr ""
+msgstr "Түвшин"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -42,11 +42,14 @@ msgstr "45%  Гүйцэтгэлтэй"
 msgid ""
 "<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/\">\n"
 "                        Ask for the privacyIDEA Enterprise Edition, now!</a>"
-msgstr "PrivacyIDEA байгууллагт зориулсан хувилбар"
+msgstr ""
+"<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/"
+"\">\n"
+"Одоо IDEA Enterprise Edition-н нууцлалыг асуугаарай!</a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
-msgstr ""
+msgstr "<b>ЭНЭ ПРОГРАМ ХАНГАМЖ ЯМАР Ч БАТАЛГААТГҮЙ!</b>"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:57
 msgid ""
@@ -54,9 +57,10 @@ msgid ""
 "                        <li><b>\"*/10 * * * *\"</b> runs the task every ten minutes.</li>\n"
 "                        <li><b>\"1 23 * * 7\"</b> runs the task at 11:01pm on Sundays.</li>"
 msgstr ""
-"Өдөр бүр 10:05am ажиллуулах\n"
-"10 минут тутамд task ажиллуулах \n"
-"Бүтэн сайн өдрийн 11:01pm task ажиллуулах"
+"li><b>\"5 10 * * *\"</b> даалгаврыг өдөр бүр 10:05 цагт гүйцэтгэдэг.</li>\n"
+"<li><b>\"*/10 * * * *\"</b> runs the task every ten minutes.</li>\n"
+"<li><b>\"1 23 * * 7\"</b> даалгаврыг ням гарагийн 23:01 цагт "
+"гүйцэтгэдэг.</li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
 msgid ""
@@ -146,19 +150,21 @@ msgid ""
 "                    and thus this world a more secure place!</p>\n"
 "                <p>Have fun using privacyIDEA!</p>"
 msgstr ""
-"PrivacyIDEA-г cүлжээндээ ашиглаж \n"
-"сүлжээнийхээ аюулгүй байдлыг бий болгосонд баярлалаа!\n"
-"PrivacyIDEA ашиглан хөгжилтэй байгаарай!"
+"<p>privacyIDEA-г ашиглаж, сүлжээгээ бий болгосонд баярлалаа\n"
+"Ингэснээр  байгууллагт аюулшзшй байдлыг бий болгоно!</p>\n"
+"<p>privacyIDEA-г ашиглан хөгжилтэй байгаарай!</p>"
 
 #: privacyidea/static/components/login/views/offline.html:1
 msgid ""
 "<p>The privacyIDEA API seems to be offline!</p>\n"
 "    <p>Please try to reload and otherwise contact your system administrator!</p>"
 msgstr ""
+"<p>privacyIDEA API нь офлайн байна!</p>\n"
+"<p>Дахин ачаалж үзээд системийн админтайгаа холбогдоно уу!</p>"
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:36
 msgid "A token specific SMS gateway"
-msgstr ""
+msgstr "Тусгай токен SMS гарц"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
@@ -169,7 +175,7 @@ msgstr "API түлхүүр"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:16
 msgid "API client ID"
-msgstr "API client ID"
+msgstr "API хэрэглэгчийн ID"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
@@ -181,7 +187,8 @@ msgid ""
 "                    <a target=\"license\" href=\"https://github.com/privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
 msgstr ""
 "Заасны дагуу\n"
-"AGPLv3"
+"<a target=\"license\" href=\"https://github.com/privacyidea/privacyidea/blob/"
+"master/LICENSE\">AGPLv3</a>"
 
 #: privacyidea/static/components/config/views/config.events.details.html:113
 #: privacyidea/static/components/config/views/config.events.details.html:220
@@ -345,15 +352,15 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:44
 msgid "Assign token to user"
-msgstr ""
+msgstr "Хэрэглэгчдэд токен оноох"
 
 #: privacyidea/static/components/token/views/token.details.html:447
 msgid "Assigned User"
-msgstr ""
+msgstr "Оноосон хэрэглэгч"
 
 #: privacyidea/static/components/token/views/token.getserial.html:33
 msgid "Assignment State"
-msgstr ""
+msgstr "Даалгаврын төлөв"
 
 #: privacyidea/static/components/token/views/token.details.html:655
 msgid "Attach Machine"
@@ -369,48 +376,48 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:280
 msgid "Attribute mapping"
-msgstr ""
+msgstr "Атрибутын зураглал"
 
 #: privacyidea/static/templates/menu.html:85
 msgid "Audit"
-msgstr ""
+msgstr "Аудит"
 
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:26
 msgid "Authentication Server URI"
-msgstr ""
+msgstr "Баталгаажуулах серверийн URI"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:343
 msgid "Authentication failed."
-msgstr ""
+msgstr "Баталгаажуулалт амжилтгүй боллоо."
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:41
 msgid "Authentications"
-msgstr ""
+msgstr "Баталгаажуулалт"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:43
 msgid "Authentications in the last 24 hours"
-msgstr ""
+msgstr "Сүүлийн 24 цагийн баталгаажуулалт"
 
 #: privacyidea/static/components/config/views/config.system.html:147
 msgid "Auto resync timeout"
-msgstr ""
+msgstr "Автоматаар resync хийх хугацаа дууссан"
 
 #: privacyidea/static/components/config/views/config.system.html:143
 msgid "Automatic resync during authentication"
-msgstr ""
+msgstr "Баталгаажуулалтын үед автоматаар resync хийх"
 
 #: privacyidea/static/components/login/factories/u2f.js:27
 msgid "Bad U2F Request"
-msgstr ""
+msgstr "Буруу U2F хүсэлт"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:28
 msgid "Base Config"
-msgstr ""
+msgstr "Үндсэн тохиргоо"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:82
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:99
 msgid "Base DN"
-msgstr ""
+msgstr "Үндсэн DN"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:92
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:122
@@ -472,11 +479,11 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.getserial.html:83
 #: privacyidea/static/components/user/views/user.details.html:56
 msgid "Cancel"
-msgstr ""
+msgstr "Цуцлах"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:45
 msgid "Certificate (PEM)"
-msgstr ""
+msgstr "Сертификат (PEM)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:107
 msgid "Certificate Directory"
@@ -519,11 +526,11 @@ msgstr ""
 #: privacyidea/static/components/login/views/pinchange.html:23
 #: privacyidea/static/components/login/views/pinchange.html:4
 msgid "Change PIN"
-msgstr ""
+msgstr "ПИН код солих"
 
 #: privacyidea/static/components/token/views/token.details.html:435
 msgid "Check OTP only."
-msgstr ""
+msgstr "Зөвхөн OTP шалгах."
 
 #: privacyidea/static/components/config/views/config.policies.details.html:204
 msgid ""
@@ -534,11 +541,11 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.radius.html:18
 #: privacyidea/static/components/token/views/token.enroll.remote.html:12
 msgid "Check the PIN locally"
-msgstr ""
+msgstr "ПИН кодыг дотооддоо шалгана уу"
 
 #: privacyidea/static/components/token/views/token.details.html:428
 msgid "Check with OTP PIN."
-msgstr ""
+msgstr "OTP PIN кодоор шалгана уу."
 
 #: privacyidea/static/components/login/views/login.html:70
 msgid "Choose a realm..."
@@ -1153,6 +1160,8 @@ msgid ""
 "Enter your username and password and click Log In to\n"
 "                authenticate."
 msgstr ""
+"Хэрэглэгчийн нэр, нууц үгээ оруулаад Нэвтрэх дээр дарна уу\n"
+"баталгаажуулах."
 
 #: privacyidea/static/components/config/factories/config.js:44
 msgid "Error fetching policy template"
@@ -1203,7 +1212,7 @@ msgstr ""
 
 #: privacyidea/static/components/recovery/controllers/recoveryControllers.js:33
 msgid "Failed to reset your password."
-msgstr ""
+msgstr "Нууц үгээ сэргээж чадсангүй."
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:227
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:241
@@ -1619,7 +1628,7 @@ msgstr ""
 #: privacyidea/static/components/login/views/login.html:20
 #: privacyidea/static/components/login/views/login.html:79
 msgid "Log In"
-msgstr ""
+msgstr "Нэвтрэх"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:117
 msgid "Log out"
@@ -2061,7 +2070,7 @@ msgstr ""
 
 #: privacyidea/static/components/login/views/login.html:51
 msgid "Please sign in"
-msgstr ""
+msgstr "Нэвтрэх хэсэг"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:49
 msgid ""
@@ -2349,7 +2358,7 @@ msgstr ""
 #: privacyidea/static/components/recovery/views/recovery.html:14
 #: privacyidea/static/components/recovery/views/recovery.reset.html:23
 msgid "Reset Password"
-msgstr ""
+msgstr "Нууц үг сэргээх"
 
 #: privacyidea/static/components/token/views/token.details.html:103
 msgid "Reset fail counter"
@@ -2357,7 +2366,7 @@ msgstr ""
 
 #: privacyidea/static/components/recovery/views/recovery.reset.html:5
 msgid "Reset your Password"
-msgstr ""
+msgstr "Нууц үгээ дахин сэргээх хэрэгтэй"
 
 #: privacyidea/static/components/config/views/config.policies.list.html:22
 #: privacyidea/static/components/token/views/token.details.html:474
@@ -2534,7 +2543,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.system.html:302
 msgid "Save System Config"
-msgstr ""
+msgstr "Системийн тохиргоог хадгал"
 
 #: privacyidea/static/components/token/views/token.details.html:281
 msgid "Save Token Info"
@@ -2808,12 +2817,12 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.system.html:10
 msgid "System Config"
-msgstr ""
+msgstr "Системийн тохиргоо"
 
 #: privacyidea/static/components/config/controllers/configControllers.js:501
 #: privacyidea/static/components/config/controllers/configControllers.js:733
 msgid "System Config saved."
-msgstr ""
+msgstr "Системийн тохиргоог хадгалсан."
 
 #: privacyidea/static/components/config/controllers/configControllers.js:510
 msgid "System entry deleted."
@@ -4088,7 +4097,7 @@ msgstr ""
 
 #: privacyidea/static/components/recovery/controllers/recoveryControllers.js:30
 msgid "Your password has been reset successfully."
-msgstr ""
+msgstr "Таны нууц үгийг амжилттай сэргээлээ."
 
 #: privacyidea/static/components/token/views/token.getserial.html:75
 msgid ""
@@ -4426,11 +4435,11 @@ msgstr "Овог нэр"
 
 #: privacyidea/static/components/token/views/token.challenges.html:20
 msgid "timestamp"
-msgstr ""
+msgstr "цагийн тэмдэг"
 
 #: privacyidea/static/components/audit/views/audit.log.html:69
 msgid "token type"
-msgstr ""
+msgstr "токен төрөл"
 
 #: privacyidea/static/components/token/views/token.list.html:12
 msgid "total tokens: {{ tokendata.count }}"
@@ -4456,7 +4465,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.list.html:29
 #: privacyidea/static/components/user/views/user.details.html:149
 msgid "type"
-msgstr ""
+msgstr "төрөл"
 
 #: privacyidea/static/components/token/views/token.import.html:41
 msgid ""
@@ -4466,7 +4475,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.vasco.html:23
 msgid "use VASCO Serial"
-msgstr ""
+msgstr "VASCO сериал ашиглах"
 
 #: privacyidea/static/components/audit/views/audit.log.html:81
 #: privacyidea/static/components/token/views/token.list.html:63
@@ -4475,11 +4484,11 @@ msgstr "хэрэглэгч"
 
 #: privacyidea/static/components/user/views/user.list.html:11
 msgid "username"
-msgstr ""
+msgstr "нэр"
 
 #: privacyidea/static/components/user/views/user.details.html:151
 msgid "window"
-msgstr ""
+msgstr "цонх"
 
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
