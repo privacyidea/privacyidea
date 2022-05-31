@@ -248,8 +248,8 @@ Glossary
         scope takes only one value.
 
    Realms
-        Users need to be in realms to have tokens assigned. A user, who is not
-        member of a realm can not have a token assigned and can not authenticate.
+        Realms are meant for general logical user grouping. Users need to be in realms to have tokens assigned.
+        A user, who is not member of a realm can not have a token assigned and can not authenticate.
 
         You can combine several different UserIdResolvers (see :ref:`useridresolvers`)
         into a realm.
