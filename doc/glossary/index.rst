@@ -68,8 +68,8 @@ Glossary
         user store (anymore).
 
    Disabled Token
-        Tokens can be ``disabled``. Disabled tokens still belong to the assigned user but those tokens
-        can not be used to authenticate. ``Disabled tokens can be enabled again``.
+        Tokens can be **disabled**. Disabled tokens still belong to the assigned user but those tokens
+        can not be used to authenticate. *Disabled tokens can be enabled again*.
 
    Resolver(UserId)
         UserIdResolvers are connectors to those user stores, the locations,
