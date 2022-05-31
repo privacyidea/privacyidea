@@ -179,9 +179,27 @@ Glossary
 
    Rollout State
         A token can be rolled out in several steps like the 2step HOTP/TOTP token.
-        In this case the attribute ``“rollout_state”`` of the token contains certain values
-        like ``‘clientwait’ or ‘enrolled’``. This way actions can be triggered, depending
-        on the step during an enrollment process.
+        In this case the attribute ``“rollout_state”`` of the token contains certain values.
+        This way actions can be triggered, depending on the step during an enrollment process.
+
+        **Rollout States are:**
+
+        - Clientwait
+
+          The rollout is pending in the backend, like CSRs that need to be approved.
+
+        - Pending
+
+          This means the user needs to authenticate to verify that the token was successfully enrolled.
+
+        - Verify
+
+        - Enrolled
+
+        - Failed
+
+        .. note:: Not all tokens have the rollout state "enrolled" set consistently.
+           An empty rollout state means "enrolled".
 
    Custom User Attributes
         The table ``“customuserattribute”`` is used to store additional, custom attributes for users.
