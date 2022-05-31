@@ -158,8 +158,10 @@ Glossary
         If the login fail counter reaches the ``MaxFail`` the user can not login
         with this token anymore.
 
+        .. note:: The **failcounter** is not increased anymore, when it has reached ``MaxFail``.
+
         The administrator or help desk user can select those tokens and
-        click the button ``reset failcounter`` to reset the fail counter to zero.
+        click the button **reset failcounter** to reset the fail counter to zero.
         The tokens can be used for authentication again.
 
    SplitAtSign
