@@ -398,7 +398,7 @@ Glossary
 
         * Programmatically via a call to /validate/triggerchallenge
 
-   Policy Conditions
+   Extended Policy Conditions
         Since privacyIDEA 3.1, :ref:`policy_conditions` allow to define more advanced rules
         for policy matching, i.e. for determining which policies are valid for a
         specific request.

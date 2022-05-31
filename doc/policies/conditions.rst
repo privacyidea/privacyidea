@@ -1,9 +1,9 @@
 .. _policy_conditions:
 
-Policy conditions
------------------
+Extended Policy Conditions
+--------------------------
 
-Since privacyIDEA 3.1, *policy conditions* allow to define more advanced rules
+Since privacyIDEA 3.1, *extended policy conditions* allow to define more advanced rules
 for policy matching, i.e. for determining which policies are valid for a
 specific request.
 
