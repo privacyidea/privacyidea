@@ -135,7 +135,7 @@ Glossary
    Audit
         The systems provides a sophisticated audit log, that can be viewed in the WebUI.
 
-        The Audit log lists all events the server registers.
+        The Audit log, is essentially a record of events and changes.
 
         .. figure:: /audit/auditlog.png
            :width: 500
