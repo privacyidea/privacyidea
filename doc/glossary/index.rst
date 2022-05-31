@@ -204,6 +204,19 @@ Glossary
    Custom User Attributes
         The table ``“customuserattribute”`` is used to store additional, custom attributes for users.
 
+        privacyIDEA working with user resolvers, which means users are already located somewhere for
+        example in an Active Directory. privacyIDEA is configured to read users from this user source,
+        so the users will be available within privacyIDEA with all the attributes which are read from
+        the user source.
+
+        The interesting thing is that often the administrator who's responsible for managing the tokens
+        in privacyIDEA does not have any access to the Active Directory. The administrator can define
+        policies to allow other admins, help desk users or even the user to manage custom attributes in privacyIDEA.
+
+        That gives the user defined in the policy the opportunity to add further attributes to the user that were not
+        defined in the active directory. For example you can add an additional tag to the user, to organize them into logical groups.
+        Another possibility is to overwrite existing attributes.
+
         A user is identified by the user_id, the resolver_id and the realm_id.
         The additional attributes are stored in Key and Value.
         The Type can hold extra information like e.g. an encrypted value / password.
