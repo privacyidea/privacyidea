@@ -411,7 +411,7 @@ Glossary
         account.
 
    Application Plugins
-        privacyIDEA comes with application plugins. These are plugins for
+        Some plugins are available for privacyIDEA. These are plugins for
         applications like PAM, OTRS, Apache2, FreeRADIUS, ownCloud, simpleSAMLphp
         or Keycloak which enable these
         application to authenticate users against privacyIDEA.
