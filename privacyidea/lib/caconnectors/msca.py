@@ -127,7 +127,7 @@ class MSCAConnector(BaseCAConnector):
         """
         creates a connection to the middleware and returns it.
         """
-        channel = grpc.insecure_channel(f'{self.hostname}:{self.port}',
+        channel = grpc.insecure_channel('{0!s}:{1!s}'.format(self.hostname, self.port),
                                         options=(('grpc.enable_http_proxy', int(is_true(self.http_proxy))),))
         try:
             grpc.channel_ready_future(channel).result(timeout=3)
