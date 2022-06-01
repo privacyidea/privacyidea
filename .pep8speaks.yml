@@ -31,7 +31,9 @@ pycodestyle:
         - E743 # Do not use functions named `l`, `O`, or `I`.
         - W503 # Line break before binary operator.
         - W505 # Doc line too long.
-    exclude: ['privacyidea/lib/caconnectors/caservice_pb2.py', 'privacyidea/lib/caconnectors/caservice_pb2_grpc.py']
+    exclude:
+        - caservice_pb2.py
+        - caservice_pb2_grpc.py
     count: False
     first: False
     show-pep8: False
