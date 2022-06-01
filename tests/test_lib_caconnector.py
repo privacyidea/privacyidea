@@ -2,6 +2,8 @@
 This test file tests the lib.caconnector.py and
 lib.caconnectors.localca.py
 """
+import unittest
+
 import OpenSSL.crypto
 
 from .base import MyTestCase
@@ -25,7 +27,7 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_type,
                                          get_caconnector_types,
                                          save_caconnector, delete_caconnector)
-from privacyidea.lib.caconnectors.caservice_pb2_grpc import CAServiceStub
+from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 
 
 CAKEY = "cakey.pem"
@@ -378,13 +380,16 @@ CONF = {MS_ATTR.HOSTNAME: MY_CA_NAME,
         MS_ATTR.CA: "CA03.nilsca.com\\nilsca-CA03-CA"}
 
 
+
+
 class MSCATestCase(MyTestCase):
     """
     Test the MS CA connector
     """
 
+    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+                         "Can not test MSCA. grpc module seems not available.")
     def test_01_create_ca_connector(self):
-
         self.cacon = MSCAConnector("billsCA", CONF)
         self.assertEqual(self.cacon.connector_type, "microsoft")
 
@@ -411,6 +416,8 @@ class MSCATestCase(MyTestCase):
     #@patch('privacyidea.lib.caconnectors.caservice_pb2_grpc.CAServiceStub', autospec=True)
     #def test_02_test_get_templates(self, mock_caservice, mock_channel_ready, mock_insecure_channel):
     #def test_02_test_get_templates(self, mock_caservice, mock_channel_ready):
+    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+                         "Can not test MSCA. grpc module seems not available.")
     def test_02_test_get_templates(self):
         #channelready_instance = mock_channel_ready.return_value
         #channelready_instance.return_value = ChannelReadyMock()
@@ -432,6 +439,8 @@ class MSCATestCase(MyTestCase):
         self.assertIn("User", templates)
         self.assertIn("SmartcardLogon", templates)
 
+    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+                         "Can not test MSCA. grpc module seems not available.")
     def test_03_test_sign_request(self):
         # Successfull
         cacon = MSCAConnector("billsCA", CONF)

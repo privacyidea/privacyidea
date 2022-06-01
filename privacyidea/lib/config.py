@@ -809,9 +809,8 @@ def get_caconnector_module_list():
 
     :return: list of CA connector modules
     """
-    module_list = set()
-    module_list.add("privacyidea.lib.caconnectors.localca.LocalCAConnector")
-    module_list.add("privacyidea.lib.caconnectors.msca.MSCAConnector")
+    from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
+    module_list = set(AvailableCAConnectors)
 
     modules = []
     for mod_name in module_list:

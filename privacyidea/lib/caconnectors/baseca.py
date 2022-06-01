@@ -26,6 +26,9 @@ In this first implementation it is only a local certificate authority.
 This module is tested in tests/test_lib_caconnector.py
 """
 
+# This takes a set of all CA Connector modules.
+AvailableCAConnectors = []
+
 
 class BaseCAConnector(object):
     def revoke_cert(self, certificate, reason=None):

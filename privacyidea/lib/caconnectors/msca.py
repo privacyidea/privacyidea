@@ -26,7 +26,7 @@ TODO: write tests
 
 from privacyidea.lib.error import CAError
 from privacyidea.lib.utils import int_to_hex, to_unicode
-from privacyidea.lib.caconnectors.baseca import BaseCAConnector
+from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConnectors
 from OpenSSL import crypto
 from subprocess import Popen, PIPE
 import yaml
@@ -38,6 +38,8 @@ import os
 from six import string_types
 from six.moves import input
 import traceback
+log = logging.getLogger(__name__)
+
 try:
     import grpc
     from privacyidea.lib.caconnectors.caservice_pb2_grpc import CAServiceStub
@@ -45,15 +47,16 @@ try:
                                                             GetTemplatesRequest,
                                                             SubmitCRRequest,
                                                             GetCertificateRequest)
-    GRPC_AVAILABLE = True
+    AvailableCAConnectors.append("privacyidea.lib.caconnectors.msca.MSCAConnector")
 except ImportError:
-    GRPC_AVAILABLE = False
+    log.warning("Can not import grpc modules.")
+
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.error import CSRError, CSRPending
 from privacyidea.lib import _
 
 
-log = logging.getLogger(__name__)
+
 
 CRL_REASONS = ["unspecified", "keyCompromise", "CACompromise",
                "affiliationChanged", "superseded", "cessationOfOperation"]
@@ -124,9 +127,6 @@ class MSCAConnector(BaseCAConnector):
         """
         creates a connection to the middleware and returns it.
         """
-        if not GRPC_AVAILABLE:
-            raise CAError("The Python grpc module is not available in your Python version. "
-                          "MSCA Connector not supported.")
         channel = grpc.insecure_channel(f'{self.hostname}:{self.port}',
                                         options=(('grpc.enable_http_proxy', int(is_true(self.http_proxy))),))
         try:
