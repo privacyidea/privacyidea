@@ -1,5 +1,5 @@
 <div class="row">
-    <div class="col-lg-3">
+    <div class="col-lg-3 sticky">
         <div class="pa-sidebar panel">
             <ul class="nav nav-pills nav-stacked">
                 <li role="presentation"
@@ -12,6 +12,10 @@
                     ng-class="{ active: $state.includes('config.events.add')}">
                     <a ui-sref="config.events.add"
                        translate>Create new Event Handler</a></li>
+                <li role="presentation">
+                    <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                    privacyideaVersionNumber+'/eventhandler/index.html#'}}" translate>
+                        Help about the events</a></li>
             </ul>
         </div>
 
