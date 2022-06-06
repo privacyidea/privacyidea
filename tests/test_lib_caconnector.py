@@ -372,7 +372,10 @@ class InsecureChannelMock(object):
     def __init__(self, x, options=None):
         pass
 
-MY_CA_NAME = "10.0.5.100"
+#MY_CA_NAME = "10.0.5.100"
+
+# Mock
+MY_CA_NAME = "192.168.47.11"
 
 CONF = {MS_ATTR.HOSTNAME: MY_CA_NAME,
         MS_ATTR.PORT: 50061,
@@ -411,19 +414,21 @@ class MSCATestCase(MyTestCase):
         self.assertRaisesRegexp(CAError, "required argument 'hostname' is missing.",
                                 MSCAConnector, "billsCA", {MS_ATTR.PORT: "shanghai"})
 
-    #@patch('grpc.insecure_channel', autospec=True)
-    #@patch('grpc.channel_ready_future', autospec=True)
+    @patch('grpc.channel_ready_future', autospec=True)
+    @patch('grpc.insecure_channel', autospec=True)
     #@patch('privacyidea.lib.caconnectors.caservice_pb2_grpc.CAServiceStub', autospec=True)
-    #def test_02_test_get_templates(self, mock_caservice, mock_channel_ready, mock_insecure_channel):
-    #def test_02_test_get_templates(self, mock_caservice, mock_channel_ready):
     @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
                          "Can not test MSCA. grpc module seems not available.")
-    def test_02_test_get_templates(self):
+    def test_02_test_get_templates(self, mock_insecure_channel, channel_ready_future):
         #channelready_instance = mock_channel_ready.return_value
         #channelready_instance.return_value = ChannelReadyMock()
 
-        #insecurechannel_instance = mock_insecure_channel.return_value
-        #insecurechannel_instance.return_value = InsecureChannelMock("x")
+#        insecurechannel_instance = mock_insecure_channel.return_value
+#        insecurechannel_instance.return_value = InsecureChannelMock("x")
+        mock_insecure_channel = InsecureChannelMock
+        channel_ready_future = ChannelReadyMock
+
+        # TODO: mock CAServiceStub in _connect_to_worker
 
         # Test getting CAs
         r = MSCAConnector("billsCA", CONF).get_specific_options()
