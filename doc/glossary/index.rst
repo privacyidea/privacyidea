@@ -189,9 +189,9 @@ Glossary
 
         - Pending
 
-          This means the user needs to authenticate to verify that the token was successfully enrolled.
-
         - Verify
+
+          This means the user needs to authenticate to verify that the token was successfully enrolled.
 
         - Enrolled
 
