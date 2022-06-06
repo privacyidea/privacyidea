@@ -390,7 +390,7 @@ Glossary
         challenge response token exists for this user. In this case, the challenge is triggered and privacyIDEA expects a response.
         If the user now gives the answer expected from the server, the response is accepted and the authentication is successful.
 
-        Multi Challenge is basically a chain of challenges. It can be used to reset a PIN or with the :ref:`code_foureye_token`.
+        Multi Challenge is basically a chain of challenges. It can be used to reset a PIN, with the :ref:`code_foureye_token` e.g..
 
         **Challenges are triggered by:**
 
