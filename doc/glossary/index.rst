@@ -93,8 +93,7 @@ Glossary
 
    Resolver(Machine)
         Machine Resolvers are used to find machines in directories like LDAP,
-        Active Directory, `puppet <https://puppet.com/docs/puppet/6/puppet_overview.html>`_,
-        `salt <https://docs.saltproject.io/salt/user-guide/en/latest/topics/overview.html>`_, or the /etc/hosts file.
+        Active Directory or the /etc/hosts file.
 
         The idea is for users to be able to authenticate on those client machines.
         Not in all cases an online authentication request is possible,
