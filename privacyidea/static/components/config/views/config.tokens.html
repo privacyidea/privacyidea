@@ -55,8 +55,13 @@
                 </li>
                 <li role="presentation"
                     ng-class="{ active: tokentype == 'yubikey'}">
-                    <a ui-sref="config.tokens({tokentype: 'yubikey'})">Yubikey</a>
-                </li>
+                    <a ui-sref="config.tokens({tokentype: 'yubikey'})">Yubikey</a></li>
+                <hr>
+                <li role="presentation">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/configuration/token_config.html#'}}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Token Settings</span></a></li>
             </ul>
         </div>
 

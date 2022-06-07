@@ -10,9 +10,13 @@
                     ng-class="{ active: $state.includes('config.radius.add')}"
                     ng-show="checkRight('radiusserver_write')">
                     <a ui-sref="config.radius.add" translate>
-                        New RADIUS server
-                    </a>
-                </li>
+                        New RADIUS server</a></li>
+                <hr>
+                <li role="presentation">
+                    <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                       privacyideaVersionNumber+'/configuration/radiusserver_config.html#'}}">
+                        <span class="glyphicon glyphicon-info-sign"></span>
+                        <span translate>Help about RADIUS-Server</span></a></li>
             </ul>
         </div>
 

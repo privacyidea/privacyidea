@@ -1,5 +1,5 @@
 <div class="row" ng-controller="configController">
-    <div class="col-lg-3">
+    <div class="col-lg-3 sticky">
         <div class="pa-sidebar panel">
             <ul class="nav nav-pills nav-stacked">
                 <li role="presentation"
@@ -25,8 +25,13 @@
                     $state.includes('config.resolvers.add'+resolvertype) }">
                     <a ui-sref="config.resolvers.add{{ resolvertype }}"
                             translate>
-                        New {{ resolvertype }}</a>
-                </li>
+                        New {{ resolvertype }}</a></li>
+                <hr>
+                <li role="presentation">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/configuration/useridresolvers.html#'}}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about UserIdResolvers</span></a></li>
             </ul>
         </div>
 

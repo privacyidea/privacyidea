@@ -10,9 +10,13 @@
                     ng-class="{ active: $state.includes('config.smtp.add')}"
                     ng-show="checkRight('smtpserver_write')">
                     <a ui-sref="config.smtp.add" translate>
-                        New SMTP server
-                    </a>
-                </li>
+                        New SMTP server</a></li>
+                <hr>
+                <li role="presentation">
+                    <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                       privacyideaVersionNumber+'/configuration/smtpserver_config.html#'}}">
+                        <span class="glyphicon glyphicon-info-sign"></span>
+                        <span translate>Help about SMTP-Servers</span></a></li>
             </ul>
         </div>
 

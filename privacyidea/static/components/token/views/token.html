@@ -1,7 +1,7 @@
 <div class="well" ng-controller="tokenController">
 
     <div class="row">
-        <div class="col-lg-3" ng-hide="token_wizard">
+        <div class="col-lg-3 sticky" ng-hide="token_wizard">
             <div class="pa-sidebar panel">
                 <ul class="nav nav-pills nav-stacked">
                     <li role="presentation"
@@ -80,9 +80,32 @@
                         <a ui-sref="token.getserial">
                             <span class="glyphicon glyphicon-question-sign">
                             </span>
-                            <span translate>Get Serial</span>
-                        </a>
-                    </li>
+                            <span translate>Get Serial</span></a></li>
+                    <hr>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.list'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/index.html#tokens'}}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Token</span></a></li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.enroll'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/tokens/tokentypes.html#'}}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Tokentypes</span></a></li>
+                     <li role="presentation"
+                        ng-show="($state.includes('token.import'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/workflows_and_tools/import/index.html#'}}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Import</span></a></li>
+                    <li role="presentation"
+                        ng-show="($state.includes('token.details'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/token_details.html#'}}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Token Details</span></a></li>
                 </ul>
 
             </div>
