@@ -1006,6 +1006,8 @@ class APISelfserviceTestCase(MyApiTestCase):
             ACTION.USERPAGESIZE, 20))
         set_policy(name="webui3", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
             ACTION.LOGOUTTIME, 200))
+        set_policy(name="webui4", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
+            ACTION.AUDITPAGESIZE, 20))
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "selfservice@realm1",
@@ -1016,6 +1018,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"), res.data)
             # Test logout time
             self.assertEqual(result.get("value").get("logout_time"), 200)
+            self.assertEqual(result.get("value").get("audit_page_size"), 20)
             self.assertEqual(result.get("value").get("token_page_size"), 20)
             self.assertEqual(result.get("value").get("user_page_size"), 20)
             self.assertEqual(result.get("value").get("policy_template_url"),

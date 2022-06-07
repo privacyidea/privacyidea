@@ -228,6 +228,7 @@ class ACTION(object):
     AUDIT = "auditlog"
     AUDIT_AGE = "auditlog_age"
     AUDIT_DOWNLOAD = "auditlog_download"
+    AUDITPAGESIZE = "audit_page_size"
     AUTHITEMS = "fetch_authentication_items"
     AUTHMAXSUCCESS = "auth_max_success"
     AUTHMAXFAIL = "auth_max_fail"
@@ -2430,6 +2431,11 @@ def get_static_policy_definitions(scope=None):
             ACTION.USERPAGESIZE: {
                 'type': 'int',
                 'desc': _("Set how many users should be displayed in the user "
+                          "view on one page.")
+            },
+            ACTION.AUDITPAGESIZE: {
+                'type': 'int',
+                'desc': _("Set how many audit entries should be displayed in the audit "
                           "view on one page.")
             },
             ACTION.CUSTOM_MENU: {

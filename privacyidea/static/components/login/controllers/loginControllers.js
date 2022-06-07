@@ -432,6 +432,7 @@ angular.module("privacyideaApp")
             if ($scope.qr_images.length > 0) {
                 $scope.qr_col_md = "col-md-" + parseInt(12 / $scope.qr_images.length);
             }
+            $scope.audit_page_size = data.result.value.audit_page_size;
             $scope.token_page_size = data.result.value.token_page_size;
             $scope.user_page_size = data.result.value.user_page_size;
             $scope.user_details_in_tokenlist = data.result.value.user_details;
