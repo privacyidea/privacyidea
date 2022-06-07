@@ -125,6 +125,17 @@ type: ``str``
 
 The action taken when a user is idle beyond the ``logout_time`` limit. Defaults to `lockscreen`.
 
+audit_page_size
+~~~~~~~~~~~~~~~
+
+.. index:: Audit view page size
+
+type: ``int``
+
+By default 10 entries are displayed on one page in the audit view.
+On big screens you might want to display more entries. Thus you can define in
+this policy how many audit entries should be displayed.
+
 token_page_size
 ~~~~~~~~~~~~~~~
 
