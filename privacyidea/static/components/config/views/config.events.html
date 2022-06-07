@@ -12,10 +12,12 @@
                     ng-class="{ active: $state.includes('config.events.add')}">
                     <a ui-sref="config.events.add"
                        translate>Create new Event Handler</a></li>
+                <hr>
                 <li role="presentation">
                     <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
-                    privacyideaVersionNumber+'/eventhandler/index.html#'}}" translate>
-                        Help about the events</a></li>
+                    privacyideaVersionNumber+'/eventhandler/index.html#'}}">
+                        <span class="glyphicon glyphicon-info-sign"></span>
+                        <span translate>Help about the events</span></a></li>
             </ul>
         </div>
 
