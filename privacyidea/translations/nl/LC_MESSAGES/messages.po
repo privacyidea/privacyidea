@@ -7,18 +7,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-03-28 12:10+0200\n"
+"POT-Creation-Date: 2022-06-08 16:56+0200\n"
 "PO-Revision-Date: 2022-04-12 17:12+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
-"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-ui/nl/>\n"
 "Language: nl\n"
+"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea"
+"/privacyidea-ui/nl/>\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.12-dev\n"
-"Generated-By: Babel 2.9.1\n"
+"Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:222
 msgid "Authentication failure. Unknown realm: {0!s}."
@@ -237,8 +236,8 @@ msgid ""
 "Admin is allowed to copy the assigned user to another token, i.e. assign "
 "a user to another token."
 msgstr ""
-"Admin mag de toegewezen gebruiker naar een ander token kopiëren, dit is een "
-"gebruiker aan een ander token toewijzen."
+"Admin mag de toegewezen gebruiker naar een ander token kopiëren, dit is "
+"een gebruiker aan een ander token toewijzen."
 
 #: lib/policy.py:1676
 msgid "Admin is allowed to trigger the lost token workflow."
@@ -636,9 +635,10 @@ msgstr ""
 "standaard."
 
 #: lib/policy.py:2130
+#, fuzzy
 msgid ""
-"Set label for a new enrolled Google Authenticator. Possible tags are <u> "
-"(user), <r> (realm), <s> (serial)."
+"Set label for a new enrolled Google Authenticator. Possible tags are "
+"&lt;u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
 msgstr ""
 "Stel een label in voor een nieuw geregistreerde Google Authenticator. "
 "Mogelijke tags zijn <u> (user), <r> (realm), <s> (serial)."
@@ -648,8 +648,10 @@ msgid "This is the issuer label for new enrolled Google Authenticators."
 msgstr "Dit is het uitgeverslabel voor nieuw geregistreerde Google Authenticators."
 
 #: lib/policy.py:2142
-msgid "This is the URL to the token image for smartphone apps like FreeOTP."
-msgstr "Dit is de URL naar de token-afbeelding voor smartphone apps zoals FreeOTP."
+msgid ""
+"This is the URL to the token image for the privacyIDEA Authenticator and "
+"some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."
+msgstr ""
 
 #: lib/policy.py:2149
 msgid ""
@@ -898,9 +900,10 @@ msgstr ""
 " token overeenkomt met deze regex-uitdrukking."
 
 #: lib/policy.py:2335
+#, fuzzy
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
-"regexp. key/<regexp>/"
+"regexp. key/&lt;regexp&gt;/"
 msgstr ""
 "De gebruiker zal enkel geauthenticeerd worden als het token info-veld "
 "overeenkomt met volgende regexp. key/<regexp>/"
@@ -1197,6 +1200,118 @@ msgstr ""
 #: lib/radiusserver.py:225 lib/radiusserver.py:257
 msgid "The RADIUS secret is too long"
 msgstr "Het RADIUS-geheim is te lang"
+
+#: lib/token.py:153
+msgid "create_tokenclass_object failed:  {0!r}"
+msgstr ""
+
+#: lib/token.py:307
+msgid "I can only create SQL filters from tokeninfo of length 1."
+msgstr ""
+
+#: lib/token.py:564
+msgid "The requested token could not be found."
+msgstr ""
+
+#: lib/token.py:566
+msgid "More than one matching token were found."
+msgstr ""
+
+#: lib/token.py:880
+msgid "multiple tokens are matching this OTP value!"
+msgstr ""
+
+#: lib/token.py:1040
+msgid "init token failed: unknown token type {0!r}"
+msgstr ""
+
+#: lib/token.py:1061
+msgid "initToken failed: {0!s}"
+msgstr ""
+
+#: lib/token.py:1100
+msgid "token create failed {0!r}"
+msgstr ""
+
+#: lib/token.py:1216
+#, fuzzy
+msgid "Token already assigned to user {0!r}"
+msgstr "Aantal tokens die aan gebruikers toegewezen zijn"
+
+#: lib/token.py:1230
+msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
+msgstr ""
+
+#: lib/token.py:1258
+msgid "Token unassign failed for {0!r}/{1!r}: {2!r}"
+msgstr ""
+
+#: lib/token.py:1334
+msgid "Parameter user must not be a string: {0!r}"
+msgstr ""
+
+#: lib/token.py:1873
+msgid "You can only define a lost token for an assigned token."
+msgstr ""
+
+#: lib/token.py:1899
+msgid "temporary replacement for {0!s}"
+msgstr ""
+
+#: lib/token.py:1955
+msgid "There is no active and assigned token in this realm"
+msgstr ""
+
+#: lib/token.py:1967
+msgid ""
+"There is no active and assigned token in this realm, included types: "
+"{0!s}, excluded types: {1!s}"
+msgstr ""
+
+#: lib/token.py:2021
+msgid "OTP verification failed."
+msgstr ""
+
+#: lib/token.py:2054
+#, fuzzy
+msgid "The user has no tokens assigned"
+msgstr "Aantal gebruikers met een toegewezen token"
+
+#: lib/token.py:2270
+msgid "matching {0:d} tokens"
+msgstr ""
+
+#: lib/token.py:2322
+msgid "Challenge matches, but token is not fit for challenge"
+msgstr ""
+
+#: lib/token.py:2332
+msgid "Found matching challenge"
+msgstr ""
+
+#: lib/token.py:2374
+msgid "Response did not match the challenge."
+msgstr ""
+
+#: lib/token.py:2376
+msgid "Response did not match for {0!s} tokens."
+msgstr ""
+
+#: lib/token.py:2384
+msgid "No active challenge response token found"
+msgstr ""
+
+#: lib/token.py:2398
+msgid "wrong otp value"
+msgstr ""
+
+#: lib/token.py:2405
+msgid ". previous otp used again"
+msgstr ""
+
+#: lib/token.py:2419
+msgid "wrong otp pin"
+msgstr ""
 
 #: lib/token.py:2449
 msgid "Admin is allowed to initalize {0!s} tokens."
@@ -1767,7 +1882,7 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr "Jouw LDAP-configuratie lijkt OK, {0!s} gebruikers gevonden."
 
-#: lib/smsprovider/FirebaseProvider.py:214
+#: lib/smsprovider/FirebaseProvider.py:218
 msgid ""
 "The project ID, that the client should use. Get it from your Firebase "
 "console."
@@ -1775,7 +1890,7 @@ msgstr ""
 "De project-ID dat de cliënt moet gebruiken. Haal die uit je Firebase "
 "console."
 
-#: lib/smsprovider/FirebaseProvider.py:218
+#: lib/smsprovider/FirebaseProvider.py:222
 msgid ""
 "The project number, that the client should use. Get it from your Firebase"
 " console."
@@ -1783,7 +1898,7 @@ msgstr ""
 "Het project-nummer dat de cliënt moet gebruiken. Haal die uit je Firebase"
 " console."
 
-#: lib/smsprovider/FirebaseProvider.py:223
+#: lib/smsprovider/FirebaseProvider.py:227
 msgid ""
 "The App ID, that the Android client should use. Get it from your Firebase"
 " console."
@@ -1791,7 +1906,7 @@ msgstr ""
 "De App-ID dat de Android cliënt moet gebruiken. Haal die uit je Firebase "
 "console."
 
-#: lib/smsprovider/FirebaseProvider.py:228
+#: lib/smsprovider/FirebaseProvider.py:232
 msgid ""
 "The API Key, that the Android client should use. Get it from your "
 "Firebase console."
@@ -1799,7 +1914,7 @@ msgstr ""
 "De Api-key die de Android cliënt moet gebruiken. Haal die uit je Firebase"
 " console."
 
-#: lib/smsprovider/FirebaseProvider.py:233
+#: lib/smsprovider/FirebaseProvider.py:237
 msgid ""
 "The App ID, that the iOS client should use. Get it from your Firebase "
 "console."
@@ -1807,7 +1922,7 @@ msgstr ""
 "De App-ID dat de IOS cliënt moet gebruiken. Haal die uit je Firebase "
 "console."
 
-#: lib/smsprovider/FirebaseProvider.py:238
+#: lib/smsprovider/FirebaseProvider.py:242
 msgid ""
 "The API Key, that the iOS client should use. Get it from your Firebase "
 "console."
@@ -1815,7 +1930,7 @@ msgstr ""
 "De Api-key die de IOS cliënt moet gebruiken. Haal die uit je Firebase "
 "console."
 
-#: lib/smsprovider/FirebaseProvider.py:243
+#: lib/smsprovider/FirebaseProvider.py:247
 msgid ""
 "The filename of the JSON config file, that allows privacyIDEA to talk to "
 "the Firebase REST API."
@@ -1823,7 +1938,7 @@ msgstr ""
 "De bestandsnaam van het JSON configuratie-bestand dat het mogelijk maakt "
 "voor privacyIDEA om met de Firebase REST API te communiceren."
 
-#: lib/smsprovider/FirebaseProvider.py:248
+#: lib/smsprovider/FirebaseProvider.py:252
 msgid "Proxy setting for HTTPS connections to googleapis.com."
 msgstr "Proxy-instellingen voor HTTPS-verbindingen naar googleapis.com."
 
@@ -2039,8 +2154,8 @@ msgid ""
 " filename as email template starting with \"file:\"."
 msgstr ""
 "De test die verstuurd zal worden via e-mail voor een e-mail token. "
-"Verschillende tags zoals {otp} en {serial} kunnen als parameters gebruikt "
-"worden. Je kunt ook een bestandsnaam opgeven als e-mail sjabloon, te "
+"Verschillende tags zoals {otp} en {serial} kunnen als parameters gebruikt"
+" worden. Je kunt ook een bestandsnaam opgeven als e-mail sjabloon, te "
 "beginnen met \"file:\"."
 
 #: lib/tokens/emailtoken.py:172
@@ -2048,8 +2163,8 @@ msgid ""
 "The subject of the EMail for an EMail token. Use tags like {otp} and "
 "{serial} as parameters."
 msgstr ""
-"Het onderwerp van de e-mail voor een e-mail token. Gebruik {otp} en {serial} "
-"als parameters."
+"Het onderwerp van de e-mail voor een e-mail token. Gebruik {otp} en "
+"{serial} als parameters."
 
 #: lib/tokens/emailtoken.py:177
 msgid ""
@@ -2370,19 +2485,23 @@ msgstr ""
 "De gebruiker mag slechts dit maximaal aantal actieve PUSH-tokens "
 "toegewezen hebben."
 
-#: lib/tokens/pushtoken.py:343
+#: lib/tokens/pushtoken.py:342
+msgid "Require to unlock the Smartphone before Push requests can be accepted"
+msgstr ""
+
+#: lib/tokens/pushtoken.py:348
 msgid "The question the user sees on his mobile phone."
 msgstr "De vraag die de gebruiker op zijn mobiele telefoon ziet."
 
-#: lib/tokens/pushtoken.py:348
+#: lib/tokens/pushtoken.py:353
 msgid "The title of the notification, the user sees on his mobile phone."
 msgstr "De titel van de melding die de gebruiker ziet op zijn mobiele telefoon."
 
-#: lib/tokens/pushtoken.py:353
+#: lib/tokens/pushtoken.py:358
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr "De smartphne moet SSL verifiëren tijdens de authenticatie. (standaard 1)"
 
-#: lib/tokens/pushtoken.py:359
+#: lib/tokens/pushtoken.py:364
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
@@ -2390,13 +2509,13 @@ msgstr ""
 "Wacht een aantal seconden om de gebruiker de challenge te laten "
 "bevestigen in de eerste aanvraag."
 
-#: lib/tokens/pushtoken.py:365
+#: lib/tokens/pushtoken.py:370
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr ""
 "Configureer of het toegestaan is om push tokens te laten vragen naar "
 "challenges"
 
-#: lib/tokens/pushtoken.py:496
+#: lib/tokens/pushtoken.py:506
 msgid "URL for privacyIDEA Push Token"
 msgstr "URL voor privacyIDEA Push Token"
 
@@ -2504,8 +2623,8 @@ msgid ""
 "The text that will be send via SMS for an SMS token. Use tags like {otp} "
 "and {serial} as parameters."
 msgstr ""
-"De tekst die verstuurd zal worden via SMS voor een SMS-token. Gebruik {otp}> "
-"en {serial} als parameters."
+"De tekst die verstuurd zal worden via SMS voor een SMS-token. Gebruik "
+"{otp}> en {serial} als parameters."
 
 #: lib/tokens/smstoken.py:215
 msgid ""
@@ -3053,3 +3172,10 @@ msgstr ""
 #~ "'*'. For more details, check the "
 #~ "documentation."
 #~ msgstr ""
+
+#~ msgid "This is the URL to the token image for smartphone apps like FreeOTP."
+#~ msgstr ""
+#~ "Dit is de URL naar de token-"
+#~ "afbeelding voor smartphone apps zoals "
+#~ "FreeOTP."
+
