@@ -954,13 +954,13 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         NOSCHEMAS: false,
         TLS_VERIFY: true,
         TLS_VERSION: "2",
-        START_TLS: true,
+        START_TLS: false,
         SERVERPOOL_ROUNDS: 2,
         SERVERPOOL_SKIP: 30
     };
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
-    $scope.authtypes = ["Simple", "SASL Digest-MD5", "NTLM"];
+    $scope.authtypes = ["Simple", "SASL Digest-MD5", "NTLM", "SASL Kerberos"];
     $scope.scopes = ["SUBTREE", "BASE", "LEVEL"];
     $scope.tls_version_options = [{value: "3", name: "TLS v1.0"},
                                   {value: "4", name: "TLS v1.1"},

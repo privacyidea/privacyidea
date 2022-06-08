@@ -132,14 +132,26 @@
     </div>
     <div class="form-group">
         <label for="bindpw" class="col-sm-3 control-label"
-               translate>Bind Password</label>
-
-        <div class="col-sm-3">
+               translate
+               ng-show="params.AUTHTYPE !== 'SASL Kerberos'">Bind Password</label>
+        <label for="keytabfile" class="col-sm-3 control-label"
+               translate
+               ng-show="params.AUTHTYPE === 'SASL Kerberos'">Keyfile Path</label>
+        <div class="col-sm-3"
+             ng-show="params.AUTHTYPE !== 'SASL Kerberos'">
             <input name="bindpw" class="form-control"
+                   id="bindpw"
                    type="password"
                    autocomplete="new-password"
                    ng-model="params.BINDPW"
                    placeholder="topsecret"/>
+        </div>
+        <div class="col-sm-3"
+             ng-show="params.AUTHTYPE === 'SASL Kerberos'">
+            <input name="keytabfile" class="form-control"
+                   id="keytabfile"
+                   ng-model="params.KEYTABFILE"
+                   placeholder="/path/to/keyfile"/>
         </div>
 
         <label for="authtype" class="col-sm-3 control-label"
@@ -148,7 +160,7 @@
         <div class="col-sm-3">
             <select class="form-control"
                     ng-model="params.AUTHTYPE"
-                    name="authtype"
+                    name="authtype" id="authtype"
                     ng-options="select for select in authtypes">
             </select>
         </div>
