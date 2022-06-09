@@ -71,6 +71,7 @@ log = logging.getLogger(__name__)
 optional = True
 required = False
 DEFAULT_LOGOUT_TIME = 120
+DEFAULT_AUDIT_PAGE_SIZE = 10
 DEFAULT_PAGE_SIZE = 15
 DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_TIMEOUT_ACTION = "lockscreeen"
@@ -487,6 +488,8 @@ def get_webui_settings(request, response):
                                         user=loginname, realm=realm).action_values(unique=True)
         timeout_action_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TIMEOUT_ACTION,
                                            user=loginname, realm=realm).action_values(unique=True)
+        audit_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.AUDITPAGESIZE,
+                                            user=loginname, realm=realm).action_values(unique=True)
         token_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.TOKENPAGESIZE,
                                             user=loginname, realm=realm).action_values(unique=True)
         user_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.USERPAGESIZE,
@@ -536,9 +539,12 @@ def get_webui_settings(request, response):
         qr_image_android = create_img(DEFAULT_ANDROID_APP_URL) if qr_android_authenticator else None
         qr_image_ios = create_img(DEFAULT_IOS_APP_URL) if qr_ios_authenticator else None
         qr_image_custom = create_img(list(qr_custom_authenticator_url)[0]) if qr_custom_authenticator_url else None
+        audit_page_size = DEFAULT_AUDIT_PAGE_SIZE
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
         default_tokentype = DEFAULT_TOKENTYPE
+        if len(audit_page_size_pol) == 1:
+            audit_page_size = int(list(audit_page_size_pol)[0])
         if len(token_page_size_pol) == 1:
             token_page_size = int(list(token_page_size_pol)[0])
         if len(user_page_size_pol) == 1:
@@ -571,6 +577,7 @@ def get_webui_settings(request, response):
             content["result"]["value"]["indexedsecret_force_attribute"] = 1
 
         content["result"]["value"]["logout_time"] = logout_time
+        content["result"]["value"]["audit_page_size"] = audit_page_size
         content["result"]["value"]["token_page_size"] = token_page_size
         content["result"]["value"]["user_page_size"] = user_page_size
         content["result"]["value"]["policy_template_url"] = policy_template_url
