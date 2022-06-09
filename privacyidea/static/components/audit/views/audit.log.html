@@ -95,8 +95,8 @@
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
-                <th ng-show="audit_columns.includes('policies')"
-                    class="pifilter" ng-show="loggedInUser.role == 'admin'"><translate>policies</translate>
+                <th ng-show="audit_columns.includes('policies') && loggedInUser.role == 'admin'"
+                    class="pifilter"><translate>policies</translate>
                     <pi-filter ng-model="policiesFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
