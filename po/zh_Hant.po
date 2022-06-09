@@ -294,8 +294,8 @@ msgstr ""
 "privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
 
 #: privacyidea/static/components/config/views/config.events.details.html:113
-#: privacyidea/static/components/config/views/config.events.details.html:220
-#: privacyidea/static/components/config/views/config.events.details.html:222
+#: privacyidea/static/components/config/views/config.events.details.html:232
+#: privacyidea/static/components/config/views/config.events.details.html:234
 #: privacyidea/static/components/config/views/config.events.list.html:27
 #: privacyidea/static/components/config/views/config.policies.details.html:130
 #: privacyidea/static/components/config/views/config.policies.details.html:279
@@ -492,7 +492,7 @@ msgstr "審計"
 msgid "Authentication Server URI"
 msgstr "身份驗證伺服器 URI"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:343
+#: privacyidea/static/components/login/controllers/loginControllers.js:344
 msgid "Authentication failed."
 msgstr "身份驗證失敗。"
 
@@ -632,7 +632,7 @@ msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr "質詢回應身份驗證。您尚未完全通過身份驗證。"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:315
+#: privacyidea/static/components/login/controllers/loginControllers.js:316
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr "質詢回應身份驗證。您的回復無效！"
 
@@ -744,6 +744,7 @@ msgstr "用戶端"
 msgid "Close"
 msgstr "關閉"
 
+#: privacyidea/static/components/config/views/config.events.details.html:145
 #: privacyidea/static/components/config/views/config.policies.details.html:303
 msgid "Close all groups"
 msgstr ""
@@ -1375,7 +1376,7 @@ msgstr "無法更新使用者。"
 msgid "File name"
 msgstr "檔名"
 
-#: privacyidea/static/components/token/views/token.import.html:119
+#: privacyidea/static/components/token/views/token.import.html:120
 msgid "Fingerprint"
 msgstr "指紋"
 
@@ -1475,15 +1476,15 @@ msgstr "通過 OTP 值獲取序列號"
 msgid "Get System Documentation"
 msgstr "獲取系統文件"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:417
+#: privacyidea/static/components/login/controllers/loginControllers.js:418
 msgid "Get the Authenticator App for Android."
 msgstr "獲取適用於 Android 的身份驗證器應用程序。"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:423
+#: privacyidea/static/components/login/controllers/loginControllers.js:424
 msgid "Get the Authenticator App for iOS."
 msgstr "獲取適用於 iOS 的身份驗證器應用程序。"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:429
+#: privacyidea/static/components/login/controllers/loginControllers.js:430
 msgid "Get the Authenticator App."
 msgstr "獲取身份驗證器應用程序。"
 
@@ -2132,6 +2133,7 @@ msgstr ""
 msgid "Online Documentation"
 msgstr "在線文檔"
 
+#: privacyidea/static/components/config/views/config.events.details.html:140
 #: privacyidea/static/components/config/views/config.policies.details.html:298
 msgid "Open all groups"
 msgstr ""
@@ -2140,7 +2142,7 @@ msgstr ""
 msgid "OpenSSL config file"
 msgstr "OpenSSL 配置文件"
 
-#: privacyidea/static/components/config/views/config.events.details.html:235
+#: privacyidea/static/components/config/views/config.events.details.html:247
 #: privacyidea/static/components/config/views/config.events.list.html:30
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:144
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:12
@@ -2179,7 +2181,7 @@ msgstr "Owncloud"
 msgid "PAPER: OTP values on a sheet of paper."
 msgstr "PAPER:OTP 數值 on apaper."
 
-#: privacyidea/static/components/token/views/token.import.html:112
+#: privacyidea/static/components/token/views/token.import.html:113
 msgid "PGP Key"
 msgstr "PGP 金鑰"
 
@@ -2189,7 +2191,7 @@ msgstr "PGP 金鑰"
 msgid "PIN"
 msgstr "PIN"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:642
+#: privacyidea/static/components/login/controllers/loginControllers.js:643
 msgid "PIN changed successfully."
 msgstr "PIN 已成功更改。"
 
@@ -2268,7 +2270,7 @@ msgid ""
 "authentication process."
 msgstr "請注意，您的智能手機在身份驗證過程中需要訪問互聯網。"
 
-#: privacyidea/static/components/token/views/token.import.html:114
+#: privacyidea/static/components/token/views/token.import.html:115
 msgid ""
 "Please pass the public key and the fingerprint to the token\n"
 "                provider."
@@ -2395,7 +2397,7 @@ msgstr "優先權"
 msgid "Privacy Statement"
 msgstr "其中聲明"
 
-#: privacyidea/static/components/token/views/token.import.html:134
+#: privacyidea/static/components/token/views/token.import.html:135
 msgid "Progress"
 msgstr ""
 
@@ -2494,7 +2496,7 @@ msgstr "在每個請求上從使用者源動態讀取數位。"
 msgid "Realm"
 msgstr "領域"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:603
+#: privacyidea/static/components/login/controllers/loginControllers.js:604
 msgid "Realm defrealm created."
 msgstr "已創建領域解凍。"
 
@@ -2758,7 +2760,7 @@ msgid "Save CA"
 msgstr "保存 CA"
 
 #: privacyidea/static/components/config/views/config.events.details.html:103
-#: privacyidea/static/components/config/views/config.events.details.html:282
+#: privacyidea/static/components/config/views/config.events.details.html:294
 #, fuzzy
 msgid "Save Event Handler Definition"
 msgstr "創建事件處理程式定義"
@@ -2892,7 +2894,7 @@ msgstr ""
 "選擇預定義的\n"
 "        <a ui-sref=\"config.smtp\">SMTP 伺服器配置</a>.。"
 
-#: privacyidea/static/components/token/views/token.import.html:126
+#: privacyidea/static/components/token/views/token.import.html:127
 msgid "Select file and import"
 msgstr "選擇檔案並匯入"
 
@@ -3014,7 +3016,7 @@ msgstr "僅顯示選定的操作"
 msgid "Size Limit"
 msgstr "大小限制"
 
-#: privacyidea/static/components/token/views/token.import.html:143
+#: privacyidea/static/components/token/views/token.import.html:144
 #, fuzzy
 msgid "Skipped Tokens"
 msgstr "令牌"
@@ -4421,11 +4423,11 @@ msgstr "上傳請求"
 msgid "Upload Subscription File"
 msgstr "上傳訂閱文件"
 
-#: privacyidea/static/components/token/views/token.import.html:137
+#: privacyidea/static/components/token/views/token.import.html:138
 msgid "Uploaded File"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:140
+#: privacyidea/static/components/token/views/token.import.html:141
 #, fuzzy
 msgid "Uploaded Tokens"
 msgstr "匯入令牌"
@@ -4654,14 +4656,14 @@ msgstr ""
 "您以 {{ loggedInUser.username }} 的身份登錄\n"
 "                            @ {{ loggedInUser.realm }}."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:503
+#: privacyidea/static/components/login/controllers/loginControllers.js:504
 msgid ""
 "You are using a certain amount of Push tokens. Note, that you need a valid "
 "subscription, to use Push tokens in push mode. Otherwise Push tokens will "
 "only work in poll only mode."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.import.html:96
+#: privacyidea/static/components/token/views/token.import.html:97
 msgid ""
 "You can choose a realm to which the tokens should be imported.\n"
 "            You can also change the realms of each token later."
@@ -4737,7 +4739,7 @@ msgstr ""
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr "您將在 {{ myCountdown }} 秒後登出。"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:395
+#: privacyidea/static/components/login/controllers/loginControllers.js:396
 #, fuzzy
 msgid "Your OTP pin expires on"
 msgstr "您的OTP密碼密碼過期"
@@ -4765,7 +4767,7 @@ msgstr ""
 msgid "Your secret phrase."
 msgstr "你的密語。"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:510
+#: privacyidea/static/components/login/controllers/loginControllers.js:511
 #, fuzzy
 msgid "Your subscription for the privacyIDEA Authenticator has expired."
 msgstr "通過privacyIDEA Authenticator App使用兩步註冊"
@@ -4909,7 +4911,7 @@ msgstr ""
 msgid "filter action..."
 msgstr "篩選操作..."
 
-#: privacyidea/static/components/config/views/config.events.details.html:140
+#: privacyidea/static/components/config/views/config.events.details.html:154
 #, fuzzy
 msgid "filter condition..."
 msgstr "篩選操作..."

@@ -293,8 +293,8 @@ msgstr ""
 "privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
 
 #: privacyidea/static/components/config/views/config.events.details.html:113
-#: privacyidea/static/components/config/views/config.events.details.html:220
-#: privacyidea/static/components/config/views/config.events.details.html:222
+#: privacyidea/static/components/config/views/config.events.details.html:232
+#: privacyidea/static/components/config/views/config.events.details.html:234
 #: privacyidea/static/components/config/views/config.events.list.html:27
 #: privacyidea/static/components/config/views/config.policies.details.html:130
 #: privacyidea/static/components/config/views/config.policies.details.html:279
@@ -490,7 +490,7 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI Authenticatieserver"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:343
+#: privacyidea/static/components/login/controllers/loginControllers.js:344
 msgid "Authentication failed."
 msgstr "Authenticatie mislukt."
 
@@ -633,7 +633,7 @@ msgid ""
 msgstr ""
 "Challenge -response authenticatie. Je bent nog niet volledig geauthenticeerd."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:315
+#: privacyidea/static/components/login/controllers/loginControllers.js:316
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr "Challenge -response authenticatie. Je antwoord was niet geldig!"
 
@@ -745,6 +745,7 @@ msgstr "Cliënten"
 msgid "Close"
 msgstr "Sluit"
 
+#: privacyidea/static/components/config/views/config.events.details.html:145
 #: privacyidea/static/components/config/views/config.policies.details.html:303
 msgid "Close all groups"
 msgstr "Sluit alle groepen"
@@ -1373,7 +1374,7 @@ msgstr "Gegevens gebruiker bijwerken mislukt."
 msgid "File name"
 msgstr "Bestandsnaam"
 
-#: privacyidea/static/components/token/views/token.import.html:119
+#: privacyidea/static/components/token/views/token.import.html:120
 msgid "Fingerprint"
 msgstr "Vingerafdruk"
 
@@ -1475,15 +1476,15 @@ msgstr "Haal serienummer op met OTP-waarde"
 msgid "Get System Documentation"
 msgstr "Vraag systeem-documentatie op"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:417
+#: privacyidea/static/components/login/controllers/loginControllers.js:418
 msgid "Get the Authenticator App for Android."
 msgstr "Installeer de Authenticator App voor Android."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:423
+#: privacyidea/static/components/login/controllers/loginControllers.js:424
 msgid "Get the Authenticator App for iOS."
 msgstr "Installeer de Authenticator App voor IOS."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:429
+#: privacyidea/static/components/login/controllers/loginControllers.js:430
 msgid "Get the Authenticator App."
 msgstr "Download de authenticatie app."
 
@@ -2135,6 +2136,7 @@ msgstr "Ok"
 msgid "Online Documentation"
 msgstr "Online documentatie"
 
+#: privacyidea/static/components/config/views/config.events.details.html:140
 #: privacyidea/static/components/config/views/config.policies.details.html:298
 msgid "Open all groups"
 msgstr "Open alle groepen"
@@ -2143,7 +2145,7 @@ msgstr "Open alle groepen"
 msgid "OpenSSL config file"
 msgstr "OpenSSL configuratiebestand"
 
-#: privacyidea/static/components/config/views/config.events.details.html:235
+#: privacyidea/static/components/config/views/config.events.details.html:247
 #: privacyidea/static/components/config/views/config.events.list.html:30
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:144
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:12
@@ -2180,7 +2182,7 @@ msgstr "Owncloud"
 msgid "PAPER: OTP values on a sheet of paper."
 msgstr "PAPIER: OTP-waarden op een blad papier."
 
-#: privacyidea/static/components/token/views/token.import.html:112
+#: privacyidea/static/components/token/views/token.import.html:113
 msgid "PGP Key"
 msgstr "PGP-sleutel"
 
@@ -2190,7 +2192,7 @@ msgstr "PGP-sleutel"
 msgid "PIN"
 msgstr "PIN"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:642
+#: privacyidea/static/components/login/controllers/loginControllers.js:643
 msgid "PIN changed successfully."
 msgstr "PIN wijzigen gelukt."
 
@@ -2270,7 +2272,7 @@ msgstr ""
 "Merk op dat je smartphone een internetverbinding nodig heeft tijdens het "
 "authenticatieproces."
 
-#: privacyidea/static/components/token/views/token.import.html:114
+#: privacyidea/static/components/token/views/token.import.html:115
 msgid ""
 "Please pass the public key and the fingerprint to the token\n"
 "                provider."
@@ -2396,7 +2398,7 @@ msgstr "Prioriteit"
 msgid "Privacy Statement"
 msgstr "Privacyverklaring"
 
-#: privacyidea/static/components/token/views/token.import.html:134
+#: privacyidea/static/components/token/views/token.import.html:135
 msgid "Progress"
 msgstr "Voortgang"
 
@@ -2493,7 +2495,7 @@ msgstr "Lees nummer dynamisch van de gebruikersbron bij elke aanvraag."
 msgid "Realm"
 msgstr "Realm"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:603
+#: privacyidea/static/components/login/controllers/loginControllers.js:604
 msgid "Realm defrealm created."
 msgstr "Realm defrealm gemaakt."
 
@@ -2753,7 +2755,7 @@ msgid "Save CA"
 msgstr "Bewaar CA"
 
 #: privacyidea/static/components/config/views/config.events.details.html:103
-#: privacyidea/static/components/config/views/config.events.details.html:282
+#: privacyidea/static/components/config/views/config.events.details.html:294
 msgid "Save Event Handler Definition"
 msgstr "Bewaar event handler definitie"
 
@@ -2883,7 +2885,7 @@ msgstr ""
 "Selecteer een voorgedefinieerde\n"
 "        <a ui-sref=\"config.smtp\">SMTP serverconfiguratie</a>."
 
-#: privacyidea/static/components/token/views/token.import.html:126
+#: privacyidea/static/components/token/views/token.import.html:127
 msgid "Select file and import"
 msgstr "Selecteer bestand en importeer"
 
@@ -3000,7 +3002,7 @@ msgstr "Toon alleen geselecteerde voorwaarden"
 msgid "Size Limit"
 msgstr "Limiet grootte"
 
-#: privacyidea/static/components/token/views/token.import.html:143
+#: privacyidea/static/components/token/views/token.import.html:144
 msgid "Skipped Tokens"
 msgstr "Overgeslagen Tokens"
 
@@ -3586,8 +3588,8 @@ msgstr ""
 "validate.html\" target =\"_blank\">\n"
 "        validatie API</a> maar kan ook afgehandeld worden door het\n"
 "    <a href=\"http://privacyidea.readthedocs.org/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass"
-".api_endpoint\" target=\"_blank\">\n"
+"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
+"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
 "        Yubico Validatieprotocol</a>."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
@@ -4438,11 +4440,11 @@ msgstr "Upload aanvraag"
 msgid "Upload Subscription File"
 msgstr "Upload inschrijvingsbestand"
 
-#: privacyidea/static/components/token/views/token.import.html:137
+#: privacyidea/static/components/token/views/token.import.html:138
 msgid "Uploaded File"
 msgstr "Geüpload bestand"
 
-#: privacyidea/static/components/token/views/token.import.html:140
+#: privacyidea/static/components/token/views/token.import.html:141
 msgid "Uploaded Tokens"
 msgstr "Geïmporteerde tokens"
 
@@ -4671,7 +4673,7 @@ msgstr ""
 "Je bent aangemeld als {{ loggedInUser.username }}\n"
 "                            @  {{ loggedInUser.realm }}."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:503
+#: privacyidea/static/components/login/controllers/loginControllers.js:504
 msgid ""
 "You are using a certain amount of Push tokens. Note, that you need a valid "
 "subscription, to use Push tokens in push mode. Otherwise Push tokens will "
@@ -4681,7 +4683,7 @@ msgstr ""
 "nodig hebt om Push-tokens in Push-modus te gebruiken. Anders zullen Push-"
 "tokens enkel in poll-modus werken."
 
-#: privacyidea/static/components/token/views/token.import.html:96
+#: privacyidea/static/components/token/views/token.import.html:97
 msgid ""
 "You can choose a realm to which the tokens should be imported.\n"
 "            You can also change the realms of each token later."
@@ -4763,7 +4765,7 @@ msgstr ""
 msgid "You will be logged out in {{ myCountdown }} second(s)."
 msgstr "Je zult afgemeld worden in {{ myCountdown }} seconden."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:395
+#: privacyidea/static/components/login/controllers/loginControllers.js:396
 msgid "Your OTP pin expires on"
 msgstr "Je OTP PIN vervalt op"
 
@@ -4791,7 +4793,7 @@ msgstr ""
 msgid "Your secret phrase."
 msgstr "Jouw geheime zin."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:510
+#: privacyidea/static/components/login/controllers/loginControllers.js:511
 msgid "Your subscription for the privacyIDEA Authenticator has expired."
 msgstr "Je abonnement voor de PrivacyIDEA Authenticator App is verlopen."
 
@@ -4935,7 +4937,7 @@ msgstr "mislukte gebruikers / tokens"
 msgid "filter action..."
 msgstr "filter actie..."
 
-#: privacyidea/static/components/config/views/config.events.details.html:140
+#: privacyidea/static/components/config/views/config.events.details.html:154
 msgid "filter condition..."
 msgstr "filter conditie..."
 

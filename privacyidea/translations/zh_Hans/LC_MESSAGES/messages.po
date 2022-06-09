@@ -7,18 +7,18 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-03-28 12:10+0200\n"
+"POT-Creation-Date: 2022-06-08 16:56+0200\n"
 "PO-Revision-Date: 2022-03-28 10:06+0000\n"
 "Last-Translator: Eric <alchemillatruth@purelymail.com>\n"
 "Language: zh_Hans\n"
 "Language-Team: Chinese (Simplified) "
 "<https://hosted.weblate.org/projects/privacyidea/privacyidea-ui/zh_Hans/>"
 "\n"
-"Plural-Forms: nplurals=1; plural=0\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.9.1\n"
+"Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:222
 msgid "Authentication failure. Unknown realm: {0!s}."
@@ -581,9 +581,10 @@ msgid ""
 msgstr "可以对OTP PIN进行哈希处理或加密。散列PIN是默认行为。"
 
 #: lib/policy.py:2130
+#, fuzzy
 msgid ""
-"Set label for a new enrolled Google Authenticator. Possible tags are <u> "
-"(user), <r> (realm), <s> (serial)."
+"Set label for a new enrolled Google Authenticator. Possible tags are "
+"&lt;u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
 msgstr "为新注册的Google身份验证器设置标签。可能的标签是<u>（用户），<r>（领域），<s>（序列）。"
 
 #: lib/policy.py:2136
@@ -591,8 +592,10 @@ msgid "This is the issuer label for new enrolled Google Authenticators."
 msgstr "这是新注册的Google身份验证器的发行者标签。"
 
 #: lib/policy.py:2142
-msgid "This is the URL to the token image for smartphone apps like FreeOTP."
-msgstr "这是智能手机应用程序（如FreeOTP）的令牌图像的URL。"
+msgid ""
+"This is the URL to the token image for the privacyIDEA Authenticator and "
+"some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."
+msgstr ""
 
 #: lib/policy.py:2149
 msgid ""
@@ -778,9 +781,10 @@ msgid ""
 msgstr "仅当令牌的序列号与此正则表达式匹配时，用户才会通过身份验证。"
 
 #: lib/policy.py:2335
+#, fuzzy
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
-"regexp. key/<regexp>/"
+"regexp. key/&lt;regexp&gt;/"
 msgstr "仅当tokeninfo字段与regexp匹配时，才会对用户进行身份验证。键/ <regexp> /"
 
 #: lib/policy.py:2342
@@ -1004,6 +1008,118 @@ msgstr ""
 #: lib/radiusserver.py:225 lib/radiusserver.py:257
 msgid "The RADIUS secret is too long"
 msgstr "RADIUS秘钥太长"
+
+#: lib/token.py:153
+msgid "create_tokenclass_object failed:  {0!r}"
+msgstr ""
+
+#: lib/token.py:307
+msgid "I can only create SQL filters from tokeninfo of length 1."
+msgstr ""
+
+#: lib/token.py:564
+msgid "The requested token could not be found."
+msgstr ""
+
+#: lib/token.py:566
+msgid "More than one matching token were found."
+msgstr ""
+
+#: lib/token.py:880
+msgid "multiple tokens are matching this OTP value!"
+msgstr ""
+
+#: lib/token.py:1040
+msgid "init token failed: unknown token type {0!r}"
+msgstr ""
+
+#: lib/token.py:1061
+msgid "initToken failed: {0!s}"
+msgstr ""
+
+#: lib/token.py:1100
+msgid "token create failed {0!r}"
+msgstr ""
+
+#: lib/token.py:1216
+#, fuzzy
+msgid "Token already assigned to user {0!r}"
+msgstr "分配给用户的令牌数量"
+
+#: lib/token.py:1230
+msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
+msgstr ""
+
+#: lib/token.py:1258
+msgid "Token unassign failed for {0!r}/{1!r}: {2!r}"
+msgstr ""
+
+#: lib/token.py:1334
+msgid "Parameter user must not be a string: {0!r}"
+msgstr ""
+
+#: lib/token.py:1873
+msgid "You can only define a lost token for an assigned token."
+msgstr ""
+
+#: lib/token.py:1899
+msgid "temporary replacement for {0!s}"
+msgstr ""
+
+#: lib/token.py:1955
+msgid "There is no active and assigned token in this realm"
+msgstr ""
+
+#: lib/token.py:1967
+msgid ""
+"There is no active and assigned token in this realm, included types: "
+"{0!s}, excluded types: {1!s}"
+msgstr ""
+
+#: lib/token.py:2021
+msgid "OTP verification failed."
+msgstr ""
+
+#: lib/token.py:2054
+#, fuzzy
+msgid "The user has no tokens assigned"
+msgstr "分配了令牌的用户数"
+
+#: lib/token.py:2270
+msgid "matching {0:d} tokens"
+msgstr ""
+
+#: lib/token.py:2322
+msgid "Challenge matches, but token is not fit for challenge"
+msgstr ""
+
+#: lib/token.py:2332
+msgid "Found matching challenge"
+msgstr ""
+
+#: lib/token.py:2374
+msgid "Response did not match the challenge."
+msgstr ""
+
+#: lib/token.py:2376
+msgid "Response did not match for {0!s} tokens."
+msgstr ""
+
+#: lib/token.py:2384
+msgid "No active challenge response token found"
+msgstr ""
+
+#: lib/token.py:2398
+msgid "wrong otp value"
+msgstr ""
+
+#: lib/token.py:2405
+msgid ". previous otp used again"
+msgstr ""
+
+#: lib/token.py:2419
+msgid "wrong otp pin"
+msgstr ""
 
 #: lib/token.py:2449
 msgid "Admin is allowed to initalize {0!s} tokens."
@@ -1496,49 +1612,49 @@ msgstr "您的LDAP配置找到{0！s}个用户对象，但只有{1！s}个具有
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr "您的LDAP配置似乎正常，找到了{0！s}个用户对象。"
 
-#: lib/smsprovider/FirebaseProvider.py:214
+#: lib/smsprovider/FirebaseProvider.py:218
 msgid ""
 "The project ID, that the client should use. Get it from your Firebase "
 "console."
 msgstr "客户端应使用的项目ID。从Firebase控制台获取它。"
 
-#: lib/smsprovider/FirebaseProvider.py:218
+#: lib/smsprovider/FirebaseProvider.py:222
 msgid ""
 "The project number, that the client should use. Get it from your Firebase"
 " console."
 msgstr "客户应使用的项目号。从Firebase控制台获取它。"
 
-#: lib/smsprovider/FirebaseProvider.py:223
+#: lib/smsprovider/FirebaseProvider.py:227
 msgid ""
 "The App ID, that the Android client should use. Get it from your Firebase"
 " console."
 msgstr "Android客户端应使用的应用ID。从Firebase控制台获取它。"
 
-#: lib/smsprovider/FirebaseProvider.py:228
+#: lib/smsprovider/FirebaseProvider.py:232
 msgid ""
 "The API Key, that the Android client should use. Get it from your "
 "Firebase console."
 msgstr "Android客户端应使用的API密钥。从Firebase控制台获取它。"
 
-#: lib/smsprovider/FirebaseProvider.py:233
+#: lib/smsprovider/FirebaseProvider.py:237
 msgid ""
 "The App ID, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr "iOS客户端应使用的应用程序ID。从Firebase控制台获取它。"
 
-#: lib/smsprovider/FirebaseProvider.py:238
+#: lib/smsprovider/FirebaseProvider.py:242
 msgid ""
 "The API Key, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr "iOS客户端应使用的API密钥。从Firebase控制台获取它。"
 
-#: lib/smsprovider/FirebaseProvider.py:243
+#: lib/smsprovider/FirebaseProvider.py:247
 msgid ""
 "The filename of the JSON config file, that allows privacyIDEA to talk to "
 "the Firebase REST API."
 msgstr "JSON配置文件的文件名，允许privacyIDEA与Firebase REST API进行通信。"
 
-#: lib/smsprovider/FirebaseProvider.py:248
+#: lib/smsprovider/FirebaseProvider.py:252
 msgid "Proxy setting for HTTPS connections to googleapis.com."
 msgstr "HTTPS与googleapis.com的连接的代理设置。"
 
@@ -1990,29 +2106,33 @@ msgstr "用户只能分配此最大数量的Push令牌。"
 msgid "The user may only have this maximum number of active Push tokens assigned."
 msgstr "用户只能分配此最大数量的活动Push令牌。"
 
-#: lib/tokens/pushtoken.py:343
+#: lib/tokens/pushtoken.py:342
+msgid "Require to unlock the Smartphone before Push requests can be accepted"
+msgstr ""
+
+#: lib/tokens/pushtoken.py:348
 msgid "The question the user sees on his mobile phone."
 msgstr "用户在手机上看到的问题。"
 
-#: lib/tokens/pushtoken.py:348
+#: lib/tokens/pushtoken.py:353
 msgid "The title of the notification, the user sees on his mobile phone."
 msgstr "用户在手机上看到的通知标题。"
 
-#: lib/tokens/pushtoken.py:353
+#: lib/tokens/pushtoken.py:358
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr "智能手机需要在身份验证期间验证SSL。（默认为1）"
 
-#: lib/tokens/pushtoken.py:359
+#: lib/tokens/pushtoken.py:364
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
 msgstr "等待秒数，以便用户在第一个请求中确认挑战。"
 
-#: lib/tokens/pushtoken.py:365
+#: lib/tokens/pushtoken.py:370
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr "配置是否允许推送令牌轮询挑战"
 
-#: lib/tokens/pushtoken.py:496
+#: lib/tokens/pushtoken.py:506
 msgid "URL for privacyIDEA Push Token"
 msgstr "privacyIDEA的推送令牌URL"
 
@@ -2492,4 +2612,7 @@ msgstr ""
 #~ "'*'. For more details, check the "
 #~ "documentation."
 #~ msgstr ""
+
+#~ msgid "This is the URL to the token image for smartphone apps like FreeOTP."
+#~ msgstr "这是智能手机应用程序（如FreeOTP）的令牌图像的URL。"
 
