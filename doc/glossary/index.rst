@@ -31,3 +31,407 @@ Glossary
    Counter
         The token property ``count`` in privacyIDEA is used to calculate the :term:`OTP Value`
         using the HMAC-type algorithms HOTP or TOTP.
+
+   WebUI
+        privacyIDEA comes with a web-based user interface which is used to manage and
+        configure the privacyIDEA server.
+
+        It is also used a self-service portal for the average user, who manages his own tokens.
+        This section gives an overview on the interface and links the respective sections in the documentation.
+
+        * :ref:`dashboard`
+        * :ref:`tokensview`
+        * :ref:`usersview`
+        * :ref:`machines`
+        * :ref:`config`
+        * :ref:`audit`
+        * :ref:`components`
+
+   Time Step
+        A TOTP token can have a timestep of 30/60 seconds. It can still be used, if this 30/60 seconds are over.
+        Technically the timestep is the divider by which the seconds since 1.1.1970 (unix system time)
+        are divided to calculate the OTP value.
+
+        The ``timestep`` is different to the :term:`Time Window`.
+
+   Time Window
+        Timewindow in which the given OTP value is valid for authentication.
+        ``Timestep`` and ``timewindow`` are completely similar to the ``counter`` and ``countwindow`` (:ref:`tokeninfo`) of HOTP tokens.
+
+   Revoked Token
+        Tokens can be ``revoked``. Usually this means the token is ``disabled and locked``. A locked token can
+        not be modified anymore. It can only be deleted. Certain token types like certificate may
+        define special actions when revoking a token.
+
+   Orphaned Token
+        An orphaned token means, that it has a user assigned, but the user does not exist in the
+        user store (anymore).
+
+   Disabled Token
+        Tokens can be **disabled**. Disabled tokens still belong to the assigned user but those tokens
+        can not be used to authenticate. *Disabled tokens can be enabled again*.
+
+   Resolver(UserId)
+        UserIdResolvers are connectors to those user stores, the locations,
+        where the users are managed. Nowadays this can be LDAP directories or
+        especially Active Directory, some times FreeIPA or the Redhat 389 service.
+        But classically users are also located in files like ``/etc/passwd`` on
+        standalone unix systems. Web services often use SQL databases as
+        user store.
+
+        Today with many more online cloud services SCIM is also an uprising
+        protocol to access userstores.
+
+        privacyIDEA already comes with :ref:`useridresolvers` to talk to all these
+        user stores:
+
+        * :ref:`flatfile_resolver`
+        * :ref:`ldap_resolver`
+        * :ref:`sql_resolver`
+        * :ref:`scim_resolver`
+        * :ref:`http_resolver`
+
+   Resolver(Machine)
+        Machine Resolvers are used to find machines in directories like LDAP,
+        Active Directory or the /etc/hosts file.
+
+        The idea is for users to be able to authenticate on those client machines.
+        Not in all cases an online authentication request is possible,
+        so that authentication items can be passed to those client machines.
+
+        In addition you need to define, which application on the client machine
+        the user should authenticate to.
+        Different application require different authentication items.
+
+        Therefore privacyIDEA can define application types.
+        At the moment privacyIDEA knows the application
+        ``luks``, ``offline`` and ``ssh``.
+
+   Tokeninfo
+        The table “tokeninfo” is used to store additional, long information that is
+        specific to the :ref:`tokentypes`. E.g. the tokentype “TOTP” has additional entries
+        in the tokeninfo table for “timeStep” and “timeWindow”, which are stored in the
+        column “Key” and “Value”.
+
+        The ``tokeninfo`` is reference by the foreign key to the “token” table.
+
+        Token info can be viewed and partially edited in the WebUI. In addition, the
+        Token-Janitor can be used to output token info, filter for tokens that have
+        specific tokeninfo and set user-defined tokeninfos.
+
+   Token
+        PrivacyIDEA supports a great variety of different token types.
+        They each have different requirements concerning configuration and how
+        the authentication works. This chapter explains the authentication modes, lists the
+        supported hardware and software tokens and explains how the token types can be used
+        with privacyIDEA.
+        Tools which facilitate and automate token enrollment are found in :ref:`enrollment_tools`.
+
+        * :ref:`authentication_modes`
+        * :ref:`supported_tokens`
+        * :ref:`tokentypes`
+
+   Audit
+        The systems provides a sophisticated audit log, that can be viewed in the WebUI.
+
+        The Audit log is essentially a record of events and changes.
+
+        .. figure:: /audit/auditlog.png
+           :width: 500
+
+           *Audit Log*
+
+        privacyIDEA comes with a default SQL audit module (see :ref:`code_audit`).
+
+        Starting with version 3.2 privacyIDEA also provides a :ref:`logger_audit` and
+        a :ref:`container_audit` which can be used to send privacyIDEA audit log messages
+        to services like splunk or logstash.
+
+   Tokenowner
+        The owner of a token is the user for whom the token was rolled out.
+
+   FailCount
+   MaxFail
+        The FailCount count the number of failed login attempts.
+
+        If the login fail counter reaches the ``MaxFail`` the user can not login
+        with this token anymore.
+
+        .. note:: The **failcounter** is not increased anymore, when it has reached ``MaxFail``.
+
+        The administrator or help desk user can select those tokens and
+        click the button **reset failcounter** to reset the fail counter to zero.
+        The tokens can be used for authentication again.
+
+   SplitAtSign
+        ``splitAtSign`` defines if the username like *user@company*
+        given during authentication should
+        be split into the loginname *user* and the realm name *company*.
+        In most cases this is the wanted behaviour so this is enabled by default.
+
+        But given your users log in with email addresses like *user@gmail.com* and
+        *otheruser@outlook.com* you probably do not want to split.
+
+        How a user is related to a realm is described here: :ref:`relate_realm`
+
+        This option also affects the login via the :ref:`rest_auth`
+
+   Rollout State
+        A token can be rolled out in several steps like the 2step HOTP/TOTP token.
+        In this case the attribute ``“rollout_state”`` of the token contains certain values.
+        This way actions can be triggered, depending on the step during an enrollment process.
+
+        **Rollout States are:**
+
+        - Clientwait
+
+          The rollout is pending in the backend, like CSRs that need to be approved.
+
+        - Pending
+
+        - Verify
+
+          This means the user needs to authenticate to verify that the token was successfully enrolled.
+
+        - Enrolled
+
+        - Failed
+
+        .. note:: Not all tokens have the rollout state "enrolled" set consistently.
+           An empty rollout state means "enrolled".
+
+   Custom User Attributes
+        The table ``“customuserattribute”`` is used to store additional, custom attributes for users.
+
+        privacyIDEA working with user resolvers, which means users are already located somewhere for
+        example in an Active Directory.
+
+        The interesting thing is that often the administrator who's responsible for managing the tokens
+        in privacyIDEA does not have any access to the Active Directory. The administrator can define
+        policies to allow other admins, help desk users or even the user to manage custom attributes in privacyIDEA.
+
+        A user is identified by the user_id, the resolver_id and the realm_id.
+        The additional attributes are stored in Key and Value.
+        The Type can hold extra information like e.g. an encrypted value / password.
+
+        .. note:: Since the users are external, i.e. no objects in this database, there is not
+            logic reference on a database level. Since users could be deleted from user stores without
+            privacyIDEA realizing that, this table could pile up with remnants of attributes.
+
+   Scope
+        A scope is the area, where a policy is meant for.
+        This can be values like:
+
+        * ADMIN = 'admin'
+
+        * AUDIT = 'audit'
+
+        * AUTH = 'authentication'
+
+        * AUTHZ = 'authorization'
+
+        * ENROLL = 'enrollment'
+
+        * REGISTER = 'register'
+
+        * USER = 'user'
+
+        * WEBUI = 'webui'
+
+        scope takes only one value.
+
+   Realms
+        Realms are meant for general logical user grouping. Users need to be in realms to have tokens assigned.
+        A user, who is not member of a realm can not have a token assigned and can not authenticate.
+
+        You can combine several different UserIdResolvers (see :ref:`useridresolvers`)
+        into a realm.
+
+        The system knows one default realm. Users within this default realm can
+        authenticate with their username.
+
+        Users in realms, that are not the default realm, need to be additionally identified.
+        Therefore the users need to authenticate with their username and the realm like this::
+
+            user@realm
+
+   Events
+        Each **API call** is an **event** and you can bind arbitrary actions to each
+        event as you like. You can bind several actions to one event. These actions are executed
+        in the order of the priority one after another.
+
+        .. Note:: An action, that is triggered by an event can not trigger a new action. Only **events** (API calls)
+           can trigger actions. E.g. if you are using the :ref:`tokenhandler` to create a new token, the creation
+           of the token is an *action*, not an *event*. This means this creation of the token can *not* trigger a new
+           action. For more complex actions, you might need to look into the :ref:`scripthandler`.
+
+        Internally events are marked by a decorator "event" with an *event identifier*.
+        At the moment not all events might be tagged. Please drop us a note to tag
+        all further API calls.
+
+        .. figure:: /eventhandler/event-list.png
+           :width: 500
+
+           *An action is bound to the event* token_init.
+
+   Radius Attribute Mapping
+        The Radius plugin can use information from the ``detail`` section
+        (see :ref:`rest_validate`) of the
+        privacyIDEA response to map these values to arbitrary RADIUS Attribute-Value
+        pairs.
+
+        To do this use the ``[Mapping]`` section in the ``rlm_perl.ini`` file.
+
+        **Using the Token serial number:**
+
+        In case of a successful authentication privacyIDEA returns the serial number
+        of the token used.
+
+        If available (see :ref:`policy_no_detail_on_success` and
+        :ref:`policy_no_detail_on_fail`) the FreeRADIUS server can receive this
+        serial number.
+
+        In ``rlm_perl_ini`` use::
+
+            [Mapping]
+            serial = privacyIDEA-Serial
+
+        This will map the ``detail->serial`` in the privacyIDEA response and add an
+        attribute ``privacyIDEA-Serial`` in your RADIUS response.
+
+        To use the ``privacyIDEA-Serial`` in the RADIUS response, you need to include
+        the ``dictionary.netknights`` in your FreeRADIUS dictionary.
+        You can get it here [#netknights_dict]_.
+
+        **Return user attributes:**
+
+        If the authorization policy :ref:`policy_add_user_in_response` is configured
+        the privacyIDEA response contains an additional tree ``detail->user`` with
+        user information.
+
+        The FreeRADIUS plugin can also map these user information to RADIUS
+        Attribute-Value pairs. Certain VPN systems use RADIUS return values to put
+        users into certain groups to allow access to special sub networks.
+
+        If you want to map such user values you need to add a section in
+        ``rlm_perl.ini``::
+
+           [Mapping user]
+           a_user_attribute = any_RADIUS_Attribute_even_vendor_specific
+
+        This way you can map any user attribute like name, email, realm, group to any
+        arbitrary RADIUS attribute.
+
+        You can also address different sections in the privacyIDEA detail response by
+        changing the keyword in ``rlm_perl.ini`` to ``[Mapping other_section]``.
+
+        You can find a detailed explanation `here <https://www.youtube.com/watch?v=uERhuCLxz0o/>`_.
+
+   UserID
+        The id of the user in a :term:`Resolver(UserId)`.
+        A user is identified by the user_id.
+
+   Admins
+        privacyIDEA comes with its own admins, who are stored in a database table
+        ``Admin`` in its own database (:ref:`code_db`). You can use the tool
+        ``pi-manage`` to
+        manage those admins from the command line as the system's root user. (see
+        :ref:`installation`)
+
+        These admin users can logon to the WebUI using the admin's user name and the
+        specified password.
+        These admins are used to get a simple quick start.
+
+        Then you can define realms (see :ref:`realms`), that should be administrative
+        realms. I.e. each user in this realm will have administrative rights in the
+        WebUI.
+
+        .. note:: You need to configure these realms within privacyIDEA. Only
+           after these realms exist, you can raise their rights to an administrative
+           role.
+
+        .. note:: Use this carefully. Imagine you defined a resolver to a specific
+           group in your Active Directory to be the pricacyIDEA admins. Then the Active
+           Directory domain admins can
+           simply add users to be administrator in privacyIDEA.
+
+        You define the administrative realms in the config file ``pi.cfg``, which is
+        usually located at ``/etc/privacyidea/pi.cfg``::
+
+           SUPERUSER_REALM = ["adminrealm1", "super", "boss"]
+
+        In this case all the users in the realms "adminrealm1", "super" and "boss"
+        will have administrative rights in the WebUI, when they login with this realm.
+
+        As for all other users, you can use the :ref:`policy_login_mode` to define,
+        if these administrators should login to the WebUI with their userstore password
+        or with an OTP token.
+
+   Userstore
+        Are the locations, where the users are managed. This can be LDAP directories
+        or especially Active Directory, some times FreeIPA or the Redhat 389 service.
+        But classically users are also located in files like /etc/passwd on standalone unix systems.
+        Web services often use SQL databases as user store.
+
+   Userinfo
+        These are the user attributes as they are determined by the respective resolver.
+        This is configured via the attribute mappings of resolvers (see :ref:`useridresolvers`).
+
+   Challenge
+   Multi Challenge
+        If a user wants to authenticate with his username and password, privacyIDEA will check whether an active
+        challenge response token exists for this user. In this case, the challenge is triggered and privacyIDEA expects a response.
+        If the user now gives the answer expected from the server, the response is accepted and the authentication is successful.
+
+        Multi Challenge is basically a chain of challenges. It can be used to reset a PIN, with the :ref:`code_foureye_token` e.g..
+
+        **Challenges are triggered by:**
+
+        * The user entering the PIN/Password of the token
+
+        * Programmatically via a call to /validate/triggerchallenge
+
+   Extended Policy Conditions
+        Since privacyIDEA 3.1, :ref:`policy_conditions` allow to define more advanced rules
+        for policy matching, i.e. for determining which policies are valid for a
+        specific request.
+
+        Conditions can be added to a policy via the WebUI. In order for a policy to
+        take effect during the processing of a request, the request has to match not
+        only the ordinary policy attributes (see :ref:`policies`), but also *all*
+        additionally defined conditions that are currently active. If no active
+        conditions are defined, only the ordinary policy attributes are taken into
+        account.
+
+   Application Plugins
+        There are some plugins for privacyIDEA. These are plugins for
+        applications like PAM, OTRS, Apache2, FreeRADIUS, ownCloud, simpleSAMLphp
+        or Keycloak which enable these
+        application to authenticate users against privacyIDEA.
+
+        You may also write your own application plugin or connect your own application
+        to privacyIDEA. This is quite simple using a REST API
+        :ref:`rest_validate`. In order to support more sophisticated token types like
+        challenge-response or out-of-band tokens, you should take a look at the
+        various :ref:`authentication_modes`.
+
+   Subscription
+        A subscription for support, warranty and enterprise packaging.
+
+        privacyIDEA is enterprise software. Managing lots of authentication devices for lots of users is a task that occurs in a company network.
+        privacyIDEA is licensed under an Open Source license. This guarantees, that a company using the Open Source software privacyIDEA can use this
+        software for life. In contrast proprietary software or software-as-a-service (SaaS) can be changed, billed differently or even completely deleted.
+        You could not do anything about it. The Open Source privacyIDEA is under your control – forever.
+
+        The Open Source license dos not mean that a company has no costs in regards to two factor authentication.
+        At least they need to pay the administrator.
+        In any case the Open Source license states that this software comes without any warranty.
+        Getting a subscription provides this warranty.
+        A company using privacyIDEA needs to be aware of this.
+
+        For the product privacyIDEA we provide the suitable `support <https://netknights.it/en/produkte/privacyidea/>`_ with a defined response time and with fixed costs.
+
+
+
+
+
