@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-06-08 16:56+0200\n"
-"PO-Revision-Date: 2022-04-12 17:12+0000\n"
+"PO-Revision-Date: 2022-06-14 09:19+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
+"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/nl/>\n"
 "Language: nl\n"
-"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/nl/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.13-dev\n"
 "Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:222
@@ -635,13 +636,12 @@ msgstr ""
 "standaard."
 
 #: lib/policy.py:2130
-#, fuzzy
 msgid ""
 "Set label for a new enrolled Google Authenticator. Possible tags are "
 "&lt;u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
 msgstr ""
 "Stel een label in voor een nieuw geregistreerde Google Authenticator. "
-"Mogelijke tags zijn <u> (user), <r> (realm), <s> (serial)."
+"Mogelijke tags zijn &lt;u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
 
 #: lib/policy.py:2136
 msgid "This is the issuer label for new enrolled Google Authenticators."
@@ -652,6 +652,9 @@ msgid ""
 "This is the URL to the token image for the privacyIDEA Authenticator and "
 "some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."
 msgstr ""
+"Dit is de URL voor de token afbeelding voor de privacyIDEA Authenticator en "
+"sommige andere apps zoals FreeOTP (ondersteunde bestandsformaten: PNG, JPG "
+"en GIF)."
 
 #: lib/policy.py:2149
 msgid ""
@@ -900,13 +903,12 @@ msgstr ""
 " token overeenkomt met deze regex-uitdrukking."
 
 #: lib/policy.py:2335
-#, fuzzy
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
 "regexp. key/&lt;regexp&gt;/"
 msgstr ""
 "De gebruiker zal enkel geauthenticeerd worden als het token info-veld "
-"overeenkomt met volgende regexp. key/<regexp>/"
+"overeenkomt met volgende regexp. key/&lt;regexp&gt;/"
 
 #: lib/policy.py:2342
 msgid ""
@@ -1203,115 +1205,115 @@ msgstr "Het RADIUS-geheim is te lang"
 
 #: lib/token.py:153
 msgid "create_tokenclass_object failed:  {0!r}"
-msgstr ""
+msgstr "create_tokenclass_object mislukt:  {0!r}"
 
 #: lib/token.py:307
 msgid "I can only create SQL filters from tokeninfo of length 1."
-msgstr ""
+msgstr "Ik kan enkel SQL-filters maken van tokeninfo met lengte 1."
 
 #: lib/token.py:564
 msgid "The requested token could not be found."
-msgstr ""
+msgstr "Het gevraagde token kon niet gevonden worden."
 
 #: lib/token.py:566
 msgid "More than one matching token were found."
-msgstr ""
+msgstr "Er werd meer dan één passend token gevonden."
 
 #: lib/token.py:880
 msgid "multiple tokens are matching this OTP value!"
-msgstr ""
+msgstr "meerdere tokens komen overeen met deze OTP-waade!"
 
 #: lib/token.py:1040
 msgid "init token failed: unknown token type {0!r}"
-msgstr ""
+msgstr "init token mislukt: onbekend tokentype {0!r}"
 
 #: lib/token.py:1061
 msgid "initToken failed: {0!s}"
-msgstr ""
+msgstr "intiToken mislukt: {0!s}"
 
 #: lib/token.py:1100
 msgid "token create failed {0!r}"
-msgstr ""
+msgstr "token maken mislukt: {0!r}"
 
 #: lib/token.py:1216
-#, fuzzy
 msgid "Token already assigned to user {0!r}"
-msgstr "Aantal tokens die aan gebruikers toegewezen zijn"
+msgstr "Aantal tokens die aan gebruiker {0!r} toegewezen zijn"
 
 #: lib/token.py:1230
 msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
-msgstr ""
+msgstr "Token toewijzen mislukt voor {0!r}/{1!s} : {2!r}"
 
 #: lib/token.py:1258
 msgid "Token unassign failed for {0!r}/{1!r}: {2!r}"
-msgstr ""
+msgstr "Token niet meer toewijzen mislukt voor {0!r}/{1!s} : {2!r}"
 
 #: lib/token.py:1334
 msgid "Parameter user must not be a string: {0!r}"
-msgstr ""
+msgstr "Parameter mag geen string zin: {0!r}"
 
 #: lib/token.py:1873
 msgid "You can only define a lost token for an assigned token."
-msgstr ""
+msgstr "Je kunt enkel een toegewezen token als verloren markeren."
 
 #: lib/token.py:1899
 msgid "temporary replacement for {0!s}"
-msgstr ""
+msgstr "tijdelijke vervanging voor {0!s}"
 
 #: lib/token.py:1955
 msgid "There is no active and assigned token in this realm"
-msgstr ""
+msgstr "Er is geen actief en toegewezen token voor dit realm"
 
 #: lib/token.py:1967
 msgid ""
 "There is no active and assigned token in this realm, included types: "
 "{0!s}, excluded types: {1!s}"
 msgstr ""
+"Er is geen actief en toegewezen token voor dit realm, inbegrepen types: {0!s}"
+", uitgesloten types: {1!s}"
 
 #: lib/token.py:2021
 msgid "OTP verification failed."
-msgstr ""
+msgstr "OTP-verificatie mislukt."
 
 #: lib/token.py:2054
-#, fuzzy
 msgid "The user has no tokens assigned"
-msgstr "Aantal gebruikers met een toegewezen token"
+msgstr "De gebruiker heeft geen toegewezen token"
 
 #: lib/token.py:2270
 msgid "matching {0:d} tokens"
-msgstr ""
+msgstr "komt overeen met {0:d} tokens"
 
 #: lib/token.py:2322
 msgid "Challenge matches, but token is not fit for challenge"
-msgstr ""
+msgstr "Challenge komt overeen, maar token is niet geschikt voor challenge"
 
 #: lib/token.py:2332
 msgid "Found matching challenge"
-msgstr ""
+msgstr "Passende challenge gevonden"
 
 #: lib/token.py:2374
 msgid "Response did not match the challenge."
-msgstr ""
+msgstr "Antwoord kwam niet overeen met de challenge."
 
 #: lib/token.py:2376
 msgid "Response did not match for {0!s} tokens."
-msgstr ""
+msgstr "Antwoord kwam niet overeen voor {0!s} tokens."
 
 #: lib/token.py:2384
 msgid "No active challenge response token found"
-msgstr ""
+msgstr "Geen actief challenge response token gevonden"
 
 #: lib/token.py:2398
 msgid "wrong otp value"
-msgstr ""
+msgstr "verkeerde otp-waarde"
 
 #: lib/token.py:2405
 msgid ". previous otp used again"
-msgstr ""
+msgstr ". vorige otp opnieuw gebruikt"
 
 #: lib/token.py:2419
 msgid "wrong otp pin"
-msgstr ""
+msgstr "foute otp pin"
 
 #: lib/token.py:2449
 msgid "Admin is allowed to initalize {0!s} tokens."
@@ -2488,6 +2490,8 @@ msgstr ""
 #: lib/tokens/pushtoken.py:342
 msgid "Require to unlock the Smartphone before Push requests can be accepted"
 msgstr ""
+"Smartphone moet ongeblokkeeerd zijn voor Push-aanvragen aanvaard kunnen "
+"worden"
 
 #: lib/tokens/pushtoken.py:348
 msgid "The question the user sees on his mobile phone."
@@ -3178,4 +3182,3 @@ msgstr ""
 #~ "Dit is de URL naar de token-"
 #~ "afbeelding voor smartphone apps zoals "
 #~ "FreeOTP."
-
