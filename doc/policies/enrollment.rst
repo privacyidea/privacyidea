@@ -457,7 +457,7 @@ The smartphone needs to verify the SSL certificate of the privacyIDEA server dur
 the enrollment of push tokens. By default, the verification is enabled. To disable
 verification during authentication, see :ref:`policy_push_ssl_verify_auth`.
 
-.. _policy_webauthn_enroll_relying_party_id:
+.. _policy_verify_enrollment:
 
 
 verify_enrollment
@@ -476,6 +476,10 @@ successfully enrolled the token.
 As long as no OTP value is provided by the user during the enrollment process, the
 token can not be used for authentication.
 
+.. note:: This does not work in combination with the admin policy :ref:`admin_policy_2step` and
+  the user policy :ref:`user_policy_2step`.
+
+.. _policy_webauthn_enroll_relying_party_id:
 
 webauthn_relying_party_id
 ~~~~~~~~~~~~~~~~~~~~~~~~~
