@@ -476,6 +476,45 @@ class UserTestCase(MyTestCase):
         delete_realm("ldap")
         delete_resolver("ldapresolver")
 
+    @ldap3mock.activate
+    def test_19_compare_user_object(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory_small)
+        params = ({'LDAPURI': 'ldap://localhost',
+                   'LDAPBASE': 'o=test',
+                   'BINDDN': 'cn=manager,ou=example,o=test',
+                   'BINDPW': 'ldaptest',
+                   'LOGINNAMEATTRIBUTE': 'cn',
+                   'LDAPSEARCHFILTER': '(|(cn=*))',  # we use this weird search filter to get a unique resolver ID
+                   'USERINFO': '{ "username": "cn",'
+                               '"phone" : "telephoneNumber", '
+                               '"mobile" : "mobile"'
+                               ', "email" : "mail", '
+                               '"surname" : "sn", '
+                               '"givenname" : "givenName" }',
+                   'UIDTYPE': 'objectGUID',
+                   'NOREFERRALS': True,
+                   'CACHE_TIMEOUT': 0
+                   })
+        params["resolver"] = "ldapresolver"
+        params["type"] = "ldapresolver"
+        rid = save_resolver(params)
+        self.assertTrue(rid > 0)
+        (added, failed) = set_realm("ldap", ["ldapresolver"])
+        self.assertEqual(len(added), 1)
+        self.assertEqual(len(failed), 0)
+
+        # Comparing different objects fails
+        self.assertFalse(User("salesman", "ldap") == None)
+        # corparing different real or resolver fails
+        self.assertFalse(User("root", self.realm1) == User("salesmann", "ldap"))
+        # comparing different users fails
+        self.assertFalse(User("manager", "ldap") == User("salesmann", "ldap"))
+        # comparing case insensitive successful
+        self.assertTrue(User("salesmann", "ldap") == User("salesmann", "ldap"))
+
+        delete_realm("ldap")
+        delete_resolver("ldapresolver")
+
     def test_50_user_attributes(self):
         user = User(login="root",
                     realm=self.realm1)
