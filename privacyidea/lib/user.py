@@ -148,15 +148,15 @@ class User(object):
         :rtype: bool
         """
         if not isinstance(other, type(self)):
-            log.info("comparing users of different classes.")
+            log.info("Comparing users based on classes.")
             return False
         if (self.resolver != other.resolver) or (self.realm != other.realm):
             log.info("Users are not in the same resolver and realm")
             return False
         if self.uid and other.uid:
-            log.info("comparing based on uid")
+            log.info(u"Comparing based on uid: {0!s} vs {1!s}".format(self.uid, other.uid))
             return self.uid == other.uid
-        log.info("comparing based on login")
+        log.info(u"Comparing based on login: {0!s} vs {1!s}".format(self.login, other.login))
         return self.login == other.login
 
     def __ne__(self, other):
