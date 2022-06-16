@@ -709,7 +709,8 @@ This works in conjunction with the enrollment parameters :ref:`2step_parameters`
 
 Such a policy can also be set for the user. See :ref:`user_policy_2step`.
 
-New in version 2.21
+.. note:: This does not work in combination with the enrollment policy :ref:`verify_enrollment`, since
+   the usage of 2step already ensures, that the user has successfully scanned the QR code.
 
 hotp_hashlib and totp_hashlib
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
