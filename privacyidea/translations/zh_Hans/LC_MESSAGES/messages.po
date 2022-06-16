@@ -8,16 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-06-08 16:56+0200\n"
-"PO-Revision-Date: 2022-03-28 10:06+0000\n"
+"PO-Revision-Date: 2022-06-14 09:19+0000\n"
 "Last-Translator: Eric <alchemillatruth@purelymail.com>\n"
+"Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
+"privacyidea/privacyidea-ui/zh_Hans/>\n"
 "Language: zh_Hans\n"
-"Language-Team: Chinese (Simplified) "
-"<https://hosted.weblate.org/projects/privacyidea/privacyidea-ui/zh_Hans/>"
-"\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.13-dev\n"
 "Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:222
@@ -581,11 +581,11 @@ msgid ""
 msgstr "可以对OTP PIN进行哈希处理或加密。散列PIN是默认行为。"
 
 #: lib/policy.py:2130
-#, fuzzy
 msgid ""
 "Set label for a new enrolled Google Authenticator. Possible tags are "
 "&lt;u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
-msgstr "为新注册的Google身份验证器设置标签。可能的标签是<u>（用户），<r>（领域），<s>（序列）。"
+msgstr "为新注册的Google身份验证器设置标签。可能的标签是&lt;u&gt;（用户）、&lt;u&gt;"
+"（领域）、&lt;u&gt;（序列）。"
 
 #: lib/policy.py:2136
 msgid "This is the issuer label for new enrolled Google Authenticators."
@@ -781,11 +781,10 @@ msgid ""
 msgstr "仅当令牌的序列号与此正则表达式匹配时，用户才会通过身份验证。"
 
 #: lib/policy.py:2335
-#, fuzzy
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
 "regexp. key/&lt;regexp&gt;/"
-msgstr "仅当tokeninfo字段与regexp匹配时，才会对用户进行身份验证。键/ <regexp> /"
+msgstr "仅当tokeninfo字段与regexp匹配时，才会对用户进行身份验证。key/&lt;regexp&gt;/"
 
 #: lib/policy.py:2342
 msgid ""
@@ -1042,9 +1041,8 @@ msgid "token create failed {0!r}"
 msgstr ""
 
 #: lib/token.py:1216
-#, fuzzy
 msgid "Token already assigned to user {0!r}"
-msgstr "分配给用户的令牌数量"
+msgstr "已分配给用户的令牌 {0!r}"
 
 #: lib/token.py:1230
 msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
@@ -1081,9 +1079,8 @@ msgid "OTP verification failed."
 msgstr ""
 
 #: lib/token.py:2054
-#, fuzzy
 msgid "The user has no tokens assigned"
-msgstr "分配了令牌的用户数"
+msgstr "用户没有分配到令牌"
 
 #: lib/token.py:2270
 msgid "matching {0:d} tokens"
@@ -2615,4 +2612,3 @@ msgstr ""
 
 #~ msgid "This is the URL to the token image for smartphone apps like FreeOTP."
 #~ msgstr "这是智能手机应用程序（如FreeOTP）的令牌图像的URL。"
-
