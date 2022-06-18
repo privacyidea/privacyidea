@@ -102,11 +102,22 @@ def teardown_request(exc):
 
 @token_blueprint.before_request
 @audit_blueprint.before_request
-@user_blueprint.before_request
 @system_blueprint.before_request
 @user_required
 def before_user_request():
     before_request()
+
+
+@user_blueprint.before_request
+@user_required
+def before_userendpoint_request():
+    before_request()
+    # DEL /user/ has no realm parameter and thus we need to create the user object this way.
+    if not request.User and request.method == "DELETE":
+        resolvername = getParam(request.all_data, "resolvername")
+        username = getParam(request.all_data, "username")
+        if resolvername and username:
+            request.User = User(login=username, resolver=resolvername)
 
 
 @resolver_blueprint.before_request
@@ -195,12 +206,6 @@ def before_request():
         audit_realm = request.User.realm
         audit_resolver = request.User.resolver
     else:
-        # in case of DEL /user/; we can not put this to get_user_from_param, since it would add the default realm
-        if request.blueprint == "user_blueprint" and request.method == "DELETE":
-            resolvername = getParam(request.all_data, "resolvername")
-            username = getParam(request.all_data, "username")
-            if resolvername and username:
-                request.User = User(login=username, resolver=resolvername)
         audit_realm = getParam(request.all_data, "realm")
         audit_resolver = getParam(request.all_data, "resolver")
         audit_username = getParam(request.all_data, "user")
