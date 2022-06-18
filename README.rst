@@ -213,9 +213,9 @@ you can get a subscription from the company NetKnights
 or if you have a very good understanding of this Open Source code, you could create a subscription on your own.
 
 ====================  ==============  ========================
-   Plugin                   Number of users
+Plugin                Number of users
 --------------------  ----------------------------------------
-                      contained       in demo subscription
+Name                  contained       in demo subscription
 ====================  ==============  ========================
 Keycloak              10000           N/A
 SimpleSAMLphp         10000           N/A
