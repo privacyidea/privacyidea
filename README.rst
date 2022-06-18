@@ -215,7 +215,7 @@ or if you have a very good understanding of this Open Source code, you could cre
 ====================  ==============  ========================
    Plugin                   Number of users
 --------------------  ----------------------------------------
-                        contained       in demo subscription
+                      contained       in demo subscription
 ====================  ==============  ========================
 Keycloak              10000           N/A
 SimpleSAMLphp         10000           N/A
