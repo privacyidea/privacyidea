@@ -196,6 +196,35 @@ Based on the realm there is the library ``lib/user.py`` which provides functions
 for users. There is no database table user, since users are dynamically read 
 from the user sources like SQL, LDAP, SCIM or flat files.
 
+Plugins
+=======
+
+The privacyIDEA project also provides several plugins for 3rd party applications like SSO Identity Providers
+or Windows Login.
+
+Subscriptions
+-------------
+
+Plugins can be limited in the number of users. I.e. the plugin will complain, if the total number of users
+in privacyIDEA with an active token exceeds a certain limit. There is a certain base number of users, with which
+the plugin will work. To enhance this number, you will need a subscription. In some cases an additional
+demo subscription can be found in the release list of the corresponding github plugin repository,
+you can get a subscription from the company NetKnights
+or if you have a very good understanding of this Open Source code, you could create a subscription on your own.
+
+====================  ==============  ========================
+   Plugin                   Number of users
+--------------------  ----------------------------------------
+                        contained       in demo subscription
+====================  ==============  ========================
+Keycloak              10000           N/A
+SimpleSAMLphp         10000           N/A
+ADFS                  50              50
+Credential Provider   50              50
+OwnCloud              50              N/A
+LDAP proxy            50              N/A
+====================  ==============  ========================
+
 Versioning
 ==========
 privacyIDEA adheres to `Semantic Versioning <http://semver.org/>`_.
