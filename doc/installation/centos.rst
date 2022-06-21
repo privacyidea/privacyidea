@@ -187,7 +187,7 @@ configuration first::
     $ cd /etc/httpd/conf.d
     $ mv ssl.conf ssl.conf.inactive
     $ mv welcome.conf welcome.conf.inactive
-    $ curl -o privacyidea.conf https://raw.githubusercontent.com/NetKnights-GmbH/centos7/master/SOURCES/privacyidea.conf.disabled
+    $ curl -o privacyidea.conf https://raw.githubusercontent.com/NetKnights-GmbH/centos7/master/SOURCES/privacyidea.conf
 
 In order to avoid recreation of the configuration files during update You can
 create empty dummy files for ``ssl.conf`` and ``welcome.conf``.
