@@ -41,8 +41,8 @@
                                 translate>Add user
                         </a>
                     </li>
-                    <li translate>Quick links</li>
-                    <li>
+                    <li ng-show="checkRight('resolverwrite')"
+                        translate>Quick links
                         <a ui-sref="config.realms.list"
                                 translate>Edit realms</a>
                     </li>
