@@ -506,12 +506,13 @@ class UserTestCase(MyTestCase):
         # Comparing different objects fails
         self.assertFalse(User("salesman", "ldap") == None)
         # corparing different real or resolver fails
-        self.assertFalse(User("root", self.realm1) == User("salesmann", "ldap"))
+        self.assertFalse(User("root", self.realm1) == User("salesman", "ldap"))
         # comparing different users fails
-        self.assertFalse(User("manager", "ldap") == User("salesmann", "ldap"))
+        self.assertFalse(User("manager", "ldap") == User("salesman", "ldap"))
         # comparing case insensitive successful
-        self.assertTrue(User("salesmann", "ldap") == User("salesmann", "ldap"))
-
+        self.assertTrue(User("salesman", "ldap") == User("salesman", "ldap"))
+        self.assertTrue(User(resolver='ldapresolver', realm="ldap",
+                             uid="039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d54") == User("salesman", "ldap"))
         delete_realm("ldap")
         delete_resolver("ldapresolver")
 
