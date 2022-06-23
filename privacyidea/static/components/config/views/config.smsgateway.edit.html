@@ -49,7 +49,7 @@
     <div class="text-center"
          ng-show="checkRight('smsgateway_write')">
         <button ng-click="createSMSgateway()"
-                id="createGatewayButton"
+                id="createTopGatewayButton"
                 ng-disabled="formGatewayAdd.$invalid"
                 class="btn btn-primary">
             <span class="glyphicon glyphicon-plus"></span>
@@ -158,5 +158,16 @@
             </td>
         </tr>
     </table>
+    </div>
+    <!-- button -->
+    <div class="text-center"
+         ng-show="checkRight('smsgateway_write')">
+        <button ng-click="createSMSgateway()"
+                id="createBottomGatewayButton"
+                ng-disabled="formGatewayAdd.$invalid"
+                class="btn btn-primary">
+            <span class="glyphicon glyphicon-plus"></span>
+            <span translate>Save SMS gateway</span>
+        </button>
     </div>
 </form>
