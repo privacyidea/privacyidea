@@ -1,7 +1,7 @@
 <div class="well" ng-controller="userController">
 
     <div class="row">
-        <div class="col-lg-3">
+        <div class="col-lg-3 sticky">
             <div class="pa-sidebar panel">
                 <ul class="nav nav-pills nav-stacked"
                     ng-show="loggedInUser.role === 'user' &&
@@ -47,6 +47,25 @@
                                 translate>Edit realms</a>
                     </li>
                     <li translate>total users: {{ usercount }}</li>
+                    <hr>
+                    <li role="presentation"
+                        ng-show="($state.includes('user.list'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/index.html#users'}}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about Users</span></a></li>
+                    <li role="presentation"
+                        ng-show="($state.includes('user.add'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/manage_users.html'}}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about manage Users</span></a></li>
+                    <li role="presentation"
+                        ng-show="($state.includes('user.details'))">
+                        <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                           privacyideaVersionNumber+'/webui/user_details.html'}}">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            <span translate>Help about User Details</span></a></li>
                 </ul>
             </div>
 

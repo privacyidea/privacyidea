@@ -65,6 +65,13 @@ select.ng-invalid:focus:not(#username):not(#password){
     }
 }
 
+/* Make elements sticky. */
+.sticky {
+position: sticky;
+position: -webkit-sticky;
+top: 0px;
+}
+
 /* Style checkboxes to match up with their labels */
 input[type="radio"],
 input[type="checkbox"] {
