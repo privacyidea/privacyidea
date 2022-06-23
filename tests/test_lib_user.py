@@ -505,8 +505,8 @@ class UserTestCase(MyTestCase):
 
         # Comparing different objects fails
         self.assertFalse(User("salesman", "ldap") == None)
-        # corparing different real or resolver fails
-        self.assertFalse(User("root", self.realm1) == User("salesman", "ldap"))
+        # comparing different realm or resolver fails
+        self.assertFalse(User("cornelius", self.realm1) == User("salesman", "ldap"))
         # comparing different users fails
         self.assertFalse(User("manager", "ldap") == User("salesman", "ldap"))
         # comparing case insensitive successful

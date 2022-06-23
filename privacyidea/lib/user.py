@@ -148,10 +148,11 @@ class User(object):
         :rtype: bool
         """
         if not isinstance(other, type(self)):
-            log.debug("Comparing a non-user object.")
+            log.info("Comparing a non-user object: {0!s} != {1!s}.".format(self, type(other)))
             return False
         if (self.resolver != other.resolver) or (self.realm != other.realm):
-            log.debug("Users are not in the same resolver and realm")
+            log.info("Users are not in the same resolver and realm: "
+                     "{0!s} != {1!s}.".format(self, other))
             return False
         if self.uid and other.uid:
             log.debug(u"Comparing based on uid: {0!s} vs {1!s}".format(self.uid, other.uid))
