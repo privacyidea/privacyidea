@@ -21,6 +21,11 @@
                         <span translate>Help about Policies</span></a></li>
             </ul>
         </div>
+        <input ng-model="filter"
+               ng-show="checkRight('policyread') && $state.includes('config.policies.list')"
+               class="form-control round-top"
+               placeholder="{{ 'Search in Policies...'|translate }}"
+               autofocus/>
 
     </div>
     <div ui-view class="col-lg-9 slide panel">
