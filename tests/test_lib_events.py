@@ -2557,7 +2557,7 @@ class WebhookTestCase(MyTestCase):
 
 
     @patch('requests.post')
-    def test_02_replace_loggin_user(self, mock_post):
+    def test_02_replace_logged_in_user(self, mock_post):
         with mock.patch("logging.Logger.info") as mock_log:
             mock_post.return_value.status_code = 200
             mock_post.return_value.json.return_value = 'response'
@@ -2585,5 +2585,37 @@ class WebhookTestCase(MyTestCase):
             self.assertTrue(res)
             text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
                 'http://test.com', 'The user is hans')
+            mock_log.assert_any_call(text)
+            mock_log.assert_called_with(200)
+
+    @patch('requests.post')
+    def test_03_wrong_place_holder(self, mock_post):
+        with mock.patch("logging.Logger.info") as mock_log:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = 'response'
+            # Setup realm and user
+            self.setUp_user_realms()
+
+            user = User("hans", self.realm1)
+            g = FakeFlaskG()
+            g.logged_in_user = {'username': 'hans',
+                                'realm': self.realm1}
+
+            t_handler = WebHookHandler()
+            options = {"g": g,
+                       "handler_def": {
+                           "options": {"URL":
+                                           'http://test.com',
+                                       "content_type":
+                                           CONTENT_TYPE.URLENCODED,
+                                       "data":
+                                           'The user is {spam}'
+                                       }
+                       }
+                       }
+            res = t_handler.do("post_webhook", options=options)
+            self.assertTrue(res)
+            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
+                'http://test.com', 'The user is ')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)

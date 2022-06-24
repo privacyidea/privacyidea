@@ -27,6 +27,7 @@ from privacyidea.lib import _
 import json
 import logging
 import requests
+from collections import defaultdict
 
 log = logging.getLogger(__name__)
 
@@ -118,7 +119,7 @@ class WebHookHandler(BaseEventHandler):
         attributes = {
             'logged_in_user': logged_in_user
         }
-        webhook_text = webhook_text.format(**attributes)
+        webhook_text = webhook_text.format_map(defaultdict(str, attributes))
 
         
         if action.lower() == ACTION_TYPE.POST_WEBHOOK:
