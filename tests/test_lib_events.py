@@ -6,7 +6,7 @@ This file contains the event handlers tests. It tests:
 lib/eventhandler/usernotification.py (one event handler module)
 lib/event.py (the decorator)
 """
-
+from unittest.mock import patch
 import responses
 import os
 import mock
@@ -2523,28 +2523,67 @@ class CustomUserAttributesTestCase(MyTestCase):
 
 class WebhookTestCase(MyTestCase):
 
-    def test_01_sending_webhook(self):
+    @patch('requests.post')
+    def test_01_send_webhook(self, mock_post):
+        with mock.patch("logging.Logger.info") as mock_log:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = 'response'
+            # Setup realm and user
+            self.setUp_user_realms()
 
-        # Setup realm and user
-        self.setUp_user_realms()
+            user = User("hans", self.realm1)
+            g = FakeFlaskG()
+            g.logged_in_user = {'username': 'hans',
+                                'realm': self.realm1}
 
-        user = User("hans", self.realm1)
-        g = FakeFlaskG()
-        g.logged_in_user = {'username': 'hans',
-                            'realm': self.realm1}
-
-        #Testing webhook aganst beeceptor. Beecaptor is a website were you can get an URL to send your webhook to
-        #and beecaptor will catche the webhook for you
-        options = {"g": g,
-                        "handler_def": {
-                            "options": {"URL":
-                                "https://privacyideawebhook.free.beeceptor.com",
-                            "content_type":
-                                CONTENT_TYPE.URLENCODED,
-                            "data":
-                                "This is a test"
-                            }
+            t_handler = WebHookHandler()
+            options = {"g": g,
+                       "handler_def": {
+                           "options": {"URL":
+                                           'http://test.com',
+                                       "content_type":
+                                           CONTENT_TYPE.URLENCODED,
+                                       "data":
+                                           'This is a test'
+                                        }
                         }
-        }
-        t_handler = WebHookHandler()
-        res = t_handler.do("post_webhook", options=options)
+                    }
+            res = t_handler.do("post_webhook", options=options)
+            self.assertTrue(res)
+            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
+                        'http://test.com', 'This is a test')
+            mock_log.assert_any_call(text)
+            mock_log.assert_called_with(200)
+
+
+    @patch('requests.post')
+    def test_02_replace_loggin_user(self, mock_post):
+        with mock.patch("logging.Logger.info") as mock_log:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = 'response'
+            # Setup realm and user
+            self.setUp_user_realms()
+
+            user = User("hans", self.realm1)
+            g = FakeFlaskG()
+            g.logged_in_user = {'username': 'hans',
+                                'realm': self.realm1}
+
+            t_handler = WebHookHandler()
+            options = {"g": g,
+                       "handler_def": {
+                           "options": {"URL":
+                                           'http://test.com',
+                                       "content_type":
+                                           CONTENT_TYPE.URLENCODED,
+                                       "data":
+                                           'The user is {logged_in_user}'
+                                       }
+                       }
+                       }
+            res = t_handler.do("post_webhook", options=options)
+            self.assertTrue(res)
+            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
+                'http://test.com', 'The user is hans')
+            mock_log.assert_any_call(text)
+            mock_log.assert_called_with(200)

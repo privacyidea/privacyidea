@@ -19,7 +19,7 @@
 #
 __doc__ = """This is th event handler module for posting webhooks.
 You can send an webhook to trigger an event on an other system or use to replace
-api requestes and reduce your traffic this way.
+api requests and reduce your traffic this way.
 
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
@@ -30,6 +30,7 @@ import requests
 
 log = logging.getLogger(__name__)
 
+
 class CONTENT_TYPE(object):
     """
     Allowed type off content
@@ -37,11 +38,13 @@ class CONTENT_TYPE(object):
     JSON = "json"
     URLENCODED = "urlendcode"
 
+
 class ACTION_TYPE(object):
     """
     Allowed actions
     """
     POST_WEBHOOK = "post_webhook"
+
 
 class WebHookHandler(BaseEventHandler):
     """
@@ -68,7 +71,7 @@ class WebHookHandler(BaseEventHandler):
 
         :return: dict with actions
         """
-        #The evant handler has just one action. Maybe we can  hide action selct for the clarity of the UI
+        #The event handler has just one action. Maybe we can  hide action selct for the clarity of the UI
         actions = {ACTION_TYPE.POST_WEBHOOK: {
             "URL": {
                 "type": "str",
@@ -87,13 +90,6 @@ class WebHookHandler(BaseEventHandler):
                 "type": "str",
                 "required": True,
                 "description": _("The data posted in the WebHook")
-            },
-            #ToDo Implemant flexibil parameters
-            #parameters is ot just at this time
-            "parameter": {
-                "type": "str",
-                "required": False,
-                "description": _("")
             }
         }}
         return actions
@@ -110,28 +106,32 @@ class WebHookHandler(BaseEventHandler):
         """
         ret = True
         g = options.get("g")
+        request = options.get("request")
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options")
         webhook_url = handler_options.get("URL")
         webhook_text = handler_options.get("data")
         content_type = handler_options.get("content_type")
+
+        #Replace placeholder in data
+        logged_in_user = g.logged_in_user.get("username")
+        attributes = {
+            'logged_in_user': logged_in_user
+        }
+        webhook_text = webhook_text.format(**attributes)
+
+        
         if action.lower() == ACTION_TYPE.POST_WEBHOOK:
             try:
-                #Sending webhook with urlendcoding
-                if content_type == "urlendcode":
+                if (content_type == "urlendcode") or (content_type == "json"):
                     #This is the main function where the webhook is sent.
                     #Documationon of the requests function is fond her docs.python-requests.org
                     resp = requests.post(webhook_url, data=json.dumps(webhook_text, sort_keys=True, default=str),
-                                         headers={'Content-Type': 'application/x-www-form-urlencoded'}, timeout=1.0)
+                                         headers={'Content-Type': content_type}, timeout=1.0)
                     #all answers will be logged in the debug. The HTTP response code will be shown in the audit too
                     httpcode = resp.status_code
-                    log.info(httpcode)
-                    log.debug(resp)
-                #Same function as above but for json
-                elif content_type == "json":
-                    resp = requests.post(webhook_url, data=json.dumps(webhook_text, sort_keys=True, default=str),
-                                         headers={'Content-Type': 'application/json'}, timeout=1.0)
-                    httpcode = resp.status_code
+                    log.info('A webhook is send to {0!r} with the text: {1!r}'.format(
+                        webhook_url, webhook_text))
                     log.info(httpcode)
                     log.debug(resp)
                 else:
@@ -154,4 +154,3 @@ class WebHookHandler(BaseEventHandler):
             log.warning('Unknown action value: {0!s}'.format(action))
             ret = False
         return ret
-
