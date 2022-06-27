@@ -33,6 +33,14 @@ myApp.controller("policyListController", ["$scope", "$stateParams", "$location",
             $scope.policies = data.result.value;
             //debug: console.log("Fetched all policies");
             //debug: console.log($scope.policies);
+
+            // converts action object to string and creates new list "action_desc"
+            $scope.policies.forEach(function (value, i) {
+                $scope.policies[i]['action_desc'] = [];
+                for (const [key, value] of Object.entries($scope.policies[i]['action'])) {
+                    $scope.policies[i]['action_desc'].push((`${key}: ${value}`));
+                }
+            });
         });
     };
 
