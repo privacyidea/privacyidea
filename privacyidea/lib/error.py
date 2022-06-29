@@ -154,8 +154,9 @@ class CSRError(privacyIDEAError):
 
 
 class CSRPending(privacyIDEAError):
-    def __init__(self, description="CSR pending", id=ERROR.CA_CSR_PENDING):
+    def __init__(self, description="CSR pending", id=ERROR.CA_CSR_PENDING, requestId=None):
         privacyIDEAError.__init__(self, description=description, id=id)
+        self.requestId = requestId
 
 
 class UserError(privacyIDEAError):
