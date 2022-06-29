@@ -203,12 +203,13 @@ class MSCAConnector(BaseCAConnector):
                                                              caName=self.ca))
             if reply.disposition == 3:
                 log.info("cert rolled out")
+                #requestId = reply.requestId
                 certificate = self.connection.GetCertificate(GetCertificateRequest(id=reply.requestId,
                                                                                    caName=self.ca)).cert
                 return crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
             if reply.disposition == 5:
                 log.info("cert still under submission")
-                raise CSRPending()
+                raise CSRPending(requestId=reply.requestId)
             else:
                 log.error("certification request could not be fullfilled! {0!s}".format(reply))
                 raise CSRError()

@@ -444,8 +444,10 @@ class CertificateTokenClass(TokenClass):
                 self.token.rollout_state = ROLLOUTSTATE.FAILED
                 # Reraise the error
                 raise CSRError()
-            except CSRPending:
+            except CSRPending as e:
                 self.token.rollout_state = ROLLOUTSTATE.PENDING
+                if hasattr(e, "requestId"):
+                    self.add_tokeninfo("requestId", e.requestId)
             finally:
                 # Save the private key to the encrypted key field of the token
                 s = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
