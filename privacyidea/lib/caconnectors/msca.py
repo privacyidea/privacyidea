@@ -109,9 +109,17 @@ class MSCAConnector(BaseCAConnector):
         self.port = None
         self.http_proxy = None
         self.ca = None
+        self._connection = None
         if config:
             self.set_config(config)
+            self._conn = self._connect_to_worker()
         # Note: We can create an empty CA connector object and later configure it using self.set_config().
+
+    @property
+    def connection(self):
+        if not self._connection:
+            self._connection = self._connect_to_worker()
+        return self._connection
 
     def get_config(self, config):
         """
@@ -190,14 +198,13 @@ class MSCAConnector(BaseCAConnector):
         :return: Returns the certificate object if cert was provided instantly
         :rtype: X509 or None
         """
-        conn = self._connect_to_worker()
-        if conn:
-            reply = conn.SubmitCR(SubmitCRRequest(cr=csr, templateName=options.get("template"),
-                                                  caName=self.ca))
+        if self.connection:
+            reply = self.connection.SubmitCR(SubmitCRRequest(cr=csr, templateName=options.get("template"),
+                                                             caName=self.ca))
             if reply.disposition == 3:
                 log.info("cert rolled out")
-                certificate = conn.GetCertificate(GetCertificateRequest(id=reply.requestId,
-                                                                        caName=self.ca)).cert
+                certificate = self.connection.GetCertificate(GetCertificateRequest(id=reply.requestId,
+                                                                                   caName=self.ca)).cert
                 return crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
             if reply.disposition == 5:
                 log.info("cert still under submission")
@@ -231,11 +238,10 @@ class MSCAConnector(BaseCAConnector):
 
         :return: String
         """
-        conn = self._connect_to_worker()
-        if conn:
+        if self.connection:
             templ = {}
             templateRequest = GetTemplatesRequest()
-            templateReply = conn.GetTemplates(templateRequest)
+            templateReply = self.connection.GetTemplates(templateRequest)
             for template in templateReply.templateName:
                 templ[template] = ""
             return templ
@@ -302,10 +308,9 @@ class MSCAConnector(BaseCAConnector):
             dummy_ca = MSCAConnector("dummy", {ATTR.HOSTNAME: config.hostname,
                                                ATTR.PORT: config.port,
                                                ATTR.HTTP_PROXY: config.http_proxy})
-            conn = dummy_ca._connect_to_worker()
             # returns a list of machine names\CAnames
             cARequest = GetCAsRequest()
-            cAReply = conn.GetCAs(cARequest)
+            cAReply = dummy_ca.connection.GetCAs(cARequest)
             cas = [x for x in cAReply.caName]
             print("Available CAs: \n")
             for c in cas:
@@ -333,11 +338,10 @@ class MSCAConnector(BaseCAConnector):
 
         :return: return the list of available CAs in the domain
         """
-        conn = self._connect_to_worker()
         cas = []
-        if conn:
+        if self.connection:
             # returns a list of machine names\CAnames
             cARequest = GetCAsRequest()
-            cAReply = conn.GetCAs(cARequest)
+            cAReply = self.connection.GetCAs(cARequest)
             cas = [x for x in cAReply.caName]
         return {"available_cas": cas}
