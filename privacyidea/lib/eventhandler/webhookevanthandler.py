@@ -27,6 +27,7 @@ from privacyidea.lib import _
 import json
 import logging
 import requests
+from requests.exceptions import HTTPError, Timeout, ConnectionError, RequestException
 from collections import defaultdict
 
 log = logging.getLogger(__name__)
@@ -72,17 +73,17 @@ class WebHookHandler(BaseEventHandler):
 
         :return: dict with actions
         """
-        #The event handler has just one action. Maybe we can  hide action selct for the clarity of the UI
+        # The event handler has just one action. Maybe we can  hide action select for the clarity of the UI
         actions = {ACTION_TYPE.POST_WEBHOOK: {
             "URL": {
                 "type": "str",
                 "required": True,
                 "description": _("The URL the WebHook is posted to")
             },
-            "cotent_type": {
+            "content_type": {
                 "type": "str",
                 "required": True,
-                "description": _("The form the WebHook is sent, for example json"),
+                "description": _("The encoding that is sent to the WebHook, for example json"),
                 "value": [
                     CONTENT_TYPE.JSON,
                     CONTENT_TYPE.URLENCODED]
@@ -101,7 +102,7 @@ class WebHookHandler(BaseEventHandler):
 
         :param action: The action to perform
         :type action: str
-        :param options: Contains the flask parameters g,  URL, data, parameter and the fire and forget
+        :param options: Contains the flask parameters g, URL, data, parameter and the fire and forget
         :type options: dict
         :return:
         """
@@ -114,22 +115,23 @@ class WebHookHandler(BaseEventHandler):
         webhook_text = handler_options.get("data")
         content_type = handler_options.get("content_type")
 
-        #Replace placeholder in data
+        # Replace placeholder in data
         logged_in_user = g.logged_in_user.get("username")
         attributes = {
             'logged_in_user': logged_in_user
         }
         webhook_text = webhook_text.format_map(defaultdict(str, attributes))
 
-        
         if action.lower() == ACTION_TYPE.POST_WEBHOOK:
             try:
-                if (content_type == "urlendcode") or (content_type == "json"):
-                    #This is the main function where the webhook is sent.
-                    #Documationon of the requests function is fond her docs.python-requests.org
+                if content_type in (CONTENT_TYPE.URLENCODED, CONTENT_TYPE.JSON):
+                    """
+                    This is the main function where the webhook is sent.
+                    Documentation of the requests function is fond her docs.python-requests.org
+                    """
                     resp = requests.post(webhook_url, data=json.dumps(webhook_text, sort_keys=True, default=str),
                                          headers={'Content-Type': content_type}, timeout=1.0)
-                    #all answers will be logged in the debug. The HTTP response code will be shown in the audit too
+                    # all answers will be logged in the debug. The HTTP response code will be shown in the audit too
                     httpcode = resp.status_code
                     log.info('A webhook is send to {0!r} with the text: {1!r}'.format(
                         webhook_url, webhook_text))
@@ -138,17 +140,8 @@ class WebHookHandler(BaseEventHandler):
                 else:
                     log.warning('Unknown content type value: {0!s}'.format(content_type))
                     ret = False
-            #error handling
-            except requests.exceptions.HTTPError as err:
-                log.warning(err)
-                return False
-            except requests.exceptions.ConnectionError as err:
-                log.warning(err)
-                return False
-            except requests.exceptions.Timeout as err:
-                log.warning(err)
-                return False
-            except requests.exceptions.RequestException as err:
+            # error handling
+            except (HTTPError, ConnectionError, RequestException, Timeout) as err:
                 log.warning(err)
                 return False
         else:
