@@ -386,7 +386,7 @@
                                                    ng-model="actionValuesNum[action.name]"
                                                    ng-show="action.type=='int' && !action.allowedValues"
                                                    ng-disabled="!actionCheckBox[action.name]"
-                                                   ng-required="actionCheckBox[action.name] && action.type=='num'"
+                                                   ng-required="actionCheckBox[action.name] && action.type=='int'"
                                                    class="form-control"/>
                                             <label for="action_{{ action.name }}_text"></label>
                                             <textarea id="action_{{ action.name }}_text"
