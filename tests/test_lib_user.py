@@ -476,6 +476,46 @@ class UserTestCase(MyTestCase):
         delete_realm("ldap")
         delete_resolver("ldapresolver")
 
+    @ldap3mock.activate
+    def test_19_compare_user_object(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory_small)
+        params = ({'LDAPURI': 'ldap://localhost',
+                   'LDAPBASE': 'o=test',
+                   'BINDDN': 'cn=manager,ou=example,o=test',
+                   'BINDPW': 'ldaptest',
+                   'LOGINNAMEATTRIBUTE': 'cn',
+                   'LDAPSEARCHFILTER': '(|(cn=*))',  # we use this weird search filter to get a unique resolver ID
+                   'USERINFO': '{ "username": "cn",'
+                               '"phone" : "telephoneNumber", '
+                               '"mobile" : "mobile"'
+                               ', "email" : "mail", '
+                               '"surname" : "sn", '
+                               '"givenname" : "givenName" }',
+                   'UIDTYPE': 'objectGUID',
+                   'NOREFERRALS': True,
+                   'CACHE_TIMEOUT': 0
+                   })
+        params["resolver"] = "ldapresolver"
+        params["type"] = "ldapresolver"
+        rid = save_resolver(params)
+        self.assertTrue(rid > 0)
+        (added, failed) = set_realm("ldap", ["ldapresolver"])
+        self.assertEqual(len(added), 1)
+        self.assertEqual(len(failed), 0)
+
+        # Comparing different objects fails
+        self.assertFalse(User("salesman", "ldap") == None)
+        # comparing different realm or resolver fails
+        self.assertFalse(User("cornelius", self.realm1) == User("salesman", "ldap"))
+        # comparing different users fails
+        self.assertFalse(User("manager", "ldap") == User("salesman", "ldap"))
+        # comparing case insensitive successful
+        self.assertTrue(User("salesman", "ldap") == User("salesman", "ldap"))
+        self.assertTrue(User(resolver='ldapresolver', realm="ldap",
+                             uid="039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d54") == User("salesman", "ldap"))
+        delete_realm("ldap")
+        delete_resolver("ldapresolver")
+
     def test_50_user_attributes(self):
         user = User(login="root",
                     realm=self.realm1)
