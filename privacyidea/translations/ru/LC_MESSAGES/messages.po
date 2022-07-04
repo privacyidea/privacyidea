@@ -8,16 +8,17 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-06-08 16:56+0200\n"
-"PO-Revision-Date: 2022-01-21 06:54+0000\n"
-"Last-Translator: Gennady Oshnurov <gercogoge@mail.ru>\n"
+"PO-Revision-Date: 2022-06-30 21:19+0000\n"
+"Last-Translator: Aleksandr Sokolov <saanchos@gmail.com>\n"
+"Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/ru/>\n"
 "Language: ru\n"
-"Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/ru/>\n"
-"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 4.13.1-dev\n"
 "Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:222
@@ -79,6 +80,8 @@ msgstr "Введите новый ПИН код"
 #: lib/challengeresponsedecorators.py:201
 msgid "To resync your token, please enter the next OTP value"
 msgstr ""
+"Пожалуйста введите указанное значение OTP , чтобы выполнить повторную "
+"синхронизацию токена"
 
 #: lib/decorators.py:43 lib/token.py:2187
 msgid "This action is not possible, since the token is locked"
@@ -102,7 +105,7 @@ msgstr "Вам необходимо указать пользователя ил
 
 #: lib/policy.py:1351
 msgid "Invalid client definition!"
-msgstr ""
+msgstr "Конфигурация клиента некорректна!"
 
 #: lib/policy.py:1532
 msgid "Define in which resolver the user should be registered."
@@ -488,7 +491,7 @@ msgstr ""
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the admin."
-msgstr ""
+msgstr "Список token info, скрытых для администратора. Разделитель пробел."
 
 #: lib/policy.py:1952
 msgid ""
@@ -600,7 +603,7 @@ msgstr ""
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the user."
-msgstr ""
+msgstr "Список tokeninfo, скрытых для пользователя. Разделитель пробел."
 
 #: lib/policy.py:2087
 msgid "Limit the number of allowed tokens in a realm."
@@ -670,6 +673,9 @@ msgid ""
 "This is the URL to the token image for the privacyIDEA Authenticator and "
 "some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."
 msgstr ""
+"Это URL изображения токена для Аутентификатора privacyIDEA Authenticator и "
+"других приложений, таких как FreeOTP (поддерживаются следюущие форматы "
+"файлов: PNG, JPG and GIF)."
 
 #: lib/policy.py:2149
 msgid ""
@@ -708,20 +714,18 @@ msgstr ""
 "[1234567890]"
 
 #: lib/policy.py:2182
-#, fuzzy
 msgid "Set the length of the password of generated password tokens."
-msgstr "Длина пароля в случае временного токена (токен утерян)."
+msgstr "Назначить длину пароля в случае временного токена (токен утерян)."
 
 #: lib/policy.py:2186
-#, fuzzy
 msgid ""
 "Specify the required contents of the password of a password token. "
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of "
 "allowed characters [1234567890]"
 msgstr ""
-"Укажите необходимое содержимое ПИН-кода OTP. (c) символы, (n)числовые, "
-"(s)специальные. Используйте модификаторы +/- или список разрешенных "
-"символов [1234567890]"
+"Укажите разрешенные символы для ПИН-кода OTP. (c) символы, (n)числовые, (s)"
+"специальные. Используйте модификаторы +/- или список разрешенных символов "
+"[1234567890]"
 
 #: lib/policy.py:2194
 #, fuzzy
@@ -2708,4 +2712,3 @@ msgstr ""
 #~ "if the tokeninfo field matches the "
 #~ "regexp. key/<regexp>/"
 #~ msgstr ""
-
