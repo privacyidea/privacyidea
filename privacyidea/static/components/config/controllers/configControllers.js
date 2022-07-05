@@ -722,18 +722,6 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
     $scope.getSmtpIdentifiers();
     $scope.getRADIUSIdentifiers();
 
-    $scope.testResolver = function () {
-        ConfigFactory.testResolver($scope.params, function (data) {
-            if (data.result.value === true) {
-                inform.add(data.detail.description,
-                    {type: "success", ttl: 10000});
-            } else {
-                inform.add(data.detail.description,
-                    {type: "danger", ttl: 10000});
-            }
-        });
-    };
-
     $scope.saveSystemConfig = function () {
         ConfigFactory.saveSystemConfig($scope.params, function (data) {
             //debug: console.log($scope.params);
@@ -943,24 +931,28 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
      LDAPSEARCHFILTER,
      USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE, AUTHTYPE, EDITABLE
      */
+    $scope.authtypes = Object.freeze({"Anonymous": "Anonymous",
+        "Simple": "Simple",
+        "SASL Digest-MD5": "SASL Digest-MD5",
+        "NTLM": "NTLM",
+        "SASL Kerberos": "SASL Kerberos"});
     $scope.params = {
         SIZELIMIT: 500,
         TIMEOUT: 5,
         UIDTYPE: "DN",
         type: 'ldapresolver',
-        AUTHTYPE: "Simple",
+        AUTHTYPE: $scope.authtypes["Simple"],
         SCOPE: "SUBTREE",
         CACHE_TIMEOUT: 120,
         NOSCHEMAS: false,
         TLS_VERIFY: true,
         TLS_VERSION: "2",
-        START_TLS: false,
+        START_TLS: true,
         SERVERPOOL_ROUNDS: 2,
         SERVERPOOL_SKIP: 30
     };
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
-    $scope.authtypes = ["Simple", "SASL Digest-MD5", "NTLM", "SASL Kerberos"];
     $scope.scopes = ["SUBTREE", "BASE", "LEVEL"];
     $scope.tls_version_options = [{value: "3", name: "TLS v1.0"},
                                   {value: "4", name: "TLS v1.1"},
@@ -992,10 +984,7 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         $scope.params.USERINFO = '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }';
         $scope.params.NOREFERRALS = true;
         $scope.params.EDITABLE = false;
-        $scope.params.SIZELIMIT = 500;
         $scope.params.UIDTYPE = "objectGUID";
-        $scope.params.AUTHTYPE = "Simple";
-        $scope.params.SCOPE = "SUBTREE";
     };
 
     $scope.presetLDAP = function () {
@@ -1004,10 +993,7 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         $scope.params.USERINFO = '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }';
         $scope.params.NOREFERRALS = true;
         $scope.params.EDITABLE = false;
-        $scope.params.SIZELIMIT = 500;
         $scope.params.UIDTYPE = "entryUUID";
-        $scope.params.AUTHTYPE = "Simple";
-        $scope.params.SCOPE = "SUBTREE";
     };
 
     $scope.setLDAPResolver = function () {
@@ -1022,6 +1008,11 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         var params = $.extend({}, $scope.params);
         params["SIZELIMIT"] = size_limit;
         params["resolver"] = $scope.resolvername;
+        if (params['AUTHTYPE'] === $scope.authtypes['Anonymous']) {
+            params['AUTHTYPE'] = $scope.authtypes['Simple'];
+            params['BINDPW'] = '';
+            params['BINDDN'] = '';
+        }
         ConfigFactory.testResolver(params, function (data) {
             if (data.result.value === true) {
                 inform.add(data.detail.description,

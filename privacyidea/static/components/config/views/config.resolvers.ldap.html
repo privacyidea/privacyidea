@@ -100,7 +100,7 @@
                translate>Base DN</label>
 
         <div class="col-sm-4">
-            <input name="basedn" class="form-control"
+            <input name="basedn" class="form-control" id="basedn"
                    ng-model="params.LDAPBASE" required
                    placeholder="ou=users,dc=domain,dc=tld"/>
         </div>
@@ -110,50 +110,14 @@
 
         <div class="col-sm-3">
             <select class="form-control"
-                        ng-model="params.SCOPE"
-                        name="ldapscope"
-                        ng-options="select for select in scopes">
+                    ng-model="params.SCOPE"
+                    name="ldapscope" id="ldapscope"
+                    ng-options="select for select in scopes">
             </select>
         </div>
-
-
     </div>
+    <hr>
     <div class="form-group">
-        <label for="binddn" class="col-sm-3 control-label" translate>Bind DN</label>
-
-        <div class="col-sm-9">
-            <input name="binddn" class="form-control"
-                   ng-model="params.BINDDN"
-                   placeholder="cn=admin,ou=users,dc=domain,dc=tld"/>
-            <p class="help-block" translate>
-                Leave the Bind DN empty if you want to do anonymous binding.
-            </p>
-        </div>
-    </div>
-    <div class="form-group">
-        <label for="bindpw" class="col-sm-3 control-label"
-               translate
-               ng-show="params.AUTHTYPE !== 'SASL Kerberos'">Bind Password</label>
-        <label for="keytabfile" class="col-sm-3 control-label"
-               translate
-               ng-show="params.AUTHTYPE === 'SASL Kerberos'">Keyfile Path</label>
-        <div class="col-sm-3"
-             ng-show="params.AUTHTYPE !== 'SASL Kerberos'">
-            <input name="bindpw" class="form-control"
-                   id="bindpw"
-                   type="password"
-                   autocomplete="new-password"
-                   ng-model="params.BINDPW"
-                   placeholder="topsecret"/>
-        </div>
-        <div class="col-sm-3"
-             ng-show="params.AUTHTYPE === 'SASL Kerberos'">
-            <input name="keytabfile" class="form-control"
-                   id="keytabfile"
-                   ng-model="params.KEYTABFILE"
-                   placeholder="/path/to/keyfile"/>
-        </div>
-
         <label for="authtype" class="col-sm-3 control-label"
                 translate>Bind Type</label>
 
@@ -165,6 +129,42 @@
             </select>
         </div>
     </div>
+    <div class="form-group"
+         ng-show="params.AUTHTYPE !== authtypes['Anonymous']">
+        <label for="binddn" class="col-sm-3 control-label" translate>Bind DN</label>
+
+        <div class="col-sm-9">
+            <input name="binddn" class="form-control" id="binddn"
+                   ng-model="params.BINDDN"
+                   placeholder="cn=admin,ou=users,dc=domain,dc=tld"/>
+        </div>
+    </div>
+    <div class="form-group"
+         ng-show="params.AUTHTYPE !== authtypes['Anonymous']">
+        <label for="bindpw" class="col-sm-3 control-label"
+               translate
+               ng-show="params.AUTHTYPE !== authtypes['SASL Kerberos']">Bind Password</label>
+        <label for="keytabfile" class="col-sm-3 control-label"
+               translate
+               ng-show="params.AUTHTYPE === authtypes['SASL Kerberos']">Keyfile Path</label>
+        <div class="col-sm-3"
+             ng-show="params.AUTHTYPE !== authtypes['SASL Kerberos']">
+            <input name="bindpw" class="form-control"
+                   id="bindpw"
+                   type="password"
+                   autocomplete="new-password"
+                   ng-model="params.BINDPW"
+                   placeholder="topsecret"/>
+        </div>
+        <div class="col-sm-3"
+             ng-show="params.AUTHTYPE === authtypes['SASL Kerberos']">
+            <input name="keytabfile" class="form-control"
+                   id="keytabfile"
+                   ng-model="params.KEYTABFILE"
+                   placeholder="/path/to/keyfile"/>
+        </div>
+    </div>
+    <hr>
     <div class="form-group">
         <label for="timeout" class="col-sm-3 control-label"
                 translate>Timeout (seconds)</label>

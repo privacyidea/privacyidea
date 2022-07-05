@@ -57,7 +57,6 @@ The file is tested in tests/test_lib_resolver.py
 """
 
 import logging
-import sys
 
 import yaml
 import threading
@@ -72,6 +71,7 @@ from ldap3 import Tls
 from ldap3.core.exceptions import LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 import ssl
+import gssapi
 
 import os.path
 
@@ -336,11 +336,6 @@ class IdResolver (UserIdResolver):
         if self.authtype == AUTHTYPE.SASL_KERBEROS:
             # we need to check credentials with kerberos differently since we
             # can not use bind for every user
-            try:
-                import gssapi
-            except ImportError:
-                log.warning('Package "gssapi" missing. Can not authenticate users!')
-                return False
             name = gssapi.Name(self.getUserInfo(uid).get('username'))
             try:
                 gssapi.raw.ext_password.acquire_cred_with_password(name, to_bytes(password))
@@ -352,10 +347,10 @@ class IdResolver (UserIdResolver):
         elif self.authtype == AUTHTYPE.NTLM:  # pragma: no cover
             # fetch the PreWindows 2000 Domain from the self.binddn
             # which would be of the format DOMAIN\username and compose the
-            # bind_user to DOMAIN\sAMAcountName
+            # bind_user to DOMAIN\sAMAccountName
             domain_name = self.binddn.split('\\')[0]
             uinfo = self.getUserInfo(uid)
-            # In fact we need the sAMAccountName. If the username mapping is
+            # In fact, we need the sAMAccountName. If the username mapping is
             # another attribute than the sAMAccountName the authentication
             # will fail!
             bind_user = u"{0!s}\\{1!s}".format(domain_name, uinfo.get("username"))
