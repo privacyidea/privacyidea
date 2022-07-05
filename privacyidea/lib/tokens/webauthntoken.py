@@ -478,6 +478,7 @@ class WEBAUTHNACTION(object):
     AUTHENTICATOR_ATTESTATION_FORM = 'webauthn_authenticator_attestation_form'
     AUTHENTICATOR_ATTESTATION_LEVEL = 'webauthn_authenticator_attestation_level'
     REQ = 'webauthn_req'
+    AVOID_DOUBLE_REGISTRATION = 'webauthn_avoid_double_registration'
 
 
 class WEBAUTHNINFO(object):
@@ -605,6 +606,11 @@ class WebAuthnTokenClass(TokenClass):
                     }
                 },
                 SCOPE.ENROLL: {
+                    WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION: {
+                        'type': 'bool',
+                        'desc': _("One webauthn token can not be registered to a user more than once."),
+                        'group': WEBAUTHNGROUP.WEBAUTHN
+                    },
                     WEBAUTHNACTION.RELYING_PARTY_NAME: {
                         'type': 'str',
                         'desc': _("A human readable name for the organization rolling out WebAuthn tokens."),

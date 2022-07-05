@@ -746,6 +746,18 @@ challenge text received during authentication
 (see :ref:`policy_webauthn_challenge_text_auth`).
 
 
+.. _policy_webauthn_avoid_double_registration:
+
+webauthn_avoid_double_registration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+If this policy is set, a user or an admin can not register the same webauthn
+token to a user more than once.
+However, the same webauthn token could be registered to a different user.
+
+
 .. _require_attestation:
 
 certificate_require_attestation
