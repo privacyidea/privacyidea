@@ -954,6 +954,11 @@ class WebAuthnTokenClass(TokenClass):
                                   validitytime=self._get_challenge_validity_time())
             challenge.save()
 
+            credential_ids = None
+            if getParam(params, WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION, optional):
+                # TODO: Get the other webauthn tokens of the user
+                # TODO: add their ids
+                credential_ids = None
             public_key_credential_creation_options = WebAuthnMakeCredentialOptions(
                 challenge=webauthn_b64_encode(nonce),
                 rp_name=getParam(params,
@@ -982,7 +987,8 @@ class WebAuthnTokenClass(TokenClass):
                                                   optional),
                 authenticator_selection_list=getParam(params,
                                                       WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
-                                                      optional)
+                                                      optional),
+                credential_ids=credential_ids
             ).registration_dict
 
             response_detail["webAuthnRegisterRequest"] = {

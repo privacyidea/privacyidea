@@ -410,7 +410,8 @@ class WebAuthnMakeCredentialOptions(object):
                  icon_url=None,
                  authenticator_attachment=None,
                  authenticator_selection_list=None,
-                 location=None):
+                 location=None,
+                 credential_ids=None):
         """
         Create a new WebAuthnMakeCredentialOptions object.
 
@@ -442,6 +443,8 @@ class WebAuthnMakeCredentialOptions(object):
         :type authenticator_selection_list: list of basestring
         :param location: Whether to ask for the inclusion of location information in the attestation.
         :type location: bool
+        :param credential_ids: A list of ids that are already enrolled to the user.
+        :type credential_ids: list
         :return: A WebAuthnMakeCredentialOptions object.
         :rtype: WebAuthnMakeCredentialOptions
         """
@@ -455,6 +458,19 @@ class WebAuthnMakeCredentialOptions(object):
         self.icon_url = icon_url
         self.authenticator_selection_list = authenticator_selection_list
         self.location = bool(location)
+        self.exclude_credentials = []
+        if credential_ids:
+            for cred_id in credential_ids:
+                self.exclude_credentials.append({
+                    "id": cred_id,
+                    "type": "public-key",
+                    "transports": [
+                        "usb",
+                        "ble",
+                        "nfc",
+                        "internal"
+                    ]
+                })
 
         attestation = str(attestation).lower()
         if attestation not in ATTESTATION_FORMS:
@@ -492,7 +508,6 @@ class WebAuthnMakeCredentialOptions(object):
         :return: The publicKeyCredentialCreationOptions dictionary.
         :rtype: dict
         """
-
         registration_dict = {
             'challenge': self.challenge,
             'rp': {
@@ -507,7 +522,7 @@ class WebAuthnMakeCredentialOptions(object):
             'pubKeyCredParams': self.public_key_credential_parameters,
             'authenticatorSelection': {},
             'timeout': self.timeout,
-            'excludeCredentials': [],
+            'excludeCredentials': self.exclude_credentials,
             # Relying parties may use AttestationConveyancePreference to specify their
             # preference regarding attestation conveyance during credential generation.
             'attestation': self.attestation,
