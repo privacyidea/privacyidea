@@ -290,10 +290,10 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
             policy_object.check_for_conflicts(pass_thru, "passthru")
             pass_thru_action = pass_thru[0].get("action").get("passthru")
             policy_name = pass_thru[0].get("name")
+            g.audit_object.add_policy([p.get("name") for p in pass_thru])
             if pass_thru_action in ["userstore", True]:
                 # Now we need to check the userstore password
                 if user_object.check_password(passw):
-                    g.audit_object.add_policy([p.get("name") for p in pass_thru])
                     return True, {"message": u"against userstore due to '{!s}'".format(
                                       policy_name)}
             else:
@@ -303,7 +303,6 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                 radius = get_radius(pass_thru_action)
                 r = radius.request(radius.config, user_object.login, passw)
                 if r:
-                    g.audit_object.add_policy([p.get("name") for p in pass_thru])
                     # TODO: here we can check, if the token should be assigned.
                     passthru_assign = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PASSTHRU_ASSIGN,
                                                  user_object=user_object).action_values(unique=True)
