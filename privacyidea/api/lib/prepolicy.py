@@ -1856,6 +1856,7 @@ def webauthntoken_enroll(request, action):
     WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+    WEAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
     WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, and
     ACTION.CHALLENGETEXT, respectively.
 
@@ -1971,6 +1972,12 @@ def webauthntoken_enroll(request, action):
             if challengetext_policies \
             else DEFAULT_CHALLENGE_TEXT_ENROLL
 
+        avoid_double_registration_policy = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
+                  user_object=request.User if hasattr(request, 'User') else None).any()
+
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_ID] = rp_id
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_NAME] = rp_name
 
@@ -1984,6 +1991,7 @@ def webauthntoken_enroll(request, action):
             = authenticator_attestation_form
         request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
             = challengetext
+        request.all_data[WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION] = avoid_double_registration_policy
 
     return True
 
