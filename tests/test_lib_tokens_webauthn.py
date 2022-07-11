@@ -402,7 +402,8 @@ class WebAuthnTestCase(unittest.TestCase):
             attestation=ATTESTATION_FORM,
             user_verification=USER_VERIFICATION,
             public_key_credential_algorithms=PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
-            location=True
+            location=True,
+            credential_ids=[CRED_ID]
         )
 
     def test_00_create_options(self):
