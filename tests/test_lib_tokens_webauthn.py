@@ -280,14 +280,24 @@ class WebAuthnTokenTestCase(MyTestCase):
         self.assertEqual(WebAuthnTokenClass.get_class_info('type'), "webauthn")
         self.assertTrue(self.token.token.serial.startswith("WAN"))
 
-        # Set avoid double registration
+        # No avoid double registration
         init_params = self.init_params
+        web_authn_register_request = self \
+            .token \
+            .get_init_detail(init_params, self.user) \
+            .get("webAuthnRegisterRequest")
+        self.assertEqual(self.token.token.serial, web_authn_register_request.get("serialNumber"))
+        self.assertNotIn("excludeCredentials", web_authn_register_request)
+
+        # Set avoid double registration
         init_params[WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION] = True
         web_authn_register_request = self \
             .token \
             .get_init_detail(init_params, self.user) \
             .get("webAuthnRegisterRequest")
         self.assertEqual(self.token.token.serial, web_authn_register_request.get("serialNumber"))
+        # Now the excludeCredentials is contained
+        self.assertIn("excludeCredentials", web_authn_register_request)
 
     def test_04_authentication(self):
         reply_dict = self._create_challenge()
