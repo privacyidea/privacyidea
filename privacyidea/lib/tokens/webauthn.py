@@ -1806,6 +1806,8 @@ def _get_trust_anchors(attestation_type, attestation_fmt, trust_anchor_dir):
                     except Exception:
                         pass
 
+    return trust_anchors
+
 
 def _is_trusted_x509_attestation_cert(trust_path, trust_anchors):
     if not trust_path or not isinstance(trust_path, list) or not trust_anchors or not isinstance(trust_anchors, list):
