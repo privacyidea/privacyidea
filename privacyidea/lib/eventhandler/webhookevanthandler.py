@@ -31,6 +31,7 @@ from requests.exceptions import HTTPError, Timeout, ConnectionError, RequestExce
 from collections import defaultdict
 
 log = logging.getLogger(__name__)
+TIMEOUT = 10
 
 
 class CONTENT_TYPE(object):
@@ -115,27 +116,31 @@ class WebHookHandler(BaseEventHandler):
         webhook_text = handler_options.get("data")
         content_type = handler_options.get("content_type")
 
-        # Replace placeholder in data
-        logged_in_user = g.logged_in_user.get("username")
-        attributes = {
-            'logged_in_user': logged_in_user
-        }
-        webhook_text = webhook_text.format_map(defaultdict(str, attributes))
-
         if action.lower() == ACTION_TYPE.POST_WEBHOOK:
             try:
-                if content_type in (CONTENT_TYPE.URLENCODED, CONTENT_TYPE.JSON):
+                if content_type == CONTENT_TYPE.JSON:
                     """
                     This is the main function where the webhook is sent.
-                    Documentation of the requests function is fond her docs.python-requests.org
+                    Documentation of the requests function is found her docs.python-requests.org
                     """
-                    resp = requests.post(webhook_url, data=json.dumps(webhook_text, sort_keys=True, default=str),
-                                         headers={'Content-Type': content_type}, timeout=1.0)
-                    # all answers will be logged in the debug. The HTTP response code will be shown in the audit too
-                    httpcode = resp.status_code
                     log.info('A webhook is send to {0!r} with the text: {1!r}'.format(
                         webhook_url, webhook_text))
-                    log.info(httpcode)
+                    resp = requests.post(webhook_url, data=json.dumps(webhook_text),
+                                         headers={'Content-Type': content_type}, timeout=TIMEOUT)
+                    # all answers will be logged in the debug. The HTTP response code will be shown in the audit too
+                    log.info(resp.status_code)
+                    log.debug(resp)
+                elif content_type == CONTENT_TYPE.URLENCODED:
+                    """
+                    This is the main function where the webhook is sent.
+                    Documentation of the requests function is found her docs.python-requests.org
+                    """
+                    log.info('A webhook is send to {0!r} with the text: {1!r}'.format(
+                        webhook_url, webhook_text))
+                    resp = requests.post(webhook_url, webhook_text,
+                                         headers={'Content-Type': content_type}, timeout=TIMEOUT)
+                    # all answers will be logged in the debug. The HTTP response code will be shown in the audit too
+                    log.info(resp.status_code)
                     log.debug(resp)
                 else:
                     log.warning('Unknown content type value: {0!s}'.format(content_type))

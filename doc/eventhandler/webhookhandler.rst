@@ -5,7 +5,7 @@ WebHook Handler Module
 
 .. index:: WebHook Handler, Handler Modules
 
-The webhook event handler module can be used to call a webhook in case of certain events.
+The webhook event handler module can be used to trigger a webhook in case of certain events.
 
 E.g. if you have a machine or a service that provides a certain API with webhooks, like an IoT coffee maker.
 Assume you want that your coffee maker starts if the first person logs in in the morning. The event of

@@ -2556,11 +2556,31 @@ class WebhookTestCase(MyTestCase):
             mock_log.assert_called_with(200)
 
 
-    @patch('requests.post')
-    def test_02_replace_logged_in_user(self, mock_post):
-        with mock.patch("logging.Logger.info") as mock_log:
-            mock_post.return_value.status_code = 200
-            mock_post.return_value.json.return_value = 'response'
+    def test_02_actions(self):
+        actions = WebHookHandler().actions
+        self.assertEqual(actions, {'post_webhook': {
+            "URL": {
+                "type": "str",
+                "required": True,
+                "description": ("The URL the WebHook is posted to")
+            },
+            "content_type": {
+                "type": "str",
+                "required": True,
+                "description": ("The encoding that is sent to the WebHook, for example json"),
+                "value": [
+                    CONTENT_TYPE.JSON,
+                    CONTENT_TYPE.URLENCODED]
+            },
+            "data": {
+                "type": "str",
+                "required": True,
+                "description": ("The data posted in the WebHook")
+            }
+        }})
+
+    def test_03_wrong_content_type(self):
+        with mock.patch("logging.Logger.warning") as mock_log:
             # Setup realm and user
             self.setUp_user_realms()
 
@@ -2577,22 +2597,17 @@ class WebhookTestCase(MyTestCase):
                                        "content_type":
                                            CONTENT_TYPE.URLENCODED,
                                        "data":
-                                           'The user is {logged_in_user}'
+                                           'This is a test'
                                        }
                        }
                        }
-            res = t_handler.do("post_webhook", options=options)
-            self.assertTrue(res)
-            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
-                'http://test.com', 'The user is hans')
+            res = t_handler.do("False_Type", options=options)
+            self.assertFalse(res)
+            text = 'Unknown action value: False_Type'
             mock_log.assert_any_call(text)
-            mock_log.assert_called_with(200)
 
-    @patch('requests.post')
-    def test_03_wrong_place_holder(self, mock_post):
-        with mock.patch("logging.Logger.info") as mock_log:
-            mock_post.return_value.status_code = 200
-            mock_post.return_value.json.return_value = 'response'
+    def test_04_wrong_action_type(self):
+        with mock.patch("logging.Logger.warning") as mock_log:
             # Setup realm and user
             self.setUp_user_realms()
 
@@ -2607,15 +2622,14 @@ class WebhookTestCase(MyTestCase):
                            "options": {"URL":
                                            'http://test.com',
                                        "content_type":
-                                           CONTENT_TYPE.URLENCODED,
+                                           'False_Type',
                                        "data":
-                                           'The user is {spam}'
+                                           'This is a test'
                                        }
                        }
                        }
             res = t_handler.do("post_webhook", options=options)
-            self.assertTrue(res)
-            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
-                'http://test.com', 'The user is ')
+            self.assertFalse(res)
+            text = 'Unknown content type value: False_Type'
             mock_log.assert_any_call(text)
-            mock_log.assert_called_with(200)
+
