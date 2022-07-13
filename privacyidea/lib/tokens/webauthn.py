@@ -464,12 +464,7 @@ class WebAuthnMakeCredentialOptions(object):
                 self.exclude_credentials.append({
                     "id": cred_id,
                     "type": "public-key",
-                    "transports": [
-                        "usb",
-                        "ble",
-                        "nfc",
-                        "internal"
-                    ]
+                    "transports": list(TRANSPORTS)
                 })
 
         attestation = str(attestation).lower()
