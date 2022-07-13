@@ -540,6 +540,9 @@ the authentication with push tokens. By default, the verification is enabled. To
 verification during enrollment, see :ref:`policy_push_ssl_verify_enrollment`.
 
 .. _policy_challenge_text:
+.. _challenge-text:
+.. _challenge-text-footer:
+.. _challenge-text-header:
 
 challenge_text, challenge_text_header, challenge_text_footer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -592,6 +595,10 @@ his WebAuthn token during authentication. This might be different from the
 challenge text received during enrollment
 (see :ref:`policy_webauthn_challenge_text_enrollment`).
 
+
+.. _email-challenge-text:
+.. _sms-challenge-text:
+.. _u2f-challenge-text:
 
 email_challenge_text, sms_challenge_text, u2f_challenge_text
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
