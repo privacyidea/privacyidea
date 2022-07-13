@@ -988,7 +988,7 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
 
     $scope.presetAD = function () {
         $scope.params.LOGINNAMEATTRIBUTE = "sAMAccountName";
-        $scope.params.LDAPSEARCHFILTER = "(sAMAccountName=*)(objectClass=person)";
+        $scope.params.LDAPSEARCHFILTER = "(sAMAccountName=*)(objectCategory=person)";
         $scope.params.USERINFO = '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }';
         $scope.params.NOREFERRALS = true;
         $scope.params.EDITABLE = false;
