@@ -46,7 +46,7 @@ import logging
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.lib.utils import hexlify_and_unicode, is_true
 
 __doc__ = """
 WebAuthn  is the Web Authentication API specified by the FIDO Alliance.
@@ -478,6 +478,7 @@ class WEBAUTHNACTION(object):
     AUTHENTICATOR_ATTESTATION_FORM = 'webauthn_authenticator_attestation_form'
     AUTHENTICATOR_ATTESTATION_LEVEL = 'webauthn_authenticator_attestation_level'
     REQ = 'webauthn_req'
+    AVOID_DOUBLE_REGISTRATION = 'webauthn_avoid_double_registration'
 
 
 class WEBAUTHNINFO(object):
@@ -605,6 +606,11 @@ class WebAuthnTokenClass(TokenClass):
                     }
                 },
                 SCOPE.ENROLL: {
+                    WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION: {
+                        'type': 'bool',
+                        'desc': _("One webauthn token can not be registered to a user more than once."),
+                        'group': WEBAUTHNGROUP.WEBAUTHN
+                    },
                     WEBAUTHNACTION.RELYING_PARTY_NAME: {
                         'type': 'str',
                         'desc': _("A human readable name for the organization rolling out WebAuthn tokens."),
@@ -948,6 +954,16 @@ class WebAuthnTokenClass(TokenClass):
                                   validitytime=self._get_challenge_validity_time())
             challenge.save()
 
+            credential_ids = []
+            if is_true(getParam(params, WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION, optional)):
+                # Get the other webauthn tokens of the user
+                webauthn_toks = get_tokens(tokentype=self.type, user=self.user)
+                # add their credential ids
+                for tok in webauthn_toks:
+                    if tok.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
+                        credential_id = tok.decrypt_otpkey()
+                        credential_ids.append(credential_id)
+
             public_key_credential_creation_options = WebAuthnMakeCredentialOptions(
                 challenge=webauthn_b64_encode(nonce),
                 rp_name=getParam(params,
@@ -976,7 +992,8 @@ class WebAuthnTokenClass(TokenClass):
                                                   optional),
                 authenticator_selection_list=getParam(params,
                                                       WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
-                                                      optional)
+                                                      optional),
+                credential_ids=credential_ids
             ).registration_dict
 
             response_detail["webAuthnRegisterRequest"] = {
@@ -1004,6 +1021,9 @@ class WebAuthnTokenClass(TokenClass):
             if (public_key_credential_creation_options.get("extensions") or {}).get("authnSel"):
                 response_detail["webAuthnRegisterRequest"]["authenticatorSelectionList"] \
                     = public_key_credential_creation_options["extensions"]["authnSel"]
+            if public_key_credential_creation_options.get("excludeCredentials"):
+                response_detail["webAuthnRegisterRequest"]["excludeCredentials"] = \
+                    public_key_credential_creation_options.get("excludeCredentials")
 
             self.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID,
                                public_key_credential_creation_options["rp"]["id"])
