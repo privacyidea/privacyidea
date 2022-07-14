@@ -372,6 +372,12 @@ If you do not want to verify the validity period, you can check this action.
 
 
 .. _2step_parameters:
+.. _hotp-2step-clientsize:
+.. _totp-2step-clientsize:
+.. _hotp-2step-serversize:
+.. _totp-2step-serversize:
+.. _hotp-2step-difficulty:
+.. _totp-2step-difficulty:
 
 {type}_2step_clientsize, {type}_2step_serversize, {type}_2step_difficulty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -390,6 +396,8 @@ specifies the number of rounds.
 This is new in version 2.21.
 
 .. _force_app_pin:
+.. _hotp-force-app-pin:
+.. _totp-force-app-pin:
 
 hotp_force_app_pin, totp_force_app_pin
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
