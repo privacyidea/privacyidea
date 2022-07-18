@@ -2556,7 +2556,27 @@ class WebhookTestCase(MyTestCase):
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
-    def test_02_actions(self):
+            options = {"g": g,
+                       "handler_def": {
+                           "options": {"URL":
+                                           'http://test.com',
+                                       "content_type":
+                                           CONTENT_TYPE.JSON,
+                                       "data":
+                                           'This is a test'
+                                       }
+                       }
+                       }
+            res = t_handler.do("post_webhook", options=options)
+            self.assertTrue(res)
+            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
+                'http://test.com', 'This is a test')
+            mock_log.assert_any_call(text)
+            mock_log.assert_called_with(200)
+
+    def test_02_actions_and_positions(self):
+        positions = WebHookHandler().allowed_positions
+        self.assertEqual(positions, ["post", "pre"])
         actions = WebHookHandler().actions
         self.assertEqual(actions, {'post_webhook': {
             "URL": {
@@ -2579,7 +2599,7 @@ class WebhookTestCase(MyTestCase):
             }
         }})
 
-    def test_03_wrong_content_type(self):
+    def test_03_wrong_action_type(self):
         with mock.patch("logging.Logger.warning") as mock_log:
             # Setup realm and user
             self.setUp_user_realms()
@@ -2606,7 +2626,7 @@ class WebhookTestCase(MyTestCase):
             text = 'Unknown action value: False_Type'
             mock_log.assert_any_call(text)
 
-    def test_04_wrong_action_type(self):
+    def test_04_wrong_content_type(self):
         with mock.patch("logging.Logger.warning") as mock_log:
             # Setup realm and user
             self.setUp_user_realms()
@@ -2633,30 +2653,27 @@ class WebhookTestCase(MyTestCase):
             text = 'Unknown content type value: False_Type'
             mock_log.assert_any_call(text)
 
-    @patch('requests.post')
-    def test_05_connection_error(self, mock_post):
-        mock_post.post = MagicMock(side_effect='unknown_content_type')
-        with mock.patch("logging.Logger.warning") as mock_log:
-            # Setup realm and user
-            self.setUp_user_realms()
+    def test_05_wrong_url(self):
+        # Setup realm and user
+        self.setUp_user_realms()
 
-            user = User("hans", self.realm1)
-            g = FakeFlaskG()
-            g.logged_in_user = {'username': 'hans',
-                                'realm': self.realm1}
+        user = User("hans", self.realm1)
+        g = FakeFlaskG()
+        g.logged_in_user = {'username': 'hans',
+                            'realm': self.realm1}
 
-            t_handler = WebHookHandler()
-            options = {"g": g,
-                       "handler_def": {
-                           "options": {"URL":
-                                           'http://test.com',
-                                       "content_type":
-                                           'False_Type',
-                                       "data":
-                                           'This is a test'
-                                       }
-                       }
-                       }
-            res = t_handler.do("post_webhook", options=options)
-            self.assertFalse(res)
-            mock_log.assert_any_call('Unknown content type value: False_Type')
+        t_handler = WebHookHandler()
+        options = {"g": g,
+                   "handler_def": {
+                       "options": {"URL":
+                                       'http://xyz.blablba',
+                                   "content_type":
+                                       CONTENT_TYPE.JSON,
+                                   "data":
+                                       'This is a test'
+                                   }
+                   }
+                   }
+        res = t_handler.do("post_webhook", options=options)
+        self.assertFalse(res)
+
