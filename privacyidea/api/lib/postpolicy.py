@@ -776,7 +776,7 @@ def check_verify_enrollment(request, response):
     """
     This policy decorator is used in the ENROLL scope to
     decorate the /token/init
-    If will check for action=verify_enrollment and ask the user
+    It will check for action=verify_enrollment and ask the user
     in a 2nd step to provide information to verify, that the token was successfully enrolled.
 
     :param request:
