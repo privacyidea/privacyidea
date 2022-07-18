@@ -94,7 +94,8 @@ typing==3.10.0.0; python_version < '3.0'
 urllib3==1.26.6
 Werkzeug==1.0.1
 zipp==1.2.0; python_version <= '3.5'
-zipp==3.5.0; python_version > '3.5'
+zipp==3.6.0; python_version == '3.6'
+zipp==3.8.0; python_version > '3.6'
 grpcio==1.46.0; python_version >= '3.7'
 grpcio-tools==1.46.0; python_version >= '3.7'
 protobuf==3.20.1; python_version >= '3.7'
