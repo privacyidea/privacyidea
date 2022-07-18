@@ -1658,6 +1658,17 @@ class MachineToken(MethodsMixin, db.Model):
         self.machine_id = machine_id
         self.application = application
 
+    def delete(self):
+        ret = self.id
+        db.session.query(MachineTokenOptions) \
+            .filter(MachineTokenOptions.machinetoken_id == self.id) \
+            .delete()
+        db.session.delete(self)
+        save_config_timestamp()
+        db.session.commit()
+        return ret
+
+
 """
 class MachineUser(db.Model):
     '''
