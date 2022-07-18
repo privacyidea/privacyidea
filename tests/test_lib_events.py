@@ -6,11 +6,11 @@ This file contains the event handlers tests. It tests:
 lib/eventhandler/usernotification.py (one event handler module)
 lib/event.py (the decorator)
 """
-from unittest.mock import patch, MagicMock
 import responses
 import os
 import mock
 
+from mock import patch, MagicMock
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import USER_TYPE
@@ -2379,9 +2379,9 @@ class CustomUserAttributesTestCase(MyTestCase):
         # The attributekey will be set as "test" and the attributevalue as "check"
         options = {"g": g,
                    "handler_def": {
-                        "options": {"user": "logged_in_user",
-                                    "attrkey": "test",
-                                    "attrvalue": "check"}}
+                       "options": {"user": "logged_in_user",
+                                   "attrkey": "test",
+                                   "attrvalue": "check"}}
                    }
         t_handler = CustomUserAttributesHandler()
         res = t_handler.do("set_custom_user_attributes", options=options)
@@ -2521,6 +2521,7 @@ class CustomUserAttributesTestCase(MyTestCase):
         self.assertIn('test', a, user)
         self.assertEqual('new', a.get('test'), user)
 
+
 class WebhookTestCase(MyTestCase):
 
     @patch('requests.post')
@@ -2545,16 +2546,15 @@ class WebhookTestCase(MyTestCase):
                                            CONTENT_TYPE.URLENCODED,
                                        "data":
                                            'This is a test'
-                                        }
-                        }
-                    }
+                                       }
+                       }
+                       }
             res = t_handler.do("post_webhook", options=options)
             self.assertTrue(res)
             text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
-                        'http://test.com', 'This is a test')
+                'http://test.com', 'This is a test')
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
-
 
     def test_02_actions(self):
         actions = WebHookHandler().actions
@@ -2575,7 +2575,7 @@ class WebhookTestCase(MyTestCase):
             "data": {
                 "type": "str",
                 "required": True,
-                "description": ("The data posted in the WebHook")
+                "description": ('The data posted in the WebHook')
             }
         }})
 
@@ -2633,31 +2633,30 @@ class WebhookTestCase(MyTestCase):
             text = 'Unknown content type value: False_Type'
             mock_log.assert_any_call(text)
 
-
     @patch('requests.post')
     def test_05_connection_error(self, mock_post):
         mock_post.post = MagicMock(side_effect='unknown_content_type')
         with mock.patch("logging.Logger.warning") as mock_log:
-                # Setup realm and user
-                self.setUp_user_realms()
+            # Setup realm and user
+            self.setUp_user_realms()
 
-                user = User("hans", self.realm1)
-                g = FakeFlaskG()
-                g.logged_in_user = {'username': 'hans',
-                                    'realm': self.realm1}
+            user = User("hans", self.realm1)
+            g = FakeFlaskG()
+            g.logged_in_user = {'username': 'hans',
+                                'realm': self.realm1}
 
-                t_handler = WebHookHandler()
-                options = {"g": g,
-                           "handler_def": {
-                               "options": {"URL":
-                                               'http://test.com',
-                                           "content_type":
-                                               'False_Type',
-                                           "data":
-                                               'This is a test'
-                                            }
-                                }
-                            }
-                res = t_handler.do("post_webhook", options=options)
-                self.assertFalse(res)
-                mock_log.assert_any_call('Unknown content type value: False_Type')
+            t_handler = WebHookHandler()
+            options = {"g": g,
+                       "handler_def": {
+                           "options": {"URL":
+                                           'http://test.com',
+                                       "content_type":
+                                           'False_Type',
+                                       "data":
+                                           'This is a test'
+                                       }
+                       }
+                       }
+            res = t_handler.do("post_webhook", options=options)
+            self.assertFalse(res)
+            mock_log.assert_any_call('Unknown content type value: False_Type')
