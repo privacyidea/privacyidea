@@ -33,7 +33,7 @@ attached to a user.
 Generating Signing Requests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can also generate the signing request. The keypair and the request is generated on the
+You can also generate the signing request. The key pair and the request is generated on the
 server.
 
 .. figure:: images/generate_csr1.png
@@ -41,7 +41,7 @@ server.
 
    *Generate a certificate signing request*
 
-When generating the certificate signing request this way the RSA keypair is
+When generating the certificate signing request this way the RSA key pair is
 generated on the server and the private key is available on the server side. The user
 can later download a PKCS12/PFX file from the server.
 
