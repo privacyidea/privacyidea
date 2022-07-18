@@ -60,6 +60,17 @@
                         translate>failcounter
                 </button>
             </th>
+            <th class="pifilter">
+                <button pi-sort-by="rollout_state"
+                        class="btn btn-default
+                       unsorted"
+                        translate>rollout state
+                </button>
+                <pi-filter ng-model="rolloutStateFilter"
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
+            </th>
             <th ng-show="loggedInUser.role == 'admin'" translate>user</th>
             <th ng-show="loggedInUser.role == 'admin'" translate>realm</th>
             <th class="pifilter" ng-show="loggedInUser.role == 'admin'"><translate>Token realms</translate>
@@ -106,6 +117,7 @@
             </span></td>
             <!--<td>{{ token.maxfail }}</td>-->
             <!--<td>{{ token.otplen }}</td>-->
+            <td>{{ token.rollout_state }}</td>
             <td ng-show="loggedInUser.role == 'admin'">
                 <a ui-sref="user.details({username: token.username,
                             realmname: token.user_realm,

@@ -2985,4 +2985,3 @@ class APIRolloutState(MyApiTestCase):
             tok = result.get("value").get("tokens")[0]
             self.assertEqual(ROLLOUTSTATE.CLIENTWAIT, tok.get("rollout_state"))
             self.assertEqual(serial1, tok.get("serial"))
-

@@ -299,7 +299,14 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
 
     if rollout_state is not None:
         # Filter for tokens with the given rollout state
-        sql_query = sql_query.filter(Token.rollout_state == rollout_state)
+        if "*" in rollout_state:
+            # match with "like"
+            sql_query = sql_query.filter(func.lower(Token.rollout_state).like(
+                rollout_state.lower().replace("*", "%")))
+        else:
+            # exact match
+            sql_query = sql_query.filter(func.lower(Token.rollout_state) ==
+                                         rollout_state.lower())
 
     if tokeninfo is not None:
         # Filter for tokens with token token.info.<key> and token.info.<value>
