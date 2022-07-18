@@ -155,7 +155,8 @@ myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
 myApp.config(['$compileProvider',
     function ($compileProvider) {
         // allow only links to our readthedocs documentation, netknights homepage and "otpauth:" links
-        $compileProvider.aHrefSanitizationTrustedUrlList(/^\s*(https:\/\/(privacyidea.readthedocs.io|netknights.it)\/|otpauth:|blob:)/);
+        let url_re = /^\s*(https:\/\/(privacyidea.readthedocs.io|netknights.it)\/|otpauth:|mailto:|file:|blob:)/;
+        $compileProvider.aHrefSanitizationTrustedUrlList(url_re);
 }]);
 
 // A function to escape regexp queries
