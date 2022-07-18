@@ -53,9 +53,6 @@ except ImportError:
 
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.error import CSRError, CSRPending
-from privacyidea.lib import _
-
-
 
 
 CRL_REASONS = ["unspecified", "keyCompromise", "CACompromise",
