@@ -102,6 +102,11 @@ can be set, for example::
 Further information on possible parameters can be found in the
 `PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
 
+In ``PI_HSM_PADDING`` the padding can be set to "PKCS7". If ``PI_HSM_PADDING`` is not set, the default internal
+padding is used::
+
+    PI_HSM_PADDING = "PKCS7"
+
 Logging
 -------
 
