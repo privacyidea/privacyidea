@@ -6,14 +6,15 @@ This file contains the event handlers tests. It tests:
 lib/eventhandler/usernotification.py (one event handler module)
 lib/event.py (the decorator)
 """
-
 import responses
 import os
 import mock
 
+from mock import patch, MagicMock
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import USER_TYPE
+from privacyidea.lib.eventhandler.webhookevanthandler import ACTION_TYPE, WebHookHandler, CONTENT_TYPE
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.config import get_config_object
@@ -2378,9 +2379,9 @@ class CustomUserAttributesTestCase(MyTestCase):
         # The attributekey will be set as "test" and the attributevalue as "check"
         options = {"g": g,
                    "handler_def": {
-                        "options": {"user": "logged_in_user",
-                                    "attrkey": "test",
-                                    "attrvalue": "check"}}
+                       "options": {"user": "logged_in_user",
+                                   "attrkey": "test",
+                                   "attrvalue": "check"}}
                    }
         t_handler = CustomUserAttributesHandler()
         res = t_handler.do("set_custom_user_attributes", options=options)
@@ -2519,3 +2520,160 @@ class CustomUserAttributesTestCase(MyTestCase):
         a = user.attributes
         self.assertIn('test', a, user)
         self.assertEqual('new', a.get('test'), user)
+
+
+class WebhookTestCase(MyTestCase):
+
+    @patch('requests.post')
+    def test_01_send_webhook(self, mock_post):
+        with mock.patch("logging.Logger.info") as mock_log:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = 'response'
+            # Setup realm and user
+            self.setUp_user_realms()
+
+            user = User("hans", self.realm1)
+            g = FakeFlaskG()
+            g.logged_in_user = {'username': 'hans',
+                                'realm': self.realm1}
+
+            t_handler = WebHookHandler()
+            options = {"g": g,
+                       "handler_def": {
+                           "options": {"URL":
+                                           'http://test.com',
+                                       "content_type":
+                                           CONTENT_TYPE.URLENCODED,
+                                       "data":
+                                           'This is a test'
+                                       }
+                       }
+                       }
+            res = t_handler.do("post_webhook", options=options)
+            self.assertTrue(res)
+            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
+                'http://test.com', 'This is a test')
+            mock_log.assert_any_call(text)
+            mock_log.assert_called_with(200)
+
+            options = {"g": g,
+                       "handler_def": {
+                           "options": {"URL":
+                                           'http://test.com',
+                                       "content_type":
+                                           CONTENT_TYPE.JSON,
+                                       "data":
+                                           'This is a test'
+                                       }
+                       }
+                       }
+            res = t_handler.do("post_webhook", options=options)
+            self.assertTrue(res)
+            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
+                'http://test.com', 'This is a test')
+            mock_log.assert_any_call(text)
+            mock_log.assert_called_with(200)
+
+    def test_02_actions_and_positions(self):
+        positions = WebHookHandler().allowed_positions
+        self.assertEqual(positions, ["post", "pre"])
+        actions = WebHookHandler().actions
+        self.assertEqual(actions, {'post_webhook': {
+            "URL": {
+                "type": "str",
+                "required": True,
+                "description": ("The URL the WebHook is posted to")
+            },
+            "content_type": {
+                "type": "str",
+                "required": True,
+                "description": ("The encoding that is sent to the WebHook, for example json"),
+                "value": [
+                    CONTENT_TYPE.JSON,
+                    CONTENT_TYPE.URLENCODED]
+            },
+            "data": {
+                "type": "str",
+                "required": True,
+                "description": ('The data posted in the WebHook')
+            }
+        }})
+
+    def test_03_wrong_action_type(self):
+        with mock.patch("logging.Logger.warning") as mock_log:
+            # Setup realm and user
+            self.setUp_user_realms()
+
+            user = User("hans", self.realm1)
+            g = FakeFlaskG()
+            g.logged_in_user = {'username': 'hans',
+                                'realm': self.realm1}
+
+            t_handler = WebHookHandler()
+            options = {"g": g,
+                       "handler_def": {
+                           "options": {"URL":
+                                           'http://test.com',
+                                       "content_type":
+                                           CONTENT_TYPE.URLENCODED,
+                                       "data":
+                                           'This is a test'
+                                       }
+                       }
+                       }
+            res = t_handler.do("False_Type", options=options)
+            self.assertFalse(res)
+            text = 'Unknown action value: False_Type'
+            mock_log.assert_any_call(text)
+
+    def test_04_wrong_content_type(self):
+        with mock.patch("logging.Logger.warning") as mock_log:
+            # Setup realm and user
+            self.setUp_user_realms()
+
+            user = User("hans", self.realm1)
+            g = FakeFlaskG()
+            g.logged_in_user = {'username': 'hans',
+                                'realm': self.realm1}
+
+            t_handler = WebHookHandler()
+            options = {"g": g,
+                       "handler_def": {
+                           "options": {"URL":
+                                           'http://test.com',
+                                       "content_type":
+                                           'False_Type',
+                                       "data":
+                                           'This is a test'
+                                       }
+                       }
+                       }
+            res = t_handler.do("post_webhook", options=options)
+            self.assertFalse(res)
+            text = 'Unknown content type value: False_Type'
+            mock_log.assert_any_call(text)
+
+    def test_05_wrong_url(self):
+        # Setup realm and user
+        self.setUp_user_realms()
+
+        user = User("hans", self.realm1)
+        g = FakeFlaskG()
+        g.logged_in_user = {'username': 'hans',
+                            'realm': self.realm1}
+
+        t_handler = WebHookHandler()
+        options = {"g": g,
+                   "handler_def": {
+                       "options": {"URL":
+                                       'http://xyz.blablba',
+                                   "content_type":
+                                       CONTENT_TYPE.JSON,
+                                   "data":
+                                       'This is a test'
+                                   }
+                   }
+                   }
+        res = t_handler.do("post_webhook", options=options)
+        self.assertFalse(res)
+
