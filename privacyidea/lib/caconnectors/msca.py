@@ -212,25 +212,6 @@ class MSCAConnector(BaseCAConnector):
                 log.error("certification request could not be fullfilled! {0!s}".format(reply))
                 raise CSRError()
 
-    def view_pending_certs(self):
-        """
-        CA Manager approval
-        the token/init of would not create a certificate but a
-        pending certificate request, that needs to be approved by a
-        CA manager. So we need some kind of approve method.
-        :return:
-        """
-        pass
-
-    def request_cert(self):
-        """
-        create key server side
-        create key on client side
-        via PKCS10
-        :return:
-        """
-        pass
-
     def get_templates(self):
         """
         Return the dict of available templates
@@ -244,40 +225,6 @@ class MSCAConnector(BaseCAConnector):
             for template in templateReply.templateName:
                 templ[template] = ""
             return templ
-
-    def publish_cert(self):
-        """
-        The certificate might get published somewhere
-        """
-        pass
-
-    def revoke_cert(self, certificate, reason=CRL_REASONS[0]):
-        """
-        Revoke the specified certificate. At this point only the database
-        index.txt is updated.
-
-        :param certificate: The certificate to revoke
-        :type certificate: Either takes X509 object or a PEM encoded
-            certificate (string)
-        :param reason: One of the available reasons the certificate gets revoked
-        :type reason: basestring
-        :return: Returns the serial number of the revoked certificate. Otherwise
-            an error is raised.
-        """
-        pass
-
-    def create_crl(self, publish=True, check_validity=False):
-        """
-        Create and Publish the CRL.
-
-        :param publish: Whether the CRL should be published at its CDPs
-        :param check_validity: Only create a new CRL, if the old one is about to
-            expire. Therefore the overlap period and the remaining runtime of
-            the CRL is checked. If the remaining runtime is smaller than the
-            overlap period, we recreate the CRL.
-        :return: the CRL location or None, if no CRL was created
-        """
-        pass
 
     @staticmethod
     def create_ca(name):  # pragma: no cover

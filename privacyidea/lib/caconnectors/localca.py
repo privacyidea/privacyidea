@@ -443,25 +443,6 @@ class LocalCAConnector(BaseCAConnector):
         cert_obj = crypto.load_certificate(filetype, certificate)
         return cert_obj
 
-    def view_pending_certs(self):
-        """
-        CA Manager approval
-        the token/init of would not create a certificate but a
-        pending certificate request, that needs to be approved by a
-        CA manager. So we need some kind of approve method.
-        :return:
-        """
-        pass
-
-    def request_cert(self):
-        """
-        create key server side
-        create key on client side
-        via PKCS10
-        :return:
-        """
-        pass
-
     def get_templates(self):
         """
         Return the dict of available templates, which are read from the
@@ -480,12 +461,6 @@ class LocalCAConnector(BaseCAConnector):
                             "not permitted.".format(self.template_file, self.name))
                 log.debug(u'{0!s}'.format(traceback.format_exc()))
         return content
-
-    def publish_cert(self):
-        """
-        The certificate might get published somewhere
-        """
-        pass
 
     def revoke_cert(self, certificate, reason=CRL_REASONS[0]):
         """

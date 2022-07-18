@@ -68,12 +68,35 @@ class BaseCAConnector(object):
         """
         pass
 
-    def create_crl(self, publish=True):
+    def create_crl(self, publish=True, check_validity=False):
         """
         Create and Publish the CRL.
 
         :param publish: Whether the CRL should be published at its CDPs
-        :return: the CRL location
+        :param check_validity: Only create a new CRL, if the old one is about to
+            expire. Therefore the overlap period and the remaining runtime of
+            the CRL is checked. If the remaining runtime is smaller than the
+            overlap period, we recreate the CRL.
+        :return: the CRL location or None, if no CRL was created
+        """
+        pass
+
+    def request_cert(self):
+        """
+        create key server side
+        create key on client side
+        via PKCS10
+        :return:
+        """
+        pass
+
+    def view_pending_certs(self):
+        """
+        CA Manager approval
+        the token/init of would not create a certificate but a
+        pending certificate request, that needs to be approved by a
+        CA manager. So we need some kind of approve method.
+        :return:
         """
         pass
 
