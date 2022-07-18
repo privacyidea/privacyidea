@@ -99,7 +99,7 @@ class MSCAConnector(BaseCAConnector):
         """
         Required attributes are:
          * hostname - the hostname of the middleware
-         * port - the port the middleware listenes on
+         * port - the port the middleware listens on
          * http_proxy - if http proxy should be used
         :param config: A dictionary with all necessary attributes.
         :return:
@@ -112,7 +112,8 @@ class MSCAConnector(BaseCAConnector):
         self._connection = None
         if config:
             self.set_config(config)
-            self._conn = self._connect_to_worker()
+            self._connection = self._connect_to_worker()
+            pass
         # Note: We can create an empty CA connector object and later configure it using self.set_config().
 
     @property
