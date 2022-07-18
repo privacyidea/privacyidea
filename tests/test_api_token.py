@@ -2980,8 +2980,32 @@ class APIRolloutState(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            # we have two tokens
+            # we have one token
             self.assertEqual(1, result.get("value").get("count"))
             tok = result.get("value").get("tokens")[0]
             self.assertEqual(ROLLOUTSTATE.CLIENTWAIT, tok.get("rollout_state"))
             self.assertEqual(serial1, tok.get("serial"))
+
+        # Test wildcard rollout_state filter
+        r = init_token({"genkey": 1})
+        self.assertEqual(r.rollout_state, "")
+        serial3 = r.token.serial
+        # Set a dummy rollout state
+        r.token.rollout_state = "special"
+        r.token.save()
+
+        # Find rollout state "cliEntwait" and "spEcial"
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={"rollout_state": "*e*"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            # we have two tokens
+            self.assertEqual(2, result.get("value").get("count"))
+            # We are not sure about the ordering. But one is serial1 and the other is serial3.
+            tok = result.get("value").get("tokens")[0]
+            self.assertIn(tok.get("serial"), [serial1, serial3])
+            tok = result.get("value").get("tokens")[1]
+            self.assertIn(tok.get("serial"), [serial1, serial3])
