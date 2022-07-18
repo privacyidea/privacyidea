@@ -44,6 +44,7 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
             $scope.params.tokenrealm = "*" + ($scope.tokenrealmFilter || "") + "*";
             $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
             $scope.params.description = "*" + ($scope.descriptionFilter || "") + "*";
+            $scope.params.rollout_state = "*" + ($scope.rolloutStateFilter || "") + "*";
             $scope.params.userid = "*" + ($scope.userIdFilter || "") + "*";
             $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
             $scope.params.pagesize = $scope.token_page_size;

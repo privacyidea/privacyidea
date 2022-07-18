@@ -180,8 +180,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                 tokentype.lower().replace("*", "%")))
         else:
             # exact match
-            sql_query = sql_query.filter(func.lower(Token.tokentype) ==
-                                         tokentype.lower())
+            sql_query = sql_query.filter(func.lower(Token.tokentype) == tokentype.lower())
 
     if description is not None and description.strip("*"):
         # filter for Description
@@ -191,8 +190,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                 description.lower().replace("*", "%")))
         else:
             # exact match
-            sql_query = sql_query.filter(func.lower(Token.description) ==
-                                         description.lower())
+            sql_query = sql_query.filter(func.lower(Token.description) == description.lower())
 
     if assigned is not None:
         # filter if assigned or not
@@ -209,14 +207,12 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         if "*" in realm:
             sql_query = sql_query.filter(and_(func.lower(Realm.name).like(realm.replace("*", "%").lower()),
                                               TokenRealm.realm_id == Realm.id,
-                                              TokenRealm.token_id ==
-                                              Token.id)).distinct()
+                                              TokenRealm.token_id == Token.id)).distinct()
         else:
             # exact matching
             sql_query = sql_query.filter(and_(func.lower(Realm.name) == realm.lower(),
                                               TokenRealm.realm_id == Realm.id,
-                                              TokenRealm.token_id ==
-                                              Token.id)).distinct()
+                                              TokenRealm.token_id == Token.id)).distinct()
 
     if allowed_realms is not None:
         sql_query = sql_query.filter(and_(func.lower(Realm.name).in_([r.lower() for r in allowed_realms]),
@@ -299,7 +295,13 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
 
     if rollout_state is not None:
         # Filter for tokens with the given rollout state
-        sql_query = sql_query.filter(Token.rollout_state == rollout_state)
+        if "*" in rollout_state:
+            # match with "like"
+            sql_query = sql_query.filter(func.lower(Token.rollout_state).like(
+                rollout_state.lower().replace("*", "%")))
+        else:
+            # exact match
+            sql_query = sql_query.filter(func.lower(Token.rollout_state) == rollout_state.lower())
 
     if tokeninfo is not None:
         # Filter for tokens with token token.info.<key> and token.info.<value>
