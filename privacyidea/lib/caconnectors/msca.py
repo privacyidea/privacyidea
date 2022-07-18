@@ -200,9 +200,9 @@ class MSCAConnector(BaseCAConnector):
             reply = self.connection.SubmitCR(SubmitCRRequest(cr=csr, templateName=options.get("template"),
                                                              caName=self.ca))
             if reply.disposition == 3:
-                log.info("cert rolled out")
-                #requestId = reply.requestId
-                certificate = self.connection.GetCertificate(GetCertificateRequest(id=reply.requestId,
+                requestId = reply.requestId
+                log.info("certificate with request ID {0!s} successfully rolled out".format(requestId))
+                certificate = self.connection.GetCertificate(GetCertificateRequest(id=requestId,
                                                                                    caName=self.ca)).cert
                 return crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
             if reply.disposition == 5:
