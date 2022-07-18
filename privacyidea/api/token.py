@@ -403,6 +403,9 @@ def list_api():
     :query user_fields: additional user fields from the userid resolver of
         the owner (user)
     :query outform: if set to "csv", than the token list will be given in CSV
+    :query rollout_state: only list tokens with the given rollout_state
+    :query infokey: only list tokens, where the infokey has the given infovalue
+    :query infovalue: only list tokens, where the infokey has the given infovalue
 
     :return: a json result with the data being a list of token dictionaries::
 
@@ -428,6 +431,7 @@ def list_api():
     active = getParam(param, "active", optional)
     tokeninfokey = getParam(param, "infokey", optional)
     tokeninfovalue = getParam(param, "infovalue", optional)
+    rollout_state = getParam(param, "rollout_state", optional)
     tokeninfo = None
     if tokeninfokey and tokeninfovalue:
         tokeninfo = {tokeninfokey: tokeninfovalue}
@@ -457,6 +461,7 @@ def list_api():
                                  description=description,
                                  userid=userid, allowed_realms=allowed_realms,
                                  tokeninfo=tokeninfo,
+                                 rollout_state=rollout_state,
                                  hidden_tokeninfo=hidden_tokeninfo)
     g.audit_object.log({"success": True})
     if output_format == "csv":

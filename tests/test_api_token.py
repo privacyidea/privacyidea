@@ -2944,3 +2944,45 @@ class APIDetermine_User_from_Serial_for_Policies(MyApiTestCase):
 
         remove_token(serial)
         delete_policy(polname)
+
+
+class APIRolloutState(MyApiTestCase):
+
+    def setUp(self):
+        super(APIRolloutState, self).setUp()
+        self.setUp_user_realms()
+
+    def test_01_enroll_two_tokens(self):
+        r = init_token({"2stepinit": 1,
+                        "genkey": 1})
+        self.assertEqual(r.rollout_state, ROLLOUTSTATE.CLIENTWAIT)
+        serial1 = r.token.serial
+
+        r = init_token({"genkey": 1})
+        self.assertEqual(r.rollout_state, "")
+        serial2 = r.token.serial
+
+        # There are two tokens enrolled
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            # we have two tokens
+            self.assertEqual(2, result.get("value").get("count"))
+
+        # Only one token in the rollout state client_wait
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={"rollout_state": ROLLOUTSTATE.CLIENTWAIT},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            # we have two tokens
+            self.assertEqual(1, result.get("value").get("count"))
+            tok = result.get("value").get("tokens")[0]
+            self.assertEqual(ROLLOUTSTATE.CLIENTWAIT, tok.get("rollout_state"))
+            self.assertEqual(serial1, tok.get("serial"))
+
