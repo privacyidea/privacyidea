@@ -51,6 +51,9 @@ from privacyidea.lib.utils import (is_true, to_unicode, to_bytes,
                                    hexlify_and_unicode)
 
 from .password import PASSWORD
+from ..framework import get_app_config_value
+from cryptography.hazmat.primitives.ciphers import algorithms
+from cryptography.hazmat.primitives import padding
 
 log = logging.getLogger(__name__)
 
@@ -398,13 +401,20 @@ class DefaultSecurityModule(SecurityModule):
 
         key = self._get_secret(key_id)
 
-        # convert input to ascii, so we can securely append bin data for padding
-        input_data = binascii.b2a_hex(data)
-        input_data += b"\x01\x02"
-        padding = (16 - len(input_data) % 16) % 16
-        input_data += padding * b"\0"
+        if get_app_config_value("PI_HSM_PADDING") == "PKCS7":
+            padder = padding.PKCS7(algorithms.AES.block_size).padder()
+            padded_data = padder.update(data) + padder.finalize()
 
-        res = aes_cbc_encrypt(key, iv, input_data)
+        else:
+            # convert input to ascii, so we can securely append bin data for padding
+            input_data = binascii.b2a_hex(data)
+
+            input_data += b"\x01\x02"
+            default_padding = (16 - len(input_data) % 16) % 16
+            input_data += default_padding * b"\0"
+            padded_data = input_data
+
+        res = aes_cbc_encrypt(key, iv, padded_data)
 
         if self.crypted is False:
             zerome(key)
@@ -486,13 +496,18 @@ class DefaultSecurityModule(SecurityModule):
 
         key = self._get_secret(key_id)
         output = aes_cbc_decrypt(key, iv, enc_data)
-        # remove padding
-        eof = output.rfind(b"\x01\x02")
-        if eof >= 0:
-            output = output[:eof]
 
-        # convert output from ascii, back to bin data
-        data = binascii.unhexlify(output)
+        if get_app_config_value("PI_HSM_PADDING") == "PKCS7":
+            unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
+            data = unpadder.update(output) + unpadder.finalize()
+        else:
+            # remove padding
+            eof = output.rfind(b"\x01\x02")
+            if eof >= 0:
+                output = output[:eof]
+
+            # convert output from ascii, back to bin data
+            data = binascii.unhexlify(output)
 
         if self.crypted is False:
             zerome(key)

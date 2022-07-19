@@ -67,6 +67,7 @@ class SecurityModuleTestCase(MyTestCase):
         hsm = DefaultSecurityModule({"file": config.get("PI_ENCFILE")})
 
         cipher = hsm.encrypt(b"data", b"iv12345678901234")
+        self.assertNotEqual(binascii.b2a_hex(cipher), b"ac17c4a5aa8703d7129c09158adc5fd4")
         text = hsm.decrypt(cipher, b"iv12345678901234")
         self.assertEqual(text, b"data")
 
@@ -758,3 +759,27 @@ class CustomHashAlgoListTestCase(OverrideConfigTestCase):
         self.assertRaises(passlib.exc.UnknownHashError, verify_pass_hash, password, 'password')
         # Checks if a faulty hash is failing.
         self.assertFalse(verify_pass_hash(password, argon2_fail_hash))
+
+
+class PKCS7PaddingTestCase(OverrideConfigTestCase):
+
+    class Config(TestingConfig):
+        # Set custom parameter for hsm padding in pi.cfg.
+        PI_HSM_PADDING = "PKCS7"
+
+    def test_01_encrypt_decrypt(self):
+        config = current_app.config
+        hsm = DefaultSecurityModule({"file": config.get("PI_ENCFILE")})
+
+        cipher = hsm.encrypt(b"data", b"iv12345678901234")
+        self.assertEqual(binascii.b2a_hex(cipher), b"ac17c4a5aa8703d7129c09158adc5fd4")
+        text = hsm.decrypt(cipher, b"iv12345678901234")
+        self.assertEqual(text, b"data")
+
+        cipher = hsm.encrypt_pin(u"pin")
+        text = hsm.decrypt_pin(cipher)
+        self.assertEqual(text, u"pin")
+
+        cipher = hsm.encrypt_password(u"password")
+        text = hsm.decrypt_password(cipher)
+        self.assertEqual(text, u"password")
