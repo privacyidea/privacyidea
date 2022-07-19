@@ -476,7 +476,7 @@ class CertificateTokenClass(TokenClass):
             try:
                 response_detail["pkcs12"] = b64encode_and_unicode(self._create_pkcs12_bin())
             except Exception:
-                log.warning("Can not create PCKS12 for token {0!s}.".format(self.token.serial))
+                log.warning("Can not create PKCS12 for token {0!s}.".format(self.token.serial))
 
         return response_detail
 
