@@ -28,6 +28,7 @@ The code is tested in tests/test_lib_tokens_ssh
 import logging
 from privacyidea.lib import _
 from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
@@ -121,17 +122,18 @@ class SSHkeyTokenClass(TokenClass):
         self.token.save()
 
         getParam(param, "sshkey", required)
-            
+
         key_elem = param.get("sshkey").split(" ", 2)
-        if key_elem[0] not in ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256"]:
+        if key_elem[0] not in ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256",
+                               "sk-ecdsa-sha2-nistp256@openssh.com", "sk-ssh-ed25519@openssh.com"]:
             self.token.rollout_state = ROLLOUTSTATE.BROKEN
             self.token.save()
-            raise Exception("The keytype you specified is not supported.")
+            raise TokenAdminError("The keytype you specified is not supported.")
 
         if len(key_elem) < 2:
             self.token.rollout_state = ROLLOUTSTATE.BROKEN
             self.token.save()
-            raise Exception("Missing key.")
+            raise TokenAdminError("Missing key.")
 
         key_type = key_elem[0]
         key = key_elem[1]
@@ -161,4 +163,7 @@ class SSHkeyTokenClass(TokenClass):
         key_comment = ti.get("ssh_comment")
         # get the ssh key directly, otherwise it will not be decrypted
         sshkey = self.get_tokeninfo("ssh_key")
-        return u"{0!s} {1!s} {2!s}".format(key_type, sshkey, key_comment)
+        r = u"{0!s} {1!s}".format(key_type, sshkey)
+        if key_comment:
+            r += " " + key_comment
+        return r
