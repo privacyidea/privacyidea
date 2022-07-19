@@ -71,7 +71,6 @@ from ldap3 import Tls
 from ldap3.core.exceptions import LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 import ssl
-import gssapi
 
 import os.path
 
@@ -90,9 +89,17 @@ import uuid
 from ldap3.utils.conv import escape_bytes
 from operator import itemgetter
 
+log = logging.getLogger(__name__)
+
+try:
+    import gssapi
+    have_gssapi = True
+except ImportError:
+    log.warning('Could not import gssapi package. Kerberos authentication not available')
+    have_gssapi = False
+
 CACHE = {}
 
-log = logging.getLogger(__name__)
 ENCODING = "utf-8"
 # The number of rounds the resolver tries to reach a responding server in the
 #  pool
@@ -334,6 +341,9 @@ class IdResolver (UserIdResolver):
 
         """
         if self.authtype == AUTHTYPE.SASL_KERBEROS:
+            if not have_gssapi:
+                log.warning('gssapi module not available. Kerberos authentication not possible')
+                return False
             # we need to check credentials with kerberos differently since we
             # can not use bind for every user
             name = gssapi.Name(self.getUserInfo(uid).get('username'))
@@ -1295,9 +1305,6 @@ class IdResolver (UserIdResolver):
         :type keytabfile: str
         :return:
         """
-
-        authentication = ldap3.ANONYMOUS if not user else None
-
         conn_opts = {'auto_bind': auto_bind,
                      'client_strategy': client_strategy,
                      'check_names': check_names,

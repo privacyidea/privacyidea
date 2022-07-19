@@ -738,7 +738,7 @@ class Ldap3Mock(object):
         # Reload the directory just in case a change has been made to
         # user credentials
         self.directory = self._load_data(DIRECTORY)
-        if authentication == ldap3.ANONYMOUS and user == "":
+        if authentication == ldap3.ANONYMOUS and user is None:
             correct_password = True
         for entry in self.directory:
             if to_unicode(entry.get("dn")) == user:
@@ -769,13 +769,13 @@ class Ldap3Mock(object):
                                    self._server_mock)
         self._patcher.start()
 
-        def unbound_on_Connection(server, user,
-                                  password,
-                                  auto_bind,
-                                  client_strategy,
-                                  authentication,
-                                  check_names,
-                                  auto_referrals, *a, **kwargs):
+        def unbound_on_Connection(server=None, user=None,
+                                  password=None,
+                                  auto_bind=None,
+                                  client_strategy=None,
+                                  authentication=None,
+                                  check_names=None,
+                                  auto_referrals=None, *a, **kwargs):
             return self._on_Connection(server, user,
                                        password,
                                        auto_bind,
