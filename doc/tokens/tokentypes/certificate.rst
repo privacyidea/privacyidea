@@ -9,7 +9,7 @@ Starting with version 2.3 privacyIDEA supports certificates. A user can
 
 * submit a certificate signing request (including an attestation certificate),
 * upload a certificate or
-* he can generate a certificate signing request in the browser.
+* generate a certificate signing request within privacyIDEA.
 
 privacyIDEA does not sign certificate signing requests itself but connects to
 existing certificate authorities. To do so, you need to define
