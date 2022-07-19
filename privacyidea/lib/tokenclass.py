@@ -153,7 +153,7 @@ class ROLLOUTSTATE(object):
     VERIFYPENDING = 'verify'
     ENROLLED = 'enrolled'
     BROKEN = 'broken'
-    FAILED = 'failed
+    FAILED = 'failed'
 
 
 class TokenClass(object):
