@@ -5,6 +5,7 @@ This depends on lib.tokenclass
 """
 
 from .base import MyTestCase
+from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.sshkeytoken import SSHkeyTokenClass
 from privacyidea.models import Token
 import six
@@ -40,6 +41,7 @@ class SSHTokenTestCase(MyTestCase):
 AAAAB3NzaC1kc3MAAACBAKrFC6uDvuxl9vnYL/Fu/Vq+12KJF4
 RyMSQe4mn8oHJma2VzepBRBpLt7Q==
 ---- END SSH2 PUBLIC KEY ----"""
+    INVALID_SSH = "ssh-rsa"
 
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="sshkey")
@@ -48,12 +50,19 @@ RyMSQe4mn8oHJma2VzepBRBpLt7Q==
 
         # An invalid key, raises an exception
         self.assertRaises(Exception, token.update, {"sshkey": "InvalidKey"})
+        self.assertEqual(token.rollout_state, ROLLOUTSTATE.BROKEN)
+
+        # An invalid key, raises an exception
+        self.assertRaises(Exception, token.update, {"sshkey": self.INVALID_SSH})
+        self.assertEqual(token.rollout_state, ROLLOUTSTATE.BROKEN)
 
         # An invalid key, raises an exception
         self.assertRaises(Exception, token.update, {"sshkey": self.wrong_sshkey})
+        self.assertEqual(token.rollout_state, ROLLOUTSTATE.BROKEN)
 
         # An unsupported keytype
         self.assertRaises(Exception, token.update, {"sshkey": self.unsupported_keytype})
+        self.assertEqual(token.rollout_state, ROLLOUTSTATE.BROKEN)
 
         # Set valid key
         token.update({"sshkey": self.sshkey})
@@ -77,7 +86,7 @@ RyMSQe4mn8oHJma2VzepBRBpLt7Q==
         token = SSHkeyTokenClass(db_token)
         token.update({"sshkey": self.sshkey_ed25519})
 
-    def test_03_class_methods(self):
+    def test_02_class_methods(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = SSHkeyTokenClass(db_token)
 
@@ -88,7 +97,7 @@ RyMSQe4mn8oHJma2VzepBRBpLt7Q==
         info = token.get_class_info("title")
         self.assertTrue(info == "SSHkey Token", info)
 
-    def test_04_get_sshkey(self):
+    def test_03_get_sshkey(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = SSHkeyTokenClass(db_token)
         sshkey = token.get_sshkey()

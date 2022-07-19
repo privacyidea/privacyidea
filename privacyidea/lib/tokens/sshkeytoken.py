@@ -29,7 +29,7 @@ import logging
 from privacyidea.lib import _
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 log = logging.getLogger(__name__)
@@ -123,14 +123,22 @@ class SSHkeyTokenClass(TokenClass):
         getParam(param, "sshkey", required)
             
         key_elem = param.get("sshkey").split(" ", 2)
-        if len(key_elem) != 3:
-            raise Exception("The key must consist of 'ssh-keytype BASE64 comment'")
         if key_elem[0] not in ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256"]:
+            self.token.rollout_state = ROLLOUTSTATE.BROKEN
+            self.token.save()
             raise Exception("The keytype you specified is not supported.")
+
+        if len(key_elem) < 2:
+            self.token.rollout_state = ROLLOUTSTATE.BROKEN
+            self.token.save()
+            raise Exception("Missing key.")
 
         key_type = key_elem[0]
         key = key_elem[1]
-        key_comment = key_elem[2]
+        if len(key_elem) > 2:
+            key_comment = key_elem[2]
+        else:
+            key_comment = ""
         
         # convert key to hex
         self.add_tokeninfo("ssh_key", key, value_type="password")

@@ -151,6 +151,7 @@ class ROLLOUTSTATE(object):
     # This means the user needs to authenticate to verify that the token was successfully enrolled.
     VERIFYPENDING = 'verify'
     ENROLLED = 'enrolled'
+    BROKEN = 'broken'
 
 
 class TokenClass(object):
