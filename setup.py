@@ -119,7 +119,8 @@ setup(
                  "responses>=0.9.0",
                  "testfixtures>=6.14.2"],
         'postgres': ['psycopg2>=2.8.3'],
-        'hsm': ['PyKCS11>=1.5.10']
+        'hsm': ['PyKCS11>=1.5.10'],
+        'kerberos': ['gssapi>=1.7.0']
     },
     install_requires=install_requires,
     include_package_data=True,
