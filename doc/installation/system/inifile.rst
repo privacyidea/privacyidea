@@ -102,10 +102,15 @@ can be set, for example::
 Further information on possible parameters can be found in the
 `PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
 
-In ``PI_HSM_PADDING`` the padding can be set to "PKCS7". If ``PI_HSM_PADDING`` is not set, the default internal
-padding is used::
+In ``PI_HSM_PADDING`` the padding used by the `DefaultSecurityModule` or the `EncryptKeyHardwareSecurityModule` can be set to "PKCS7". 
+If ``PI_HSM_PADDING`` is not set, the default internal padding is used::
 
     PI_HSM_PADDING = "PKCS7"
+    
+.. note:: The `AESHardwareSecurityModule` always uses PKCS7 padding.
+    
+.. warning:: The two paddings are not compatible. Data encrypted with one padding can not decrypted with the other padding. 
+   So if you change the padding later during the cause of operation, it will not be possible to decrypt old data!
 
 Logging
 -------
