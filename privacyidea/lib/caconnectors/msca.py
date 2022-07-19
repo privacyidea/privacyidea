@@ -190,7 +190,7 @@ class MSCAConnector(BaseCAConnector):
                 log.info("cert still under submission")
                 raise CSRPending(requestId=reply.requestId)
             else:
-                log.error("certification request could not be fullfilled! {0!s}".format(reply))
+                log.error("certification request could not be fulfilled! {0!s}".format(reply))
                 raise CSRError()
 
     def get_templates(self):
