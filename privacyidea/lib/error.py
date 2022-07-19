@@ -148,12 +148,12 @@ class CAError(privacyIDEAError):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
-class CSRError(privacyIDEAError):
+class CSRError(CAError):
     def __init__(self, description="CSR invalid", id=ERROR.CA_CSR_INVALID):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
-class CSRPending(privacyIDEAError):
+class CSRPending(CAError):
     def __init__(self, description="CSR pending", id=ERROR.CA_CSR_PENDING, requestId=None):
         privacyIDEAError.__init__(self, description=description, id=id)
         self.requestId = requestId

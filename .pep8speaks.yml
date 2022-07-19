@@ -32,8 +32,8 @@ pycodestyle:
         - W503 # Line break before binary operator.
         - W505 # Doc line too long.
     exclude:
-        - caservice_pb2.py
-        - caservice_pb2_grpc.py
+        - '*/caservice_pb2.py'
+        - '*/caservice_pb2_grpc.py'
     count: False
     first: False
     show-pep8: False

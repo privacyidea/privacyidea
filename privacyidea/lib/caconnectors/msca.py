@@ -25,21 +25,14 @@ TODO: write tests
 """
 
 from privacyidea.lib.error import CAError
-from privacyidea.lib.utils import int_to_hex, to_unicode
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConnectors
 from OpenSSL import crypto
-from subprocess import Popen, PIPE
-import yaml
-import datetime
-import shlex
-import re
 import logging
-import os
-from six import string_types
 from six.moves import input
-import traceback
-log = logging.getLogger(__name__)
+from privacyidea.lib.utils import is_true
+from privacyidea.lib.error import CSRError, CSRPending
 
+log = logging.getLogger(__name__)
 try:
     import grpc
     from privacyidea.lib.caconnectors.caservice_pb2_grpc import CAServiceStub
@@ -50,9 +43,6 @@ try:
     AvailableCAConnectors.append("privacyidea.lib.caconnectors.msca.MSCAConnector")
 except ImportError:
     log.warning("Can not import grpc modules.")
-
-from privacyidea.lib.utils import is_true
-from privacyidea.lib.error import CSRError, CSRPending
 
 
 CRL_REASONS = ["unspecified", "keyCompromise", "CACompromise",
@@ -110,7 +100,6 @@ class MSCAConnector(BaseCAConnector):
         if config:
             self.set_config(config)
             self._connection = self._connect_to_worker()
-            pass
         # Note: We can create an empty CA connector object and later configure it using self.set_config().
 
     @property
@@ -170,28 +159,20 @@ class MSCAConnector(BaseCAConnector):
         self._check_attributes()
         self.hostname = self.config.get(ATTR.HOSTNAME)
         self.port = self.config.get(ATTR.PORT)
-        log.error(config)
         self.http_proxy = int(is_true(self.config.get(ATTR.HTTP_PROXY)))
         self.templates = self.get_templates()
         self.ca = self.config.get(ATTR.CA)
-        log.error(self.http_proxy)
 
     def sign_request(self, csr, options=None):
         """
         Send a signing request to the Microsoft CA
 
         options can be
-        WorkingDir: The directory where the configuration like openssl.cnf
-        can be found.
-        CSRDir: The directory, where to save the certificate signing
-        requests. This is relative to the WorkingDir.
-        CertificateDir: The directory where to save the certificates. This is
-        relative to the WorkingDir.
+        template: The name of the certificate template to issue
 
         :param csr: Certificate signing request
         :type csr: PEM string or SPKAC
-        :param options: Additional options like the validity time or the
-            template or spkac=1
+        :param options: Additional options like the validity time or the template or spkac=1
         :type options: dict
         :return: Returns the certificate object if cert was provided instantly
         :rtype: X509 or None
