@@ -30,6 +30,7 @@ import responses
 import os
 from . import smtpmock
 from . import smppmock
+import mock
 
 
 class SMSTestCase(MyTestCase):
@@ -560,6 +561,7 @@ class HttpSMSTestCase(MyTestCase):
         id = set_smsgateway(identifier, provider_module, description="test",
                             options={"HTTP_METHOD": "POST",
                                      "URL": "http://example.com",
+                                     "SEND_DATA_AS_JSON": "no",
                                      "RETURN_SUCCESS": "ID",
                                      "text": "{otp}",
                                      "phone": "{phone}"},
@@ -585,6 +587,33 @@ class HttpSMSTestCase(MyTestCase):
         # Here we need to send the SMS
         r = self.post_provider.submit_message("123456", u"Hallöle Smørrebrød")
         self.assertTrue(r)
+
+    @responses.activate
+    def test_12_send_sms_post_success_as_json(self):
+        identifier = "myGWJSON"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider" \
+                          ".HttpSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options={"HTTP_METHOD": "POST",
+                                     "URL": "http://some.other.service",
+                                     "RETURN_SUCCESS": "ID",
+                                     "SEND_DATA_AS_JSON": "yes",
+                                     "text": "{otp}",
+                                     "phone": "{phone}"},
+                            headers={"Authorization": "QWERTZ"})
+        self.assertTrue(id > 0)
+        provider = create_sms_instance(identifier=identifier)
+
+        responses.add(responses.POST,
+                      "http://some.other.service",
+                      body=self.success_body)
+        # Here we need to send the SMS
+        with mock.patch("logging.Logger.debug") as mock_log:
+            r = provider.submit_message("123456", '{"Hallo": 7}')
+            self.assertTrue(r)
+            mock_log.assert_any_call("passing JSON data: {'Hallo': 7}")
+
+        delete_smsgateway(identifier)
 
 
 class SmppSMSTestCase(MyTestCase):
