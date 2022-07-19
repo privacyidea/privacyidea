@@ -39,7 +39,7 @@
 #
 
 __doc__ = """This is the SMSClass to send SMS via HTTP Gateways
-It can handle HTTP/HTTPS PUT and GET requests also with Proxy support
+It can handle HTTP/HTTPS POST and GET requests also with Proxy support
 
 The code is tested in tests/test_lib_smsprovider
 """
@@ -50,6 +50,7 @@ import requests
 from six.moves.urllib.parse import urlparse
 import re
 import logging
+import json
 log = logging.getLogger(__name__)
 
 
@@ -88,6 +89,8 @@ class HttpSMSProvider(ISMSProvider):
             password = self.smsgateway.option_dict.get("PASSWORD")
             ssl_verify = self.smsgateway.option_dict.get("CHECK_SSL",
                                                          "yes") == "yes"
+            json_data = self.smsgateway.option_dict.get("SEND_DATA_AS_JSON",
+                                                        "yes") == "yes"
             # FIXME: The Proxy option is deprecated and will be removed a version > 2.21
             proxy = self.smsgateway.option_dict.get("PROXY")
             http_proxy = self.smsgateway.option_dict.get('HTTP_PROXY')
@@ -105,6 +108,7 @@ class HttpSMSProvider(ISMSProvider):
             username = self.config.get('USERNAME')
             password = self.config.get('PASSWORD')
             ssl_verify = self.config.get('CHECK_SSL', True)
+            json_data = False
             # FIXME: The Proxy option is deprecated and will be removed a version > 2.21
             proxy = self.config.get('PROXY')
             http_proxy = self.config.get('HTTP_PROXY')
@@ -146,6 +150,10 @@ class HttpSMSProvider(ISMSProvider):
             requestor = requests.post
             params = {}
             data = parameter
+            if json_data:
+                text_json = json.loads(data.get("text"))
+                data["text"] = text_json
+                log.debug("passing JSON data: {0!s}".format(data["text"]))
 
         log.debug(u"issuing request with parameters {0!s} headers {1!s} and method {2!s} and"
                   "authentication {3!s} to url {4!s}.".format(params, headers, method,
@@ -265,6 +273,12 @@ class HttpSMSProvider(ISMSProvider):
                           "required": True,
                           "description": _("Should the SSL certificate be "
                                            "verified."),
+                          "values": ["yes", "no"]
+                      },
+                      "SEND_DATA_AS_JSON": {
+                          "required": True,
+                          "description": _("Should the data in a POST Request be sent "
+                                           "as JSON."),
                           "values": ["yes", "no"]
                       },
                       "REGEXP": {
