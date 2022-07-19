@@ -590,7 +590,7 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
     // TODO: This information needs to be fetched from the server
     $scope.availableMachineResolverTypes = ['hosts', 'ldap'];
     // TODO: This information needs to be fetched from the server
-    $scope.availableCAConnectorTypes = ['local'];
+    $scope.availableCAConnectorTypes = ['local', 'microsoft'];
 
     $scope.getResolvers = function () {
         ConfigFactory.getResolvers(function (data) {
@@ -898,6 +898,45 @@ myApp.controller("LocalCAConnectorController", ["$scope", "$stateParams",
 
 }]);
 
+myApp.controller("MicrosoftCAConnectorController", ["$scope", "$stateParams",
+                                                "ConfigFactory", "$state",
+                                                function($scope, $stateParams,
+                                                         ConfigFactory, $state) {
+    $scope.params = {
+        type: 'microsoft'
+    };
+
+    $scope.connectorname = $stateParams.connectorname;
+    if ($scope.connectorname) {
+        /* If we have a connectorname, we do an Edit
+         and we need to fill all the $scope.params */
+        ConfigFactory.getCAConnector($scope.connectorname, function (data) {
+            //debug: console.log(data.result.value);
+            var caconnector = data.result.value[0];
+            $scope.params = caconnector.data;
+            $scope.params.type = 'microsoft';
+            $scope.getCASpecificOptions($scope.params.type);
+        });
+    }
+
+    $scope.setCAConnector = function () {
+        ConfigFactory.setCAConnector($scope.connectorname,
+                                     $scope.params, function (data) {
+            $scope.set_result = data.result.value;
+            $scope.getCAConnectors();
+            $state.go("config.caconnectors.list");
+        });
+    };
+
+    $scope.getCASpecificOptions = function (catype) {
+        ConfigFactory.getCASpecificOptions(catype,
+            $scope.params, function (data) {
+            $scope.available_cas = data.result.value.available_cas;
+        });
+    }
+
+
+}]);
 
 myApp.controller("machineResolverController", ["$scope", "ConfigFactory",
                                                "$state", "$rootScope",

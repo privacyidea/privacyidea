@@ -103,6 +103,14 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                     url: "/local/:connectorname",
                     templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get()
                 })
+                .state('config.caconnectors.addmicrosoft', {
+                    url: "/microsoft",
+                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get()
+                })
+                .state('config.caconnectors.editmicrosoft', {
+                    url: "/microsoft/:connectorname",
+                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get()
+                })
                 .state('config.mresolvers', {
                     url: "/machineresolvers",
                     templateUrl: configpath + "config.machineresolvers.html" + versioningSuffixProviderProvider.$get().$get()

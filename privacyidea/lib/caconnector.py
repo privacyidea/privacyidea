@@ -37,12 +37,11 @@ from ..models import (CAConnector,
                       CAConnectorConfig)
 from ..api.lib.utils import required
 from ..api.lib.utils import getParam
-from .error import ConfigAdminError
+from .error import CAError, CSRError, CSRPending
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
 from privacyidea.lib.utils.export import (register_import, register_export)
-#from privacyidea.lib.cache import cache
 
 log = logging.getLogger(__name__)
 
@@ -170,11 +169,27 @@ def get_caconnector_list(filter_caconnector_type=None,
             c_obj = c_obj_class(conn.name, data)
             if c_obj:
                 c["templates"] = templates = c_obj.get_templates()
+                if return_config:
+                    c["data"] = c_obj.get_config(data)
 
         Connectors.append(c)
 
     return Connectors
 
+
+@log_with(log)
+def get_caconnector_specific_options(catype, data):
+    """
+    Given the raw data of a CA connector configuration this function returns
+    a dict of all available specific options to this instance of a CA connector.
+
+    :param catype:
+    :param data:
+    :return:
+    """
+    c_obj_class = get_caconnector_class(catype)
+    c_obj = c_obj_class("dummy", data)
+    return c_obj.get_specific_options()
 
 @log_with(log)
 def delete_caconnector(connector_name):

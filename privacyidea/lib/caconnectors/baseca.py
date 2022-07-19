@@ -26,6 +26,9 @@ In this first implementation it is only a local certificate authority.
 This module is tested in tests/test_lib_caconnector.py
 """
 
+# This takes a set of all CA Connector modules.
+AvailableCAConnectors = []
+
 
 class BaseCAConnector(object):
     def revoke_cert(self, certificate, reason=None):
@@ -65,12 +68,35 @@ class BaseCAConnector(object):
         """
         pass
 
-    def create_crl(self, publish=True):
+    def create_crl(self, publish=True, check_validity=False):
         """
         Create and Publish the CRL.
 
         :param publish: Whether the CRL should be published at its CDPs
-        :return: the CRL location
+        :param check_validity: Only create a new CRL, if the old one is about to
+            expire. Therefore the overlap period and the remaining runtime of
+            the CRL is checked. If the remaining runtime is smaller than the
+            overlap period, we recreate the CRL.
+        :return: the CRL location or None, if no CRL was created
+        """
+        pass
+
+    def request_cert(self):
+        """
+        create key server side
+        create key on client side
+        via PKCS10
+        :return:
+        """
+        pass
+
+    def view_pending_certs(self):
+        """
+        CA Manager approval
+        the token/init of would not create a certificate but a
+        pending certificate request, that needs to be approved by a
+        CA manager. So we need some kind of approve method.
+        :return:
         """
         pass
 
@@ -100,6 +126,22 @@ class BaseCAConnector(object):
 
         Depending on the user we could return different templates.
 
+        :return:
+        """
+        return {}
+
+    def get_config(self, config):
+        """
+        This method helps to format the config values of the CA Connector.
+        :param config: The configuration as it is stored in the database
+        :type config: dict
+        :return:
+        """
+        return config
+
+    def get_specific_options(self):
+        """
+        Returns a dict of additional options for a specific connector instance.
         :return:
         """
         return {}
