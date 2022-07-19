@@ -9,7 +9,7 @@ Starting with version 2.3 privacyIDEA supports certificates. A user can
 
 * submit a certificate signing request (including an attestation certificate),
 * upload a certificate or
-* he can generate a certificate signing request in the browser.
+* generate a certificate signing request within privacyIDEA.
 
 privacyIDEA does not sign certificate signing requests itself but connects to
 existing certificate authorities. To do so, you need to define
@@ -33,18 +33,17 @@ attached to a user.
 Generating Signing Requests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can also generate the signing request directly in your browser.
-
-.. note:: This uses the keygen HTML-tag that is not supported by the Internet
-   Explorer!
+You can also generate the signing request. The key pair and the request is generated on the
+server.
 
 .. figure:: images/generate_csr1.png
    :width: 500
 
    *Generate a certificate signing request*
 
-When generating the certificate signing request this way the RSA keypair is
-generated on the client side in the browser.
+When generating the certificate signing request this way the RSA key pair is
+generated on the server and the private key is available on the server side. The user
+can later download a PKCS12/PFX file from the server.
 
 The certificate is signed by the CA connected by the chosen CA connector.
 
@@ -59,5 +58,28 @@ Afterwards the user can install the certificate into the browser.
    (see :ref:`policy_login_mode`)
    you can have two factor authentication required for the user to be allowed
    to enroll a certificate.
+
+.. _pending_requests:
+
+Pending certificate requests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When sending certificate requests the issuing of the certificate can be pending.
+This can happen with e.g. the Microsoft CA, when a CA manage approval is required.
+In this case the certificate token in privacyIDEA is marked in the `rollout_state`
+"pending".
+
+Using the :ref:`eventhandler` a user can be notified if a certificate request is pending.
+E.g. privacyIDEA can automatically send an email to the user.
+
+Example event handler
+.....................
+
+To configure this, create a new post event handler on the event `token_init` with the
+:ref:`usernotification`.
+
+In the conditions set the `rollout_state=pending` and in the `actions` choose to send an
+email to the tokenowner. This way, after the token is enrolled and in the state *pending*,
+privacyIDEA will send the notification email.
 
 

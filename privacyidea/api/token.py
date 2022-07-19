@@ -150,9 +150,9 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(required_piv_attestation, request)
 @prepolicy(verify_enrollment, request)
 @postpolicy(save_pin_change, request)
+@event("token_init", request, g)
 @postpolicy(check_verify_enrollment, request)
 @CheckSubscription(request)
-@event("token_init", request, g)
 @log_with(log, log_entry=False)
 def init():
     """
