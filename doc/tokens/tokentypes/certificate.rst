@@ -70,15 +70,16 @@ In this case the certificate token in privacyIDEA is marked in the `rollout_stat
 "pending".
 
 Using the :ref:`eventhandler` a user can be notified if a certificate request is pending.
-E.g. privacyIDEA can automatically write an email to the user.
+E.g. privacyIDEA can automatically send an email to the user.
 
 Example event handler
 .....................
 
-To configure this, create a new event handler on the event `token_init` with the
+To configure this, create a new post event handler on the event `token_init` with the
 :ref:`usernotification`.
 
 In the conditions set the `rollout_state=pending` and in the `actions` choose to send an
-email to the tokenowner.
+email to the tokenowner. This way, after the token is enrolled and in the state *pending*,
+privacyIDEA will send the notification email.
 
 
