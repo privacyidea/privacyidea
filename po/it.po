@@ -1,8 +1,9 @@
+# Marco Malavolti <marco.malavolti@gmail.com>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2023-01-17 10:35+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2024-03-27 09:25+0000\n"
+"Last-Translator: Marco Malavolti <marco.malavolti@gmail.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/it/>\n"
 "Language: it\n"
@@ -10,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.15.1-dev\n"
+"X-Generator: Weblate 5.5-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -47,8 +48,8 @@ msgid ""
 msgstr ""
 "<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/"
 "\">\n"
-"                        Richiedi privacyIDEA Enterprise Edition oggi stesso!"
-"</a>"
+"                        Richiedi privacyIDEA Enterprise Edition oggi "
+"stesso!</a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
