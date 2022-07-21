@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-07-21 13:21+0000\n"
+"PO-Revision-Date: 2022-07-22 04:02+0000\n"
 "Last-Translator: Marco Malavolti <marco.malavolti@gmail.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/it/>\n"
@@ -99,6 +99,34 @@ msgid ""
 "                        like code audits.\n"
 "                    </li>"
 msgstr ""
+"<li>Supporto e\n"
+"                        <a target=\"netknights\" href=\"https://netknights."
+"it/en/leistungen/service-level-agreements/\">\n"
+"                            accordo sul livello del servizio fornito da "
+"NetKnights</a>, Germania.\n"
+"                    </li>\n"
+"                    <li>I pacchetti Debian, Ubuntu e RHEL per il mondo "
+"Enterprise, consentono un aggiornamento facile e sicuro.\n"
+"                    </li>\n"
+"                    <li>Un esclusivo strumento per l'<b>Applicativo</b>, che "
+"permette di configurare facilmente i client RADIUS, i MySQL master\n"
+"                        le replicazioni del master,\n"
+"                        backup e ripristino...\n"
+"                    </li>\n"
+"                    <li>Notizie esclusive tempestive e segnalazioni di "
+"bug.</li>\n"
+"                    <li>A seconda del livello di supporto, ottieni aiuto con "
+"aggiornamenti e consulenza annuale.</li>\n"
+"                    <li>Comprando\n"
+"                        <a target=\"netknights\" href=\"https://netknights."
+"it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                        ti assicuri che gli sviluppatori professionisti "
+"possano lavorare a tempo pieno\n"
+"                        su privacyIDEA, aggiungere nuove funzionalità e "
+"correggere i bug in modo tempestivo. Inoltre, consenti\n"
+"                        servizi esterni\n"
+"                        come gli audits del codice.\n"
+"                    </li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:45
 msgid ""
@@ -133,6 +161,37 @@ msgid ""
 "                        your own system! Forever!</b>\n"
 "                </p>"
 msgstr ""
+"<p>\n"
+"                    Stai leggendo libri che non ti appartengono più. Il tuo "
+"ebook reader\n"
+"                    li fornisce solo per il tempo della lettura. Stai usando "
+"il software come fosse un servizio\n"
+"                    e non hai alcun controllo, quando il software verrà "
+"aggiornato,\n"
+"                    su quali funzionalità verranno aggiunte o rimosse o se "
+"il servizio viene interrotto.\n"
+"                    Ottieni solo un diritto legale di utilizzo limitato nel "
+"tempo.\n"
+"                </p>\n"
+"                <p>\n"
+"                    Potresti installare software proprietario sul tuo "
+"server, ma hai solo\n"
+"                    diritti limitati riguardo all'installazione. Non è "
+"consentito modificare o trasmettere\n"
+"                    questo software di proprietà di altri.\n"
+"                </p>\n"
+"                <p>\n"
+"                    Il software open source privacyIDEA ora è <b>di tua "
+"proprietà</b>! Nessuno può portarti via questo software\n"
+"                    o questa installazione. Secondo la licenza AGPLv3 è "
+"possibile modificare o distribuire questo software.\n"
+"                    Non devi preoccuparti della fine della vita.\n"
+"                </p>\n"
+"                <p>\n"
+"                    <b>L'uso di software open source non significa non "
+"spendere soldi, ma avere il pieno controllo che puoi supportare \n"
+"                        il tuo sistema per sempre!</b>\n"
+"                </p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:149
 msgid ""
@@ -150,6 +209,21 @@ msgid ""
 "                    paid programming of new features.\n"
 "                </p>"
 msgstr ""
+"<p><b>Stai utilizzando privacyIDEA con più di 50 utenti.</b></p>\n"
+"                 <p>Grazie per la tua fiducia!</p>\n"
+"                 <p>Per l'utilizzo da parte dell'impresa produttiva "
+"raccomandiamo il\n"
+"                     <a target=\"netknights\" href=\"https://netknights.it/"
+"en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>.\n"
+"                 </p>\n"
+"                 <p>NetKnights fornisce\n"
+"                     <a target=\"netknights\" href=\"https://netknights.it/"
+"en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                     inclusi <b>Supporto e Accordi sul livello di "
+"servizio</b>.\n"
+"                     Inoltre NetKnights fornisce servizi, consulenza e\n"
+"                     programmazione a pagamento di nuove funzionalità.\n"
+"                 </p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:18
 msgid ""
@@ -167,6 +241,21 @@ msgid ""
 "                    paid programming of new features.\n"
 "                </p>"
 msgstr ""
+"<p>Per prima cosa, vorremmo darti un po' di background\n"
+"                     informativo su privacyIDEA.</p>\n"
+"                 <p>privacyIDEA è un <b>livello Enterprise</b>\n"
+"                     di Sistema di autenticazione a più fattori. È open "
+"source.\n"
+"                     Gli sviluppatori principali sono impiegati presso "
+"NetKnights GmbH, Germania.\n"
+"                     NetKnights fornisce\n"
+"                     <a target=\"netknights\" href=\"https://netknights.it/"
+"en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                     inclusi <b>Supporto e Accordi sul livello di "
+"servizio</b>.\n"
+"                     Inoltre NetKnights fornisce servizi, consulenza e\n"
+"                     programmazione a pagamento di nuove funzionalità.\n"
+"                 </p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:131
 msgid ""
@@ -174,6 +263,9 @@ msgid ""
 "                    and thus this world a more secure place!</p>\n"
 "                <p>Have fun using privacyIDEA!</p>"
 msgstr ""
+"<p>Grazie per aver utilizzato privacyIDEA e aver creato la tua rete\n"
+"                     e reso questo mondo un posto più sicuro!</p>\n"
+"                 <p>Divertiti con privacyIDEA!</p>"
 
 #: privacyidea/static/components/login/views/offline.html:1
 msgid ""
@@ -181,32 +273,35 @@ msgid ""
 "    <p>Please try to reload and otherwise contact your system administrator!"
 "</p>"
 msgstr ""
+"<p>L'API privacyIDEA sembra essere offline!</p>\n"
+"     <p>Prova a ricaricare e in caso contrario contatta l'amministratore di "
+"sistema!</p>"
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:36
 msgid "A token specific SMS gateway"
-msgstr ""
+msgstr "Un gateway SMS specifico per token"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
 #: privacyidea/static/components/config/views/config.token.yubikey.html:21
 #: privacyidea/static/components/config/views/config.token.yubikey.html:44
 msgid "API Key"
-msgstr ""
+msgstr "API Key"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:16
 msgid "API client ID"
-msgstr ""
+msgstr "API client ID"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
-msgstr ""
+msgstr "Informazioni sul client Web privacyIDEA"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:81
 msgid ""
 "According to the\n"
 "                    <a target=\"license\" href=\"https://github.com/"
 "privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
-msgstr ""
+msgstr "Informazioni su privacyIDEA Web Client"
 
 #: privacyidea/static/components/config/views/config.events.details.html:113
 #: privacyidea/static/components/config/views/config.events.details.html:232
@@ -217,7 +312,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.list.html:19
 #: privacyidea/static/components/dashboard/views/dashboard.html:82
 msgid "Action"
-msgstr ""
+msgstr "Azione"
 
 #: privacyidea/static/components/config/views/config.events.list.html:9
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:6
@@ -226,231 +321,233 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:30
 #: privacyidea/static/components/user/views/user.details.html:150
 msgid "Active"
-msgstr ""
+msgstr "Attivo"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:146
 msgid "Active Events"
-msgstr ""
+msgstr "Eventi Attivi"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:109
 msgid "Active Policies"
-msgstr ""
+msgstr "Politiche Attive"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:74
 msgid "Add a condition"
-msgstr ""
+msgstr "Aggiungi una condizione"
 
 #: privacyidea/static/components/user/views/user.add.html:3
 msgid "Add a new user"
-msgstr ""
+msgstr "Aggiungi un nuovo utente"
 
 #: privacyidea/static/components/user/views/user.details.html:96
 msgid "Add custom attribute"
-msgstr ""
+msgstr "Aggiungi un attributo personalizzato"
 
 #: privacyidea/static/components/config/views/config.token.question.html:56
 msgid "Add new question"
-msgstr ""
+msgstr "Aggiungi una nuova domanda"
 
 #: privacyidea/static/components/user/views/user.html:40
 msgid "Add user"
-msgstr ""
+msgstr "Aggiungi utente"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:268
 msgid "Additional conditions"
-msgstr ""
+msgstr "Condizioni Addizionali"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:157
 msgid "Admin"
-msgstr ""
+msgstr "Amministratore"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:140
 msgid "Admin-Realm"
-msgstr ""
+msgstr "Amministratore-Realm"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:75
 msgid "Administration"
-msgstr ""
+msgstr "Amministrazione"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:81
 msgid "Administrator"
-msgstr ""
+msgstr "Amministratore"
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:8
 msgid "All CA Connectors"
-msgstr ""
+msgstr "Tutti i CA Connectors"
 
 #: privacyidea/static/components/config/views/config.events.html:8
 msgid "All Event Handlers"
-msgstr ""
+msgstr "Tutti gli Event Handlers"
 
 #: privacyidea/static/components/config/views/config.machineresolvers.html:7
 msgid "All Machine Resolvers"
-msgstr ""
+msgstr "Tutti i Machine Resolvers"
 
 #: privacyidea/static/components/machine/views/machine.html:8
 msgid "All Machines"
-msgstr ""
+msgstr "Tutte le macchina"
 
 #: privacyidea/static/components/config/views/config.periodictasks.html:8
 msgid "All Periodic Tasks"
-msgstr ""
+msgstr "Tutte le Operazioni Periodiche"
 
 #: privacyidea/static/components/config/views/config.policies.html:8
 msgid "All Policies"
-msgstr ""
+msgstr "Tutte le Policies"
 
 #: privacyidea/static/components/config/views/config.realms.html:7
 msgid "All Realms"
-msgstr ""
+msgstr "Tutti i Realms"
 
 #: privacyidea/static/components/config/views/config.resolvers.html:7
 msgid "All Resolvers"
-msgstr ""
+msgstr "Tutti i Resolvers"
 
 #: privacyidea/static/components/config/views/config.smsgateway.html:7
 msgid "All SMS Gateways"
-msgstr ""
+msgstr "Tutti gli SMS Gateways"
 
 #: privacyidea/static/components/token/views/token.html:11
 msgid "All tokens"
-msgstr ""
+msgstr "Tutti i tokens"
 
 #: privacyidea/static/components/user/views/user.html:19
 msgid "All users"
-msgstr ""
+msgstr "Tutt gli utenti"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:163
 msgid "An Attribute or the DN to identify the machine"
-msgstr ""
+msgstr "Un Attributo il DN che identifica la macchina"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:197
 msgid "An Attribute that contains the IP address."
-msgstr ""
+msgstr "Un Attributo che contiene l'indirizzo IP."
 
 #: privacyidea/static/components/recovery/controllers/recoveryControllers.js:21
 msgid "An Email to reset the password has been sent to you."
-msgstr ""
+msgstr "Una mail per resettare la password a te inviata."
 
 #: privacyidea/static/components/machine/views/machine.details.html:127
 #: privacyidea/static/components/machine/views/machine.details.html:51
 #: privacyidea/static/components/token/views/token.details.html:539
 #: privacyidea/static/components/token/views/token.details.html:624
 msgid "Application"
-msgstr ""
+msgstr "Applicazione"
 
 #: privacyidea/static/components/components/views/component.clienttype.html:7
 msgid "Application Type"
-msgstr ""
+msgstr "Tipo di Applicazione"
 
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
 "As the values are encrypted with AES128-CBC, you need to give a\n"
 "            32 characters long hex string."
 msgstr ""
+"Poiché i valori sono crittografati con AES128-CBC, è necessario fornire un\n"
+"            Stringa esadecimale lunga 32 caratteri."
 
 #: privacyidea/static/components/token/views/token.assign.html:12
 #: privacyidea/static/components/token/views/token.html:44
 #: privacyidea/static/components/user/views/user.details.html:202
 msgid "Assign Token"
-msgstr ""
+msgstr "Assegna token"
 
 #: privacyidea/static/components/token/views/token.details.html:497
 #: privacyidea/static/components/token/views/token.details.html:510
 msgid "Assign User"
-msgstr ""
+msgstr "Assegna utente"
 
 #: privacyidea/static/components/user/views/user.details.html:197
 msgid "Assign a new token {{ newToken.serial }}"
-msgstr ""
+msgstr "Assegna un nuovo token {{ newToken.serial }}"
 
 #: privacyidea/static/components/token/views/token.assign.html:1
 msgid "Assign a new token {{ newTokenObject.serial }}"
-msgstr ""
+msgstr "Assegnare un nuovo token {{ newTokenObject.serial }}"
 
 #: privacyidea/static/components/token/views/token.enroll.html:44
 msgid "Assign token to user"
-msgstr ""
+msgstr "Assegnare token all'utente"
 
 #: privacyidea/static/components/token/views/token.details.html:447
 msgid "Assigned User"
-msgstr ""
+msgstr "Utente assegnato"
 
 #: privacyidea/static/components/token/views/token.getserial.html:33
 msgid "Assignment State"
-msgstr ""
+msgstr "Stato di assegnamento"
 
 #: privacyidea/static/components/token/views/token.details.html:655
 msgid "Attach Machine"
-msgstr ""
+msgstr "Collegare la macchina"
 
 #: privacyidea/static/components/machine/views/machine.details.html:154
 msgid "Attach Token"
-msgstr ""
+msgstr "Allega token"
 
 #: privacyidea/static/components/token/views/token.details.html:617
 msgid "Attach to a new Machine"
-msgstr ""
+msgstr "Collegare a una nuova macchina"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:280
 msgid "Attribute mapping"
-msgstr ""
+msgstr "Mappatura degli attributi"
 
 #: privacyidea/static/templates/menu.html:85
 msgid "Audit"
-msgstr ""
+msgstr "Audit"
 
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:26
 msgid "Authentication Server URI"
-msgstr ""
+msgstr "URI del server di autenticazione"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:344
 msgid "Authentication failed."
-msgstr ""
+msgstr "Autenticazione fallita."
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:41
 msgid "Authentications"
-msgstr ""
+msgstr "Autenticazioni"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:43
 msgid "Authentications in the last 24 hours"
-msgstr ""
+msgstr "Autenticazioni nelle ultime 24 ore"
 
 #: privacyidea/static/components/config/views/config.system.html:147
 msgid "Auto resync timeout"
-msgstr ""
+msgstr "Timeout di risincronizzazione automatica"
 
 #: privacyidea/static/components/config/views/config.system.html:143
 msgid "Automatic resync during authentication"
-msgstr ""
+msgstr "Risincronizzazione automatica durante l'autenticazione"
 
 #: privacyidea/static/components/login/factories/u2f.js:27
 msgid "Bad U2F Request"
-msgstr ""
+msgstr "Richiesta U2F errata"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:28
 msgid "Base Config"
-msgstr ""
+msgstr "Configurazione di base"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:82
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:99
 msgid "Base DN"
-msgstr ""
+msgstr "Base DN"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:92
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:122
 msgid "Bind DN"
-msgstr ""
+msgstr "Bind DN"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:102
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:134
 msgid "Bind Password"
-msgstr ""
+msgstr "Bind Password"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:113
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:145
 msgid "Bind Type"
-msgstr ""
+msgstr "Tipo di Bind"
 
 #: privacyidea/static/components/token/views/token.getserial.html:3
 msgid ""
@@ -459,14 +556,20 @@ msgid ""
 "    search for the token. So you can only search within certain token types\n"
 "    or in assigned or unassigned tokens."
 msgstr ""
+"Inserendo un valore OTP è possibile ottenere il numero di serie del token.\n"
+"    È inoltre possibile inserire ulteriori parametri opzionali, per "
+"restringere la\n"
+"    ricerca del token. In questo modo è possibile effettuare la ricerca solo "
+"all'interno di determinati tipi di token\n"
+"    o nei token assegnati o non assegnati."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:31
 msgid "CA Certificate"
-msgstr ""
+msgstr "Certificato CA"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:28
 msgid "CA Connector"
-msgstr ""
+msgstr "Connettore CA"
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:5
 msgid "CA Connector name"
