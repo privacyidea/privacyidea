@@ -153,6 +153,7 @@ class HttpSMSProvider(ISMSProvider):
             if json_data:
                 text_json = json.loads(data.get("text"))
                 data["text"] = text_json
+                headers['Content-Type'] = 'application/json'
                 log.debug("passing JSON data: {0!s}".format(data["text"]))
 
         log.debug(u"issuing request with parameters {0!s} headers {1!s} and method {2!s} and"
