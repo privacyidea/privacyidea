@@ -78,6 +78,3 @@ class CAServiceMock(object):
 
     def GetCertificate(self, _certificate_request):
         return MyCertificateReply(certificate=self.certificate)
-
-
-
