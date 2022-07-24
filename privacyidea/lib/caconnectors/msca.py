@@ -38,8 +38,11 @@ try:
     from privacyidea.lib.caconnectors.caservice_pb2_grpc import CAServiceStub
     from privacyidea.lib.caconnectors.caservice_pb2 import (GetCAsRequest,
                                                             GetTemplatesRequest,
+                                                            GetCRStatusRequest,
+                                                            GetCRStatusReply,
                                                             SubmitCRRequest,
-                                                            GetCertificateRequest)
+                                                            GetCertificateRequest,
+                                                            GetCertificateReply)
     AvailableCAConnectors.append("privacyidea.lib.caconnectors.msca.MSCAConnector")
 except ImportError:
     log.warning("Can not import grpc modules.")
@@ -192,6 +195,39 @@ class MSCAConnector(BaseCAConnector):
             else:
                 log.error("certification request could not be fulfilled! {0!s}".format(reply))
                 raise CSRError()
+
+    def get_cr_status(self, request_id):
+        """
+        If a certificate needs a CA manager approval the request is in a pending state.
+        This method fetches the state of a requested certificate.
+        This way we can know, if the certificate was issued in the meantime.
+        :return: Status code of the request
+        """
+        if self.connection:
+            csrRequest = GetCRStatusRequest()
+            csrRequest.certRequestId = request_id
+            csrRequest.caName = self.ca
+            csrReply = self.connection.GetCRStatus(csrRequest)
+            """
+            Disposition 2: denied
+            Disposition 3: issued
+            Disposition 5: pending
+            """
+            return csrReply.disposition
+
+    def get_issued_certificate(self, request_id):
+        """
+        if get_csr_status returned a dispositon 3, we can fetch the issued certificate.
+
+        :param request_id: The id of the originial certificate request
+        :return: The certificate as PEM string
+        """
+        if self.connection:
+            certRequest = GetCertificateRequest()
+            certRequest.id = request_id
+            certRequest.caName = self.ca
+            certReply = self.connection.GetCertificate(certRequest)
+            return certReply.cert
 
     def get_templates(self):
         """

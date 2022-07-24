@@ -59,6 +59,8 @@ log = logging.getLogger(__name__)
 
 
 DEFAULT_CA_PATH = ["/etc/privacyidea/trusted_attestation_ca"]
+# This is the key of the tokeninfo, where the request Id of a pending certificate is stored
+REQUEST_ID = "requestId"
 
 
 class ACTION(BASE_ACTION):
@@ -353,6 +355,38 @@ class CertificateTokenClass(TokenClass):
 
         return ret
 
+    def _update_rollout_state(self):
+        """
+        This is a certificate specific method, that communicates to the CA and checks,
+        if a pending certificate has been enrolled, yet.
+        If the certificate is enrolled, it fetches the certificate from the CA and
+        updates the certificate token.
+        :return:
+        """
+        if self.rollout_state == ROLLOUTSTATE.PENDING:
+            request_id = self.get_tokeninfo(REQUEST_ID)
+            ca = self.get_tokeninfo("CA")
+            if ca and request_id:
+                cacon = get_caconnector_object(ca)
+                status = cacon.get_cr_status(request_id)
+                # TODO: Later we need to make the status CA dependent. Different CAs could return
+                # different codes. So each CA Connector needs a mapper for its specific codes.
+                if status in [3, 4]: # issued or "issued out of band"
+                    # TODO: fetch the CA and update the token
+                    # Update the rollout state
+                    log.info("The certificate {0!s} has been issued by the CA.".format(self.token.serial))
+                    self.token.rollout_state = ROLLOUTSTATE.ENROLLED
+                    self.token.save()
+                elif status == 2:  # denied
+                    log.warning("The certificate {0!s} has been denied by the CA.".format(self.token.serial))
+                    self.token.rollout_state = ROLLOUTSTATE.DENIED
+                    self.token.save()
+                else:
+                    log.info("The certificate {0!s} is still pending.".format(self.token.serial))
+            else:
+                log.warning("The certificate token in rollout_state pending, but either the CA ({0!s}) "
+                            "or the requestId ({1!s}) is missing.".format(ca, request_id))
+
     def update(self, param):
         """
         This method is called during the initialization process.
@@ -447,7 +481,7 @@ class CertificateTokenClass(TokenClass):
             except CSRPending as e:
                 self.token.rollout_state = ROLLOUTSTATE.PENDING
                 if hasattr(e, "requestId"):
-                    self.add_tokeninfo("requestId", e.requestId)
+                    self.add_tokeninfo(REQUEST_ID, e.requestId)
             finally:
                 # Save the private key to the encrypted key field of the token
                 s = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
