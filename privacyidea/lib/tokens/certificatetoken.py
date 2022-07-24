@@ -371,7 +371,7 @@ class CertificateTokenClass(TokenClass):
                 status = cacon.get_cr_status(request_id)
                 # TODO: Later we need to make the status CA dependent. Different CAs could return
                 # different codes. So each CA Connector needs a mapper for its specific codes.
-                if status in [3, 4]: # issued or "issued out of band"
+                if status in [3, 4]:  # issued or "issued out of band"
                     # TODO: fetch the CA and update the token
                     # Update the rollout state
                     log.info("The certificate {0!s} has been issued by the CA.".format(self.token.serial))

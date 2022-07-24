@@ -217,9 +217,9 @@ class MSCAConnector(BaseCAConnector):
 
     def get_issued_certificate(self, request_id):
         """
-        if get_csr_status returned a dispositon 3, we can fetch the issued certificate.
+        If get_csr_status returned a disposition 3, we can fetch the issued certificate.
 
-        :param request_id: The id of the originial certificate request
+        :param request_id: The id of the original certificate request
         :return: The certificate as PEM string
         """
         if self.connection:

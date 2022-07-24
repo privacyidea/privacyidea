@@ -407,6 +407,7 @@ class MyCSRStatusReply(object):
     def __init__(self, disposition):
         self.disposition = disposition
 
+
 class MyCertificateReply(object):
     def __init__(self, certificate):
         self.cert = certificate
