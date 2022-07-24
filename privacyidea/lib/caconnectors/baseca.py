@@ -99,6 +99,16 @@ class BaseCAConnector(object):
         """
         pass
 
+    def get_issued_certificate(self, request_id):
+        """
+        If get_csr_status returned the information that the certificate has been enrolled,
+        we can fetch the issued certificate.
+
+        :param request_id: The id of the original certificate request
+        :return: The certificate as PEM string
+        """
+        pass
+
     @classmethod
     def get_caconnector_description(cls):
         """

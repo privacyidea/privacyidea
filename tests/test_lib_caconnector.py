@@ -28,6 +28,9 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_types,
                                          save_caconnector, delete_caconnector)
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
+from .mscamock import (MyTemplateReply, MyCAReply, MyCRReply,
+                       MyCertReply, MyCertificateReply, MyCSRStatusReply, CAServiceMock)
+
 
 
 CAKEY = "cakey.pem"
@@ -380,65 +383,6 @@ class LocalCATestCase(MyTestCase):
         # but an empty value is returned
         cacon.template_file = "nonexistent"
         self.assertEquals(cacon.get_templates(), {})
-
-
-class MyTemplateReply(object):
-    def __init__(self, templates):
-        self.templateName = templates
-
-
-class MyCAReply(object):
-    def __init__(self, ca_list=None):
-        self.caName = ca_list or []
-
-
-class MyCRReply(object):
-    def __init__(self, disposition=0, request_id=None):
-        self.disposition = disposition
-        self.requestId = request_id or 4711
-
-
-class MyCertReply(object):
-    def __init__(self, certificate):
-        self.cert = certificate
-
-
-class MyCSRStatusReply(object):
-    def __init__(self, disposition):
-        self.disposition = disposition
-
-
-class MyCertificateReply(object):
-    def __init__(self, certificate):
-        self.cert = certificate
-
-
-class CAServiceMock(object):
-
-    def __init__(self, config, mock_config=None):
-        self.cas = mock_config.get("available_cas") or []
-        self.templates = mock_config.get("ca_templates") or []
-        self.disposition = mock_config.get("csr_disposition") or 0
-        self.certificate = mock_config.get("certificate")
-
-    def GetTemplates(self, _template_request):
-        return MyTemplateReply(self.templates)
-
-    def SubmitCR(self, _submit_request):
-        return MyCRReply(self.disposition)
-
-    def GetCAs(self, _carequest):
-        return MyCAReply(self.cas)
-
-    def GetCertificate(self, _get_certificate_request):
-        return MyCertReply(certificate=self.certificate)
-
-    def GetCRStatus(self, _csr_status_request):
-        return MyCSRStatusReply(disposition=self.disposition)
-
-    def GetCertificate(self, _certificate_request):
-        return MyCertificateReply(certificate=self.certificate)
-
 
 # Mock
 MY_CA_NAME = "192.168.47.11"

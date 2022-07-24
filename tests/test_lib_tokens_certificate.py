@@ -12,8 +12,17 @@ from privacyidea.lib.tokens.certificatetoken import (parse_chainfile, verify_cer
                                                      CertificateTokenClass)
 from privacyidea.lib.policy import set_policy, delete_policy, PolicyClass, SCOPE
 import os
+import unittest
+import mock
 from OpenSSL import crypto
-
+from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
+from privacyidea.lib.caconnectors.msca import MSCAConnector
+from .mscamock import (MyTemplateReply, MyCAReply, MyCRReply,
+                       MyCertReply, MyCertificateReply, MyCSRStatusReply, CAServiceMock)
+from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
+from privacyidea.lib.token import init_token
+from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.user import User
 
 CERT = """-----BEGIN CERTIFICATE-----
 MIIGXDCCBUSgAwIBAgITYwAAAA27DqXl0fVdOAAAAAAADTANBgkqhkiG9w0BAQsF
@@ -183,6 +192,117 @@ BuCSS5h/F6roSi7rjh2bEOaErLG+G1hVWAzfBNXgrsUuirWRk0WKhJKeUrfNPILh
 CzYH/zLEaIsLjRg+tnmKJu2E4IdodScri7oGVhVyhUW5DrcX+/8CPqnoBpd7zQ==
 -----END CERTIFICATE-----
 """
+
+REQUEST_USER = """-----BEGIN CERTIFICATE REQUEST-----
+MIICjDCCAXQCAQAwRzELMAkGA1UEBhMCREUxDzANBgNVBAgMBkhlc3NlbjEUMBIG
+A1UECgwLcHJpdmFjeWlkZWExETAPBgNVBAMMCHVzZXJjZXJ0MIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3C/RXymX1HzDU8gwvUtncCwka7he6yF6SBJW
+fIFcSHW2aOv28phOUFHRf2xz8wqnrr5IXuXW4dkqfDJuTv0I9lpUSSNzw7kHGNHv
+s6z4ityUlqSQOo503+YNNxu9W7clGlY52m+Rql4cdPP5fBQBgxJldse7/jZblely
+ZYPtPpgwcfqH3aM2WjADLibgYdG/Aj+2Bh9KiSgcXKL/Tr6U5ozg2oLxnSkySDBz
+tAT2Qh6+9+IyMic8nYkvcD6Fmm9cxQnAjDIvciLJ0pUftqxyYHK3gk1rzlvjANDS
+L1jG4BDlUcpNOy7mfquE1lbxkzWgk2QmgXUvkbUWBjgL28wtBwIDAQABoAAwDQYJ
+KoZIhvcNAQELBQADggEBADPFLT1HVbYtVFsthnBj/UX3qs3NoLE9W5llV9Z5JEsE
+yQgANX3hiL6m3uVyPBOZVBqCKO8ZC5VzO99zpQ+3BaWQUCuxXbmjJrA8kzIwmRL6
+yJz7YpmbQzOPSlbmFguiVs8Mhhfo6NB2oMx0uV6mCMnoX1thfkIOz6+AKTIoWexV
+6/X2VXR1zEPxMCF3eqAClleF+RbKcTXfLSoxaRAdDtuUOERqu9EUpIFEsGFwu/zS
+y/hmHFGvyDotqmmdxUeXpw2qW882mWZdLtb3TQorvknrOjhtcRZ4/c5X5f4Fv73K
+PwFuUcQ1S7UsaJqyysFSx/SA36F0zEjSwbqJwQAKlzA=
+-----END CERTIFICATE REQUEST-----"""
+
+CERTIFICATE = """-----BEGIN CERTIFICATE-----
+MIIHdTCCBV2gAwIBAgITMAAAAHozruIlHyAQtAAAAAAAejANBgkqhkiG9w0BAQsF
+ADBGMRMwEQYKCZImiZPyLGQBGRYDY29tMRYwFAYKCZImiZPyLGQBGRYGbmlsc2Nh
+MRcwFQYDVQQDEw5uaWxzY2EtQ0EwMy1DQTAeFw0yMjA3MjQxNjQzNDlaFw0yMzA3
+MjQxNjQzNDlaMFUxEzARBgoJkiaJk/IsZAEZFgNjb20xFjAUBgoJkiaJk/IsZAEZ
+FgZuaWxzY2ExDjAMBgNVBAMTBVVzZXJzMRYwFAYDVQQDEw1BZG1pbmlzdHJhdG9y
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzb4UT/rOAT9CIhsdnK/d
+ktJ/22y3PjlDQ2sTA/EF9Ad0vHZpKAuvGY7X/OPNxljyyn8IbVP8BwJEJMa0NEyM
+BP4zDkDiILoCc1r39U9jbszGtt9UHTc5fVE2Jl+93D+oi2uirrad1iHn30G4eigq
+aEjKqC3t4elGXlpybbSEOIeR/ZQRCyiExsIvKvsB+TZ6CXXRM4g8c0FbyL+UiXCh
+8MC5LlBTHrEXZGn0LYHgqQ0OMum6VYqF8RtvSXm0f4jDDT5UiJs9HziMBPPuamMr
+9cbbtIOqxHhBOn1L4cg+ccobYVnqxsTKMl7J6b8SKebGw2P+oFXaevFgmE0m7fpw
+LQIDAQABo4IDSzCCA0cwHQYDVR0OBBYEFFM/7V0JB7Nle6tFySRbCXeACpbtMB8G
+A1UdIwQYMBaAFLgiq+2UnxagGJRx6MJQEOuboBfNMIHIBgNVHR8EgcAwgb0wgbqg
+gbeggbSGgbFsZGFwOi8vL0NOPW5pbHNjYS1DQTAzLUNBLENOPUNBMDMsQ049Q0RQ
+LENOPVB1YmxpYyUyMEtleSUyMFNlcnZpY2VzLENOPVNlcnZpY2VzLENOPUNvbmZp
+Z3VyYXRpb24sREM9bmlsc2NhLERDPWNvbT9jZXJ0aWZpY2F0ZVJldm9jYXRpb25M
+aXN0P2Jhc2U/b2JqZWN0Q2xhc3M9Y1JMRGlzdHJpYnV0aW9uUG9pbnQwgb8GCCsG
+AQUFBwEBBIGyMIGvMIGsBggrBgEFBQcwAoaBn2xkYXA6Ly8vQ049bmlsc2NhLUNB
+MDMtQ0EsQ049QUlBLENOPVB1YmxpYyUyMEtleSUyMFNlcnZpY2VzLENOPVNlcnZp
+Y2VzLENOPUNvbmZpZ3VyYXRpb24sREM9bmlsc2NhLERDPWNvbT9jQUNlcnRpZmlj
+YXRlP2Jhc2U/b2JqZWN0Q2xhc3M9Y2VydGlmaWNhdGlvbkF1dGhvcml0eTAOBgNV
+HQ8BAf8EBAMCBaAwPAYJKwYBBAGCNxUHBC8wLQYlKwYBBAGCNxUIhrbHcYa95yeB
+1Y8bh6WhcIGbvAqBfJStI5DMCgIBZAIBBTApBgNVHSUEIjAgBggrBgEFBQcDAgYI
+KwYBBQUHAwQGCisGAQQBgjcKAwQwNQYJKwYBBAGCNxUKBCgwJjAKBggrBgEFBQcD
+AjAKBggrBgEFBQcDBDAMBgorBgEEAYI3CgMEMDMGA1UdEQQsMCqgKAYKKwYBBAGC
+NxQCA6AaDBhBZG1pbmlzdHJhdG9yQG5pbHNjYS5jb20wTQYJKwYBBAGCNxkCBEAw
+PqA8BgorBgEEAYI3GQIBoC4ELFMtMS01LTIxLTYwNDM1NTA3OS0zNzE5MzIxMzQ2
+LTE4ODc1MjYzMzItNTAwMEQGCSqGSIb3DQEJDwQ3MDUwDgYIKoZIhvcNAwICAgCA
+MA4GCCqGSIb3DQMEAgIAgDAHBgUrDgMCBzAKBggqhkiG9w0DBzANBgkqhkiG9w0B
+AQsFAAOCAgEACiBnzQbxxS7cCTtvT6ODyXaJfl5F+WkeoazR7iQnMTIIuigGNeGY
+q7YS92YPGlw8CBcjQ2VHG8ez4v4RaN0xnRDPOoVddG6JPjY4z0Cq+SCHW1W+yBH6
+YNIoU22gx8qM4GWHEQvu33tU+gPHy0ZZceMoEWQVwpC9/Nq/bqEvbevrcXJDC20f
+3Ob3kVJTqrwULYqcuzNW194NXE+hC5+Wjg3mMy7YJU0bE1XeYQxCzHs2T3Sd2O+C
+9ZGvvykSS2MJsC0vW+sFpZ2Z6hDFduXzQqpzaORXe04p+dI88orjdu3yX898jOL0
+YCmxCy/Rvm5+E15MW6Dh3BfUh6Zaeij3z3/xmE3kVaLA9PeWxG5+akW1KtQwD0PB
+mH5q4AmzBj0ryhPfOvXKUSOBp+tLV9Fd4QW0rZgU6/ZTAC73mbh8sDBdXZYb+jzi
+7iM6kqIma6T3mgODYg2d1WTmNx3z+8m+sBoUiwY0yQc22oWkTVXKqzOrg7SOuiSy
+a3QX4OejnyxBSuNegL8EQhyxDCAdisRqgGLhtYh3RMegZn0WnJOlRPBHrniFkJBV
+ub8B4Q4BtcXwyX1IjkSRVGhpmBKc+cykTR1GGR0L0JihMK85qWF/8vyYiwBq3z08
+TdIfRtrzkM5Zw/U/p2/LWzbe/fCkqSC6SheI+/FDR7Bjz7xNxIZHonk=
+-----END CERTIFICATE-----"""
+
+
+# Mock for certificate from MSCA
+MY_CA_NAME = "192.168.47.11"
+
+MOCK_AVAILABLE_CAS = ['WIN-GG7JP259HMQ.nilsca.com\\nilsca-WIN-GG7JP259HMQ-CA',
+                      'CA03.nilsca.com\\nilsca-CA03-CA']
+MOCK_CA_TEMPLATES = ["User", "SmartcardLogon", "ApprovalRequired"]
+
+MOCK_USER_CERT = """-----BEGIN CERTIFICATE-----
+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
+17qsUVtb+0YLznMdHEFtWc51SpzA0h3a7w==
+-----END CERTIFICATE-----"""
+
+
+CONF = {MS_ATTR.HOSTNAME: MY_CA_NAME,
+        MS_ATTR.PORT: 50061,
+        MS_ATTR.HTTP_PROXY: "0",
+        MS_ATTR.CA: "CA03.nilsca.com\\nilsca-CA03-CA"}
+
 
 class CertificateTokenTestCase(MyTestCase):
 
@@ -436,3 +556,124 @@ class CertificateTokenTestCase(MyTestCase):
         p = CertificateTokenClass.get_default_settings(g, params)
         self.assertEqual(["/etc/privacyidea/trusted_attestation_ca"],
                          p.get(ACTION.TRUSTED_CA_PATH))
+
+
+class MSCACertTestCase(MyTestCase):
+
+    def test_00_setup(self):
+        self.setUp_user_realms()
+        # setup ca connector
+        CONF["type"] = "microsoft"
+        CONF["caconnector"] = "billCA"
+        r = save_caconnector(CONF)
+        self.assertEqual(r, 1)
+
+    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+                         "Can not test MSCA. grpc module seems not available.")
+    def test_01_msca_certificate_pending_and_enrolled(self):
+        with mock.patch.object(MSCAConnector, "_connect_to_worker") as mock_conncect_worker:
+            # Mock the CA to simulate a Pending Request - disposition 5
+            mock_conncect_worker.return_value = CAServiceMock(CONF,
+                                                              {"available_cas": MOCK_AVAILABLE_CAS,
+                                                               "ca_templates": MOCK_CA_TEMPLATES,
+                                                               "csr_disposition": 5,
+                                                               "certificate": CERTIFICATE})
+            # Issue a cert request to billCA for a ApprovalRequired Token.
+            cert_tok = init_token({"type": "certificate",
+                                   "ca": "billCA",
+                                   "template": "ApprovalRequired",
+                                   "genkey": 1,
+                                   "user": "cornelius",
+                                   "realm": self.realm1
+                                   }, User("cornelius", self.realm1))
+            self.assertEqual("certificate", cert_tok.type)
+            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+
+            # Fetch the rolloutstate from the CA
+            r = cert_tok._update_rollout_state()
+            # Still pending
+            self.assertEqual(5, r)
+            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+            # Enroll the certificated
+            mock_conncect_worker.return_value.disposition = 3
+
+            # Fetch the rolloutstate again
+            r = cert_tok._update_rollout_state()
+            self.assertEqual(3, r)
+            self.assertEqual(ROLLOUTSTATE.ENROLLED, cert_tok.rollout_state)
+
+            # Fet the rollout state again, but the cert is not pending anymore
+            r = cert_tok._update_rollout_state()
+            self.assertEqual(-1, r)
+            self.assertEqual(ROLLOUTSTATE.ENROLLED, cert_tok.rollout_state)
+
+    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+                         "Can not test MSCA. grpc module seems not available.")
+    def test_02_msca_certificate_pending_and_denied(self):
+        with mock.patch.object(MSCAConnector, "_connect_to_worker") as mock_conncect_worker:
+            # Mock the CA to simulate a Pending Request - disposition 5
+            mock_conncect_worker.return_value = CAServiceMock(CONF,
+                                                              {"available_cas": MOCK_AVAILABLE_CAS,
+                                                               "ca_templates": MOCK_CA_TEMPLATES,
+                                                               "csr_disposition": 5,
+                                                               "certificate": CERTIFICATE})
+            # Issue a cert request to billCA for a ApprovalRequired Token.
+            cert_tok = init_token({"type": "certificate",
+                                   "ca": "billCA",
+                                   "template": "ApprovalRequired",
+                                   "genkey": 1,
+                                   "user": "cornelius",
+                                   "realm": self.realm1
+                                   }, User("cornelius", self.realm1))
+            self.assertEqual("certificate", cert_tok.type)
+            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+
+            # Fetch the rolloutstate from the CA
+            r = cert_tok._update_rollout_state()
+            # Still pending
+            self.assertEqual(5, r)
+            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+            # Enroll the certificated
+            mock_conncect_worker.return_value.disposition = 2
+
+            # Fetch the rolloutstate again
+            r = cert_tok._update_rollout_state()
+            self.assertEqual(2, r)
+            self.assertEqual(ROLLOUTSTATE.DENIED, cert_tok.rollout_state)
+
+            # Fet the rollout state again, but the cert is not pending anymore
+            r = cert_tok._update_rollout_state()
+            self.assertEqual(-1, r)
+            self.assertEqual(ROLLOUTSTATE.DENIED, cert_tok.rollout_state)
+
+    def test_03_msca_certificate_pending_but_cert_broken_in_privacyIDEA(self):
+        with mock.patch.object(MSCAConnector, "_connect_to_worker") as mock_conncect_worker:
+            # Mock the CA to simulate a Pending Request - disposition 5
+            mock_conncect_worker.return_value = CAServiceMock(CONF,
+                                                              {"available_cas": MOCK_AVAILABLE_CAS,
+                                                               "ca_templates": MOCK_CA_TEMPLATES,
+                                                               "csr_disposition": 5,
+                                                               "certificate": CERTIFICATE})
+            # Issue a cert request to billCA for a ApprovalRequired Token.
+            cert_tok = init_token({"type": "certificate",
+                                   "ca": "billCA",
+                                   "template": "ApprovalRequired",
+                                   "genkey": 1,
+                                   "user": "cornelius",
+                                   "realm": self.realm1
+                                   }, User("cornelius", self.realm1))
+            self.assertEqual("certificate", cert_tok.type)
+            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+
+            # Fetch the rolloutstate from the CA
+            r = cert_tok._update_rollout_state()
+            # Still pending
+            self.assertEqual(5, r)
+            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+            # turn the certificate token to be broken
+            cert_tok.del_tokeninfo("requestId")
+
+            # Fetch the rolloutstate again, it will fail, since no requestId available
+            r = cert_tok._update_rollout_state()
+            self.assertEqual(-1, r)
+            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)

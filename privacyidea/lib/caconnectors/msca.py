@@ -201,6 +201,8 @@ class MSCAConnector(BaseCAConnector):
         If a certificate needs a CA manager approval the request is in a pending state.
         This method fetches the state of a requested certificate.
         This way we can know, if the certificate was issued in the meantime.
+        :param request_id: Id of the request to check
+        :type request_id: int
         :return: Status code of the request
         """
         if self.connection:

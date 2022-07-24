@@ -363,20 +363,22 @@ class CertificateTokenClass(TokenClass):
         updates the certificate token.
         :return:
         """
+        status = -1
         if self.rollout_state == ROLLOUTSTATE.PENDING:
             request_id = self.get_tokeninfo(REQUEST_ID)
             ca = self.get_tokeninfo("CA")
             if ca and request_id:
+                request_id = int(request_id)
                 cacon = get_caconnector_object(ca)
                 status = cacon.get_cr_status(request_id)
                 # TODO: Later we need to make the status CA dependent. Different CAs could return
                 # different codes. So each CA Connector needs a mapper for its specific codes.
                 if status in [3, 4]:  # issued or "issued out of band"
-                    # TODO: fetch the CA and update the token
-                    # Update the rollout state
                     log.info("The certificate {0!s} has been issued by the CA.".format(self.token.serial))
+                    certificate = cacon.get_issued_certificate(request_id)
+                    # Update the rollout state
                     self.token.rollout_state = ROLLOUTSTATE.ENROLLED
-                    self.token.save()
+                    self.add_tokeninfo("certificate", certificate)
                 elif status == 2:  # denied
                     log.warning("The certificate {0!s} has been denied by the CA.".format(self.token.serial))
                     self.token.rollout_state = ROLLOUTSTATE.DENIED
@@ -386,6 +388,7 @@ class CertificateTokenClass(TokenClass):
             else:
                 log.warning("The certificate token in rollout_state pending, but either the CA ({0!s}) "
                             "or the requestId ({1!s}) is missing.".format(ca, request_id))
+        return status
 
     def update(self, param):
         """
