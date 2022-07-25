@@ -248,6 +248,10 @@ class CertificateTokenClass(TokenClass):
         TokenClass.__init__(self, aToken)
         self.set_type(u"certificate")
         self.otp_len = 0
+        try:
+            self._update_rollout_state()
+        except Exception as e:
+            log.warning("Failed to check for pending update. {0!s}".format(e))
 
     @staticmethod
     def get_class_type():
