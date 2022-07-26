@@ -8,34 +8,38 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-06-08 16:56+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2022-07-27 09:17+0000\n"
+"Last-Translator: Dan Marina <dan.marina@yahoo.com>\n"
+"Language-Team: Romanian <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/ro/>\n"
 "Language: ro\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
+"20)) ? 1 : 2;\n"
+"X-Generator: Weblate 4.14-dev\n"
 "Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:222
 msgid "Authentication failure. Unknown realm: {0!s}."
-msgstr ""
+msgstr "Autentificare eșuată. Zonă necunoscută: {0!s}."
 
 #: api/auth.py:226
 msgid "Authentication failure. Missing Username"
-msgstr ""
+msgstr "Autentificare eșuată. Numele de utilizator lipsește"
 
 #: api/auth.py:336
 msgid "Authentication failure. Wrong credentials"
-msgstr ""
+msgstr "Autentificare eșuată. Acreditări greșite"
 
 #: api/lib/utils.py:310
 msgid "Authentication failure. Missing Authorization header."
-msgstr ""
+msgstr "Autentificare eșuată. Lipsește antetul de autorizare."
 
 #: api/lib/utils.py:338 api/lib/utils.py:348
 msgid "Authentication failure. Your token has expired: {0!s}"
-msgstr ""
+msgstr "Eroare de autentificare. Token-ul a expirat: {0!s}"
 
 #: api/lib/utils.py:345
 msgid "Authentication failure. Error during decoding your token: {0!s}"
