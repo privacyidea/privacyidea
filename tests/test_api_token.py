@@ -3115,6 +3115,8 @@ class APIRolloutState(MyApiTestCase):
 
 class APIMSCACertTestCase(MyApiTestCase):
 
+    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+                         "Can not test MSCA. grpc module seems not available.")
     def test_00_setup(self):
         self.setUp_user_realms()
         # setup ca connector
