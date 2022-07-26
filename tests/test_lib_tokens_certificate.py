@@ -560,6 +560,8 @@ class CertificateTokenTestCase(MyTestCase):
 
 class MSCACertTestCase(MyTestCase):
 
+    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+                         "Can not test MSCA. grpc module seems not available.")
     def test_00_setup(self):
         self.setUp_user_realms()
         # setup ca connector
@@ -646,6 +648,8 @@ class MSCACertTestCase(MyTestCase):
             self.assertEqual(-1, r)
             self.assertEqual(ROLLOUTSTATE.DENIED, cert_tok.rollout_state)
 
+    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+                         "Can not test MSCA. grpc module seems not available.")
     def test_03_msca_certificate_pending_but_cert_broken_in_privacyIDEA(self):
         with mock.patch.object(MSCAConnector, "_connect_to_worker") as mock_conncect_worker:
             # Mock the CA to simulate a Pending Request - disposition 5
