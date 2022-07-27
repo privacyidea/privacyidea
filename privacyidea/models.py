@@ -941,9 +941,8 @@ class Realm(TimestampMethodsMixin, db.Model):
     default = db.Column(db.Boolean(), default=False)
     option = db.Column(db.Unicode(40), default='')
     resolver_list = db.relationship('ResolverRealm',
-                                    lazy='select',
-                                    foreign_keys='ResolverRealm.realm_id')
-    
+                                    back_populates='realm')
+
     @log_with(log)
     def __init__(self, realm):
         self.name = realm
@@ -1077,12 +1076,10 @@ class Resolver(TimestampMethodsMixin, db.Model):
                       nullable=False)
     # This creates an attribute "resolver" in the ResolverConfig object
     config_list = db.relationship('ResolverConfig',
-                                  lazy='select',
-                                  backref='resolver')
+                                  back_populates='resolver')
     realm_list = db.relationship('ResolverRealm',
-                                 lazy='select',
-                                 foreign_keys='ResolverRealm.resolver_id')
-    
+                                 back_populates='resolver')
+
     def __init__(self, name, rtype):
         self.name = name
         self.rtype = rtype
@@ -1122,6 +1119,8 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
                                           'Key',
                                           name='rcix_2'),
                       {'mysql_row_format': 'DYNAMIC'})
+    resolver = db.relationship('Resolver',
+                               back_populates='config_list')
 
     def __init__(self, resolver_id=None,
                  Key=None, Value=None,
@@ -1173,12 +1172,10 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
     # If there are several resolvers in a realm, the priority is used the
     # find a user first in a resolver with a higher priority (i.e. lower number)
     priority = db.Column(db.Integer)
-    resolver = db.relationship(Resolver,
-                               lazy="joined",
-                               foreign_keys="ResolverRealm.resolver_id")
-    realm = db.relationship(Realm,
-                            lazy="joined",
-                            foreign_keys="ResolverRealm.realm_id")
+    resolver = db.relationship('Resolver',
+                               back_populates='realm_list')
+    realm = db.relationship('Realm',
+                            back_populates="resolver_list")
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'realm_id',
                                           name='rrix_2'),

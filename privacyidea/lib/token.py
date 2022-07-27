@@ -117,6 +117,7 @@ ENCODING = "utf-8"
 # differentiate between different dialects.
 class clob_to_varchar(expression.FunctionElement):
     name = 'clob_to_varchar'
+    inherit_cache = True
 
 
 @compiles(clob_to_varchar)
