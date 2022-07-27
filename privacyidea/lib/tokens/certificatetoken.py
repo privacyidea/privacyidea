@@ -365,7 +365,10 @@ class CertificateTokenClass(TokenClass):
         if a pending certificate has been enrolled, yet.
         If the certificate is enrolled, it fetches the certificate from the CA and
         updates the certificate token.
-        :return:
+
+        A return code of -1 means that the status is unchanged.
+
+        :return: the status of the rollout
         """
         status = -1
         if self.rollout_state == ROLLOUTSTATE.PENDING:

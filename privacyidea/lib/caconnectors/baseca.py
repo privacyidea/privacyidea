@@ -95,6 +95,7 @@ class BaseCAConnector(object):
         If a certificate needs a CA manager approval the request is in a pending state.
         This method fetches the state of a requested certificate.
         This way we can know, if the certificate was issued in the meantime.
+
         :return:
         """
         pass
