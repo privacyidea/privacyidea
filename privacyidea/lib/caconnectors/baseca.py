@@ -90,13 +90,23 @@ class BaseCAConnector(object):
         """
         pass
 
-    def view_pending_certs(self):
+    def get_cr_status(self, request_id):
         """
-        CA Manager approval
-        the token/init of would not create a certificate but a
-        pending certificate request, that needs to be approved by a
-        CA manager. So we need some kind of approve method.
+        If a certificate needs a CA manager approval the request is in a pending state.
+        This method fetches the state of a requested certificate.
+        This way we can know, if the certificate was issued in the meantime.
+
         :return:
+        """
+        pass
+
+    def get_issued_certificate(self, request_id):
+        """
+        If get_csr_status returned the information that the certificate has been enrolled,
+        we can fetch the issued certificate.
+
+        :param request_id: The id of the original certificate request
+        :return: The certificate as PEM string
         """
         pass
 

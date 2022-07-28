@@ -154,6 +154,7 @@ class ROLLOUTSTATE(object):
     ENROLLED = 'enrolled'
     BROKEN = 'broken'
     FAILED = 'failed'
+    DENIED = 'denied'
 
 
 class TokenClass(object):

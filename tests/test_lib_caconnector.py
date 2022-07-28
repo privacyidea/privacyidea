@@ -28,6 +28,9 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_types,
                                          save_caconnector, delete_caconnector)
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
+from .mscamock import (MyTemplateReply, MyCAReply, MyCRReply,
+                       MyCertReply, MyCertificateReply, MyCSRStatusReply, CAServiceMock)
+
 
 
 CAKEY = "cakey.pem"
@@ -67,6 +70,49 @@ yJz7YpmbQzOPSlbmFguiVs8Mhhfo6NB2oMx0uV6mCMnoX1thfkIOz6+AKTIoWexV
 y/hmHFGvyDotqmmdxUeXpw2qW882mWZdLtb3TQorvknrOjhtcRZ4/c5X5f4Fv73K
 PwFuUcQ1S7UsaJqyysFSx/SA36F0zEjSwbqJwQAKlzA=
 -----END CERTIFICATE REQUEST-----"""
+
+CERTIFICATE = """-----BEGIN CERTIFICATE-----
+MIIHdTCCBV2gAwIBAgITMAAAAHozruIlHyAQtAAAAAAAejANBgkqhkiG9w0BAQsF
+ADBGMRMwEQYKCZImiZPyLGQBGRYDY29tMRYwFAYKCZImiZPyLGQBGRYGbmlsc2Nh
+MRcwFQYDVQQDEw5uaWxzY2EtQ0EwMy1DQTAeFw0yMjA3MjQxNjQzNDlaFw0yMzA3
+MjQxNjQzNDlaMFUxEzARBgoJkiaJk/IsZAEZFgNjb20xFjAUBgoJkiaJk/IsZAEZ
+FgZuaWxzY2ExDjAMBgNVBAMTBVVzZXJzMRYwFAYDVQQDEw1BZG1pbmlzdHJhdG9y
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzb4UT/rOAT9CIhsdnK/d
+ktJ/22y3PjlDQ2sTA/EF9Ad0vHZpKAuvGY7X/OPNxljyyn8IbVP8BwJEJMa0NEyM
+BP4zDkDiILoCc1r39U9jbszGtt9UHTc5fVE2Jl+93D+oi2uirrad1iHn30G4eigq
+aEjKqC3t4elGXlpybbSEOIeR/ZQRCyiExsIvKvsB+TZ6CXXRM4g8c0FbyL+UiXCh
+8MC5LlBTHrEXZGn0LYHgqQ0OMum6VYqF8RtvSXm0f4jDDT5UiJs9HziMBPPuamMr
+9cbbtIOqxHhBOn1L4cg+ccobYVnqxsTKMl7J6b8SKebGw2P+oFXaevFgmE0m7fpw
+LQIDAQABo4IDSzCCA0cwHQYDVR0OBBYEFFM/7V0JB7Nle6tFySRbCXeACpbtMB8G
+A1UdIwQYMBaAFLgiq+2UnxagGJRx6MJQEOuboBfNMIHIBgNVHR8EgcAwgb0wgbqg
+gbeggbSGgbFsZGFwOi8vL0NOPW5pbHNjYS1DQTAzLUNBLENOPUNBMDMsQ049Q0RQ
+LENOPVB1YmxpYyUyMEtleSUyMFNlcnZpY2VzLENOPVNlcnZpY2VzLENOPUNvbmZp
+Z3VyYXRpb24sREM9bmlsc2NhLERDPWNvbT9jZXJ0aWZpY2F0ZVJldm9jYXRpb25M
+aXN0P2Jhc2U/b2JqZWN0Q2xhc3M9Y1JMRGlzdHJpYnV0aW9uUG9pbnQwgb8GCCsG
+AQUFBwEBBIGyMIGvMIGsBggrBgEFBQcwAoaBn2xkYXA6Ly8vQ049bmlsc2NhLUNB
+MDMtQ0EsQ049QUlBLENOPVB1YmxpYyUyMEtleSUyMFNlcnZpY2VzLENOPVNlcnZp
+Y2VzLENOPUNvbmZpZ3VyYXRpb24sREM9bmlsc2NhLERDPWNvbT9jQUNlcnRpZmlj
+YXRlP2Jhc2U/b2JqZWN0Q2xhc3M9Y2VydGlmaWNhdGlvbkF1dGhvcml0eTAOBgNV
+HQ8BAf8EBAMCBaAwPAYJKwYBBAGCNxUHBC8wLQYlKwYBBAGCNxUIhrbHcYa95yeB
+1Y8bh6WhcIGbvAqBfJStI5DMCgIBZAIBBTApBgNVHSUEIjAgBggrBgEFBQcDAgYI
+KwYBBQUHAwQGCisGAQQBgjcKAwQwNQYJKwYBBAGCNxUKBCgwJjAKBggrBgEFBQcD
+AjAKBggrBgEFBQcDBDAMBgorBgEEAYI3CgMEMDMGA1UdEQQsMCqgKAYKKwYBBAGC
+NxQCA6AaDBhBZG1pbmlzdHJhdG9yQG5pbHNjYS5jb20wTQYJKwYBBAGCNxkCBEAw
+PqA8BgorBgEEAYI3GQIBoC4ELFMtMS01LTIxLTYwNDM1NTA3OS0zNzE5MzIxMzQ2
+LTE4ODc1MjYzMzItNTAwMEQGCSqGSIb3DQEJDwQ3MDUwDgYIKoZIhvcNAwICAgCA
+MA4GCCqGSIb3DQMEAgIAgDAHBgUrDgMCBzAKBggqhkiG9w0DBzANBgkqhkiG9w0B
+AQsFAAOCAgEACiBnzQbxxS7cCTtvT6ODyXaJfl5F+WkeoazR7iQnMTIIuigGNeGY
+q7YS92YPGlw8CBcjQ2VHG8ez4v4RaN0xnRDPOoVddG6JPjY4z0Cq+SCHW1W+yBH6
+YNIoU22gx8qM4GWHEQvu33tU+gPHy0ZZceMoEWQVwpC9/Nq/bqEvbevrcXJDC20f
+3Ob3kVJTqrwULYqcuzNW194NXE+hC5+Wjg3mMy7YJU0bE1XeYQxCzHs2T3Sd2O+C
+9ZGvvykSS2MJsC0vW+sFpZ2Z6hDFduXzQqpzaORXe04p+dI88orjdu3yX898jOL0
+YCmxCy/Rvm5+E15MW6Dh3BfUh6Zaeij3z3/xmE3kVaLA9PeWxG5+akW1KtQwD0PB
+mH5q4AmzBj0ryhPfOvXKUSOBp+tLV9Fd4QW0rZgU6/ZTAC73mbh8sDBdXZYb+jzi
+7iM6kqIma6T3mgODYg2d1WTmNx3z+8m+sBoUiwY0yQc22oWkTVXKqzOrg7SOuiSy
+a3QX4OejnyxBSuNegL8EQhyxDCAdisRqgGLhtYh3RMegZn0WnJOlRPBHrniFkJBV
+ub8B4Q4BtcXwyX1IjkSRVGhpmBKc+cykTR1GGR0L0JihMK85qWF/8vyYiwBq3z08
+TdIfRtrzkM5Zw/U/p2/LWzbe/fCkqSC6SheI+/FDR7Bjz7xNxIZHonk=
+-----END CERTIFICATE-----"""
 
 SPKAC = "SPKAC=MIICQDCCASgwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggE" \
         "KAoIBAQDSgYkgUUgPc/QRMiTVHxz9XPW25sXwUoHc0q9mSnyTMWFcr" \
@@ -338,49 +384,6 @@ class LocalCATestCase(MyTestCase):
         cacon.template_file = "nonexistent"
         self.assertEquals(cacon.get_templates(), {})
 
-
-class MyTemplateReply(object):
-    def __init__(self, templates):
-        self.templateName = templates
-
-
-class MyCAReply(object):
-    def __init__(self, ca_list=None):
-        self.caName = ca_list or []
-
-
-class MyCRReply(object):
-    def __init__(self, disposition=0, request_id=None):
-        self.disposition = disposition
-        self.requestId = request_id or 4711
-
-
-class MyCertReply(object):
-    def __init__(self, certificate):
-        self.cert = certificate
-
-
-class CAServiceMock(object):
-
-    def __init__(self, config, mock_config=None):
-        self.cas = mock_config.get("available_cas") or []
-        self.templates = mock_config.get("ca_templates") or []
-        self.disposition = mock_config.get("csr_disposition") or 0
-        self.certificate = mock_config.get("certificate")
-
-    def GetTemplates(self, _template_request):
-        return MyTemplateReply(self.templates)
-
-    def SubmitCR(self, _submit_request):
-        return MyCRReply(self.disposition)
-
-    def GetCAs(self, _carequest):
-        return MyCAReply(self.cas)
-
-    def GetCertificate(self, _get_certificate_request):
-        return MyCertReply(certificate=self.certificate)
-
-
 # Mock
 MY_CA_NAME = "192.168.47.11"
 
@@ -429,6 +432,11 @@ CONF = {MS_ATTR.HOSTNAME: MY_CA_NAME,
         MS_ATTR.PORT: 50061,
         MS_ATTR.HTTP_PROXY: "0",
         MS_ATTR.CA: "CA03.nilsca.com\\nilsca-CA03-CA"}
+
+CONF_LAB = {MS_ATTR.HOSTNAME: "10.0.5.100",
+            MS_ATTR.PORT: 50061,
+            MS_ATTR.HTTP_PROXY: "0",
+            MS_ATTR.CA: "CA03.nilsca.com\\nilsca-CA03-CA"}
 
 
 class MSCATestCase(MyTestCase):
@@ -517,6 +525,35 @@ class MSCATestCase(MyTestCase):
             cacon = MSCAConnector("billsCA", CONF)
             r = cacon.sign_request(REQUEST_USER, {"template": "User"})
             self.assertIsInstance(r, OpenSSL.crypto.X509)
+
+    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+                         "Can not test MSCA. grpc module seems not available.")
+    def test_04_test_pending_request(self):
+        with mock.patch.object(MSCAConnector, "_connect_to_worker") as mock_conncect_worker:
+            # Mock the CA to simulate a Pending Request - disposition 5
+            mock_conncect_worker.return_value = CAServiceMock(CONF,
+                                                              {"available_cas": MOCK_AVAILABLE_CAS,
+                                                               "ca_templates": MOCK_CA_TEMPLATES,
+                                                               "csr_disposition": 5,
+                                                               "certificate": CERTIFICATE})
+            cacon = MSCAConnector("billsCA", CONF_LAB)
+            try:
+                r = cacon.sign_request(REQUEST, {"template": "ApprovalRequired"})
+            except CSRPending as e:
+                request_id = e.requestId
+
+            r = cacon.get_cr_status(request_id)
+            # still under submission
+            self.assertEqual(5, r)
+
+            # Issue the certificate
+            mock_conncect_worker.return_value.disposition = 3
+            # certificate was issued
+            r = cacon.get_cr_status(request_id)
+            self.assertEqual(3, r)
+            # Fetch the certificate.
+            r = cacon.get_issued_certificate(request_id)
+            self.assertTrue(r.startswith("-----BEGIN CERTIFICATE-----"), r)
 
 
 class CreateLocalCATestCase(MyTestCase):
