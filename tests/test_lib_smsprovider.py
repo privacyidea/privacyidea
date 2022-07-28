@@ -29,6 +29,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      create_sms_instance)
 from privacyidea.lib.smtpserver import add_smtpserver
 import responses
+from responses import matchers
 import os
 from . import smtpmock
 from . import smppmock
@@ -448,7 +449,6 @@ class HttpSMSTestCase(MyTestCase):
         self.missing_provider = HttpSMSProvider()
         self.missing_provider.load_config(self.config_missing)
 
-
     @responses.activate
     def test_01_send_sms_post_success(self):
         responses.add(responses.POST,
@@ -606,18 +606,18 @@ class HttpSMSTestCase(MyTestCase):
         self.assertTrue(id > 0)
         provider = create_sms_instance(identifier=identifier)
 
-        responses.add(responses.POST,
-                      "http://some.other.service",
-                      body=self.success_body)
+        # also check that the parameters are sent as json
+        responses.post("http://some.other.service",
+                       body=self.success_body,
+                       match=[
+                           matchers.json_params_matcher({"text": 'Hello: 7',
+                                                         'phone': '123456'})
+                       ],)
         # Here we need to send the SMS
         with mock.patch("logging.Logger.debug") as mock_log:
-            r = provider.submit_message("123456", '{"Hallo": 7}')
+            r = provider.submit_message("123456", 'Hello: 7')
             self.assertTrue(r)
-            if six.PY2:
-                mock_log.assert_any_call("passing JSON data: {u'Hallo': 7}")
-            else:
-                mock_log.assert_any_call("passing JSON data: {'Hallo': 7}")
-
+            mock_log.assert_any_call("passing JSON data: {'text': 'Hello: 7', 'phone': '123456'}")
         delete_smsgateway(identifier)
 
 
