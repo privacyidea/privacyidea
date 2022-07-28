@@ -39,6 +39,7 @@ class ERROR:
     TOKENADMIN = 301
     CONFIGADMIN = 302
     POLICY = 303
+    IMPORTADMIN = 304
     VALIDATE = 401
     REGISTRATION = 402
     AUTHENTICATE = 403
@@ -105,6 +106,11 @@ class SubscriptionError(privacyIDEAError):
         ret = '{0!s}({1!r}, application={2!s})'.format(type(
             self).__name__, self.message, self.application)
         return ret
+
+
+class TokenImportException(privacyIDEAError):
+    def __init__(self, description, id=ERROR.IMPORTADMIN):
+        privacyIDEAError.__init__(self, description=description, id=id)
 
 
 class AuthError(privacyIDEAError):
