@@ -7,17 +7,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-03-28 12:10+0200\n"
+"POT-Creation-Date: 2022-07-28 14:52+0200\n"
 "PO-Revision-Date: 2022-03-23 07:58+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language: nl\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea"
 "/privacyidea-ui/nl/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.9.1\n"
+"Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:222
 msgid "Authentication failure. Unknown realm: {0!s}."
@@ -634,9 +634,10 @@ msgstr ""
 "standaard."
 
 #: lib/policy.py:2130
+#, fuzzy
 msgid ""
-"Set label for a new enrolled Google Authenticator. Possible tags are <u> "
-"(user), <r> (realm), <s> (serial)."
+"Set label for a new enrolled Google Authenticator. Possible tags are "
+"&lt;u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
 msgstr ""
 "Stel een label in voor een nieuw geregistreerde Google Authenticator. "
 "Mogelijke tags zijn <u> (user), <r> (realm), <s> (serial)."
@@ -896,9 +897,10 @@ msgstr ""
 " token overeenkomt met deze regex-uitdrukking."
 
 #: lib/policy.py:2335
+#, fuzzy
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
-"regexp. key/<regexp>/"
+"regexp. key/&lt;regexp&gt;/"
 msgstr ""
 "De gebruiker zal enkel geauthenticeerd worden als het token info-veld "
 "overeenkomt met volgende regexp. key/<regexp>/"
@@ -1765,7 +1767,7 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr "Jouw LDAP-configuratie lijkt OK, {0!s} gebruikers gevonden."
 
-#: lib/smsprovider/FirebaseProvider.py:214
+#: lib/smsprovider/FirebaseProvider.py:218
 msgid ""
 "The project ID, that the client should use. Get it from your Firebase "
 "console."
@@ -1773,7 +1775,7 @@ msgstr ""
 "De project-ID dat de cliënt moet gebruiken. Haal die uit je Firebase "
 "console."
 
-#: lib/smsprovider/FirebaseProvider.py:218
+#: lib/smsprovider/FirebaseProvider.py:222
 msgid ""
 "The project number, that the client should use. Get it from your Firebase"
 " console."
@@ -1781,7 +1783,7 @@ msgstr ""
 "Het project-nummer dat de cliënt moet gebruiken. Haal die uit je Firebase"
 " console."
 
-#: lib/smsprovider/FirebaseProvider.py:223
+#: lib/smsprovider/FirebaseProvider.py:227
 msgid ""
 "The App ID, that the Android client should use. Get it from your Firebase"
 " console."
@@ -1789,7 +1791,7 @@ msgstr ""
 "De App-ID dat de Android cliënt moet gebruiken. Haal die uit je Firebase "
 "console."
 
-#: lib/smsprovider/FirebaseProvider.py:228
+#: lib/smsprovider/FirebaseProvider.py:232
 msgid ""
 "The API Key, that the Android client should use. Get it from your "
 "Firebase console."
@@ -1797,7 +1799,7 @@ msgstr ""
 "De Api-key die de Android cliënt moet gebruiken. Haal die uit je Firebase"
 " console."
 
-#: lib/smsprovider/FirebaseProvider.py:233
+#: lib/smsprovider/FirebaseProvider.py:237
 msgid ""
 "The App ID, that the iOS client should use. Get it from your Firebase "
 "console."
@@ -1805,7 +1807,7 @@ msgstr ""
 "De App-ID dat de IOS cliënt moet gebruiken. Haal die uit je Firebase "
 "console."
 
-#: lib/smsprovider/FirebaseProvider.py:238
+#: lib/smsprovider/FirebaseProvider.py:242
 msgid ""
 "The API Key, that the iOS client should use. Get it from your Firebase "
 "console."
@@ -1813,7 +1815,7 @@ msgstr ""
 "De Api-key die de IOS cliënt moet gebruiken. Haal die uit je Firebase "
 "console."
 
-#: lib/smsprovider/FirebaseProvider.py:243
+#: lib/smsprovider/FirebaseProvider.py:247
 msgid ""
 "The filename of the JSON config file, that allows privacyIDEA to talk to "
 "the Firebase REST API."
@@ -1821,7 +1823,7 @@ msgstr ""
 "De bestandsnaam van het JSON configuratie-bestand dat het mogelijk maakt "
 "voor privacyIDEA om met de Firebase REST API te communiceren."
 
-#: lib/smsprovider/FirebaseProvider.py:248
+#: lib/smsprovider/FirebaseProvider.py:252
 msgid "Proxy setting for HTTPS connections to googleapis.com."
 msgstr "Proxy-instellingen voor HTTPS-verbindingen naar googleapis.com."
 
@@ -2369,19 +2371,23 @@ msgstr ""
 "De gebruiker mag slechts dit maximaal aantal actieve PUSH-tokens "
 "toegewezen hebben."
 
-#: lib/tokens/pushtoken.py:343
+#: lib/tokens/pushtoken.py:342
+msgid "Require to unlock the Smartphone before Push requests can be accepted"
+msgstr ""
+
+#: lib/tokens/pushtoken.py:348
 msgid "The question the user sees on his mobile phone."
 msgstr "De vraag die de gebruiker op zijn mobiele telefoon ziet."
 
-#: lib/tokens/pushtoken.py:348
+#: lib/tokens/pushtoken.py:353
 msgid "The title of the notification, the user sees on his mobile phone."
 msgstr "De titel van de melding die de gebruiker ziet op zijn mobiele telefoon."
 
-#: lib/tokens/pushtoken.py:353
+#: lib/tokens/pushtoken.py:358
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr "De smartphne moet SSL verifiëren tijdens de authenticatie. (standaard 1)"
 
-#: lib/tokens/pushtoken.py:359
+#: lib/tokens/pushtoken.py:364
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
@@ -2389,13 +2395,13 @@ msgstr ""
 "Wacht een aantal seconden om de gebruiker de challenge te laten "
 "bevestigen in de eerste aanvraag."
 
-#: lib/tokens/pushtoken.py:365
+#: lib/tokens/pushtoken.py:370
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr ""
 "Configureer of het toegestaan is om push tokens te laten vragen naar "
 "challenges"
 
-#: lib/tokens/pushtoken.py:496
+#: lib/tokens/pushtoken.py:506
 msgid "URL for privacyIDEA Push Token"
 msgstr "URL voor privacyIDEA Push Token"
 
