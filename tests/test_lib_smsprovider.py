@@ -607,17 +607,23 @@ class HttpSMSTestCase(MyTestCase):
         provider = create_sms_instance(identifier=identifier)
 
         # also check that the parameters are sent as json
-        responses.post("http://some.other.service",
-                       body=self.success_body,
-                       match=[
-                           matchers.json_params_matcher({"text": 'Hello: 7',
-                                                         'phone': '123456'})
-                       ],)
+        responses.add(responses.POST,
+                      "http://some.other.service",
+                      body=self.success_body,
+                      match=[
+                          matchers.json_params_matcher({"text": 'Hello: 7',
+                                                        'phone': '123456'})
+                      ],)
         # Here we need to send the SMS
         with mock.patch("logging.Logger.debug") as mock_log:
             r = provider.submit_message("123456", 'Hello: 7')
             self.assertTrue(r)
-            mock_log.assert_any_call("passing JSON data: {'text': 'Hello: 7', 'phone': '123456'}")
+            if six.PY2:
+                mock_log.assert_any_call("passing JSON data: {u'text': u'Hello: "
+                                         "7', u'phone': u'123456'}")
+            else:
+                mock_log.assert_any_call("passing JSON data: {'text': 'Hello: "
+                                         "7', 'phone': '123456'}")
         delete_smsgateway(identifier)
 
 
