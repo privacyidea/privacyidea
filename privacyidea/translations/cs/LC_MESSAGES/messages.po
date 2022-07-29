@@ -7,17 +7,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-03-28 12:10+0200\n"
+"POT-Creation-Date: 2022-07-28 14:52+0200\n"
 "PO-Revision-Date: 2022-01-19 09:53+0000\n"
 "Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
 "Language: cs\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea"
 "/privacyidea-ui/cs/>\n"
-"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.9.1\n"
+"Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:222
 msgid "Authentication failure. Unknown realm: {0!s}."
@@ -583,8 +583,8 @@ msgstr ""
 
 #: lib/policy.py:2130
 msgid ""
-"Set label for a new enrolled Google Authenticator. Possible tags are <u> "
-"(user), <r> (realm), <s> (serial)."
+"Set label for a new enrolled Google Authenticator. Possible tags are "
+"&lt;u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
 msgstr ""
 
 #: lib/policy.py:2136
@@ -779,7 +779,7 @@ msgstr ""
 #: lib/policy.py:2335
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
-"regexp. key/<regexp>/"
+"regexp. key/&lt;regexp&gt;/"
 msgstr ""
 
 #: lib/policy.py:2342
@@ -1483,49 +1483,49 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr "Vaše konfigurace LDAP vypadá v pořádku, bylo nalezeno {0!s} uživatelů."
 
-#: lib/smsprovider/FirebaseProvider.py:214
+#: lib/smsprovider/FirebaseProvider.py:218
 msgid ""
 "The project ID, that the client should use. Get it from your Firebase "
 "console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:218
+#: lib/smsprovider/FirebaseProvider.py:222
 msgid ""
 "The project number, that the client should use. Get it from your Firebase"
 " console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:223
+#: lib/smsprovider/FirebaseProvider.py:227
 msgid ""
 "The App ID, that the Android client should use. Get it from your Firebase"
 " console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:228
+#: lib/smsprovider/FirebaseProvider.py:232
 msgid ""
 "The API Key, that the Android client should use. Get it from your "
 "Firebase console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:233
+#: lib/smsprovider/FirebaseProvider.py:237
 msgid ""
 "The App ID, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:238
+#: lib/smsprovider/FirebaseProvider.py:242
 msgid ""
 "The API Key, that the iOS client should use. Get it from your Firebase "
 "console."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:243
+#: lib/smsprovider/FirebaseProvider.py:247
 msgid ""
 "The filename of the JSON config file, that allows privacyIDEA to talk to "
 "the Firebase REST API."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:248
+#: lib/smsprovider/FirebaseProvider.py:252
 msgid "Proxy setting for HTTPS connections to googleapis.com."
 msgstr ""
 
@@ -1975,29 +1975,33 @@ msgstr ""
 msgid "The user may only have this maximum number of active Push tokens assigned."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:343
-msgid "The question the user sees on his mobile phone."
+#: lib/tokens/pushtoken.py:342
+msgid "Require to unlock the Smartphone before Push requests can be accepted"
 msgstr ""
 
 #: lib/tokens/pushtoken.py:348
-msgid "The title of the notification, the user sees on his mobile phone."
+msgid "The question the user sees on his mobile phone."
 msgstr ""
 
 #: lib/tokens/pushtoken.py:353
+msgid "The title of the notification, the user sees on his mobile phone."
+msgstr ""
+
+#: lib/tokens/pushtoken.py:358
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:359
+#: lib/tokens/pushtoken.py:364
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:365
+#: lib/tokens/pushtoken.py:370
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:496
+#: lib/tokens/pushtoken.py:506
 msgid "URL for privacyIDEA Push Token"
 msgstr ""
 
@@ -2470,5 +2474,17 @@ msgstr ""
 #~ "The text that will be send via "
 #~ "SMS for an SMS token. Use <otp>"
 #~ " and <serial> as parameters."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Set label for a new enrolled "
+#~ "Google Authenticator. Possible tags are "
+#~ "<u> (user), <r> (realm), <s> (serial)."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The user will only be authenticated "
+#~ "if the tokeninfo field matches the "
+#~ "regexp. key/<regexp>/"
 #~ msgstr ""
 

@@ -7,18 +7,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-03-28 12:10+0200\n"
+"POT-Creation-Date: 2022-07-28 14:52+0200\n"
 "PO-Revision-Date: 2022-04-27 14:55+0000\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
-"Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-ui/es/>\n"
 "Language: es\n"
+"Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea"
+"/privacyidea-ui/es/>\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.12.1-dev\n"
-"Generated-By: Babel 2.9.1\n"
+"Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:222
 msgid "Authentication failure. Unknown realm: {0!s}."
@@ -668,9 +667,10 @@ msgstr ""
 "comportamiento predeterminado."
 
 #: lib/policy.py:2130
+#, fuzzy
 msgid ""
-"Set label for a new enrolled Google Authenticator. Possible tags are <u> "
-"(user), <r> (realm), <s> (serial)."
+"Set label for a new enrolled Google Authenticator. Possible tags are "
+"&lt;u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
 msgstr ""
 "Establezca una etiqueta para un nuevo Autenticador de Google. Las "
 "posibles etiquetas son <u> (usuario), <r> (dominio), <s> (secuencia)."
@@ -877,8 +877,8 @@ msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
 msgstr ""
-"Permite que el usuario se autentique (predeterminado). Si se establece en "
-"'{0!s}', se denegará la autenticación del usuario."
+"Permite que el usuario se autentique (predeterminado). Si se establece en"
+" '{0!s}', se denegará la autenticación del usuario."
 
 #: lib/policy.py:2291
 msgid ""
@@ -935,9 +935,10 @@ msgstr ""
 " con esta expresión regular."
 
 #: lib/policy.py:2335
+#, fuzzy
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
-"regexp. key/<regexp>/"
+"regexp. key/&lt;regexp&gt;/"
 msgstr ""
 "El usuario solo será autenticado si el campo tokeninfo coincide con la "
 "expresión regular. clave /<regexp>/"
@@ -1265,8 +1266,8 @@ msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr ""
-"Especifique el contenido del PIN requerido del token {0!s}. (c)aracteres, (n)"
-"uméricos, e(s)peciales, (o)tros. [+/-]!"
+"Especifique el contenido del PIN requerido del token {0!s}. (c)aracteres,"
+" (n)uméricos, e(s)peciales, (o)tros. [+/-]!"
 
 #: lib/tokenclass.py:1599
 msgid "please enter otp: "
@@ -1810,15 +1811,14 @@ msgid ""
 "Your LDAP config found {0!s} user objects, but only {1!s} with the "
 "specified uidtype"
 msgstr ""
-"Su configuración LDAP encontró {0!s} usuarios, pero solo {1!s} con el tipo "
-"de uid especificado"
+"Su configuración LDAP encontró {0!s} usuarios, pero solo {1!s} con el "
+"tipo de uid especificado"
 
 #: lib/resolvers/LDAPIdResolver.py:1090
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
-msgstr ""
-"Su configuración de LDAP parece estar bien, se encontraron {0!s} usuarios."
+msgstr "Su configuración de LDAP parece estar bien, se encontraron {0!s} usuarios."
 
-#: lib/smsprovider/FirebaseProvider.py:214
+#: lib/smsprovider/FirebaseProvider.py:218
 msgid ""
 "The project ID, that the client should use. Get it from your Firebase "
 "console."
@@ -1826,7 +1826,7 @@ msgstr ""
 "El ID del proyecto que debe usar el cliente. Consíguelo en tu consola de "
 "Firebase."
 
-#: lib/smsprovider/FirebaseProvider.py:218
+#: lib/smsprovider/FirebaseProvider.py:222
 msgid ""
 "The project number, that the client should use. Get it from your Firebase"
 " console."
@@ -1834,7 +1834,7 @@ msgstr ""
 "El número de proyecto que debe utilizar el cliente. Consíguelo en tu "
 "consola de Firebase."
 
-#: lib/smsprovider/FirebaseProvider.py:223
+#: lib/smsprovider/FirebaseProvider.py:227
 msgid ""
 "The App ID, that the Android client should use. Get it from your Firebase"
 " console."
@@ -1842,7 +1842,7 @@ msgstr ""
 "El ID de la aplicación que debe usar el cliente de Android. Consíguelo en"
 " tu consola de Firebase."
 
-#: lib/smsprovider/FirebaseProvider.py:228
+#: lib/smsprovider/FirebaseProvider.py:232
 msgid ""
 "The API Key, that the Android client should use. Get it from your "
 "Firebase console."
@@ -1850,7 +1850,7 @@ msgstr ""
 "La clave de API que debe usar el cliente de Android. Consíguelo en tu "
 "consola de Firebase."
 
-#: lib/smsprovider/FirebaseProvider.py:233
+#: lib/smsprovider/FirebaseProvider.py:237
 msgid ""
 "The App ID, that the iOS client should use. Get it from your Firebase "
 "console."
@@ -1858,7 +1858,7 @@ msgstr ""
 "El ID de la aplicación que debe usar el cliente iOS. Consíguelo en tu "
 "consola de Firebase."
 
-#: lib/smsprovider/FirebaseProvider.py:238
+#: lib/smsprovider/FirebaseProvider.py:242
 msgid ""
 "The API Key, that the iOS client should use. Get it from your Firebase "
 "console."
@@ -1866,7 +1866,7 @@ msgstr ""
 "La clave de API que debe usar el cliente iOS. Consíguelo en tu consola de"
 " Firebase."
 
-#: lib/smsprovider/FirebaseProvider.py:243
+#: lib/smsprovider/FirebaseProvider.py:247
 msgid ""
 "The filename of the JSON config file, that allows privacyIDEA to talk to "
 "the Firebase REST API."
@@ -1874,7 +1874,7 @@ msgstr ""
 "El nombre del archivo de configuración JSON que permite a privacyIDEA "
 "comunicarse con la API REST de Firebase."
 
-#: lib/smsprovider/FirebaseProvider.py:248
+#: lib/smsprovider/FirebaseProvider.py:252
 msgid "Proxy setting for HTTPS connections to googleapis.com."
 msgstr "Configuración proxy para conexiones HTTPS a \"googleapis.com\"."
 
@@ -2416,21 +2416,25 @@ msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens "
 "Push\" activos."
 
-#: lib/tokens/pushtoken.py:343
+#: lib/tokens/pushtoken.py:342
+msgid "Require to unlock the Smartphone before Push requests can be accepted"
+msgstr ""
+
+#: lib/tokens/pushtoken.py:348
 msgid "The question the user sees on his mobile phone."
 msgstr "La pregunta que ve el usuario en su teléfono móvil."
 
-#: lib/tokens/pushtoken.py:348
+#: lib/tokens/pushtoken.py:353
 msgid "The title of the notification, the user sees on his mobile phone."
 msgstr "El título de la notificación que el usuario ve en su teléfono móvil."
 
-#: lib/tokens/pushtoken.py:353
+#: lib/tokens/pushtoken.py:358
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr ""
 "El \"smarthphone\" debe verificar SSL durante la autenticación. "
 "(predeterminado 1)"
 
-#: lib/tokens/pushtoken.py:359
+#: lib/tokens/pushtoken.py:364
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
@@ -2438,11 +2442,11 @@ msgstr ""
 "Espere unos segundos para que el usuario confirme el desafío de la "
 "primera solicitud."
 
-#: lib/tokens/pushtoken.py:365
+#: lib/tokens/pushtoken.py:370
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr "Configure si desea permitir que los \"tokens push\" sondeen los desafíos"
 
-#: lib/tokens/pushtoken.py:496
+#: lib/tokens/pushtoken.py:506
 msgid "URL for privacyIDEA Push Token"
 msgstr "URL para el \"Push Token\" de privacyIDEA"
 
@@ -3055,3 +3059,4 @@ msgstr ""
 #~ "'*'. For more details, check the "
 #~ "documentation."
 #~ msgstr ""
+
