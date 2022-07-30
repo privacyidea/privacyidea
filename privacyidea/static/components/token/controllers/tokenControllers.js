@@ -688,8 +688,6 @@ myApp.controller("tokenImportController", ['$scope', 'Upload', 'AuthFactory',
         realm: ""
     };
 
-
-
     // get Realms
     ConfigFactory.getRealms(function (data) {
         $scope.realms = data.result.value;
