@@ -1,4 +1,4 @@
-Version 3.7.3, 2022-08-xx
+Version 3.7.3, 2022-08-01
 
   Fixes:
   * Preserve client information, when disabling a policy (#3243)
