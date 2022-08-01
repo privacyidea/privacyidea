@@ -82,10 +82,7 @@
             </p>
             <select class="form-control"
                     ng-model="form.validateMAC">
-                <option ng-repeat="(key, desc) in {
-                    no_check: 'Do not verify the authenticity',
-                    check_fail_soft : 'Skip tokens that can not be verified',
-                    check_fail_hard : 'Abort operation on unverifiable token'}"
+                <option ng-repeat="(key, desc) in verify_pskc_opts"
                         value="{{ key }}">
                     {{ desc }}
                 </option>
