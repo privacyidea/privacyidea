@@ -429,10 +429,10 @@ class TiqrTokenClass(OcraTokenClass):
         encoded_user_identifier = quote_plus(user_identifier.encode('utf-8'))
         authurl = u"tiqrauth://{0!s}@{1!s}/{2!s}/{3!s}/{4!s}".format(
                                               encoded_user_identifier,
+                                              service_identifier,
                                               db_challenge.transaction_id,
                                               challenge,
-                                              quote(service_displayname),
-                                              service_identifier)
+                                              quote(service_displayname))
         image = create_img(authurl, width=250)
         attributes = {"img": image,
                       "value": authurl,
