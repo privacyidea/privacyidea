@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-06-08 16:56+0200\n"
-"PO-Revision-Date: 2022-07-22 04:02+0000\n"
+"PO-Revision-Date: 2022-08-03 08:22+0000\n"
 "Last-Translator: Marco Malavolti <marco.malavolti@gmail.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/it/>\n"
@@ -1867,7 +1867,7 @@ msgstr ""
 
 #: lib/tokens/certificatetoken.py:273
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr ""
+msgstr "Certificato: registra un token per un certificato X509."
 
 #: lib/tokens/certificatetoken.py:284
 msgid "The user may only have this maximum number of certificates assigned."
