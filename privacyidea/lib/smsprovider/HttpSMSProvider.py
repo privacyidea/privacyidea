@@ -90,7 +90,7 @@ class HttpSMSProvider(ISMSProvider):
             ssl_verify = self.smsgateway.option_dict.get("CHECK_SSL",
                                                          "yes") == "yes"
             json_data = self.smsgateway.option_dict.get("SEND_DATA_AS_JSON",
-                                                        "yes") == "yes"
+                                                        "no") == "yes"
             # FIXME: The Proxy option is deprecated and will be removed a version > 2.21
             proxy = self.smsgateway.option_dict.get("PROXY")
             http_proxy = self.smsgateway.option_dict.get('HTTP_PROXY')
@@ -145,23 +145,31 @@ class HttpSMSProvider(ISMSProvider):
         # url, parameter, username, password, method
         requestor = requests.get
         params = parameter
-        data = {}
+        data = None
+        json_param = None
         if method == "POST":
             requestor = requests.post
-            params = {}
-            data = parameter
+            params = None
             if json_data:
-                text_json = json.loads(data.get("text"))
-                data["text"] = text_json
-                headers['Content-Type'] = 'application/json'
-                log.debug("passing JSON data: {0!s}".format(data["text"]))
+                json_param = parameter
+                log.debug("passing JSON data: {0!s}".format(json_param))
+            else:
+                data = parameter
 
-        log.debug(u"issuing request with parameters {0!s} headers {1!s} and method {2!s} and"
-                  "authentication {3!s} to url {4!s}.".format(params, headers, method,
-                                                              basic_auth, url))
+        log_dict = {'params': params,
+                    'headers': headers,
+                    'method': method,
+                    'basic_auth': basic_auth,
+                    'url': url,
+                    'data': data,
+                    'json_param': json_param}
+        log.debug("issuing request with parameters {params} (data: {data}, "
+                  "json: {json_param}), headers {headers}, method {method} and"
+                  "authentication {basic_auth} "
+                  "to url {url}.".format(**log_dict))
         # Todo: drop basic auth if Authorization-Header is given?
         r = requestor(url, params=params, headers=headers,
-                      data=data,
+                      data=data, json=json_param,
                       verify=ssl_verify,
                       auth=basic_auth,
                       timeout=float(timeout),
