@@ -93,6 +93,8 @@ def single_page_application():
     browser_lang = request.accept_languages.best_match(["en", "de", "de-DE", "nl", "fr", "cs", "it", "es", "tr"], default="en").split("-")[0]
     # The page title can be configured in pi.cfg
     page_title = current_app.config.get("PI_PAGE_TITLE", "privacyIDEA Authentication System")
+    # A url to redirct to at logout
+    logout_redirect_url = current_app.config.get("PI_LOGOUT_REDIRECT_URL", "")
     # check if login with REMOTE_USER is allowed.
     remote_user = ""
     password_reset = False
@@ -178,6 +180,7 @@ def single_page_application():
         'show_node': show_node,
         'external_links': external_links,
         'login_text': login_text,
+        'logout_redirect_url': logout_redirect_url,
         'gdpr_link': gdpr_link,
         'logo': logo,
         'page_title': page_title

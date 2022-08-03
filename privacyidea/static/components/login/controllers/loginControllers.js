@@ -75,6 +75,8 @@ angular.module("privacyideaApp")
     $scope.hasJobQueue = obj.val() == "True";
     obj = angular.element(document.querySelector('#LOGIN_TEXT'));
     $scope.piLoginText = obj.val();
+    obj = angular.element(document.querySelector('#LOGOUT_REDIRECT_URL'));
+    $scope.logout_redirect_url = obj.val();
     obj = angular.element(document.querySelector('#SHOW_NODE'));
     $scope.show_node = obj.val();
     obj = angular.element(document.querySelector('#GDPR_LINK'));
@@ -540,6 +542,11 @@ angular.module("privacyideaApp")
         Idle.unwatch();
         // Jump to top when the policy is saved
         $('html,body').scrollTop(0);
+        // Optional redirect on logout
+        if ($scope.logout_redirect_url != "") {
+            console.log("Redirecting to "+$scope.logout_redirect_url)
+            window.location.href = $scope.logout_redirect_url;
+        }
     };
 
     $scope.nextWelcome = function() {

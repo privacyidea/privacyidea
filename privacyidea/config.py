@@ -59,6 +59,7 @@ class Config(object):
     # PI_AUDIT_SQL_URI = sqlite://
     PI_VASCO_LIBRARY = None
     PI_CUSTOM_CSS = False
+    PI_LOGOUT_REDIRECT_URL = ""
 
 
 class DevelopmentConfig(Config):
