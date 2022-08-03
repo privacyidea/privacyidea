@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-07-22 04:02+0000\n"
+"PO-Revision-Date: 2022-08-03 08:18+0000\n"
 "Last-Translator: Marco Malavolti <marco.malavolti@gmail.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/it/>\n"
@@ -573,23 +573,23 @@ msgstr "Connettore CA"
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:5
 msgid "CA Connector name"
-msgstr ""
+msgstr "Nome del connettore CA"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:44
 msgid "CA Key"
-msgstr ""
+msgstr "Chiave CA"
 
 #: privacyidea/static/components/config/views/config.html:73
 msgid "CAs"
-msgstr ""
+msgstr "CA"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:121
 msgid "CRL Configuration"
-msgstr ""
+msgstr "Configurazione CRL"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:165
 msgid "Cache Timeout (seconds)"
-msgstr ""
+msgstr "Timeout della cache (secondi)"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:77
 #: privacyidea/static/components/directives/views/directive.tokendata.html:23
@@ -600,88 +600,97 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.getserial.html:83
 #: privacyidea/static/components/user/views/user.details.html:56
 msgid "Cancel"
-msgstr ""
+msgstr "Annulla"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:45
 msgid "Certificate (PEM)"
-msgstr ""
+msgstr "Certificato (PEM)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:107
 msgid "Certificate Directory"
-msgstr ""
+msgstr "Cartella dei certificati"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:123
 msgid "Certificate Revocation List"
-msgstr ""
+msgstr "Elenco di revoca dei certificati"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:94
 msgid ""
 "Certificate Signing\n"
 "                Request Directory"
 msgstr ""
+"Firma del Certificato\n"
+"                Cartella delle richieste"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:56
 msgid "Certificate Signing Request (PEM)"
-msgstr ""
+msgstr "Richiesta di firma del certificato (PEM)"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:33
 msgid "Certificate Template"
-msgstr ""
+msgstr "Modello di certificato"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:211
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr ""
+msgstr "Certificato: registra un token per un certificato X509."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:69
 msgid "Certificates Templates file"
-msgstr ""
+msgstr "File di modelli di certificati"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:239
 msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr ""
+"Risposta della sfida per l'Autenticazione. L'utente non è ancora "
+"completamente autenticato."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:316
 msgid "Challenge Response Authentication. Your response was not valid!"
-msgstr ""
+msgstr "Risposta alla sfida per l'Autenticazione. La risposta non è valida!"
 
 #: privacyidea/static/components/login/views/pinchange.html:23
 #: privacyidea/static/components/login/views/pinchange.html:4
 msgid "Change PIN"
-msgstr ""
+msgstr "Modifica del PIN"
 
 #: privacyidea/static/components/token/views/token.details.html:435
 msgid "Check OTP only."
-msgstr ""
+msgstr "Controlla solo OTP."
 
 #: privacyidea/static/components/config/views/config.policies.details.html:204
 msgid ""
 "Check all possible resolvers of a user to match the resolver\n"
 "                in this policy."
 msgstr ""
+"Controllare tutti i possibili resolver di un utente in modo che "
+"corrispondano al resolver\n"
+"                in questa politica."
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:18
 #: privacyidea/static/components/token/views/token.enroll.remote.html:12
 msgid "Check the PIN locally"
-msgstr ""
+msgstr "Controllare il PIN localmente"
 
 #: privacyidea/static/components/token/views/token.details.html:428
 msgid "Check with OTP PIN."
-msgstr ""
+msgstr "Verifica con il PIN OTP."
 
 #: privacyidea/static/components/login/views/login.html:70
 msgid "Choose a realm..."
-msgstr ""
+msgstr "Scegliere un realm..."
 
 #: privacyidea/static/components/config/views/config.realms.html:9
 msgid "Clear default realm"
-msgstr ""
+msgstr "Cancella il realm predefinito"
 
 #: privacyidea/static/components/config/views/config.system.html:87
 msgid ""
 "Clear failcounter\n"
 "                after minutes"
 msgstr ""
+"Azzeramento del contatore di errori\n"
+"                dopo minuti"
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:20
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:20
@@ -690,6 +699,10 @@ msgid ""
 "            the QR Code, if you\n"
 "            want to add the Token to your Google Authenticator."
 msgstr ""
+"Fare clic <a href=\"{{ enrolledToken.googleurl.value }}\">qui</a> o eseguire "
+"la scansione\n"
+"            del QR Code, se\n"
+"            vuoi aggiungere il token al tuo Google Authenticator."
 
 #: privacyidea/static/components/token/views/token.enrolled.motp.html:14
 msgid ""
@@ -697,6 +710,10 @@ msgid ""
 "            the QR Code, if you\n"
 "            want to add the Token to your mOTP App like Token2."
 msgstr ""
+"Fare clic <a href=\"{{ enrolledToken.motpurl.value }}\">qui</a> o eseguire "
+"la scansione\n"
+"            del QR Code, se\n"
+"            vuoi aggiungere il Token alla tua app mOTP come Token2."
 
 #: privacyidea/static/components/token/views/token.enrolled.tiqr.html:13
 msgid ""
@@ -705,110 +722,116 @@ msgid ""
 "            the QR Code, if you\n"
 "            want to add the Token to your TiQR App."
 msgstr ""
+"Fare clic <a href=\"{{ enrolledToken.tiqrenroll.value }}\">qui</a> o\n"
+"            scannerizzare\n"
+"            il QR Code se\n"
+"            vuoi aggiungere il Token alla tua App TiQR."
 
 #: privacyidea/static/components/components/views/component.clienttype.html:8
 #: privacyidea/static/components/config/views/config.policies.details.html:240
 #: privacyidea/static/components/config/views/config.policies.list.html:23
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:51
 msgid "Client"
-msgstr ""
+msgstr "Client"
 
 #: privacyidea/static/components/components/views/component.html:20
 msgid "Client Application Type"
-msgstr ""
+msgstr "Tipo di applicazione client"
 
 #: privacyidea/static/components/login/factories/u2f.js:28
 msgid "Client Configuration is not supported."
-msgstr ""
+msgstr "La configurazione del client non è supportata."
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:20
 #: privacyidea/static/components/config/views/config.token.yubikey.html:39
 msgid "Client ID"
-msgstr ""
+msgstr "Identificativo cliente"
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:44
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:44
 msgid "Client Part"
-msgstr ""
+msgstr "Parte client"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:36
 msgid "Clients"
-msgstr ""
+msgstr "Clienti"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:48
 msgid "Close"
-msgstr ""
+msgstr "Chiudi"
 
 #: privacyidea/static/components/config/views/config.events.details.html:145
 #: privacyidea/static/components/config/views/config.policies.details.html:303
 msgid "Close all groups"
-msgstr ""
+msgstr "Chiudi tutti i gruppi"
 
 #: privacyidea/static/templates/menu.html:140
 msgid "Community"
-msgstr ""
+msgstr "Comunità"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:8
 msgid "Comparator"
-msgstr ""
+msgstr "Comparatore"
 
 #: privacyidea/static/templates/menu.html:93
 msgid "Components"
-msgstr ""
+msgstr "Componenti"
 
 #: privacyidea/static/components/config/views/config.events.details.html:109
 #: privacyidea/static/components/config/views/config.events.details.html:121
 #: privacyidea/static/components/config/views/config.policies.details.html:126
 #: privacyidea/static/components/config/views/config.policies.details.html:138
 msgid "Condition"
-msgstr ""
+msgstr "Condizione"
 
 #: privacyidea/static/components/config/views/config.events.list.html:25
 msgid "Conditions"
-msgstr ""
+msgstr "Condizioni"
 
 #: privacyidea/static/templates/menu.html:77
 msgid "Config"
-msgstr ""
+msgstr "Configurazione"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:196
 msgid "Connection Parameters"
-msgstr ""
+msgstr "Parametri di connessione"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:14
 msgid "Connector name"
-msgstr ""
+msgstr "Nome del connettore"
 
 #: privacyidea/static/components/token/views/token.details.html:119
 msgid "Count"
-msgstr ""
+msgstr "Conteggio"
 
 #: privacyidea/static/components/token/views/token.details.html:124
 #: privacyidea/static/components/token/views/token.getserial.html:52
 msgid "Count Window"
-msgstr ""
+msgstr "Finestra di conteggio"
 
 #: privacyidea/static/components/config/views/config.system.html:222
 msgid ""
 "Count Window of\n"
 "                    newly enrolled tokens"
 msgstr ""
+"Finestra di conteggio dei\n"
+"                    nuovi token registrati"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:187
 msgid "Create Periodic Task Definition"
-msgstr ""
+msgstr "Creare una definizione di attività periodica"
 
 #: privacyidea/static/components/config/views/config.events.details.html:24
 msgid "Create a new Event Handler"
-msgstr ""
+msgstr "Creare un nuovo gestore eventi"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:5
 msgid "Create a new HTTP Resolver"
-msgstr ""
+msgstr "Creare un nuovo resolver HTTP"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:6
 msgid "Create a new LDAP Resolver"
-msgstr ""
+msgstr "Creare un nuovo LDAP Resolver"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:7
 msgid "Create a new Local CA Connector"
