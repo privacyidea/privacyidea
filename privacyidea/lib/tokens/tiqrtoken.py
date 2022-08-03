@@ -80,7 +80,7 @@ the token in challenge response.
 This code is tested in tests/test_lib_tokens_tiqr.
 """
 
-from six.moves.urllib.parse import quote_plus
+from six.moves.urllib.parse import quote, quote_plus
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
@@ -432,8 +432,7 @@ class TiqrTokenClass(OcraTokenClass):
                                               service_identifier,
                                               db_challenge.transaction_id,
                                               challenge,
-                                              service_displayname
-                                              )
+                                              quote(service_displayname))
         image = create_img(authurl, width=250)
         attributes = {"img": image,
                       "value": authurl,
