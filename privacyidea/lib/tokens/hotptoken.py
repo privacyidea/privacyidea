@@ -274,8 +274,7 @@ class HotpTokenClass(TokenClass):
                                                     _("URL for google "
                                                       "Authenticator"),
                                                     "value": goo_url,
-                                                    "img": create_img(goo_url,
-                                                                      width=250)
+                                                    "img": create_img(goo_url)
                                                     }
 
                     oath_url = cr_oath(otpkey=otpkey,
@@ -289,8 +288,7 @@ class HotpTokenClass(TokenClass):
                                                                    " OATH "
                                                                    "token"),
                                                   "value": oath_url,
-                                                  "img": create_img(oath_url,
-                                                                    width=250)
+                                                  "img": create_img(oath_url)
                                                   }
                 except Exception as ex:  # pragma: no cover
                     log.error("{0!s}".format((traceback.format_exc())))

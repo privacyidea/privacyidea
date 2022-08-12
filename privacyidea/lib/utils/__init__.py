@@ -27,14 +27,11 @@ This is the library with base functions for privacyIDEA.
 This module is tested in tests/test_lib_utils.py
 """
 import six
-import logging; log = logging.getLogger(__name__)
+import logging
 from importlib import import_module
 import binascii
 import base64
-import qrcode
 import sqlalchemy
-from six.moves.urllib.parse import urlencode
-from io import BytesIO
 import string
 import re
 from datetime import timedelta, datetime
@@ -48,10 +45,11 @@ import threading
 import importlib_metadata
 import time
 import html
+import segno
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
 
-ENCODING = "utf-8"
+log = logging.getLogger(__name__)
 
 BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
@@ -61,6 +59,7 @@ ALLOWED_SERIAL = r"^[0-9a-zA-Z\-_]+$"
 CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters, # characters
                           "n": string.digits,        # numbers
                           "s": string.punctuation}   # special
+
 
 def check_time_in_range(time_range, check_time=None):
     """
@@ -255,49 +254,18 @@ def urlsafe_b64encode_and_unicode(s):
     return res
 
 
-def create_png(data, alt=None):
-    img = qrcode.make(data)
-
-    output = BytesIO()
-    img.save(output)
-    o_data = output.getvalue()
-    output.close()
-
-    return o_data
-
-
-def create_img(data, width=0, alt=None, raw=False):
+def create_img(data, scale=10):
     """
-    create the qr image data
+    create the qr PNG image data URI
 
     :param data: input data that will be munched into the qrcode
     :type data: str
-    :param width: image width in pixel
-    :type width: int
-    :param raw: If set to false, the data will be interpreted as text and a
-        QR code will be generated.
-
-    :return: image data to be used in an <img> tag
-    :rtype:  str
+    :param scale: Scaling of the final PNG image
+    :type scale: int
+    :return: PNG data URI to be used in an <img> tag
+    :rtype: str
     """
-    width_str = ''
-    alt_str = ''
-
-    if not raw:
-        o_data = create_png(data, alt=alt)
-    else:
-        o_data = data
-    data_uri = b64encode_and_unicode(o_data)
-
-    if width != 0:
-        width_str = " width={0:d} ".format((int(width)))
-
-    if alt is not None:
-        val = urlencode({'alt': alt})
-        alt_str = " alt={0!r} ".format((val[len('alt='):]))
-
-    ret_img = u'data:image/png;base64,{0!s}'.format(data_uri)
-    return ret_img
+    return segno.make_qr(data).png_data_uri(scale=scale)
 
 
 #
