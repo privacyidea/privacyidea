@@ -792,7 +792,7 @@ class WebAuthnRegistrationResponse(object):
         """
         Create a new WebAuthnRegistrationResponse object.
 
-        :param rp_id: The relying party id.
+        :param rp_id: The Relying party id.
         :type rp_id: basestring
         :param origin: The origin of the user.
         :type origin: basestring
@@ -954,27 +954,28 @@ class WebAuthnRegistrationResponse(object):
             #
             # Verify the sig using verificationData and certificate public
             # key per [SEC1].
-            if not client_data_hash:
-                raise RegistrationRejectedException('Client data hash not available')
+            # TODO: we need to check here what happens if we do not have a
+            #  client_data_hash (this happens during the webauthntoken_allowed
+            #  pre-policy).
+            if client_data_hash:
+                try:
+                    _verify_signature(certificate_public_key, alg, verification_data, signature)
+                except InvalidSignature:
+                    raise RegistrationRejectedException('Invalid signature received.')
+                except NotImplementedError:
+                    # We do not support this. Treat as none attestation, if acceptable.
+                    if none_attestation_permitted:
+                        attestation_type = ATTESTATION_TYPE.NONE
+                        trust_path = []
+                        return (
+                            attestation_type,
+                            trust_path,
+                            credential_pub_key,
+                            cred_id,
+                            aaguid
+                        )
 
-            try:
-                _verify_signature(certificate_public_key, alg, verification_data, signature)
-            except InvalidSignature:
-                raise RegistrationRejectedException('Invalid signature received.')
-            except NotImplementedError:
-                # We do not support this. Treat as none attestation, if acceptable.
-                if none_attestation_permitted:
-                    attestation_type = ATTESTATION_TYPE.NONE
-                    trust_path = []
-                    return (
-                        attestation_type,
-                        trust_path,
-                        credential_pub_key,
-                        cred_id,
-                        aaguid
-                    )
-
-                raise RegistrationRejectedException('Unsupported algorithm.')
+                    raise RegistrationRejectedException('Unsupported algorithm.')
 
             # Step 7.
             #
