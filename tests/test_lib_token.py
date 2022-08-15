@@ -1633,7 +1633,7 @@ class TokenOutOfBandTestCase(MyTestCase):
         self.assertEqual(r, 0)
 
         # Now set the challenge to be answered and recheck:
-        Challenge.query.filter(Challenge.transaction_id == transaction_id).update({"otp_valid": 1})
+        Challenge.query.filter(Challenge.transaction_id == transaction_id).update({"otp_valid": True})
         r, r_dict = check_token_list([token1], "", user=user, options={"transaction_id": transaction_id})
         self.assertTrue(r, r_dict)
         self.assertEqual(r_dict.get("message"), "Found matching challenge", r_dict)
