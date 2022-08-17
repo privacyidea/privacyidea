@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-03-28 10:06+0000\n"
+"PO-Revision-Date: 2022-08-18 14:17+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.12-dev\n"
+"X-Generator: Weblate 4.14-dev\n"
 
 # This is the level in the subscriptions
 #. level of subscription
@@ -1618,7 +1618,7 @@ msgid ""
 "                with the new name!"
 msgstr ""
 "Wenn Sie den Namen der Richtlinie ändern, wird eine neue Richtlinie mit "
-"diesem Namen erzeugt. Die Richtlinie mit dem alten Namen bleibt erhalten."
+"diesem Namen erzeugt. Die Richtlinie mit dem alten Namen bleibt erhalten!"
 
 #: privacyidea/static/components/token/views/token.import.html:51
 msgid ""
