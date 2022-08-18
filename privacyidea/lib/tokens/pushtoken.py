@@ -505,7 +505,7 @@ class PushTokenClass(TokenClass):
                                            ttl=ttl)
             response_detail["pushurl"] = {"description": _("URL for privacyIDEA Push Token"),
                                           "value": qr_url,
-                                          "img": create_img(qr_url, width=250)
+                                          "img": create_img(qr_url)
                                           }
 
             response_detail["enrollment_credential"] = self.get_tokeninfo("enrollment_credential")
