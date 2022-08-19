@@ -65,10 +65,9 @@ def main():
     if password == "":
         password = getpass.getpass("Please enter a password: ")
 
-    # the salt are two characters from: [./a-zA-Z0-9]
-    pool = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    salt = pool[random.randrange(0, len(pool))] + pool[random.randrange(0, len(pool))]
-    encryptedPW = crypt.crypt(password, salt)
+    # without salt, the strongest available hash function will be selected
+    # and a random salt is created
+    encryptedPW = crypt.crypt(password)
 
     gid = uid
     home = ""
