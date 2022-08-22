@@ -57,7 +57,7 @@ jobs:
     name: 'Run tests with Python'
     needs: pre_check
     if: needs.pre_check.outputs.run_tests == 'true'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       # don't cancel running matrix tests when one test fails
       fail-fast: false
@@ -114,7 +114,7 @@ jobs:
     needs: build
     # always run this job, regardless of a failing matrix-job
     if: always()
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code for coverage
       uses: actions/checkout@v2
