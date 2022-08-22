@@ -73,12 +73,12 @@ class SecurityModuleTestCase(MyTestCase):
 
         # check that we can decrypt values with default PKCS7 padding
         iv = b'1234567890abcdef'
-        self.assertEqual(b'Hallo Welt',
-                         hsm.decrypt(binascii.unhexlify('98d005d6f87c01f1719199bc3df1beb8'), iv))
+        pkcs7_cipher = '98d005d6f87c01f1719199bc3df1beb8'
+        legacy_cipher = 'bbcaff52640f9dc90be1c4e1df8a70b55a1194cc67d155722054317901e3646a'
+        self.assertEqual(b'Hallo Welt', hsm.decrypt(binascii.unhexlify(pkcs7_cipher), iv))
 
         # check that we can decrypt values with legacy padding
-        self.assertEqual(b'Hallo Welt',
-                         hsm.decrypt(binascii.unhexlify('bbcaff52640f9dc90be1c4e1df8a70b55a1194cc67d155722054317901e3646a'), iv))
+        self.assertEqual(b'Hallo Welt', hsm.decrypt(binascii.unhexlify(legacy_cipher), iv))
 
         cipher = hsm.encrypt_pin(u"pin")
         text = hsm.decrypt_pin(cipher)
