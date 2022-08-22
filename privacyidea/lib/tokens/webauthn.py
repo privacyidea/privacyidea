@@ -1338,7 +1338,6 @@ class WebAuthnRegistrationResponse(object):
                 client_data_hash,
                 self.none_attestation_permitted
             )
-            b64_cred_id = webauthn_b64_encode(cred_id)
 
             # Step 15.
             #
@@ -1391,6 +1390,7 @@ class WebAuthnRegistrationResponse(object):
             # to a different user, the Relying Party SHOULD fail this registration
             # ceremony, or it MAY decide to accept the registration, e.g. while deleting
             # the older registration.
+            b64_cred_id = webauthn_b64_encode(cred_id)
             if existing_credential_ids and b64_cred_id in existing_credential_ids:
                 raise RegistrationRejectedException('Credential already exists.')
 
@@ -1405,7 +1405,7 @@ class WebAuthnRegistrationResponse(object):
             credential = WebAuthnCredential(rp_id=self.rp_id,
                                             origin=self.origin,
                                             aaguid=aaguid,
-                                            credential_id=b64_cred_id,
+                                            credential_id=cred_id,
                                             public_key=webauthn_b64_encode(credential_public_key),
                                             sign_count=struct.unpack('!I', auth_data[33:37])[0],
                                             attestation_level=attestation_level,
@@ -1850,8 +1850,9 @@ def _is_trusted_x509_attestation_cert(trust_path, trust_anchors):
     try:
         store_ctx.verify_certificate()
         return True
-    except Exception as e:
-        log.info('Unable to verify certificate: {}'.format(e))
+    except crypto.X509StoreContextError as e:
+        log.info('Unable to verify certificate {0!r}: '
+                 '{1!s}'.format(e.certificate.get_subject(), e))
 
     return False
 

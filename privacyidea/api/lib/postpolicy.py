@@ -814,7 +814,11 @@ def check_verify_enrollment(request, response):
                 tokenobj.token.rollout_state = ROLLOUTSTATE.VERIFYPENDING
                 tokenobj.token.save()
                 response.set_data(json.dumps(content))
-    else:
+    elif len(tokenobj_list) > 1:
         log.warning("No distinct token object found in enrollment response!")
+    else:
+        # Some enrollments don't provide a token in the second step (WebAuthn)
+        # Maybe we could implement a verification step for these tokens as well.
+        pass
 
     return response

@@ -728,7 +728,7 @@ class WebAuthnTokenClass(TokenClass):
     @staticmethod
     def get_setting_type(key):
         """
-        Fetch the type of a setting specific to WebAuthn tokens.
+        Fetch the type of setting specific to WebAuthn tokens.
 
         The WebAuthn token defines several public settings. When these are
         written to the database, the type of the setting is automatically
@@ -790,7 +790,7 @@ class WebAuthnTokenClass(TokenClass):
         :rtype: basestring
         """
 
-        return webauthn_b64_encode(binascii.unhexlify(self.token.get_otpkey().getKey()))
+        return webauthn_b64_encode(self.token.get_otpkey().getKey())
 
     def update(self, param, reset_failcount=True):
         """
@@ -866,7 +866,7 @@ class WebAuthnTokenClass(TokenClass):
                 token.decrypt_otpkey() for token in get_tokens(tokentype=self.type)
             ])
 
-            self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(web_authn_credential.credential_id)))
+            self.set_otpkey(web_authn_credential.credential_id)
             self.set_otp_count(web_authn_credential.sign_count)
             self.add_tokeninfo(WEBAUTHNINFO.PUB_KEY,
                                hexlify_and_unicode(webauthn_b64_decode(web_authn_credential.public_key)))
@@ -944,7 +944,6 @@ class WebAuthnTokenClass(TokenClass):
 
             # To aid with unit testing a fixed nonce may be passed in.
             nonce = self._get_nonce()
-
             # Create the challenge in the database
             challenge = Challenge(serial=self.token.serial,
                                   transaction_id=getParam(params, 'transaction_id', optional),

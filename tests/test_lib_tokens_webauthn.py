@@ -175,7 +175,7 @@ class WebAuthnTokenTestCase(MyTestCase):
     USER_RESOLVER = "testresolver"
 
     def _create_challenge(self):
-        self.token.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(CRED_ID)))
+        self.token.set_otpkey(webauthn_b64_decode(CRED_ID))
         self.token.add_tokeninfo(WEBAUTHNINFO.PUB_KEY, PUB_KEY)
         self.token.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID, RP_ID)
         (_, _, _, response_details) = self.token.create_challenge(options=self.challenge_options)
@@ -399,7 +399,7 @@ class WebAuthnTestCase(unittest.TestCase):
             user_name=USER_NAME,
             user_display_name=USER_DISPLAY_NAME,
             icon_url=ICON_URL,
-            credential_id=credential.credential_id.decode(),
+            credential_id=webauthn_b64_encode(credential.credential_id),
             public_key=credential.public_key,
             sign_count=credential.sign_count,
             rp_id=credential.rp_id
