@@ -2,7 +2,10 @@
 """
 This tests the package lib.utils
 """
-from .base import MyTestCase
+from flask.testing import EnvironBuilder
+
+from privacyidea.lib.token import init_token
+from .base import MyTestCase, FakeFlaskG
 
 from privacyidea.lib.utils import (parse_timelimit,
                                    check_time_in_range, parse_proxy,
@@ -24,14 +27,16 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
                                    check_serial_valid, determine_logged_in_userparams,
-                                   to_list, parse_string_to_dict)
+                                   to_list, parse_string_to_dict, replace_function_event_handler)
 from privacyidea.lib.crypto import generate_password
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.error import PolicyError
+from privacyidea.lib.user import User
 import binascii
+from flask import Request
 
 
 class UtilsTestCase(MyTestCase):
@@ -1018,3 +1023,29 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(d.get("key1"), ["v1", "v2", "v3"])
         self.assertEqual(d.get("key2"), [])
         self.assertEqual(d.get("key3"), ["v5"])
+
+    def test_36_replace(self):
+        # Setup realm and user
+        self.setUp_user_realms()
+        userh = User("hans", self.realm1)
+        self.setUp_user_realms()
+
+        init_token({"serial": "SPASS01", "type": "spass"},
+                   User("cornelius", self.realm1))
+        g = FakeFlaskG()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01"}
+        req.User = User("cornelius", self.realm1)
+        g = FakeFlaskG()
+        g.logged_in_user = {'username': 'hans',
+                            'realm': self.realm1}
+        text = "The logged in user is {logged_in_user}"
+        text2 = replace_function_event_handler(text, token_serial="SPASS01", tokenowner=User, logged_in_user=userh)
+        self.assertEqual("The logged in user is hans", text2)
