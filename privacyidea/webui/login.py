@@ -45,10 +45,10 @@ from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_nod
 from privacyidea.lib.queue import has_job_queue
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
+DEFAULT_LANGUAGE_LIST = ["en", "de", "de_DE", "nl", "fr",
+                         "cs", "es", "tr", "zh_Hant"]
 
 login_blueprint = Blueprint('login_blueprint', __name__)
-default_language_list = ["en", "de", "de_DE", "nl", "fr",
-                         "cs", "es", "tr", "zh_Hant"]
 
 
 def get_accepted_language(req):
@@ -58,12 +58,9 @@ def get_accepted_language(req):
         return None
     # otherwise try to guess the language from the user accept
     # header the browser transmits. The best match wins.
-    pi_cfg_configuration = get_app_config_value("PREFERRED_LANGUAGE")
-    # reads pi.cfg and checks if preferred language is set. Otherwise default list ist selected.
-    return req.accept_languages.best_match(pi_cfg_configuration, default=pi_cfg_configuration[0]) \
-        if pi_cfg_configuration else req.accept_languages.best_match(default_language_list,
-                                                                     default=default_language_list[4])
-
+    pi_cfg_configuration = get_app_config_value("PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
+    # reads pi.cfg and checks if preferred language is set. Otherwise default list is selected.
+    return req.accept_languages.best_match(pi_cfg_configuration, default=pi_cfg_configuration[0])
 
 @login_blueprint.before_request
 def before_request():
