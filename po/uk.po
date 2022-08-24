@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2020-09-25 12:40+0000\n"
-"Last-Translator: Maksym Mohylko <maksym.mohylko@gmail.com>\n"
+"PO-Revision-Date: 2022-08-25 04:19+0000\n"
+"Last-Translator: Artem <artem@molotov.work>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/uk/>\n"
 "Language: uk\n"
@@ -10,7 +10,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 4.3-dev\n"
+"X-Generator: Weblate 4.14-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -268,7 +268,7 @@ msgid ""
 "                <p>Have fun using privacyIDEA!</p>"
 msgstr ""
 "<p> Дякуємо за те, що ви користуєтесь privacyIDEA та робите вашу мережу\n"
-"                    і, таким чином, цей світ, більш безпечним місцем! </p>\n"
+"                    і, таким чином, цей світ, безпечнішим місцем! </p>\n"
 "                <p> Отримуйте задоволення користуючись privacyIDEA! </p>"
 
 #: privacyidea/static/components/login/views/offline.html:1
