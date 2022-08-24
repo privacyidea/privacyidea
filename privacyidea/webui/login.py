@@ -45,8 +45,7 @@ from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_nod
 from privacyidea.lib.queue import has_job_queue
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
-DEFAULT_LANGUAGE_LIST = ["en", "de", "de_DE", "nl", "fr",
-                         "cs", "es", "tr", "zh_Hant"]
+DEFAULT_LANGUAGE_LIST = ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr']
 
 login_blueprint = Blueprint('login_blueprint', __name__)
 
