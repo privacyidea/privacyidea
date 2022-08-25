@@ -347,12 +347,24 @@
                                             <label for="action_{{ action.name }}_str_vals"></label>
                                             <select class="form-control"
                                                     id="action_{{ action.name }}_str_vals"
-                                                    ng-show="action.allowedValues && action.type=='str'"
+                                                    ng-show="action.allowedValues && action.type=='str' && !action.multiple"
                                                     ng-model="actionValuesStr[action.name]"
                                                     ng-disabled="!actionCheckBox[action.name]"
                                                     name="action.name"
                                                     ng-options="select for select in action.allowedValues">
                                             </select>
+                                            <label for="action_{{ action.name }}_mult_str_vals"></label>
+                                            <div isteven-multi-select
+                                                 id="action_{{ action.name }}_mult_str_vals"
+                                                 ng-show="action.allowedValues && action.type=='str' && action.multiple"
+                                                 input-model="action.allowedValues"
+                                                 output-model="actionValuesStr[action.name]"
+                                                 button-label="name"
+                                                 item-label="name"
+                                                 tick-property="ticked"
+                                                 helper-elements=""
+                                                 is-disabled="!actionCheckBox[action.name]">
+                                            </div>
                                             <label for="action_{{ action.name }}_num_vals"></label>
                                             <select class="form-control"
                                                     id="action_{{ action.name }}_num_vals"

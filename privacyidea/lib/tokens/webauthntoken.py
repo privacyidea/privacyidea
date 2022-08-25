@@ -418,28 +418,20 @@ DEFAULT_ALLOWED_TRANSPORTS = "usb ble nfc internal"
 DEFAULT_TIMEOUT = 60
 DEFAULT_USER_VERIFICATION_REQUIREMENT = 'preferred'
 DEFAULT_AUTHENTICATOR_ATTACHMENT = 'either'
-DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = 'ecdsa_preferred'
+DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = ['ecdsa', 'rsassa-pss']
 DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL = 'untrusted'
 DEFAULT_AUTHENTICATOR_ATTESTATION_FORM = 'direct'
 DEFAULT_CHALLENGE_TEXT_AUTH = _(u'Please confirm with your WebAuthn token ({0!s})')
 DEFAULT_CHALLENGE_TEXT_ENROLL = _(u'Please confirm with your WebAuthn token')
 
-PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS = {
-    'ecdsa_preferred': [
-        COSE_ALGORITHM.ES256,
-        COSE_ALGORITHM.PS256
-    ],
-    'ecdsa_only': [
-        COSE_ALGORITHM.ES256
-    ],
-    'rsassa-pss_preferred': [
-        COSE_ALGORITHM.PS256,
-        COSE_ALGORITHM.ES256
-    ],
-    'rsassa-pss_only': [
-        COSE_ALGORITHM.PS256
-    ]
+PUBLIC_KEY_CREDENTIAL_ALGORITHMS = {
+    'ecdsa': COSE_ALGORITHM.ES256,
+    'rsassa-pss': COSE_ALGORITHM.PS256,
+    'rsassa-pkcs1v1_5': COSE_ALGORITHM.RS256
 }
+# since in Python < 3.7 the insert order of a dictionary is not guaranteed, we
+# need a list to define the proper order
+PUBKEY_CRED_ALGORITHMS_ORDER = ['ecdsa', 'rsassa-pss', 'rsassa-pkcs1v1_5']
 
 log = logging.getLogger(__name__)
 optional = True
@@ -474,7 +466,7 @@ class WEBAUTHNACTION(object):
     AUTHENTICATOR_ATTACHMENT = 'webauthn_authenticator_attachment'
     AUTHENTICATOR_SELECTION_LIST = 'webauthn_authenticator_selection_list'
     USER_VERIFICATION_REQUIREMENT = 'webauthn_user_verification_requirement'
-    PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = 'webauthn_public_key_credential_algorithm_preference'
+    PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS = 'webauthn_public_key_credential_algorithms'
     AUTHENTICATOR_ATTESTATION_FORM = 'webauthn_authenticator_attestation_form'
     AUTHENTICATOR_ATTESTATION_LEVEL = 'webauthn_authenticator_attestation_level'
     REQ = 'webauthn_req'
@@ -657,17 +649,13 @@ class WebAuthnTokenClass(TokenClass):
                             "discouraged"
                         ]
                     },
-                    WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE: {
+                    WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS: {
                         'type': 'str',
                         'desc': _("Which algorithm to use for creating public key credentials for WebAuthn tokens. "
                                   "Default: ecdsa_preferred"),
                         'group': WEBAUTHNGROUP.WEBAUTHN,
-                        'value': [
-                            "ecdsa_preferred",
-                            "ecdsa_only",
-                            "rsassa-pss_preferred",
-                            "rsassa-pss_only"
-                        ]
+                        'multiple': True,
+                        'value': list(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())
                     },
                     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM: {
                         'type': 'str',
@@ -985,7 +973,7 @@ class WebAuthnTokenClass(TokenClass):
                                            WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
                                            required),
                 public_key_credential_algorithms=getParam(params,
-                                                          WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+                                                          WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS,
                                                           required),
                 authenticator_attachment=getParam(params,
                                                   WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
@@ -1002,13 +990,10 @@ class WebAuthnTokenClass(TokenClass):
                 "nonce": public_key_credential_creation_options["challenge"],
                 "relyingParty": public_key_credential_creation_options["rp"],
                 "serialNumber": public_key_credential_creation_options["user"]["id"],
-                "preferredAlgorithm": public_key_credential_creation_options["pubKeyCredParams"][0],
+                "pubKeyCredAlgorithms": public_key_credential_creation_options["pubKeyCredParams"],
                 "name": public_key_credential_creation_options["user"]["name"],
                 "displayName": public_key_credential_creation_options["user"]["displayName"]
             }
-            if len(public_key_credential_creation_options.get("pubKeyCredParams")) > 1:
-                response_detail["webAuthnRegisterRequest"]["alternativeAlgorithm"] \
-                    = public_key_credential_creation_options["pubKeyCredParams"][1]
             if public_key_credential_creation_options.get("authenticatorSelection"):
                 response_detail["webAuthnRegisterRequest"]["authenticatorSelection"] \
                     = public_key_credential_creation_options["authenticatorSelection"]

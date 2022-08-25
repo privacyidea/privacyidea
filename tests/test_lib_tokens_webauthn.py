@@ -193,7 +193,7 @@ class WebAuthnTokenTestCase(MyTestCase):
             WEBAUTHNACTION.TIMEOUT: TIMEOUT,
             WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM: DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
             WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
-            WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
+            WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
         }
 
         self.user = User(login=USER_NAME)
@@ -235,10 +235,16 @@ class WebAuthnTokenTestCase(MyTestCase):
         self.assertIn('name', web_authn_register_request.get("relyingParty"))
         self.assertEqual(RP_ID, web_authn_register_request.get("relyingParty").get('id'))
         self.assertEqual(RP_NAME, web_authn_register_request.get("relyingParty").get('name'))
-        self.assertIn('alg', web_authn_register_request.get("preferredAlgorithm"))
-        self.assertIn('type', web_authn_register_request.get("preferredAlgorithm"))
-        self.assertEqual('public-key', web_authn_register_request.get("preferredAlgorithm").get("type"))
-        self.assertEqual(COSE_ALGORITHM.ES256, web_authn_register_request.get("preferredAlgorithm").get("alg"))
+        self.assertIn('alg', web_authn_register_request.get("pubKeyCredAlgorithms")[0],
+                      web_authn_register_request)
+        self.assertIn('type', web_authn_register_request.get("pubKeyCredAlgorithms")[0],
+                      web_authn_register_request)
+        self.assertEqual('public-key',
+                         web_authn_register_request.get("pubKeyCredAlgorithms")[0].get("type"),
+                         web_authn_register_request)
+        self.assertEqual(COSE_ALGORITHM.ES256,
+                         web_authn_register_request.get("pubKeyCredAlgorithms")[0].get("alg"),
+                         web_authn_register_request)
         self.assertEqual(USER_NAME, web_authn_register_request.get("name"))
 
         self.assertEqual(RP_ID, self.token.get_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID))
@@ -573,7 +579,7 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
             WEBAUTHNACTION.TIMEOUT: TIMEOUT,
             WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM: DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
             WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
-            WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
+            WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
         }
     auth_options = {
         WEBAUTHNACTION.ALLOWED_TRANSPORTS: ALLOWED_TRANSPORTS,

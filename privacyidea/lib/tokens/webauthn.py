@@ -1171,7 +1171,8 @@ class WebAuthnRegistrationResponse(object):
                 if fmt == ATTESTATION_FORMAT.NONE:
                     raise RegistrationRejectedException('Authenticator attestation is required.')
                 else:
-                    raise RegistrationRejectedException('Unsupported authenticator attestation format.')
+                    raise RegistrationRejectedException(
+                        'Unsupported authenticator attestation format ({0!s})!'.format(fmt))
 
             # Treat as none attestation.
             #
