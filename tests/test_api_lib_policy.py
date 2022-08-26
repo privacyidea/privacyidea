@@ -17,7 +17,8 @@ from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_ALLOWE
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                                                   DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
-                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT)
+                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT,
+                                                  PUBKEY_CRED_ALGORITHMS_ORDER)
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from .base import (MyApiTestCase)
@@ -2417,9 +2418,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
                          None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS),
-                         PUBLIC_KEY_CREDENTIAL_ALGORITHMS[
-                             DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
-                         ])
+                         [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
+                          for x in PUBKEY_CRED_ALGORITHMS_ORDER
+                          if x in DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE])
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
                          DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM),
@@ -2450,7 +2451,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # With policies
         authenticator_attachment = AUTHENTICATOR_ATTACHMENT_TYPE.CROSS_PLATFORM
-        public_key_credential_algorithm_preference = 'ecdsa_only'
+        public_key_credential_algorithm_preference = 'ecdsa'
         authenticator_attestation_level = ATTESTATION_LEVEL.TRUSTED
         authenticator_attestation_form = ATTESTATION_FORM.INDIRECT
         challengetext = "Lorem Ipsum"
@@ -2458,7 +2459,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn2",
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT + '=' + authenticator_attachment + ','
-                   + WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS + '=' + public_key_credential_algorithm_preference + ','
+                   + WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS + '='
+                   + public_key_credential_algorithm_preference + ','
                    + WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + authenticator_attestation_level + ','
                    + WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM + '=' + authenticator_attestation_form + ','
                    + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
@@ -2471,9 +2473,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
                          authenticator_attachment)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS),
-                         PUBLIC_KEY_CREDENTIAL_ALGORITHMS[
+                         [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[
                              public_key_credential_algorithm_preference
-                         ])
+                         ]])
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
                          authenticator_attestation_level)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM),
