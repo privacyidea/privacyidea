@@ -309,7 +309,8 @@ def get_auth_token():
                                                     superuser_realms=
                                                     superuser_realms)
         details = details or {}
-        challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]] if 'multi_challenge' in details.keys() else []
+        challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]\
+            if 'multi_challenge' in details.keys() else []
         if db_admin_exist(loginname) and user_auth and realm == get_default_realm():
             # If there is a local admin with the same login name as the user
             # in the default realm, we inform about this in the log file.

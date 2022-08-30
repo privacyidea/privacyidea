@@ -445,8 +445,6 @@ def max_sms_sent(wrapped_function, user_object, passw, options=None):
     :param options: Dict containing values for "g" and "clientip"
     :return: Tuple of True/False and reply-dictionary
     """
-
-
     options = options or {}
     g = options.get("g")
     max_sms_sent_dict = Match.user(g, scope=SCOPE.AUTH, action=ACTION.MAXSMSSENT,
