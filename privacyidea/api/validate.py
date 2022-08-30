@@ -416,10 +416,10 @@ def check():
                     # additional attributes
                     for k, v in ui.items():
                         result["attributes"][k] = v
-
+    challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": success,
-                        "serial": serial or details.get("serial"),
+                        "serial": ",".join(challenge_serials),
                         "token_type": details.get("type")})
     return send_result(result, rid=2, details=details)
 

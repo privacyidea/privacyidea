@@ -309,6 +309,7 @@ def get_auth_token():
                                                     superuser_realms=
                                                     superuser_realms)
         details = details or {}
+        challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]] if 'multi_challenge' in details.keys() else []
         if db_admin_exist(loginname) and user_auth and realm == get_default_realm():
             # If there is a local admin with the same login name as the user
             # in the default realm, we inform about this in the log file.
@@ -321,14 +322,14 @@ def get_auth_token():
                                 "administrator": user_obj.login,
                                 "realm": user_obj.realm,
                                 "resolver": user_obj.resolver,
-                                "serial": details.get('serial', None),
+                                "serial": ",".join(challenge_serials),
                                 "info": u"{0!s}|loginmode={1!s}".format(log_used_user(user_obj),
                                                                         details.get("loginmode"))})
         else:
             g.audit_object.log({"user": user_obj.login,
                                 "realm": user_obj.realm,
                                 "resolver": user_obj.resolver,
-                                "serial": details.get('serial', None),
+                                "serial": ",".join(challenge_serials),
                                 "info": u"{0!s}|loginmode={1!s}".format(log_used_user(user_obj),
                                         details.get("loginmode"))})
 
