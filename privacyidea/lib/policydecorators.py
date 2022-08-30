@@ -428,6 +428,84 @@ def auth_user_timelimit(wrapped_function, user_object, passw, options=None):
     return res, reply_dict
 
 
+def max_sms_sent(wrapped_function, user_object, passw, options=None):
+    """
+    This decorator checks the policy settings of
+    ACTION.MAXSMSSENT,
+
+    When an SMS has been sent, it checks, if the number of allowed
+    sent sms is exceeded (MAXSMSSENT).
+
+    The wrapped function is usually token.check_user_pass, which takes the
+    arguments (user, passw, options={})
+
+    :param wrapped_function:
+    :param user_object:
+    :param passw:
+    :param options: Dict containing values for "g" and "clientip"
+    :return: Tuple of True/False and reply-dictionary
+    """
+
+
+    options = options or {}
+    g = options.get("g")
+    max_sms_sent_dict = Match.user(g, scope=SCOPE.AUTH, action=ACTION.MAXSMSSENT,
+                                   user_object=user_object).action_values(unique=True, write_to_audit_log=False)
+
+    if len(max_sms_sent_dict) == 1:
+        policy_count, tdelta = parse_timelimit(list(max_sms_sent_dict)[0])
+        audit_validate_check_entries = g.audit_object.search({"user": user_object.login,
+                                                              "realm": user_object.realm,
+                                                              "action": "%/validate/check",
+                                                              "serial": "*PIEM*",
+                                                              "success": "0"},
+                                                             timelimit=tdelta,
+                                                             page_size=100)
+        sms_sent_via_validate_check = 0
+        for entry in audit_validate_check_entries.auditdata:
+            sms_sent_via_validate_check += len([x for x in entry.get("serial").split(',') if x.startswith('PIEM')])
+
+        log.info("Checking users timelimit %s: %s "
+                 "sms sent via /validate/check" %
+                 (list(max_sms_sent_dict)[0], sms_sent_via_validate_check))
+        audit_auth_entries = g.audit_object.search({"user": user_object.login,
+                                                    "realm": user_object.realm,
+                                                    "info": "%loginmode=privacyIDEA%",
+                                                    "action": "%/auth",
+                                                    "serial": "*PIEM*",
+                                                    "success": "0"},
+                                                   timelimit=tdelta,
+                                                   page_size=100)
+        sms_sent_via_auth = 0
+        for entry in audit_auth_entries.auditdata:
+            sms_sent_via_auth += len([x for x in entry.get("serial").split(',') if x.startswith('PIEM')])
+
+        log.info("Checking users timelimit %s: %s "
+                 "sms sent via /auth" %
+                 (list(max_sms_sent_dict)[0], sms_sent_via_auth))
+        audit_triggerchallenge_entries = g.audit_object.search({"user": user_object.login,
+                                                                "realm": user_object.realm,
+                                                                "action": "%/validate/triggerchallenge",
+                                                                "serial": "*PIEM*",
+                                                                "success": "1"},
+                                                               timelimit=tdelta,
+                                                               page_size=100)
+        sms_sent_via_triggerchallenge = 0
+        for entry in audit_triggerchallenge_entries.auditdata:
+            sms_sent_via_triggerchallenge += len([x for x in entry.get("serial").split(',') if x.startswith('PIEM')])
+        log.info("Checking users timelimit %s: %s "
+                 "sms sent via /triggerchallenge" %
+                 (list(max_sms_sent_dict)[0], sms_sent_via_triggerchallenge))
+
+        if sms_sent_via_validate_check + sms_sent_via_auth + sms_sent_via_triggerchallenge >= policy_count:
+            g.audit_object.add_policy(next(iter(max_sms_sent_dict.values())))
+            raise PolicyError("SMS limit reached! "
+                              "Only %s sent SMS per %s"
+                              % (policy_count, tdelta))
+        else:
+            res, reply_dict = wrapped_function(user_object, passw, options)
+            return res, reply_dict
+
 def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
     """
     This decorator checks the policy settings of ACTION.LASTAUTH

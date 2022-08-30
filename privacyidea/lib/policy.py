@@ -232,6 +232,7 @@ class ACTION(object):
     AUTHITEMS = "fetch_authentication_items"
     AUTHMAXSUCCESS = "auth_max_success"
     AUTHMAXFAIL = "auth_max_fail"
+    MAXSMSSENT = "max_sms_sent"
     AUTOASSIGN = "autoassignment"
     CACONNECTORREAD = "caconnectorread"
     CACONNECTORWRITE = "caconnectorwrite"
@@ -2277,7 +2278,13 @@ def get_static_policy_definitions(scope=None):
                           'allow authentication with the same credentials for a '
                           'certain amount of time. '
                           'Specify timeout like 4h or 4h/5m.')
-            }
+            },
+            ACTION.MAXSMSSENT: {
+                'type': 'str',
+                'desc': _("You can specify how many SMS should be sent in a period of time "
+                          "Specify like 1/5s, 2/10m, 10/1h - s, m, h being "
+                          "second, minute and hour.")
+            },
         },
         SCOPE.AUTHZ: {
             ACTION.AUTHORIZED: {
