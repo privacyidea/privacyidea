@@ -78,44 +78,69 @@ The enrollment/registering can be completely performed within privacyIDEA.
 But if you want to enroll the WebAuthn token via the REST API you need to do
 it in two steps:
 
-Step 1
-~~~~~~
+**Step 1**
 
 .. sourcecode:: http
 
     POST /token/init HTTP/1.1
-    Host: example.com
+    Host: <privacyIDEA server>
     Accept: application/json
-    
+
     type=webauthn
-    
-This step returns a nonce, a relying party (containing a name and an ID
-generated from your domain), and a serial number, along with a transaction ID,
-and a message to display to the user. It will also pass some additional options
+    user=<username>
+
+The request returns:
+
+.. sourcecode:: http
+
+    HTTP/1.1 200 OK
+    Content-Type: application/json
+
+    {
+        "detail": {
+            "serial": "<serial number>",
+            "webAuthnRegisterRequest": {
+                "attestation": "direct",
+                "authenticatorSelection": {
+                    "userVerification": "preferred"
+                },
+                "displayName": "<user.resolver@realm>",
+                "message": "Please confirm with your WebAuthn token",
+                "name": "<username>",
+                "nonce": "<nonce>",
+                "pubKeyCredAlgorithms": [
+                    {
+                        "alg": -7,
+                        "type": "public-key"
+                    },
+                    {
+                        "alg": -37,
+                        "type": "public-key"
+                    }
+                ],
+                "relyingParty": {
+                    "id": "<relying party ID>",
+                    "name": "<relying party name>"
+                },
+                "serialNumber": "<serial number>",
+                "timeout": 60000,
+                "transaction_id": "<transaction ID>"
+            }
+        },
+        "result": {
+            "status": true,
+            "value": true
+        },
+        "version": "<privacyIDEA version>"
+    }
+
+This step returns a *webAuthnRegisterRequest* which contains a nonce, a relying party (containing a
+name and an ID generated from your domain), a serial number along with a transaction ID
+and a message to display to the user. It will also contain some additional options
 regarding timeout, which authenticators are acceptable, and what key types are
 acceptable to the server.
 
-Step 2
-~~~~~~
-
-.. sourcecode:: http
-
-    POST /token/init HTTP/1.1
-    Host: example.com
-    Accept: application/json
-    
-    type=webauthn
-    transaction_id=<transaction_id>
-    description=<description>
-    clientdata=<clientDataJSON>
-    regdata=<attestationObject>
-    registrationclientextensions=<registrationClientExtensions>
-
-*clientDataJSON* and *attestationObject* are the values returned by the
-WebAuthn authenticator. *description* is an optional description string for 
-the new token.
-
-You need to call the javascript function
+With the received data You need to call the javascript function
 
 .. sourcecode:: javascript
 
@@ -129,16 +154,7 @@ You need to call the javascript function
                 name: <name>,
                 displayName: <displayName>
             },
-            pubKeyCredParams: [
-                {
-                    alg: <preferredAlgorithm>,
-                    type: "public-key"
-                },
-                {
-                    alg: <alternativeAlgorithm>,
-                    type: "public-key"
-                }
-            ],
+            pubKeyCredParams: <pubKeyCredAlgorithms>,
             authenticatorSelection: <authenticatorSelection>,
             timeout: <timeout>,
             attestation: <attestation>,
@@ -149,11 +165,11 @@ You need to call the javascript function
         .then(function(credential) { <responseHandler> })
         .catch(function(error) { <errorHandler> });
 
-Here *nonce*, *relyingParty*, *serialNumber*, *preferredAlgorithm*,
-*alternativeAlgorithm*, *authenticatorSelection*, *timeout*, *attestation*,
+Here *nonce*, *relyingParty*, *serialNumber*, *pubKeyCredAlgorithms*,
+*authenticatorSelection*, *timeout*, *attestation*,
 *authenticatorSelectionList*, *name*, and *displayName* are the values
 provided by the server in the *webAuthnRegisterRequest* field in the response
-from the first step. *alternativeAlgorithm*, *authenticatorSelection*,
+from the first step. *authenticatorSelection*,
 *timeout*, *attestation*, and *authenticatorSelectionList* are optional. If
 *attestation* is not provided, the client should default to `direct`
 attestation. If *timeout* is not provided, it may be omitted, or a sensible
@@ -170,10 +186,30 @@ company-provided token.
 
 The *responseHandler* needs to then send the *clientDataJSON*,
 *attestationObject*, and *registrationClientExtensions* contained in the
-*response* field of the *credential* (2. step) back to the server. If
+*response* field of the *credential* back to the server. If
 enrollment succeeds, the server will send a response with a
 *webAuthnRegisterResponse* field, containing a *subject* field with the
 description of the newly created token.
+
+
+**Step 2**
+
+.. sourcecode:: http
+    
+    POST /token/init HTTP/1.1
+    Host: <privacyIDEA server>
+    Accept: application/json
+    
+    type=webauthn
+    transaction_id=<transaction_id>
+    description=<description>
+    clientdata=<clientDataJSON>
+    regdata=<attestationObject>
+    registrationclientextensions=<registrationClientExtensions>
+
+The values *clientDataJSON* and *attestationObject* are returned by the
+WebAuthn authenticator. *description* is an optional description string for
+the new token.
 
 The server expects the *clientDataJSON* and *attestationObject* encoded as
 web-safe base64 as defined by the WebAuthn standard. This encoding is similar
@@ -181,7 +217,7 @@ to standard base64, but '-' and '_' should be used in the alphabet instead of
 '+' and '/', respectively, and any padding should be omitted.
 
 The *registrationClientExtensions* are optional and should simply be omitted,
-if the client does not provide them. It the *registrationClientExtensions* are
+if the client does not provide them. If the *registrationClientExtensions* are
 available, they must be encoded as a utf-8 JSON string, then sent to the server
 as web-safe base64.
 
@@ -208,52 +244,61 @@ Get the challenge (using /validate/check)
 The /validate/check endpoint can be used to trigger a challenge using the PIN
 for the token (without requiring any special permissions).
 
-**Request**
+**Request:**
 
 .. sourcecode:: http
 
     POST /validate/check HTTP/1.1
-    Host: example.com
+    Host: <privacyIDEA server>
     Accept: application/json
     
     user=<username>
     pass=<password>
-    
-**Response**
+
+**Response:**
 
 .. sourcecode:: http
 
     HTTP/1.1 200 OK
     Content-Type: application/json
-    
+
     {
         "detail": {
             "attributes": {
                 "hideResponseInput": true,
-                "img": <imageUrl>,
+                "img": "<image URL>",
                 "webAuthnSignRequest": {
-                    "challenge": <nonce>,
-                    "allowCredentials": [{
-                        "id": <credentialId>,
-                        "type": <credentialType>,
-                        "transports": <allowedTransports>,
-                    }],
-                    "rpId": <relyingPartyId>,
-                    "userVerification": <userVerificationRequirement>,
-                    "timeout": <timeout>
+                    "allowCredentials": [
+                        {
+                            "id": "<credential ID>",
+                            "transports": [
+                                "<allowed transports>"
+                            ],
+                            "type": "<credential type>"
+                        }
+                    ],
+                    "challenge": "<nonce>",
+                    "rpId": "<relying party ID>",
+                    "timeout": 60000,
+                    "userVerification": "<user verification requirement>"
                 }
             },
+            "client_mode": "webauthn",
             "message": "Please confirm with your WebAuthn token",
-            "transaction_id": <transactionId>
+            "serial": "<token serial>",
+            "transaction_id": "<transaction ID>",
+            "type": "webauthn"
         },
         "id": 1,
         "jsonrpc": "2.0",
         "result": {
+            "authentication": "CHALLENGE",
             "status": true,
             "value": false
         },
-        "versionnumber": <privacyIDEAversion>
+        "version": "<privacyIDEA version>"
     }
+
 
 Get the challenge (using /validate/triggerchallenge)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -266,7 +311,7 @@ using a service account (without requiring the PIN for the token).
 .. sourcecode:: http
 
     POST /validate/triggerchallenge HTTP/1.1
-    Host: example.com
+    Host: <privacyIDEA server>
     Accept: application/json
     PI-Authorization: <authToken>
     
@@ -282,23 +327,24 @@ challenge will be triggered for every challenge response token the user has.
 
     HTTP/1.1 200 OK
     Content-Type: application/json
-    
-    
+
     {
         "detail": {
             "attributes": {
                 "hideResponseInput": true,
-                "img": <imageUrl>,
+                "img": "<image URL>",
                 "webAuthnSignRequest": {
-                    "challenge": <nonce>,
+                    "challenge": "<nonce>",
                     "allowCredentials": [{
-                        "id": <credentialId>,
-                        "type": <credentialType>,
-                        "transports": <allowedTransports>,
+                        "id": "<credential ID>",
+                        "transports": [
+                            "<allowed transports>"
+                        ],
+                        "type": "<credential type>",
                     }],
-                    "rpId": <relyingPartyId>,
-                    "userVerification": <userVerificationRequirement>,
-                    "timeout": <timeout>
+                    "rpId": "<relying party ID>",
+                    "userVerification": "<user verification requirement>",
+                    "timeout": 60000
                 }
             },
             "message": "Please confirm with your WebAuthn token",
@@ -306,28 +352,29 @@ challenge will be triggered for every challenge response token the user has.
             "multi_challenge": [{
                 "attributes": {
                     "hideResponseInput": true,
-                    "img": <imageUrl>,
+                    "img": "<image URL>",
                     "webAuthnSignRequest": {
-                        "challenge": <nonce>,
+                        "challenge": "<nonce>",
                         "allowCredentials": [{
-                            "id": <credentialId>,
-                            "type": <credentialType>,
-                            "transports": <allowedTransports>,
+                            "id": "<credential ID>",
+                            "transports": [
+                                "<allowedTransports>"
+                            ],
+                            "type": "<credential type>",
                         }],
-                        "rpId": <relyingPartyId>,
-                        "userVerification": <userVerificationRequirement>,
-                        "timeout": <timeout>
+                        "rpId": "<relying party ID>",
+                        "userVerification": "<user verification requirement>",
+                        "timeout": 60000
                     }
                 },
                 "message": "Please confirm with your WebAuthn token",
-                "serial": <tokenSerial>,
-                "transaction_id": <transactionId>,
+                "serial": "<token serial>",
+                "transaction_id": "<transaction ID>",
                 "type": "webauthn"
             }],
-            "serial": <tokenSerial>,
-            "threadid": <threadId>,
-            "transaction_id": <transactionId>,
-            "transaction_ids": [<transactionId>],
+            "serial": "<token serial>",
+            "transaction_id": "<transaction ID>",
+            "transaction_ids": ["<transaction IDs>"],
             "type": "webauthn"
         },
         "id": 1,
@@ -336,15 +383,15 @@ challenge will be triggered for every challenge response token the user has.
             "status": true,
             "value": 1
         },
-        "versionnumber": <privacyIDEAversion>
+        "version": "<privacyIDEA version>"
     }
     
 Send the Response
 ~~~~~~~~~~~~~~~~~
 
 The application now needs to call the javascript function
-*navigator.credentials.get* with *publicKeyCredentialRequestOptions* built using
-the *nonce*, *credentialId*, *allowedTransports*, *userVerificationRequirement*
+*navigator.credentials.get* with the *publicKeyCredentialRequestOptions* built
+using the *nonce*, *credentialId*, *allowedTransports*, *userVerificationRequirement*
 and *timeout* from the server.  The timeout is optional and may be omitted, if
 not provided, the client may also pick a sensible default. Please note that the
 nonce will be a binary, encoded using the web-safe base64 algorithm specified by
@@ -651,8 +698,10 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS: {
                         'type': 'str',
-                        'desc': _("Which algorithm to use for creating public key credentials for WebAuthn tokens. "
-                                  "Default: ecdsa_preferred"),
+                        'desc': _("Which algorithm are available to use for creating public key "
+                                  "credentials for WebAuthn tokens. (Default: [{0!s}], Order: "
+                                  "[{1!s}]".format(', '.join(DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
+                                                   ', '.join(PUBKEY_CRED_ALGORITHMS_ORDER))),
                         'group': WEBAUTHNGROUP.WEBAUTHN,
                         'multiple': True,
                         'value': list(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())
@@ -1136,7 +1185,7 @@ class WebAuthnTokenClass(TokenClass):
                       "image": user.icon_url}
 
         return True, message, db_challenge.transaction_id, reply_dict
-    
+
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
         """

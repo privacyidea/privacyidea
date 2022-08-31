@@ -444,9 +444,30 @@ class WebAuthnTestCase(unittest.TestCase):
         self.assertTrue(CRED_KEY in registration_dict['pubKeyCredParams'])
 
     def test_01_validate_registration(self):
-        web_authn_credential = self.getWebAuthnCredential()
-        self.assertEqual(RP_ID, web_authn_credential.rp_id)
-        self.assertEqual(ORIGIN, web_authn_credential.origin)
+        webauthn_credential = self.getWebAuthnCredential()
+        self.assertEqual(RP_ID, webauthn_credential.rp_id, webauthn_credential)
+        self.assertEqual(ORIGIN, webauthn_credential.origin, webauthn_credential)
+        self.assertTrue(webauthn_credential.has_signed_attestation, webauthn_credential)
+        self.assertTrue(webauthn_credential.has_trusted_attestation, webauthn_credential)
+        self.assertEqual(str(webauthn_credential),
+                         '{credential_id!r} ({rp_id}, {origin}, '
+                         '{sign_count})'.format(**webauthn_credential.__dict__),
+                         webauthn_credential)
+
+    def test_01b_validate_untrusted_registration(self):
+        webauthn_credential = WebAuthnRegistrationResponse(
+            rp_id=RP_ID,
+            origin=ORIGIN,
+            registration_response=copy(REGISTRATION_RESPONSE_TMPL),
+            challenge=REGISTRATION_CHALLENGE,
+            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.NONE],
+            uv_required=False,
+            expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS,
+        ).verify()
+        self.assertEqual(RP_ID, webauthn_credential.rp_id, webauthn_credential)
+        self.assertEqual(ORIGIN, webauthn_credential.origin, webauthn_credential)
+        self.assertTrue(webauthn_credential.has_signed_attestation, webauthn_credential)
+        self.assertFalse(webauthn_credential.has_trusted_attestation, webauthn_credential)
 
     def test_02_registration_invalid_user_verification(self):
         registration_response = WebAuthnRegistrationResponse(
@@ -460,11 +481,17 @@ class WebAuthnTestCase(unittest.TestCase):
             expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
         )
 
-        with self.assertRaises(RegistrationRejectedException):
+        with self.assertRaisesRegexp(RegistrationRejectedException,
+                                     'Malformed request received.'):
             registration_response.verify()
 
     def test_03_validate_assertion(self):
         webauthn_assertion_response = self.getAssertionResponse()
+        webauthn_user = webauthn_assertion_response.webauthn_user
+        self.assertEqual(str(webauthn_user),
+                         '{user_id} ({user_name}, {user_display_name}, '
+                         '{sign_count})'.format(**webauthn_user.__dict__),
+                         webauthn_user)
         webauthn_assertion_response.verify()
 
     def test_04_invalid_signature_fail_assertion(self):

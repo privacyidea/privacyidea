@@ -298,14 +298,14 @@ def check():
                 "serial": "PIEM0000AB00",
                 "type": "email",
                 "transaction_id": "12345678901234567890",
-                "multi_challenge: [ {"serial": "PIEM0000AB00",
-                                     "transaction_id":  "12345678901234567890",
-                                     "message": "Please enter otp from your email",
-                                     "client_mode": "interactive"},
-                                    {"serial": "PISM12345678",
-                                     "transaction_id": "12345678901234567890",
-                                     "message": "Please enter otp from your SMS",
-                                     "client_mode": "interactive"}
+                "multi_challenge": [ {"serial": "PIEM0000AB00",
+                                      "transaction_id":  "12345678901234567890",
+                                      "message": "Please enter otp from your email",
+                                      "client_mode": "interactive"},
+                                     {"serial": "PISM12345678",
+                                      "transaction_id": "12345678901234567890",
+                                      "message": "Please enter otp from your SMS",
+                                      "client_mode": "interactive"}
                 ]
               },
               "id": 2,
