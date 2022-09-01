@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import privacyidea.lib.caconnectors.caservice_pb2 as caservice__pb2
+import caservice_pb2 as caservice__pb2
 
 
 class CAServiceStub(object):
@@ -22,10 +22,10 @@ class CAServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.SubmitCR = channel.unary_unary(
-                '/CAService/SubmitCR',
-                request_serializer=caservice__pb2.SubmitCRRequest.SerializeToString,
-                response_deserializer=caservice__pb2.SubmitCRReply.FromString,
+        self.SubmitCSR = channel.unary_unary(
+                '/CAService/SubmitCSR',
+                request_serializer=caservice__pb2.SubmitCSRRequest.SerializeToString,
+                response_deserializer=caservice__pb2.SubmitCSRReply.FromString,
                 )
         self.GetCAs = channel.unary_unary(
                 '/CAService/GetCAs',
@@ -42,15 +42,20 @@ class CAServiceStub(object):
                 request_serializer=caservice__pb2.GetTemplatesRequest.SerializeToString,
                 response_deserializer=caservice__pb2.GetTemplatesReply.FromString,
                 )
-        self.GetCRStatus = channel.unary_unary(
-                '/CAService/GetCRStatus',
-                request_serializer=caservice__pb2.GetCRStatusRequest.SerializeToString,
-                response_deserializer=caservice__pb2.GetCRStatusReply.FromString,
+        self.GetCSRStatus = channel.unary_unary(
+                '/CAService/GetCSRStatus',
+                request_serializer=caservice__pb2.GetCSRStatusRequest.SerializeToString,
+                response_deserializer=caservice__pb2.GetCSRStatusReply.FromString,
                 )
         self.SetOption = channel.unary_unary(
                 '/CAService/SetOption',
                 request_serializer=caservice__pb2.SetOptionRequest.SerializeToString,
                 response_deserializer=caservice__pb2.SetOptionReply.FromString,
+                )
+        self.GetOptions = channel.unary_unary(
+                '/CAService/GetOptions',
+                request_serializer=caservice__pb2.GetOptionsRequest.SerializeToString,
+                response_deserializer=caservice__pb2.GetOptionsReply.FromString,
                 )
 
 
@@ -65,7 +70,7 @@ class CAServiceServicer(object):
 
     """
 
-    def SubmitCR(self, request, context):
+    def SubmitCSR(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -89,7 +94,7 @@ class CAServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetCRStatus(self, request, context):
+    def GetCSRStatus(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -101,13 +106,19 @@ class CAServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetOptions(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_CAServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'SubmitCR': grpc.unary_unary_rpc_method_handler(
-                    servicer.SubmitCR,
-                    request_deserializer=caservice__pb2.SubmitCRRequest.FromString,
-                    response_serializer=caservice__pb2.SubmitCRReply.SerializeToString,
+            'SubmitCSR': grpc.unary_unary_rpc_method_handler(
+                    servicer.SubmitCSR,
+                    request_deserializer=caservice__pb2.SubmitCSRRequest.FromString,
+                    response_serializer=caservice__pb2.SubmitCSRReply.SerializeToString,
             ),
             'GetCAs': grpc.unary_unary_rpc_method_handler(
                     servicer.GetCAs,
@@ -124,15 +135,20 @@ def add_CAServiceServicer_to_server(servicer, server):
                     request_deserializer=caservice__pb2.GetTemplatesRequest.FromString,
                     response_serializer=caservice__pb2.GetTemplatesReply.SerializeToString,
             ),
-            'GetCRStatus': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetCRStatus,
-                    request_deserializer=caservice__pb2.GetCRStatusRequest.FromString,
-                    response_serializer=caservice__pb2.GetCRStatusReply.SerializeToString,
+            'GetCSRStatus': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCSRStatus,
+                    request_deserializer=caservice__pb2.GetCSRStatusRequest.FromString,
+                    response_serializer=caservice__pb2.GetCSRStatusReply.SerializeToString,
             ),
             'SetOption': grpc.unary_unary_rpc_method_handler(
                     servicer.SetOption,
                     request_deserializer=caservice__pb2.SetOptionRequest.FromString,
                     response_serializer=caservice__pb2.SetOptionReply.SerializeToString,
+            ),
+            'GetOptions': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetOptions,
+                    request_deserializer=caservice__pb2.GetOptionsRequest.FromString,
+                    response_serializer=caservice__pb2.GetOptionsReply.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -153,7 +169,7 @@ class CAService(object):
     """
 
     @staticmethod
-    def SubmitCR(request,
+    def SubmitCSR(request,
             target,
             options=(),
             channel_credentials=None,
@@ -163,9 +179,9 @@ class CAService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/CAService/SubmitCR',
-            caservice__pb2.SubmitCRRequest.SerializeToString,
-            caservice__pb2.SubmitCRReply.FromString,
+        return grpc.experimental.unary_unary(request, target, '/CAService/SubmitCSR',
+            caservice__pb2.SubmitCSRRequest.SerializeToString,
+            caservice__pb2.SubmitCSRReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -221,7 +237,7 @@ class CAService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def GetCRStatus(request,
+    def GetCSRStatus(request,
             target,
             options=(),
             channel_credentials=None,
@@ -231,9 +247,9 @@ class CAService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/CAService/GetCRStatus',
-            caservice__pb2.GetCRStatusRequest.SerializeToString,
-            caservice__pb2.GetCRStatusReply.FromString,
+        return grpc.experimental.unary_unary(request, target, '/CAService/GetCSRStatus',
+            caservice__pb2.GetCSRStatusRequest.SerializeToString,
+            caservice__pb2.GetCSRStatusReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -251,5 +267,22 @@ class CAService(object):
         return grpc.experimental.unary_unary(request, target, '/CAService/SetOption',
             caservice__pb2.SetOptionRequest.SerializeToString,
             caservice__pb2.SetOptionReply.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetOptions(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/CAService/GetOptions',
+            caservice__pb2.GetOptionsRequest.SerializeToString,
+            caservice__pb2.GetOptionsReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
