@@ -629,21 +629,22 @@ supported by the token.
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_authn_user_verification_requirement`.
 
-.. _policy_webauthn_enroll_public_key_credential_algorithm_preference:
+.. _policy_webauthn_enroll_public_key_credential_algorithms:
 
-webauthn_public_key_credential_algorithm_preference
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+webauthn_public_key_credential_algorithms
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: string
 
-This action configures which algorithms should be preferred for the creation
-of WebAuthn asymmetric cryptography key pairs, and in which order. privacyIDEA
-currently supports ECDSA as well as RSASSA-PSS. Please check back with the
-manufacturer of your authenticators to get information on which algorithms are
-acceptable to your model of authenticator.
+This action configures which algorithms should be available for the creation
+of WebAuthn asymmetric cryptography key pairs. privacyIDEA
+currently supports ECDSA, RSASSA-PSS and RSASSA-PKCS1-v1_5. Please check back
+with the manufacturer of your authenticators to get information on which
+algorithms are acceptable to your model of authenticator.
 
-The default is to allow both ECDSA and RSASSA-PSS, but to prefer ECDSA over
-RSASSA-PSS.
+The default is to allow both ECDSA and RSASSA-PSS.
+
+The Order of preferred algorithms is `ECDSA > RSASSA-PSS > RSASSA-PKCS1-v1_5`
 
 .. note:: Not all authenticators will supports all algorithms. It should not
     usually be necessary to configure this action. Do *not* change this

@@ -114,6 +114,7 @@ CRED_KEY = {
     'alg': -7,
     'type': 'public-key'
 }
+CREDENTIAL_ID = b'ilNaaY5fYJoR1sg5IB7FL2Zoa-qBd_5Q95ZcyxNkmjkoDhiLCLgEKoKfCUElLt6_6Dmj_EUuOHZUI6x_gC32LQ'
 REGISTRATION_CHALLENGE = 'bPzpX3hHQtsp9evyKYkaZtVc9UN07PUdJ22vZUdDp94'
 ASSERTION_CHALLENGE = 'e-g-nXaRxMagEiqTJSyD82RsEc5if_6jyfJDy8bNKlw'
 RP_ID = "webauthn.io"
@@ -450,8 +451,8 @@ class WebAuthnTestCase(unittest.TestCase):
         self.assertTrue(webauthn_credential.has_signed_attestation, webauthn_credential)
         self.assertTrue(webauthn_credential.has_trusted_attestation, webauthn_credential)
         self.assertEqual(str(webauthn_credential),
-                         '{credential_id!r} ({rp_id}, {origin}, '
-                         '{sign_count})'.format(**webauthn_credential.__dict__),
+                         '{0!r} ({1!s}, {2!s}, {3!s})'.format(CREDENTIAL_ID,
+                                                              RP_ID, ORIGIN, 0),
                          webauthn_credential)
 
     def test_01b_validate_untrusted_registration(self):
@@ -489,8 +490,8 @@ class WebAuthnTestCase(unittest.TestCase):
         webauthn_assertion_response = self.getAssertionResponse()
         webauthn_user = webauthn_assertion_response.webauthn_user
         self.assertEqual(str(webauthn_user),
-                         '{user_id} ({user_name}, {user_display_name}, '
-                         '{sign_count})'.format(**webauthn_user.__dict__),
+                         '{0!r} ({1!s}, {2!s}, {3!s})'.format(USER_ID, USER_NAME,
+                                                              USER_DISPLAY_NAME, 0),
                          webauthn_user)
         webauthn_assertion_response.verify()
 

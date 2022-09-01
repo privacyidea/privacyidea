@@ -699,7 +699,8 @@ class WebAuthnUser(object):
         self.rp_id = rp_id
 
     def __str__(self):
-        return '{} ({}, {}, {})'.format(self.user_id, self.user_name, self.user_display_name, self.sign_count)
+        return '{!r} ({}, {}, {})'.format(self.user_id, self.user_name,
+                                          self.user_display_name, self.sign_count)
 
 
 class WebAuthnCredential(object):

@@ -195,11 +195,11 @@ description of the newly created token.
 **Step 2**
 
 .. sourcecode:: http
-    
+
     POST /token/init HTTP/1.1
     Host: <privacyIDEA server>
     Accept: application/json
-    
+
     type=webauthn
     transaction_id=<transaction_id>
     description=<description>
@@ -251,7 +251,7 @@ for the token (without requiring any special permissions).
     POST /validate/check HTTP/1.1
     Host: <privacyIDEA server>
     Accept: application/json
-    
+
     user=<username>
     pass=<password>
 
@@ -314,10 +314,10 @@ using a service account (without requiring the PIN for the token).
     Host: <privacyIDEA server>
     Accept: application/json
     PI-Authorization: <authToken>
-    
+
     user=<username>
     serial=<tokenSerial>
-    
+
 Providing the *tokenSerial* is optional. If just a user is provided, a
 challenge will be triggered for every challenge response token the user has.
 
@@ -385,7 +385,7 @@ challenge will be triggered for every challenge response token the user has.
         },
         "version": "<privacyIDEA version>"
     }
-    
+
 Send the Response
 ~~~~~~~~~~~~~~~~~
 
@@ -441,7 +441,7 @@ native encoding of the language (usually utf-16).
     POST /validate/check HTTP/1.1
     Host: example.com
     Accept: application/json
-    
+
     user=<user>
     pass=
     transaction_id=<transaction_id>
@@ -1269,9 +1269,10 @@ class WebAuthnTokenClass(TokenClass):
                     getParam(options, WEBAUTHNACTION.REQ, optional)
             ):
                 log.warning(
-                    "The WebAuthn token {0!s} is not allowed to authenticate due to policy restriction {1!s}"
-                        .format(self.token.serial, WEBAUTHNACTION.REQ))
-                raise PolicyError("The WebAuthn token is not allowed to authenticate due to a policy restriction.")
+                    "The WebAuthn token {0!s} is not allowed to authenticate "
+                    "due to policy restriction {1!s}".format(self.token.serial, WEBAUTHNACTION.REQ))
+                raise PolicyError("The WebAuthn token is not allowed to "
+                                  "authenticate due to a policy restriction.")
 
             # Now we need to check, if a whitelist for AAGUIDs exists, and if
             # so, if this device is whitelisted. If not, we again raise a
@@ -1279,9 +1280,10 @@ class WebAuthnTokenClass(TokenClass):
             allowed_aaguids = getParam(options, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, optional)
             if allowed_aaguids and self.get_tokeninfo(WEBAUTHNINFO.AAGUID) not in allowed_aaguids:
                 log.warning(
-                    "The WebAuthn token {0!s} is not allowed to authenticate due to policy restriction {1!s}"
-                        .format(self.token.serial, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST))
-                raise PolicyError("The WebAuthn token is not allowed to authenticate due to a policy restriction.")
+                    "The WebAuthn token {0!s} is not allowed to authenticate due to policy "
+                    "restriction {1!s}".format(self.token.serial, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST))
+                raise PolicyError("The WebAuthn token is not allowed to "
+                                  "authenticate due to a policy restriction.")
 
             # All clear? Nice!
             return self.get_otp_count()
