@@ -28,7 +28,7 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_types,
                                          save_caconnector, delete_caconnector)
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
-from .mscamock import (MyTemplateReply, MyCAReply, MyCRReply,
+from .mscamock import (MyTemplateReply, MyCAReply, MyCSRReply,
                        MyCertReply, MyCertificateReply, MyCSRStatusReply, CAServiceMock)
 
 
@@ -275,10 +275,10 @@ class LocalCATestCase(MyTestCase):
                           "openssl.cnf": OPENSSLCNF,
                           "WorkingDir": cwd + "/" + WORKINGDIR})
 
-        cert = cacon.sign_request(REQUEST,
-                                  {"CSRDir": "",
-                                   "CertificateDir": "",
-                                   "WorkingDir": cwd + "/" + WORKINGDIR})
+        _r, cert = cacon.sign_request(REQUEST,
+                                      {"CSRDir": "",
+                                       "CertificateDir": "",
+                                       "WorkingDir": cwd + "/" + WORKINGDIR})
         serial = cert.get_serial_number()
 
         self.assertEqual("{0!r}".format(cert.get_issuer()),
@@ -333,7 +333,7 @@ class LocalCATestCase(MyTestCase):
                                   "openssl.cnf": OPENSSLCNF,
                                   "WorkingDir": cwd + "/" + WORKINGDIR})
 
-        cert = cacon.sign_request(REQUEST_USER)
+        _, cert = cacon.sign_request(REQUEST_USER)
         self.assertEqual("{0!r}".format(cert.get_issuer()),
                          "<X509Name object "
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=CA001'>")
@@ -349,7 +349,7 @@ class LocalCATestCase(MyTestCase):
                                   "openssl.cnf": OPENSSLCNF,
                                   "WorkingDir": cwd + "/" + WORKINGDIR})
 
-        cert = cacon.sign_request(SPKAC, options={"spkac": 1})
+        _, cert = cacon.sign_request(SPKAC, options={"spkac": 1})
         self.assertEqual("{0!r}".format(cert.get_issuer()),
                          "<X509Name object "
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=CA001'>")
@@ -369,8 +369,8 @@ class LocalCATestCase(MyTestCase):
         self.assertTrue("user" in templates)
         self.assertTrue("webserver" in templates)
         self.assertTrue("template3" in templates)
-        cert = cacon.sign_request(SPKAC, options={"spkac": 1,
-                                                  "template": "webserver"})
+        _, cert = cacon.sign_request(SPKAC, options={"spkac": 1,
+                                                     "template": "webserver"})
         expires = to_unicode(cert.get_notAfter())
         import datetime
         dt = datetime.datetime.strptime(expires, "%Y%m%d%H%M%SZ")
@@ -523,8 +523,9 @@ class MSCATestCase(MyTestCase):
                                                                "csr_disposition": 3,
                                                                "certificate": MOCK_USER_CERT})
             cacon = MSCAConnector("billsCA", CONF)
-            r = cacon.sign_request(REQUEST_USER, {"template": "User"})
-            self.assertIsInstance(r, OpenSSL.crypto.X509)
+            request_id, cert = cacon.sign_request(REQUEST_USER, {"template": "User"})
+            self.assertIsInstance(cert, OpenSSL.crypto.X509)
+            self.assertEqual(4711, request_id)
 
     @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
                          "Can not test MSCA. grpc module seems not available.")

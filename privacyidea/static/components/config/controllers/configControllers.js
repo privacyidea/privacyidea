@@ -903,6 +903,7 @@ myApp.controller("MicrosoftCAConnectorController", ["$scope", "$stateParams",
             var caconnector = data.result.value[0];
             $scope.params = caconnector.data;
             $scope.params.type = 'microsoft';
+            $scope.params['type.ssl_client_key_password'] = 'password';
             $scope.getCASpecificOptions($scope.params.type);
         });
     }

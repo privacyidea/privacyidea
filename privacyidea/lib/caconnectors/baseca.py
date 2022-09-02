@@ -31,7 +31,7 @@ AvailableCAConnectors = []
 
 
 class BaseCAConnector(object):
-    def revoke_cert(self, certificate, reason=None):
+    def revoke_cert(self, certificate, request_id=None, reason=None):
         """
         Revoke the specified certificate. At this point only the database
         index.txt is updated.
@@ -39,6 +39,8 @@ class BaseCAConnector(object):
         :param certificate: The certificate to revoke
         :type certificate: Either takes X509 object or a PEM encoded
             certificate (string)
+        :param request_id: The Id of the certificate in the certificate authority
+        :type request_id: int
         :param reason: One of the available reasons the certificate gets revoked
         :type reason: basestring
         :return: Returns the serial number of the revoked certificate. Otherwise

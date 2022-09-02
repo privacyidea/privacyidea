@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import caservice_pb2 as caservice__pb2
+import privacyidea.lib.caconnectors.caservice_pb2 as caservice__pb2
 
 
 class CAServiceStub(object):
