@@ -38,19 +38,18 @@ from privacyidea.lib.utils import to_bytes
 log = logging.getLogger(__name__)
 try:
     import grpc
-except ImportError:
-    log.warning("Can not import grpc modules.")
-
-from privacyidea.lib.caconnectors.caservice_pb2_grpc import CAServiceStub
-from privacyidea.lib.caconnectors.caservice_pb2 import (GetCAsRequest,
+    from privacyidea.lib.caconnectors.caservice_pb2_grpc import CAServiceStub
+    from privacyidea.lib.caconnectors.caservice_pb2 import (GetCAsRequest,
                                                             GetTemplatesRequest,
                                                             GetCSRStatusRequest,
                                                             GetCSRStatusReply,
                                                             SubmitCSRRequest,
                                                             GetCertificateRequest,
                                                             GetCertificateReply)
+    AvailableCAConnectors.append("privacyidea.lib.caconnectors.msca.MSCAConnector")
+except ImportError:
+    log.warning("Can not import grpc modules.")
 
-AvailableCAConnectors.append("privacyidea.lib.caconnectors.msca.MSCAConnector")
 
 CRL_REASONS = ["unspecified", "keyCompromise", "CACompromise",
                "affiliationChanged", "superseded", "cessationOfOperation"]
