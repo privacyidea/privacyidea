@@ -156,6 +156,9 @@ The Microsoft CA Connector has the following options.
 
 The hostname (FQDN) or IP address where the privacyIDEA MS CA worker is running.
 
+.. note:: If you configure `Use SSL`, you need to provide the correct hostname as it is
+   contained in the server certificate.
+
 **Port**
 
 The port on which the worker listens.
@@ -164,15 +167,56 @@ The port on which the worker listens.
 
 Whether the worker is situated behind a HTTP proxy.
 
-**CA**
+**Domain CA**
 
-The real CA to which privacyIDEA shall communicate. After providing the initial
+The worker will provide a list of available CAs in the domain. This is the
+actual CA to which privacyIDEA shall communicate. After providing the initial
 connection information `hostname` and `Port`, privacyIDEA can fetch the available
 CAs in the Windows Dowmain. The CA is identified by the hostname where the Microsoft CA is
 running and the name of the CA like `<hostname>\\<name of CA>`.
 
-Setup from the command line
----------------------------
+**Use SSL**
+
+This is a boolean paramenter. If it is checked, then privacyIDEA will communicate to
+the CA worker via TLS. Depending on the worker configuration it will also be required,
+to provide a client certificate for authentication.
+
+.. note:: In productive use SSL should always be activated and a client certificate must
+   be used for authentication.
+
+**CA certificate**
+
+This is the location of the file, that contains the CA certificate, that issued the
+CA worker servider certificate. This file is located on the privacyIDEA server in PEM format.
+
+**Client certificate**
+
+This is the file locateion of the certificate that privacyIDEA uses to authenticate against the CA worker.
+It is PEM format.
+
+.. note:: The subject of this certificate must match the name of the privacyIDEA server as
+   seen by the CA worker. It is a good idea to request the client certificate from the
+   CA on the domain where the CA worker is actually running at.
+
+**Client private key**
+
+This is the location of the file containing the private key that belongs to the `Client certificate`.
+It is in PEM format and can either be password protected (encrypted) or not.
+We expect the password protected key to be in PKCS8 format.
+
+**Password of client certificate**
+
+This is the password of the encrypted client private key.
+
+.. note:: We strongly recommend to protect the file with a password. You can add a password
+   to the key file on the privacyIDEA server using openssl::
+
+      openssl pkcs8 -topk8 -in privkey.pem -out privkey-encrypted.pem
+
+
+
+Basic setup from the command line
+---------------------------------
 
 Of cours the MS CA Connector can be configured in the privacyIDEA Web UI.
 For quick setup, you can also configure a connector at the command line using
