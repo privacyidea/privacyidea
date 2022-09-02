@@ -161,7 +161,7 @@ class MSCAConnector(BaseCAConnector):
                     client_cert_pem = f.read()
                 with open(self.ssl_client_key, 'rb') as f:
                     client_key_pem = f.read()
-                if client_key_pem.startswith(b"-----BEGIN RSA PRIVATE KEY-----"):
+                if client_key_pem.startswith(b"-----BEGIN RSA PRIVATE KEY-----") or client_key_pem.startswith(b"-----BEGIN PRIVATE KEY-----"):
                     log.debug("Read unencrypted private key.")
                 elif client_key_pem.startswith(b"-----BEGIN ENCRYPTED PRIVATE KEY-----"):
                     if self.ssl_client_key_password:

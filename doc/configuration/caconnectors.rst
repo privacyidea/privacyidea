@@ -202,16 +202,25 @@ It is PEM format.
 
 This is the location of the file containing the private key that belongs to the `Client certificate`.
 It is in PEM format and can either be password protected (encrypted) or not.
-We expect the password protected key to be in PKCS8 format.
+
+The key can be provided in PKCS1 or PKCS8 format.
+
+.. note:: The PCKCS1 format will start with "-----BEGIN RSA PRIVATE KEY-----", the PKCS8 format
+   will start with "-----BEGIN PRIVATE KEY-----".
+
+To convert between PKCS1 and PKCS8 format you can use::
+
+    openssl pkcs8 -in private-p1.pem -topk8 -out private-p8.pem -nocrypt
+    openssl pkcs8 -in private-p1.pem -topk8 -out private-p8-encrypted.pem
+
+    openssl rsa -in private-p8.pem -out private-p1.pem
 
 **Password of client certificate**
 
 This is the password of the encrypted client private key.
 
-.. note:: We strongly recommend to protect the file with a password. You can add a password
-   to the key file on the privacyIDEA server using openssl::
-
-      openssl pkcs8 -topk8 -in privkey.pem -out privkey-encrypted.pem
+.. note:: We strongly recommend to protect the file with a password. As encrypted key files
+   we only support PKCS8!
 
 
 
