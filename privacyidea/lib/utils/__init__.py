@@ -1482,15 +1482,16 @@ def parse_string_to_dict(s, split_char=":"):
     d = {a: b for a, b in zip(keys, values)}
     return d
 
+
 def replace_function_event_handler(text, token_serial=None, tokenowner=None, logged_in_user=None):
-    if logged_in_user != None:
+    if logged_in_user is not None:
         login = logged_in_user.login
         realm = logged_in_user.realm
     else:
         login = ""
         realm = ""
 
-    if tokenowner != None:
+    if tokenowner is not None:
         surname = tokenowner.info.get("surname")
         givenname = tokenowner.info.get("givenname")
         userrealm = tokenowner.realm
@@ -1499,23 +1500,25 @@ def replace_function_event_handler(text, token_serial=None, tokenowner=None, log
         givenname = ""
         userrealm = ""
 
-    if token_serial != None:
+    if token_serial is not None:
         token_serial = token_serial
     else:
-        token_type = ""
         token_serial = ""
 
-    if type(text) is str:
+    try:
         attributes = {
             "logged_in_user": login,
             "realm": realm,
             "surname": surname,
-            "givenname": givenname,
-            "token_type": token_type,
+            "token_owner": givenname,
+            "user_realm": userrealm,
             "token_serial": token_serial
         }
         new_text = text.format_map(defaultdict(str, attributes))
         return new_text
-    else:
-        log.warning('The type of the text has to been string')
+    except(ValueError) as err:
+        log.warning('privacyIDEA can`t replace your placeholder. Please check the text for mistakes')
+        return text
+    except () as err:
+        log.warning('Unknown error {0!s}'.format(err))
         return text

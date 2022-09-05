@@ -1023,29 +1023,3 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(d.get("key1"), ["v1", "v2", "v3"])
         self.assertEqual(d.get("key2"), [])
         self.assertEqual(d.get("key3"), ["v5"])
-
-    def test_36_replace(self):
-        # Setup realm and user
-        self.setUp_user_realms()
-        userh = User("hans", self.realm1)
-        self.setUp_user_realms()
-
-        init_token({"serial": "SPASS01", "type": "spass"},
-                   User("cornelius", self.realm1))
-        g = FakeFlaskG()
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "SPASS01"},
-                                 headers={})
-
-        env = builder.get_environ()
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        req.all_data = {"serial": "SPASS01"}
-        req.User = User("cornelius", self.realm1)
-        g = FakeFlaskG()
-        g.logged_in_user = {'username': 'hans',
-                            'realm': self.realm1}
-        text = "The logged in user is {logged_in_user}"
-        text2 = replace_function_event_handler(text, token_serial="SPASS01", tokenowner=User, logged_in_user=userh)
-        self.assertEqual("The logged in user is hans", text2)

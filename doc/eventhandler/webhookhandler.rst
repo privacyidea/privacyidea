@@ -21,4 +21,6 @@ what ever your other application understands as data.
 
 .. note:: You can use placeholder for more flexibility of the webhook. For example: If the user John is logged in
     and the webhook handler text is "This webhook is triggered by {logged_in_user}", than this text is send:
-    "This webhook is triggered by John"
+    "This webhook is triggered by John".
+    Possible please holder are `logged_in_user`, `realm`, `token_owner`, `user_realm` and `token_serial`
+
