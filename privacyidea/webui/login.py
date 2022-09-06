@@ -55,11 +55,11 @@ def get_accepted_language(req):
     # locale
     if not req:
         return None
-    # otherwise try to guess the language from the user accept
-    # header the browser transmits. The best match wins.
-    pi_cfg_configuration = get_app_config_value("PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
     # reads pi.cfg and checks if preferred language is set. Otherwise default list is selected.
-    return req.accept_languages.best_match(pi_cfg_configuration, default=pi_cfg_configuration[0])
+    pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
+    # otherwise try to match the language from the user
+    # accept header the browser transmits. (The best match wins)
+    return req.accept_languages.best_match(pi_lang_list, default=pi_lang_list[0])
 
 @login_blueprint.before_request
 def before_request():

@@ -112,13 +112,13 @@ If ``PI_HSM_PADDING`` is not set, the default internal padding is used::
 .. warning:: The two paddings are not compatible. Data encrypted with one padding can not decrypted with the other padding. 
    So if you change the padding later during the cause of operation, it will not be possible to decrypt old data!
 
-``PREFERRED_LANGUAGE`` is a list in which the preferred languages can be defined. The browser's language settings are compared to this
+``PI_PREFERRED_LANGUAGE`` is a list in which the preferred languages can be defined. The browser's language settings are compared to this
 list and the "best match" wins. If none of the languages set in the browser match, the first language in the list will be used as the default language::
 
-    PREFERRED_LANGUAGE = ["en", "de", "es", "fr"]
+    PI_PREFERRED_LANGUAGE = ["en", "de", "es", "fr"]
 
-.. note:: If ``PREFERRED_LANGUAGE`` is not defined, a ``DEFAULT_LANGUAGE_LIST`` is used.
-   DEFAULT_LANGUAGE_LIST = ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr']
+.. note:: If ``PI_PREFERRED_LANGUAGE`` is not defined, a ``DEFAULT_LANGUAGE_LIST`` is used.
+   ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr']
 
 Logging
 -------
