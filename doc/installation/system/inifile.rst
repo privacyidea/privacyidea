@@ -117,7 +117,7 @@ list and the "best match" wins. If none of the languages set in the browser matc
 
     PI_PREFERRED_LANGUAGE = ["en", "de", "es", "fr"]
 
-.. note:: If ``PI_PREFERRED_LANGUAGE`` is not defined, a ``DEFAULT_LANGUAGE_LIST`` is used.
+.. note:: If ``PI_PREFERRED_LANGUAGE`` is not defined, the following list is used.
    ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr']
 
 Logging
