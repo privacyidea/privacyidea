@@ -5,7 +5,7 @@ This file tests the web UI Login
 
 implementation is contained webui/login.py
 """
-from .base import MyTestCase
+from .base import MyTestCase, MyApiTestCase
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, PolicyClass, delete_all_policies
 from privacyidea.lib.utils import to_unicode
 import re
@@ -118,3 +118,24 @@ class LoginUITestCase(MyTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(b"https://privacyidea.org/" in res.data)
+
+
+class LanguageTestCase(MyApiTestCase):
+
+    def test_01_check_for_english_translation(self):
+        with self.app.test_request_context('/auth/rights',
+                                           method='GET',
+                                           headers={
+                                               'Authorization': self.at,
+                                               'Accept-Language': 'en'}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.json['result']['value']['totp'], 'TOTP: Time based One Time Passwords.')
+
+    def test_02_check_for_german_translation(self):
+        with self.app.test_request_context('/auth/rights',
+                                           method='GET',
+                                           headers={
+                                               'Authorization': self.at,
+                                               'Accept-Language': 'de'}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.json['result']['value']['totp'], 'TOTP: Zeitbasiertes Einmalpasswort.')

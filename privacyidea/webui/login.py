@@ -34,6 +34,7 @@ from flask import (Blueprint, render_template, request,
                    current_app, g)
 from privacyidea.api.lib.utils import send_html
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
+from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.passwordreset import is_password_reset
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.realm import get_realms
@@ -44,9 +45,20 @@ from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_nod
 from privacyidea.lib.queue import has_job_queue
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
+DEFAULT_LANGUAGE_LIST = ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr']
 
 login_blueprint = Blueprint('login_blueprint', __name__)
 
+
+def get_accepted_language(req):
+    # if we are not in the request context, return None to use the default locale
+    if not req:
+        return None
+    # read pi.cfg and checks if preferred language is set. Otherwise, default list is selected.
+    pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
+    # try to match the language from the users accept header the browser transmits.
+    # (The best match wins)
+    return req.accept_languages.best_match(pi_lang_list, default=pi_lang_list[0])
 
 @login_blueprint.before_request
 def before_request():
@@ -90,7 +102,7 @@ def single_page_application():
     translation_warning = current_app.config.get("PI_TRANSLATION_WARNING", False)
     # Get the logo file
     logo = current_app.config.get("PI_LOGO", "privacyIDEA1.png")
-    browser_lang = request.accept_languages.best_match(["en", "de", "de-DE", "nl", "fr", "cs", "it", "es", "tr"], default="en").split("-")[0]
+    browser_lang = get_accepted_language(request)
     # The page title can be configured in pi.cfg
     page_title = current_app.config.get("PI_PAGE_TITLE", "privacyIDEA Authentication System")
     # check if login with REMOTE_USER is allowed.
@@ -100,7 +112,7 @@ def single_page_application():
         request.all_data = {}
     # Depending on displaying the realm dropdown, we fill realms or not.
     realms = ""
-    realm_dropdown = Match.action_only(g, scope=SCOPE.WEBUI, action=ACTION.REALMDROPDOWN)\
+    realm_dropdown = Match.action_only(g, scope=SCOPE.WEBUI, action=ACTION.REALMDROPDOWN) \
         .policies(write_to_audit_log=False)
     show_node = get_privacyidea_node() \
         if Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_NODE).any(write_to_audit_log=False) else ""
@@ -129,7 +141,7 @@ def single_page_application():
     # and baseline. get_action_values returns an array!
     sub_state = subscription_status()
     customization_menu_file = Match.action_only(g, action=ACTION.CUSTOM_MENU,
-                                                scope=SCOPE.WEBUI)\
+                                                scope=SCOPE.WEBUI) \
         .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
     if len(customization_menu_file) and list(customization_menu_file)[0] \
             and sub_state not in [1, 2]:

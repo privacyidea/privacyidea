@@ -102,6 +102,16 @@ can be set, for example::
 Further information on possible parameters can be found in the
 `PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
 
+``PI_PREFERRED_LANGUAGE`` is a list in which the preferred languages can be defined.
+The browser's language settings are compared to this list and the "best match" wins.
+If none of the languages set in the browser match, the first language in the list
+will be used as the default language::
+
+    PI_PREFERRED_LANGUAGE = ["en", "de", "es", "fr"]
+
+.. note:: If ``PI_PREFERRED_LANGUAGE`` is not defined, the following list is used.
+   ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr']
+
 Logging
 -------
 

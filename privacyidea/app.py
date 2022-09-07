@@ -45,7 +45,7 @@ from privacyidea.api.application import application_blueprint
 from privacyidea.api.caconnector import caconnector_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.auth import jwtauth
-from privacyidea.webui.login import login_blueprint
+from privacyidea.webui.login import login_blueprint, get_accepted_language
 from privacyidea.webui.certificate import cert_blueprint
 from privacyidea.api.machineresolver import machineresolver_blueprint
 from privacyidea.api.machine import machine_blueprint
@@ -218,15 +218,7 @@ def create_app(config_name="development",
 
     @babel.localeselector
     def get_locale():
-        # if we are not in the request context, return None to use the default
-        # locale
-        if not request:
-            return None
-        # otherwise try to guess the language from the user accept
-        # header the browser transmits.  We support de/fr/en in this
-        # example.  The best match wins.
-        return request.accept_languages.best_match(['de', 'nl', 'fr', 'cs',
-                                                    'es', 'en', 'tr', 'zh_Hant'])
+        return get_accepted_language(request)
 
     queue.register_app(app)
 
