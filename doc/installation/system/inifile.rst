@@ -102,18 +102,10 @@ can be set, for example::
 Further information on possible parameters can be found in the
 `PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
 
-In ``PI_HSM_PADDING`` the padding used by the `DefaultSecurityModule` or the `EncryptKeyHardwareSecurityModule` can be set to "PKCS7". 
-If ``PI_HSM_PADDING`` is not set, the default internal padding is used::
-
-    PI_HSM_PADDING = "PKCS7"
-    
-.. note:: The `AESHardwareSecurityModule` always uses PKCS7 padding.
-    
-.. warning:: The two paddings are not compatible. Data encrypted with one padding can not decrypted with the other padding. 
-   So if you change the padding later during the cause of operation, it will not be possible to decrypt old data!
-
-``PI_PREFERRED_LANGUAGE`` is a list in which the preferred languages can be defined. The browser's language settings are compared to this
-list and the "best match" wins. If none of the languages set in the browser match, the first language in the list will be used as the default language::
+``PI_PREFERRED_LANGUAGE`` is a list in which the preferred languages can be defined.
+The browser's language settings are compared to this list and the "best match" wins.
+If none of the languages set in the browser match, the first language in the list
+will be used as the default language::
 
     PI_PREFERRED_LANGUAGE = ["en", "de", "es", "fr"]
 
