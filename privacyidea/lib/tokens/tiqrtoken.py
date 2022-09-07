@@ -239,8 +239,7 @@ class TiqrTokenClass(OcraTokenClass):
                                                     _("URL for TiQR "
                                                       "enrollment"),
                                          "value": tiqrenroll,
-                                         "img": create_img(tiqrenroll,
-                                                           width=250)}
+                                         "img": create_img(tiqrenroll)}
 
         return response_detail
 
@@ -433,7 +432,7 @@ class TiqrTokenClass(OcraTokenClass):
                                               db_challenge.transaction_id,
                                               challenge,
                                               quote(service_displayname))
-        image = create_img(authurl, width=250)
+        image = create_img(authurl)
         attributes = {"img": image,
                       "value": authurl,
                       "poll": self.client_mode == CLIENTMODE.POLL,

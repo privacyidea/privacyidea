@@ -401,18 +401,8 @@ class DefaultSecurityModule(SecurityModule):
 
         key = self._get_secret(key_id)
 
-        if get_app_config_value("PI_HSM_PADDING") == "PKCS7":
-            padder = padding.PKCS7(algorithms.AES.block_size).padder()
-            padded_data = padder.update(data) + padder.finalize()
-
-        else:
-            # convert input to ascii, so we can securely append bin data for padding
-            input_data = binascii.b2a_hex(data)
-
-            input_data += b"\x01\x02"
-            default_padding = (16 - len(input_data) % 16) % 16
-            input_data += default_padding * b"\0"
-            padded_data = input_data
+        padder = padding.PKCS7(algorithms.AES.block_size).padder()
+        padded_data = padder.update(data) + padder.finalize()
 
         res = aes_cbc_encrypt(key, iv, padded_data)
 
@@ -497,10 +487,11 @@ class DefaultSecurityModule(SecurityModule):
         key = self._get_secret(key_id)
         output = aes_cbc_decrypt(key, iv, enc_data)
 
-        if get_app_config_value("PI_HSM_PADDING") == "PKCS7":
+        try:
             unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
             data = unpadder.update(output) + unpadder.finalize()
-        else:
+        except ValueError as _e:
+            # try legacy padding
             # remove padding
             eof = output.rfind(b"\x01\x02")
             if eof >= 0:

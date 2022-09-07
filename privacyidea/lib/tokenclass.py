@@ -1391,7 +1391,7 @@ class TokenClass(object):
         if otpkey is not None:
             response_detail["otpkey"] = {"description": "OTP seed",
                                          "value": "seed://{0!s}".format(otpkey),
-                                         "img": create_img(otpkey, width=200)}
+                                         "img": create_img(otpkey)}
 
         return response_detail
 

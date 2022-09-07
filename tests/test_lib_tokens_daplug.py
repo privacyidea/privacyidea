@@ -149,8 +149,7 @@ class DaplugTokenTestCase(MyTestCase):
                         token.token.so_pin)
         self.assertTrue(len(token.token.user_pin) == 32,
                         token.token.user_pin)
-        self.assertTrue(len(token.token.key_enc) == 192,
-                        token.token.key_enc)
+        self.assertEqual(len(token.token.key_enc), 96, token.token.key_enc)
         self.assertTrue(token.get_otplen() == 8)
         self.assertTrue(token.token.count == 1000,
                         token.token.count)

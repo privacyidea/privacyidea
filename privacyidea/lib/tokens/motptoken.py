@@ -153,8 +153,7 @@ class MotpTokenClass(TokenClass):
                     response_detail["motpurl"] = {"description": _("URL for MOTP "
                                                                    "token"),
                                                   "value": motp_url,
-                                                  "img": create_img(motp_url,
-                                                                    width=250)
+                                                  "img": create_img(motp_url)
                                                   }
                 except Exception as ex:   # pragma: no cover
                     log.debug("{0!s}".format(traceback.format_exc()))
