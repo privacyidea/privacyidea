@@ -22,6 +22,8 @@ You can send an webhook to trigger an event on an other system or use to replace
 api requests and reduce your traffic this way.
 
 """
+
+import six
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
 import json
@@ -30,6 +32,7 @@ import requests
 from requests.exceptions import HTTPError, Timeout, ConnectionError, RequestException
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import replace_function_event_handler
+
 
 log = logging.getLogger(__name__)
 TIMEOUT = 10
@@ -130,7 +133,8 @@ class WebHookHandler(BaseEventHandler):
             tokenowner = self._get_tokenowner(request)
         user = User(login=g.logged_in_user.get('username'),
                     realm=g.logged_in_user.get('realm'))
-        if replace:
+
+        if replace and six.PY3:
             webhook_text = replace_function_event_handler(webhook_text, token_serial=token_serial,
                                                           tokenowner=tokenowner, logged_in_user=user)
 
