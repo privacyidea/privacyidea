@@ -24,3 +24,4 @@ what ever your other application understands as data.
     "This webhook is triggered by John".
     Possible please holder are `logged_in_user`, `realm`, `token_owner`, `user_realm` and `token_serial`
 
+.. note:: placeholders are only available with python 3. python 2 will not support this
