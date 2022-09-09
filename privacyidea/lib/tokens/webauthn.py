@@ -1206,6 +1206,9 @@ class WebAuthnRegistrationResponse(object):
         """
 
         try:
+            # As described in https://www.w3.org/TR/webauthn/#sctn-registering-a-new-credential
+            # In the docs it starts at step 5.
+            #
             # Step 1.
             #
             # Let JSONtext be the result of running UTF-8 decode on the value of

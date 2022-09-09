@@ -34,7 +34,6 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError, RegistrationError, PolicyError
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
-from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
                                              ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
                                              WebAuthnMakeCredentialOptions, WebAuthnAssertionOptions, WebAuthnUser,
@@ -513,7 +512,7 @@ class WEBAUTHNACTION(object):
     AUTHENTICATOR_ATTACHMENT = 'webauthn_authenticator_attachment'
     AUTHENTICATOR_SELECTION_LIST = 'webauthn_authenticator_selection_list'
     USER_VERIFICATION_REQUIREMENT = 'webauthn_user_verification_requirement'
-    PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS = 'webauthn_public_key_credential_algorithms'
+    PUBLIC_KEY_CREDENTIAL_ALGORITHMS = 'webauthn_public_key_credential_algorithms'
     AUTHENTICATOR_ATTESTATION_FORM = 'webauthn_authenticator_attestation_form'
     AUTHENTICATOR_ATTESTATION_LEVEL = 'webauthn_authenticator_attestation_level'
     REQ = 'webauthn_req'
@@ -696,7 +695,7 @@ class WebAuthnTokenClass(TokenClass):
                             "discouraged"
                         ]
                     },
-                    WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS: {
+                    WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: {
                         'type': 'str',
                         'desc': _("Which algorithm are available to use for creating public key "
                                   "credentials for WebAuthn tokens. (Default: [{0!s}], Order: "
@@ -884,7 +883,7 @@ class WebAuthnTokenClass(TokenClass):
             #
             # All data is parsed and verified. If any errors occur an exception
             # will be raised.
-            web_authn_credential = WebAuthnRegistrationResponse(
+            webauthn_credential = WebAuthnRegistrationResponse(
                 rp_id=rp_id,
                 origin=http_origin,
                 registration_response={
@@ -900,40 +899,33 @@ class WebAuthnTokenClass(TokenClass):
                 trust_anchor_dir=get_from_config(WEBAUTHNCONFIG.TRUST_ANCHOR_DIR),
                 uv_required=uv_req == USER_VERIFICATION_LEVEL.REQUIRED
             ).verify([
+                # TODO: this might get slow when a lot of webauthn tokens are registered
                 token.decrypt_otpkey() for token in get_tokens(tokentype=self.type)
             ])
 
-            self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(web_authn_credential.credential_id)))
-            self.set_otp_count(web_authn_credential.sign_count)
+            self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(webauthn_credential.credential_id)))
+            self.set_otp_count(webauthn_credential.sign_count)
             self.add_tokeninfo(WEBAUTHNINFO.PUB_KEY,
-                               hexlify_and_unicode(webauthn_b64_decode(web_authn_credential.public_key)))
+                               hexlify_and_unicode(webauthn_b64_decode(webauthn_credential.public_key)))
             self.add_tokeninfo(WEBAUTHNINFO.ORIGIN,
-                               web_authn_credential.origin)
+                               webauthn_credential.origin)
             self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_LEVEL,
-                               web_authn_credential.attestation_level)
+                               webauthn_credential.attestation_level)
 
             self.add_tokeninfo(WEBAUTHNINFO.AAGUID,
-                               hexlify_and_unicode(web_authn_credential.aaguid))
+                               hexlify_and_unicode(webauthn_credential.aaguid))
 
             # Add attestation info.
-            if web_authn_credential.attestation_cert:
-                # attestation_cert is of type X509. If you get warnings from your IDE
-                # here, it is because your IDE mistakenly assumes it to be of type PKey,
-                # due to a bug in pyOpenSSL 18.0.0. This bug is – however – purely
-                # cosmetic (a wrongly hinted return type in X509.from_cryptography()),
-                # and can be safely ignored.
-                #
-                # See also:
-                # https://github.com/pyca/pyopenssl/commit/4121e2555d07bbba501ac237408a0eea1b41f467
-                attestation_cert = crypto.X509.from_cryptography(web_authn_credential.attestation_cert)
+            if webauthn_credential.attestation_cert:
+                # attestation_cert is of type cryptography.x509.Certificate.
                 self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_ISSUER,
-                                   x509name_to_string(attestation_cert.get_issuer()))
+                                   webauthn_credential.attestation_cert.issuer.rfc4514_string())
                 self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_SUBJECT,
-                                   x509name_to_string(attestation_cert.get_subject()))
+                                   webauthn_credential.attestation_cert.subject.rfc4514_string())
                 self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_SERIAL,
-                                   attestation_cert.get_serial_number())
+                                   webauthn_credential.attestation_cert.serial_number)
 
-                cn = web_authn_credential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+                cn = webauthn_credential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
                 automatic_description = cn[0].value if len(cn) else None
 
             # If no description has already been set, set the automatic description or the
@@ -1022,7 +1014,7 @@ class WebAuthnTokenClass(TokenClass):
                                            WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
                                            required),
                 public_key_credential_algorithms=getParam(params,
-                                                          WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS,
+                                                          WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
                                                           required),
                 authenticator_attachment=getParam(params,
                                                   WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,

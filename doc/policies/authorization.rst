@@ -331,7 +331,7 @@ type: string
 This action allows filtering of WebAuthn tokens by the fields of the
 attestation certificate.
 
-The action can be specified like this:
+The action can be specified like this::
 
     webauthn_req=subject/.*Yubico.*/
 

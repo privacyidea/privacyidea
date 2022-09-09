@@ -2417,7 +2417,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                          rp_name)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
                          None)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS),
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
                          [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
                           for x in PUBKEY_CRED_ALGORITHMS_ORDER
                           if x in DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE])
@@ -2440,7 +2440,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                          None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
                          None)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS),
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
                          None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
                          None)
@@ -2459,7 +2459,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn2",
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT + '=' + authenticator_attachment + ','
-                   + WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS + '='
+                   + WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS + '='
                    + public_key_credential_algorithm_preference + ','
                    + WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + authenticator_attestation_level + ','
                    + WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM + '=' + authenticator_attestation_form + ','
@@ -2472,7 +2472,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         webauthntoken_enroll(request, None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
                          authenticator_attachment)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS),
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
                          [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[
                              public_key_credential_algorithm_preference
                          ]])
@@ -2491,7 +2491,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn2",
             scope=SCOPE.ENROLL,
-            action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS + '=' + 'b0rked'
+            action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS + '=' + 'b0rked'
         )
         with self.assertRaises(PolicyError):
             webauthntoken_enroll(request, None)
@@ -2908,8 +2908,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         class RequestMock(object):
             pass
 
-        allowed_certs = "subject/.*Yubico.*/"
-
         request = RequestMock()
         request.all_data = {
             "type": WebAuthnTokenClass.get_class_type(),
@@ -2917,13 +2915,24 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "regdata": REGISTRATION_RESPONSE_TMPL['attObj']
         }
 
+        allowed_certs = "subject/.*Yubico.*/"
         set_policy(
             name="WebAuthn",
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.REQ + "=" + allowed_certs
         )
-
         self.assertTrue(webauthntoken_allowed(request, None))
+
+        allowed_certs = "subject/.*Feitian.*/"
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.REQ + "=" + allowed_certs
+        )
+        self.assertRaisesRegexp(PolicyError,
+                                'The WebAuthn token is not allowed to be registered '
+                                'due to a policy restriction.',
+                                webauthntoken_allowed, request, None)
 
         set_policy(
             name="WebAuthn",

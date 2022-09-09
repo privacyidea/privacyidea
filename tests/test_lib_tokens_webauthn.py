@@ -79,6 +79,7 @@ from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, WEBAUTHNAC
 from privacyidea.lib.token import init_token, check_user_pass, remove_token
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.error import PolicyError
 
 TRUST_ANCHOR_DIR = "{}/testdata/trusted_attestation_roots".format(os.path.abspath(os.path.dirname(__file__)))
 REGISTRATION_RESPONSE_TMPL = {
@@ -119,7 +120,7 @@ REGISTRATION_CHALLENGE = 'bPzpX3hHQtsp9evyKYkaZtVc9UN07PUdJ22vZUdDp94'
 ASSERTION_CHALLENGE = 'e-g-nXaRxMagEiqTJSyD82RsEc5if_6jyfJDy8bNKlw'
 RP_ID = "webauthn.io"
 ORIGIN = "https://webauthn.io"
-USER_NAME = 'testuser'
+USER_NAME = 'hans'
 ICON_URL = "https://example.com/icon.png"
 USER_DISPLAY_NAME = "A Test User"
 USER_ID = b'\x80\xf1\xdc\xec\xb5\x18\xb1\xc8b\x05\x886\xbc\xdfJ\xdf'
@@ -171,9 +172,6 @@ NONE_ATTESTATION_PUB_KEY = 'a5010203262001215820d210be8ddfb5b0bc0be1ea8deaedec19
 
 
 class WebAuthnTokenTestCase(MyTestCase):
-    USER_LOGIN = "testuser"
-    USER_REALM = "testrealm"
-    USER_RESOLVER = "testresolver"
 
     def _create_challenge(self):
         self.token.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(CRED_ID)))
@@ -182,11 +180,37 @@ class WebAuthnTokenTestCase(MyTestCase):
         (_, _, _, response_details) = self.token.create_challenge(options=self.challenge_options)
         return response_details
 
+    def _setup_token(self):
+        with patch('privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
+            mock_nonce.return_value = webauthn_b64_decode(REGISTRATION_CHALLENGE)
+            self.token.get_init_detail(self.init_params, self.user)
+        self.token.update({
+            'type': 'webauthn',
+            'serial': self.token.token.serial,
+            'regdata': REGISTRATION_RESPONSE_TMPL['attObj'],
+            'clientdata': REGISTRATION_RESPONSE_TMPL['clientData'],
+            WEBAUTHNACTION.RELYING_PARTY_ID: RP_ID,
+            WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
+            'HTTP_ORIGIN': ORIGIN
+        })
+
     def setUp(self):
+        self.setUp_user_realms()
+
+        set_policy(name="WebAuthn",
+                   scope=SCOPE.ENROLL,
+                   action=WEBAUTHNACTION.RELYING_PARTY_NAME + "=" + RP_NAME + ","
+                          + WEBAUTHNACTION.RELYING_PARTY_ID + "=" + RP_ID)
+        set_privacyidea_config(WEBAUTHNCONFIG.TRUST_ANCHOR_DIR, TRUST_ANCHOR_DIR)
+        set_privacyidea_config(WEBAUTHNCONFIG.APP_ID, APP_ID)
+
+        self.user = User(login=USER_NAME, realm=self.realm1,
+                         resolver=self.resolvername1)
+
         self.token = init_token({
             'type': 'webauthn',
             'pin': '1234'
-        })
+        }, user=self.user)
 
         self.init_params = {
             WEBAUTHNACTION.RELYING_PARTY_ID: RP_ID,
@@ -194,10 +218,8 @@ class WebAuthnTokenTestCase(MyTestCase):
             WEBAUTHNACTION.TIMEOUT: TIMEOUT,
             WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM: DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
             WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
-            WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
+            WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
         }
-
-        self.user = User(login=USER_NAME)
 
         self.challenge_options = {
             "user": self.user,
@@ -206,15 +228,9 @@ class WebAuthnTokenTestCase(MyTestCase):
             WEBAUTHNACTION.TIMEOUT: TIMEOUT
         }
 
-    def test_00_users(self):
-        self.setUp_user_realms()
-
-        set_policy(name="WebAuthn",
-                   scope=SCOPE.ENROLL,
-                   action=WEBAUTHNACTION.RELYING_PARTY_NAME + "=" + RP_NAME + ","
-                         +WEBAUTHNACTION.RELYING_PARTY_ID   + "=" + RP_ID)
-        set_privacyidea_config(WEBAUTHNCONFIG.TRUST_ANCHOR_DIR, TRUST_ANCHOR_DIR)
-        set_privacyidea_config(WEBAUTHNCONFIG.APP_ID, APP_ID)
+    def tearDown(self):
+        self.token.delete_token()
+        delete_policy("WebAuthn")
 
     def test_01_create_token(self):
         self.assertEqual(self.token.type, "webauthn")
@@ -252,18 +268,7 @@ class WebAuthnTokenTestCase(MyTestCase):
         self.assertEqual(RP_NAME, self.token.get_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_NAME))
 
     def test_03_token_update(self):
-        with patch('privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
-            mock_nonce.return_value = webauthn_b64_decode(REGISTRATION_CHALLENGE)
-            self.token.get_init_detail(self.init_params, self.user)
-        self.token.update({
-            'type': 'webauthn',
-            'serial': self.token.token.serial,
-            'regdata': REGISTRATION_RESPONSE_TMPL['attObj'],
-            'clientdata': REGISTRATION_RESPONSE_TMPL['clientData'],
-            WEBAUTHNACTION.RELYING_PARTY_ID: RP_ID,
-            WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
-            'HTTP_ORIGIN': ORIGIN
-        })
+        self._setup_token()
         web_authn_registration_response = self.token.get_init_detail().get("webAuthnRegisterResponse")
 
         self.assertTrue(web_authn_registration_response
@@ -287,24 +292,31 @@ class WebAuthnTokenTestCase(MyTestCase):
         self.assertEqual(WebAuthnTokenClass.get_class_info('type'), "webauthn")
         self.assertTrue(self.token.token.serial.startswith("WAN"))
 
+        # we need to create an additional token for this to take effect
+        temp_token = init_token({
+            'type': 'webauthn',
+            'pin': '1234'
+        }, user=self.user)
+
         # No avoid double registration
         init_params = self.init_params
-        web_authn_register_request = self \
-            .token \
+        web_authn_register_request = temp_token \
             .get_init_detail(init_params, self.user) \
             .get("webAuthnRegisterRequest")
-        self.assertEqual(self.token.token.serial, web_authn_register_request.get("serialNumber"))
+        self.assertEqual(temp_token.token.serial, web_authn_register_request.get("serialNumber"))
         self.assertNotIn("excludeCredentials", web_authn_register_request)
+
+        self._setup_token()
 
         # Set avoid double registration
         init_params[WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION] = True
-        web_authn_register_request = self \
-            .token \
+        web_authn_register_request = temp_token \
             .get_init_detail(init_params, self.user) \
             .get("webAuthnRegisterRequest")
-        self.assertEqual(self.token.token.serial, web_authn_register_request.get("serialNumber"))
+        self.assertEqual(temp_token.token.serial, web_authn_register_request.get("serialNumber"))
         # Now the excludeCredentials is contained
         self.assertIn("excludeCredentials", web_authn_register_request)
+        temp_token.delete_token()
 
     def test_04_authentication(self):
         reply_dict = self._create_challenge()
@@ -382,6 +394,82 @@ class WebAuthnTokenTestCase(MyTestCase):
                 WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.UNTRUSTED,
                 'HTTP_ORIGIN': ORIGIN
             })
+
+    def test_09a_attestation_subject_allowed(self):
+        self._setup_token()
+        self.challenge_options['nonce'] = webauthn_b64_decode(ASSERTION_CHALLENGE)
+        self._create_challenge()
+        options = {
+            "credentialid": CRED_ID,
+            "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+            "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+            "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+            "user": self.user,
+            "challenge": hexlify_and_unicode(self.challenge_options['nonce']),
+            "HTTP_ORIGIN": ORIGIN,
+            WEBAUTHNACTION.REQ: ['subject/.*Yubico.*/']
+        }
+        res = self.token.check_otp(otpval=None, options=options)
+        self.assertGreaterEqual(res, 0)
+
+    def test_09b_attestation_subject_not_allowed(self):
+        self._setup_token()
+        self.challenge_options['nonce'] = webauthn_b64_decode(ASSERTION_CHALLENGE)
+        self._create_challenge()
+        options = {
+            "credentialid": CRED_ID,
+            "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+            "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+            "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+            "user": self.user,
+            "challenge": hexlify_and_unicode(self.challenge_options['nonce']),
+            "HTTP_ORIGIN": ORIGIN,
+            WEBAUTHNACTION.REQ: ['subject/.*Feitian.*/']
+        }
+        self.assertRaisesRegexp(PolicyError,
+                                "The WebAuthn token is not allowed to authenticate "
+                                "due to a policy restriction.",
+                                self.token.check_otp,
+                                **{'otpval': None,
+                                   'options': options})
+
+    def test_10a_aaguid_allowed(self):
+        self._setup_token()
+        self.challenge_options['nonce'] = webauthn_b64_decode(ASSERTION_CHALLENGE)
+        self._create_challenge()
+        # check token with a valid aaguid
+        res = self.token.check_otp(otpval=None, options={
+            "credentialid": CRED_ID,
+            "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+            "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+            "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+            "user": self.user,
+            "challenge": hexlify_and_unicode(self.challenge_options['nonce']),
+            "HTTP_ORIGIN": ORIGIN,
+            WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST: ['00000000000000000000000000000000']
+        })
+        self.assertGreaterEqual(res, 0)
+
+    def test_10b_aaguid_not_allowed(self):
+        self._setup_token()
+        self.challenge_options['nonce'] = webauthn_b64_decode(ASSERTION_CHALLENGE)
+        self._create_challenge()
+        # check token with an invalid aaguid
+        self.assertRaisesRegexp(PolicyError,
+                                "The WebAuthn token is not allowed to authenticate "
+                                "due to a policy restriction.",
+                                self.token.check_otp,
+                                **{'otpval': None,
+                                   'options': {
+                                       "credentialid": CRED_ID,
+                                       "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+                                       "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+                                       "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+                                       "user": self.user,
+                                       "challenge": hexlify_and_unicode(self.challenge_options['nonce']),
+                                       "HTTP_ORIGIN": ORIGIN,
+                                       WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST: ['ffff0000000000000000000000000000']
+                                   }})
 
 
 class WebAuthnTestCase(unittest.TestCase):
@@ -607,7 +695,7 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
             WEBAUTHNACTION.TIMEOUT: TIMEOUT,
             WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM: DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
             WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT: DEFAULT_USER_VERIFICATION_REQUIREMENT,
-            WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFS: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
+            WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
         }
     auth_options = {
         WEBAUTHNACTION.ALLOWED_TRANSPORTS: ALLOWED_TRANSPORTS,
