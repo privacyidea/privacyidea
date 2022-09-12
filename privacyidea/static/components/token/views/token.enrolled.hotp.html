@@ -10,7 +10,7 @@
         <uib-accordion close-others="oneAtATime" ng-show="show_seed">
             <div uib-accordion-group
                  class="panel-default"
-                 heading="{{ 'The OTP key'|translate }}">
+                 heading="{{ 'The OTP key'|translate }} ({{ 'click to reveal'|translate }}">
                 Hex: {{ enrolledToken.otpkey.value }}<br/>
                 Base32: {{ enrolledToken.otpkey.value_b32 }}
             </div>
