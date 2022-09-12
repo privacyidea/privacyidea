@@ -23,7 +23,6 @@ api requests and reduce your traffic this way.
 
 """
 
-import six
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
 import json
@@ -96,7 +95,7 @@ class WebHookHandler(BaseEventHandler):
             "replace": {
                 "type": "bool",
                 "required": True,
-                "description": _("You can replace placeholder like {locked_in_user}")
+                "description": _("You can replace placeholder like {logged_in_user}")
             },
             "data": {
                 "type": "str",
@@ -134,7 +133,7 @@ class WebHookHandler(BaseEventHandler):
         user = User(login=g.logged_in_user.get('username'),
                     realm=g.logged_in_user.get('realm'))
 
-        if replace and six.PY3:
+        if replace:
             webhook_text = replace_function_event_handler(webhook_text, token_serial=token_serial,
                                                           tokenowner=tokenowner, logged_in_user=user)
 

@@ -1514,11 +1514,8 @@ def replace_function_event_handler(text, token_serial=None, tokenowner=None, log
             "user_realm": userrealm,
             "token_serial": token_serial
         }
-        new_text = text.format_map(defaultdict(str, attributes))
+        new_text = text.format(**attributes)
         return new_text
     except(ValueError) as err:
         log.warning('privacyIDEA can`t replace your placeholder. Please check the text for mistakes')
-        return text
-    except () as err:
-        log.warning('Unknown error {0!s}'.format(err))
         return text

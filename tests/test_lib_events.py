@@ -9,7 +9,6 @@ lib/event.py (the decorator)
 import responses
 import os
 import mock
-import six
 
 from mock import patch, MagicMock
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
@@ -2596,7 +2595,7 @@ class WebhookTestCase(MyTestCase):
             "replace": {
                 "type": "bool",
                 "required": True,
-                "description": ("You can replace placeholder like {locked_in_user}")
+                "description": ("You can replace placeholder like {logged_in_user}")
             },
             "data": {
                 "type": "str",
@@ -2714,8 +2713,7 @@ class WebhookTestCase(MyTestCase):
             self.assertTrue(res)
             text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
                 'http://test.com', 'This is hans from realm realm1')
-            if six.PY3:
-                mock_log.assert_any_call(text)
+            mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
     @patch('requests.post')
@@ -2759,9 +2757,8 @@ class WebhookTestCase(MyTestCase):
                            }
                 res = t_handler.do("post_webhook", options=options)
                 self.assertTrue(res)
-                if six.PY3:
-                    mock_log.assert_any_call('privacyIDEA can`t replace your placeholder.'
-                                             ' Please check the text for mistakes')
+                mock_log.assert_any_call('privacyIDEA can`t replace your placeholder.'
+                                         ' Please check the text for mistakes')
                 text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
                     'http://test.com', '{{token_serial} {token_owner} {user_realm}}')
                 mock_info.assert_any_call(text)
