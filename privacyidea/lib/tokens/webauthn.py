@@ -425,9 +425,9 @@ class WebAuthnMakeCredentialOptions(object):
         :type rp_id: basestring
         :param user_id: The ID for the user credential being generated. This is the privacyIDEA token serial.
         :type user_id: basestring
-        :param user_name: The user name the user logs in with.
+        :param user_name: The username the user logs in with.
         :type user_name: basestring
-        :param user_display_name: The human readable name of the user.
+        :param user_display_name: The human-readable name of the user.
         :type user_display_name: basestring
         :param icon_url: An optional icon url.
         :type icon_url: basestring
@@ -664,9 +664,9 @@ class WebAuthnUser(object):
 
         :param user_id: The ID for the user credential being stored. This is the privacyIDEA token serial.
         :type user_id: basestring
-        :param user_name: The user name the user logs in with.
+        :param user_name: The username the user logs in with.
         :type user_name: basestring
-        :param user_display_name: The human readable name of the user.
+        :param user_display_name: The human-readable name of the user.
         :type user_display_name: basestring
         :param icon_url: An optional icon url.
         :type icon_url: basestring
@@ -699,7 +699,8 @@ class WebAuthnUser(object):
         self.rp_id = rp_id
 
     def __str__(self):
-        return '{} ({}, {}, {})'.format(self.user_id, self.user_name, self.user_display_name, self.sign_count)
+        return '{!r} ({}, {}, {})'.format(self.user_id, self.user_name,
+                                          self.user_display_name, self.sign_count)
 
 
 class WebAuthnCredential(object):
@@ -770,8 +771,9 @@ class WebAuthnCredential(object):
 
         return not ATTESTATION_REQUIREMENT_LEVEL[self.attestation_level]['self_attestation_permitted']
 
-    def __str_(self):
-        return '{} ({}, {}, {})'.format(self.credential_id, self.rp_id, self.origin, self.sign_count)
+    def __str__(self):
+        return '{!r} ({}, {}, {})'.format(self.credential_id, self.rp_id,
+                                          self.origin, self.sign_count)
 
 
 class WebAuthnRegistrationResponse(object):
@@ -1171,7 +1173,8 @@ class WebAuthnRegistrationResponse(object):
                 if fmt == ATTESTATION_FORMAT.NONE:
                     raise RegistrationRejectedException('Authenticator attestation is required.')
                 else:
-                    raise RegistrationRejectedException('Unsupported authenticator attestation format.')
+                    raise RegistrationRejectedException(
+                        'Unsupported authenticator attestation format ({0!s})!'.format(fmt))
 
             # Treat as none attestation.
             #
@@ -1203,6 +1206,9 @@ class WebAuthnRegistrationResponse(object):
         """
 
         try:
+            # As described in https://www.w3.org/TR/webauthn/#sctn-registering-a-new-credential
+            # In the docs it starts at step 5.
+            #
             # Step 1.
             #
             # Let JSONtext be the result of running UTF-8 decode on the value of

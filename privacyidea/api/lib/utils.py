@@ -400,7 +400,6 @@ def attestation_certificate_allowed(cert_info, allowed_certs_pols):
     if not cert_info:
         return not allowed_certs_pols
 
-
     if allowed_certs_pols:
         for allowed_cert in allowed_certs_pols:
             tag, matching, _rest = allowed_cert.split("/", 3)
@@ -411,6 +410,7 @@ def attestation_certificate_allowed(cert_info, allowed_certs_pols):
                 return False
 
     return True
+
 
 def is_fqdn(x):
     """

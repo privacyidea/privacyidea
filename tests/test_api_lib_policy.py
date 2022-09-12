@@ -12,12 +12,13 @@ from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_
                                              USER_VERIFICATION_LEVEL)
 from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_ALLOWED_TRANSPORTS,
                                                   WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
-                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
+                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
                                                   DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                                                   DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
-                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT)
+                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT,
+                                                  PUBKEY_CRED_ALGORITHMS_ORDER)
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from .base import (MyApiTestCase)
@@ -2416,10 +2417,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                          rp_name)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
                          None)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
-                         PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS[
-                             DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
-                         ])
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
+                         [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
+                          for x in PUBKEY_CRED_ALGORITHMS_ORDER
+                          if x in DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE])
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
                          DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM),
@@ -2439,7 +2440,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                          None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
                          None)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
                          None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
                          None)
@@ -2450,7 +2451,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # With policies
         authenticator_attachment = AUTHENTICATOR_ATTACHMENT_TYPE.CROSS_PLATFORM
-        public_key_credential_algorithm_preference = 'ecdsa_only'
+        public_key_credential_algorithm_preference = 'ecdsa'
         authenticator_attestation_level = ATTESTATION_LEVEL.TRUSTED
         authenticator_attestation_form = ATTESTATION_FORM.INDIRECT
         challengetext = "Lorem Ipsum"
@@ -2458,10 +2459,11 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn2",
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT + '=' + authenticator_attachment + ','
-                  +WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE + '=' + public_key_credential_algorithm_preference + ','
-                  +WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + authenticator_attestation_level + ','
-                  +WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM + '=' + authenticator_attestation_form + ','
-                  +WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
+                   + WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS + '='
+                   + public_key_credential_algorithm_preference + ','
+                   + WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + authenticator_attestation_level + ','
+                   + WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM + '=' + authenticator_attestation_form + ','
+                   + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
         )
         request = RequestMock()
         request.all_data = {
@@ -2470,10 +2472,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         webauthntoken_enroll(request, None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
                          authenticator_attachment)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
-                         PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS[
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
+                         [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[
                              public_key_credential_algorithm_preference
-                         ])
+                         ]])
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
                          authenticator_attestation_level)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM),
@@ -2489,7 +2491,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn2",
             scope=SCOPE.ENROLL,
-            action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE + '=' + 'b0rked'
+            action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS + '=' + 'b0rked'
         )
         with self.assertRaises(PolicyError):
             webauthntoken_enroll(request, None)
@@ -2906,8 +2908,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         class RequestMock(object):
             pass
 
-        allowed_certs = "subject/.*Yubico.*/"
-
         request = RequestMock()
         request.all_data = {
             "type": WebAuthnTokenClass.get_class_type(),
@@ -2915,13 +2915,24 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "regdata": REGISTRATION_RESPONSE_TMPL['attObj']
         }
 
+        allowed_certs = "subject/.*Yubico.*/"
         set_policy(
             name="WebAuthn",
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.REQ + "=" + allowed_certs
         )
-
         self.assertTrue(webauthntoken_allowed(request, None))
+
+        allowed_certs = "subject/.*Feitian.*/"
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.REQ + "=" + allowed_certs
+        )
+        self.assertRaisesRegexp(PolicyError,
+                                'The WebAuthn token is not allowed to be registered '
+                                'due to a policy restriction.',
+                                webauthntoken_allowed, request, None)
 
         set_policy(
             name="WebAuthn",

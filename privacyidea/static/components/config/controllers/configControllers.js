@@ -251,7 +251,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             }
             $scope.actions.push({name: key, help: value.desc, ticked: ticked});
             // Check if we need to do actionValues
-            if (value.type != "bool") {
+            if (value.type !== "bool") {
                 $scope.isActionValues = true;
             }
         });
@@ -266,17 +266,37 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             // This scope contains action values. We need to create
             // a list of checkboxes and input fields.
             angular.forEach(actions, function(value, key) {
+                let val = []
+                // handle select with multiple options
+                if (value.multiple === true) {
+                    value.value.forEach(function(entry) {
+                        val.push({
+                            'name': entry,
+                            'ticked': false
+                        });
+                    });
+                } else
+                    val = value.value;
+
                 $scope.actions.push({name: key,
                                      type: value.type,
                                      desc: value.desc,
                                      group: value.group,
-                                     allowedValues: value.value});
+                                     allowedValues: val,
+                                     multiple: value.multiple});
                 // preset the fields
                 if (policyActions && policyActions[key]) {
                     $scope.actionCheckBox[key] = true;
                     if (policyActions[key] !== true) {
-                        if (value.type === "str")
+                        if (value.type === "str") {
                             $scope.actionValuesStr[key] = policyActions[key];
+                            if (value.multiple === true) {
+                                let vals = $scope.actions.find(x => x.name === key).allowedValues;
+                                policyActions[key].split(' ').forEach(function(n) {
+                                    vals.find(x => x.name === n).ticked = true;
+                                })
+                            }
+                        }
                         if (value.type === "int")
                             $scope.actionValuesNum[key] = parseInt(policyActions[key]);
                         if (value.type === "text")
@@ -314,7 +334,10 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                         aval = $scope.actionValuesText[key];
                     }
                     if (aval) {
-                        $scope.params.action.push(key + "=" + aval);
+                        if (Array.isArray(aval))
+                            $scope.params.action.push(key + '=' + aval.map((o) => {return o.name}).join(' '));
+                        else
+                            $scope.params.action.push(key + "=" + aval);
                     } else {
                         aval = $scope.actionValuesNum[key];
                         if (aval === false || aval === undefined) {

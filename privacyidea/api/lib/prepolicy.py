@@ -97,7 +97,8 @@ from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse,
                                              ATTESTATION_FORMS)
 from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION,
                                                   DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
-                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
+                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
+                                                  PUBKEY_CRED_ALGORITHMS_ORDER,
                                                   DEFAULT_TIMEOUT, DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
@@ -1917,20 +1918,21 @@ def webauthntoken_enroll(request, action):
                and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES \
             else None
 
-        public_key_credential_algorithm_preference_policies = Match\
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
-        public_key_credential_algorithm_preference = list(public_key_credential_algorithm_preference_policies)[0] \
-            if public_key_credential_algorithm_preference_policies \
+        # we need to set `unique` to False since this policy can contain multiple values
+        public_key_credential_algorithm_pref_policies = Match.user(
+            g,
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
+            user_object=request.User if hasattr(request, 'User') else None
+        ).action_values(unique=False)
+        public_key_credential_algorithm_pref = public_key_credential_algorithm_pref_policies.keys() \
+            if public_key_credential_algorithm_pref_policies \
             else DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
-        if public_key_credential_algorithm_preference not in PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS.keys():
+        if not all([x in PUBLIC_KEY_CREDENTIAL_ALGORITHMS for x in public_key_credential_algorithm_pref]):
             raise PolicyError(
                 "{0!s} must be one of {1!s}"
-                    .format(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
-                            ', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS.keys())))
+                    .format(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
+                            ', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())))
 
         authenticator_attestation_level_policies = Match\
             .user(g,
@@ -1983,8 +1985,10 @@ def webauthntoken_enroll(request, action):
 
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT] \
             = authenticator_attachment
-        request.all_data[WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE] \
-            = PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS[public_key_credential_algorithm_preference]
+        request.all_data[WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS] \
+            = [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
+               for x in PUBKEY_CRED_ALGORITHMS_ORDER
+               if x in public_key_credential_algorithm_pref]
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL] \
             = authenticator_attestation_level
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] \
@@ -2102,8 +2106,8 @@ def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
     against, while attestation_certificate_required() expects the plain fields
     from the token info, containing just the issuer, serial and subject.
 
-    :param cert_info: The cert.
-    :type cert_info: X509 or None
+    :param attestation_cert: The attestation certificate.
+    :type attestation_cert: OpenSSL.crypto.X509 or None
     :param allowed_certs_pols: The policies restricting enrollment, or authorization.
     :type allowed_certs_pols: dict or None
     :return: Whether the token should be allowed to complete enrollment, or authorization, based on its attestation.
