@@ -3260,6 +3260,12 @@ msgstr ""
 msgid "The OTP key"
 msgstr "OTP tuşu"
 
+#: privacyidea/static/components/token/views/token.enrolled.hotp.html:13
+#: privacyidea/static/components/token/views/token.enrolled.motp.html:10
+#: privacyidea/static/components/token/views/token.enrolled.totp.html:13
+msgid "click to reveal"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:6
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:6
 msgid "The OTP values"
