@@ -2,10 +2,7 @@
 """
 This tests the package lib.utils
 """
-from flask.testing import EnvironBuilder
-
-from privacyidea.lib.token import init_token
-from .base import MyTestCase, FakeFlaskG
+from .base import MyTestCase
 
 from privacyidea.lib.utils import (parse_timelimit,
                                    check_time_in_range, parse_proxy,
@@ -34,9 +31,7 @@ from netaddr import IPAddress, IPNetwork, AddrFormatError
 from dateutil.tz import tzlocal, tzoffset, gettz
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.error import PolicyError
-from privacyidea.lib.user import User
 import binascii
-from flask import Request
 
 
 class UtilsTestCase(MyTestCase):

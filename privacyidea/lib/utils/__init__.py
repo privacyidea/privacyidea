@@ -1516,6 +1516,6 @@ def replace_function_event_handler(text, token_serial=None, tokenowner=None, log
         }
         new_text = text.format(**attributes)
         return new_text
-    except(ValueError) as err:
+    except(ValueError, KeyError) as err:
         log.warning('privacyIDEA can`t replace your placeholder. Please check the text for mistakes')
         return text
