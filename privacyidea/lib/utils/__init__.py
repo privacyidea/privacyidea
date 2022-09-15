@@ -50,7 +50,6 @@ import time
 import html
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
-from collections import defaultdict
 
 ENCODING = "utf-8"
 
@@ -1517,5 +1516,5 @@ def replace_function_event_handler(text, token_serial=None, tokenowner=None, log
         new_text = text.format(**attributes)
         return new_text
     except(ValueError, KeyError) as err:
-        log.warning('privacyIDEA can`t replace your placeholder. Please check the text for mistakes')
+        log.warning("Unable to replace placeholder: ({0!s})! Please check the webhooks data option.".format(err))
         return text

@@ -14,7 +14,7 @@ from mock import patch, MagicMock
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import USER_TYPE
-from privacyidea.lib.eventhandler.webhookevanthandler import ACTION_TYPE, WebHookHandler, CONTENT_TYPE
+from privacyidea.lib.eventhandler.webhookeventhandler import ACTION_TYPE, WebHookHandler, CONTENT_TYPE
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.config import get_config_object
@@ -2757,8 +2757,8 @@ class WebhookTestCase(MyTestCase):
                            }
                 res = t_handler.do("post_webhook", options=options)
                 self.assertTrue(res)
-                mock_log.assert_any_call('privacyIDEA can`t replace your placeholder.'
-                                         ' Please check the text for mistakes')
+                mock_log.assert_any_call("Unable to replace placeholder: (Single '}' encountered in format string)!"
+                                         " Please check the webhooks data option.")
                 text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
                     'http://test.com', '{{token_serial} {token_owner} {user_realm}}')
                 mock_info.assert_any_call(text)
@@ -2805,8 +2805,8 @@ class WebhookTestCase(MyTestCase):
                            }
                 res = t_handler.do("post_webhook", options=options)
                 self.assertTrue(res)
-                mock_log.assert_any_call('privacyIDEA can`t replace your placeholder.'
-                                         ' Please check the text for mistakes')
+                mock_log.assert_any_call("Unable to replace placeholder: ('token_seril')!"
+                                         " Please check the webhooks data option.")
                 text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
                     'http://test.com', 'The token serial is {token_seril}')
                 mock_info.assert_any_call(text)
