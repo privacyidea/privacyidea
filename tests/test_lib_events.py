@@ -14,7 +14,7 @@ from mock import patch, MagicMock
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import USER_TYPE
-from privacyidea.lib.eventhandler.webhookevanthandler import ACTION_TYPE, WebHookHandler, CONTENT_TYPE
+from privacyidea.lib.eventhandler.webhookeventhandler import ACTION_TYPE, WebHookHandler, CONTENT_TYPE
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.config import get_config_object
@@ -2592,6 +2592,11 @@ class WebhookTestCase(MyTestCase):
                     CONTENT_TYPE.JSON,
                     CONTENT_TYPE.URLENCODED]
             },
+            "replace": {
+                "type": "bool",
+                "required": True,
+                "description": ("You can replace placeholder like {logged_in_user}")
+            },
             "data": {
                 "type": "str",
                 "required": True,
@@ -2677,3 +2682,132 @@ class WebhookTestCase(MyTestCase):
         res = t_handler.do("post_webhook", options=options)
         self.assertFalse(res)
 
+    @patch('requests.post')
+    def test_06_replace_function(self, mock_post):
+        with mock.patch("logging.Logger.info") as mock_log:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = 'response'
+            # Setup realm and user
+            self.setUp_user_realms()
+
+            user = User("hans", self.realm1)
+            g = FakeFlaskG()
+            g.logged_in_user = {'username': 'hans',
+                                'realm': self.realm1}
+
+            t_handler = WebHookHandler()
+            options = {"g": g,
+                       "handler_def": {
+                           "options": {"URL":
+                                           'http://test.com',
+                                       "content_type":
+                                           CONTENT_TYPE.URLENCODED,
+                                       "replace":
+                                           True,
+                                       "data":
+                                           'This is {logged_in_user} from realm {realm}'
+                                       }
+                       }
+                       }
+            res = t_handler.do("post_webhook", options=options)
+            self.assertTrue(res)
+            text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
+                'http://test.com', 'This is hans from realm realm1')
+            mock_log.assert_any_call(text)
+            mock_log.assert_called_with(200)
+
+    @patch('requests.post')
+    def test_07_replace_function_error(self, mock_post):
+        with mock.patch("logging.Logger.warning") as mock_log:
+            with mock.patch("logging.Logger.info") as mock_info:
+                mock_post.return_value.status_code = 200
+                mock_post.return_value.json.return_value = 'response'
+
+                # Setup realm and user
+                self.setUp_user_realms()
+
+                init_token({"serial": "SPASS01", "type": "spass"},
+                           User("cornelius", self.realm1))
+                g = FakeFlaskG()
+                builder = EnvironBuilder(method='POST',
+                                         data={'serial': "SPASS01"},
+                                         headers={})
+
+                env = builder.get_environ()
+                env["REMOTE_ADDR"] = "10.0.0.1"
+                g.client_ip = env["REMOTE_ADDR"]
+                req = Request(env)
+                req.all_data = {"serial": "SPASS01"}
+                req.User = User("cornelius", self.realm1)
+
+                t_handler = WebHookHandler()
+                options = {"g": g,
+                           "request": req,
+                           "handler_def": {
+                               "options": {"URL":
+                                               'http://test.com',
+                                           "content_type":
+                                               CONTENT_TYPE.JSON,
+                                           "replace":
+                                               True,
+                                           "data":
+                                               '{{token_serial} {token_owner} {user_realm}}'
+                                           }
+                           }
+                           }
+                res = t_handler.do("post_webhook", options=options)
+                self.assertTrue(res)
+                mock_log.assert_any_call("Unable to replace placeholder: (Single '}' encountered in format string)!"
+                                         " Please check the webhooks data option.")
+                text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
+                    'http://test.com', '{{token_serial} {token_owner} {user_realm}}')
+                mock_info.assert_any_call(text)
+                mock_info.assert_called_with(200)
+
+    @patch('requests.post')
+    def test_08_replace_function_typo(self, mock_post):
+        with mock.patch("logging.Logger.warning") as mock_log:
+            with mock.patch("logging.Logger.info") as mock_info:
+                mock_post.return_value.status_code = 200
+                mock_post.return_value.json.return_value = 'response'
+
+                # Setup realm and user
+                self.setUp_user_realms()
+
+                init_token({"serial": "SPASS01", "type": "spass"},
+                           User("cornelius", self.realm1))
+                g = FakeFlaskG()
+                builder = EnvironBuilder(method='POST',
+                                         data={'serial': "SPASS01"},
+                                         headers={})
+
+                env = builder.get_environ()
+                env["REMOTE_ADDR"] = "10.0.0.1"
+                g.client_ip = env["REMOTE_ADDR"]
+                req = Request(env)
+                req.all_data = {"serial": "SPASS01"}
+                req.User = User("cornelius", self.realm1)
+
+                t_handler = WebHookHandler()
+                options = {"g": g,
+                           "request": req,
+                           "handler_def": {
+                               "options": {"URL":
+                                               'http://test.com',
+                                           "content_type":
+                                               CONTENT_TYPE.JSON,
+                                           "replace":
+                                               True,
+                                           "data":
+                                               'The token serial is {token_seril}'
+                                           }
+                           }
+                           }
+                res = t_handler.do("post_webhook", options=options)
+                self.assertTrue(res)
+                mock_log.assert_any_call("Unable to replace placeholder: ('token_seril')!"
+                                         " Please check the webhooks data option.")
+                text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
+                    'http://test.com', 'The token serial is {token_seril}')
+                mock_info.assert_any_call(text)
+                mock_info.assert_called_with(200)

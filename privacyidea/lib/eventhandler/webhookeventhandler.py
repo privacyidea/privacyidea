@@ -22,13 +22,16 @@ You can send an webhook to trigger an event on an other system or use to replace
 api requests and reduce your traffic this way.
 
 """
+
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
 import json
 import logging
 import requests
 from requests.exceptions import HTTPError, Timeout, ConnectionError, RequestException
-from collections import defaultdict
+from privacyidea.lib.user import User
+from privacyidea.lib.utils import replace_function_event_handler
+
 
 log = logging.getLogger(__name__)
 TIMEOUT = 10
@@ -89,6 +92,11 @@ class WebHookHandler(BaseEventHandler):
                     CONTENT_TYPE.JSON,
                     CONTENT_TYPE.URLENCODED]
             },
+            "replace": {
+                "type": "bool",
+                "required": True,
+                "description": _("You can replace placeholder like {logged_in_user}")
+            },
             "data": {
                 "type": "str",
                 "required": True,
@@ -115,6 +123,19 @@ class WebHookHandler(BaseEventHandler):
         webhook_url = handler_options.get("URL")
         webhook_text = handler_options.get("data")
         content_type = handler_options.get("content_type")
+        replace = handler_options.get("replace")
+        token_serial = None
+        tokenowner = None
+
+        if request is not None:
+            token_serial = request.all_data.get('serial')
+            tokenowner = self._get_tokenowner(request)
+        user = User(login=g.logged_in_user.get('username'),
+                    realm=g.logged_in_user.get('realm'))
+
+        if replace:
+            webhook_text = replace_function_event_handler(webhook_text, token_serial=token_serial,
+                                                          tokenowner=tokenowner, logged_in_user=user)
 
         if action.lower() == ACTION_TYPE.POST_WEBHOOK:
             try:
