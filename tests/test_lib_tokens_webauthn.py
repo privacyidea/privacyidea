@@ -192,6 +192,24 @@ SELF_ATTESTATION_REGISTRATION_RESPONSE_TMPL = {
               "h4UGgEHSZ00G5SFoc19nGx_UJcqezx5cLZsny-qQYDRjIUMBAAE"
 }
 
+SELF_ATTESTATION_REGISTRATION_RESPONSE_BAD_COSE_ALG = {
+    'clientData': SELF_ATTESTATION_REGISTRATION_RESPONSE_TMPL['clientData'],
+    'attObj': SELF_ATTESTATION_REGISTRATION_RESPONSE_TMPL['attObj'][:529]
+              + 'y' + SELF_ATTESTATION_REGISTRATION_RESPONSE_TMPL['attObj'][530:]
+}
+
+SELF_ATTESTATION_REGISTRATION_RESPONSE_ALG_MISMATCH = {
+    'clientData': SELF_ATTESTATION_REGISTRATION_RESPONSE_TMPL['clientData'],
+    'attObj': SELF_ATTESTATION_REGISTRATION_RESPONSE_TMPL['attObj'][:37]
+              + '2' + SELF_ATTESTATION_REGISTRATION_RESPONSE_TMPL['attObj'][38:]
+}
+
+SELF_ATTESTATION_REGISTRATION_RESPONSE_BROKEN_SIG = {
+    'clientData': SELF_ATTESTATION_REGISTRATION_RESPONSE_TMPL['clientData'],
+    'attObj': SELF_ATTESTATION_REGISTRATION_RESPONSE_TMPL['attObj'][:46]
+              + 'AA' + SELF_ATTESTATION_REGISTRATION_RESPONSE_TMPL['attObj'][48:]
+}
+
 
 class WebAuthnTokenTestCase(MyTestCase):
 
@@ -676,6 +694,47 @@ class WebAuthnTestCase(unittest.TestCase):
         self.assertEqual('http://localhost:3000', webauthn_credential.origin, webauthn_credential)
         self.assertTrue(webauthn_credential.has_signed_attestation, webauthn_credential)
         self.assertFalse(webauthn_credential.has_trusted_attestation, webauthn_credential)
+
+    def test_09b_registration_self_Attestation_bad_cose_alg(self):
+        self.assertRaises(
+            RegistrationRejectedException,
+            WebAuthnRegistrationResponse(
+                rp_id='localhost',
+                origin='http://localhost:3000',
+                registration_response=copy(SELF_ATTESTATION_REGISTRATION_RESPONSE_BAD_COSE_ALG),
+                challenge='AXkXWXPP3gLx8OLlpkJ3aRRhFWntnSENggnjDpBql1ngKol7xWwevUYvrpBDP3LEvdr2EOStOFpGGxnMvXk-Vw',
+                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.UNTRUSTED],
+                trust_anchor_dir=TRUST_ANCHOR_DIR,
+                expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
+            ).verify)
+
+    def test_09c_registration_self_Attestation_alg_mismatch(self):
+        self.assertRaisesRegexp(
+            RegistrationRejectedException,
+            'does not match algorithm from attestation statement',
+            WebAuthnRegistrationResponse(
+                rp_id='localhost',
+                origin='http://localhost:3000',
+                registration_response=copy(SELF_ATTESTATION_REGISTRATION_RESPONSE_ALG_MISMATCH),
+                challenge='AXkXWXPP3gLx8OLlpkJ3aRRhFWntnSENggnjDpBql1ngKol7xWwevUYvrpBDP3LEvdr2EOStOFpGGxnMvXk-Vw',
+                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.UNTRUSTED],
+                trust_anchor_dir=TRUST_ANCHOR_DIR,
+                expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
+            ).verify)
+
+    def test_09d_registration_self_Attestation_broken_signature(self):
+        self.assertRaisesRegexp(
+            RegistrationRejectedException,
+            'Invalid signature received.',
+            WebAuthnRegistrationResponse(
+                rp_id='localhost',
+                origin='http://localhost:3000',
+                registration_response=copy(SELF_ATTESTATION_REGISTRATION_RESPONSE_BROKEN_SIG),
+                challenge='AXkXWXPP3gLx8OLlpkJ3aRRhFWntnSENggnjDpBql1ngKol7xWwevUYvrpBDP3LEvdr2EOStOFpGGxnMvXk-Vw',
+                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[ATTESTATION_LEVEL.UNTRUSTED],
+                trust_anchor_dir=TRUST_ANCHOR_DIR,
+                expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
+            ).verify)
 
 
 class MultipleWebAuthnTokenTestCase(MyTestCase):

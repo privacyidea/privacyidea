@@ -1188,7 +1188,7 @@ class WebAuthnRegistrationResponse(object):
                     _verify_signature(credential_public_key, alg, verification_data, signature)
                 except InvalidSignature:
                     raise RegistrationRejectedException('Invalid signature received.')
-                except NotImplementedError:
+                except NotImplementedError:  # pragma: no cover
                     # We do not support this. Treat as none attestation, if acceptable.
                     if none_attestation_permitted:
                         return (
