@@ -2309,6 +2309,10 @@ class ValidateAPITestCase(MyApiTestCase):
                                    transaction_id).all()
         self.assertEqual(len(r), 2)
 
+        # check that both serials appear in the audit log
+        ae = self.find_most_recent_audit_entry(action='* /validate/check')
+        self.assertEqual({"CR2A", "CR2B"}, set(ae.get('serial').split(',')), ae)
+
         # Check the second response to the challenge, the second step in
         # challenge response:
 
@@ -2951,6 +2955,10 @@ class ValidateAPITestCase(MyApiTestCase):
         # the application tried to trigger only hotp
         triggered_serials = [item['serial'] for item in detail.get("multi_challenge")]
         self.assertTrue("tok_hotp" in triggered_serials and "tok_totp" in triggered_serials)
+
+        # check that both serials appear in the audit log
+        ae = self.find_most_recent_audit_entry(action='POST /validate/triggerchallenge')
+        self.assertTrue({"tok_hotp", "tok_totp"}.issubset(set(ae.get('serial').split(','))), ae)
 
         # Set a policy, that the application is allowed to specify tokentype
         set_policy(name="pol_application_tokentype",
