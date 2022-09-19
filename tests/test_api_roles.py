@@ -11,16 +11,16 @@ import json
 from . import ldap3mock
 from .test_api_validate import LDAPDirectory
 from .base import MyApiTestCase
-from privacyidea.lib.error import (TokenAdminError, UserError)
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
-                                   assign_token, unassign_token, init_token)
+                                   assign_token, init_token)
 from privacyidea.lib.user import User
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.models import Token
 from privacyidea.lib.realm import (set_realm, delete_realm, set_default_realm)
 from privacyidea.api.lib.postpolicy import DEFAULT_POLICY_TEMPLATE_URL
-from privacyidea.lib.policy import ACTION, SCOPE, set_policy, delete_policy, LOGINMODE
+from privacyidea.lib.policy import (ACTION, SCOPE, set_policy, delete_policy,
+                                    LOGINMODE, ACTIONVALUE)
 
 
 PWFILE = "tests/testdata/passwords"
@@ -175,6 +175,11 @@ class APIAuthChallengeResponse(MyApiTestCase):
         from privacyidea.lib.token import set_pin
         set_pin("hotp1", "pin")
 
+    def tearDown(self):
+        remove_token('hotp1')
+        delete_policy('pol_cr')
+        delete_policy('webuilog')
+
     def test_01_challenge_response_at_webui(self):
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -198,6 +203,29 @@ class APIAuthChallengeResponse(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             data = res.json
             self.assertEqual(data.get("result").get("value").get("username"), "selfservice")
+
+    def test_02_auth_chal_resp_multi_token(self):
+        # create another token
+        Token("hotp2", "hotp", otpkey=self.otpkey, userid=1004,
+              resolver=self.resolvername1, realm=self.realm1).save()
+        set_policy(name="pol_otppin", scope=SCOPE.AUTH,
+                   action="{0!s}={1!s}".format(ACTION.OTPPIN, ACTIONVALUE.USERSTORE))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice",
+                                                 "password": 'test'}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
+            result = res.json.get('detail')
+            self.assertTrue('multi_challenge' in result, result)
+            self.assertEqual({'hotp1', 'hotp2'}, set([x['serial'] for x in result.get('multi_challenge')]))
+
+        # check if we have both serials in the audit log
+        ae = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertTrue({"hotp1", "hotp2"}.issubset(set(ae.get('serial').split(','))), ae)
+
+        delete_policy('pol_otppin')
+        remove_token('hotp2')
 
 
 class APISelfserviceTestCase(MyApiTestCase):
