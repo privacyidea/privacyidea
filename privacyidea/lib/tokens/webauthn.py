@@ -1189,7 +1189,9 @@ class WebAuthnRegistrationResponse(object):
                 except InvalidSignature:
                     raise RegistrationRejectedException('Invalid signature received.')
                 except NotImplementedError:  # pragma: no cover
-                    # We do not support this. Treat as none attestation, if acceptable.
+                    log.warning('Unsupported algorithm ({0!s}) for signature '
+                                'verification'.format(alg))
+                    # We do not support this algorithm. Treat as none attestation, if acceptable.
                     if none_attestation_permitted:
                         return (
                             ATTESTATION_TYPE.NONE,
@@ -1199,7 +1201,8 @@ class WebAuthnRegistrationResponse(object):
                             aaguid
                         )
                     else:
-                        raise RegistrationRejectedException('Unsupported algorithm.')
+                        raise RegistrationRejectedException('Unsupported algorithm '
+                                                            '({0!s}).'.format(alg))
                 return (
                     ATTESTATION_TYPE.SELF_ATTESTATION,
                     [],
