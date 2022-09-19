@@ -103,9 +103,14 @@ class SubscriptionApplicationTestCase(MyTestCase):
 
         init_token({"type": "spass"}, user=User("shadow", self.realm1))
         init_token({"type": "spass"}, user=User("nopw", self.realm1))
-        # Now we have three users with tokens, subscription will fail
-        self.assertRaises(SubscriptionError, check_subscription,
-                          "demo_application")
+        # Now we have three users with tokens, but only two are allowed. We fail with a probabiliy of 1/3
+        try:
+            for i in range(30):
+                check_subscription("demo_application")
+            # We fail with a probability of 1/3, so we should have failed by now.
+            raise Exception("Something seems awkward with the subscription check")
+        except SubscriptionError:
+            print("Subscription Error has been raised successfully.")
 
         # try to save some broken subscriptions
         sub1 = SUBSCRIPTION1.copy()
