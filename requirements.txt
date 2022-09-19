@@ -54,7 +54,7 @@ Jinja2==2.11.3
 ldap3==2.8.1
 lxml==4.9.1
 Mako==1.1.6; python_version <= '3.6'
-Mako==1.2.0; python_version > '3.6'
+Mako==1.2.2; python_version > '3.6'
 MarkupSafe==1.1.1; python_version < '3.0'
 MarkupSafe==2.0.1; python_version > '3.5'
 netaddr==0.8.0
