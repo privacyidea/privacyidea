@@ -472,12 +472,14 @@ class CertificateTokenClass(TokenClass):
             if user.info.get("email"):
                 req.get_subject().emailAddress = user.info.get("email")
             # TODO: How can we define, which parameters should be added to CSR?
-            #req.get_subject().organizationalUnitName = user.realm
+            # req.get_subject().organizationalUnitName = user.realm
             # TODO: Add Country, Organization, Email
-            # req.get_subject().countryName = 'xxx'
-            # req.get_subject().stateOrProvinceName = 'xxx'
-            # req.get_subject().localityName = 'xxx'
-            # req.get_subject().organizationName = 'xxx'
+            """
+            req.get_subject().countryName = 'xxx'
+            req.get_subject().stateOrProvinceName = 'xxx'
+            req.get_subject().localityName = 'xxx'
+            req.get_subject().organizationName = 'xxx'
+            """
             req.set_pubkey(key)
             r = req.sign(key, "sha256")
             csr = to_unicode(crypto.dump_certificate_request(crypto.FILETYPE_PEM, req))
