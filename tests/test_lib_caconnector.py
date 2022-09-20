@@ -6,6 +6,7 @@ import unittest
 
 import OpenSSL.crypto
 
+import privacyidea.lib.caconnectors.msca
 from .base import MyTestCase
 import os
 import glob
@@ -382,7 +383,7 @@ class LocalCATestCase(MyTestCase):
         # in case of a nonexistent template file, no exception is raised
         # but an empty value is returned
         cacon.template_file = "nonexistent"
-        self.assertEquals(cacon.get_templates(), {})
+        self.assertEqual(cacon.get_templates(), {})
 
 # Mock
 MY_CA_NAME = "192.168.47.11"
@@ -468,10 +469,10 @@ class MSCATestCase(MyTestCase):
             self.assertEqual(description[key], "string")
 
         # Check, if an error is raised if a required attribute is missing:
-        self.assertRaisesRegexp(CAError, "required argument 'port' is missing.",
-                                MSCAConnector, "billsCA", {MS_ATTR.HOSTNAME: "hans"})
-        self.assertRaisesRegexp(CAError, "required argument 'hostname' is missing.",
-                                MSCAConnector, "billsCA", {MS_ATTR.PORT: "shanghai"})
+        self.assertRaisesRegex(CAError, "required argument 'port' is missing.",
+                               MSCAConnector, "billsCA", {MS_ATTR.HOSTNAME: "hans"})
+        self.assertRaisesRegex(CAError, "required argument 'hostname' is missing.",
+                               MSCAConnector, "billsCA", {MS_ATTR.PORT: "shanghai"})
 
     @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
                          "Can not test MSCA. grpc module seems not available.")
@@ -506,16 +507,16 @@ class MSCATestCase(MyTestCase):
                                                                "ca_templates": MOCK_CA_TEMPLATES,
                                                                "csr_disposition": 5})
             cacon = MSCAConnector("billsCA", CONF)
-            self.assertRaisesRegexp(CSRPending, "ERR505: CSR pending",
-                                    cacon.sign_request, REQUEST, {"template": "ApprovalRequired"})
+            self.assertRaisesRegex(CSRPending, "ERR505: CSR pending",
+                                   cacon.sign_request, REQUEST, {"template": "ApprovalRequired"})
             # Mock the CA to simulate a failed Request - dispoisition -1
             mock_conncect_worker.return_value = CAServiceMock(CONF,
                                                               {"available_cas": MOCK_AVAILABLE_CAS,
                                                                "ca_templates": MOCK_CA_TEMPLATES,
                                                                "csr_disposition": -1})
             cacon = MSCAConnector("billsCA", CONF)
-            self.assertRaisesRegexp(CSRError, "ERR504: CSR invalid",
-                                    cacon.sign_request, REQUEST, {"template": "NonExisting"})
+            self.assertRaisesRegex(CSRError, "ERR504: CSR invalid",
+                                   cacon.sign_request, REQUEST, {"template": "NonExisting"})
             # Mock the CA to simulate a signed request - disposition 3
             mock_conncect_worker.return_value = CAServiceMock(CONF,
                                                               {"available_cas": MOCK_AVAILABLE_CAS,
@@ -555,6 +556,13 @@ class MSCATestCase(MyTestCase):
             # Fetch the certificate.
             r = cacon.get_issued_certificate(request_id)
             self.assertTrue(r.startswith("-----BEGIN CERTIFICATE-----"), r)
+
+    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+                         "Can not test MSCA. grpc module seems not available.")
+    def test_10_create_ca(self):
+        with mock.patch.object(__builtins__, "raw_input") as mock_input:
+            mock_input.return_value = "cahostname"
+            r = MSCAConnector.create_ca("testca")
 
 
 class CreateLocalCATestCase(MyTestCase):

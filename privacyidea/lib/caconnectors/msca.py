@@ -47,7 +47,7 @@ try:
                                                             GetCertificateRequest,
                                                             GetCertificateReply)
     AvailableCAConnectors.append("privacyidea.lib.caconnectors.msca.MSCAConnector")
-except ImportError:
+except ImportError:  # pragma: no cover
     log.warning("Can not import grpc modules.")
 
 
@@ -282,7 +282,7 @@ class MSCAConnector(BaseCAConnector):
             an error is raised.
         """
         # TODO: here we need to revoke the cert based on the request Id.
-        pass
+        pass  # pragma: no cover
 
     def get_cr_status(self, request_id):
         """
@@ -350,7 +350,7 @@ class MSCAConnector(BaseCAConnector):
 
         :param name: The name of the CA connector.
         :type name: str
-        :return: The LocalCAConnector configuration
+        :return: The MSCAConnector configuration
         :rtype: dict
         """
         config = CONFIG(name)
