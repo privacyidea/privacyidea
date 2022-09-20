@@ -31,7 +31,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.error import ParameterError, RegistrationError, PolicyError
+from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
@@ -874,7 +874,7 @@ class WebAuthnTokenClass(TokenClass):
 
             # Since we are still enrolling the token, there should be exactly one challenge.
             if not len(challengeobject_list):
-                raise RegistrationError(
+                raise EnrollmentError(
                     "The enrollment challenge does not exist or has timed out for {0!s}".format(serial))
             challengeobject = challengeobject_list[0]
             challenge = binascii.unhexlify(challengeobject.challenge)
@@ -883,25 +883,30 @@ class WebAuthnTokenClass(TokenClass):
             #
             # All data is parsed and verified. If any errors occur an exception
             # will be raised.
-            webauthn_credential = WebAuthnRegistrationResponse(
-                rp_id=rp_id,
-                origin=http_origin,
-                registration_response={
-                    'clientData': client_data,
-                    'attObj': reg_data,
-                    'registrationClientExtensions':
-                        webauthn_b64_decode(registration_client_extensions)
+            try:
+                webauthn_credential = WebAuthnRegistrationResponse(
+                    rp_id=rp_id,
+                    origin=http_origin,
+                    registration_response={
+                        'clientData': client_data,
+                        'attObj': reg_data,
+                        'registrationClientExtensions':
+                            webauthn_b64_decode(registration_client_extensions)
                             if registration_client_extensions
                             else None
-                },
-                challenge=webauthn_b64_encode(challenge),
-                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[attestation_level],
-                trust_anchor_dir=get_from_config(WEBAUTHNCONFIG.TRUST_ANCHOR_DIR),
-                uv_required=uv_req == USER_VERIFICATION_LEVEL.REQUIRED
-            ).verify([
-                # TODO: this might get slow when a lot of webauthn tokens are registered
-                token.decrypt_otpkey() for token in get_tokens(tokentype=self.type)
-            ])
+                    },
+                    challenge=webauthn_b64_encode(challenge),
+                    attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[attestation_level],
+                    trust_anchor_dir=get_from_config(WEBAUTHNCONFIG.TRUST_ANCHOR_DIR),
+                    uv_required=uv_req == USER_VERIFICATION_LEVEL.REQUIRED
+                ).verify([
+                    # TODO: this might get slow when a lot of webauthn tokens are registered
+                    token.decrypt_otpkey() for token in get_tokens(tokentype=self.type)
+                ])
+            except Exception as e:
+                log.warning('Enrollment of {0!s} token failed: '
+                            '{1!s}!'.format(self.get_class_type(), e))
+                raise EnrollmentError("Could not enroll {0!s} token!".format(self.get_class_type()))
 
             self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(webauthn_credential.credential_id)))
             self.set_otp_count(webauthn_credential.sign_count)

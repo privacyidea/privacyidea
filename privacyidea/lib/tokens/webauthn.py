@@ -69,7 +69,7 @@ from cryptography.hazmat.primitives import constant_time
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicNumbers, SECP256R1, ECDSA
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15, PSS, MGF1
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
-from cryptography.hazmat.primitives.hashes import SHA256
+from cryptography.hazmat.primitives.hashes import SHA256, SHA1
 from cryptography.x509 import load_der_x509_certificate
 
 from privacyidea.lib.tokens.u2f import url_encode, url_decode
@@ -183,6 +183,7 @@ class COSE_ALGORITHM(object):
     ES256 = -7
     PS256 = -37
     RS256 = -257
+    RS1 = -65535  # for tests, otherwise unsupported
 
 
 SUPPORTED_COSE_ALGORITHMS = (
@@ -1167,6 +1168,48 @@ class WebAuthnRegistrationResponse(object):
                 #   * If successful, return attestation type ECDAA and
                 #     attestation trust path ecdaaKeyId.
                 raise RegistrationRejectedException('ECDAA attestation type is not currently supported.')
+            else:
+                # self-attestation
+                # Step 1:
+                # Validate that alg matches the algorithm of the credentialPublicKey
+                # in authenticatorData.
+                try:
+                    public_key_alg, credential_public_key = _load_cose_public_key(credential_pub_key)
+                except COSEKeyException as e:
+                    raise RegistrationRejectedException(str(e))
+                if alg != public_key_alg:
+                    raise RegistrationRejectedException('credentialPublicKey algorithm {0!s} does '
+                                                        'not match algorithm from attestation '
+                                                        'statement {1!s}'.format(public_key_alg, alg))
+                # Step 2:
+                # Verify that sig is a valid signature over the concatenation of authenticatorData
+                # and clientDataHash using the credential public key with alg.
+                try:
+                    _verify_signature(credential_public_key, alg, verification_data, signature)
+                except InvalidSignature:
+                    raise RegistrationRejectedException('Invalid signature received.')
+                except NotImplementedError:  # pragma: no cover
+                    log.warning('Unsupported algorithm ({0!s}) for signature '
+                                'verification'.format(alg))
+                    # We do not support this algorithm. Treat as none attestation, if acceptable.
+                    if none_attestation_permitted:
+                        return (
+                            ATTESTATION_TYPE.NONE,
+                            [],
+                            credential_pub_key,
+                            cred_id,
+                            aaguid
+                        )
+                    else:
+                        raise RegistrationRejectedException('Unsupported algorithm '
+                                                            '({0!s}).'.format(alg))
+                return (
+                    ATTESTATION_TYPE.SELF_ATTESTATION,
+                    [],
+                    credential_pub_key,
+                    cred_id,
+                    aaguid
+                )
         else:
             # Attestation is either none, or unsupported.
             if not none_attestation_permitted:
@@ -1773,7 +1816,7 @@ def _load_cose_public_key(key_bytes):
         y = int(codecs.encode(cose_public_key[COSE_PUBLIC_KEY.Y], 'hex'), 16)
 
         return alg, EllipticCurvePublicNumbers(x, y, SECP256R1()).public_key(backend=default_backend())
-    elif alg in (COSE_ALGORITHM.PS256, COSE_ALGORITHM.RS256):
+    elif alg in (COSE_ALGORITHM.PS256, COSE_ALGORITHM.RS256, COSE_ALGORITHM.RS1):
 
         required_keys = {
             COSE_PUBLIC_KEY.ALG,
@@ -1792,6 +1835,7 @@ def _load_cose_public_key(key_bytes):
 
         return alg, RSAPublicNumbers(e, n).public_key(backend=default_backend())
     else:
+        log.warning('Unsupported webAuthn COSE algorithm: {0!s}'.format(alg))
         raise COSEKeyException('Unsupported algorithm.')
 
 
@@ -2003,5 +2047,7 @@ def _verify_signature(public_key, alg, data, signature):
     elif alg == COSE_ALGORITHM.PS256:
         padding = PSS(mgf=MGF1(SHA256()), salt_length=PSS.MAX_LENGTH)
         public_key.verify(signature, data, padding, SHA256())
+    elif alg == COSE_ALGORITHM.RS1:
+        public_key.verify(signature, data, PKCS1v15(), SHA1())
     else:
         raise NotImplementedError()

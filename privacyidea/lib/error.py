@@ -49,6 +49,7 @@ class ERROR:
     AUTHENTICATE_DECODING_ERROR = 4304
     AUTHENTICATE_TOKEN_EXPIRED = 4305
     AUTHENTICATE_MISSING_RIGHT = 4306
+    ENROLLMENT = 404
     CA = 503
     CA_CSR_INVALID = 504
     CA_CSR_PENDING = 505
@@ -135,7 +136,12 @@ class ValidateError(privacyIDEAError):
 
 
 class RegistrationError(privacyIDEAError):
-    def __init__(self, description="registraion error!", id=ERROR.REGISTRATION):
+    def __init__(self, description="registration error!", id=ERROR.REGISTRATION):
+        privacyIDEAError.__init__(self, description=description, id=id)
+
+
+class EnrollmentError(privacyIDEAError):
+    def __init__(self, description="enrollment error!", id=ERROR.ENROLLMENT):
         privacyIDEAError.__init__(self, description=description, id=id)
 
 
