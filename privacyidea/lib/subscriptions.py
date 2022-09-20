@@ -234,6 +234,8 @@ def subscription_exceeded_probability(active_tokens, allowed_tokens):
     Depending on the subscription token numbers, this will return True,
     so that an exception can be raised.
 
+    Returns true if a Subscription Exception is to be raised.
+
     :param active_tokens: The number of the active tokens
     :param allowed_tokens: The number of the allowed tokens
     :return:
@@ -242,7 +244,7 @@ def subscription_exceeded_probability(active_tokens, allowed_tokens):
     # return active_tokens > allowed_tokens
     if active_tokens > allowed_tokens:
         prob_check = random.randrange(active_tokens +1)
-        return prob_check <= allowed_tokens
+        return prob_check > allowed_tokens
     else:
         return False
 

@@ -12,6 +12,7 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            SUBSCRIPTION_DATE_FORMAT)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
+import mock
 
 # 100 users
 SUBSCRIPTION1 = {'by_address': 'provider-address', 'for_email': 'customer@example.com', 'num_tokens': 100, 'num_users': 100, 'level': 'Gold', 'for_comment': 'comment', 'date_from': '2016-10-24', 'for_address': 'customer-address', 'signature': '24287419543134291932335914280232067571967865893672677932354574121521748844689122490399903572722627692437421759860332653860825381771420923865100775095168810778157750122430333094307912014590689769228979527735405954705615614505247995506136338010930079794077541100403759754392432809967862978004604278914337052409517895998984832947211907032852653171723886377329563223486623362230032551555536271158219094006763746441282022250783412321241299993657761512776112262708235357995055119379697774465205945934356687189514600830870353192115780195534680601265109038104466390286558785622582056183085321696667197925775161589029048460315', 'for_phone': '12345', 'by_email': 'provider@example.com', 'date_till': '2026-10-22', 'by_name': 'NetKnights GmbH', 'application': 'demo_application', 'by_url': 'http://provider', 'for_name': 'customer', 'by_phone': '12345', 'for_url': 'http://customer', 'num_clients': 100}
@@ -104,13 +105,17 @@ class SubscriptionApplicationTestCase(MyTestCase):
         init_token({"type": "spass"}, user=User("shadow", self.realm1))
         init_token({"type": "spass"}, user=User("nopw", self.realm1))
         # Now we have three users with tokens, but only two are allowed. We fail with a probabiliy of 1/3
-        try:
-            for i in range(30):
-                check_subscription("demo_application")
-            # We fail with a probability of 1/3, so we should have failed by now.
-            raise Exception("Something seems awkward with the subscription check")
-        except SubscriptionError:
-            print("Subscription Error has been raised successfully.")
+        # Fail subscription check
+        with mock.patch("random.randrange") as mock_random:
+            mock_random.return_value = 3
+            self.assertRaises(SubscriptionError, check_subscription, "demo_application")
+        # succeed subscription check
+        with mock.patch("random.randrange") as mock_random:
+            mock_random.return_value = 2
+            self.assertTrue(check_subscription("demo_application"))
+        with mock.patch("random.randrange") as mock_random:
+            mock_random.return_value = 1
+            self.assertTrue(check_subscription("demo_application"))
 
         # try to save some broken subscriptions
         sub1 = SUBSCRIPTION1.copy()
