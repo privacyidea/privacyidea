@@ -557,12 +557,53 @@ class MSCATestCase(MyTestCase):
             r = cacon.get_issued_certificate(request_id)
             self.assertTrue(r.startswith("-----BEGIN CERTIFICATE-----"), r)
 
-    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
-                         "Can not test MSCA. grpc module seems not available.")
-    def test_10_create_ca(self):
-        with mock.patch.object(__builtins__, "raw_input") as mock_input:
-            mock_input.return_value = "cahostname"
-            r = MSCAConnector.create_ca("testca")
+    def test_10_fail_ca_missing_certs(self):
+        # Fail to create CA connection due to missing certificates
+        with mock.patch("logging.Logger.warning") as mock_log:
+            conf = CONF
+            conf[MS_ATTR.USE_SSL] = True
+            self.cacon = MSCAConnector("bCA2", conf)
+            mock_log.assert_any_call("Channel to MS CA worker was not set up successfully.")
+            mock_log.assert_any_call("For a secure connection we need 'ssl_ca_cert', "
+                                     "'ssl_client_cert' and 'ssl_client_key'. "
+                                     "The following configuration seems incomplete: "
+                                     "(None, None, None)")
+            self.assertEqual(self.cacon.connector_type, "microsoft")
+
+    def test_11_ssl_unencrypted_key(self):
+        # Create CA connector with an unencrypted private key
+        conf = CONF
+        conf[MS_ATTR.USE_SSL] = True
+        conf[MS_ATTR.SSL_CA_CERT] = "tests/testdata/msca-connector/ca.pem"
+        conf[MS_ATTR.SSL_CLIENT_CERT] = "tests/testdata/msca-connector/privacyidea.pem"
+        conf[MS_ATTR.SSL_CLIENT_KEY] = "tests/testdata/msca-connector/privacyidea.key"
+        self.cacon = MSCAConnector("bCA2", conf)
+
+    def test_12_ssl_encrypted_key_missing_passphrase(self):
+        # Create CA connector with an unencrypted private key
+        conf = CONF
+        conf[MS_ATTR.USE_SSL] = True
+        conf[MS_ATTR.SSL_CA_CERT] = "tests/testdata/msca-connector/ca.pem"
+        conf[MS_ATTR.SSL_CLIENT_CERT] = "tests/testdata/msca-connector/privacyidea.pem"
+        conf[MS_ATTR.SSL_CLIENT_KEY] = "tests/testdata/msca-connector/privacyidea-encrypted.key"
+        self.cacon = MSCAConnector("bCA2", conf)
+
+    def test_13_ssl_encrypted_key(self):
+        # Create CA connector with an unencrypted private key
+        conf = CONF
+        conf[MS_ATTR.USE_SSL] = True
+        conf[MS_ATTR.SSL_CA_CERT] = "tests/testdata/msca-connector/ca.pem"
+        conf[MS_ATTR.SSL_CLIENT_CERT] = "tests/testdata/msca-connector/privacyidea.pem"
+        conf[MS_ATTR.SSL_CLIENT_KEY] = "tests/testdata/msca-connector/privacyidea-encrypted.key"
+        conf[MS_ATTR.SSL_CLIENT_KEY_PASSWORD] = "test"
+        self.cacon = MSCAConnector("bCA2", conf)
+
+#    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+#                         "Can not test MSCA. grpc module seems not available.")
+#    def test_10_create_ca(self):
+#        with mock.patch.object(__builtins__, "raw_input") as mock_input:
+#            mock_input.return_value = "cahostname"
+#            r = MSCAConnector.create_ca("testca")
 
 
 class CreateLocalCATestCase(MyTestCase):

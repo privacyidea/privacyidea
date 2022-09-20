@@ -57,7 +57,8 @@ CRL_REASONS = ["unspecified", "keyCompromise", "CACompromise",
 TIMEOUT = 3
 
 
-class CONFIG(object):
+class CONFIG(object):  # pragma: no cover
+    # Only needed for command line creation
 
     def __init__(self, name):
         self.hostname = "foo.bar"
@@ -190,7 +191,7 @@ class MSCAConnector(BaseCAConnector):
             log.warning("Worker seems to be offline. No connection could be established!")
             log.info(traceback.format_exc())
         except UnboundLocalError:
-            log.warning("channel to MS CA worker was not set up successfully.")
+            log.warning("Channel to MS CA worker was not set up successfully.")
         else:
             return CAServiceStub(channel)
 
@@ -228,13 +229,13 @@ class MSCAConnector(BaseCAConnector):
         self.hostname = self.config.get(ATTR.HOSTNAME)
         self.port = self.config.get(ATTR.PORT)
         self.http_proxy = int(is_true(self.config.get(ATTR.HTTP_PROXY)))
-        self.templates = self.get_templates()
         self.ca = self.config.get(ATTR.CA)
         self.use_ssl = int(is_true(self.config.get(ATTR.USE_SSL)))
         self.ssl_ca_cert = self.config.get(ATTR.SSL_CA_CERT)
         self.ssl_client_cert = self.config.get(ATTR.SSL_CLIENT_CERT)
         self.ssl_client_key = self.config.get(ATTR.SSL_CLIENT_KEY)
         self.ssl_client_key_password = self.config.get(ATTR.SSL_CLIENT_KEY_PASSWORD)
+        self.templates = self.get_templates()
 
     def sign_request(self, csr, options=None):
         """
