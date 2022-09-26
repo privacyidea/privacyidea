@@ -321,8 +321,8 @@ class RandomTestCase(MyTestCase):
         self.assertTrue(len(r) == 2, r)
         r = get_rand_digit_str(1001)
         self.assertTrue(len(r) == 1001, r)
-        r = get_rand_digit_str(19182)
-        self.assertTrue(len(r) == 19182)
+        r = get_rand_digit_str(2500)
+        self.assertTrue(len(r) == 2500)
 
     def test_05_get_alphanum_str(self):
         r = get_alphanum_str(20)
