@@ -1,21 +1,21 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2021-12-12 14:54+0000\n"
-"Last-Translator: Eric <spice2wolf@gmail.com>\n"
+"PO-Revision-Date: 2022-09-28 15:16+0000\n"
+"Last-Translator: Ryan Gu <ryan.gu@outlook.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "privacyidea/privacyidea-server/zh_Hans/>\n"
 "Language: zh_Hans\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 4.10-dev\n"
+"X-Generator: Weblate 4.14.1\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
 msgctxt "subscription"
 msgid "Level"
-msgstr ""
+msgstr "等级"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:15
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:17
@@ -28,15 +28,15 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:21
 #: privacyidea/static/components/token/views/token.enrolled.tan.html:23
 msgid "#"
-msgstr ""
+msgstr "#"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:108
 msgid "(none)"
-msgstr ""
+msgstr "(没有)"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:8
 msgid "45% Complete"
-msgstr ""
+msgstr "45% 已完成"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:114
 msgid ""
@@ -47,7 +47,7 @@ msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
-msgstr ""
+msgstr "<b>本软件不提供任何担保!</b>"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:57
 msgid ""
@@ -57,6 +57,9 @@ msgid ""
 "                        <li><b>\"1 23 * * 7\"</b> runs the task at 11:01pm "
 "on Sundays.</li>"
 msgstr ""
+"<li><b>\"5 10 * * *\"</b>每天上午 10：05 运行任务</li>\n"
+"<li><b>\"*/10 * * * *\"</b>每十分钟运行一次任务 </li>\n"
+"<li><b>\"1 23 * * * 7\"</b>在周日晚上 11：01 运行任务 </li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
 msgid ""
@@ -174,22 +177,22 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:36
 msgid "A token specific SMS gateway"
-msgstr ""
+msgstr "Token专用短信网关"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
 #: privacyidea/static/components/config/views/config.token.yubikey.html:21
 #: privacyidea/static/components/config/views/config.token.yubikey.html:44
 msgid "API Key"
-msgstr ""
+msgstr "API 密钥"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:16
 msgid "API client ID"
-msgstr ""
+msgstr "API 客户端 ID"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
-msgstr ""
+msgstr "关于privacyIDEA Web 客户端"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:81
 msgid ""
@@ -207,7 +210,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.list.html:19
 #: privacyidea/static/components/dashboard/views/dashboard.html:82
 msgid "Action"
-msgstr ""
+msgstr "行动"
 
 #: privacyidea/static/components/config/views/config.events.list.html:9
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:6
@@ -216,55 +219,55 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:30
 #: privacyidea/static/components/user/views/user.details.html:150
 msgid "Active"
-msgstr ""
+msgstr "活跃"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:146
 msgid "Active Events"
-msgstr ""
+msgstr "活动事件"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:109
 msgid "Active Policies"
-msgstr ""
+msgstr "活动策略"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:74
 msgid "Add a condition"
-msgstr ""
+msgstr "添加条件"
 
 #: privacyidea/static/components/user/views/user.add.html:3
 msgid "Add a new user"
-msgstr ""
+msgstr "添加新用户"
 
 #: privacyidea/static/components/user/views/user.details.html:96
 msgid "Add custom attribute"
-msgstr ""
+msgstr "添加自定义属性"
 
 #: privacyidea/static/components/config/views/config.token.question.html:56
 msgid "Add new question"
-msgstr ""
+msgstr "添加新问题"
 
 #: privacyidea/static/components/user/views/user.html:40
 msgid "Add user"
-msgstr ""
+msgstr "添加用户"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:268
 msgid "Additional conditions"
-msgstr ""
+msgstr "附加条件"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:157
 msgid "Admin"
-msgstr ""
+msgstr "管理"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:140
 msgid "Admin-Realm"
-msgstr ""
+msgstr "管理-领域"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:75
 msgid "Administration"
-msgstr ""
+msgstr "管理"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:81
 msgid "Administrator"
-msgstr ""
+msgstr "管理员"
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:8
 msgid "All CA Connectors"
