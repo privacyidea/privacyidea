@@ -609,6 +609,26 @@ class Token(MethodsMixin, db.Model):
         for ti in tokeninfos:
             ti.delete()
 
+    def del_tokengroup(self, tokengroup=None, tokengroup_id=None):
+        """
+        Deletes the tokengroup from the given token.
+        If tokengroup name and id are omitted, all tokengroups are deleted.
+
+        :param tokengroup: The name of the tokengroup
+        :param tokengroup_id: The id of the tokengroup
+        :return:
+        """
+        if tokengroup:
+            # We need to resolve the id of the tokengroup
+            t = Tokengroup.query.filter_by(name=tokengroup).first()
+            tokengroup_id = t.id
+        if tokengroup_id:
+            tgs = TokenTokengroup.query.filter_by(tokengroup_id=tokengroup_id, token_id=self.id)
+        else:
+            tgs = TokenTokengroup.query.filter_by(token_id=self.id)
+        for tg in tgs:
+            tg.delete()
+
     def get_info(self):
         """
 
@@ -3156,7 +3176,6 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
         :param tokengroupname: the name of the tokengroup
         :param token_id: The id of the token
         """
-        log.debug("setting tokengroup_id to {0:d}".format(tokengroup_id))
         if tokengroupname:
             r = Tokengroup.query.filter_by(name=tokengroupname).first()
             self.tokengroup_id = r.id

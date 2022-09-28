@@ -29,7 +29,7 @@ import hashlib
 import binascii
 import warnings
 from privacyidea.lib.token import (create_tokenclass_object,
-                                   get_tokens,
+                                   get_tokens, list_tokengroups,
                                    get_token_type, check_serial,
                                    get_num_tokens_in_realm,
                                    get_realms_of_token,
@@ -56,8 +56,8 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    set_validity_period_end,
                                    set_validity_period_start, remove_token, delete_tokeninfo,
                                    import_token, get_one_token, get_tokens_from_serial_or_user,
-                                   get_tokens_paginated_generator)
-
+                                   get_tokens_paginated_generator, assign_tokengroup, unassign_tokengroup)
+from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.tokenclass import DATE_FORMAT
@@ -1289,15 +1289,15 @@ class TokenTestCase(MyTestCase):
                          binascii.hexlify(otpkey))
         remove_token("NEW001")
         # unknown encoding
-        self.assertRaisesRegexp(ParameterError,
-                                "Unknown OTP key format",
-                                init_token,
-                                {"serial": "NEW001",
-                                 "type": "hotp",
-                                 "otpkey": binascii.hexlify(otpkey),
-                                 "otpkeyformat": "foobar"},
-                                user=User(login="cornelius",
-                                          realm=self.realm1))
+        self.assertRaisesRegex(ParameterError,
+                               "Unknown OTP key format",
+                               init_token,
+                               {"serial": "NEW001",
+                                "type": "hotp",
+                                "otpkey": binascii.hexlify(otpkey),
+                                "otpkeyformat": "foobar"},
+                               user=User(login="cornelius",
+                                         realm=self.realm1))
         remove_token("NEW001")
         # successful base32check encoding
         base32check_encoding = b32encode_and_unicode(checksum + otpkey).strip("=")
@@ -1341,56 +1341,56 @@ class TokenTestCase(MyTestCase):
         # invalid base32check encoding (incorrect checksum due to typo)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = "A" + base32check_encoding[1:]
-        self.assertRaisesRegexp(ParameterError,
-                                "Incorrect checksum",
-                                init_token,
-                                {"serial": "NEW004", "type": "hotp",
-                                 "otpkey": base32check_encoding,
-                                 "otpkeyformat": "base32check"},
-                                user=User(login="cornelius", realm=self.realm1))
+        self.assertRaisesRegex(ParameterError,
+                               "Incorrect checksum",
+                               init_token,
+                               {"serial": "NEW004", "type": "hotp",
+                                "otpkey": base32check_encoding,
+                                "otpkeyformat": "base32check"},
+                               user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW004") # TODO: Token is created anyway?
         # invalid base32check encoding (missing four characters => incorrect checksum)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = base32check_encoding[:-4]
-        self.assertRaisesRegexp(ParameterError,
-                                "Incorrect checksum",
-                                init_token,
-                                {"serial": "NEW005", "type": "hotp",
-                                 "otpkey": base32check_encoding,
-                                 "otpkeyformat": "base32check"},
-                                user=User(login="cornelius", realm=self.realm1))
+        self.assertRaisesRegex(ParameterError,
+                               "Incorrect checksum",
+                               init_token,
+                               {"serial": "NEW005", "type": "hotp",
+                                "otpkey": base32check_encoding,
+                                "otpkeyformat": "base32check"},
+                               user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW005") # TODO: Token is created anyway?
         # invalid base32check encoding (too many =)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = base32check_encoding + "==="
-        self.assertRaisesRegexp(ParameterError,
-                                "Invalid base32",
-                                init_token,
-                                {"serial": "NEW006", "type": "hotp",
-                                 "otpkey": base32check_encoding,
-                                 "otpkeyformat": "base32check"},
-                                user=User(login="cornelius", realm=self.realm1))
+        self.assertRaisesRegex(ParameterError,
+                               "Invalid base32",
+                               init_token,
+                               {"serial": "NEW006", "type": "hotp",
+                                "otpkey": base32check_encoding,
+                                "otpkeyformat": "base32check"},
+                               user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW006") # TODO: Token is created anyway?
         # invalid base32check encoding (wrong characters)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = "1" + base32check_encoding[1:]
-        self.assertRaisesRegexp(ParameterError,
-                                "Invalid base32",
-                                init_token,
-                                {"serial": "NEW006", "type": "hotp",
-                                 "otpkey": base32check_encoding,
-                                 "otpkeyformat": "base32check"},
-                                user=User(login="cornelius", realm=self.realm1))
+        self.assertRaisesRegex(ParameterError,
+                               "Invalid base32",
+                               init_token,
+                               {"serial": "NEW006", "type": "hotp",
+                                "otpkey": base32check_encoding,
+                                "otpkeyformat": "base32check"},
+                               user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW006") # TODO: Token is created anyway?
         # invalid key (too short)
         base32check_encoding = b32encode_and_unicode(b'Yo')
-        self.assertRaisesRegexp(ParameterError,
-                                "Too short",
-                                init_token,
-                                {"serial": "NEW006", "type": "hotp",
-                                 "otpkey": base32check_encoding,
-                                 "otpkeyformat": "base32check"},
-                                user=User(login="cornelius", realm=self.realm1))
+        self.assertRaisesRegex(ParameterError,
+                               "Too short",
+                               init_token,
+                               {"serial": "NEW006", "type": "hotp",
+                                "otpkey": base32check_encoding,
+                                "otpkeyformat": "base32check"},
+                               user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW006")
 
     def test_51_tokenkind(self):
@@ -2047,10 +2047,65 @@ class PINChangeTestCase(MyTestCase):
         newpin = "test"
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', category=DeprecationWarning)
-            self.assertRaisesRegexp(
+            self.assertRaisesRegex(
                 PolicyError, "The minimum OTP PIN length is 5", check_token_list,
                 [tok, tok2], newpin, user=user_obj,
                 options={"transaction_id": transaction_id,
                          "g": g})
 
         delete_policy("minpin")
+
+
+class TokenGroupTestCase(MyTestCase):
+
+    def test_01_add_tokengroups(self):
+        # Create tokens
+        serials = ["s1", "s2"]
+        for s in serials:
+            tok = init_token({"serial": s, "type": "spass"})
+
+        # create tokengroups
+        groups = [("g1", "Test A"), ("g2", "test B")]
+        for g in groups:
+            set_tokengroup(g[0], g[1])
+
+        assign_tokengroup("s1", "g1")
+        assign_tokengroup("s1", "g2")
+        assign_tokengroup("s2", "g2")
+
+        # Check the tokengroups of the first token
+        tok1 = get_one_token(serial="s1")
+        self.assertEqual(tok1.token.tokengroup_list[0].tokengroup.name, "g1")
+        self.assertEqual(tok1.token.tokengroup_list[1].tokengroup.name, "g2")
+
+        # check the tokengroups of the 2nd token
+        tok2 = get_one_token(serial="s2")
+        self.assertEqual(tok2.token.tokengroup_list[0].tokengroup.name, "g2")
+
+        # Test a missing group information
+        self.assertRaises(ParameterError, assign_tokengroup, "s1")
+
+        # list tokengroup assignments
+        grouplist = list_tokengroups()
+        self.assertEqual(len(grouplist), 3)
+        # one token in group1
+        grouplist = list_tokengroups("g1")
+        self.assertEqual(len(grouplist), 1)
+        self.assertEqual(grouplist[0].token.serial, "s1")
+        # two tokens in group2
+        grouplist = list_tokengroups("g2")
+        self.assertEqual(len(grouplist), 2)
+
+        # unassign tokengroups
+        r = tok1.del_tokengroup("g1")
+        # only the 2nd group remains
+        self.assertEqual(tok1.token.tokengroup_list[0].tokengroup.name, "g2")
+        # remove it
+        unassign_tokengroup("s2", "g2")
+        tok2 = get_one_token(serial="s2")
+        self.assertEqual(len(tok2.token.tokengroup_list), 0)
+
+        # cleanup
+        for s in serials:
+            remove_token(s)
+            

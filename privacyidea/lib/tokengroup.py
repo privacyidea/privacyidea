@@ -28,43 +28,9 @@ import string
 import datetime
 import os
 import logging
-from six import string_types
 
-from sqlalchemy import (and_, func)
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql import expression
-
-from privacyidea.lib.error import (TokenAdminError,
-                                   ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError)
-from privacyidea.lib.decorators import (check_user_or_serial,
-                                        check_copy_serials)
-from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid
-from privacyidea.lib.crypto import generate_password
-from privacyidea.lib.log import log_with
+from privacyidea.lib.error import privacyIDEAError
 from privacyidea.models import Tokengroup
-from privacyidea.lib.config import (get_token_class, get_token_prefix,
-                                    get_token_types, get_from_config,
-                                    get_inc_fail_count_on_false_pin, SYSCONF)
-from privacyidea.lib.user import User
-from privacyidea.lib import _
-from privacyidea.lib.realm import realm_is_defined
-from privacyidea.lib.resolver import get_resolver_object
-from privacyidea.lib.policydecorators import (libpolicy,
-                                              auth_user_does_not_exist,
-                                              auth_user_has_no_token,
-                                              auth_user_passthru,
-                                              auth_user_timelimit,
-                                              auth_lastauth,
-                                              auth_cache,
-                                              config_lost_token,
-                                              reset_all_user_tokens)
-from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
-                                                         generic_challenge_response_resync)
-from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.tokenclass import TOKENKIND
-from dateutil.tz import tzlocal
 
 log = logging.getLogger(__name__)
 
