@@ -3111,6 +3111,18 @@ class Tokengroup(TimestampMethodsMixin, db.Model):
         db.session.commit()
         return ret
 
+    def save(self):
+        ti_func = Tokengroup.query.filter_by(name=self.name).first
+        ti = ti_func()
+        if ti is None:
+            return TimestampMethodsMixin.save(self)
+        else:
+            # update
+            Tokengroup.query.filter_by(id=ti.id).update({'Description': self.Description})
+            ret = ti.id
+            db.session.commit()
+        return ret
+
 
 class TokenTokengroup(TimestampMethodsMixin, db.Model):
     """
