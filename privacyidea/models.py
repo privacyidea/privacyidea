@@ -3080,3 +3080,94 @@ class MonitoringStats(MethodsMixin, db.Model):
         self.stats_value = value
         #self.save()
 
+
+class Tokengroup(TimestampMethodsMixin, db.Model):
+    """
+    The tokengroup table contains the definition of available token groups.
+    A token can then be assigned to several of these tokengroups.
+    """
+    __tablename__ = 'tokengroup'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    id = db.Column(db.Integer, Sequence("tokengroup_seq"), primary_key=True,
+                   nullable=False)
+    name = db.Column(db.Unicode(255), default=u'',
+                     unique=True, nullable=False)
+    Description = db.Column(db.Unicode(2000), default=u'')
+
+    @log_with(log)
+    def __init__(self, groupname, description=None):
+        self.name = groupname
+        self.Description = description
+
+    def delete(self):
+        ret = self.id
+        # delete all TokenTokenGroup
+        db.session.query(TokenTokengroup)\
+                  .filter(TokenTokengroup.tokengroup_id == ret)\
+                  .delete()
+        # delete the realm
+        db.session.delete(self)
+        save_config_timestamp()
+        db.session.commit()
+        return ret
+
+
+class TokenTokengroup(TimestampMethodsMixin, db.Model):
+    """
+    This table stores the assignment of tokens to tokengroups.
+    A token can be assigned to several different token groups.
+    """
+    __tablename__ = 'tokentokengroup'
+    __table_args__ = (db.UniqueConstraint('token_id',
+                                          'tokengroup_id',
+                                          name='ttgix_2'),
+                      {'mysql_row_format': 'DYNAMIC'})
+    id = db.Column(db.Integer(), Sequence("tokentokengroup_seq"), primary_key=True,
+                   nullable=True)
+    token_id = db.Column(db.Integer(),
+                         db.ForeignKey('token.id'))
+    tokengroup_id = db.Column(db.Integer(),
+                              db.ForeignKey('tokengroup.id'))
+    # This creates an attribute "tokengroup_list" in the Token object
+    token = db.relationship('Token',
+                            lazy='joined',
+                            backref='tokengroup_list')
+    # This creates an attribute "token_list" in the Tokengroup object
+    tokengroup = db.relationship('Tokengroup',
+                                 lazy='joined',
+                                 backref='token_list')
+
+    def __init__(self, tokengroup_id=0, token_id=0, tokengroupname=None):
+        """
+        Create a new TokenTokengroup assignment
+        :param tokengroup_id: The id of the token group
+        :param tokengroupname: the name of the tokengroup
+        :param token_id: The id of the token
+        """
+        log.debug("setting tokengroup_id to {0:d}".format(tokengroup_id))
+        if tokengroupname:
+            r = Tokengroup.query.filter_by(name=tokengroupname).first()
+            self.tokengroup_id = r.id
+        if tokengroup_id:
+            self.tokengroup_id = tokengroup_id
+        self.token_id = token_id
+
+    def save(self):
+        """
+        We only save this, if it does not exist, yet.
+        """
+        tr_func = TokenTokengroup.query.filter_by(tokengroup_id=self.tokengroup_id,
+                                                  token_id=self.token_id).first
+        tr = tr_func()
+        if tr is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            if get_app_config_value(SAFE_STORE, False):
+                tr = tr_func()
+                ret = tr.id
+            else:
+                ret = self.id
+        else:
+            ret = self.id
+        return ret
