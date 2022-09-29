@@ -1954,14 +1954,17 @@ def get_static_policy_definitions(scope=None):
             ACTION.TOKENGROUP_LIST: {
                 'type': 'bool',
                 'desc': _("The Admin is allowed list the available tokengroups."),
+                'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.TOKENGROUP},
             ACTION.TOKENGROUP_ADD: {
                 'type': 'bool',
                 'desc': _("The Admin is allowed to add a new tokengroup."),
+                'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.TOKENGROUP},
             ACTION.TOKENGROUP_DELETE: {
                 'type': 'bool',
                 'desc': _("The Admin is allowed delete a tokengroup."),
+                'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.TOKENGROUP},
             ACTION.TOKENGROUP_ASSIGN: {
                 'type': 'bool',

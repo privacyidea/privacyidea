@@ -2083,7 +2083,7 @@ class TokenGroupTestCase(MyTestCase):
         self.assertEqual(tok2.token.tokengroup_list[0].tokengroup.name, "g2")
 
         # Test a missing group information
-        self.assertRaises(ParameterError, assign_tokengroup, "s1")
+        self.assertRaises(ResourceNotFoundError, assign_tokengroup, "s1")
 
         # list tokengroup assignments
         grouplist = list_tokengroups()
