@@ -3282,7 +3282,7 @@ class APITokengroupTestCase(MyApiTestCase):
         init_token({"serial": serial, "type": "spass"})
 
         # Assign token to non-existing tokengroup
-        with self.app.test_request_context('/token/{0!s}/group/gruppe1'.format(serial),
+        with self.app.test_request_context('/token/{0!s}/group/gaga'.format(serial),
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -3293,7 +3293,7 @@ class APITokengroupTestCase(MyApiTestCase):
             self.assertEqual(result.get("error").get("message"), "The tokengroup does not exist.")
 
         # Delete a non-existing tokengroup from the token
-        with self.app.test_request_context('/token/{0!s}/group/gruppe1'.format(serial),
+        with self.app.test_request_context('/token/{0!s}/group/gaga'.format(serial),
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
