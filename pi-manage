@@ -592,6 +592,7 @@ def create_tables(stamp=False):
     """
     createdb(stamp=False)
 
+
 @manager.command
 def dropdb(dropit=None):
     """
@@ -619,6 +620,14 @@ def dropdb(dropit=None):
 
 @manager.command
 def drop_tables(dropit=None):
+    """
+    This drops all the privacyIDEA database tables.
+    Use with caution! All data will be lost!
+
+    For safety reason you need to pass
+        --dropit==yes
+    Otherwise the command will not drop anything.
+    """
     dropdb(dropit=None)
 
 
