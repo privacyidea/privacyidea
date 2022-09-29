@@ -2108,4 +2108,3 @@ class TokenGroupTestCase(MyTestCase):
         # cleanup
         for s in serials:
             remove_token(s)
-            
