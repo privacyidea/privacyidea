@@ -2526,7 +2526,10 @@ def assign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
     :return: True
     """
     tokenobject = get_one_token(serial=serial)
-    return tokenobject.add_tokengroup(tokengroup, tokengroup_id)
+    try:
+        return tokenobject.add_tokengroup(tokengroup, tokengroup_id)
+    except Exception:
+        raise ResourceNotFoundError(_(u"The tokengroup does not exist."))
 
 
 def unassign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
@@ -2538,8 +2541,11 @@ def unassign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
     :param tokengroup_id: alternatively the id of the tokengroup
     :return: True
     """
-    tokenobject = get_one_token(serial=serial)
-    return tokenobject.del_tokengroup(tokengroup, tokengroup_id)
+    try:
+        tokenobject = get_one_token(serial=serial)
+        return tokenobject.del_tokengroup(tokengroup, tokengroup_id)
+    except Exception:
+        raise ResourceNotFoundError(_(u"The tokengroup does not exist."))
 
 
 def list_tokengroups(tokengroup=None):

@@ -550,6 +550,11 @@ class Token(MethodsMixin, db.Model):
         for realm_entry in self.realm_list:
             realm_list.append(realm_entry.realm.name)
         ret['realms'] = realm_list
+        # list of tokengroups
+        tokengroup_list = []
+        for tg_entry in self.tokengroup_list:
+            tokengroup_list.append(tg_entry.tokengroup.name)
+        ret['tokengroup'] = tokengroup_list
         return ret
 
     __str__ = __unicode__
@@ -621,6 +626,8 @@ class Token(MethodsMixin, db.Model):
         if tokengroup:
             # We need to resolve the id of the tokengroup
             t = Tokengroup.query.filter_by(name=tokengroup).first()
+            if not t:
+                raise Exception("tokengroup does not exist")
             tokengroup_id = t.id
         if tokengroup_id:
             tgs = TokenTokengroup.query.filter_by(tokengroup_id=tokengroup_id, token_id=self.id)
@@ -3178,6 +3185,8 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
         """
         if tokengroupname:
             r = Tokengroup.query.filter_by(name=tokengroupname).first()
+            if not r:
+                raise Exception("tokengroup does not exist")
             self.tokengroup_id = r.id
         if tokengroup_id:
             self.tokengroup_id = tokengroup_id
