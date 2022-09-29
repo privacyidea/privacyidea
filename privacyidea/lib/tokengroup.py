@@ -30,7 +30,7 @@ import os
 import logging
 
 from privacyidea.lib.error import privacyIDEAError
-from privacyidea.models import Tokengroup
+from privacyidea.models import Tokengroup, db
 
 log = logging.getLogger(__name__)
 
@@ -48,6 +48,7 @@ def delete_tokengroup(name=None, id=None):
         Tokengroup.query.filter_by(id=id).delete()
     elif name:
         Tokengroup.query.filter_by(name=name).delete()
+    db.session.commit()
 
 
 def get_tokengroups(name=None, id=None):
