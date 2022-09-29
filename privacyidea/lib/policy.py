@@ -256,6 +256,7 @@ class ACTION(object):
     IMPORT = "importtokens"
     LASTAUTH = "last_auth"
     LOGINMODE = "login_mode"
+    LOGOUT_REDIRECT = "logout_redirect"
     LOGOUTTIME = "logout_time"
     LOSTTOKEN = 'losttoken'
     LOSTTOKENPWLEN = "losttoken_PW_length"
@@ -2461,6 +2462,10 @@ def get_static_policy_definitions(scope=None):
                           "templates can be found.  (Default "
                           "https: //raw.githubusercontent.com/ privacyidea/"
                           "policy-templates /master/templates/)")
+            },
+            ACTION.LOGOUT_REDIRECT: {
+              'type': 'str',
+              'desc': _("The URL of a SSO provider for redirect at logout")
             },
             ACTION.TOKENWIZARD: {
                 'type': 'bool',
