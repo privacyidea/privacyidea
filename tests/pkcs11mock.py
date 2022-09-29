@@ -140,10 +140,13 @@ class PKCS11Mock(object):
         This is just a shortcut for calling ``simulate_failure`` on ``generateRandom``, ``encrypt``,
         ``decrypt`` and ``openSession``.
         """
-        with self.simulate_failure(self.session_mock.generateRandom, count), \
-            self.simulate_failure(self.session_mock.encrypt, count), \
-            self.simulate_failure(self.session_mock.decrypt, count), \
-            self.simulate_failure(self.mock.openSession, count):
+        with self.simulate_failure(self.session_mock.generateRandom, count,
+                                   error=PyKCS11.CKR_SESSION_HANDLE_INVALID), \
+                self.simulate_failure(self.session_mock.encrypt, count,
+                                      error=PyKCS11.CKR_SESSION_HANDLE_INVALID), \
+                self.simulate_failure(self.session_mock.decrypt, count,
+                                      error=PyKCS11.CKR_SESSION_HANDLE_INVALID), \
+                self.simulate_failure(self.mock.openSession, count):
             yield
 
     def _mock_openSession(self, slot):

@@ -228,8 +228,7 @@ class Token(MethodsMixin, db.Model):
         self.count_window = 10
         self.otplen = otplen
         self.pin_seed = u""
-        if otpkey:
-            self.set_otpkey(otpkey)
+        self.set_otpkey(otpkey)
 
         # also create the user assignment
         if userid and resolver and realm:

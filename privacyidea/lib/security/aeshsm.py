@@ -195,9 +195,9 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                     retries += 1
                     if retries > self.max_retries:
                         raise HSMException("Failed to generate random number after multiple retries.")
-                    else:
-                        raise HSMException("HSM random number generation failed "
-                                           "with {0!s}".format(exx))
+                else:
+                    raise HSMException("HSM random number generation failed "
+                                       "with {0!s}".format(exx))
 
         # convert the array of the random integers to a string
         return int_list_to_bytestring(r_integers)
@@ -261,8 +261,8 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                         td = datetime.datetime.now() - start
                         log.warning(u"Decryption finally failed: {0!s}. Time taken: {1!s}.".format(exx, td))
                         raise HSMException("Failed to decrypt after multiple retries.")
-                    else:
-                        raise HSMException("HSM decrypt failed with {0!s}".format(exx))
+                else:
+                    raise HSMException("HSM decrypt failed with {0!s}".format(exx))
 
         if retries > 0:
             td = datetime.datetime.now() - start
