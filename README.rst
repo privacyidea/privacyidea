@@ -130,7 +130,7 @@ Running it
 First You need to create a `config-file <https://privacyidea.readthedocs
 .io/en/latest/installation/system/inifile.html>`_.
 
-Then create the database and encryption key::
+Then create the database tables and the encryption key::
 
     ./pi-manage create_tables
     ./pi-manage create_enckey
