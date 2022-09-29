@@ -379,6 +379,11 @@ class ACTION(object):
     SET_USER_ATTRIBUTES = "set_custom_user_attributes"
     DELETE_USER_ATTRIBUTES = "delete_custom_user_attributes"
     VERIFY_ENROLLMENT = "verify_enrollment"
+    TOKENGROUP_ASSIGN = "tokengroup_assign"
+    TOKENGROUP_UNASSIGN = "tokengroup_unassign"
+    TOKENGROUP_LIST = "tokengroup_list"
+    TOKENGROUP_ADD = "tokengroup_add"
+    TOKENGROUP_DELETE = "tokengroup_delete"
 
 
 class TYPE(object):
@@ -406,6 +411,7 @@ class GROUP(object):
     MODIFYING_RESPONSE = "modifying response"
     CONDITIONS = "conditions"
     SETTING_ACTIONS = "setting actions"
+    TOKENGROUP= "tokengroup"
 
 
 class MAIN_MENU(object):
@@ -1944,6 +1950,26 @@ def get_static_policy_definitions(scope=None):
                 'type': TYPE.STRING,
                 'desc': _('A whitespace-separated list of tokeninfo fields '
                           'which are not displayed to the admin.'),
+                'group': GROUP.TOKEN},
+            ACTION.TOKENGROUP_LIST: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed list the available tokengroups."),
+                'group': GROUP.TOKENGROUP},
+            ACTION.TOKENGROUP_ADD: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to add a new tokengroup."),
+                'group': GROUP.TOKENGROUP},
+            ACTION.TOKENGROUP_DELETE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed delete a tokengroup."),
+                'group': GROUP.TOKENGROUP},
+            ACTION.TOKENGROUP_ASSIGN: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to assign tokens to a tokengroup."),
+                'group': GROUP.TOKEN},
+            ACTION.TOKENGROUP_UNASSIGN: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to remove tokens from a tokengroup."),
                 'group': GROUP.TOKEN}
         },
 

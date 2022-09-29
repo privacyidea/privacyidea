@@ -19,12 +19,13 @@
 #
 __doc__ = """The tokengroup endpoint allows administrators to manage tokengroup definitions.
 """
-from flask import (Blueprint,
-                   request, current_app)
+from flask import (Blueprint, request)
 from .lib.utils import (getParam, send_result)
 from ..lib.log import log_with
 from privacyidea.lib.tokengroup import get_tokengroups, set_tokengroup, delete_tokengroup
 from privacyidea.lib.event import event
+from privacyidea.lib.policy import ACTION
+from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import g
 import logging
@@ -35,9 +36,9 @@ tokengroup_blueprint = Blueprint('tokengroup_blueprint', __name__)
 
 
 @tokengroup_blueprint.route('/<groupname>', methods=['POST'])
+@prepolicy(check_base_action, request, ACTION.TOKENGROUP_ADD)
 @event("tokengroup_add", request, g)
 @log_with(log)
-#@prepolicy(check_base_action, request, ACTION.____)
 def set_tokengroup_api(groupname):
     """
     This call creates a new tokengroup or updates the description
@@ -91,6 +92,7 @@ def set_tokengroup_api(groupname):
 
 @tokengroup_blueprint.route('/<groupname>', methods=['GET'])
 @tokengroup_blueprint.route('/', methods=['GET'])
+@prepolicy(check_base_action, request, ACTION.TOKENGROUP_LIST)
 @event("tokengroup_list", request, g)
 @log_with(log)
 def get_tokengroup_api(groupname=None):
@@ -140,9 +142,9 @@ def get_tokengroup_api(groupname=None):
 
 
 @tokengroup_blueprint.route('/<groupname>', methods=['DELETE'])
-@event("tokengroup_remove", request, g)
+@prepolicy(check_base_action, request, ACTION.TOKENGROUP_DELETE)
+@event("tokengroup_delete", request, g)
 @log_with(log)
-#@prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
 def delete_tokengroup_api(groupname=None):
     """
     This call deletes the given tokengroup
