@@ -254,7 +254,7 @@ def get_all_params(request):
         # Add the unquoted HTML and form parameters
         return_param = {key: unquote(value) for (key, value) in param.items()}
 
-    if request.json:
+    if request.is_json:
         log.debug(u"Update params in request {0!s} {1!s} with JSON data.".format(request.method,
                                                                                  request.base_url))
         # Add the original JSON data
