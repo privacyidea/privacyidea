@@ -48,12 +48,13 @@
 #
 # ./manage.py db init
 # ./manage.py db migrate
-# ./manage.py createdb
+# ./manage.py create_tables
 #
 from __future__ import print_function
 import os
 import sys
 import datetime
+import warnings
 from datetime import timedelta
 import re
 from subprocess import call, Popen, PIPE
@@ -579,7 +580,17 @@ def createdb(stamp=False):
         migration_dir = os.path.dirname(os.path.abspath(p[0]))
         fm_stamp(directory=migration_dir)
     db.session.commit()
+    warnings.warn("The function createdb() will be removed in Version 4.0", DeprecationWarning)
 
+
+@manager.option('--stamp', '-s', help='Stamp database to current head revision.',
+                default=False, action='store_true')
+def create_tables(stamp=False):
+    """
+    Initially create the tables in the database. The database must exist
+    (an SQLite database will be created).
+    """
+    createdb(stamp=False)
 
 @manager.command
 def dropdb(dropit=None):
@@ -603,6 +614,12 @@ def dropdb(dropit=None):
                                        checkfirst=True)
     else:
         print("Not dropping anything!")
+    warnings.warn("The function dropdb() will be removed in Version 4.0", DeprecationWarning)
+
+
+@manager.command
+def drop_tables(dropit=None):
+    dropdb(dropit=None)
 
 
 @manager.command

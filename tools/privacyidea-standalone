@@ -229,7 +229,7 @@ def create():
             # create an enckey
             invoke_pi_manage(['create_enckey'], pi_cfg)
             invoke_pi_manage(['create_audit_keys'], pi_cfg)
-            invoke_pi_manage(['createdb'], pi_cfg)
+            invoke_pi_manage(['create_tables'], pi_cfg)
 
             print()
             print('Please enter a password for the new admin `super`.')

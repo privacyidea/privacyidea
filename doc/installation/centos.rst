@@ -141,7 +141,7 @@ From now on the ``pi-manage``-tool can be used to configure and manage the priva
 
     (privacyidea)$ pi-manage create_enckey  # encryption key for the database
     (privacyidea)$ pi-manage create_audit_keys  # key for verification of audit log entries
-    (privacyidea)$ pi-manage createdb  # create the database structure
+    (privacyidea)$ pi-manage create_tables  # create the database structure
     (privacyidea)$ pi-manage db stamp head -d /opt/privacyidea/lib/privacyidea/migrations/  # stamp the db
 
 An administrative account is needed to configure and maintain privacyIDEA:

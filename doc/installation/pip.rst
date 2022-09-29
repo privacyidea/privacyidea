@@ -95,7 +95,7 @@ executed inside the virtual environment)::
 
 To create the database tables execute::
 
-    pi-manage createdb
+    pi-manage create_tables
 
 Stamping the database to the current database schema version is important for
 the update process later::

@@ -132,7 +132,7 @@ First You need to create a `config-file <https://privacyidea.readthedocs
 
 Then create the database and encryption key::
 
-    ./pi-manage createdb
+    ./pi-manage create_tables
     ./pi-manage create_enckey
 
 If You want to keep the development database upgradable, You should `stamp
