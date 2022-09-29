@@ -50,6 +50,6 @@ To create the new database you need the command *pi-manage*. The command
 If you want to use another instance with another config file, you need to set
 an environment variable and create the database like this::
 
-   PRIVACYIDEA_CONFIGFILE=/etc/privacyidea3/pi.cfg pi-manage createdb
+   PRIVACYIDEA_CONFIGFILE=/etc/privacyidea3/pi.cfg pi-manage create_tables
 
 This way you can use *pi-manage* for each instance.

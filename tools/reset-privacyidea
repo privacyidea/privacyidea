@@ -5,7 +5,7 @@ create_files() {
         mkdir -p /var/lib/privacyidea
         touch /var/log/privacyidea/privacyidea.log
         pi-manage create_enckey || true > /dev/null
-        pi-manage createdb || true > /dev/null
+        pi-manage create_tables || true > /dev/null
         pi-manage create_audit_keys || true > /dev/null
         chown -R $USERNAME /var/log/privacyidea
         chown -R $USERNAME /var/lib/privacyidea

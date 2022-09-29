@@ -48,12 +48,13 @@
 #
 # ./manage.py db init
 # ./manage.py db migrate
-# ./manage.py createdb
+# ./manage.py create_tables
 #
 from __future__ import print_function
 import os
 import sys
 import datetime
+import warnings
 from datetime import timedelta
 import re
 from subprocess import call, Popen, PIPE
@@ -568,6 +569,18 @@ def create_audit_keys(keysize=2048):
 def createdb(stamp=False):
     """
     Initially create the tables in the database. The database must exist
+    (an SQLite database will be created). This function will be removed with Version 4.0.
+    """
+    create_tables(stamp)
+
+    warnings.warn("This function will be removed in Version 4.0", DeprecationWarning)
+
+
+@manager.option('--stamp', '-s', help='Stamp database to current head revision.',
+                default=False, action='store_true')
+def create_tables(stamp=False):
+    """
+    Initially create the tables in the database. The database must exist
     (an SQLite database will be created).
     """
     print(db)
@@ -583,6 +596,21 @@ def createdb(stamp=False):
 
 @manager.command
 def dropdb(dropit=None):
+    """
+    This drops all the privacyIDEA database tables.
+    Use with caution! All data will be lost!
+
+    For safety reason you need to pass
+        --dropit==yes
+    Otherwise the command will not drop anything.
+    This function will be removed with Version 4.0.
+    """
+    drop_tables(dropit)
+    warnings.warn("This function will be removed in Version 4.0", DeprecationWarning)
+
+
+@manager.command
+def drop_tables(dropit=None):
     """
     This drops all the privacyIDEA database tables.
     Use with caution! All data will be lost!
@@ -1331,7 +1359,7 @@ exp_fmt_dict = {
                             '{0!s}'.format(', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))),
                        )
 @config_manager.option('-n', '--name',
-                       help = 'The name of the configuration object to export (default: export all)')
+                       help='The name of the configuration object to export (default: export all)')
 def exporter(output, fmt, types, name=None):
     """
     Export server configuration using specific or all registered exporter types.
@@ -1364,7 +1392,7 @@ imp_fmt_dict = {
                             'Currently registered importer types are: '
                             '{0!s}'.format(', '.join(['all'] + list(IMPORT_FUNCTIONS.keys()))))
 @config_manager.option('-n', '--name',
-                       help = 'The name of the configuration object to import (default: import all)')
+                       help='The name of the configuration object to import (default: import all)')
 def importer(infile, types, name=None):
     """
     Import server configuration using specific or all registered importer types.
