@@ -24,6 +24,7 @@ from flask import (Blueprint,
 from .lib.utils import (getParam, send_result)
 from ..lib.log import log_with
 from privacyidea.lib.tokengroup import get_tokengroups, set_tokengroup, delete_tokengroup
+from privacyidea.lib.event import event
 
 from flask import g
 import logging
@@ -34,6 +35,7 @@ tokengroup_blueprint = Blueprint('tokengroup_blueprint', __name__)
 
 
 @tokengroup_blueprint.route('/<groupname>', methods=['POST'])
+@event("tokengroup_add", request, g)
 @log_with(log)
 #@prepolicy(check_base_action, request, ACTION.____)
 def set_tokengroup_api(groupname):
@@ -89,6 +91,7 @@ def set_tokengroup_api(groupname):
 
 @tokengroup_blueprint.route('/<groupname>', methods=['GET'])
 @tokengroup_blueprint.route('/', methods=['GET'])
+@event("tokengroup_list", request, g)
 @log_with(log)
 def get_tokengroup_api(groupname=None):
     """
@@ -137,6 +140,7 @@ def get_tokengroup_api(groupname=None):
 
 
 @tokengroup_blueprint.route('/<groupname>', methods=['DELETE'])
+@event("tokengroup_remove", request, g)
 @log_with(log)
 #@prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
 def delete_tokengroup_api(groupname=None):
