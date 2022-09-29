@@ -564,13 +564,12 @@ def create_audit_keys(keysize=2048):
     print("Please ensure, that it is owned by the right user.")
 
 
-@manager.option('--stamp', '-s', help='Stamp database to current head revision. This function will be '
-                                      'removed with Version 4.0',
+@manager.option('--stamp', '-s', help='Stamp database to current head revision.',
                 default=False, action='store_true')
 def createdb(stamp=False):
     """
     Initially create the tables in the database. The database must exist
-    (an SQLite database will be created).
+    (an SQLite database will be created). This function will be removed with Version 4.0.
     """
     create_tables(stamp)
 
@@ -604,6 +603,7 @@ def dropdb(dropit=None):
     For safety reason you need to pass
         --dropit==yes
     Otherwise the command will not drop anything.
+    This function will be removed with Version 4.0.
     """
     drop_tables(dropit)
     warnings.warn("This function will be removed in Version 4.0", DeprecationWarning)
