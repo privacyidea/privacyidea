@@ -64,7 +64,7 @@ This module uses three keys, similarly to the content of
 ``PI_ENCFILE``, identified as ``token``, ``config`` and ``value``.
 
 To activate this module add the following to the configuration file
-(:ref:`cfgfile`)
+(:ref:`cfgfile`)::
 
    PI_HSM_MODULE = "privacyidea.lib.security.aeshsm.AESHardwareSecurityModule"
 

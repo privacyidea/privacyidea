@@ -316,7 +316,8 @@ def encryptPassword(password):
         ret = hsm.encrypt_password(to_bytes(password))
     except Exception as exx:  # pragma: no cover
         log.warning(exx)
-        ret = "FAILED TO ENCRYPT PASSWORD!"
+        log.info(traceback.format_exc())
+        raise HSMException("Failed to encrypt password!")
     return ret
 
 
