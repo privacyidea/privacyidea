@@ -119,6 +119,14 @@ class LoginUITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(b"https://privacyidea.org/" in res.data)
 
+    def test_08_logout_redirect_for_SSO(self):
+        set_policy("logout_redirect", scope=SCOPE.WEBUI,
+                   action="{0!s}=www.test.it".format(ACTION.LOGOUT_REDIRECT))
+        with self.app.test_request_context('/', method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(b"www.test.it" in res.data)
+
 
 class LanguageTestCase(MyApiTestCase):
 
