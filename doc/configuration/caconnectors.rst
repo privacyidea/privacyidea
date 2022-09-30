@@ -7,7 +7,7 @@ CA Connectors
 
 You can use privacyIDEA to enroll certificates and assign certificates to users.
 
-You can define connections to Certifacte Authorities, that are used when
+You can define connections to Certificate Authorities, that are used when
 enrolling certificates.
 
 .. _fig_caconnector:
@@ -172,12 +172,12 @@ Whether the worker is situated behind a HTTP proxy.
 The worker will provide a list of available CAs in the domain. This is the
 actual CA to which privacyIDEA shall communicate. After providing the initial
 connection information `hostname` and `Port`, privacyIDEA can fetch the available
-CAs in the Windows Dowmain. The CA is identified by the hostname where the Microsoft CA is
+CAs in the Windows Domain. The CA is identified by the hostname where the Microsoft CA is
 running and the name of the CA like `<hostname>\\<name of CA>`.
 
 **Use SSL**
 
-This is a boolean paramenter. If it is checked, then privacyIDEA will communicate to
+This is a boolean parameter. If it is checked, then privacyIDEA will communicate to
 the CA worker via TLS. Depending on the worker configuration it will also be required,
 to provide a client certificate for authentication.
 
@@ -187,12 +187,12 @@ to provide a client certificate for authentication.
 **CA certificate**
 
 This is the location of the file, that contains the CA certificate, that issued the
-CA worker servider certificate. This file is located on the privacyIDEA server in PEM format.
+CA worker server certificate. This file is located on the privacyIDEA server in PEM format.
 
 **Client certificate**
 
-This is the file locateion of the certificate that privacyIDEA uses to authenticate against the CA worker.
-It is PEM format.
+This is the file location of the certificate that privacyIDEA uses to authenticate against the CA worker.
+It is in PEM format.
 
 .. note:: The subject of this certificate must match the name of the privacyIDEA server as
    seen by the CA worker. It is a good idea to request the client certificate from the
