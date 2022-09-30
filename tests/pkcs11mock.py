@@ -30,8 +30,8 @@ try:
 except ImportError:
     # PyKCS11 not installed, let's use our simple mock module
     class MockPyKCS11Error(Exception):
-        def __init__(self, code):
-            self.code = code
+        def __init__(self, value):
+            self.value = value
 
 
     MOCK_CONSTANTS = ['CKA_CLASS', 'CKO_SECRET_KEY', 'CKA_LABEL', 'CKR_SLOT_ID_INVALID', 'CKR_DEVICE_ERROR']
