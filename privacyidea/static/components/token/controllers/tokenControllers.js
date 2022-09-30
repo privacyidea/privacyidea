@@ -192,35 +192,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     $scope.enrolling = false;
 
     $scope.formInit = {
-        tokenTypes: {"hotp": gettextCatalog.getString("HOTP: event based One Time Passwords"),
-            "totp": gettextCatalog.getString("TOTP: time based One Time Passwords"),
-            "Daypassword": gettextCatalog.getString("DayPassword: Time Based Password"),
-            "spass": gettextCatalog.getString("SPass: Simple Pass token. Static passwords"),
-            "motp": gettextCatalog.getString("mOTP: classical mobile One Time Passwords"),
-            "sshkey": gettextCatalog.getString("SSH Public Key: The public SSH key"),
-            "yubikey": gettextCatalog.getString("Yubikey AES mode: One Time Passwords with" +
-                " Yubikey"),
-            "remote": gettextCatalog.getString("Remote Token: Forward authentication request" +
-                " to another server"),
-            "yubico": gettextCatalog.getString("Yubikey Cloud mode: Forward authentication" +
-                " request to YubiCloud"),
-            "radius": gettextCatalog.getString("RADIUS: Forward authentication request to a" +
-                " RADIUS server"),
-            "email": gettextCatalog.getString("EMail: Send a One Time Password to the users email" +
-                " address."),
-            "sms": gettextCatalog.getString("SMS: Send a One Time Password to the users" +
-                " mobile phone."),
-            "certificate": gettextCatalog.getString("Certificate: Enroll an x509 Certificate" +
-                " Token."),
-            "4eyes": gettextCatalog.getString("Four Eyes: Two or more users are required to" +
-                " log in."),
-            "tiqr": gettextCatalog.getString("TiQR: Authenticate with Smartphone by scanning" +
-                " a QR code."),
-            "u2f": gettextCatalog.getString("U2F: Universal 2nd Factor hardware token."),
-            "indexedsecret": gettextCatalog.getString("IndexedSecret: Challenge token based on a shared secret."),
-            "webAuthn": gettextCatalog.getString("WebAuthn: Web Authentication hardware token."),
-            "paper": gettextCatalog.getString("PAPER: OTP values on a sheet of paper."),
-            "applspec": gettextCatalog.getString("ApplSpec: Application Specific Password Token")},
+        tokenTypes: {},  // will be set later with response from server
         timesteps: [30, 60],
         otplens: [6, 8],
         hashlibs: ["sha1", "sha256", "sha512"],

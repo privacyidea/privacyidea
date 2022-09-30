@@ -186,8 +186,9 @@
     <div ng-show="enrolledToken.rollout_state === 'verify'">
         <p translate>The token was enrolled, but you still need to verify it before you can use it!</p>
         <div class="form-group">
-            <label for="verifyResponse" translate>{{ enrolledToken.verify.message }}</label>
+            <label for="verifyResponse">{{ enrolledToken.verify.message }}</label>
             <input type="text" ng-model="verifyResponse"
+                   id="verifyResponse"
                    autofocus
                    class="form-control"
                    name="verifyResponse">

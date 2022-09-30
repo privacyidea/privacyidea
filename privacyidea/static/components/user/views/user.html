@@ -41,10 +41,13 @@
                                 translate>Add user
                         </a>
                     </li>
-                    <li translate>Quick links</li>
-                    <li ng-show="checkRight('resolverwrite')">
-                        <a ui-sref="config.realms.list"
-                                translate>Edit realms</a>
+                    <li translate>Quick links>
+                        <ul class="nav nav-pills nav-stacked">
+                            <li ng-show="checkRight('resolverwrite')">
+                                <a ui-sref="config.realms.list"
+                                   translate>Edit realms</a>
+                            </li>
+                        </ul>
                     </li>
                     <li translate>total users: {{ usercount }}</li>
                     <hr>

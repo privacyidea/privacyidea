@@ -1,6 +1,6 @@
 <!-- Modal -->
 
-<!-- this dialog is displayed, if the logged in user is or role "user" and he has no tokens. -->
+<!-- this dialog is displayed, if the logged-in user is or role "user" and he has no tokens. -->
 
 <div class="modal fade lock-dialog" id="dialogNoToken" tabindex="-1"
      role="dialog"
@@ -16,19 +16,13 @@
                 >Welcome</h4>
             </div>
 
-            <div class="modal-body" ng-show="browserLanguage == 'en'">
+            <div class="modal-body" translate>
                 privacyIDEA is a system to manage your tokens.
                 You currently have no token assigned.
-                You can manage your own tokens here - you can create new tokens, set the PIN of the tokens, disable tokens
-                or even delete tokens.
+                You can manage your own tokens here - you can create new tokens, set the PIN of the tokens,
+                disable tokens or even delete tokens.
             </div>
 
-            <div class="modal-body" ng-show="browserLanguage == 'de'">
-                privacyIDEA ist ein System, mit dem Sie Token verwalten können.
-                Derzeit sind Ihnen keine Token zugewiesen.
-                Sie können hier Ihre eigenen Token verwalten. Sie können Token ausrollen, PINs setzen, Token
-                deaktivieren oder löschen.
-            </div>
             <!--
             <div>
             You could also add links here that point to the enrollment tab like this:
@@ -44,4 +38,3 @@
 
     </div>
 </div>
-

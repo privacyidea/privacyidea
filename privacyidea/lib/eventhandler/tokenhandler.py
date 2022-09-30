@@ -143,7 +143,7 @@ class TokenEventHandler(BaseEventHandler):
                              "description": _("The new realm will be the only "
                                               "realm of the token. I.e. all "
                                               "other realms will be removed "
-                                              "from this token. Otherwise the "
+                                              "from this token. If disabled, the "
                                               "realm will be added to the token.")
                             }
                         },
@@ -290,7 +290,7 @@ class TokenEventHandler(BaseEventHandler):
                         "value":
                             {
                                 "type": "str",
-                                "description": _("Set the above key the this "
+                                "description": _("Set the above key to this "
                                                  "value.")
                             }
                        },

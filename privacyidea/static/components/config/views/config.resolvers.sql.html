@@ -8,7 +8,7 @@
         ng-hide="resolvername"
             translate>Create a new SQL Resolver</h2>
 
-    <form name="formResolverAddSql" role="form" validate
+    <form name="formResolverAddSql" role="form"
           class="form-horizontal">
 
 
@@ -30,7 +30,7 @@
                     translate>Driver</label>
 
             <div class="col-sm-9">
-                <input name="driver" class="form-control"
+                <input id="driver" class="form-control"
                        ng-model="params.Driver" required
                        placeholder="mysql+pymysql"/>
             </div>
@@ -41,7 +41,7 @@
                     translate>Server</label>
 
             <div class="col-sm-3">
-                <input name="server" class="form-control"
+                <input id="server" class="form-control"
                        ng-model="params.Server" required
                        placeholder="127.0.0.1"/>
             </div>
@@ -49,7 +49,7 @@
                     translate>Port</label>
 
             <div class="col-sm-3">
-                <input name="port" class="form-control"
+                <input id="port" class="form-control"
                        ng-model="params.Port"
                        placeholder="3306"/>
             </div>
@@ -61,7 +61,7 @@
                     translate>Database</label>
 
             <div class="col-sm-9">
-                <input name="database" class="form-control"
+                <input id="database" class="form-control"
                        ng-model="params.Database"
                        placeholder="YourDataBase"/>
             </div>
@@ -70,7 +70,7 @@
             <label for="user" class="col-sm-3 control-label">User</label>
 
             <div class="col-sm-9">
-                <input name="user" class="form-control"
+                <input id="user" class="form-control"
                        ng-model="params.User"
                        placeholder="user"/>
             </div>
@@ -80,7 +80,7 @@
                 Password</label>
 
             <div class="col-sm-9">
-                <input name="password" class="form-control"
+                <input id="password" class="form-control"
                        type="password" autocomplete="new-password"
                        ng-model="params.Password"
                        placeholder="topsecret"/>
@@ -108,7 +108,7 @@
             <div class="col-sm-9">
                 <select class="form-control"
                         ng-model="params.Password_Hash_Type"
-                        name="passwordhash"
+                        id="passwordhash"
                         ng-options="hashtype for hashtype in hashtypes">
                 </select>
                 <p class="help-block" translate>
@@ -120,23 +120,23 @@
 
         <div class="well">
             <div class="form-group">
-                <button class="btn btn-info" ng-click="presetWordpress()"
-                        translate>Wordpress
+                <button class="btn btn-info" ng-click="presetWordpress()">
+                    Wordpress
                 </button>
-                <button class="btn btn-info" ng-click="presetOTRS()"
-                        translate>OTRS
+                <button class="btn btn-info" ng-click="presetOTRS()">
+                    OTRS
                 </button>
-                <button class="btn btn-info" ng-click="presetTine()"
-                        translate>Tine 2.0
+                <button class="btn btn-info" ng-click="presetTine()">
+                    Tine 2.0
                 </button>
-                <button class="btn btn-info" ng-click="presetOwncloud()"
-                        translate>Owncloud
+                <button class="btn btn-info" ng-click="presetOwncloud()">
+                    Owncloud
                 </button>
-                <button class="btn btn-info" ng-click="presetTypo3()"
-                        translate>Typo3
+                <button class="btn btn-info" ng-click="presetTypo3()">
+                    Typo3
                 </button>
-                <button class="btn btn-info" ng-click="presetDrupal()"
-                        translate>Drupal
+                <button class="btn btn-info" ng-click="presetDrupal()">
+                    Drupal
                 </button>
             </div>
             <div class="form-group">
@@ -144,7 +144,7 @@
                         translate>Table</label>
 
                 <div class="col-sm-3">
-                    <input name="table" class="form-control"
+                    <input id="table" class="form-control"
                            ng-model="params.Table" required
                            placeholder="Users"/>
                 </div>
@@ -153,7 +153,7 @@
                         translate>Limit</label>
 
                 <div class="col-sm-3">
-                    <input name="limit" class="form-control"
+                    <input id="limit" class="form-control"
                            ng-model="params.Limit" required
                            placeholder="500"/>
                 </div>
@@ -165,7 +165,7 @@
                         translate>Mapping</label>
 
                 <div class="col-sm-9">
-                    <input name="mapping" class="form-control"
+                    <input id="mapping" class="form-control"
                            ng-model="params.Map" required
                            placeholder='{ "userid" : "id", "username": "user", "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" ,"password" : "password"}'
                             />
@@ -178,7 +178,7 @@
                         translate>Where statement</label>
 
                 <div class="col-sm-9">
-                    <input name="where" class="form-control"
+                    <input id="where" class="form-control"
                            ng-model="params.Where"/>
                 </div>
             </div>
@@ -188,7 +188,7 @@
                         translate>Database Encoding</label>
 
                 <div class="col-sm-9">
-                    <input name="encoding" class="form-control"
+                    <input id="encoding" class="form-control"
                            ng-model="params.Encoding" />
                 </div>
             </div>
@@ -198,7 +198,7 @@
                         translate>Connection Parameters</label>
 
                 <div class="col-sm-9">
-                    <input name="conparams" class="form-control"
+                    <input id="conparams" class="form-control"
                            ng-model="params.conParams"/>
                 </div>
             </div>
@@ -208,7 +208,7 @@
                         translate>Pool size</label>
 
                 <div class="col-sm-9">
-                    <input name="poolsize" class="form-control"
+                    <input id="poolsize" class="form-control"
                            size="3" width="3ex"
                            ng-model="params.poolSize"/>
                 </div>
@@ -219,7 +219,7 @@
                         translate>Pool timeout</label>
 
                 <div class="col-sm-9">
-                    <input name="pooltimeout" class="form-control"
+                    <input id="pooltimeout" class="form-control"
                            size="3" width="3ex"
                            ng-model="params.poolTimeout"/>
                 </div>
@@ -230,7 +230,7 @@
                         translate>Pool recycle timeout</label>
 
                 <div class="col-sm-9">
-                    <input name="poolrecycle" class="form-control"
+                    <input id="poolrecycle" class="form-control"
                            size="3" width="3ex"
                            ng-model="params.poolRecycle"/>
                 </div>
