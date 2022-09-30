@@ -65,8 +65,8 @@ class BaseCAConnector(object):
         :param options: Additional options like the validity time or the
             template or spkac=1
         :type options: dict
-        :return: Returns the certificate
-        :rtype: basestring
+        :return: Returns a return value and the certificate
+        :rtype: (int, x509)
         """
         pass
 

@@ -361,8 +361,8 @@ class LocalCAConnector(BaseCAConnector):
         :param options: Additional options like the validity time or the
             template or spkac=1
         :type options: dict
-        :return: Returns the certificate object
-        :rtype: X509
+        :return: Returns a return value (0) and the certificate object
+        :rtype: (int, X509)
         """
         # Sign the certificate for one year
         options = options or {}

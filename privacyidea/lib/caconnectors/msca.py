@@ -106,6 +106,7 @@ class MSCAConnector(BaseCAConnector):
          * hostname - the hostname of the middleware
          * port - the port the middleware listens on
          * http_proxy - if http proxy should be used
+
         :param config: A dictionary with all necessary attributes.
         :return:
         """
@@ -134,6 +135,7 @@ class MSCAConnector(BaseCAConnector):
     def get_config(self, config):
         """
         This method helps to format the config values of the CA Connector.
+
         :param config: The configuration as it is stored in the database
         :type config: dict
         :return:
