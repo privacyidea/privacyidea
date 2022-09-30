@@ -606,7 +606,7 @@ class CertificateTokenClass(TokenClass):
         # call CAConnector.revoke_cert()
         ca_obj = get_caconnector_object(ca_specifier)
         revoked = ca_obj.revoke_cert(certificate_pem,
-                                     request_id=ti.get("requestId"))
+                                     request_id=ti.get(REQUEST_ID))
         log.info("Certificate {0!s} revoked on CA {1!s}.".format(revoked,
                                                                  ca_specifier))
 
