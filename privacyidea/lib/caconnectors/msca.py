@@ -190,9 +190,10 @@ class MSCAConnector(BaseCAConnector):
             grpc.channel_ready_future(channel).result(timeout=TIMEOUT)
         except grpc.FutureTimeoutError:
             log.warning("Worker seems to be offline. No connection could be established!")
-            log.info(traceback.format_exc())
+            log.debug(traceback.format_exc())
         except UnboundLocalError:
             log.warning("Channel to MS CA worker was not set up successfully.")
+            log.debug(traceback.format_exc())
         else:
             return CAServiceStub(channel)
 
