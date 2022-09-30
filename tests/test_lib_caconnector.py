@@ -589,7 +589,7 @@ class MSCATestCase(MyTestCase):
         self.cacon = MSCAConnector("bCA2", conf)
 
     def test_13_ssl_encrypted_key(self):
-        # Create CA connector with an unencrypted private key
+        # Create CA connector with an encrypted private key
         conf = CONF
         conf[MS_ATTR.USE_SSL] = True
         conf[MS_ATTR.SSL_CA_CERT] = "tests/testdata/msca-connector/ca.pem"
@@ -597,6 +597,16 @@ class MSCATestCase(MyTestCase):
         conf[MS_ATTR.SSL_CLIENT_KEY] = "tests/testdata/msca-connector/privacyidea-encrypted.key"
         conf[MS_ATTR.SSL_CLIENT_KEY_PASSWORD] = "test"
         self.cacon = MSCAConnector("bCA2", conf)
+
+    def test_14_ssl_encrypted_key(self):
+        # Create CA connector with an encrypted private key but wrong passphrase
+        conf = CONF
+        conf[MS_ATTR.USE_SSL] = True
+        conf[MS_ATTR.SSL_CA_CERT] = "tests/testdata/msca-connector/ca.pem"
+        conf[MS_ATTR.SSL_CLIENT_CERT] = "tests/testdata/msca-connector/privacyidea.pem"
+        conf[MS_ATTR.SSL_CLIENT_KEY] = "tests/testdata/msca-connector/privacyidea-encrypted.key"
+        conf[MS_ATTR.SSL_CLIENT_KEY_PASSWORD] = "wrong"
+        self.assertRaises(Exception, MSCAConnector, "bCA2", conf)
 
 #    @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
 #                         "Can not test MSCA. grpc module seems not available.")
