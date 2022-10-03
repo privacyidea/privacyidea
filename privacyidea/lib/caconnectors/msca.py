@@ -30,8 +30,9 @@ import traceback
 from six.moves import input
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.error import CSRError, CSRPending
-from OpenSSL.crypto import dump_privatekey, load_privatekey
 from privacyidea.lib.utils import to_bytes
+from cryptography.hazmat.primitives import serialization
+
 
 log = logging.getLogger(__name__)
 try:
@@ -170,8 +171,16 @@ class MSCAConnector(BaseCAConnector):
                         # Decrypt the key
                         log.debug("Decrypting client private key with password.")
                         password = to_bytes(self.ssl_client_key_password)
-                        key = load_privatekey(crypto.FILETYPE_PEM, client_key_pem, password)
-                        client_key_pem = dump_privatekey(crypto.FILETYPE_PEM, key)
+                        with open(self.ssl_client_key, "rb") as key_file:
+                            private_key = serialization.load_pem_private_key(
+                                key_file.read(),
+                                password=password,
+                            )
+                        client_key_pem = private_key.private_bytes(
+                            encoding=serialization.Encoding.PEM,
+                            format=serialization.PrivateFormat.TraditionalOpenSSL,
+                            encryption_algorithm=serialization.NoEncryption()
+                        )
                         log.debug("Client private key decrypted.")
                     else:
                         log.error("Faulty configuration in CA '{0!s}'. "
