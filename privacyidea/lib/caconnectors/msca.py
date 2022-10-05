@@ -152,9 +152,12 @@ class MSCAConnector(BaseCAConnector):
         if self.use_ssl:
             # Secure connection
             if not (self.ssl_ca_cert and self.ssl_client_cert and self.ssl_client_key):
-                log.warning("For a secure connection we need 'ssl_ca_cert', 'ssl_client_cert' and 'ssl_client_key'. "
-                            "The following configuration seems incomplete: "
-                            "({0!s}, {1!s}, {2!s})".format(self.ssl_ca_cert, self.ssl_client_cert, self.ssl_client_key))
+                log.error("For a secure connection we need 'ssl_ca_cert', 'ssl_client_cert'"
+                          " and 'ssl_client_key'. The following configuration seems incomplete: "
+                          "({0!s}, {1!s}, {2!s})".format(self.ssl_ca_cert, self.ssl_client_cert,
+                                                         self.ssl_client_key))
+                raise CAError('Incomplete TLS configuration for MSCA worker '
+                              'configuration {0!s}'.format(self.name))
             else:
                 # Read all stuff. We need to provide all parameters as PEM encoded byte string
                 with open(self.ssl_ca_cert, 'rb') as f:
@@ -163,30 +166,29 @@ class MSCAConnector(BaseCAConnector):
                     client_cert_pem = f.read()
                 with open(self.ssl_client_key, 'rb') as f:
                     client_key_pem = f.read()
-                if client_key_pem.startswith(b"-----BEGIN RSA PRIVATE KEY-----") or \
-                        client_key_pem.startswith(b"-----BEGIN PRIVATE KEY-----"):
-                    log.debug("Read unencrypted private key.")
-                elif client_key_pem.startswith(b"-----BEGIN ENCRYPTED PRIVATE KEY-----"):
-                    if self.ssl_client_key_password:
-                        # Decrypt the key
-                        log.debug("Decrypting client private key with password.")
-                        password = to_bytes(self.ssl_client_key_password)
-                        with open(self.ssl_client_key, "rb") as key_file:
-                            private_key = serialization.load_pem_private_key(
-                                key_file.read(),
-                                password=password,
-                            )
-                        client_key_pem = private_key.private_bytes(
-                            encoding=serialization.Encoding.PEM,
-                            format=serialization.PrivateFormat.TraditionalOpenSSL,
-                            encryption_algorithm=serialization.NoEncryption()
-                        )
-                        log.debug("Client private key decrypted.")
-                    else:
-                        log.error("Faulty configuration in CA '{0!s}'. "
-                                  "Trying to use an encrypted private key "
-                                  "without providing a password! "
-                                  "The CA connector will not work!".format(self.name))
+                try:
+                    log.debug("Decrypting client private key with password.")
+                    password = to_bytes(self.ssl_client_key_password)
+                    private_key = serialization.load_pem_private_key(
+                        client_key_pem,
+                        password=password,
+                    )
+                    client_key_pem = private_key.private_bytes(
+                        encoding=serialization.Encoding.PEM,
+                        format=serialization.PrivateFormat.TraditionalOpenSSL,
+                        encryption_algorithm=serialization.NoEncryption()
+                    )
+                    log.debug("Client private key decrypted.")
+                except ValueError as e:
+                    log.error('Could not decrypt TLS key with given password. '
+                              '({0!s})'.format(e))
+                    raise CAError('Invalid TLS configuration for MSCA worker.')
+                except TypeError as e:
+                    log.error("Faulty configuration in CA '{0!s}'. "
+                              "Trying to use an encrypted private key "
+                              "without providing a password (or vice versa)! "
+                              "The CA connector will not work! ({1!s})".format(self.name, e))
+                    raise CAError('Invalid TLS configuration for MSCA worker.')
 
                 credentials = grpc.ssl_channel_credentials(ca_cert_pem, client_key_pem, client_cert_pem)
                 channel = grpc.secure_channel('{0!s}:{1!s}'.format(self.hostname, self.port),
