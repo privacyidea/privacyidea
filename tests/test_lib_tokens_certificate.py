@@ -17,7 +17,7 @@ import mock
 from OpenSSL import crypto
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from privacyidea.lib.caconnectors.msca import MSCAConnector
-from .mscamock import (MyTemplateReply, MyCAReply, MyCRReply,
+from .mscamock import (MyTemplateReply, MyCAReply, MyCSRReply,
                        MyCertReply, MyCertificateReply, MyCSRStatusReply, CAServiceMock)
 from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
 from privacyidea.lib.token import init_token
@@ -501,8 +501,10 @@ class CertificateTokenTestCase(MyTestCase):
         self.assertEqual("{0!r}".format(x509obj.get_issuer()),
                          "<X509Name object '/C=DE/ST=Hessen"
                          "/O=privacyidea/CN=CA001'>")
-        self.assertEqual("{0!r}".format(x509obj.get_subject()),
-                         "<X509Name object '/OU=realm1/CN=cornelius/emailAddress=user@localhost.localdomain'>")
+        # Currently it is work in progress if we add the OU or not. So we check for both.
+        self.assertIn("{0!r}".format(x509obj.get_subject()),
+                      ["<X509Name object '/OU=realm1/CN=cornelius/emailAddress=user@localhost.localdomain'>",
+                       "<X509Name object '/CN=cornelius/emailAddress=user@localhost.localdomain'>"])
 
         # Test, if the certificate is also completely stored in the tokeninfo
         # and if we can retrieve it from the tokeninfo
@@ -512,8 +514,9 @@ class CertificateTokenTestCase(MyTestCase):
         self.assertEqual("{0!r}".format(x509obj.get_issuer()),
                          "<X509Name object '/C=DE/ST=Hessen"
                          "/O=privacyidea/CN=CA001'>")
-        self.assertEqual("{0!r}".format(x509obj.get_subject()),
-                         "<X509Name object '/OU=realm1/CN=cornelius/emailAddress=user@localhost.localdomain'>")
+        self.assertIn("{0!r}".format(x509obj.get_subject()),
+                      ["<X509Name object '/OU=realm1/CN=cornelius/emailAddress=user@localhost.localdomain'>",
+                       "<X509Name object '/CN=cornelius/emailAddress=user@localhost.localdomain'>"])
 
         privatekey = token.get_tokeninfo("privatekey")
         self.assertTrue(privatekey.startswith("-----BEGIN PRIVATE KEY-----"))
