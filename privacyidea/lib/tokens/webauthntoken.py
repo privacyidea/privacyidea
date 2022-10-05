@@ -901,7 +901,7 @@ class WebAuthnTokenClass(TokenClass):
                     uv_required=uv_req == USER_VERIFICATION_LEVEL.REQUIRED
                 ).verify([
                     # TODO: this might get slow when a lot of webauthn tokens are registered
-                    token.decrypt_otpkey() for token in get_tokens(tokentype=self.type)
+                    token.decrypt_otpkey() for token in get_tokens(tokentype=self.type) if token.get_serial() != self.get_serial()
                 ])
             except Exception as e:
                 log.warning('Enrollment of {0!s} token failed: '
