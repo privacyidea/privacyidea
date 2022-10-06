@@ -96,8 +96,8 @@ Actions:
         --tokeninfo-value-less-than=<value>
         --tokeninfo-value-after=<value>
         --tokeninfo-value-before=<value>
-        --unassigned
-        --orphaned
+        --assigned false
+        --orphaned true
         --tokentype=<type>
         --serial=<regexp>
         --description=<regexp>
