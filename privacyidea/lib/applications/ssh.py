@@ -71,7 +71,7 @@ class MachineApplication(MachineApplicationBase):
                     # We just return the ssh public key, so that
                     # it can be included into authorized keys.
                     log.info(u"Using SSH key {0!s} for SSH user {1!s}".format(tokclass.token.serial,
-                                                                          options.get("user")))
+                                                                              options.get("user")))
                     ret["sshkey"] = tokclass.get_sshkey()
                     # We return the username if the token is assigned to a
                     # user, so that this username could be used to save
