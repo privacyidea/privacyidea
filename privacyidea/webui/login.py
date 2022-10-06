@@ -137,15 +137,6 @@ def single_page_application():
     except HSMException:
         hsm_ready = False
 
-    # A url to redirct to at logout
-    logout_redirect_url = Match.action_only(g, action=ACTION.LOGOUT_REDIRECT,
-                                                    scope=SCOPE.WEBUI) \
-        .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
-    if len(logout_redirect_url) and list(logout_redirect_url)[0]:
-        logout_redirect_url = list(logout_redirect_url)[0]
-    else:
-        logout_redirect_url = ""
-
     # Use policies to determine the customization of menu
     # and baseline. get_action_values returns an array!
     sub_state = subscription_status()
@@ -199,7 +190,6 @@ def single_page_application():
         'show_node': show_node,
         'external_links': external_links,
         'login_text': login_text,
-        'logout_redirect_url': logout_redirect_url,
         'gdpr_link': gdpr_link,
         'logo': logo,
         'page_title': page_title
