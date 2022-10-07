@@ -20,7 +20,7 @@
  */
 
 //Return an empty array if string is empty.
-//Otherwise return the result of the ordinary split.
+//Otherwise, return the result of the ordinary split.
 String.prototype.mysplit = function(separator) {
     return this == "" ? [] : this.split(separator);
 };
@@ -34,7 +34,7 @@ angular.module("privacyideaApp")
                                    "hotkeys", "RegisterFactory",
                                    "U2fFactory", "webAuthnToken", "instanceUrl",
                                    "PollingAuthFactory", "$transitions",
-                                   "resourceNamePatterns",
+                                   "resourceNamePatterns", "$window",
                                    function (Idle, $scope, $sce, $http, $location,
                                              authUrl, validateUrl, AuthFactory, $rootScope,
                                              $state, ConfigFactory, inform,
@@ -42,7 +42,7 @@ angular.module("privacyideaApp")
                                              hotkeys, RegisterFactory,
                                              U2fFactory, webAuthnToken, instanceUrl,
                                              PollingAuthFactory, $transitions,
-                                             resourceNamePatterns) {
+                                             resourceNamePatterns, $window) {
 
     $scope.instanceUrl = instanceUrl;
     $scope.checkRight = AuthFactory.checkRight;
@@ -72,13 +72,11 @@ angular.module("privacyideaApp")
     obj = angular.element(document.querySelector('#LOGO'));
     $scope.piLogo = obj.val();
     obj = angular.element(document.querySelector('#HAS_JOB_QUEUE'));
-    $scope.hasJobQueue = obj.val() == "True";
+    $scope.hasJobQueue = obj.val() === "True";
     obj = angular.element(document.querySelector('#LOGIN_TEXT'));
     $scope.piLoginText = obj.val();
     obj = angular.element(document.querySelector('#SHOW_NODE'));
     $scope.show_node = obj.val();
-    obj = angular.element(document.querySelector('#LOGOUT_REDIRECT_URL'));
-    $scope.logout_redirect_url = obj.val();
     obj = angular.element(document.querySelector('#GDPR_LINK'));
     // we need to trust the GDPR URI explicitly since an admin can change this via policy.
     $scope.piGDPRLink = $sce.trustAsUrl(obj.val());
@@ -158,7 +156,7 @@ angular.module("privacyideaApp")
     });
 
     $scope.$on('IdleTimeout', function () {
-        if ($scope.timeout_action == "logout") {
+        if ($scope.timeout_action === "logout") {
             //debug: console.log("Logout!");
             $scope.logout();
         } else {
@@ -446,6 +444,7 @@ angular.module("privacyideaApp")
             } else {
                 $scope.startRoute = "/token";
             }
+            $scope.logout_redirect_url = data.result.value.logout_redirect_url;
             $scope.hide_welcome = data.result.value.hide_welcome;
             $scope.hide_buttons = data.result.value.hide_buttons;
             $scope.show_seed = data.result.value.show_seed;
@@ -543,16 +542,16 @@ angular.module("privacyideaApp")
         // Jump to top when the policy is saved
         $('html,body').scrollTop(0);
         // Optional redirect on logout
-        if ($scope.logout_redirect_url != "") {
+        if ($scope.logout_redirect_url !== "") {
             console.log("Redirecting to "+$scope.logout_redirect_url)
-            window.location.href = $scope.logout_redirect_url;
+            $window.location.href = $scope.logout_redirect_url;
         }
     };
 
     $scope.nextWelcome = function() {
         $scope.welcomeStep += 1;
-        if (($scope.subscription_state == 0 && $scope.welcomeStep === 4) ||
-            ($scope.subscription_state == 1 && $scope.welcomeStep === 5)) {
+        if (($scope.subscription_state === 0 && $scope.welcomeStep === 4) ||
+            ($scope.subscription_state === 1 && $scope.welcomeStep === 5)) {
             $('#dialogWelcome').modal("hide");
         }
     };

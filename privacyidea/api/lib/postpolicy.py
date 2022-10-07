@@ -535,6 +535,8 @@ def get_webui_settings(request, response):
                                                  user=loginname, realm=realm).any()
         qr_custom_authenticator_url = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_CUSTOM_AUTHENTICATOR,
                                                     user=loginname, realm=realm).action_values(unique=True)
+        logout_redirect_url_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.LOGOUT_REDIRECT,
+                                                user=loginname, realm=realm).action_values(unique=True)
 
         qr_image_android = create_img(DEFAULT_ANDROID_APP_URL) if qr_android_authenticator else None
         qr_image_ios = create_img(DEFAULT_IOS_APP_URL) if qr_ios_authenticator else None
@@ -543,6 +545,7 @@ def get_webui_settings(request, response):
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
         default_tokentype = DEFAULT_TOKENTYPE
+        logout_redirect_url = ""
         if len(audit_page_size_pol) == 1:
             audit_page_size = int(list(audit_page_size_pol)[0])
         if len(token_page_size_pol) == 1:
@@ -551,6 +554,8 @@ def get_webui_settings(request, response):
             user_page_size = int(list(user_page_size_pol)[0])
         if len(default_tokentype_pol) == 1:
             default_tokentype = list(default_tokentype_pol)[0]
+        if len(logout_redirect_url_pol) == 1:
+            logout_redirect_url = list(logout_redirect_url_pol)[0]
 
         logout_time = DEFAULT_LOGOUT_TIME
         if len(logout_time_pol) == 1:
@@ -600,6 +605,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["qr_image_android"] = qr_image_android
         content["result"]["value"]["qr_image_ios"] = qr_image_ios
         content["result"]["value"]["qr_image_custom"] = qr_image_custom
+        content["result"]["value"]["logout_redirect_url"] = logout_redirect_url
         response.set_data(json.dumps(content))
     return response
 
