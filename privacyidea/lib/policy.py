@@ -2466,7 +2466,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.LOGOUT_REDIRECT: {
               'type': 'str',
               'desc': _("The URL of an SSO provider for redirect at logout."
-                        "(The URL have to contain http or https)")
+                        "(The URL must start with http:// or https://)")
             },
             ACTION.TOKENWIZARD: {
                 'type': 'bool',

@@ -42,7 +42,7 @@ angular.module("privacyideaApp")
                                              hotkeys, RegisterFactory,
                                              U2fFactory, webAuthnToken, instanceUrl,
                                              PollingAuthFactory, $transitions,
-                                             esourceNamePatterns, $window) {
+                                             resourceNamePatterns, $window) {
 
     $scope.instanceUrl = instanceUrl;
     $scope.checkRight = AuthFactory.checkRight;

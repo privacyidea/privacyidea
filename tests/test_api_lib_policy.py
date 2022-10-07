@@ -3825,24 +3825,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(sign_object.verify(json.dumps(jresult, sort_keys=True), sig))
 
     def test_08_get_webui_settings(self):
-        # Test that a machine definition will return offline hashes
         self.setUp_user_realms()
-        serial = "offline01"
-        tokenobject = init_token({"serial": serial, "type": "hotp",
-                                  "otpkey": "3132333435363738393031"
-                                            "323334353637383930",
-                                  "pin": "offline",
-                                  "user": "cornelius"})
-
-        # Set the Machine and MachineToken
-        resolver1 = save_resolver({"name": "reso1",
-                                   "type": "hosts",
-                                   "filename": HOSTSFILE})
-
-        mt = attach_token(serial, "offline", hostname="gandalf")
-        self.assertEqual(mt.token.serial, serial)
-        self.assertEqual(mt.token.machine_list[0].machine_id, "192.168.0.1")
-
         # The request with an OTP value and a PIN of a user, who has not
         # token assigned
         builder = EnvironBuilder(method='POST',
@@ -3860,7 +3843,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                           "value": {"role": "user",
                                     "username": "cornelius"}},
                "version": "privacyIDEA test",
-               "detail": {"serial": serial},
+               "detail": {"serial": None},
                "id": 1}
         resp = jsonify(res)
 
@@ -3868,6 +3851,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
             "token_wizard"), False)
+        self.assertEqual(jresult.get("result").get("value").get("logout_redirect_url"),
+                         "", jresult)
 
         # Set a policy. User has not token, so "token_wizard" will be True
         set_policy(name="pol_wizard",
@@ -3977,7 +3962,20 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(1, jresult.get("result").get("value").get("indexedsecret_force_attribute"))
         delete_policy("pol_indexed_force")
 
-    def test_09_get_webui_settings(self):
+        # Test if the logout_redirect URL is set
+        redir_uri = 'https://redirect.to'
+        set_policy(name="pol_logout_redirect", scope=SCOPE.WEBUI,
+                   action="{0!s}={1!s}".format(ACTION.LOGOUT_REDIRECT, redir_uri))
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertEqual(redir_uri,
+                         jresult.get("result").get("value").get("logout_redirect_url"),
+                         jresult)
+        delete_policy("pol_logout_redirect")
+
+
+    def test_09_get_webui_settings_token_pagesize(self):
         # Test that policies like tokenpagesize are also user dependent
         self.setUp_user_realms()
 
@@ -4004,7 +4002,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
-            "token_wizard"), False)
+            ACTION.TOKENPAGESIZE), 15)
 
         # Set a policy. User has not token, so "token_wizard" will be True
         set_policy(name="pol_pagesize",
@@ -4032,7 +4030,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("pol_pagesize")
 
-    def test_10_get_webui_settings(self):
+    def test_10_get_webui_settings_admin_dashboard(self):
         # Test admin_dashboard
         self.setUp_user_realms()
 
