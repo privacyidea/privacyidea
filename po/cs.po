@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-08-03 08:18+0000\n"
+"PO-Revision-Date: 2022-10-12 10:29+0000\n"
 "Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/cs/>\n"
@@ -9,7 +9,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
-"X-Generator: Weblate 4.14-dev\n"
+"X-Generator: Weblate 4.15-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -1150,7 +1150,7 @@ msgstr "Přidat token"
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:200
 msgid "Enroll a new token"
-msgstr "Přidat nový token"
+msgstr "Přidat další token"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:282
 msgid "Enrollment successfully verified."
@@ -2924,7 +2924,7 @@ msgstr "Tabulka"
 
 #: privacyidea/static/components/token/views/token.enrolled.webauthn.html:3
 msgid "Take action on your authenticator"
-msgstr "Potvrďte akci na svém autentikátoru"
+msgstr "Potvrďte přihlášení bezpečnostním klíčem"
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:3
 msgid "Take action on your token"
