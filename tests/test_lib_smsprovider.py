@@ -633,7 +633,6 @@ class SmppSMSTestCase(MyTestCase):
               'SMSC_PORT': "1234",
               'SYSTEM_ID': "privacyIDEA",
               'PASSWORD': "secret",
-              'SYSTEM_ID': "privacyIDEA",
               'S_ADDR_TON': "0x5",
               'S_ADDR_NPI': "0x1",
               'S_ADDR': "privacyIDEA",
