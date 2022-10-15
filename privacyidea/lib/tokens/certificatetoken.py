@@ -39,7 +39,7 @@ from privacyidea.lib.utils import to_unicode, b64encode_and_unicode, to_byte_str
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
 from privacyidea.lib.log import log_with
 from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.caconnector import get_caconnector_object
+from privacyidea.lib.caconnector import get_caconnector_object, get_caconnector_list
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import determine_logged_in_userparams
 from OpenSSL import crypto
@@ -67,6 +67,8 @@ class ACTION(BASE_ACTION):
     __doc__ = """This is the list of special certificate actions."""
     TRUSTED_CA_PATH = "certificate_trusted_Attestation_CA_path"
     REQUIRE_ATTESTATION = "certificate_require_attestation"
+    CA_CONNECTOR = "ca_connector"
+    CERTIFICATE_TEMPLATE = "certificate_template"
 
 
 class REQUIRE_ACTIONS(object):
@@ -303,6 +305,17 @@ class CertificateTokenClass(TokenClass):
                            'value': [REQUIRE_ACTIONS.IGNORE,
                                      REQUIRE_ACTIONS.VERIFY,
                                      REQUIRE_ACTIONS.REQUIRE_AND_VERIFY]
+                       },
+                       ACTION.CA_CONNECTOR: {
+                           'type': 'str',
+                           'desc': _("The CA connector that should be used during certificate enrollment."),
+                           'group': GROUP.TOKEN,
+                           'value': [x.get("connectorname") for x in get_caconnector_list()]
+                       },
+                       ACTION.CERTIFICATE_TEMPLATE: {
+                           'type': 'str',
+                           'desc': _("The template that should be used to issue a certificate."),
+                           'group': GROUP.TOKEN
                        }
                    },
                    SCOPE.USER: {
