@@ -312,7 +312,7 @@ class EmailTokenClass(HotpTokenClass):
             except Exception as e:
                 info = _("The PIN was correct, but the "
                          "EMail could not be sent!")
-                log.warning(info + " ({0!s})".format(e))
+                log.warning(info + " ({0!r})".format(e))
                 log.debug(u"{0!s}".format(traceback.format_exc()))
                 return_message = info
                 if is_true(options.get("exception")):

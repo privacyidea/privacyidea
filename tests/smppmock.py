@@ -25,6 +25,7 @@ from __future__ import (
 )
 
 from collections import namedtuple
+from mock import Mock
 
 try:
     from collections import Sequence, Sized
@@ -114,13 +115,17 @@ class SmppMock(object):
     def _on_transmitter(self, SMPP, systemid, password):
         if systemid != self.systemid or password != self.password:
             raise Exception("Wrong credentials")
-        return None
+        BindTransmitterRespMock = Mock()
+        BindTransmitterRespMock.get_status_desc.return_value = 'No Error'
+        return BindTransmitterRespMock
 
     def _on_send_message(self, SMPP, source_addr_ton=None, source_addr_npi=None,
                          source_addr=None, dest_addr_ton=None,
                          dest_addr_npi=None, destination_addr=None,
-                         short_message=None):
-        pass
+                         short_message=None, data_coding=None, esm_class=None):
+        SubmitSMMock = Mock()
+        SubmitSMMock.get_status_desc.return_value = 'No Error'
+        return SubmitSMMock
 
     def start(self):
         import mock
