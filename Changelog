@@ -55,6 +55,7 @@ Version 3.7.4, 2022-10-18
   Fixes:
   * Fix the PassOnNoToken and passthru in Offline mode with Credential
   Provider (#3333)
+  * URLencode password and username for remote token (#3337)
 
 
 Version 3.7.3, 2022-08-01
