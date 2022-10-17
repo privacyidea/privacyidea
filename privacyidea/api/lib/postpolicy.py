@@ -455,14 +455,17 @@ def offline_info(request, response):
     if content.get("result").get("value") is True and g.client_ip:
         # check if there is a MachineToken definition
         serial = content.get("detail", {}).get("serial")
-        try:
-            auth_items = get_auth_items(serial=serial, application="offline",
-                                        challenge=request.all_data.get("pass"))
-            if auth_items:
-                content["auth_items"] = auth_items
-                response.set_data(json.dumps(content))
-        except Exception as exx:
-            log.info(exx)
+        if serial:
+            try:
+                auth_items = get_auth_items(serial=serial, application="offline",
+                                            challenge=request.all_data.get("pass"))
+                if auth_items:
+                    content["auth_items"] = auth_items
+                    response.set_data(json.dumps(content))
+                    # Also update JSON in the response object
+                    response.get_jsons()
+            except Exception as exx:
+                log.info(exx)
     return response
 
 
