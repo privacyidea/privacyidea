@@ -133,7 +133,7 @@ class PrivacyIDEAServerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # check for correct percent encoding
-        responses.post("https://privacyidea/pi4/validate/check",
+        responses.add(responses.POST, "https://privacyidea/pi4/validate/check",
                        body="""{
             "detail": null,
             "result": {
@@ -228,7 +228,7 @@ class PrivacyIDEAServerTestCase(MyTestCase):
         self.assertFalse(r.json().get("result").get("value"))
 
         # check for correct percent encoding
-        responses.post("https://privacyidea/pi4/validate/check",
+        responses.add(responses.POST, "https://privacyidea/pi4/validate/check",
                        body="""{
             "detail": null,
             "result": {
