@@ -9,7 +9,7 @@ from privacyidea.lib.privacyideaserver import (add_privacyideaserver,
                                                get_privacyideaservers,
                                                PrivacyIDEAServer)
 import responses
-
+from responses import matchers
 
 class PrivacyIDEAServerTestCase(MyTestCase):
 
@@ -132,6 +132,26 @@ class PrivacyIDEAServerTestCase(MyTestCase):
         r = PrivacyIDEAServer.request(pi.config, "user", "password")
         self.assertFalse(r)
 
+        # check for correct percent encoding
+        responses.post("https://privacyidea/pi4/validate/check",
+                       body="""{
+            "detail": null,
+            "result": {
+              "status": true,
+              "value": true},
+            "id": 1
+            }""",
+                       content_type="application/json",
+                       match=[matchers.urlencoded_params_matcher({"user": "user",
+                                                                  "pass": "pw_w_%25123"})])
+        r = add_privacyideaserver(identifier="pi4",
+                                  url="https://privacyidea/pi4",
+                                  tls=False)
+        self.assertTrue(r > 0)
+        pi = get_privacyideaserver("pi4")
+        r = PrivacyIDEAServer.request(pi.config, "user", "pw_w_%123")
+        self.assertTrue(r)
+
     @responses.activate
     def test_05_privacyidea_validate_check(self):
         responses.add(responses.POST, "https://privacyidea/pi/validate/check",
@@ -206,3 +226,23 @@ class PrivacyIDEAServerTestCase(MyTestCase):
         self.assertEqual(404, r.status_code)
         self.assertFalse(r.json().get("result").get("value"))
 
+        # check for correct percent encoding
+        responses.post("https://privacyidea/pi4/validate/check",
+                       body="""{
+            "detail": null,
+            "result": {
+              "status": true,
+              "value": true},
+            "id": 1
+            }""",
+                       content_type="application/json",
+                       match=[matchers.urlencoded_params_matcher({"user": "user",
+                                                                  "pass": "pw_w_%25123"})])
+        r = add_privacyideaserver(identifier="pi4",
+                                  url="https://privacyidea/pi4",
+                                  tls=False)
+        self.assertTrue(r > 0)
+        pi = get_privacyideaserver("pi4")
+        r = pi.validate_check("user", "pw_w_%123")
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json().get("result").get("value"))
