@@ -50,6 +50,13 @@ Version 3.8dev1, 2022-10-06
   * Disable realm button in case of reasolverread (UI) (#3149)
   * Add missing translation for PSKC import (#3129)
 
+Version 3.7.4, 2022-10-18
+
+  Fixes:
+  * Fix the PassOnNoToken and passthru in Offline mode with Credential
+  Provider (#3333)
+
+
 Version 3.7.3, 2022-08-01
 
   Fixes:
