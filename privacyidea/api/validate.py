@@ -186,7 +186,8 @@ def offlinerefill():
                 response = send_result(True)
                 content = response.json
                 content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
-                                                      "response": otps}]}
+                                                      "response": otps,
+                                                      "serial": serial}]}
                 response.set_data(json.dumps(content))
                 return response
         raise ParameterError("Token is not an offline token or refill token is incorrect")

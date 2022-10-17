@@ -462,6 +462,7 @@ def get_auth_items(hostname=None, ip=None, application=None,
             # Add the options the the auth_item
             for k, v in mtoken.get("options", {}).items():
                 auth_item[k] = v
+            auth_item["serial"] = serial
 
             # append the auth_item to the list
             auth_items[mtoken.get("application")].append(auth_item)

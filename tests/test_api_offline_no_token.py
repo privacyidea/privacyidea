@@ -50,6 +50,25 @@ class OfflinePassNoTokenTestCase(MyApiTestCase):
             # One offline entry
             self.assertEqual(1, len(offline))
             self.assertEqual("cornelius", offline[0].get("username"))
+            serial = offline[0].get("serial")
+            self.assertEqual("tokB", serial)
+            refilltoken = offline[0].get("refilltoken")
+
+        # Test refill
+        with self.app.test_request_context('/validate/offlinerefill',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "refilltoken": refilltoken,
+                                                 "pass": self.valid_otp_values[3]},
+                                           environ_base={'REMOTE_ADDR': '192.168.0.2'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            auth_items = data.get("auth_items")
+            self.assertIn("offline", auth_items)
+            offline = auth_items.get("offline")
+            self.assertEqual(1, len(offline))
+            self.assertIn("serial", offline[0])
 
         # PassOnNoToken userC
         with self.app.test_request_context('/validate/check',
