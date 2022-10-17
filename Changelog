@@ -1,3 +1,9 @@
+Version 3.7.4, 2022-10-18
+
+  Fixes:
+  * Fix the PassOnNoToken and passthru in Offline mode with Credential
+  Provider (#3333)
+
 Version 3.7.3, 2022-08-01
 
   Fixes:
