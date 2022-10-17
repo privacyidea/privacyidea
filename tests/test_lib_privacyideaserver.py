@@ -9,7 +9,7 @@ from privacyidea.lib.privacyideaserver import (add_privacyideaserver,
                                                get_privacyideaservers,
                                                PrivacyIDEAServer)
 import responses
-from responses import matchers
+
 
 class PrivacyIDEAServerTestCase(MyTestCase):
 
@@ -141,9 +141,10 @@ class PrivacyIDEAServerTestCase(MyTestCase):
               "value": true},
             "id": 1
             }""",
-                       content_type="application/json",
-                       match=[matchers.urlencoded_params_matcher({"user": "user",
-                                                                  "pass": "pw_w_%25123"})])
+                       content_type="application/json")
+# add matcher in v3.8
+#                       match=[matchers.urlencoded_params_matcher({"user": "user",
+#                                                                  "pass": "pw_w_%25123"})])
         r = add_privacyideaserver(identifier="pi4",
                                   url="https://privacyidea/pi4",
                                   tls=False)
@@ -235,9 +236,10 @@ class PrivacyIDEAServerTestCase(MyTestCase):
               "value": true},
             "id": 1
             }""",
-                       content_type="application/json",
-                       match=[matchers.urlencoded_params_matcher({"user": "user",
-                                                                  "pass": "pw_w_%25123"})])
+                       content_type="application/json")
+# add matcher in v3.8
+#                       match=[matchers.urlencoded_params_matcher({"user": "user",
+#                                                                  "pass": "pw_w_%25123"})])
         r = add_privacyideaserver(identifier="pi4",
                                   url="https://privacyidea/pi4",
                                   tls=False)
