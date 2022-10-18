@@ -317,19 +317,14 @@ class OCRATestCase(MyTestCase):
 
 
 class OcraTokenTestCase(MyTestCase):
-
-    def test_00_users(self):
-        self.setUp_user_realms()
-
     def test_01_create_token(self):
+        self.setUp_user_realms()
         pin = "test"
         token = init_token({"type": "ocra",
                             "pin": pin,
                             "serial": "OCRA1",
-                            "user": "cornelius",
-                            "realm": self.realm1,
                             "otpkey": KEY20
-                            })
+                            }, user=User("cornelius", realm=self.realm1))
         self.assertEqual(token.type, "ocra")
 
         prefix = OcraTokenClass.get_class_prefix()
