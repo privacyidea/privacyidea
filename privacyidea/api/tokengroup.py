@@ -44,18 +44,19 @@ def set_tokengroup_api(groupname):
     This call creates a new tokengroup or updates the description
     of an existing tokengroup.
 
+    Note, that the identifier (name) of the tokengroup needs to be unique.
+
     :param tokengroup: The unique name of the tokengroup
     :param description: The description of the tokengroup
     :return:
 
     **Example request**:
 
-    To create a new realm "newrealm", that consists of the resolvers
-    "reso1_with_realm" and "reso2_with_realm" call:
+    To create a new tokengroup "groupA" with a description call:
 
     .. sourcecode:: http
 
-       POST /tokengroup/newgroupname HTTP/1.1
+       POST /tokengroup/groupA HTTP/1.1
        Host: example.com
        Accept: application/json
        Content-Length: 26
@@ -97,7 +98,8 @@ def set_tokengroup_api(groupname):
 @log_with(log)
 def get_tokengroup_api(groupname=None):
     """
-    This call returns the information for the given tokengroup
+    This call returns the information for the given tokengroup.
+    If no groupname is specified, it returns a list of all defined tokengroups.
 
     :return: a json result with a list of tokengropups
 
@@ -106,7 +108,7 @@ def get_tokengroup_api(groupname=None):
 
     .. sourcecode:: http
 
-       GET /tokengroup/gruppe1 HTTP/1.1
+       GET /tokengroup/ HTTP/1.1
        Host: example.com
        Accept: application/json
 
@@ -147,7 +149,7 @@ def get_tokengroup_api(groupname=None):
 @log_with(log)
 def delete_tokengroup_api(groupname=None):
     """
-    This call deletes the given tokengroup
+    This call deletes the given tokengroup.
 
     :param groupname: The name of the token.
 

@@ -1239,7 +1239,8 @@ def assign_tokengroup_api(serial, groupname=None):
     Assigns a token to a given tokengroup.
 
     If no groupname is given, we expect a body data "groups", that
-    contains a list of tokengroups. tokengroups not in this list, will be removed.
+    contains a list of tokengroups. tokengroups that are
+    not contained in this list, will be removed.
 
     :jsonparam basestring serial: the serial number of the token
     :jsonparam basestring groupname: The name of the tokengroup
@@ -1269,7 +1270,7 @@ def assign_tokengroup_api(serial, groupname=None):
 @log_with(log)
 def unassign_tokengroup_api(serial, groupname):
     """
-    Assigns a token to a given tokengroup.
+    Unassigned a token from a tokengroup.
 
     :jsonparam basestring serial: the serial number of the token
     :jsonparam basestring groupname: The name of the tokengroup
