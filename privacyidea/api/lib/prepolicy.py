@@ -85,6 +85,7 @@ from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed,
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 import functools
 import jwt
 import re
@@ -602,6 +603,48 @@ def init_tokenlabel(request=None, action=None):
         request.all_data[ACTION.FORCE_APP_PIN] = True
 
     return True
+
+
+def init_ca_connector(request=None, action=None):
+    """
+    This is a pre decorator for the endpoint '/token/init'.
+    It reads the policy scope=enrollment, action=certificate_ca_connector and
+    sets the API parameter "ca" accordingly.
+
+    :param request: The request to enhance
+    :return: None, but we modify the request
+    """
+    params = request.all_data
+    user_object = get_user_from_param(params)
+    token_type = getParam(request.all_data, "type", optional).lower()
+    if token_type == "certificate":
+        # get the CA connectors from the policies
+        ca_pols = Match.user(g, scope=SCOPE.ENROLL, action=CERTIFICATE_ACTION.CA_CONNECTOR,
+                             user_object=user_object).action_values(unique=True)
+        if len(ca_pols) == 1:
+            # The policy was set, so we need to set the CA in the request
+            request.all_data["ca"] = list(ca_pols)[0]
+
+
+def init_ca_template(request=None, action=None):
+    """
+    This is a pre decorator for the endpoint '/token/init'.
+    It reads the policy scope=enrollment, action=certificate_template and
+    sets the API parameter "template" accordingly.
+
+    :param request: The request to enhance
+    :return: None, but we modify the request
+    """
+    params = request.all_data
+    user_object = get_user_from_param(params)
+    token_type = getParam(request.all_data, "type", optional).lower()
+    if token_type == "certificate":
+        # get the CA connectors from the policies
+        template_pols = Match.user(g, scope=SCOPE.ENROLL, action=CERTIFICATE_ACTION.CERTIFICATE_TEMPLATE,
+                                   user_object=user_object).action_values(unique=True)
+        if len(template_pols) == 1:
+            # The policy was set, so we need to set the CA in the request
+            request.all_data["template"] = list(template_pols)[0]
 
 
 def twostep_enrollment_activation(request=None, action=None):
