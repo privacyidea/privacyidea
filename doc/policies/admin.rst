@@ -373,6 +373,44 @@ Then all administrators can see these tokens and assign the tokens.
 But as soon as the token is assigned to a user in one realm, the
 administrator of another realm can not manage the token anymore.
 
+.. _tokengroups:
+
+tokengroups
+~~~~~~~~~~~
+
+type: bool
+
+If the ``tokengroups``action is defined, the administrator is allowed to
+manage the tokengroups of a token.
+
+Tokens can be grouped into tokengroups, so that such tokens can be more easily
+addressed in certain situations.
+
+Administrators can also be allowed to define tokengroups and delete tokengroup definitions.
+
+tokengroup_list
+~~~~~~~~~~~~~~~
+
+type: bool
+
+This allows the administrator to list all defined tokengroups.
+
+tokengroup_add
+~~~~~~~~~~~~~~
+
+type: bool
+
+If the policy ``tokengroup_add`` is defined, the administrator is allowed to
+define new tokengroups.
+
+tokengroup_delete
+~~~~~~~~~~~~~~~~~
+
+type: bool
+
+If the policy ``tokengroup_delete`` is defined, the administrator is allowed to
+delete existing tokengroup definitions.
+
 getserial
 ~~~~~~~~~
 
