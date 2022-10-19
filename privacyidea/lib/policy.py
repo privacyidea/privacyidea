@@ -379,8 +379,7 @@ class ACTION(object):
     SET_USER_ATTRIBUTES = "set_custom_user_attributes"
     DELETE_USER_ATTRIBUTES = "delete_custom_user_attributes"
     VERIFY_ENROLLMENT = "verify_enrollment"
-    TOKENGROUP_ASSIGN = "tokengroup_assign"
-    TOKENGROUP_UNASSIGN = "tokengroup_unassign"
+    TOKENGROUPS = "tokengroups"
     TOKENGROUP_LIST = "tokengroup_list"
     TOKENGROUP_ADD = "tokengroup_add"
     TOKENGROUP_DELETE = "tokengroup_delete"
@@ -1966,14 +1965,10 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("The Admin is allowed delete a tokengroup."),
                 'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.TOKENGROUP},
-            ACTION.TOKENGROUP_ASSIGN: {
+            ACTION.TOKENGROUPS: {
                 'type': 'bool',
-                'desc': _("The Admin is allowed to assign tokens to a tokengroup."),
+                'desc': _("The Admin is allowed to manage the tokengroups of a token."),
                 'group': GROUP.TOKEN},
-            ACTION.TOKENGROUP_UNASSIGN: {
-                'type': 'bool',
-                'desc': _("The Admin is allowed to remove tokens from a tokengroup."),
-                'group': GROUP.TOKEN}
         },
 
         SCOPE.USER: {

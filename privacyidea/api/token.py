@@ -1231,7 +1231,7 @@ def delete_tokeninfo_api(serial, key):
 @token_blueprint.route('/group/<serial>/<groupname>', methods=['POST'])
 @token_blueprint.route('/group/<serial>', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.TOKENGROUP_ASSIGN)
+@prepolicy(check_base_action, request, ACTION.TOKENGROUPS)
 @event("token_assign_group", request, g)
 @log_with(log)
 def assign_tokengroup_api(serial, groupname=None):
@@ -1264,7 +1264,7 @@ def assign_tokengroup_api(serial, groupname=None):
 
 @token_blueprint.route('/group/<serial>/<groupname>', methods=['DELETE'])
 @admin_required
-@prepolicy(check_base_action, request, ACTION.TOKENGROUP_UNASSIGN)
+@prepolicy(check_base_action, request, ACTION.TOKENGROUPS)
 @event("token_unassign_group", request, g)
 @log_with(log)
 def unassign_tokengroup_api(serial, groupname):
