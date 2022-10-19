@@ -616,8 +616,8 @@ def init_ca_connector(request=None, action=None):
     """
     params = request.all_data
     user_object = get_user_from_param(params)
-    token_type = getParam(request.all_data, "type", optional).lower()
-    if token_type == "certificate":
+    token_type = getParam(request.all_data, "type", optional)
+    if token_type and token_type.lower() == "certificate":
         # get the CA connectors from the policies
         ca_pols = Match.user(g, scope=SCOPE.ENROLL, action=CERTIFICATE_ACTION.CA_CONNECTOR,
                              user_object=user_object).action_values(unique=True)
@@ -637,8 +637,8 @@ def init_ca_template(request=None, action=None):
     """
     params = request.all_data
     user_object = get_user_from_param(params)
-    token_type = getParam(request.all_data, "type", optional).lower()
-    if token_type == "certificate":
+    token_type = getParam(request.all_data, "type", optional)
+    if token_type and token_type.lower() == "certificate":
         # get the CA connectors from the policies
         template_pols = Match.user(g, scope=SCOPE.ENROLL, action=CERTIFICATE_ACTION.CERTIFICATE_TEMPLATE,
                                    user_object=user_object).action_values(unique=True)
