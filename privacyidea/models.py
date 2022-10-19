@@ -307,6 +307,38 @@ class Token(MethodsMixin, db.Model):
         if reset_failcount is True:
             self.failcount = 0
 
+    def set_tokengroups(self, tokengroups, add=False):
+        """
+        Set the list of the tokengroups.
+
+        This is done by filling the :py:class:`privacyidea.models.TokenTokengroup` table.
+
+        :param tokengroups: the tokengroups
+        :type tokengroups: list[str]
+        :param add: If set, the tokengroups are added. I.e. old tokengroups are not deleted
+        :type add: bool
+        """
+        # delete old Tokengroups
+        if not add:
+            db.session.query(TokenTokengroup)\
+                      .filter(TokenTokengroup.token_id == self.id)\
+                      .delete()
+        # add new Tokengroups
+        # We must not set the same tokengroup more than once...
+        # uniquify: tokengroups -> set(tokengroups)
+        for tokengroup in set(tokengroups):
+            # Get the id of the realm to add
+            g = Tokengroup.query.filter_by(name=tokengroup).first()
+            if g:
+                # Check if TokenTokengroup already exists
+                tg = TokenTokengroup.query.filter_by(token_id=self.id,
+                                                     tokengroup_id=g.id).first()
+                if not tg:
+                    # If the Tokengroup is not yet attached to the token
+                    Tg = TokenTokengroup(token_id=self.id, tokengroup_id=g.id)
+                    db.session.add(Tg)
+        db.session.commit()
+
     def set_realms(self, realms, add=False):
         """
         Set the list of the realms.

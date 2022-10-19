@@ -3235,10 +3235,20 @@ class APITokengroupTestCase(MyApiTestCase):
             value = res.json['result']['value']
             self.assertGreaterEqual(value, 1)
 
+        # Add a 2nd group
+        with self.app.test_request_context('/tokengroup/gruppe2',
+                                           data={"description": "My Cool first group"},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            value = res.json['result']['value']
+            self.assertGreaterEqual(value, 1)
+
         init_token({"serial": serial, "type": "spass"})
 
         # Assign token to tokengroup
-        with self.app.test_request_context('/token/{0!s}/group/gruppe1'.format(serial),
+        with self.app.test_request_context('/token/group/{0!s}/gruppe1'.format(serial),
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -3257,7 +3267,7 @@ class APITokengroupTestCase(MyApiTestCase):
             self.assertEqual(tok.get("tokengroup"), ["gruppe1"])
 
         # Delete the tokengroup from the token
-        with self.app.test_request_context('/token/{0!s}/group/gruppe1'.format(serial),
+        with self.app.test_request_context('/token/group/{0!s}/gruppe1'.format(serial),
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -3275,6 +3285,34 @@ class APITokengroupTestCase(MyApiTestCase):
             tok = value["tokens"][0]
             self.assertEqual(tok.get("tokengroup"), [])
 
+        # Now assign the tokengroup grupp1 again.
+        with self.app.test_request_context('/token/group/{0!s}/gruppe1'.format(serial),
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            value = res.json['result']['value']
+            self.assertGreaterEqual(value, 1)
+
+        # Now use the generic endpoint to SET tokengroups. We set "gruppe2", this will also remove "gruppe1"
+        with self.app.test_request_context('/token/group/{0!s}'.format(serial),
+                                           method='POST',
+                                           data={"groups": ["gruppe2"]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            value = res.json['result']['value']
+            self.assertGreaterEqual(value, 1)
+        # Check that the token has gruppe2 assigned and not gruppe1
+        with self.app.test_request_context('/token/?serial={0!s}'.format(serial),
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            value = res.json['result']['value']
+            tok = value["tokens"][0]
+            self.assertEqual(tok.get("tokengroup"), ["gruppe2"])
+
         remove_token(serial)
 
     def test_02_non_existing_groups(self):
@@ -3282,7 +3320,7 @@ class APITokengroupTestCase(MyApiTestCase):
         init_token({"serial": serial, "type": "spass"})
 
         # Assign token to non-existing tokengroup
-        with self.app.test_request_context('/token/{0!s}/group/gaga'.format(serial),
+        with self.app.test_request_context('/token/group/{0!s}/gaga'.format(serial),
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -3293,7 +3331,7 @@ class APITokengroupTestCase(MyApiTestCase):
             self.assertEqual(result.get("error").get("message"), "The tokengroup does not exist.")
 
         # Delete a non-existing tokengroup from the token
-        with self.app.test_request_context('/token/{0!s}/group/gaga'.format(serial),
+        with self.app.test_request_context('/token/group/{0!s}/gaga'.format(serial),
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()

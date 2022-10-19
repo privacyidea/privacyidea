@@ -739,6 +739,17 @@ class TokenClass(object):
         tokenowner = self.token.first_owner
         return "" if not tokenowner else tokenowner.user_id
 
+    def set_tokengroups(self, tokengroups, add=False):
+        """
+        Set the list of the tokengroups of a token.
+
+        :param tokengroups: realms the token should be assigned to
+        :type tokengroups: list
+        :param add: if the tokengroups should be added and not replaced
+        :type add: boolean
+        """
+        self.token.set_tokengroups(tokengroups, add=add)
+
     def set_realms(self, realms, add=False):
         """
         Set the list of the realms of a token.

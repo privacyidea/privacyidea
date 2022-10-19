@@ -71,7 +71,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          get_serial_by_otp, get_tokens,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
                          delete_tokeninfo, import_token,
-                         assign_tokengroup, unassign_tokengroup)
+                         assign_tokengroup, unassign_tokengroup, set_tokengroups)
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError)
@@ -1228,27 +1228,41 @@ def delete_tokeninfo_api(serial, key):
     return send_result(success)
 
 
-@token_blueprint.route('/<serial>/group/<groupname>', methods=['POST'])
+@token_blueprint.route('/group/<serial>/<groupname>', methods=['POST'])
+@token_blueprint.route('/group/<serial>', methods=['POST'])
 @admin_required
 @prepolicy(check_base_action, request, ACTION.TOKENGROUP_ASSIGN)
 @event("token_assign_group", request, g)
 @log_with(log)
-def assign_tokengroup_api(serial, groupname):
+def assign_tokengroup_api(serial, groupname=None):
     """
     Assigns a token to a given tokengroup.
+
+    If no groupname is given, we expect a body data "groups", that
+    contains a list of tokengroups. tokengroups not in this list, will be removed.
 
     :jsonparam basestring serial: the serial number of the token
     :jsonparam basestring groupname: The name of the tokengroup
     :return:
     :rtype: json object
     """
-    g.audit_object.add_to_log({'action_detail': groupname})
-    assign_tokengroup(serial, tokengroup=groupname)
-    g.audit_object.add_to_log({'success': True})
+    g.audit_object.log({"serial": serial})
+    if groupname:
+        g.audit_object.add_to_log({'action_detail': groupname})
+        assign_tokengroup(serial, tokengroup=groupname)
+    else:
+        groups = getParam(request.all_data, "groups", required)
+        if type(groups) == list:
+            group_list = groups
+        else:
+            group_list = [r.strip() for r in groups.split(",")]
+        g.audit_object.add_to_log({'action_detail': ",".join(group_list)})
+        set_tokengroups(serial, group_list)
+    g.audit_object.log({"success": True})
     return send_result(1)
 
 
-@token_blueprint.route('/<serial>/group/<groupname>', methods=['DELETE'])
+@token_blueprint.route('/group/<serial>/<groupname>', methods=['DELETE'])
 @admin_required
 @prepolicy(check_base_action, request, ACTION.TOKENGROUP_UNASSIGN)
 @event("token_unassign_group", request, g)

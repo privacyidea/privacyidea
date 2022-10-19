@@ -337,6 +337,51 @@
             </td>
         </tr>
 
+        <tr>
+            <td>Token groups</td>
+            <td>
+                <span ng-hide="editTokenGroups">
+            <ul ng-click="!token.locked ? editTokenGroups = true : null">
+                <li ng-repeat="group in token.tokengroup">{{ group }}</li>
+            </ul>
+            </span>
+            <span ng-show="editTokenGroups">
+                <span ng-repeat="(groupname, tokengroup) in tokengroups">
+                    <label for="{{ groupname }}">
+                        <input type="checkbox"
+                               ng-model="selectedTokenGroups[groupname]"
+                               name="group"
+                               id="{{ groupname }}"
+                               ng-checked="selectedTokenGroups[groupname]">
+                        {{ groupname }} ({{ tokengroup.description }})
+                    </label><br>
+                </span></span>
+            </td>
+            <td>
+                <div ng-show="loggedInUser.role == 'admin' && !token.locked">
+                    <button class="btn btn-primary"
+                            id="tgEditButton"
+                            ng-hide="editTokenGroups || (!checkRight('tokengroups') && hide_buttons)"
+                            ng-disable="!checkRight('tokengroups')"
+                            ng-click="startEditTokenGroups()"
+                            translate>Edit
+                    </button>
+                    <button class="btn btn-primary"
+                            id="tgSaveButton"
+                            ng-show="editTokenGroups"
+                            ng-click="saveTokenGroups()"
+                            translate>Save Token Groups
+                    </button>
+                    <button class="btn btn-danger"
+                            id="tgCancelButton"
+                            ng-show="editTokenGroups"
+                            ng-click="cancelEditTokenGroups();"
+                            translate>Cancel
+                    </button>
+                </div>
+            </td>
+        </tr>
+
         <!-- =================== TOKEN FUNCTIONS =============================== -->
 
         <tr ng-hide="['spass', 'registration'].indexOf(token.tokentype) >= 0

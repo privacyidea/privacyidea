@@ -2516,6 +2516,22 @@ def get_dynamic_policy_definitions(scope=None):
     return pol
 
 
+def set_tokengroups(serial, tokengroups=None, add=False):
+    """
+    Set a list of tokengroups for one token
+
+    :param serial: The serial of the token
+    :param tokengroups: The list of tokengroups (names)
+    :param add: Whether the list of tokengropus should be added
+    :return:
+    """
+    tokengroups = tokengroups or []
+
+    tokenobject = get_one_token(serial=serial)
+    tokenobject.set_tokengroups(tokengroups, add=add)
+    tokenobject.save()
+
+
 def assign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
     """
     Assign a new tokengroup to a token
