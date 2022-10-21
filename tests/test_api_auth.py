@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """ Test for the '/auth' API-endpoint """
-from .base import MyApiTestCase
+from .base import MyApiTestCase, OverrideConfigTestCase
 import mock
 import six
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
@@ -14,6 +14,7 @@ from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.token import get_tokens, remove_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode
+from privacyidea.config import TestingConfig
 from . import ldap3mock
 
 
@@ -555,6 +556,89 @@ class AuthApiTestCase(MyApiTestCase):
         delete_policy(name='remote')
         set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
 
+    @ldap3mock.activate
+    def test_05_local_admin_with_failing_resolver(self):
+        ldap3mock.setLDAPDirectory([])
+        # define, that we want to get an exception
+        ldap3mock.set_exception()
+        # Create an LDAP Realm as default realm
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                  'UIDTYPE': 'DN',
+                  "resolver": "ldap1",
+                  "type": "ldapresolver"}
+        save_resolver(params)
+        set_realm("ldap1", ["ldap1"])
+        set_default_realm("ldap1")
+
+        # Try to log in as internal admin with a failing LDAP resolver
+        with mock.patch("logging.Logger.warning") as mock_log:
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "testadmin",
+                                                     "password": "testpw"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"), result)
+                self.assertIn('token', result.get("value"), result)
+                # role should be 'admin'
+                self.assertEqual('admin', result['value']['role'], result)
+                mock_log.assert_called_once_with("Problem resolving user testadmin in realm ldap1: LDAP request failed.")
+
+        delete_realm("ldap1")
+        delete_resolver("ldap1")
+        ldap3mock.set_exception(False)
+
+
+class AdminFromUserstore(OverrideConfigTestCase):
+    class Config(TestingConfig):
+        SUPERUSER_REALM = ["realm1"]
+
+    def test_01_admin_from_userstore(self):
+        self.setUp_user_realms()
+        # login as an admin user from userstore
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius@realm1",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertIn('token', result.get('value'), result)
+            self.assertEqual(result.get("value").get('role'), 'admin', result)
+            # if no admin policy is set, the user should have all admin rights
+            self.assertIn(ACTION.DELETE, result.get('value').get('rights'), result)
+
+        # Now test wirh a helpdesk policy for the admin realm
+        set_policy(name='helpdesk', scope=SCOPE.ADMIN, adminrealm=self.realm1,
+                   action=ACTION.DISABLE)
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius@Realm1",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertIn('token', result.get('value'), result)
+            self.assertEqual(result.get("value").get('role'), 'admin', result)
+            # check that the appropriate rights are set/unset
+            self.assertNotIn(ACTION.DELETE, result.get('value').get('rights'), result)
+            self.assertIn(ACTION.DISABLE, result.get('value').get('rights'), result)
+        delete_policy(name='helpdesk')
+
 
 class DuplicateUserApiTestCase(MyApiTestCase):
 
@@ -622,7 +706,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             mock_log.assert_called_with("user uid 1004 failed to authenticate")
 
 
-class AAPreEventHandlerTest(MyApiTestCase):
+class PreEventHandlerTest(MyApiTestCase):
 
     def test_01_setup_eventhandlers(self):
         # This test create an HOTP token with C/R with a pre-event handler
@@ -708,47 +792,3 @@ class AAPreEventHandlerTest(MyApiTestCase):
         delete_policy("crhotp")
         delete_event(eid)
         remove_token(hotptoken.token.serial)
-
-    @ldap3mock.activate
-    def test_02_failing_resolver(self):
-        ldap3mock.setLDAPDirectory([])
-        # define, that we want to get an exception
-        ldap3mock.set_exception()
-        # Create an LDAP Realm as default realm
-        params = {'LDAPURI': 'ldap://localhost',
-                  'LDAPBASE': 'o=test',
-                  'BINDDN': 'cn=manager,ou=example,o=test',
-                  'BINDPW': 'ldaptest',
-                  'LOGINNAMEATTRIBUTE': 'cn',
-                  'LDAPSEARCHFILTER': '(cn=*)',
-                  'USERINFO': '{ "username": "cn",'
-                                  '"phone" : "telephoneNumber", '
-                                  '"mobile" : "mobile"'
-                                  ', "email" : "mail", '
-                                  '"surname" : "sn", '
-                                  '"givenname" : "givenName" }',
-                  'UIDTYPE': 'DN',
-                  "resolver": "ldap1",
-                  "type": "ldapresolver"}
-        save_resolver(params)
-        set_realm("ldap1", ["ldap1"])
-        set_default_realm("ldap1")
-
-        # Try to login as internal admin with a failing LDAP resolver
-        with mock.patch("logging.Logger.warning") as mock_log:
-            with self.app.test_request_context('/auth',
-                                               method='POST',
-                                               data={"username": "testadmin",
-                                                     "password": "testpw"}):
-                res = self.app.full_dispatch_request()
-                self.assertEqual(200, res.status_code, res)
-                result = res.json.get("result")
-                self.assertTrue(result.get("status"), result)
-                self.assertIn('token', result.get("value"), result)
-                # role should be 'admin'
-                self.assertEqual('admin', result['value']['role'], result)
-                mock_log.assert_called_once_with("Problem resolving user testadmin in realm ldap1: LDAP request failed.")
-
-        delete_realm("ldap1")
-        delete_resolver("ldap1")
-        ldap3mock.set_exception(False)
