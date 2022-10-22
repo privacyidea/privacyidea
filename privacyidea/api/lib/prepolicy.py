@@ -639,11 +639,11 @@ def init_ca_template(request=None, action=None):
     user_object = get_user_from_param(params)
     token_type = getParam(request.all_data, "type", optional)
     if token_type and token_type.lower() == "certificate":
-        # get the CA connectors from the policies
+        # get the CA template from the policies
         template_pols = Match.user(g, scope=SCOPE.ENROLL, action=CERTIFICATE_ACTION.CERTIFICATE_TEMPLATE,
                                    user_object=user_object).action_values(unique=True)
         if len(template_pols) == 1:
-            # The policy was set, so we need to set the CA in the request
+            # The policy was set, so we need to set the template in the request
             request.all_data["template"] = list(template_pols)[0]
 
 
