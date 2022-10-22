@@ -789,6 +789,35 @@ The trusted root certificate authorities and intermediate certificate authoritie
 the policies :ref:`admin_trusted_attestation_CA` and :ref:`user_trusted_attestation_CA`
 
 
+.. _policy_certificate_ca_connector:
+
+certificate_ca_connector
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+During enrollment of a `certificate` token the user needs to specify the CA connector
+from which the CSR should be signed.
+This policy adds the given CA connector parameter to the request.
+The list of CA connectors is read from the configured connectors.
+
+.. note:: When using the privacyIDEA Smartcard Enrollment Tool, this policy needs to be set, otherwise
+   the enrollment will fail.
+
+
+.. _policy_certificate_template:
+
+certificate_template
+~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+During enrollment of a `certificate` token the user needs to specify the certificate template that should be used
+for enrollment. This policy adds the given template parameter to the request.
+The administrator needs to add the name of the template manually in this policy.
+
+.. note:: When using the privacyIDEA Smartcard Enrollment Tool in combination with a Microsoft CA,
+   this policy needs to be set, otherwise the enrollment will fail.
 
 
 .. rubric:: Footnotes
