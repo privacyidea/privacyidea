@@ -621,7 +621,7 @@ class AdminFromUserstore(OverrideConfigTestCase):
             # if no admin policy is set, the user should have all admin rights
             self.assertIn(ACTION.DELETE, result.get('value').get('rights'), result)
 
-        # Now test wirh a helpdesk policy for the admin realm
+        # Now test with a helpdesk policy for the admin realm
         set_policy(name='helpdesk', scope=SCOPE.ADMIN, adminrealm=self.realm1,
                    action=ACTION.DISABLE)
         with self.app.test_request_context('/auth',

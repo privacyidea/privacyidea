@@ -291,6 +291,7 @@ def get_auth_token():
         user_obj = User()
         g.audit_object.log({"success": True,
                             "user": "",
+                            "realm": "",
                             "administrator": username,
                             "info": "internal admin"})
 
