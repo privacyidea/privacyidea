@@ -9,6 +9,7 @@ from privacyidea.lib.privacyideaserver import (add_privacyideaserver,
                                                get_privacyideaservers,
                                                PrivacyIDEAServer)
 import responses
+from responses import matchers
 
 
 class PrivacyIDEAServerTestCase(MyTestCase):
@@ -133,18 +134,17 @@ class PrivacyIDEAServerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # check for correct percent encoding
-        responses.post("https://privacyidea/pi4/validate/check",
-                       body="""{
+        responses.add(responses.POST, "https://privacyidea/pi4/validate/check",
+                      body="""{
             "detail": null,
             "result": {
               "status": true,
               "value": true},
             "id": 1
             }""",
-                       content_type="application/json")
-# add matcher in v3.8
-#                       match=[matchers.urlencoded_params_matcher({"user": "user",
-#                                                                  "pass": "pw_w_%25123"})])
+                      content_type="application/json",
+                      match=[matchers.urlencoded_params_matcher({"user": "user",
+                                                                 "pass": "pw_w_%25123"})])
         r = add_privacyideaserver(identifier="pi4",
                                   url="https://privacyidea/pi4",
                                   tls=False)
@@ -228,18 +228,17 @@ class PrivacyIDEAServerTestCase(MyTestCase):
         self.assertFalse(r.json().get("result").get("value"))
 
         # check for correct percent encoding
-        responses.post("https://privacyidea/pi4/validate/check",
-                       body="""{
+        responses.add(responses.POST, "https://privacyidea/pi4/validate/check",
+                      body="""{
             "detail": null,
             "result": {
               "status": true,
               "value": true},
             "id": 1
             }""",
-                       content_type="application/json")
-# add matcher in v3.8
-#                       match=[matchers.urlencoded_params_matcher({"user": "user",
-#                                                                  "pass": "pw_w_%25123"})])
+                      content_type="application/json",
+                      match=[matchers.urlencoded_params_matcher({"user": "user",
+                                                                 "pass": "pw_w_%25123"})])
         r = add_privacyideaserver(identifier="pi4",
                                   url="https://privacyidea/pi4",
                                   tls=False)
