@@ -327,27 +327,32 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             angular.forEach($scope.actionCheckBox, function(value, key){
                 if (value) {
                     // The action is checked. So try to get an action value.
-                    // either a string, a num or only a bool
-                    var aval = $scope.actionValuesStr[key];
-                    if (!aval) {
-                        // No 'str' so lets try a 'text'.
-                        aval = $scope.actionValuesText[key];
-                    }
-                    if (aval) {
-                        if (Array.isArray(aval))
-                            $scope.params.action.push(key + '=' + aval.map((o) => {return o.name}).join(' '));
-                        else
-                            $scope.params.action.push(key + "=" + aval);
-                    } else {
-                        aval = $scope.actionValuesNum[key];
-                        if (aval === false || aval === undefined) {
-                            // We must avoid getting here if aval==0
-                            // it is a bool value
+                    // The type is given in the $scope.actions array
+                    // It is either a string/text, a num or only a bool
+                    let vtype = $scope.actions.find(o => o.name === key)['type'];
+                    let aval = undefined;
+                    switch (vtype) {
+                        case 'bool':
                             $scope.params.action.push(key);
-                        } else {
+                            break;
+                        case 'int':
+                            aval = $scope.actionValuesNum[key];
                             $scope.params.action.push(key + "=" + aval);
-                        }
-                    }
+                            break;
+                        case 'text':
+                            aval = $scope.actionValuesText[key];
+                            $scope.params.action.push(key + "=" + aval);
+                            break;
+                        case 'str':
+                            aval = $scope.actionValuesStr[key];
+                            if (Array.isArray(aval))
+                                $scope.params.action.push(key + '=' + aval.map((o) => {return o.name}).join(' '));
+                            else
+                                $scope.params.action.push(key + "=" + aval);
+                            break;
+                        default:
+                            console.error('Unknown policy value type: ' + vtype);
+                   }
                 }
             });
         } else {
