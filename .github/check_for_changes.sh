@@ -46,8 +46,8 @@ echo "IGNORE_BUILD: $IGNORE_BUILD"
 
 if [[ ${IGNORE_BUILD} == True ]]; then
   echo "No changes to build-essential files found, exiting."
-  echo "::set-output name=run_tests::False"
+  echo "run_tests=False" >> "$GITHUB_OUTPUT"
 else
   echo "Changes to build-essential files found, continuing with tests."
-  echo "::set-output name=run_tests::True"
+  echo "run_tests=True" >> "$GITHUB_OUTPUT"
 fi
