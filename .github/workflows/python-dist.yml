@@ -1,0 +1,45 @@
+# This workflow will create python packages when the master branch is tagged
+
+name: Python Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-dist:
+    name: Build Python sdist and wheel
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 2
+    - run: mkdir -p dist
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+    - name: Install build environment
+      run: >-
+        python -m pip install build --user
+    - name: Build a binary wheel and a source tarball
+      run: >-
+        python -m build --sdist --wheel --outdir dist/
+    - name: Upload packages to artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        path: dist/*
+    - name: Create GitHub pre-release
+      id: gh_pre_release
+      uses: softprops/action-gh-release@v1
+      if: contains(github.ref_name, 'dev')
+      with:
+        files: dist/*
+        prerelease: True
+    - name: Create GitHub release draft
+      uses: softprops/action-gh-release@v1
+      if: steps.gh_pre_release.conclusion == 'skipped'
+      with:
+        files: dist/*
+        draft: True
