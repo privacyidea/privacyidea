@@ -238,15 +238,13 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
                     if (condition.type === "multi"
                         && Object.keys($scope.conds).indexOf(name) >= 0
                         && $scope.conds[name].length > 0) {
-                        let tickedConditions = $scope.conds[name];
-                        // Now we iterate over the possible values of this
-                        // condition
-                        angular.forEach(condition.value, function (condval) {
-                            for (let i = 0; i < tickedConditions.length; i++) {
-                                if (tickedConditions[i].name === condval.name) {
-                                    condval.ticked = true;
-                                }
-                            }
+                        // multi value conditions are comma separated in one string
+                        let tickedConditions = $scope.conds[name].split(',').map(cond => {
+                            return cond.trim();
+                        });
+                        // Now we iterate over the given values and set them as `ticked`
+                        angular.forEach(tickedConditions, function (cond) {
+                            condition.value.find(x => x.name === cond).ticked = true;
                         });
                     }
                     if ($scope.conditionGroups.indexOf(condition.group) < 0) {

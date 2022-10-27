@@ -186,30 +186,38 @@
                                         </td>
 
                                         <td>
+                                            <label for="condition_{{ conditionname }}_str_value"></label>
                                             <select class="form-control"
+                                                    id="condition_{{ conditionname }}_str_value"
                                                     ng-if="condition.type!=='multi' && condition.value"
                                                     ng-disabled="!conditionCheckBox[conditionname]"
                                                     ng-required="condition.required && condition.value"
                                                     ng-model="conds[conditionname]"
                                                     ng-options="value for value in condition.value">
                                             </select>
+                                            <label for="condition_{{ conditionname }}_multi_str_value"></label>
                                             <div isteven-multi-select
+                                                 id="condition_{{ conditionname }}_multi_str_value"
                                                  ng-if="condition.type==='multi'"
-                                                 ng-disabled="!conditionCheckBox[conditionname]"
+                                                 is-disabled="!conditionCheckBox[conditionname]"
                                                  input-model="condition.value"
                                                  output-model="conds[conditionname]"
                                                  button-label="icon name"
                                                  item-label="icon name maker"
                                                  tick-property="ticked">
                                             </div>
+                                            <label for="condition_{{ conditionname }}_text_value"></label>
                                             <textarea type="text" rows="6"
+                                                      id="condition_{{ conditionname }}_text_value"
                                                       ng-disabled="!conditionCheckBox[conditionname]"
                                                       ng-required="condition.required && !condition.value"
                                                       ng-if="condition.type==='text' && !condition.value"
                                                       class="form-control"
                                                       ng-model="conds[conditionname]">
                                             </textarea>
+                                            <label for="condition_{{ conditionname }}_input_str_value"></label>
                                             <input class="form-control"
+                                                   id="condition_{{ conditionname }}_input_str_value"
                                                    ng-disabled="!conditionCheckBox[conditionname]"
                                                    ng-required="condition.required && !condition.value"
                                                    ng-model="conds[conditionname]"
