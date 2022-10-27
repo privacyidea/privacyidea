@@ -205,6 +205,8 @@ def create(name, catype='local'):
         sys.exit(1)
     if not catype:
         catype = "local"
+    print("Warning: Be sure to set the access rights.")
+    print("")
     print("Creating CA connector of type {0!s}.".format(catype))
     ca_class = get_caconnector_class(catype)
     ca_params = ca_class.create_ca(name)
