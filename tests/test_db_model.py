@@ -230,7 +230,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(u'Hellö', t2.get_otpkey().getKey().decode('utf8'), t2)
 
         # key too long
-        k = os.urandom(512)
+        k = os.urandom(1500)
         t2.set_otpkey(k)
         self.assertGreater(len(t2.key_enc), Token.key_enc.property.columns[0].type.length)
 

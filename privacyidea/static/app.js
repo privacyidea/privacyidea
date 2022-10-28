@@ -159,6 +159,11 @@ myApp.config(['$compileProvider',
         $compileProvider.aHrefSanitizationTrustedUrlList(url_re);
 }]);
 
+// disable debug info: https://docs.angularjs.org/guide/production#disabling-debug-data
+myApp.config(['$compileProvider', function ($compileProvider) {
+    $compileProvider.debugInfoEnabled(false);
+}]);
+
 // A function to escape regexp queries
 const esc_regex = /([.?*+^$[\]\\(){}|-])/;
 escapeRegexp = function (queryToEscape) {

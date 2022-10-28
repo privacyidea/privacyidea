@@ -49,7 +49,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            webauthntoken_enroll, webauthntoken_request,
                                            webauthntoken_allowed, check_application_tokentype,
                                            required_piv_attestation, check_custom_user_attributes,
-                                           hide_tokeninfo)
+                                           hide_tokeninfo, init_ca_template, init_ca_connector)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -72,6 +72,7 @@ from privacyidea.lib.tokens.smstoken import SMSACTION
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
+from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 
 from flask import Request, g, current_app, jsonify
 from werkzeug.test import EnvironBuilder
@@ -105,6 +106,23 @@ SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx366cmSSs/89j" \
          "Dq5IRDQqXH2KybHpSLATnbSY7zjVD+evJeU994yTaXTFi5hBmd0aWTC+ph79mmE" \
          "tu3dokA2YbLa7uWkAIXvX/HHauGLMTyCOpYi1BxN47c/kccxyNg" \
          "jPw== corny@schnuck"
+
+YUBIKEY_CSR = """-----BEGIN CERTIFICATE REQUEST-----
+MIICbTCCAVUCAQAwFzEVMBMGA1UEAwwMY249Y29ybmVsaXVzMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzqQ5MCVz5J3mNzuFWYPvo275g7n3SLAL1egF
+QGHNxVq8ES9bTtBPuNDofwWrrSQLkNQ/YOwVtk6+jtkmq/IvfzXCpqG8UjrZiPuz
++nEguVEO+K8NFr69XbmrMNWsazy87ihKT2/UCRX3mK932zYVLh7uD9DZYK3bucQ/
+xiUy+ePpULjshKDE0pz9ziWAhX46rUynQBsKWBifwl424dFE6Ua23LQoouztAvcl
+eeGGjmlnUu6CIbeELcznqDlXfaMe6VBjdymr5KX/3O5MS14IK2IILXW4JmyT6/VF
+6s2DWFMVRuZrQ8Ev2YhLPdX9DP9RUu1U+yctWe9MUM5xzetamQIDAQABoBEwDwYJ
+KoZIhvcNAQkOMQIwADANBgkqhkiG9w0BAQsFAAOCAQEArLWY74prQRtKojwMEOsw
+4efmzCwOvLoO/WXDwzrr7kgSOawQanhFzD+Z4kCwapf1ZMmobBnyWREpL4EC9PzC
+YH+mgSDCI0jDj/4OSfklb31IzRhuWcCVOpV9xuiDW875WM792t09ILCpx4rayw2a
+8t92zv49IcWHtJNqpo2Q8064p2fzYf1J1r4OEBKUUxEIcw2/nifIiHHTb7DqDF4+
+XjcD3ygUfTVbCzPYBmLPwvt+80AxgT2Nd6E612L/fbI9clv5DsvMwnVeSvlP1wXo
+5BampVY4p5CQRFLlCQa9fGWZrT+ArC9Djo0mHf32x6pEsSz0zMOlmjHrh+ChVkAs
+tA==
+-----END CERTIFICATE REQUEST-----"""
 
 
 class PrePolicyDecoratorTestCase(MyApiTestCase):
@@ -3226,6 +3244,54 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "key": "size", "value": "3"}
         check_custom_user_attributes(req, "set")
 
+    def test_50_enroll_ca_connector(self):
+        g.logged_in_user = {"username": "admin1",
+                            "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'type': "certificate", "genkey": 1},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+
+        # first test without any policy
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "certificate", "genkey": 1}
+        init_ca_connector(req)
+        init_ca_template(req)
+        # Check, if that there is no parameter set
+        self.assertNotIn("ca", req.all_data)
+        self.assertNotIn("template", req.all_data)
+
+        # now create a policy for the CA connector and the template
+        set_policy(name="ca",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s},{2!s}={3!s}".format(
+                     CERTIFICATE_ACTION.CA_CONNECTOR, "caconnector",
+                     CERTIFICATE_ACTION.CERTIFICATE_TEMPLATE, "catemplate"
+                   ))
+        # request, that matches the policy
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "certificate", "genkey": 1}
+        # check that the parameters were added
+        init_ca_connector(req)
+        init_ca_template(req)
+        # Check, if that there is no parameter set
+        self.assertIn("ca", req.all_data)
+        self.assertIn("template", req.all_data)
+        self.assertEqual("caconnector", req.all_data.get("ca"))
+        self.assertEqual("catemplate", req.all_data.get("template"))
+
+        # request, that matches the policy
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "hotp", "genkey": 1}
+        # check that it only works for certificate tokens
+        init_ca_connector(req)
+        init_ca_template(req)
+        # Check, if that there is no parameter set
+        self.assertNotIn("ca", req.all_data)
+        self.assertNotIn("template", req.all_data)
+
+        # delete policy
+        delete_policy("ca")
+
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
 
@@ -3825,24 +3891,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(sign_object.verify(json.dumps(jresult, sort_keys=True), sig))
 
     def test_08_get_webui_settings(self):
-        # Test that a machine definition will return offline hashes
         self.setUp_user_realms()
-        serial = "offline01"
-        tokenobject = init_token({"serial": serial, "type": "hotp",
-                                  "otpkey": "3132333435363738393031"
-                                            "323334353637383930",
-                                  "pin": "offline",
-                                  "user": "cornelius"})
-
-        # Set the Machine and MachineToken
-        resolver1 = save_resolver({"name": "reso1",
-                                   "type": "hosts",
-                                   "filename": HOSTSFILE})
-
-        mt = attach_token(serial, "offline", hostname="gandalf")
-        self.assertEqual(mt.token.serial, serial)
-        self.assertEqual(mt.token.machine_list[0].machine_id, "192.168.0.1")
-
         # The request with an OTP value and a PIN of a user, who has not
         # token assigned
         builder = EnvironBuilder(method='POST',
@@ -3860,7 +3909,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                           "value": {"role": "user",
                                     "username": "cornelius"}},
                "version": "privacyIDEA test",
-               "detail": {"serial": serial},
+               "detail": {"serial": None},
                "id": 1}
         resp = jsonify(res)
 
@@ -3868,6 +3917,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
             "token_wizard"), False)
+        self.assertEqual(jresult.get("result").get("value").get("logout_redirect_url"),
+                         "", jresult)
 
         # Set a policy. User has not token, so "token_wizard" will be True
         set_policy(name="pol_wizard",
@@ -3977,7 +4028,20 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(1, jresult.get("result").get("value").get("indexedsecret_force_attribute"))
         delete_policy("pol_indexed_force")
 
-    def test_09_get_webui_settings(self):
+        # Test if the logout_redirect URL is set
+        redir_uri = 'https://redirect.to'
+        set_policy(name="pol_logout_redirect", scope=SCOPE.WEBUI,
+                   action="{0!s}={1!s}".format(ACTION.LOGOUT_REDIRECT, redir_uri))
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertEqual(redir_uri,
+                         jresult.get("result").get("value").get("logout_redirect_url"),
+                         jresult)
+        delete_policy("pol_logout_redirect")
+
+
+    def test_09_get_webui_settings_token_pagesize(self):
         # Test that policies like tokenpagesize are also user dependent
         self.setUp_user_realms()
 
@@ -4004,7 +4068,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
-            "token_wizard"), False)
+            ACTION.TOKENPAGESIZE), 15)
 
         # Set a policy. User has not token, so "token_wizard" will be True
         set_policy(name="pol_pagesize",
@@ -4032,7 +4096,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("pol_pagesize")
 
-    def test_10_get_webui_settings(self):
+    def test_10_get_webui_settings_admin_dashboard(self):
         # Test admin_dashboard
         self.setUp_user_realms()
 

@@ -184,7 +184,7 @@ class Token(MethodsMixin, db.Model):
                        default=6)
     pin_hash = db.Column(db.Unicode(512),
                          default=u'')  # hashed
-    key_enc = db.Column(db.Unicode(1024),
+    key_enc = db.Column(db.Unicode(2800),
                         default=u'')  # encrypt
     key_iv = db.Column(db.Unicode(32),
                        default=u'')

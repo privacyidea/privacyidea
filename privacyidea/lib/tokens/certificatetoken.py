@@ -39,7 +39,7 @@ from privacyidea.lib.utils import to_unicode, b64encode_and_unicode, to_byte_str
 from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
 from privacyidea.lib.log import log_with
 from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.caconnector import get_caconnector_object
+from privacyidea.lib.caconnector import get_caconnector_object, get_caconnector_list
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import determine_logged_in_userparams
 from OpenSSL import crypto
@@ -67,6 +67,8 @@ class ACTION(BASE_ACTION):
     __doc__ = """This is the list of special certificate actions."""
     TRUSTED_CA_PATH = "certificate_trusted_Attestation_CA_path"
     REQUIRE_ATTESTATION = "certificate_require_attestation"
+    CA_CONNECTOR = "ca_connector"
+    CERTIFICATE_TEMPLATE = "certificate_template"
 
 
 class REQUIRE_ACTIONS(object):
@@ -303,6 +305,17 @@ class CertificateTokenClass(TokenClass):
                            'value': [REQUIRE_ACTIONS.IGNORE,
                                      REQUIRE_ACTIONS.VERIFY,
                                      REQUIRE_ACTIONS.REQUIRE_AND_VERIFY]
+                       },
+                       ACTION.CA_CONNECTOR: {
+                           'type': 'str',
+                           'desc': _("The CA connector that should be used during certificate enrollment."),
+                           'group': GROUP.TOKEN,
+                           'value': [x.get("connectorname") for x in get_caconnector_list()]
+                       },
+                       ACTION.CERTIFICATE_TEMPLATE: {
+                           'type': 'str',
+                           'desc': _("The template that should be used to issue a certificate."),
+                           'group': GROUP.TOKEN
                        }
                    },
                    SCOPE.USER: {
@@ -411,6 +424,7 @@ class CertificateTokenClass(TokenClass):
         certificate = getParam(param, "certificate", optional)
         generate = getParam(param, "genkey", optional)
         template_name = getParam(param, "template", optional)
+        request_id = None
         if request or generate:
             # If we do not upload a user certificate, then we need a CA do
             # sign the uploaded request or generated certificate.
@@ -449,9 +463,9 @@ class CertificateTokenClass(TokenClass):
 
             # During the initialization process, we need to create the
             # certificate
-            x509object = cacon.sign_request(request,
-                                            options={"spkac": spkac,
-                                                     "template": template_name})
+            request_id, x509object = cacon.sign_request(request,
+                                                        options={"spkac": spkac,
+                                                                 "template": template_name})
             certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
                                                   x509object)
         elif generate:
@@ -470,19 +484,21 @@ class CertificateTokenClass(TokenClass):
             # Add email to subject
             if user.info.get("email"):
                 req.get_subject().emailAddress = user.info.get("email")
-            req.get_subject().organizationalUnitName = user.realm
+            # TODO: How can we define, which parameters should be added to CSR?
+            # req.get_subject().organizationalUnitName = user.realm
             # TODO: Add Country, Organization, Email
-            # req.get_subject().countryName = 'xxx'
-            # req.get_subject().stateOrProvinceName = 'xxx'
-            # req.get_subject().localityName = 'xxx'
-            # req.get_subject().organizationName = 'xxx'
+            """
+            req.get_subject().countryName = 'xxx'
+            req.get_subject().stateOrProvinceName = 'xxx'
+            req.get_subject().localityName = 'xxx'
+            req.get_subject().organizationName = 'xxx'
+            """
             req.set_pubkey(key)
             r = req.sign(key, "sha256")
             csr = to_unicode(crypto.dump_certificate_request(crypto.FILETYPE_PEM, req))
             try:
-                x509object = cacon.sign_request(csr, options={"template": template_name})
-                certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
-                                                      x509object)
+                request_id, x509object = cacon.sign_request(csr, options={"template": template_name})
+                certificate = crypto.dump_certificate(crypto.FILETYPE_PEM, x509object)
             except CSRError:
                 # Mark the token as broken
                 self.token.rollout_state = ROLLOUTSTATE.FAILED
@@ -491,7 +507,7 @@ class CertificateTokenClass(TokenClass):
             except CSRPending as e:
                 self.token.rollout_state = ROLLOUTSTATE.PENDING
                 if hasattr(e, "requestId"):
-                    self.add_tokeninfo(REQUEST_ID, e.requestId)
+                    request_id = e.requestId
             finally:
                 # Save the private key to the encrypted key field of the token
                 s = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
@@ -502,6 +518,9 @@ class CertificateTokenClass(TokenClass):
 
         if certificate:
             self.add_tokeninfo("certificate", certificate)
+
+        if request_id:
+            self.add_tokeninfo(REQUEST_ID, request_id)
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
@@ -599,7 +618,8 @@ class CertificateTokenClass(TokenClass):
 
         # call CAConnector.revoke_cert()
         ca_obj = get_caconnector_object(ca_specifier)
-        revoked = ca_obj.revoke_cert(certificate_pem)
+        revoked = ca_obj.revoke_cert(certificate_pem,
+                                     request_id=ti.get(REQUEST_ID))
         log.info("Certificate {0!s} revoked on CA {1!s}.".format(revoked,
                                                                  ca_specifier))
 

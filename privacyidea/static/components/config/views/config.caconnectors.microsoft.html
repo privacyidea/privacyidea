@@ -64,6 +64,75 @@
             </div>
         </div>
 
+        <h3 translate>SSL Config</h3>
+
+        <div class="form-group">
+            <label for="use_ssl"
+                   class="col-sm-3 control-label" translate>
+                Use SSL</label>
+            <div class="col-sm-9">
+                <input type="checkbox"
+                       name="use_ssl"
+                       ng-model="params['use_ssl']"
+                       id="use_ssl">
+            </div>
+        </div>
+
+        <div class="form-group" ng-show="params.use_ssl">
+            <label for="ssl_ca_cert"
+                   class="col-sm-3 control-label" translate>
+                CA certificate (filename)</label>
+
+            <div class="col-sm-9">
+                <input name="ssl_ca_cert" id="ssl_ca_cert"
+                       class="form-control"
+                       ng-model="params.ssl_ca_cert"
+                       placeholder="/etc/privacyidea/ca/ca.crt"/>
+            </div>
+        </div>
+
+        <div class="form-group" ng-show="params.use_ssl">
+            <label for="ssl_client_cert"
+                   class="col-sm-3 control-label" translate>
+                Client certificate (filename)</label>
+
+            <div class="col-sm-9">
+                <input name="ssl_client_cert" id="ssl_client_cert"
+                       class="form-control"
+                       ng-model="params.ssl_client_cert"
+                       placeholder="/etc/privacyidea/ca/privacyidea.crt"/>
+            </div>
+        </div>
+
+        <div class="form-group" ng-show="params.use_ssl">
+            <label for="ssl_client_key"
+                   class="col-sm-3 control-label" translate>
+                Client private key (filename)</label>
+
+            <div class="col-sm-9">
+                <input name="ssl_client_key" id="ssl_client_key"
+                       class="form-control"
+                       ng-model="params.ssl_client_key"
+                       placeholder="/etc/privacyidea/ca/privacyidea.key"/>
+            </div>
+        </div>
+
+        <div class="form-group" ng-show="params.use_ssl">
+            <label for="ssl_client_key_password"
+                   class="col-sm-3 control-label" translate>
+                Password of encrypted client private key</label>
+
+            <div class="col-sm-9">
+                <input type=password
+                       name="ssl_client_key_password" id="ssl_client_key_password"
+                       class="form-control"
+                       ng-model="params.ssl_client_key_password"
+                       placeholder="top secret"/>
+            </div>
+        </div>
+
+        <!-- -->
+
         <div class="form-group">
             <label class="col-sm-3 control-label" translate>
                 CA specific options</label>

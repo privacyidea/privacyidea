@@ -1,14 +1,18 @@
 name: Greetings
 
-on: [issues]
+on:
+  issues:
+    types:
+      - opened
 
 jobs:
   greeting:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/first-interaction@v1
+      continue-on-error: true
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         issue-message: 'Thank you for filing an issue and sharing your observations or ideas.
-                        Please be sure to provide as many information as possible to help us
-                        working on this issue.'
+                        Please be sure to provide as much information as possible to help us
+                        to work on this issue.'

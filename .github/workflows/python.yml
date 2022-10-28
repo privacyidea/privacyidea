@@ -20,7 +20,7 @@ jobs:
     outputs:
       run_tests: ${{ steps.check.outputs.run_tests}}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 2
 #    - name: Dump GitHub context
@@ -46,7 +46,7 @@ jobs:
         fi
         echo "Changed files: $DIFF"
         # Escape newlines (replace \n with %0A)
-        echo "::set-output name=diff::$( echo "$DIFF" | sed ':a;N;$!ba;s/\n/%0A/g' )"
+        echo "diff=$( echo "$DIFF" | sed ':a;N;$!ba;s/\n/%0A/g' )" >> $GITHUB_OUTPUT
     - name: 'Check for changes in sources'
       id: check
       env:
@@ -66,18 +66,18 @@ jobs:
         python-version: ['2.7', '3.6', '3.7', '3.8', '3.9', '3.10']
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         # clone submodules as well
         submodules: 'recursive'
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Cache pip installation
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       id: pip-cache
       with:
         path: ~/.cache/pip
@@ -93,61 +93,16 @@ jobs:
         pip install -r tests/requirements.txt
 
     - name: Test with pytest
+      id: pytest_run
       run: |
         pip freeze
-        python -b -m pytest -v --cov=privacyidea tests/
+        python -b -m pytest -v --cov=privacyidea --cov-report=xml tests/
       env:
         # silence some deprecation warnings
         PYTHONWARNINGS: "ignore:the imp module is deprecated in favour of importlib:DeprecationWarning,ignore:Please use assertRegex instead:DeprecationWarning"
 
-    - name: Archive code coverage results
-      # save the code coverage results as artifacts in order to merge them
-      # in the 'finish' job
-      uses: actions/upload-artifact@v2
-      with:
-        name: coverage-${{ matrix.python-version }}
-        path: ./.coverage
-        retention-days: 1
-
-  finish:
-    # run this job after matrix build is finished
-    needs: build
-    # always run this job, regardless of a failing matrix-job
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code for coverage
-      uses: actions/checkout@v2
-    - name: Cache pip installation
-      uses: actions/cache@v2
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-coverage }}
-        restore-keys: |
-          ${{ runner.os }}-pip-coverage
-          ${{ runner.os }}-pip-
-
-    - name: Install coverage for merging output
-      run: |
-        python -m pip install --upgrade pip setuptools
-        python -m pip install coverage
-        echo "/home/runner/.local/bin" >> $GITHUB_PATH
-
-    - name: Download coverage report artifacts
-      uses: actions/download-artifact@v2
-      with:
-        path: ./cov_reports
-
-    - name: Combine coverage reports
-      id: combine_cov
-      working-directory: ./cov_reports
-      continue-on-error: true
-      run: |
-        coverage combine coverage-*/.coverage
-        coverage xml
-
     - name: Codecov upload
-      if: ${{ steps.combine_cov.outcome == 'success' }}
-      uses: codecov/codecov-action@v1
+      if: ${{ steps.pytest_run.outcome == 'success' }}
+      uses: codecov/codecov-action@v3
       with:
-        file: ./cov_reports/coverage.xml
+        files: ./coverage.xml
