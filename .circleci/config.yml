@@ -1,11 +1,34 @@
 version: 2.1
 
+executors:
+  mysql:
+    docker:
+      - image: cimg/python:3.10
+        environment:
+          TEST_DATABASE_URL: mysql+pymysql://pi:test123@localhost/pi
+      - image: cimg/mysql:8.0
+        environment:
+          MYSQL_DATABASE: pi
+          MYSQL_USER: pi
+          MYSQL_PASSWORD: test123
+          MYSQL_RANDOM_ROOT_PASSWORD: yes
+  postgres: &postgres-executor
+    docker:
+      - image: cimg/python:3.10
+        environment:
+          TEST_DATABASE_URL: postgresql+psycopg2://pi:test123@localhost/pi
+      - image: cimg/postgres:14.5
+        environment:
+          POSTGRES_DB: pi
+          POSTGRES_USER: pi
+          POSTGRES_PASSWORD: test123
+
 jobs:
   test_generic:
     description: Run all tests with the latest packages
     docker:
       # in the long run we could use matrix tests here for multiple python versions
-      - image: cimg/python:3.6
+      - image: cimg/python:3.10
     steps:
       - checkout
       - run: git submodule sync
@@ -26,18 +49,12 @@ jobs:
       - store_artifacts:
           path: test-results/generic
 
-  test_mysql:
-    description: Run all tests with MySQL database backend
-    docker:
-      - image: cimg/python:3.6
-        environment:
-          TEST_DATABASE_URL: mysql+pymysql://pi:test123@localhost/pi
-      - image: circleci/mysql:latest-ram
-        environment:
-          MYSQL_DATABASE: pi
-          MYSQL_USER: pi
-          MYSQL_PASSWORD: test123
-          MYSQL_RANDOM_ROOT_PASSWORD: yes
+  test_database:
+    parameters:
+      db:
+        type: string
+    description: Run all tests with << parameters.db >> database backend
+    executor: << parameters.db >>
     steps:
       - checkout
       - run: git submodule sync
@@ -46,11 +63,17 @@ jobs:
           key: v1-deps-{{ checksum "requirements.txt" }}
       - run: pip install -U pip
       - run: pip install -r tests/requirements.txt
-      - run: mkdir -p test-results/mysql
+      - when:
+          condition:
+            # see https://circleci.com/docs/configuration-reference#logic-statements
+            equal: [*postgres-executor, << parameters.db >> ]
+          steps:
+            - run: pip install psycopg2
+      - run: mkdir -p test-results/<< parameters.db >>
       - run:
           command: |
-            python -b -m pytest --cov=privacyidea --junit-xml=test-results/mysql/results.xml tests/
-          name: MySQL Test
+            python -b -m pytest --cov=privacyidea --junit-xml=test-results/<< parameters.db >>/results.xml tests/
+          name: << parameters.db >> Test
       - save_cache:
           paths:
             - "${PYENV_ROOT}"
@@ -58,41 +81,7 @@ jobs:
       - store_test_results:
           path: test-results
       - store_artifacts:
-          path: test-results/mysql
-
-  test_postgresql:
-    description: Run all tests with PostgreSQL database backend
-    docker:
-      - image: cimg/python:3.6
-        environment:
-          TEST_DATABASE_URL: postgresql+psycopg2://pi:test123@localhost/pi
-      - image: circleci/postgres:latest-ram
-        environment:
-          POSTGRES_DB: pi
-          POSTGRES_USER: pi
-          POSTGRES_PASSWORD: test123
-    steps:
-      - checkout
-      - run: git submodule sync
-      - run: git submodule update --init
-      - restore_cache:
-          key: v1-deps-{{ checksum "requirements.txt" }}
-      - run: pip install -U pip
-      - run: pip install -r tests/requirements.txt
-      - run: pip install psycopg2
-      - run: mkdir -p test-results/postgresql
-      - run:
-          command: |
-            python -b -m pytest --cov=privacyidea --junit-xml=test-results/postgresql/results.xml tests/
-          name: PostgreSQL Test
-      - save_cache:
-          paths:
-            - "${PYENV_ROOT}"
-          key: v1-deps-{{ checksum "requirements.txt" }}
-      - store_test_results:
-          path: test-results
-      - store_artifacts:
-          path: test-results/postgresql
+          path: test-results/<< parameters.db >>
 
 workflows:
   version: 2
@@ -107,5 +96,7 @@ workflows:
                 - master
     jobs:
       - test_generic
-      - test_mysql
-      - test_postgresql
+      - test_database:
+          matrix:
+            parameters:
+              db: ['mysql', 'postgres']
