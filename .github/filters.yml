@@ -1,0 +1,9 @@
+python_test:
+  - 'tests/**'
+  - 'tools/**'
+  - 'privacyidea/**/*.py'
+  - '.github/workflows/python.yml'
+  - '.github/filters.yml'
+  - 'pi-manage'
+  - 'requirements.txt'
+  - 'setup.py'
