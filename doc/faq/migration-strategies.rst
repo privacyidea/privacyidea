@@ -49,3 +49,5 @@ As soon as all users have a new token within privacyIDEA, you can switch of
 the old RADIUS server.
 
 For strategies on enrolling token see :ref:`rollout_strategies`.
+
+Some dull changes

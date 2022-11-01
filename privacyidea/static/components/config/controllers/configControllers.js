@@ -527,9 +527,9 @@ myApp.controller("tokenConfigController", ["$scope", "$location", "$rootScope",
     $scope.saveTokenConfig = function () {
         // only save parameters, that have changed!
         //debug: console.log($scope.form);
-        var save_params = {};
+        let save_params = {};
         angular.forEach($scope.form, function (value, key) {
-            if (value != $scope.original_params[key])
+            if (value !== $scope.original_params[key])
                 save_params[key] = value;
         });
         ConfigFactory.saveSystemConfig(save_params, function (data) {
@@ -560,17 +560,6 @@ myApp.controller("tokenConfigController", ["$scope", "$location", "$rootScope",
         $scope.saveTokenConfig();
         $scope.nextQuestion += 1;
     };
-
-    /* DEPRECATED: Testing is done in SMTP server config
-    $scope.sendTestEmail = function() {
-            ConfigFactory.testTokenConfig("email", $scope.form, function(data) {
-           if (data.result.value === true) {
-               inform.add(gettextCatalog.getString(data.detail.message),
-                   {type: "info"});
-           }
-        });
-    };
-    */
 
     $scope.getSmtpIdentifiers();
     $scope.getSMSIdentifiers();
