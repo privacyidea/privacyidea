@@ -18,40 +18,16 @@ jobs:
     name: 'Check for code changes'
     runs-on: ubuntu-latest
     outputs:
-      run_tests: ${{ steps.check.outputs.run_tests}}
+      run_tests: ${{ steps.changes.outputs.python_test}}
     steps:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 2
-#    - name: Dump GitHub context
-#      env:
-#        GITHUB_CONTEXT: ${{ toJson(github) }}
-#      run: echo "$GITHUB_CONTEXT"
-    - name: 'Get changed file list'
-      id: list
-      run: |
-        if [[ -n "${GITHUB_BASE_REF}" ]]; then
-          # this is a pull request. We need the base branch to compare.
-          git fetch origin ${GITHUB_BASE_REF} --depth=1
-          export DIFF=$( git diff --name-only --diff-filter=AM origin/${GITHUB_BASE_REF} ${GITHUB_SHA} )
-        else
-          # this is a push event.
-          if [[ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]]; then
-            # this is the first commit in a branch
-            export DIFF=$( git diff --name-only --diff-filter=AM HEAD^1 ${GITHUB_SHA} )
-          else
-            git fetch origin ${{ github.event.before }} --depth=1
-            export DIFF=$( git diff --name-only --diff-filter=AM ${{ github.event.before }} $GITHUB_SHA )
-          fi
-        fi
-        echo "Changed files: $DIFF"
-        # Escape newlines (replace \n with %0A)
-        echo "diff=$( echo "$DIFF" | sed ':a;N;$!ba;s/\n/%0A/g' )" >> $GITHUB_OUTPUT
-    - name: 'Check for changes in sources'
-      id: check
-      env:
-        DIFF: ${{ steps.list.outputs.diff }}
-      run: ./.github/check_for_changes.sh
+    - uses: dorny/paths-filter@v2
+      id: changes
+      with:
+        filters: .github/filters.yml
+        list-files: 'json'
 
   build:
     name: 'Run tests with Python'
