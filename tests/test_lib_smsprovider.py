@@ -1,6 +1,6 @@
 
 # -*- coding: utf-8 -*-
-__doc__="""
+__doc__ = """
 This test file tests the modules:
  lib.smsprovider.httpsmsprovider
  lib.smsprovider.sipgateprovider
@@ -622,8 +622,8 @@ class HttpSMSTestCase(MyTestCase):
                 mock_log.assert_any_call("passing JSON data: {u'text': u'Hello: "
                                          "7', u'phone': u'123456'}")
             else:
-                mock_log.assert_any_call("passing JSON data: {'text': 'Hello: "
-                                         "7', 'phone': '123456'}")
+                call = [x[0][0] for x in mock_log.call_args_list if x[0][0].startswith('passing')][0]
+                self.assertRegex(call, r'passing JSON data: {.*Hello: 7.*}', call)
         delete_smsgateway(identifier)
 
 
