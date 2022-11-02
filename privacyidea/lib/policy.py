@@ -380,6 +380,7 @@ class ACTION(object):
     SET_USER_ATTRIBUTES = "set_custom_user_attributes"
     DELETE_USER_ATTRIBUTES = "delete_custom_user_attributes"
     VERIFY_ENROLLMENT = "verify_enrollment"
+    PREFERREDCLIENTMODE = "preferred_client_mode"
 
 
 class TYPE(object):
@@ -2278,6 +2279,10 @@ def get_static_policy_definitions(scope=None):
                           'allow authentication with the same credentials for a '
                           'certain amount of time. '
                           'Specify timeout like 4h or 4h/5m.')
+            },
+            ACTION.PREFERREDCLIENTMODE: {
+                'type': 'str',
+                'desc': _('preferred client mode')
             }
         },
         SCOPE.AUTHZ: {

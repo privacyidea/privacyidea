@@ -318,6 +318,43 @@ def no_detail_on_success(request, response):
     return response
 
 
+def preferred_client_mode(request, response):
+    """
+    description
+    """
+    content = response.json
+
+    # get the preferred client mode from a policy definition
+    detail_pol = Match.action_only(g, scope=SCOPE.AUTH, action=ACTION.PREFERREDCLIENTMODE)\
+        .action_values(unique=True)
+
+    if detail_pol:
+        preferred_client_mode_list = detail_pol.get("test")[0].split(", ")
+    else:
+        preferred_client_mode_list = ['poll', 'webauthn', 'interactive', 'u2f']
+    if content.get("detail"):
+        detail = content.get("detail")
+        if detail.get("multi_challenge"):
+            multi_challenge = detail.get("multi_challenge")
+            l = []
+            for x in multi_challenge:
+                l.append(x.get("client_mode"))
+            l=list(dict.fromkeys(l))
+
+            if preferred_client_mode_list[0] in l:
+                preferred = preferred_client_mode_list[0]
+            elif preferred_client_mode_list[1] in l:
+                preferred = preferred_client_mode_list[1]
+            elif preferred_client_mode_list[2] in l:
+                preferred = preferred_client_mode_list[2]
+            elif preferred_client_mode_list[3] in l:
+                preferred = preferred_client_mode_list[3]
+            content.setdefault("detail", {})["preferred_client_mode"] = preferred
+
+    response.set_data(json.dumps(content))
+    return response
+
+
 def add_user_detail_to_response(request, response):
     """
     This policy decorated is used in the AUTHZ scope.
