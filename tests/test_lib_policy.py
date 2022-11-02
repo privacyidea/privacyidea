@@ -1514,7 +1514,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(sorted(d.get("set").get("hello")), ["one", "three", "two"])
         self.assertEqual(sorted(d.get("set").get("hello2")), ["*"])
 
-    def test_34_preferred_client_mode(self):
+    def test_34_preferred_client_mode_default(self):
         self.setUp_user_realms()
         OTPKE2 = "31323334353637383930313233343536373839AA"
         user = User("multichal", self.realm1)

@@ -320,7 +320,15 @@ def no_detail_on_success(request, response):
 
 def preferred_client_mode(request, response):
     """
-    description
+    This policy function is used to add the preferred client mode.
+    The admin can set the list of client modes in the policy in the
+    same order as  he preferred them. The faction will pick the first
+    client mode from the list, that is also in the multichallege and
+    set it as preferred client mode
+
+    :param request:
+    :param response:
+    :return:
     """
     content = response.json
 
@@ -343,13 +351,16 @@ def preferred_client_mode(request, response):
 
             if preferred_client_mode_list[0] in l:
                 preferred = preferred_client_mode_list[0]
+                content.setdefault("detail", {})["preferred_client_mode"] = preferred
             elif preferred_client_mode_list[1] in l:
                 preferred = preferred_client_mode_list[1]
+                content.setdefault("detail", {})["preferred_client_mode"] = preferred
             elif preferred_client_mode_list[2] in l:
                 preferred = preferred_client_mode_list[2]
+                content.setdefault("detail", {})["preferred_client_mode"] = preferred
             elif preferred_client_mode_list[3] in l:
                 preferred = preferred_client_mode_list[3]
-            content.setdefault("detail", {})["preferred_client_mode"] = preferred
+                content.setdefault("detail", {})["preferred_client_mode"] = preferred
 
     response.set_data(json.dumps(content))
     return response
