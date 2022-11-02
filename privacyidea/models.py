@@ -3164,7 +3164,7 @@ class Tokengroup(TimestampMethodsMixin, db.Model):
         db.session.query(TokenTokengroup)\
                   .filter(TokenTokengroup.tokengroup_id == ret)\
                   .delete()
-        # delete the realm
+        # delete the tokengroup
         db.session.delete(self)
         save_config_timestamp()
         db.session.commit()

@@ -248,6 +248,7 @@ class TokenClass(object):
     def add_tokengroup(self, tokengroup=None, tokengroup_id=None):
         """
         Adds a new tokengroup to this token.
+
         :param tokengroup: The name of the token group to add
         :type tokengroup: basestring
         :param tokengroup_id: The id of the tokengroup to add
@@ -257,8 +258,8 @@ class TokenClass(object):
         if not tokengroup and not tokengroup_id:
             raise ParameterError("You either need to specify a tokengroup name or id.")
         r = TokenTokengroup(token_id=self.token.id,
-                           tokengroup_id=tokengroup_id,
-                           tokengroupname=tokengroup).save()
+                            tokengroup_id=tokengroup_id,
+                            tokengroupname=tokengroup).save()
         return r > 0
 
     @property

@@ -1244,6 +1244,7 @@ def assign_tokengroup_api(serial, groupname=None):
 
     :jsonparam basestring serial: the serial number of the token
     :jsonparam basestring groupname: The name of the tokengroup
+    :jsonparam list groups: A list of tokengroups
     :return:
     :rtype: json object
     """
