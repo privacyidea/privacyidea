@@ -1530,7 +1530,7 @@ class PolicyTestCase(MyTestCase):
         set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
             ACTION.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
-        set_policy("u2f, webauthn, interactive, poll", scope=SCOPE.AUTH, action="{0!s}=test".format(
+        set_policy("u2f webauthn interactive poll", scope=SCOPE.AUTH, action="{0!s}=test".format(
             ACTION.PREFERREDCLIENTMODE))
 
         with self.app.test_request_context('/validate/check',

@@ -48,6 +48,7 @@ from privacyidea.lib.error import PolicyError, ValidateError
 from flask import g, current_app, make_response
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, AUTHORIZED
 from privacyidea.lib.policy import DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL
+from privacyidea.lib.policy import DEFAULT_PREFERRED_CLIENT_MODE
 from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
@@ -331,15 +332,16 @@ def preferred_client_mode(request, response):
     :return:
     """
     content = response.json
+    user_object = request.User
 
     # get the preferred client mode from a policy definition
-    detail_pol = Match.action_only(g, scope=SCOPE.AUTH, action=ACTION.PREFERREDCLIENTMODE)\
-        .action_values(unique=True)
+    detail_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.PREFERREDCLIENTMODE, user_object=user_object)\
+        .action_values(allow_white_space_in_action=True, unique=True)
 
     if detail_pol:
-        preferred_client_mode_list = detail_pol.get("test")[0].split(", ")
+        preferred_client_mode_list = list(detail_pol.values())[0][0].split(" ")
     else:
-        preferred_client_mode_list = ['poll', 'webauthn', 'interactive', 'u2f']
+        preferred_client_mode_list = DEFAULT_PREFERRED_CLIENT_MODE
     if content.get("detail"):
         detail = content.get("detail")
         if detail.get("multi_challenge"):
@@ -347,20 +349,17 @@ def preferred_client_mode(request, response):
             l = []
             for x in multi_challenge:
                 l.append(x.get("client_mode"))
-            l=list(dict.fromkeys(l))
 
-            if preferred_client_mode_list[0] in l:
-                preferred = preferred_client_mode_list[0]
+            try:
+                preferred = [x for x in preferred_client_mode_list if x in l][0]
                 content.setdefault("detail", {})["preferred_client_mode"] = preferred
-            elif preferred_client_mode_list[1] in l:
-                preferred = preferred_client_mode_list[1]
-                content.setdefault("detail", {})["preferred_client_mode"] = preferred
-            elif preferred_client_mode_list[2] in l:
-                preferred = preferred_client_mode_list[2]
-                content.setdefault("detail", {})["preferred_client_mode"] = preferred
-            elif preferred_client_mode_list[3] in l:
-                preferred = preferred_client_mode_list[3]
-                content.setdefault("detail", {})["preferred_client_mode"] = preferred
+            except IndexError as err:
+                content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
+                log.error('There was no except client mode in the multi-challenge. The preferred mode is'
+                          ' set to interactive. Please check your policy. Error:'.format(err))
+            except Exception as err:
+                content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
+                log.error('something with the preferred client mode got wrong:{0}'.format(err))
 
     response.set_data(json.dumps(content))
     return response
