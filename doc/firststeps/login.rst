@@ -46,7 +46,7 @@ the user needs to authenticate with his LDAP/AD password.
 But before a user can login, the administrator needs to configure 
 realms, which is described in the next step :ref:`first_steps_realm`. 
 
-.. note:: The user my either login with his password from the userstore
+.. note:: The user may either login with his password from the userstore
    or with any of his tokens.
 
 .. note:: The administrator may change this behaviour
