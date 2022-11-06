@@ -405,8 +405,6 @@ def list_api():
     :query assigned: Only return assigned (True) or not assigned (False) tokens
     :query active: Only return active (True) or inactive (False) tokens
     :query pagesize: limit the number of returned tokens
-    :query user_fields: additional user fields from the userid resolver of
-        the owner (user)
     :query outform: if set to "csv", than the token list will be given in CSV
     :query rollout_state: only list tokens with the given rollout_state
     :query infokey: only list tokens, where the infokey has the given infovalue
@@ -430,7 +428,6 @@ def list_api():
     realm = getParam(param, "tokenrealm", optional)
     userid = getParam(param, "userid", optional)
     resolver = getParam(param, "resolver", optional)
-    ufields = getParam(param, "user_fields", optional)
     output_format = getParam(param, "outform", optional)
     assigned = getParam(param, "assigned", optional)
     active = getParam(param, "active", optional)
@@ -444,10 +441,6 @@ def list_api():
         assigned = assigned.lower() == "true"
     if active:
         active = active.lower() == "true"
-    
-    user_fields = []
-    if ufields:
-        user_fields = [u.strip() for u in ufields.split(",")]
 
     # allowed_realms determines, which realms the admin would be allowed to see
     # In certain cases like for users, we do not have allowed_realms
