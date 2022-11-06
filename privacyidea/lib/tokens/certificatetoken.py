@@ -69,6 +69,7 @@ class ACTION(BASE_ACTION):
     REQUIRE_ATTESTATION = "certificate_require_attestation"
     CA_CONNECTOR = "ca_connector"
     CERTIFICATE_TEMPLATE = "certificate_template"
+    CERTIFICATE_REQUEST_SUBJECT_COMPONENT = "certificate_request_subject_component"
 
 
 class REQUIRE_ACTIONS(object):
@@ -316,6 +317,12 @@ class CertificateTokenClass(TokenClass):
                            'type': 'str',
                            'desc': _("The template that should be used to issue a certificate."),
                            'group': GROUP.TOKEN
+                       },
+                       ACTION.CERTIFICATE_REQUEST_SUBJECT_COMPONENT: {
+                           'type': 'str',
+                           'desc': _("This takes a space separated list of elemtens to be added to the subject. "
+                                     "Can be 'email' and 'realm'."),
+                           'group': GROUP.TOKEN
                        }
                    },
                    SCOPE.USER: {
@@ -424,6 +431,7 @@ class CertificateTokenClass(TokenClass):
         certificate = getParam(param, "certificate", optional)
         generate = getParam(param, "genkey", optional)
         template_name = getParam(param, "template", optional)
+        subject_components = getParam(param, "subject_components", optional=optional, default=[])
         request_id = None
         if request or generate:
             # If we do not upload a user certificate, then we need a CA do
@@ -461,32 +469,33 @@ class CertificateTokenClass(TokenClass):
                         if verify_attestation:
                             raise privacyIDEAError("Failed to verify certificate chain of attestation certificate.")
 
-            # During the initialization process, we need to create the
-            # certificate
+            # During the initialization process, we need to create the certificate
             request_id, x509object = cacon.sign_request(request,
                                                         options={"spkac": spkac,
                                                                  "template": template_name})
             certificate = crypto.dump_certificate(crypto.FILETYPE_PEM,
                                                   x509object)
         elif generate:
-            # Create the certificate on behalf of another user.
-            # Now we need to create the key pair,
-            # the request
-            # and the certificate
-            # We need the user for whom the certificate should be created
+            """
+            Create the certificate on behalf of another user. Now we need to create 
+            * the key pair,
+            * the request
+            * and the certificate
+            We need the user for whom the certificate should be created
+            """
             user = get_user_from_param(param, optionalOrRequired=required)
-
             keysize = getParam(param, "keysize", optional, 2048)
             key = crypto.PKey()
             key.generate_key(crypto.TYPE_RSA, keysize)
             req = crypto.X509Req()
             req.get_subject().CN = user.login
-            # Add email to subject
-            if user.info.get("email"):
-                req.get_subject().emailAddress = user.info.get("email")
-            # TODO: How can we define, which parameters should be added to CSR?
-            # req.get_subject().organizationalUnitName = user.realm
-            # TODO: Add Country, Organization, Email
+            # Add components to subject
+            if subject_components:
+                if "email" in subject_components and user.info.get("email"):
+                    req.get_subject().emailAddress = user.info.get("email")
+                if "realm" in subject_components:
+                    req.get_subject().organizationalUnitName = user.realm
+            # TODO: Add Country, Organization
             """
             req.get_subject().countryName = 'xxx'
             req.get_subject().stateOrProvinceName = 'xxx'

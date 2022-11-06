@@ -647,6 +647,28 @@ def init_ca_template(request=None, action=None):
             request.all_data["template"] = list(template_pols)[0]
 
 
+def init_subject_components(request=None, action=None):
+    """
+    This is a pre decorator for the endpoint '/token/init'.
+    It reads the policy scope=enrollment, action=certificate_request_subject_component and
+    sets the API parameter "subject_component" accordingly.
+
+    :param request: The request to enhance
+    :return: None, but we modify the request
+    """
+    params = request.all_data
+    user_object = get_user_from_param(params)
+    token_type = getParam(request.all_data, "type", optional)
+    if token_type and token_type.lower() == "certificate":
+        # get the subject list from the policies
+        subject_pols = Match.user(g, scope=SCOPE.ENROLL,
+                                  action=CERTIFICATE_ACTION.CERTIFICATE_REQUEST_SUBJECT_COMPONENT,
+                                  user_object=user_object).action_values(unique=False)
+        if len(list(subject_pols)):
+            # The policy was set, we need to add the list to the parameters
+            request.all_data["subject_components"] = list(subject_pols)
+
+
 def twostep_enrollment_activation(request=None, action=None):
     """
     This policy function enables the two-step enrollment process according

@@ -49,7 +49,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            webauthntoken_enroll, webauthntoken_request,
                                            webauthntoken_allowed, check_application_tokentype,
                                            required_piv_attestation, check_custom_user_attributes,
-                                           hide_tokeninfo, init_ca_template, init_ca_connector)
+                                           hide_tokeninfo, init_ca_template, init_ca_connector,
+                                           init_subject_components)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -3258,9 +3259,11 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.all_data = {"user": "cornelius", "realm": "home", "type": "certificate", "genkey": 1}
         init_ca_connector(req)
         init_ca_template(req)
+        init_subject_components(req)
         # Check, if that there is no parameter set
         self.assertNotIn("ca", req.all_data)
         self.assertNotIn("template", req.all_data)
+        self.assertNotIn("subject_components", req.all_data)
 
         # now create a policy for the CA connector and the template
         set_policy(name="ca",
@@ -3269,28 +3272,44 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                      CERTIFICATE_ACTION.CA_CONNECTOR, "caconnector",
                      CERTIFICATE_ACTION.CERTIFICATE_TEMPLATE, "catemplate"
                    ))
+        set_policy(name="sub1",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}=email".format(
+                       CERTIFICATE_ACTION.CERTIFICATE_REQUEST_SUBJECT_COMPONENT))
+        set_policy(name="sub2",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}=email realm".format(
+                       CERTIFICATE_ACTION.CERTIFICATE_REQUEST_SUBJECT_COMPONENT))
         # request, that matches the policy
         req.all_data = {"user": "cornelius", "realm": "home", "type": "certificate", "genkey": 1}
         # check that the parameters were added
         init_ca_connector(req)
         init_ca_template(req)
+        init_subject_components(req)
         # Check, if that there is no parameter set
         self.assertIn("ca", req.all_data)
         self.assertIn("template", req.all_data)
+        self.assertIn("subject_components", req.all_data)
         self.assertEqual("caconnector", req.all_data.get("ca"))
         self.assertEqual("catemplate", req.all_data.get("template"))
+        self.assertIn("email", req.all_data.get("subject_components"))
+        self.assertIn("realm", req.all_data.get("subject_components"))
 
         # request, that matches the policy
         req.all_data = {"user": "cornelius", "realm": "home", "type": "hotp", "genkey": 1}
         # check that it only works for certificate tokens
         init_ca_connector(req)
         init_ca_template(req)
+        init_subject_components(req)
         # Check, if that there is no parameter set
         self.assertNotIn("ca", req.all_data)
         self.assertNotIn("template", req.all_data)
+        self.assertNotIn("subject_components", req.all_data)
 
         # delete policy
         delete_policy("ca")
+        delete_policy("sub1")
+        delete_policy("sub2")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):

@@ -101,7 +101,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation,
-                                           hide_tokeninfo, init_ca_connector, init_ca_template)
+                                           hide_tokeninfo, init_ca_connector, init_ca_template,
+                                           init_subject_components)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -131,6 +132,7 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(init_tokenlabel, request)
 @prepolicy(init_ca_connector, request)
 @prepolicy(init_ca_template, request)
+@prepolicy(init_subject_components, request)
 @prepolicy(enroll_pin, request)
 @prepolicy(twostep_enrollment_activation, request)
 @prepolicy(twostep_enrollment_parameters, request)
