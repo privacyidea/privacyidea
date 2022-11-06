@@ -455,7 +455,6 @@ class CertificateTokenTestCase(MyTestCase):
                          "<X509Name object '/CN=cn=cornelius'>")
         remove_token(self.serial2)
 
-
     def test_03_class_methods(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = CertificateTokenClass(db_token)
@@ -485,11 +484,10 @@ class CertificateTokenTestCase(MyTestCase):
 
         # missing user
         self.assertRaises(ParameterError,
-                          token.update, {"ca": "localCA","genkey": 1})
+                          token.update, {"ca": "localCA", "genkey": 1})
 
         token.update({"ca": "localCA", "genkey": 1,
                       "user": "cornelius"})
-
         self.assertEqual(token.token.serial, self.serial3)
         self.assertEqual(token.token.tokentype, "certificate")
         self.assertEqual(token.type, "certificate")
@@ -501,10 +499,9 @@ class CertificateTokenTestCase(MyTestCase):
         self.assertEqual("{0!r}".format(x509obj.get_issuer()),
                          "<X509Name object '/C=DE/ST=Hessen"
                          "/O=privacyidea/CN=CA001'>")
-        # Currently it is work in progress if we add the OU or not. So we check for both.
-        self.assertIn("{0!r}".format(x509obj.get_subject()),
-                      ["<X509Name object '/OU=realm1/CN=cornelius/emailAddress=user@localhost.localdomain'>",
-                       "<X509Name object '/CN=cornelius/emailAddress=user@localhost.localdomain'>"])
+        # No Email Address in the subject!
+        subject = x509obj.get_subject()
+        self.assertEqual("{0!s}".format(subject), "<X509Name object '/CN=cornelius'>")
 
         # Test, if the certificate is also completely stored in the tokeninfo
         # and if we can retrieve it from the tokeninfo
@@ -514,9 +511,7 @@ class CertificateTokenTestCase(MyTestCase):
         self.assertEqual("{0!r}".format(x509obj.get_issuer()),
                          "<X509Name object '/C=DE/ST=Hessen"
                          "/O=privacyidea/CN=CA001'>")
-        self.assertIn("{0!r}".format(x509obj.get_subject()),
-                      ["<X509Name object '/OU=realm1/CN=cornelius/emailAddress=user@localhost.localdomain'>",
-                       "<X509Name object '/CN=cornelius/emailAddress=user@localhost.localdomain'>"])
+        self.assertEqual("{0!r}".format(x509obj.get_subject()), "<X509Name object '/CN=cornelius'>")
 
         privatekey = token.get_tokeninfo("privatekey")
         self.assertTrue(privatekey.startswith("-----BEGIN PRIVATE KEY-----"))
@@ -527,6 +522,21 @@ class CertificateTokenTestCase(MyTestCase):
         # revoke the token
         r = token.revoke()
         self.assertEqual(r, int_to_hex(x509obj.get_serial_number()))
+        remove_token(self.serial3)
+
+        # Now create a new token again and also check for subjects with email and realm
+        db_token = Token(self.serial3, tokentype="certificate")
+        db_token.save()
+        token = CertificateTokenClass(db_token)
+        token.update({"ca": "localCA", "genkey": 1,
+                      "subject_components": ["email", "realm"],
+                      "user": "cornelius"})
+        detail = token.get_init_detail()
+        certificate = detail.get("certificate")
+        x509obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
+        self.assertEqual("{0!r}".format(x509obj.get_subject()),
+                         "<X509Name object '/OU=realm1/CN=cornelius/emailAddress=user@localhost.localdomain'>")
+        remove_token(self.serial3)
 
     def test_05_get_default_settings(self):
         params = {}
