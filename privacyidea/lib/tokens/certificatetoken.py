@@ -320,7 +320,7 @@ class CertificateTokenClass(TokenClass):
                        },
                        ACTION.CERTIFICATE_REQUEST_SUBJECT_COMPONENT: {
                            'type': 'str',
-                           'desc': _("This takes a space separated list of elemtens to be added to the subject. "
+                           'desc': _("This takes a space separated list of elements to be added to the subject. "
                                      "Can be 'email' and 'realm'."),
                            'group': GROUP.TOKEN
                        }
