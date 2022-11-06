@@ -820,7 +820,7 @@ The administrator needs to add the name of the template manually in this policy.
    this policy needs to be set, otherwise the enrollment will fail.
 
 
-.. _policy_ceritifacte_request_subject_component:
+.. _policy_certificate_request_subject_component:
 
 certificate_request_subject_component
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -833,7 +833,7 @@ components to the request subject.
 This can be "email" (The email of the user read from the userstore) and/or "realm", which
 is written to the orgnaizationalUnit (OU) of the request.
 
-.. note:: A couple of certificate templates on the Mircosoft CA will not allow to have the
+.. note:: A couple of certificate templates on the Microsoft CA will not allow to have the
    email component directly in the subject!
 
 .. rubric:: Footnotes
