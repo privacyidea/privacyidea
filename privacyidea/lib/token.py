@@ -81,7 +81,7 @@ from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_se
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
-                                MachineToken, TokenInfo, TokenOwner)
+                                MachineToken, TokenInfo, TokenOwner, TokenTokengroup, Tokengroup)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
@@ -2514,3 +2514,70 @@ def get_dynamic_policy_definitions(scope=None):
         pol = pol[scope]
 
     return pol
+
+
+def set_tokengroups(serial, tokengroups=None, add=False):
+    """
+    Set a list of tokengroups for one token
+
+    :param serial: The serial of the token
+    :param tokengroups: The list of tokengroups (names)
+    :param add: Whether the list of tokengropus should be added
+    :return:
+    """
+    tokengroups = tokengroups or []
+
+    tokenobject = get_one_token(serial=serial)
+    tokenobject.set_tokengroups(tokengroups, add=add)
+    tokenobject.save()
+
+
+def assign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
+    """
+    Assign a new tokengroup to a token
+
+    :param serial: The serial number of the token
+    :param tokengroup: The name of the tokengroup
+    :param tokengroup_id: alternatively the id of the tokengroup
+    :return: True
+    """
+    tokenobject = get_one_token(serial=serial)
+    try:
+        return tokenobject.add_tokengroup(tokengroup, tokengroup_id)
+    except Exception:
+        raise ResourceNotFoundError(_(u"The tokengroup does not exist."))
+
+
+def unassign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
+    """
+    Removes a tokengroup from a token
+
+    :param serial: The serial number of the token
+    :param tokengroup: The name of the tokengroup
+    :param tokengroup_id: alternatively the id of the tokengroup
+    :return: True
+    """
+    try:
+        tokenobject = get_one_token(serial=serial)
+        return tokenobject.del_tokengroup(tokengroup, tokengroup_id)
+    except Exception:
+        raise ResourceNotFoundError(_(u"The tokengroup does not exist."))
+
+
+def list_tokengroups(tokengroup=None):
+    """
+    Return a list of tokens that are assigned to a certain tokengroup
+    If no tokengroup is specified, all groups/tokens are returned.
+
+    :param tokengroup. The name of the token group
+    :return:
+    """
+    tg = None
+    if tokengroup:
+        tg = Tokengroup.query.filter_by(name=tokengroup).first()
+    if tg:
+        tgs = TokenTokengroup.query.filter_by(tokengroup_id=tg.id).all()
+    else:
+        tgs = TokenTokengroup.query.all()
+
+    return tgs

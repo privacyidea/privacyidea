@@ -47,6 +47,14 @@
                             <span translate>SMS Gateways</span>
                         </a>
                     </li>
+                    <li role="presentation"
+                        ng-class="{ active: $state.includes('config.tokengroup')}"
+                        ng-show="checkRight('tokengroup_list')">
+                        <a ui-sref="config.tokengroup">
+                            <span class="glyphicon glyphicon-phone"></span>
+                            <span translate>Tokengroups</span>
+                        </a>
+                    </li>
             </ul>
         </div>
     </div>

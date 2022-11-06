@@ -2363,6 +2363,68 @@ class TokenEventTestCase(MyTestCase):
 
         remove_token("SPASS01")
 
+    def test_13_tokengroup(self):
+        # setup realms
+        self.setUp_user_realms()
+        # create a tokengroup
+        from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
+        set_tokengroup("group1")
+
+        init_token({"serial": "SPASS01", "type": "spass"},
+                   User("cornelius", self.realm1))
+        t = get_tokens(serial="SPASS01")
+        uid = t[0].get_user_id()
+        self.assertEqual(uid, "1000")
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01", "type": "spass"}
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # The count window of the token will be set to 123
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"tokengroup": "group1"}
+                                   }
+                   }
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.ADD_TOKENGROUP, options=options)
+        self.assertTrue(res)
+        # Check if the token as the group assigned
+        tok = get_tokens(serial="SPASS01")[0]
+        self.assertEqual(1, len(tok.token.tokengroup_list))
+        tg = tok.token.tokengroup_list[0]
+        self.assertEqual(tg.tokengroup.name, "group1")
+
+        # now remove the tokengroup
+        t_handler = TokenEventHandler()
+        res = t_handler.do(ACTION_TYPE.REMOVE_TOKENGROUP, options=options)
+        self.assertTrue(res)
+
+        tok = get_tokens(serial="SPASS01")[0]
+        self.assertEqual(0, len(tok.token.tokengroup_list))
+
+        remove_token("SPASS01")
+
 
 class CustomUserAttributesTestCase(MyTestCase):
 

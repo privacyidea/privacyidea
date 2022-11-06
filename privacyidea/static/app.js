@@ -75,6 +75,7 @@ myApp.constant("clientUrl", backendUrl + instance + "/client");
 myApp.constant("subscriptionsUrl", backendUrl + instance + "/subscriptions");
 myApp.constant("policyUrl", backendUrl + instance + "/policy");
 myApp.constant("registerUrl", backendUrl + instance + "/register");
+myApp.constant("tokengroupUrl", backendUrl + instance + "/tokengroup");
 myApp.constant("CAConnectorUrl", backendUrl + instance + "/caconnector");
 myApp.constant("smtpServerUrl", backendUrl + instance + "/smtpserver");
 myApp.constant("radiusServerUrl", backendUrl + instance + "/radiusserver");

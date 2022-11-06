@@ -91,7 +91,7 @@ from .log import log_with
 from .config import (get_from_config, get_prepend_pin)
 from .user import (User,
                    get_username)
-from ..models import (TokenOwner, Challenge, cleanup_challenges)
+from ..models import (TokenOwner, TokenTokengroup, Tokengroup, Challenge, cleanup_challenges)
 from .challenge import get_challenges
 from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
                                     generate_otpkey)
@@ -244,6 +244,23 @@ class TokenClass(object):
                            realmname=user.realm).save()
         # set the tokenrealm
         self.set_realms([user.realm])
+
+    def add_tokengroup(self, tokengroup=None, tokengroup_id=None):
+        """
+        Adds a new tokengroup to this token.
+
+        :param tokengroup: The name of the token group to add
+        :type tokengroup: basestring
+        :param tokengroup_id: The id of the tokengroup to add
+        :type tokengroup_id: int
+        :return: True
+        """
+        if not tokengroup and not tokengroup_id:
+            raise ParameterError("You either need to specify a tokengroup name or id.")
+        r = TokenTokengroup(token_id=self.token.id,
+                            tokengroup_id=tokengroup_id,
+                            tokengroupname=tokengroup).save()
+        return r > 0
 
     @property
     def user(self):
@@ -723,6 +740,17 @@ class TokenClass(object):
         tokenowner = self.token.first_owner
         return "" if not tokenowner else tokenowner.user_id
 
+    def set_tokengroups(self, tokengroups, add=False):
+        """
+        Set the list of the tokengroups of a token.
+
+        :param tokengroups: realms the token should be assigned to
+        :type tokengroups: list
+        :param add: if the tokengroups should be added and not replaced
+        :type add: boolean
+        """
+        self.token.set_tokengroups(tokengroups, add=add)
+
     def set_realms(self, realms, add=False):
         """
         Set the list of the realms of a token.
@@ -929,6 +957,19 @@ class TokenClass(object):
 
     def del_tokeninfo(self, key=None):
         self.token.del_info(key)
+
+    def del_tokengroup(self, tokengroup=None, tokengroup_id=None):
+        """
+        Removes a token group from a token.
+        You either need to specify the name or the ID of the tokengroup.
+
+        :param tokengroup: The name of the tokengroup
+        :type tokengroup: basestring
+        :param tokengroup_id: The ID of the tokengroup
+        :type tokengroup_id: int
+        :return: True in case of success
+        """
+        self.token.del_tokengroup(tokengroup=tokengroup, tokengroup_id=tokengroup_id)
 
     @check_token_locked
     def set_count_auth_success_max(self, count):

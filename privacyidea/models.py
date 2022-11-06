@@ -307,6 +307,38 @@ class Token(MethodsMixin, db.Model):
         if reset_failcount is True:
             self.failcount = 0
 
+    def set_tokengroups(self, tokengroups, add=False):
+        """
+        Set the list of the tokengroups.
+
+        This is done by filling the :py:class:`privacyidea.models.TokenTokengroup` table.
+
+        :param tokengroups: the tokengroups
+        :type tokengroups: list[str]
+        :param add: If set, the tokengroups are added. I.e. old tokengroups are not deleted
+        :type add: bool
+        """
+        # delete old Tokengroups
+        if not add:
+            db.session.query(TokenTokengroup)\
+                      .filter(TokenTokengroup.token_id == self.id)\
+                      .delete()
+        # add new Tokengroups
+        # We must not set the same tokengroup more than once...
+        # uniquify: tokengroups -> set(tokengroups)
+        for tokengroup in set(tokengroups):
+            # Get the id of the realm to add
+            g = Tokengroup.query.filter_by(name=tokengroup).first()
+            if g:
+                # Check if TokenTokengroup already exists
+                tg = TokenTokengroup.query.filter_by(token_id=self.id,
+                                                     tokengroup_id=g.id).first()
+                if not tg:
+                    # If the Tokengroup is not yet attached to the token
+                    Tg = TokenTokengroup(token_id=self.id, tokengroup_id=g.id)
+                    db.session.add(Tg)
+        db.session.commit()
+
     def set_realms(self, realms, add=False):
         """
         Set the list of the realms.
@@ -550,6 +582,11 @@ class Token(MethodsMixin, db.Model):
         for realm_entry in self.realm_list:
             realm_list.append(realm_entry.realm.name)
         ret['realms'] = realm_list
+        # list of tokengroups
+        tokengroup_list = []
+        for tg_entry in self.tokengroup_list:
+            tokengroup_list.append(tg_entry.tokengroup.name)
+        ret['tokengroup'] = tokengroup_list
         return ret
 
     __str__ = __unicode__
@@ -608,6 +645,28 @@ class Token(MethodsMixin, db.Model):
             tokeninfos = TokenInfo.query.filter_by(token_id=self.id)
         for ti in tokeninfos:
             ti.delete()
+
+    def del_tokengroup(self, tokengroup=None, tokengroup_id=None):
+        """
+        Deletes the tokengroup from the given token.
+        If tokengroup name and id are omitted, all tokengroups are deleted.
+
+        :param tokengroup: The name of the tokengroup
+        :param tokengroup_id: The id of the tokengroup
+        :return:
+        """
+        if tokengroup:
+            # We need to resolve the id of the tokengroup
+            t = Tokengroup.query.filter_by(name=tokengroup).first()
+            if not t:
+                raise Exception("tokengroup does not exist")
+            tokengroup_id = t.id
+        if tokengroup_id:
+            tgs = TokenTokengroup.query.filter_by(tokengroup_id=tokengroup_id, token_id=self.id)
+        else:
+            tgs = TokenTokengroup.query.filter_by(token_id=self.id)
+        for tg in tgs:
+            tg.delete()
 
     def get_info(self):
         """
@@ -3080,3 +3139,107 @@ class MonitoringStats(MethodsMixin, db.Model):
         self.stats_value = value
         #self.save()
 
+
+class Tokengroup(TimestampMethodsMixin, db.Model):
+    """
+    The tokengroup table contains the definition of available token groups.
+    A token can then be assigned to several of these tokengroups.
+    """
+    __tablename__ = 'tokengroup'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    id = db.Column(db.Integer, Sequence("tokengroup_seq"), primary_key=True,
+                   nullable=False)
+    name = db.Column(db.Unicode(255), default=u'',
+                     unique=True, nullable=False)
+    Description = db.Column(db.Unicode(2000), default=u'')
+
+    @log_with(log)
+    def __init__(self, groupname, description=None):
+        self.name = groupname
+        self.Description = description
+
+    def delete(self):
+        ret = self.id
+        # delete all TokenTokenGroup
+        db.session.query(TokenTokengroup)\
+                  .filter(TokenTokengroup.tokengroup_id == ret)\
+                  .delete()
+        # delete the tokengroup
+        db.session.delete(self)
+        save_config_timestamp()
+        db.session.commit()
+        return ret
+
+    def save(self):
+        ti_func = Tokengroup.query.filter_by(name=self.name).first
+        ti = ti_func()
+        if ti is None:
+            return TimestampMethodsMixin.save(self)
+        else:
+            # update
+            Tokengroup.query.filter_by(id=ti.id).update({'Description': self.Description})
+            ret = ti.id
+            db.session.commit()
+        return ret
+
+
+class TokenTokengroup(TimestampMethodsMixin, db.Model):
+    """
+    This table stores the assignment of tokens to tokengroups.
+    A token can be assigned to several different token groups.
+    """
+    __tablename__ = 'tokentokengroup'
+    __table_args__ = (db.UniqueConstraint('token_id',
+                                          'tokengroup_id',
+                                          name='ttgix_2'),
+                      {'mysql_row_format': 'DYNAMIC'})
+    id = db.Column(db.Integer(), Sequence("tokentokengroup_seq"), primary_key=True,
+                   nullable=True)
+    token_id = db.Column(db.Integer(),
+                         db.ForeignKey('token.id'))
+    tokengroup_id = db.Column(db.Integer(),
+                              db.ForeignKey('tokengroup.id'))
+    # This creates an attribute "tokengroup_list" in the Token object
+    token = db.relationship('Token',
+                            lazy='joined',
+                            backref='tokengroup_list')
+    # This creates an attribute "token_list" in the Tokengroup object
+    tokengroup = db.relationship('Tokengroup',
+                                 lazy='joined',
+                                 backref='token_list')
+
+    def __init__(self, tokengroup_id=0, token_id=0, tokengroupname=None):
+        """
+        Create a new TokenTokengroup assignment
+        :param tokengroup_id: The id of the token group
+        :param tokengroupname: the name of the tokengroup
+        :param token_id: The id of the token
+        """
+        if tokengroupname:
+            r = Tokengroup.query.filter_by(name=tokengroupname).first()
+            if not r:
+                raise Exception("tokengroup does not exist")
+            self.tokengroup_id = r.id
+        if tokengroup_id:
+            self.tokengroup_id = tokengroup_id
+        self.token_id = token_id
+
+    def save(self):
+        """
+        We only save this, if it does not exist, yet.
+        """
+        tr_func = TokenTokengroup.query.filter_by(tokengroup_id=self.tokengroup_id,
+                                                  token_id=self.token_id).first
+        tr = tr_func()
+        if tr is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            if get_app_config_value(SAFE_STORE, False):
+                tr = tr_func()
+                ret = tr.id
+            else:
+                ret = self.id
+        else:
+            ret = self.id
+        return ret

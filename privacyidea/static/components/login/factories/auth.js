@@ -75,10 +75,12 @@ angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
                 return user.role;
             },
             checkRight: function (action) {
-                // check if the action is contained in user.rights
-                var res = (user.rights.indexOf(action) >= 0);
-                ////debug: console.log("checking right: " + action + ": " + res);
-                return res;
+                if (user.rights) {
+                    // check if the action is contained in user.rights
+                    var res = (user.rights.indexOf(action) >= 0);
+                    ////debug: console.log("checking right: " + action + ": " + res);
+                    return res;
+                }
             },
             getRightsValue: function (action, defaultValue=false) {
                 // return the value of an action like otp_pin_minlength

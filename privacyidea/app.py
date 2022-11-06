@@ -60,6 +60,7 @@ from privacyidea.api.smsgateway import smsgateway_blueprint
 from privacyidea.api.clienttype import client_blueprint
 from privacyidea.api.subscriptions import subscriptions_blueprint
 from privacyidea.api.monitoring import monitoring_blueprint
+from privacyidea.api.tokengroup import tokengroup_blueprint
 from privacyidea.lib import queue
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
@@ -174,6 +175,7 @@ def create_app(config_name="development",
     app.register_blueprint(client_blueprint, url_prefix='/client')
     app.register_blueprint(subscriptions_blueprint, url_prefix='/subscriptions')
     app.register_blueprint(monitoring_blueprint, url_prefix='/monitoring')
+    app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
     db.init_app(app)
     migrate = Migrate(app, db)
 

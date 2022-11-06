@@ -205,6 +205,18 @@ Please take care, that probably the PIN needs to be removed from the response
 using the *response mangler handler* after
 handling it with the notification handler.
 
+add tokengroup
+..............
+
+The token is assigned to the given tokengroup.
+
+.. Note:: A token can be assigned to several different tokengroups at the same time.
+
+remove tokengroup
+.................
+
+The token is unassigned from the given tokengroup.
+
 Code
 ~~~~
 
