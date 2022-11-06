@@ -1289,15 +1289,15 @@ class TokenTestCase(MyTestCase):
                          binascii.hexlify(otpkey))
         remove_token("NEW001")
         # unknown encoding
-        self.assertRaisesRegex(ParameterError,
-                               "Unknown OTP key format",
-                               init_token,
-                               {"serial": "NEW001",
-                                "type": "hotp",
-                                "otpkey": binascii.hexlify(otpkey),
-                                "otpkeyformat": "foobar"},
-                               user=User(login="cornelius",
-                                         realm=self.realm1))
+        self.assertRaisesRegexp(ParameterError,
+                                "Unknown OTP key format",
+                                init_token,
+                                {"serial": "NEW001",
+                                 "type": "hotp",
+                                 "otpkey": binascii.hexlify(otpkey),
+                                 "otpkeyformat": "foobar"},
+                                user=User(login="cornelius",
+                                          realm=self.realm1))
         remove_token("NEW001")
         # successful base32check encoding
         base32check_encoding = b32encode_and_unicode(checksum + otpkey).strip("=")
@@ -1341,56 +1341,56 @@ class TokenTestCase(MyTestCase):
         # invalid base32check encoding (incorrect checksum due to typo)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = "A" + base32check_encoding[1:]
-        self.assertRaisesRegex(ParameterError,
-                               "Incorrect checksum",
-                               init_token,
-                               {"serial": "NEW004", "type": "hotp",
-                                "otpkey": base32check_encoding,
-                                "otpkeyformat": "base32check"},
-                               user=User(login="cornelius", realm=self.realm1))
+        self.assertRaisesRegexp(ParameterError,
+                                "Incorrect checksum",
+                                init_token,
+                                {"serial": "NEW004", "type": "hotp",
+                                 "otpkey": base32check_encoding,
+                                 "otpkeyformat": "base32check"},
+                                user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW004") # TODO: Token is created anyway?
         # invalid base32check encoding (missing four characters => incorrect checksum)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = base32check_encoding[:-4]
-        self.assertRaisesRegex(ParameterError,
-                               "Incorrect checksum",
-                               init_token,
-                               {"serial": "NEW005", "type": "hotp",
-                                "otpkey": base32check_encoding,
-                                "otpkeyformat": "base32check"},
-                               user=User(login="cornelius", realm=self.realm1))
+        self.assertRaisesRegexp(ParameterError,
+                                "Incorrect checksum",
+                                init_token,
+                                {"serial": "NEW005", "type": "hotp",
+                                 "otpkey": base32check_encoding,
+                                 "otpkeyformat": "base32check"},
+                                user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW005") # TODO: Token is created anyway?
         # invalid base32check encoding (too many =)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = base32check_encoding + "==="
-        self.assertRaisesRegex(ParameterError,
-                               "Invalid base32",
-                               init_token,
-                               {"serial": "NEW006", "type": "hotp",
-                                "otpkey": base32check_encoding,
-                                "otpkeyformat": "base32check"},
-                               user=User(login="cornelius", realm=self.realm1))
+        self.assertRaisesRegexp(ParameterError,
+                                "Invalid base32",
+                                init_token,
+                                {"serial": "NEW006", "type": "hotp",
+                                 "otpkey": base32check_encoding,
+                                 "otpkeyformat": "base32check"},
+                                user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW006") # TODO: Token is created anyway?
         # invalid base32check encoding (wrong characters)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = "1" + base32check_encoding[1:]
-        self.assertRaisesRegex(ParameterError,
-                               "Invalid base32",
-                               init_token,
-                               {"serial": "NEW006", "type": "hotp",
-                                "otpkey": base32check_encoding,
-                                "otpkeyformat": "base32check"},
-                               user=User(login="cornelius", realm=self.realm1))
+        self.assertRaisesRegexp(ParameterError,
+                                "Invalid base32",
+                                init_token,
+                                {"serial": "NEW006", "type": "hotp",
+                                 "otpkey": base32check_encoding,
+                                 "otpkeyformat": "base32check"},
+                                user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW006") # TODO: Token is created anyway?
         # invalid key (too short)
         base32check_encoding = b32encode_and_unicode(b'Yo')
-        self.assertRaisesRegex(ParameterError,
-                               "Too short",
-                               init_token,
-                               {"serial": "NEW006", "type": "hotp",
-                                "otpkey": base32check_encoding,
-                                "otpkeyformat": "base32check"},
-                               user=User(login="cornelius", realm=self.realm1))
+        self.assertRaisesRegexp(ParameterError,
+                                "Too short",
+                                init_token,
+                                {"serial": "NEW006", "type": "hotp",
+                                 "otpkey": base32check_encoding,
+                                 "otpkeyformat": "base32check"},
+                                user=User(login="cornelius", realm=self.realm1))
         remove_token("NEW006")
 
     def test_51_tokenkind(self):
@@ -2047,7 +2047,7 @@ class PINChangeTestCase(MyTestCase):
         newpin = "test"
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', category=DeprecationWarning)
-            self.assertRaisesRegex(
+            self.assertRaisesRegexp(
                 PolicyError, "The minimum OTP PIN length is 5", check_token_list,
                 [tok, tok2], newpin, user=user_obj,
                 options={"transaction_id": transaction_id,
