@@ -91,6 +91,8 @@ class HotpTokenClass(TokenClass):
 
     # The HOTP token provides means to verify the enrollment
     can_verify_enrollment = True
+    # If the token is enrollable via multichallenge
+    is_multichallenge_enrollable = True
 
     @staticmethod
     def get_class_type():

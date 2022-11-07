@@ -168,6 +168,9 @@ class TokenClass(object):
     check_if_disabled = True
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
+    # If the token is enrollable via multichallenge
+    is_multichallenge_enrollable = False
+
 
     @log_with(log)
     def __init__(self, db_token):

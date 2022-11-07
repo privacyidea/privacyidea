@@ -262,6 +262,8 @@ class PushTokenClass(TokenClass):
     client_mode = CLIENTMODE.POLL
     # A disabled PUSH token has to be removed from the list of checked tokens.
     check_if_disabled = False
+    # If the token is enrollable via multichallenge
+    is_multichallenge_enrollable = True
 
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)

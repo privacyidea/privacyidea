@@ -1012,3 +1012,13 @@ def import_config(data, name=None):
         ', '.join([k for k, v in res.items() if v == 'insert'])))
     log.info('Updated configuration: {0!s}'.format(
         ', '.join([k for k, v in res.items() if v == 'update'])))
+
+
+def get_multichallenge_enrollable_tokentypes():
+    enrollable_tokentypes = []
+    # If the token is enrollable via multichallenge
+    for tclass in get_token_classes():
+        if tclass.is_multichallenge_enrollable:
+            enrollable_tokentypes.append(tclass.get_class_type())
+
+    return enrollable_tokentypes
