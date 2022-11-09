@@ -381,6 +381,7 @@ For more information on configuring U2F see :ref:`u2f_token`.
 
 .. [#pythonre] https://docs.python.org/2/library/re.html
 
+.. _reset_all_user_tokens:
 
 reset_all_user_tokens
 ~~~~~~~~~~~~~~~~~~~~~
@@ -390,6 +391,20 @@ type: bool
 If a user authenticates successfully all failcounter of all of his tokens
 will be reset. This can be important, if using empty PINs or *otppin=None*.
 
+always_increase_failcounter
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+If a user logs in with their correct userstore password or a suitable tokenpin,
+the failcounter will still be increased for the time being.
+
+The reason for this is that an attack can no longer trigger an infinite number
+of SMS or emails, for example. Because once the maximum failcounter has been reached,
+no further tokens can be triggered.
+
+.. note:: It should be noted that the failcounter of all tokens from the user are increased.
+   It makes sense to use this policy together with :ref:`reset_all_user_tokens`.
 
 .. _policy_auth_cache:
 
