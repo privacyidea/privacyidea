@@ -357,6 +357,7 @@ class ACTION(object):
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
+    ALWAYSINCREASEFAILCOUNTER = "always_increase_failcounter"
     ENROLLPIN = "enrollpin"
     MANAGESUBSCRIPTION = "managesubscription"
     SEARCH_ON_ENTER = "search_on_enter"
@@ -2295,6 +2296,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _('If a user authenticates successfully reset the '
                           'failcounter of all of his tokens.')
+            },
+            ACTION.ALWAYSINCREASEFAILCOUNTER: {
+                'type': 'bool',
+                'desc': _('If a user enters a correct pin or userstore password,'
+                          '  increases the failcounter of all of his tokens.')
             },
             ACTION.AUTH_CACHE: {
                 'type': 'str',

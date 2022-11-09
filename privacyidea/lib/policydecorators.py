@@ -660,3 +660,32 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
                         "cannot be reset.")
 
     return r
+
+
+def always_increase_failcounter(wrapped_function, *args, **kwds):
+    """
+    Increase the failcounter from all token if any token pin/password match
+    :param token: The successful token, the tokenowner is used to find policies.
+    :param tokenobject_list: The list of all the tokens of the user
+    :param options: options dictionary containing g.
+    :return: None
+    """
+    tokenobject_list = args[0]
+    options = kwds.get("options") or {}
+    g = options.get("g")
+    allow_increase_failcount = kwds.get("allow_increase_failcount")
+    wrong_pin_or_otp = ['wrong otp pin', 'Response did not match the challenge.']
+    r = wrapped_function(*args, **kwds)
+    # A suitable tokenpin or/and the correct userstore password is entered
+    if not r[0] and g and allow_increase_failcount:
+        token_owner = tokenobject_list[0].user
+        increase_all = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ALWAYSINCREASEFAILCOUNTER,
+                               user_object=token_owner if token_owner else None).policies()
+        if increase_all and r[1]['message'] not in wrong_pin_or_otp:
+            log.debug("Increases the failcounter of all tokens from {0!s}".format(token_owner))
+            for tok_obj_increase in tokenobject_list:
+                try:
+                    tok_obj_increase.inc_failcount()
+                except Exception:
+                    log.debug("Token {0!s} is not processable".format(tok_obj_increase))
+    return r
