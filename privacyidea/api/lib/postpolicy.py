@@ -339,7 +339,7 @@ def preferred_client_mode(request, response):
         .action_values(allow_white_space_in_action=True, unique=True)
 
     if detail_pol:
-        preferred_client_mode_list = list(detail_pol.values())[0][0].split(" ")
+        preferred_client_mode_list = list(detail_pol)[0].split(", ")
     else:
         preferred_client_mode_list = DEFAULT_PREFERRED_CLIENT_MODE
     if content.get("detail"):
@@ -356,7 +356,7 @@ def preferred_client_mode(request, response):
             except IndexError as err:
                 content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
                 log.error('There was no except client mode in the multi-challenge. The preferred mode is'
-                          ' set to interactive. Please check your policy. Error:'.format(err))
+                          ' set to interactive. Please check your policy. Error:{0} '.format(err))
             except Exception as err:
                 content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
                 log.error('something with the preferred client mode got wrong:{0}'.format(err))

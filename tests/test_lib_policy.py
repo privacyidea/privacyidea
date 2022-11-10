@@ -7,7 +7,6 @@ The lib.policy.py only depends on the database model.
 import dateutil
 import mock
 
-from privacyidea.lib.token import init_token
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 
 from privacyidea.lib.auth import ROLE
@@ -24,7 +23,6 @@ from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.user import User
-import datetime
 from .base import PWFILE as FILE_PASSWORDS
 from .base import PWFILE2 as FILE_PASSWD
 
@@ -1513,39 +1511,6 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(sorted(d.get("set").get("*")), ["off", "on"])
         self.assertEqual(sorted(d.get("set").get("hello")), ["one", "three", "two"])
         self.assertEqual(sorted(d.get("set").get("hello2")), ["*"])
-
-    def test_34_preferred_client_mode_default(self):
-        self.setUp_user_realms()
-        OTPKE2 = "31323334353637383930313233343536373839AA"
-        user = User("multichal", self.realm1)
-        pin = "test49"
-        token_a = init_token({"serial": "CR2A",
-                              "type": "hotp",
-                              "otpkey": OTPKE2,
-                              "pin": pin}, user)
-        token_b = init_token({"serial": "CR2B",
-                              "type": "hotp",
-                              "otpkey": self.otpkey,
-                              "pin": pin}, user)
-        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
-            ACTION.CHALLENGERESPONSE))
-        # both tokens will be a valid challenge response token!
-        set_policy("u2f webauthn interactive poll", scope=SCOPE.AUTH, action="{0!s}=test".format(
-            ACTION.PREFERREDCLIENTMODE))
-
-        with self.app.test_request_context('/validate/check',
-                                           method='POST',
-                                           data={"user": "multichal",
-                                                 "realm": self.realm1,
-                                                 "pass": pin}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertEqual(result.get("value"), False)
-            detail = res.json.get("detail")
-            self.assertEqual(detail.get("preferred_client_mode"), 'interactive')
-
-        delete_policy("test49")
 
     def test_40_disable_policy_client_remains(self):
         pname = "client_must_not_vanish"
