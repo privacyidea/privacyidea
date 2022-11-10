@@ -356,10 +356,10 @@ def preferred_client_mode(request, response):
             except IndexError as err:
                 content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
                 log.error('There was no except client mode in the multi-challenge. The preferred mode is'
-                          ' set to interactive. Please check your policy. Error:{0} '.format(err))
-            except Exception as err:
-                content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
-                log.error('something with the preferred client mode got wrong:{0}'.format(err))
+                          ' set to interactive. Please check your policy. Error: {0} '.format(err))
+            except Exception as err:                                                                #pragma no cover
+                content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'           #pragma no cover
+                log.error('something with the preferred client mode got wrong: {0}'.format(err))    #pragma no cover
 
     response.set_data(json.dumps(content))
     return response
