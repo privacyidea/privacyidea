@@ -23,7 +23,6 @@ from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.user import User
-import datetime
 from .base import PWFILE as FILE_PASSWORDS
 from .base import PWFILE2 as FILE_PASSWD
 

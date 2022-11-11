@@ -92,7 +92,7 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             no_detail_on_success, autoassign,
                                             offline_info,
                                             add_user_detail_to_response, construct_radius_response,
-                                            mangle_challenge_response, is_authorized)
+                                            mangle_challenge_response, is_authorized, preferred_client_mode)
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 import logging
@@ -207,6 +207,7 @@ def offlinerefill():
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
+@postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(pushtoken_wait, request=request)

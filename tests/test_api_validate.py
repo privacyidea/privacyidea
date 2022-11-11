@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 import six
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from privacyidea.lib.utils import to_unicode
 from six.moves.urllib.parse import urlencode, quote
 import json
-
+from privacyidea.lib.tokens.pushtoken import PUSH_ACTION, strip_key
 from privacyidea.lib.utils import hexlify_and_unicode
 from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
@@ -3619,6 +3623,35 @@ class MultiChallege(MyApiTestCase):
 
     serial = "hotp1"
 
+    """
+    for test 3
+    """
+
+    server_private_key = rsa.generate_private_key(public_exponent=65537,
+                                                  key_size=4096,
+                                                  backend=default_backend())
+    server_private_key_pem = to_unicode(server_private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption()))
+    server_public_key_pem = to_unicode(server_private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo))
+
+    # We now allow white spaces in the firebase config name
+    firebase_config_name = "my firebase config"
+
+    smartphone_private_key = rsa.generate_private_key(public_exponent=65537,
+                                                      key_size=4096,
+                                                      backend=default_backend())
+    smartphone_public_key = smartphone_private_key.public_key()
+    smartphone_public_key_pem = to_unicode(smartphone_public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo))
+    # The smartphone sends the public key in URLsafe and without the ----BEGIN header
+    smartphone_public_key_pem_urlsafe = strip_key(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
+    serial_push = "PIPU001"
+
     def setUp(self):
         super(MultiChallege, self).setUp()
         self.setUp_user_realms()
@@ -3805,6 +3838,136 @@ class MultiChallege(MyApiTestCase):
         delete_policy("hotp_chalresp")
         delete_policy("challenge_header")
 
+    def test_03_preferred_client_mode(self):
+        REGISTRATION_URL = "http://test/ttype/push"
+        TTL = "10"
+
+        self.setUp_user_realms()
+
+        # set policy
+        from privacyidea.lib.tokens.pushtoken import POLL_ONLY
+        set_policy("push2", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
+                       PUSH_ACTION.FIREBASE_CONFIG, POLL_ONLY,
+                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL,
+                       PUSH_ACTION.TTL, TTL))
+
+        # create push token for user
+        # 1st step
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "push",
+                                                 "pin": "otppin",
+                                                 "user": "selfservice",
+                                                 "realm": self.realm1,
+                                                 "serial": self.serial_push,
+                                                 "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            detail = res.json.get("detail")
+            serial = detail.get("serial")
+            enrollment_credential = detail.get("enrollment_credential")
+
+        # 2nd step: as performed by the smartphone
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": serial,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            detail = res.json.get("detail")
+
+
+        # create hotp token for user
+        init_token({"serial": "CR2A",
+                             "type": "hotp",
+                             "otpkey": "31323334353637383930313233343536373839AA",
+                             "pin": "otppin"}, user=User("selfservice", self.realm1))
+        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+            ACTION.CHALLENGERESPONSE))
+
+        set_policy("test", scope=SCOPE.AUTH, action="{0!s}=poll, webauthn, interactive, u2f".format(
+            ACTION.PREFERREDCLIENTMODE))
+
+        # authenticate with spass
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "realm": self.realm1,
+                                                 "pass": "otppin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            detail = res.json.get("detail")
+            self.assertEqual(detail.get("preferred_client_mode"), 'poll')
+
+        delete_policy("test49")
+        delete_policy("test")
+        delete_policy("push2")
+
+    def test_04_preferred_client_mode_default(self):
+        self.setUp_user_realms()
+        OTPKE2 = "31323334353637383930313233343536373839"
+        user = User("multichal", self.realm1)
+        pin = "test49"
+        token_a = init_token({"serial": "CR2AAA",
+                              "type": "hotp",
+                              "otpkey": OTPKE2,
+                              "pin": pin}, user)
+        token_b = init_token({"serial": "CR2B",
+                              "type": "hotp",
+                              "otpkey": self.otpkey,
+                              "pin": pin}, user)
+        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+            ACTION.CHALLENGERESPONSE))
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "multichal",
+                                                 "realm": self.realm1,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result.get("value"), False)
+            detail = res.json.get("detail")
+            self.assertEqual(detail.get("preferred_client_mode"), 'interactive')
+
+        delete_policy("test49")
+
+    def test_05_preferred_client_mode_no_accepted_values(self):
+        self.setUp_user_realms()
+        OTPKE2 = "31323334353637383930313233343536373839"
+        user = User("multichal", self.realm1)
+        pin = "test49"
+        token_a = init_token({"serial": "CR2AAA",
+                              "type": "hotp",
+                              "otpkey": OTPKE2,
+                              "pin": pin}, user)
+        token_b = init_token({"serial": "CR2B",
+                              "type": "hotp",
+                              "otpkey": self.otpkey,
+                              "pin": pin}, user)
+        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+            ACTION.CHALLENGERESPONSE))
+        # both tokens will be a valid challenge response token!
+        set_policy("test", scope=SCOPE.AUTH, action="{0!s}=wrong, falsch, Chigau, sbagliato".format(
+            ACTION.PREFERREDCLIENTMODE))
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "multichal",
+                                                 "realm": self.realm1,
+                                                 "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            detail = res.json.get("detail")
+            self.assertEqual(detail.get("preferred_client_mode"), 'interactive')
+
+        delete_policy("test49")
+        delete_policy("test")
 
 class AChallengeResponse(MyApiTestCase):
 
