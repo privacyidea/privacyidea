@@ -381,6 +381,10 @@ class ACTION(object):
     SET_USER_ATTRIBUTES = "set_custom_user_attributes"
     DELETE_USER_ATTRIBUTES = "delete_custom_user_attributes"
     VERIFY_ENROLLMENT = "verify_enrollment"
+    TOKENGROUPS = "tokengroups"
+    TOKENGROUP_LIST = "tokengroup_list"
+    TOKENGROUP_ADD = "tokengroup_add"
+    TOKENGROUP_DELETE = "tokengroup_delete"
     PREFERREDCLIENTMODE = "preferred_client_mode"
 
 
@@ -2284,7 +2288,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.PREFERREDCLIENTMODE: {
                 'type': 'str',
                 'desc': _('You can set the client modes in the order that you prefer. '
-                          'For example: "interactive webauthn poll u2f". Except'
+                          'For example: "interactive webauthn poll u2f". Accepted'
                           ' values are:"interactive, webauthn, poll, u2f"')
             }
         },

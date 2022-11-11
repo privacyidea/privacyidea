@@ -51,12 +51,11 @@ from privacyidea.lib.policy import DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL
 from privacyidea.lib.policy import DEFAULT_PREFERRED_CLIENT_MODE
 from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
-from privacyidea.lib.machine import get_hostname, get_auth_items
+from privacyidea.lib.machine import get_auth_items
 from .prepolicy import check_max_token_user, check_max_token_realm
 import functools
 import json
 import re
-import netaddr
 from privacyidea.lib.crypto import Sign
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.auth import ROLE
@@ -324,7 +323,7 @@ def preferred_client_mode(request, response):
     This policy function is used to add the preferred client mode.
     The admin can set the list of client modes in the policy in the
     same order as  he preferred them. The faction will pick the first
-    client mode from the list, that is also in the multichallege and
+    client mode from the list, that is also in the multichallenge and
     set it as preferred client mode
 
     :param request:
@@ -339,7 +338,8 @@ def preferred_client_mode(request, response):
         .action_values(allow_white_space_in_action=True, unique=True)
 
     if detail_pol:
-        preferred_client_mode_list = list(detail_pol)[0].split(", ")
+        # Split comma or several whitespaces
+        preferred_client_mode_list = re.split("\s+|,", list(detail_pol)[0])
     else:
         preferred_client_mode_list = DEFAULT_PREFERRED_CLIENT_MODE
     if content.get("detail"):
@@ -445,7 +445,6 @@ def save_pin_change(request, response, serial=None):
     "pin" and "otppin" is investigated.
 
     :param request:
-    :param action:
     :return:
     """
     policy_object = g.policy_object
