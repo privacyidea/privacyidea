@@ -685,6 +685,63 @@ def autoassign(request, response):
     return response
 
 
+def multichallenge_enroll_via_validate(request, response):
+    """
+    This is a post decorator to allow enrolling tokens via /validate/check.
+    It checks the AUTH policy ENROLL_VIA_MULTICHALLENGE and enrolls the
+    corresponding token type.
+    It also modifies the response accordingly, so that the client/plugin can
+    display necessary data for the enrollment to the user.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    content = response.json
+    # check, if the authentication was successful, then we need to do nothing
+    result = content.get("result")
+    if result.get("value") and result.get("authentication") == "ACCEPT":
+        user_obj = request.User
+        if user_obj.login and user_obj.realm:
+            enroll_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE,
+                                    user_object=user_obj).action_values(unique=True, write_to_audit_log=False)
+            # check if we have a multi enroll policy
+            if enroll_pol:
+                tokentype = list(enroll_pol)[0]
+                # TODO: Somehow we need to add condition, when we should stop enrolling!
+                if len(get_tokens(tokentype=tokentype, user=user_obj)) == 0:
+                    from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes
+                    from privacyidea.lib.tokenclass import CLIENTMODE
+                    if tokentype.lower() in get_multichallenge_enrollable_tokentypes():
+                        from privacyidea.lib.token import init_token
+                        token_obj = init_token({"type": tokentype,
+                                                "genkey": 1}, user=user_obj)
+
+                        # HOTP specific:
+                        # Set the response to true
+                        content.get("result")["value"] = False
+                        content.get("result")["authentication"] = "CHALLENGE"
+
+                        # Set the serial number
+                        detail = content.setdefault("detail", {})
+                        detail["serial"] = token_obj.token.serial
+                        detail["otplen"] = token_obj.token.otplen
+                        detail["type"] = token_obj.type
+                        detail["message"] = "Please scan the QR code!"
+                        # TODO: Create a challenge!
+                        c = token_obj.create_challenge()
+                        detail["transaction_id"] = c[2]
+                        # Add image
+                        init_details = token_obj.get_init_detail()
+                        detail["image"] = init_details.get("otpkey").get("img")
+                        detail["otpkey"] = init_details.get("otpkey")
+                        detail["client_mode"] = CLIENTMODE.INTERACTIVE
+
+                        response.set_data(json.dumps(content))
+
+    return response
+
+
 def construct_radius_response(request, response):
     """
     This decorator implements the /validate/radiuscheck endpoint.
