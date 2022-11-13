@@ -817,7 +817,7 @@ def is_authorized(request, response):
     """
     This policy decorator is used in the AUTHZ scope to
     decorate the /validate/check and /validate/triggerchallenge endpoint.
-    I will cause authentication to fail, if the policy
+    It will cause authentication to fail, if the policy
     authorized=deny_access is set.
 
     :param request:
