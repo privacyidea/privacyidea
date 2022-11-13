@@ -1877,3 +1877,16 @@ class TokenClass(object):
         :return: True
         """
         return False
+
+    @classmethod
+    def enroll_via_validate(cls, content, user_obj):
+        """
+        This class method is used in the policy ENROLL_VIA_MULTICHALLENGE.
+        It enrolls a new token of this type and returns the necessary information
+        to the client by modifying the content.
+
+        :param content: The content of a response
+        :param user_obj: A user object
+        :return: None, the content is modified
+        """
+        return True

@@ -28,7 +28,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.tokens.webauthn import webauthn_b64_decode
 from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_REG
 from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_PW
-from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.tokenclass import ROLLOUTSTATE, CLIENTMODE
 from privacyidea.lib import _
 from passlib.hash import argon2
 
@@ -5185,8 +5185,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             transaction_id = detail.get("transaction_id")
             self.assertTrue("Please scan the QR code!" in detail.get("message"), detail.get("message"))
             # Get image and client_mode
-            from privacyidea.lib.tokenclass import CLIENTMODE
             self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"))
+            # Check, that multi_challenge is also contained.
+            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
             serial = detail.get("serial")
 
@@ -5210,3 +5211,76 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # Cleanup
         delete_policy("pol_passthru")
         delete_policy("pol_multienroll")
+        remove_token(serial)
+
+    @ldap3mock.activate
+    def test_02_enroll_TOTP(self):
+        # Init LDAP
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        # create realm
+        # If the sales resolver comes first, frank is found in sales!
+        r = set_realm("ldaprealm", resolvers=["catchall"])
+        set_default_realm("ldaprealm")
+
+        # 1. set policies.
+        # Policy scope:auth, action:enroll_via_multichallenge=hotp
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
+
+        # 2. authenticate user via passthru
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertEqual(result.get("authentication"), "ACCEPT")
+
+        # Set enroll policy
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action="{0!s}=totp".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
+        # Now we should get an authentication Challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(result.get("authentication"), "CHALLENGE")
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            self.assertTrue("Please scan the QR code!" in detail.get("message"), detail.get("message"))
+            # Get image and client_mode
+            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"))
+            # Check, that multi_challenge is also contained.
+            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
+            self.assertIn("image", detail)
+            serial = detail.get("serial")
+
+        # 3. scan the qrcode / Get the OTP value
+        token_obj = get_tokens(serial=serial)[0]
+        counter = int(time.time() / 30)
+        otp = token_obj._calc_otp(counter)
+
+        # 4. run the 2nd authentication with the OTP value and the transaction_id
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "transaction_id": transaction_id,
+                                                 "pass": otp}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertEqual(result.get("authentication"), "ACCEPT")
+
+        # Cleanup
+        delete_policy("pol_passthru")
+        delete_policy("pol_multienroll")
+        remove_token(serial)

@@ -51,6 +51,7 @@ from privacyidea.lib.policy import DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL
 from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_hostname, get_auth_items
+from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes, get_token_class
 from .prepolicy import check_max_token_user, check_max_token_realm
 import functools
 import json
@@ -709,34 +710,11 @@ def multichallenge_enroll_via_validate(request, response):
             if enroll_pol:
                 tokentype = list(enroll_pol)[0]
                 # TODO: Somehow we need to add condition, when we should stop enrolling!
+                #       Here: If the user has one token of this type.
                 if len(get_tokens(tokentype=tokentype, user=user_obj)) == 0:
-                    from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes
-                    from privacyidea.lib.tokenclass import CLIENTMODE
                     if tokentype.lower() in get_multichallenge_enrollable_tokentypes():
-                        from privacyidea.lib.token import init_token
-                        token_obj = init_token({"type": tokentype,
-                                                "genkey": 1}, user=user_obj)
-
-                        # HOTP specific:
-                        # Set the response to true
-                        content.get("result")["value"] = False
-                        content.get("result")["authentication"] = "CHALLENGE"
-
-                        # Set the serial number
-                        detail = content.setdefault("detail", {})
-                        detail["serial"] = token_obj.token.serial
-                        detail["otplen"] = token_obj.token.otplen
-                        detail["type"] = token_obj.type
-                        detail["message"] = "Please scan the QR code!"
-                        # TODO: Create a challenge!
-                        c = token_obj.create_challenge()
-                        detail["transaction_id"] = c[2]
-                        # Add image
-                        init_details = token_obj.get_init_detail()
-                        detail["image"] = init_details.get("otpkey").get("img")
-                        detail["otpkey"] = init_details.get("otpkey")
-                        detail["client_mode"] = CLIENTMODE.INTERACTIVE
-
+                        tclass = get_token_class(tokentype)
+                        tclass.enroll_via_validate(content, user_obj)
                         response.set_data(json.dumps(content))
 
     return response
