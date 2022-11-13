@@ -46,6 +46,8 @@ enable
 The token which was identified in the request will be enabled
 if all conditions are matched.
 
+.. _event_token_enroll:
+
 enroll
 ......
 

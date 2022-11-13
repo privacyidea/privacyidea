@@ -5267,6 +5267,19 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         counter = int(time.time() / 30)
         otp = token_obj._calc_otp(counter)
 
+        # 4a. fail to authenticate with a wrong OTP value
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "transaction_id": transaction_id,
+                                                 "pass": "123"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(result.get("authentication"), "REJECT")
+
         # 4. run the 2nd authentication with the OTP value and the transaction_id
         with self.app.test_request_context('/validate/check',
                                            method='POST',
