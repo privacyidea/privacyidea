@@ -306,6 +306,8 @@ class User(object):
             return {}
         (uid, _rtype, _resolver) = self.get_user_identifiers()
         y = get_resolver_object(self.resolver)
+        if uid = None:
+            return None
         userInfo = y.getUserInfo(uid)
         # Now add the custom attributes, this is used e.g. in ADDUSERINRESPONSE
         userInfo.update(self.attributes)
