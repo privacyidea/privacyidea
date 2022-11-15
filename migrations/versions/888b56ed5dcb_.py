@@ -10,12 +10,28 @@ Create Date: 2021-02-10 12:17:40.880224
 revision = '888b56ed5dcb'
 down_revision = 'd415d490eb05'
 
-from alembic import op
+from alembic import op, context
 import sqlalchemy as sa
+from sqlalchemy.schema import Sequence, CreateSequence
+
+
+def dialect_supports_sequences():
+    migration_context = context.get_context()
+    return migration_context.dialect.supports_sequences
+
+
+def create_seq(seq):
+    if dialect_supports_sequences():
+        op.execute(CreateSequence(seq))
 
 
 def upgrade():
     try:
+        seq = Sequence('customuserattribute')
+        try:
+            create_seq(seq)
+        except Exception as _e:
+            pass
         op.create_table('customuserattribute',
             sa.Column('id', sa.Integer(), nullable=False),
             sa.Column('user_id', sa.Unicode(length=320), nullable=True),
