@@ -301,10 +301,12 @@ class User(object):
         :return: a dict with all the userinformation
         :rtype: dict
         """
-        if self.is_empty() or uid = None:
+        if self.is_empty():
             # An empty user has no info
             return {}
         (uid, _rtype, _resolver) = self.get_user_identifiers()
+        if uid = None:
+            return {}
         y = get_resolver_object(self.resolver)
         userInfo = y.getUserInfo(uid)
         # Now add the custom attributes, this is used e.g. in ADDUSERINRESPONSE
