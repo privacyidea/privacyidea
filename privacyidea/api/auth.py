@@ -66,7 +66,7 @@ from privacyidea.api.lib.postpolicy import (postpolicy, get_webui_settings, add_
                                             get_webui_settings)
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
-                                           webauthntoken_auth)
+                                           webauthntoken_auth, increase_failcounter_on_challenge)
 from privacyidea.api.lib.utils import (send_result, get_all_params,
                                        verify_auth_token, getParam)
 from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode, to_unicode
@@ -125,6 +125,7 @@ def before_request():
 
 
 @jwtauth.route('', methods=['POST'])
+@prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(pushtoken_disable_wait, request)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)

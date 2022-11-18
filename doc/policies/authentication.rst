@@ -391,20 +391,23 @@ type: bool
 If a user authenticates successfully all failcounter of all of his tokens
 will be reset. This can be important, if using empty PINs or *otppin=None*.
 
-always_increase_failcounter
+increase_failcounter_on_challenge
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: bool
 
-If a user logs in with their correct userstore password or a suitable tokenpin,
-the failcounter will still be increased for the time being.
+The normal behaviour is: to not increase the failcounter in case of challenge response.
+
+If this policy is activated the failcounter is increased for each token for which a challenge
+is triggered, even if the correct password or userstore pin is entered.
 
 The reason for this is that an attack can no longer trigger an infinite number
 of SMS or emails, for example. Because once the maximum failcounter has been reached,
-no further tokens can be triggered.
+no further challenges for these tokens can be triggered.
 
-.. note:: It should be noted that the failcounter of all tokens from the user are increased.
-   It makes sense to use this policy together with :ref:`reset_all_user_tokens`.
+.. note:: It should be noted that for all tokens for which a challenge has been generated,
+   the failcounter will be incremented. In the case of validate/triggerchallenge, the failcounters are increased for all tokens.
+   In some cases it makes sense to use this policy together with :ref:`reset_all_user_tokens`.
 
 .. _policy_auth_cache:
 

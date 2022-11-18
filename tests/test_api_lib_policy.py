@@ -50,7 +50,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            webauthntoken_allowed, check_application_tokentype,
                                            required_piv_attestation, check_custom_user_attributes,
                                            hide_tokeninfo, init_ca_template, init_ca_connector,
-                                           init_subject_components)
+                                           init_subject_components, increase_failcounter_on_challenge)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -3310,6 +3310,37 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("ca")
         delete_policy("sub1")
         delete_policy("sub2")
+
+    def test_60_increase_failcounter_on_challenge(self):
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "hans", "pass": "123456"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.User = User()
+
+        # Check, if that there is no parameter set
+        req.all_data = {"user": "hans", "pass": "123456"}
+        self.assertNotIn("increase_failcounter_on_challenge", req.all_data)
+
+        # Check that the parameters were added
+        increase_failcounter_on_challenge(req)
+        self.assertIn("increase_failcounter_on_challenge", req.all_data)
+
+        # Check that value is False with no policy
+        self.assertEqual(False, req.all_data.get("increase_failcounter_on_challenge"))
+
+        # Set policy
+        set_policy(name="increase_failcounter_on_challenge",
+                   scope=SCOPE.AUTH,
+                   action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+
+        # Check that value is True with set policy
+        increase_failcounter_on_challenge(req)
+        self.assertEqual(True, req.all_data.get("increase_failcounter_on_challenge"))
+
+        # delete policy
+        delete_policy("increase_failcounter_on_challenge")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):

@@ -70,7 +70,6 @@ from six import string_types
 from sqlalchemy import (and_, func)
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import expression
-
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
@@ -97,8 +96,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_lastauth,
                                               auth_cache,
                                               config_lost_token,
-                                              reset_all_user_tokens,
-                                              always_increase_failcounter)
+                                              reset_all_user_tokens)
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
 from privacyidea.lib.tokenclass import DATE_FORMAT
@@ -1973,8 +1971,7 @@ def check_realm_pass(realm, passw, options=None,
             return False, reply_dict
 
         return check_token_list(tokenobject_list, passw, options=options,
-                                allow_reset_all_tokens=False,
-                                allow_increase_failcount=False)
+                                allow_reset_all_tokens=False)
 
 
 @log_with(log)
@@ -2002,8 +1999,7 @@ def check_serial_pass(serial, passw, options=None):
     res, reply_dict = check_token_list([tokenobject], passw,
                                        user=tokenobject.user,
                                        options=options,
-                                       allow_reset_all_tokens=True,
-                                       allow_increase_failcount=True)
+                                       allow_reset_all_tokens=True)
 
     return res, reply_dict
 
@@ -2062,8 +2058,7 @@ def check_user_pass(user, passw, options=None):
         res, reply_dict = check_token_list(tokenobject_list, passw,
                                            user=tokenobject.user,
                                            options=options,
-                                           allow_reset_all_tokens=True,
-                                           allow_increase_failcount=True)
+                                           allow_reset_all_tokens=True)
 
     return res, reply_dict
 
@@ -2142,11 +2137,9 @@ def weigh_token_type(token_obj):
 
 @log_with(log)
 @libpolicy(reset_all_user_tokens)
-@libpolicy(always_increase_failcounter)
 @libpolicy(generic_challenge_response_reset_pin)
 @libpolicy(generic_challenge_response_resync)
-def check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=False,
-                     allow_increase_failcount=False):
+def check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=False):
     """
     this takes a list of token objects and tries to find the matching token
     for the given passw. It also tests,
@@ -2159,8 +2152,6 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
 
     :param tokenobject_list: list of identified tokens
     :param passw: the provided passw (mostly pin+otp)
-    :param allow_increase_failcount: If set to True, the policy increase the failcounter for all tokens,
-        even if the correct pin or password is given.
     :param user: the identified use - as class object
     :param options: additional parameters, which are passed to the token
     :param allow_reset_all_tokens: If set to True, the policy reset_all_user_tokens is evaluated to
@@ -2389,12 +2380,14 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
     elif challenge_request_token_list:
         # This is the initial REQUEST of a challenge response token
         active_challenge_token = [t for t in challenge_request_token_list
-                                  if t.token.active ]
+                                  if t.token.active]
         if len(active_challenge_token) == 0:
             reply_dict["message"] = _("No active challenge response token found")
         else:
             for token_obj in challenge_request_token_list:
                 token_obj.check_reset_failcount()
+                if is_true(options.get("increase_failcounter_on_challenge")):
+                    token_obj.inc_failcount()
             create_challenges_from_tokens(active_challenge_token, reply_dict, options)
 
     elif pin_matching_token_list:
