@@ -77,7 +77,7 @@ class MachineApplication(MachineApplicationBase):
                     user_object = toks[0].user
                     if user_object:
                         uInfo = user_object.info
-                        if uInfo and "username" in uInfo:
+                        if "username" in uInfo:
                             ret["username"] = uInfo.get("username")
                     # ret["info"] = uInfo
                 else:
