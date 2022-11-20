@@ -224,6 +224,7 @@ class HotpTokenClass(TokenClass):
         TokenClass.__init__(self, db_token)
         self.set_type(u"hotp")
         self.hKeyRequired = True
+        self.currently_in_challenge = False
 
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
@@ -838,3 +839,15 @@ class HotpTokenClass(TokenClass):
                 "message": "Please scan the QR code!"}
         detail["multi_challenge"] = [chal]
         detail.update(chal)
+
+    def has_further_challenge(self, options=None):
+        """
+
+        :param options:
+        :return:
+        """
+        try:
+            return self.currently_in_challenge
+        except AttributeError:
+            # Certain from HOTP inherited tokenclasses might not set currently_in_challenge
+            return False
