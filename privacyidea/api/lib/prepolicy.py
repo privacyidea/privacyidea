@@ -2251,5 +2251,5 @@ def increase_failcounter_on_challenge(request=None, action=None):
     which sets the parameter increase_failcounter_on_challenge
     """
     inc_fail_counter = Match.user(g, scope=SCOPE.AUTH, action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE,
-                                  user_object=request.User if request.User else None).any()
+                                  user_object=request.User if hasattr(request, 'User') else None).any()
     request.all_data["increase_failcounter_on_challenge"] = inc_fail_counter
