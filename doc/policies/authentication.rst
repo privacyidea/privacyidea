@@ -399,7 +399,7 @@ type: bool
 The normal behaviour is: to not increase the failcounter in case of challenge response.
 
 If this policy is activated the failcounter is increased for each token for which a challenge
-is triggered, even if the correct password or userstore pin is entered.
+is triggered.
 
 The reason for this is that an attack can no longer trigger an infinite number
 of SMS or emails, for example. Because once the maximum failcounter has been reached,

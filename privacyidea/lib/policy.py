@@ -2299,8 +2299,7 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE: {
                 'type': 'bool',
-                'desc': _('If a user enters a correct pin or userstore password,'
-                          '  increases the failcounter of all of his tokens.')
+                'desc': _('Increase the failcounter for all the tokens, for which a challenge has been triggered.')
             },
             ACTION.AUTH_CACHE: {
                 'type': 'str',

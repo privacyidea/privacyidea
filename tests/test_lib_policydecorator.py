@@ -19,7 +19,7 @@ from privacyidea.lib.policydecorators import (auth_otppin,
                                               login_mode, config_lost_token,
                                               challenge_response_allowed,
                                               auth_user_timelimit, auth_cache,
-                                              auth_lastauth, reset_all_user_tokens, always_increase_failcounter)
+                                              auth_lastauth, reset_all_user_tokens)
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.realm import set_realm, delete_realm
@@ -932,44 +932,3 @@ class LibPolicyTestCase(MyTestCase):
         remove_token("TOKMATCH")
         delete_policy("pol1")
         delete_policy("pol2")
-
-    def test_17_always_increase_failcounter(self):
-        self.setUp_user_realms()
-
-        set_policy("always_increase", scope=SCOPE.AUTH,
-                   action=ACTION.ALWAYSINCREASEFAILCOUNTER)
-
-        user = User(login="cornelius", realm=self.realm1)
-        pin1 = "pin1"
-        pin2 = "pin2"
-        token1 = init_token({"serial": pin1, "pin": pin1,
-                             "type": "spass"}, user=user)
-        token2 = init_token({"serial": pin2, "pin": pin2,
-                             "type": "spass"}, user=user)
-
-        token1.inc_failcount()
-        token2.inc_failcount()
-        token2.inc_failcount()
-        self.assertEqual(token1.token.failcount, 1)
-        self.assertEqual(token2.token.failcount, 2)
-
-        g.policy_object = PolicyClass()
-        g.audit_object = FakeAudit()
-        g.client_ip = None
-        g.serial = None
-        options = {"g": g}
-
-        r = always_increase_failcounter(self.fake_check_token_list_increase,
-                                        [token1, token2],
-                                        "pw", None,
-                                        options=options,
-                                        allow_increase_failcount=True,
-                                        result=True)
-        self.assertTrue(r)
-
-        self.assertEqual(token1.token.failcount, 2)
-        self.assertEqual(token2.token.failcount, 3)
-
-        # Clean up
-        remove_token(pin1)
-        remove_token(pin2)
