@@ -58,13 +58,7 @@ class LibPolicyTestCase(MyTestCase):
         return pin == "FAKE"
 
     @staticmethod
-    def fake_check_token_list_reset(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=True,
-                              result=False):
-        return result, "some text"    \
-
-    @staticmethod
-    def fake_check_token_list_increase(tokenobject_list, passw, user=None, options=None, allow_increase_failcount=True,
-                              result=False):
+    def fake_check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=True, result=False):
         return result, "some text"
 
     def test_01_otppin(self):
@@ -863,7 +857,7 @@ class LibPolicyTestCase(MyTestCase):
         g.serial = None
         options = {"g": g}
 
-        r = reset_all_user_tokens(self.fake_check_token_list_reset,
+        r = reset_all_user_tokens(self.fake_check_token_list,
                                   [token1, token2],
                                   "pw", None,
                                   options=options,
