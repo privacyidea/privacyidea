@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-06-08 16:56+0200\n"
-"PO-Revision-Date: 2022-04-09 12:10+0000\n"
+"PO-Revision-Date: 2022-11-25 13:47+0000\n"
 "Last-Translator: Salih Kiraz <salihk06@gmail.com>\n"
+"Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/tr/>\n"
 "Language: tr\n"
-"Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/tr/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.15-dev\n"
 "Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:222
@@ -2225,7 +2226,7 @@ msgstr ""
 
 #: lib/tokens/hotptoken.py:136
 msgid "HOTP: Event based One Time Passwords."
-msgstr "HOTP: Olay bir kez şifreleri tabanlı."
+msgstr "HOTP: Olay bazlı bir kez şifreleri tabanlı."
 
 #: lib/tokens/hotptoken.py:144
 msgid "The user may only have this maximum number of HOTP tokens assigned."
@@ -2401,7 +2402,7 @@ msgstr "İtin"
 
 #: lib/tokens/pushtoken.py:299
 msgid "PUSH: Send a push notification to a smartphone."
-msgstr "İtme: Bir akıllı telefona bir push bildirimi gönderin."
+msgstr "PUSH: Bir akıllı telefona bir push bildirimi gönderin."
 
 #: lib/tokens/pushtoken.py:307
 msgid "The configuration of your Firebase application."
@@ -2564,7 +2565,7 @@ msgstr "SMS belirteci"
 
 #: lib/tokens/smstoken.py:201
 msgid "SMS: Send a One Time Password to the users mobile phone."
-msgstr "SMS: Kullanıcıların cep telefonuna bir kerelik şifre gönderin."
+msgstr "SMS: Cep telefonuna bir kerelik şifre gönder."
 
 #: lib/tokens/smstoken.py:210
 msgid ""
@@ -2678,7 +2679,7 @@ msgstr "Lütfen QR kodunu tarayın"
 
 #: lib/tokens/totptoken.py:108
 msgid "TOTP: Time based One Time Passwords."
-msgstr "TOTP: Zaman tabanlı bir zaman şifreleri."
+msgstr "TOTP: Zaman tabanlı şifreler( Google Authenticator)"
 
 #: lib/tokens/u2ftoken.py:259
 msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
@@ -3039,4 +3040,3 @@ msgstr ""
 #~ "Bu, FreeOtp gibi akıllı telefon "
 #~ "uygulamaları için belirteç görüntüsünün "
 #~ "URL'sidir."
-
