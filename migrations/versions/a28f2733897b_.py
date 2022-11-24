@@ -27,28 +27,19 @@ def create_seq(seq):
 def upgrade():
     try:
         seq = Sequence('customuserattribute_seq')
-        try:
-            create_seq(seq)
-        except Exception as _e:
-            pass
+        create_seq(seq)
     except Exception as exx:
         print(exx)
 
     try:
         seq = Sequence('tokengroup_seq')
-        try:
-            create_seq(seq)
-        except Exception as _e:
-            pass
+        create_seq(seq)
     except Exception as exx:
         print(exx)
 
     try:
         seq = Sequence('tokentokengroup_seq')
-        try:
-            create_seq(seq)
-        except Exception as _e:
-            pass
+        create_seq(seq)
     except Exception as exx:
         print(exx)
 
