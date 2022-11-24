@@ -1,15 +1,15 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-10-01 12:19+0000\n"
-"Last-Translator: Ethem <ethem.saciak@gmail.com>\n"
+"PO-Revision-Date: 2022-11-25 13:47+0000\n"
+"Last-Translator: Salih Kiraz <salihk06@gmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/tr/>\n"
 "Language: tr\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.14.1\n"
+"X-Generator: Weblate 4.15-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -274,7 +274,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:36
 msgid "A token specific SMS gateway"
-msgstr "Bir belirteç belirli SMS ağ geçidi"
+msgstr "Bir jeton belirli SMS ağ geçidi"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
@@ -407,7 +407,7 @@ msgstr "Tüm SMS Ağ Geçitleri"
 
 #: privacyidea/static/components/token/views/token.html:11
 msgid "All tokens"
-msgstr "Tüm belirteçleri"
+msgstr "Tüm Jetonlar"
 
 #: privacyidea/static/components/user/views/user.html:19
 msgid "All users"
@@ -448,7 +448,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.html:44
 #: privacyidea/static/components/user/views/user.details.html:202
 msgid "Assign Token"
-msgstr "Belirteç atama"
+msgstr "Jeton atama"
 
 #: privacyidea/static/components/token/views/token.details.html:497
 #: privacyidea/static/components/token/views/token.details.html:510
@@ -457,15 +457,15 @@ msgstr "Kullanıcı atama"
 
 #: privacyidea/static/components/user/views/user.details.html:197
 msgid "Assign a new token {{ newToken.serial }}"
-msgstr "Yeni bir belirteç atama {{{newtoken.serial}}"
+msgstr "Yeni bir jeton atama {{ newToken.serial }}"
 
 #: privacyidea/static/components/token/views/token.assign.html:1
 msgid "Assign a new token {{ newTokenObject.serial }}"
-msgstr "Yeni bir belirteç atayın {{newtokenObject.serial}}"
+msgstr "Yeni bir jeton atayın {{ newTokenObject.serial }}"
 
 #: privacyidea/static/components/token/views/token.enroll.html:44
 msgid "Assign token to user"
-msgstr "Kullanıcıya belirteç atama"
+msgstr "Kullanıcıya jeton atama"
 
 #: privacyidea/static/components/token/views/token.details.html:447
 msgid "Assigned User"
@@ -481,7 +481,7 @@ msgstr "Takma makinesi"
 
 #: privacyidea/static/components/machine/views/machine.details.html:154
 msgid "Attach Token"
-msgstr "Belirteç takmak"
+msgstr "Jeton Ekleme"
 
 #: privacyidea/static/components/token/views/token.details.html:617
 msgid "Attach to a new Machine"
@@ -556,9 +556,9 @@ msgid ""
 msgstr ""
 "Bir OTP değeri girerek, belirteçlerin seri numarasını alabilirsiniz.\n"
 "    Daraltmak için ek isteğe bağlı parametreler de girebilirsiniz.\n"
-"    Tokeni arayın. Böylece yalnızca belirli belirteç türlerinde arama "
+"    Jetonu arayın. Böylece yalnızca belirli jeton türlerinde arama "
 "yapabilirsiniz.\n"
-"    veya atanmış veya atanmamış belirteçlerde."
+"    veya atanmış veya atanmamış jetonlarda."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:31
 msgid "CA Certificate"
@@ -696,8 +696,8 @@ msgid ""
 "            want to add the Token to your Google Authenticator."
 msgstr ""
 "<a href=\"{{enroledtoken.googleurl.value}} \"> buradaki </a> veya tarama\n"
-"            QR kodu, eğer\n"
-"            Belirteç'i Google Authenticator'unuza eklemek istiyorum."
+"            QR kodu, eğer \n"
+"            Jetonu Google Authenticator'unuza eklemek istiyorum."
 
 #: privacyidea/static/components/token/views/token.enrolled.motp.html:14
 msgid ""
@@ -809,8 +809,8 @@ msgid ""
 "Count Window of\n"
 "                    newly enrolled tokens"
 msgstr ""
-"Penceresini saymak\n"
-"                    Yeni kayıtlı belirteçler"
+"Penceresini sayısı \n"
+"                    Yeni kayıtlı jetonlar"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:187
 msgid "Create Periodic Task Definition"
@@ -987,7 +987,7 @@ msgstr "Silmek"
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:12
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:32
 msgid "Delete Token"
-msgstr "Jeton silmek"
+msgstr "Jeton sil"
 
 #: privacyidea/static/components/user/views/dialog.ask_user_delete.html:12
 #: privacyidea/static/components/user/views/dialog.ask_user_delete.html:26
@@ -1052,7 +1052,7 @@ msgstr "Devre dışı bırakmak"
 
 #: privacyidea/static/components/token/views/token.list.html:87
 msgid "Disable token"
-msgstr "Belirteç'i devre dışı bırakmak"
+msgstr "Jetonu devre dışı bırakmak"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:141
 msgid "Dive In!"
@@ -1071,7 +1071,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:19
 msgid "Do you really want to delete the Token {{ tokenSerial }}?"
-msgstr "Gerçekten belirteçleri silmek istiyor musun {{TOKENSERIAL}}?"
+msgstr "Gerçekten jetonu silmek istiyor musun {{ tokenSerial }}?"
 
 #: privacyidea/static/components/user/views/dialog.ask_user_delete.html:15
 msgid "Do you really want to delete the user in the user store?"
@@ -1240,7 +1240,7 @@ msgstr "Olanak vermek"
 
 #: privacyidea/static/components/token/views/token.list.html:92
 msgid "Enable token"
-msgstr "Belirteç'i etkinleştirmek"
+msgstr "Jetonu etkinleştirmek"
 
 #: privacyidea/static/components/token/views/token.details.html:242
 msgid "End Date before Start Date!"
@@ -1252,21 +1252,21 @@ msgstr "Son nokta (URL)"
 
 #: privacyidea/static/components/user/views/user.details.html:189
 msgid "Enroll New Token"
-msgstr "Yeni belirteç kayıt"
+msgstr "Yeni jeton kayıt"
 
 #: privacyidea/static/components/token/views/token.enroll.html:135
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:49
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:49
 #: privacyidea/static/components/token/views/token.html:25
 msgid "Enroll Token"
-msgstr "Kayıt belirteci"
+msgstr "Jeton Kayıt Ekleme"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:102
 #: privacyidea/static/components/token/controllers/tokenControllers.js:137
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:200
 msgid "Enroll a new token"
-msgstr "Yeni bir belirteç kaydetmek"
+msgstr "Yeni bir jeton kaydetmek"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:282
 msgid "Enrollment successfully verified."
@@ -1406,18 +1406,18 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.import.html:25
 msgid "For HOTP and TOTP tokens:"
-msgstr "Hotp ve TOTP belirteçleri için:"
+msgstr "HOTP ve TOTP jetonları için:"
 
 #: privacyidea/static/components/token/views/token.import.html:33
 msgid "For OCRA tokens:"
-msgstr "Ocra belirteçleri için:"
+msgstr "Ocra jetonları için:"
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:7
 msgid ""
 "For SMS tokens to work properly you need to set the\n"
 "    <a ui-sref=\"config.tokens({tokentype:'sms'})\">SMS Token Config</a>!"
 msgstr ""
-"SMS belirteçlerinin düzgün çalışması için ayarlamanız gerekir.\n"
+"SMS jetonlarının düzgün çalışması için ayarlamanız gerekir.\n"
 "    <a ui-sref=\"config.tokens({tokentype:'sms'})\">SMS Token Ayarları</a>!"
 
 #: privacyidea/static/components/token/views/token.enroll.tiqr.html:1
@@ -1445,8 +1445,7 @@ msgid ""
 "    to privacyIDEA."
 msgstr ""
 "Kayıt işlemi ve kimlik doğrulama işlemi için akıllı telefonunuzun bir "
-"internet bağlantısına ihtiyacı var\n"
-"    Privacyidea'ya."
+"internet bağlantısına ihtiyacı var"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:213
 msgid "Four Eyes: Two or more users are required to log in."
@@ -1565,8 +1564,8 @@ msgid ""
 "Here you can upload a csv file for your OATH token.\n"
 "            The file is supposed to contain one token per line."
 msgstr ""
-"Burada yemin etiniz için bir CSV dosyası yükleyebilirsiniz.\n"
-"            Dosyanın satır başına bir belirteç içermesi gerekiyordu."
+"Buradan OATH belirteciniz için bir csv dosyası yükleyebilirsiniz..\n"
+"            Dosyanın satır başına bir jeton içermesi gerekiyordu."
 
 #: privacyidea/static/components/token/views/token.import.html:47
 msgid ""
@@ -1792,7 +1791,7 @@ msgstr "Sınırlamak"
 
 #: privacyidea/static/components/token/views/token.html:62
 msgid "List Challenges"
-msgstr "Mücadele listesi"
+msgstr "Giriş Listesi"
 
 #: privacyidea/static/components/config/views/config.radius.html:7
 msgid "List RADIUS server definitions"
@@ -1812,7 +1811,7 @@ msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:110
 msgid "List tokens"
-msgstr "Belirteçler listesi"
+msgstr "Jeton listesi"
 
 #: privacyidea/static/components/directives/views/directive.attachmachine.html:14
 msgid "Loading Machines..."
@@ -1869,7 +1868,7 @@ msgstr "Çıkış Yap"
 
 #: privacyidea/static/components/token/views/token.html:73
 msgid "Lost Token"
-msgstr "Kayıp belirteç"
+msgstr "Kayıp Jeton"
 
 #: privacyidea/static/components/directives/views/directive.attachmachine.html:5
 msgid "Machine"
@@ -2711,7 +2710,7 @@ msgstr "SMS Token Ayarları"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:209
 msgid "SMS: Send a One Time Password to the users mobile phone."
-msgstr "SMS: Kullanıcıların cep telefonuna bir kerelik şifre gönderin."
+msgstr "SMS: Cep telefonuna bir kerelik şifre gönder."
 
 #: privacyidea/static/components/config/controllers/smtpServerController.js:89
 msgid "SMTP Config saved."
