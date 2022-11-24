@@ -1,4 +1,4 @@
-"""Sequence for cusstomuserattribute, tokengroup and tokentokengroup
+"""v3.8: Sequence for cusstomuserattribute, tokengroup and tokentokengroup
 
 Revision ID: a28f2733897b
 Revises: 89e57ed16379
