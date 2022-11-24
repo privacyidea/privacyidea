@@ -431,6 +431,7 @@ def check():
 @admin_required
 @postpolicy(is_authorized, request=request)
 @postpolicy(mangle_challenge_response, request=request)
+@postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
 @check_user_or_serial_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
