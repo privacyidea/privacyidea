@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-11-25 13:47+0000\n"
+"PO-Revision-Date: 2022-11-26 09:24+0000\n"
 "Last-Translator: Salih Kiraz <salihk06@gmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/tr/>\n"
@@ -695,9 +695,9 @@ msgid ""
 "            the QR Code, if you\n"
 "            want to add the Token to your Google Authenticator."
 msgstr ""
-"<a href=\"{{enroledtoken.googleurl.value}} \"> buradaki </a> veya tarama\n"
-"            QR kodu, eğer \n"
-"            Jetonu Google Authenticator'unuza eklemek istiyorum."
+"<a href=\"{{ enrolledToken.googleurl.value }}\"> buradaki </a>  veya  "
+"yandaki QR kodu Google Authenticator'a eklemek istiyorsanız "
+"kullanabilrisiniz."
 
 #: privacyidea/static/components/token/views/token.enrolled.motp.html:14
 msgid ""
@@ -1314,8 +1314,7 @@ msgid ""
 "Enter your username and password and click Log In to\n"
 "                authenticate."
 msgstr ""
-"Kullanıcı adınızı ve şifrenizi girin ve giriş yapın\n"
-"                kimlik doğrulaması."
+"Kimlik doğrulaması için kullanıcı adınızı ve şifrenizi girin ve giriş yapın"
 
 #: privacyidea/static/components/config/factories/config.js:44
 msgid "Error fetching policy template"
@@ -1839,7 +1838,7 @@ msgstr "Kayıt"
 #: privacyidea/static/components/login/views/login.html:20
 #: privacyidea/static/components/login/views/login.html:79
 msgid "Log In"
-msgstr "Giriş yapmak"
+msgstr "Giriş"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:117
 msgid "Log out"
@@ -1847,7 +1846,7 @@ msgstr "Çıkış Yap"
 
 #: privacyidea/static/templates/menu.html:118
 msgid "Login"
-msgstr "Giriş yapmak"
+msgstr "Giriş"
 
 #: privacyidea/static/components/login/views/login.html:9
 msgid ""
@@ -1911,7 +1910,7 @@ msgid ""
 "                    newly enrolled tokens"
 msgstr ""
 "Max başarısız\n"
-"                    Yeni kayıtlı belirteçler"
+"                    Yeni kayıtlı jetonlar"
 
 #: privacyidea/static/components/token/views/token.details.html:83
 msgid "Maxfail"
@@ -2188,7 +2187,7 @@ msgstr "PGP tuşu"
 #: privacyidea/static/components/directives/views/directive.assignuser.html:36
 #: privacyidea/static/components/token/views/token.enroll.html:59
 msgid "PIN"
-msgstr "TOPLU İĞNE"
+msgstr "PIN"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:643
 msgid "PIN changed successfully."
@@ -2523,12 +2522,12 @@ msgstr "Son koşu kaydedildi"
 
 #: privacyidea/static/templates/menu.html:109
 msgid "Refresh"
-msgstr "Yenilemek"
+msgstr "Yenile"
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:30
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:30
 msgid "Regenerate QR Code"
-msgstr "QR kodunu yenilemek"
+msgstr "QR kodunu yenile"
 
 #: privacyidea/static/components/register/views/register.html:14
 #: privacyidea/static/components/register/views/register.html:89
@@ -4659,8 +4658,8 @@ msgid ""
 "You are logged in as {{ loggedInUser.username }}\n"
 "                            @  {{ loggedInUser.realm }}."
 msgstr ""
-"Olarak giriş yaptınız {{loggedinuser.username}}\n"
-"                            @ {{loggedinuser.realm}}."
+"{{ loggedInUser.username }} Olarak giriş yaptınız\n"
+"                            @  {{ loggedInUser.realm }}."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:504
 msgid ""
@@ -5014,7 +5013,7 @@ msgstr "PrivacyIDEA Tek Sayfa Web İstemcisi"
 
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:10
 msgid "privacyIDEA UI is locked"
-msgstr "privacyidea ui kilitli"
+msgstr "Kilitli"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:33
 msgid "privacyIDEA authentication backend"
