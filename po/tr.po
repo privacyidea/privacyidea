@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-11-28 12:47+0000\n"
+"PO-Revision-Date: 2022-11-28 13:00+0000\n"
 "Last-Translator: Salih Kiraz <salihk06@gmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/tr/>\n"
@@ -1267,7 +1267,7 @@ msgstr "Jeton Ekle"
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:200
 msgid "Enroll a new token"
-msgstr "Yeni bir jeton kaydetmek"
+msgstr "Yeni bir jeton kaydet"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:282
 msgid "Enrollment successfully verified."
