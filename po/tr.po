@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-11-26 09:24+0000\n"
+"PO-Revision-Date: 2022-11-28 10:06+0000\n"
 "Last-Translator: Salih Kiraz <salihk06@gmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/tr/>\n"
@@ -982,7 +982,7 @@ msgstr "Varsayılan Zaman Penceresi"
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:66
 #: privacyidea/static/components/token/views/token.details.html:18
 msgid "Delete"
-msgstr "Silmek"
+msgstr "Sil"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:12
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:32
@@ -1067,7 +1067,8 @@ msgid ""
 "Do you really want to delete the Token {{ tokenSerial }} from user {{ token."
 "username }}?"
 msgstr ""
-"Gerçekten {{tokenserial}} {{token.username}} adresini silmek istiyor musunuz?"
+"Gerçekten {{ tokenSerial }} {{ token.username }} adresini silmek istiyor "
+"musunuz?"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:19
 msgid "Do you really want to delete the Token {{ tokenSerial }}?"
@@ -1114,7 +1115,7 @@ msgstr "E-posta: Kullanıcılara e-posta adresine bir kez şifre gönderin."
 #: privacyidea/static/components/token/views/token.details.html:274
 #: privacyidea/static/components/token/views/token.details.html:317
 msgid "Edit"
-msgstr "Düzenlemek"
+msgstr "Düzenle"
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:14
 msgid "Edit CA Connector {{ connectorname }}"
@@ -1458,7 +1459,7 @@ msgstr "İtibaren"
 #: privacyidea/static/components/token/views/token.enroll.motp.html:11
 #: privacyidea/static/components/token/views/token.enroll.totp.html:18
 msgid "Generate OTP Key on the Server"
-msgstr "Sunucuya OTP tuşunu oluşturun"
+msgstr "Sunucu OTP anahtarını otomatik oluştursun(önerilir)"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:12
 msgid "Generate Request"
@@ -2480,7 +2481,7 @@ msgstr "Yeniden oku"
 #: privacyidea/static/components/token/views/token.enroll.email.html:15
 msgid "Read email address dynamically from user source on each request."
 msgstr ""
-"Her istek üzerine kullanıcı kaynağından dinamik olarak e-posta adresini "
+"Her istek üzerine kullanıcı kaynağından otomatik olarak e-posta adresini "
 "okuyun."
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:15
@@ -2594,7 +2595,7 @@ msgstr "Gerekli alemler"
 
 #: privacyidea/static/components/token/views/token.list.html:100
 msgid "Reset Failcounter"
-msgstr "Sıfırla başarısızlık"
+msgstr "Başarısızları Sıfırla"
 
 #: privacyidea/static/components/login/views/login.html:84
 #: privacyidea/static/components/recovery/views/recovery.html:14
@@ -2604,7 +2605,7 @@ msgstr "Şifreyi yenile"
 
 #: privacyidea/static/components/token/views/token.details.html:103
 msgid "Reset fail counter"
-msgstr "Sıfırla başarısız sayaç"
+msgstr "Başarısızları Sıfırla(sayaç)"
 
 #: privacyidea/static/components/recovery/views/recovery.reset.html:5
 msgid "Reset your Password"
@@ -2665,7 +2666,7 @@ msgstr "Başarısız olursa tekrar deneyin"
 
 #: privacyidea/static/components/token/views/token.details.html:62
 msgid "Revoke"
-msgstr "Geri çekmek"
+msgstr "İptal Et"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:146
 msgid "Roll the token"
@@ -2951,7 +2952,7 @@ msgstr "Sunucu havuzu zaman aşımını atla (saniye)"
 
 #: privacyidea/static/components/token/views/token.details.html:384
 msgid "Set PIN"
-msgstr "Pim koymak"
+msgstr "Pin Ayarla"
 
 #: privacyidea/static/components/token/views/token.details.html:125
 msgid "Set count window"
@@ -3013,7 +3014,7 @@ msgstr "Yazılım"
 
 #: privacyidea/static/components/token/views/token.enroll.html:38
 msgid "Some nice words..."
-msgstr "Bazı güzel sözler ..."
+msgstr "Akılda kalıcı tanımlar.."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:61
 msgid ""
@@ -3238,11 +3239,11 @@ msgid ""
 "    app like the Google Authenticator turning your\n"
 "    smartphone into an authentication device."
 msgstr ""
-"Hotp belirteci bir etkinlik tabanlı bir jetondur. Gizli bir anahtarı "
+"HOTP belirteci bir etkinlik tabanlı bir jetondur. Gizli bir anahtarı "
 "yapıştırabilirsiniz veya\n"
-"    Sunucunun sırrı oluşturmasını ve QR kodunu bir akıllı telefonla tarayın\n"
-"    Google kimlik doğrulaması gibi uygulama\n"
-"    Bir kimlik doğrulama cihazına akıllı telefon."
+"    Sunucu anahtarı kendi oluşturur ve QR kodunu bir akıllı telefonla "
+"tarayın\n"
+"    Google Authenticator yazılımı ile bu jetonu kullanabilirsiniz."
 
 #: privacyidea/static/components/login/views/login.html:94
 msgid ""
@@ -3283,8 +3284,8 @@ msgid ""
 "please\n"
 "            regenerate the QR Code, when no one else is watching.</b>"
 msgstr ""
-"QR kodu, belirteçinizin gizli anahtarını içerir. Gerek\n"
-"            onu koru. <b> Şüpheniz varsa, başka birinin gördüğü, lütfen\n"
+"QR kodu, Jetonunuzun gizli anahtarını içerir.Onu \n"
+"            koruyun. <b> Şüpheniz varsa, başka birinin gördüğü, lütfen\n"
 "            başka hiç kimsenin izlenmemesi durumunda QR kodunu yeniden "
 "oluşturun. </b>"
 
@@ -3348,7 +3349,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:1
 msgid "The SMS Token sends an OTP value to the mobile phone of the user."
-msgstr "SMS belirteci, kullanıcının cep telefonuna bir OTP değeri gönderir."
+msgstr "SMS Jetonu, kullanıcının cep telefonuna bir OTP değeri gönderir."
 
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:1
 msgid ""
@@ -3406,9 +3407,10 @@ msgid ""
 msgstr ""
 "TOTP belirteci bir zaman tabanlı bir jetondur. Gizli bir anahtarı "
 "yapıştırabilirsiniz veya\n"
-"    Sunucunun sırrı oluşturmasını ve QR kodunu bir ile tarayın\n"
-"    Google Authenticator veya freeotp gibi akıllı telefon uygulaması\n"
-"    Bir kimlik doğrulama cihazına akıllı telefon."
+"    Sunucunun anahtarı otomatik oluşturur sonrasında  QR kodunu bir "
+"telefonla ile tarayın\n"
+"    Google Authenticator veya freeotp gibi akıllı telefon uygulamasını\n"
+"    bir akıllı cihazda kullanabilirsiniz."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:2
 msgid ""
@@ -3833,10 +3835,10 @@ msgid ""
 "            will be\n"
 "            displayed to you to be scanned."
 msgstr ""
-"Sunucu OTP tuşunu oluşturacak\n"
-"            ve bir QR kodu\n"
-"            olacak\n"
-"            Taranan size görüntülenir."
+"Sunucu OTP anahtarı oluşturacak\n"
+"            ve bir QR kodunuz\n"
+"            olacak.\n"
+"            Taramanız için size gösterilecektir."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
 msgid ""
@@ -4298,11 +4300,11 @@ msgstr "Token türü"
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:6
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:16
 msgid "Token data"
-msgstr "Belirteç verileri"
+msgstr "Jeton verileri"
 
 #: privacyidea/static/components/token/views/token.details.html:1
 msgid "Token details for {{ tokenSerial }}"
-msgstr "{{Tokenserial}} için belirteç detayları"
+msgstr "{{ tokenSerial }} için jeton detayları"
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:4
 #: privacyidea/static/components/token/views/token.enrolled.webauthn.html:4
@@ -4581,7 +4583,7 @@ msgstr "Sertifikayı doğrula"
 #: privacyidea/static/components/token/views/token.details.html:3
 #: privacyidea/static/components/token/views/token.lost.html:4
 msgid "View token in Audit log"
-msgstr "Denetim günlüğünde belirteci görüntüleyin"
+msgstr "Denetim günlüğünde jetonu görüntüleyin"
 
 #: privacyidea/static/components/user/views/user.details.html:17
 msgid "View user in Audit log"
