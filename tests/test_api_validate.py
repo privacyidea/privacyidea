@@ -5068,15 +5068,15 @@ class AChallengeResponse(MyApiTestCase):
         # Create HOTP token
         init_token({
             "type": "hotp",
-            "serial": self.serial,
-            "otpkey": self.otpkey,
+            "serial": "hotp_serial",
+            "otpkey": "abcde12345",
             "pin": "pin"},
             user=User("cornelius", self.realm1))
 
         # Now check the fail counters of the tokens, all should be 0
         self.assertEqual(0, get_one_token(serial=self.serial_email).token.failcount)
         self.assertEqual(0, get_one_token(serial=self.serial_sms).token.failcount)
-        self.assertEqual(0, get_one_token(serial=self.serial).token.failcount)
+        self.assertEqual(0, get_one_token(serial="hotp_serial").token.failcount)
 
         # Set the increase_failcounter_on_challenge policy
         set_policy(name="increase_failcounter_on_challenge",
@@ -5094,7 +5094,7 @@ class AChallengeResponse(MyApiTestCase):
         # The failcounter (email, sms) increased by 1
         self.assertEqual(1, get_one_token(serial=self.serial_email).token.failcount)
         self.assertEqual(1, get_one_token(serial=self.serial_sms).token.failcount)
-        self.assertEqual(0, get_one_token(serial=self.serial).token.failcount)
+        self.assertEqual(0, get_one_token(serial="hotp_serial").token.failcount)
 
         # Trigger a challenge for all token via validate/triggerchallenge
         with self.app.test_request_context('/validate/triggerchallenge',
@@ -5107,12 +5107,12 @@ class AChallengeResponse(MyApiTestCase):
         # All failcounter increased by 1
         self.assertEqual(2, get_one_token(serial=self.serial_email).token.failcount)
         self.assertEqual(2, get_one_token(serial=self.serial_sms).token.failcount)
-        self.assertEqual(1, get_one_token(serial=self.serial).token.failcount)
+        self.assertEqual(1, get_one_token(serial="hotp_serial").token.failcount)
 
         # Clean up
         remove_token(self.serial_email)
         remove_token(self.serial_sms)
-        remove_token(self.serial)
+        remove_token("hotp_serial")
         delete_policy("increase_failcounter_on_challenge")
 
 
