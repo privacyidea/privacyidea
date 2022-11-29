@@ -5048,6 +5048,73 @@ class AChallengeResponse(MyApiTestCase):
 
         remove_token(serial)
 
+    def test_19_increase_failcounter_on_challenge(self):
+        # Create email token
+        init_token({
+            "type": "email",
+            "serial": self.serial_email,
+            "email": "hans@dampf.com",
+            "pin": "pin"},
+            user=User("cornelius", self.realm1))
+
+        # Create SMS token
+        init_token({
+            "type": "sms",
+            "serial": self.serial_sms,
+            "phone": "123456",
+            "pin": "pin"},
+            user=User("cornelius", self.realm1))
+
+        # Create HOTP token
+        init_token({
+            "type": "hotp",
+            "serial": self.serial,
+            "otpkey": self.otpkey,
+            "pin": "pin"},
+            user=User("cornelius", self.realm1))
+
+        # Now check the fail counters of the tokens, all should be 0
+        self.assertEqual(0, get_one_token(serial=self.serial_email).token.failcount)
+        self.assertEqual(0, get_one_token(serial=self.serial_sms).token.failcount)
+        self.assertEqual(0, get_one_token(serial=self.serial).token.failcount)
+
+        # Set the increase_failcounter_on_challenge policy
+        set_policy(name="increase_failcounter_on_challenge",
+                   scope=SCOPE.AUTH,
+                   action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+
+        # Now we create the challenges via validate/check
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # The failcounter (email, sms) increased by 1
+        self.assertEqual(1, get_one_token(serial=self.serial_email).token.failcount)
+        self.assertEqual(1, get_one_token(serial=self.serial_sms).token.failcount)
+        self.assertEqual(0, get_one_token(serial=self.serial).token.failcount)
+
+        # Trigger a challenge for all token via validate/triggerchallenge
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"user": "cornelius"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # All failcounter increased by 1
+        self.assertEqual(2, get_one_token(serial=self.serial_email).token.failcount)
+        self.assertEqual(2, get_one_token(serial=self.serial_sms).token.failcount)
+        self.assertEqual(1, get_one_token(serial=self.serial).token.failcount)
+
+        # Clean up
+        remove_token(self.serial_email)
+        remove_token(self.serial_sms)
+        remove_token(self.serial)
+        delete_policy("increase_failcounter_on_challenge")
+
 
 class TriggeredPoliciesTestCase(MyApiTestCase):
 
