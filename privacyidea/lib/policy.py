@@ -175,7 +175,8 @@ import six
 import logging
 from ..models import (Policy, db, save_config_timestamp, Token)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
-                                    get_config_object, get_privacyidea_node)
+                                    get_config_object, get_privacyidea_node,
+                                    get_multichallenge_enrollable_tokentypes)
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
@@ -355,6 +356,7 @@ class ACTION(object):
     CHANGE_PIN_EVERY = "change_pin_every"
     CHANGE_PIN_VIA_VALIDATE = "change_pin_via_validate"
     RESYNC_VIA_MULTICHALLENGE = "resync_via_multichallenge"
+    ENROLL_VIA_MULTICHALLENGE = "enroll_via_multichallenge"
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
@@ -584,8 +586,8 @@ class PolicyClass(object):
             if searchvalue is not None:
                 reduced_policies = [policy for policy in reduced_policies if
                                     policy.get(searchkey) == searchvalue]
-                log.debug("Policies after matching {1!s}: {0!s}".format(
-                    reduced_policies, searchkey))
+                log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
+                    reduced_policies, searchkey, searchvalue))
 
         p = [("action", action), ("user", user), ("realm", realm)]
         # If this is an admin-policy, we also do check the adminrealm
@@ -609,8 +611,8 @@ class PolicyClass(object):
                         if value_found and not value_excluded:
                             new_policies.append(policy)
                 reduced_policies = new_policies
-                log.debug("Policies after matching {1!s}: {0!s}".format(
-                    reduced_policies, searchkey))
+                log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
+                    reduced_policies, searchkey, searchvalue))
 
         # We need to act individually on the resolver key word
         # We either match the resolver exactly or we match another resolver (
@@ -644,8 +646,8 @@ class PolicyClass(object):
                         new_policies.append(policy)
 
             reduced_policies = new_policies
-            log.debug("Policies after matching resolver: {0!s}".format(
-                reduced_policies))
+            log.debug("Policies after matching resolver={1!s}: {0!s}".format(
+                reduced_policies, resolver))
 
         # Match the privacyIDEA node
         if pinode is not None:
@@ -656,7 +658,7 @@ class PolicyClass(object):
                     new_policies.append(policy)
 
             reduced_policies = new_policies
-            log.debug("Policies after matching pinode: {0!s}".format(reduced_policies))
+            log.debug("Policies after matching pinode={1!s}: {0!s}".format(reduced_policies, pinode))
 
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
@@ -686,8 +688,8 @@ class PolicyClass(object):
                 if not policy.get("client"):
                     new_policies.append(policy)
             reduced_policies = new_policies
-            log.debug("Policies after matching client: {0!s}".format(
-                reduced_policies))
+            log.debug("Policies after matching client={1!s}: {0!s}".format(
+                reduced_policies, client))
 
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
@@ -2261,6 +2263,12 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("The autoresync of a token can be done via a challenge response message."
                           "You need to activate 'Automatic resync' in the general settings!"),
+            },
+            ACTION.ENROLL_VIA_MULTICHALLENGE: {
+                'type': 'str',
+                'desc': _("In case of a successful authentication the following tokentype is enrolled. The "
+                          "maximum number of tokens for a user is checked."),
+                'value': [t.upper() for t in get_multichallenge_enrollable_tokentypes()]
             },
             ACTION.PASSTHRU: {
                 'type': 'str',

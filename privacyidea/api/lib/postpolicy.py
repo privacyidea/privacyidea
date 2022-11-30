@@ -52,10 +52,12 @@ from privacyidea.lib.policy import DEFAULT_PREFERRED_CLIENT_MODE
 from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_auth_items
+from privacyidea.lib.config import get_multichallenge_enrollable_tokentypes, get_token_class
 from .prepolicy import check_max_token_user, check_max_token_realm
 import functools
 import json
 import re
+import netaddr
 from privacyidea.lib.crypto import Sign
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.auth import ROLE
@@ -445,6 +447,7 @@ def save_pin_change(request, response, serial=None):
     "pin" and "otppin" is investigated.
 
     :param request:
+    :param action:
     :return:
     """
     policy_object = g.policy_object
@@ -731,6 +734,40 @@ def autoassign(request, response):
     return response
 
 
+def multichallenge_enroll_via_validate(request, response):
+    """
+    This is a post decorator to allow enrolling tokens via /validate/check.
+    It checks the AUTH policy ENROLL_VIA_MULTICHALLENGE and enrolls the
+    corresponding token type.
+    It also modifies the response accordingly, so that the client/plugin can
+    display necessary data for the enrollment to the user.
+
+    :param request:
+    :param response:
+    :return:
+    """
+    content = response.json
+    # check, if the authentication was successful, then we need to do nothing
+    result = content.get("result")
+    if result.get("value") and result.get("authentication") == "ACCEPT":
+        user_obj = request.User
+        if user_obj.login and user_obj.realm:
+            enroll_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE,
+                                    user_object=user_obj).action_values(unique=True, write_to_audit_log=False)
+            # check if we have a multi enroll policy
+            if enroll_pol:
+                tokentype = list(enroll_pol)[0]
+                # TODO: Somehow we need to add condition, when we should stop enrolling!
+                #       Here: If the user has one token of this type.
+                if len(get_tokens(tokentype=tokentype, user=user_obj)) == 0:
+                    if tokentype.lower() in get_multichallenge_enrollable_tokentypes():
+                        tclass = get_token_class(tokentype)
+                        tclass.enroll_via_validate(g, content, user_obj)
+                        response.set_data(json.dumps(content))
+
+    return response
+
+
 def construct_radius_response(request, response):
     """
     This decorator implements the /validate/radiuscheck endpoint.
@@ -806,7 +843,7 @@ def is_authorized(request, response):
     """
     This policy decorator is used in the AUTHZ scope to
     decorate the /validate/check and /validate/triggerchallenge endpoint.
-    I will cause authentication to fail, if the policy
+    It will cause authentication to fail, if the policy
     authorized=deny_access is set.
 
     :param request:

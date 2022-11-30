@@ -87,11 +87,14 @@ def _digi2daplug(normal_otp):
     for i in hex_otp:
         daplug_otp += REVERSE_MAPPING.get(i)
     return daplug_otp
-         
+
+
 class DaplugTokenClass(HotpTokenClass):
     """
     daplug token class implementation
     """
+    # If the token is enrollable via multichallenge
+    is_multichallenge_enrollable = False
 
     @staticmethod
     def get_class_type():

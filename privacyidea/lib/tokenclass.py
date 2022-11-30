@@ -121,6 +121,10 @@ TWOSTEP_DEFAULT_DIFFICULTY = 10000
 log = logging.getLogger(__name__)
 
 
+class CHALLENGE_SESSION(object):
+    ENROLLMENT = "enrollment"
+
+
 class TOKENKIND(object):
     SOFTWARE = "software"
     HARDWARE = "hardware"
@@ -168,6 +172,9 @@ class TokenClass(object):
     check_if_disabled = True
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
+    # If the token is enrollable via multichallenge
+    is_multichallenge_enrollable = False
+
 
     @log_with(log)
     def __init__(self, db_token):
@@ -1582,16 +1589,22 @@ class TokenClass(object):
                     # Add the challenge to the options for check_otp
                     options["challenge"] = challengeobject.challenge
                     options["data"] = challengeobject.data
-                    # Now see if the OTP matches:
-                    otp_counter = self.check_otp(passw, options=options)
-                    if otp_counter >= 0:
-                        # We found the matching challenge, so lets return the
-                        #  successful result and delete the challenge object.
+                    if challengeobject.session == CHALLENGE_SESSION.ENROLLMENT:
+                        self.enroll_via_validate_2nd_step(passw, options=options)
                         challengeobject.delete()
-                        break
+                        # Basically we have a successfully answered challenge
+                        otp_counter = 0
                     else:
-                        # increase the received_count
-                        challengeobject.set_otp_status()
+                        # Now see if the OTP matches:
+                        otp_counter = self.check_otp(passw, options=options)
+                        if otp_counter >= 0:
+                            # We found the matching challenge, so lets return the
+                            # successful result and delete the challenge object.
+                            challengeobject.delete()
+                            break
+                        else:
+                            # increase the received_count
+                            challengeobject.set_otp_status()
 
         self.challenge_janitor()
         return otp_counter
@@ -1874,3 +1887,28 @@ class TokenClass(object):
         :return: True
         """
         return False
+
+    @classmethod
+    def enroll_via_validate(cls, g, content, user_obj):
+        """
+        This class method is used in the policy ENROLL_VIA_MULTICHALLENGE.
+        It enrolls a new token of this type and returns the necessary information
+        to the client by modifying the content.
+
+        :param g: context object
+        :param content: The content of a response
+        :param user_obj: A user object
+        :return: None, the content is modified
+        """
+        return True
+
+    def enroll_via_validate_2nd_step(self, passw, options=None):
+        """
+        This method is the optional second step of ENROLL_VIA_MULTICHALLENGE.
+        It is used in situations like the email token, sms token or push,
+        when enrollment via challenge response needs two steps.
+
+        :param options:
+        :return:
+        """
+        return True
