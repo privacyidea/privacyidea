@@ -334,7 +334,7 @@ class SmsTokenClass(HotpTokenClass):
             # out would cancel the checking of the other tokens
             try:
                 data = None
-                # Only if this is NOT an multichallenge enrollment, we try to send the email
+                # Only if this is NOT a multichallenge enrollment, we try to send the sms
                 if options.get("session") != CHALLENGE_SESSION.ENROLLMENT:
                     self.inc_otp_counter(counter, reset=False)
                     message_template = self._get_sms_text(options)

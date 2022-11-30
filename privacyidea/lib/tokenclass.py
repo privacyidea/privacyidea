@@ -1599,7 +1599,7 @@ class TokenClass(object):
                         otp_counter = self.check_otp(passw, options=options)
                         if otp_counter >= 0:
                             # We found the matching challenge, so lets return the
-                            #  successful result and delete the challenge object.
+                            # successful result and delete the challenge object.
                             challengeobject.delete()
                             break
                         else:
