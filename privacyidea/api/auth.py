@@ -75,6 +75,7 @@ from privacyidea.lib.event import event, EventConfiguration
 from privacyidea.lib import _
 import logging
 import traceback
+import threading
 
 log = logging.getLogger(__name__)
 
@@ -106,6 +107,7 @@ def before_request():
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "action_detail": "",
+                        "thread_id": u"{0!s}".format(threading.current_thread().ident),
                         "info": ""})
 
     username = getParam(request.all_data, "username")

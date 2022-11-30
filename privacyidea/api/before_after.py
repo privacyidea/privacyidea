@@ -74,6 +74,7 @@ from ..lib.error import (privacyIDEAError,
 from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.user import User
 import datetime
+import threading
 
 log = logging.getLogger(__name__)
 
@@ -223,6 +224,7 @@ def before_request():
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "action_detail": "",
+                        "thread_id": u"{0!s}".format(threading.current_thread().ident),
                         "info": ""})
 
     if g.logged_in_user.get("role") == "admin":

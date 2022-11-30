@@ -2745,6 +2745,7 @@ audit_column_length = {"signature": 620,
                        "client": 50,
                        "loglevel": 12,
                        "clearance_level": 12,
+                       "thread_id": 20,
                        "policies": 255}
 AUDIT_TABLE_NAME = 'pidea_audit'
 
@@ -2778,6 +2779,7 @@ class Audit(MethodsMixin, db.Model):
     loglevel = db.Column(db.Unicode(audit_column_length.get("loglevel")))
     clearance_level = db.Column(db.Unicode(audit_column_length.get(
         "clearance_level")))
+    thread_id = db.Column(db.Unicode(audit_column_length.get("thread_id")))
     policies = db.Column(db.Unicode(audit_column_length.get("policies")))
 
     def __init__(self,
@@ -2795,6 +2797,7 @@ class Audit(MethodsMixin, db.Model):
                  client="",
                  loglevel="default",
                  clearance_level="default",
+                 thread_id="0",
                  policies="",
                  startdate=None,
                  duration=None
@@ -2817,6 +2820,7 @@ class Audit(MethodsMixin, db.Model):
         self.client = convert_column_to_unicode(client)
         self.loglevel = convert_column_to_unicode(loglevel)
         self.clearance_level = convert_column_to_unicode(clearance_level)
+        self.thread_id = convert_column_to_unicode(thread_id)
         self.policies = convert_column_to_unicode(policies)
 
 

@@ -305,7 +305,8 @@ class Audit(AuditBase):
                           clearance_level=self.audit_data.get("clearance_level"),
                           policies=self.audit_data.get("policies"),
                           startdate=self.audit_data.get("startdate"),
-                          duration=duration
+                          duration=duration,
+                          thread_id=self.audit_data.get("thread_id")
                           )
             self.session.add(le)
             self.session.commit()
@@ -376,7 +377,7 @@ class Audit(AuditBase):
         :rtype str
         """
         s = u"id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s," \
-            u"ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
+            u"ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s,thid=%s" % (le.id,
                                                    le.date,
                                                    le.action,
                                                    le.success,
@@ -390,7 +391,8 @@ class Audit(AuditBase):
                                                    le.privacyidea_server,
                                                    le.client,
                                                    le.loglevel,
-                                                   le.clearance_level)
+                                                   le.clearance_level,
+                                                   le.thread_id)
         # If we have the new log entries, we also add them for signing and verification.
         if le.startdate:
             s += ",{0!s}".format(le.startdate)
@@ -420,7 +422,8 @@ class Audit(AuditBase):
                     'client': LogEntry.client,
                     'log_level': LogEntry.loglevel,
                     'policies': LogEntry.policies,
-                    'clearance_level': LogEntry.clearance_level}
+                    'clearance_level': LogEntry.clearance_level,
+                    'thread_id': LogEntry.thread_id}
         return sortname.get(key)
 
     def csv_generator(self, param=None, user=None, timelimit=None):
@@ -587,4 +590,5 @@ class Audit(AuditBase):
         audit_dict['clearance_level'] = audit_entry.clearance_level
         audit_dict['startdate'] = audit_entry.startdate.isoformat() if audit_entry.startdate else None
         audit_dict['duration'] = audit_entry.duration.total_seconds() if audit_entry.duration else None
+        audit_dict['thread_id'] = audit_entry.thread_id
         return audit_dict
