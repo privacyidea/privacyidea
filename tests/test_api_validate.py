@@ -3919,6 +3919,8 @@ class AChallengeResponse(MyApiTestCase):
             detail = data.get("detail")
             self.assertTrue("No active challenge response" in detail.get("message"), detail.get("message"))
 
+        delete_policy("pol_cr")
+
     @smtpmock.activate
     def test_02_two_challenge_response_tokens(self):
         smtpmock.setdata(response={"bla@example.com": (200, 'OK')})
@@ -4122,7 +4124,7 @@ class AChallengeResponse(MyApiTestCase):
         set_privacyidea_config("sms.concurrent_challenges", "True")
         # remove tokens for user cornelius
         remove_token(user=User("cornelius", self.realm1))
-        # Enroll an Email-Token to the user
+        # Enroll an SMS-Token to the user
         init_token(user=User("cornelius", self.realm1),
                    param={"serial": self.serial_sms,
                           "type": "sms",
@@ -4199,7 +4201,7 @@ class AChallengeResponse(MyApiTestCase):
 
         # remove tokens for user cornelius
         remove_token(user=User("cornelius", self.realm1))
-        # Enroll an Email-Token to the user
+        # Enroll an SMS-Token to the user
         init_token(user=User("cornelius", self.realm1),
                    param={"serial": self.serial_sms,
                           "type": "sms",
