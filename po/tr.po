@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-11-28 10:06+0000\n"
+"PO-Revision-Date: 2022-11-28 13:00+0000\n"
 "Last-Translator: Salih Kiraz <salihk06@gmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/tr/>\n"
@@ -1260,14 +1260,14 @@ msgstr "Yeni jeton kayıt"
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:49
 #: privacyidea/static/components/token/views/token.html:25
 msgid "Enroll Token"
-msgstr "Jeton Kayıt Ekleme"
+msgstr "Jeton Ekle"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:102
 #: privacyidea/static/components/token/controllers/tokenControllers.js:137
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:200
 msgid "Enroll a new token"
-msgstr "Yeni bir jeton kaydetmek"
+msgstr "Yeni bir jeton kaydet"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:282
 msgid "Enrollment successfully verified."
@@ -1690,10 +1690,10 @@ msgid ""
 "the\n"
 "    token. Please enter this serial number and make up a token pin."
 msgstr ""
-"Bir token cihazı verildiyseniz, bu cihazı size bağlayabilirsiniz.\n"
-"    hesap. Belirteçleri çevirin, üzerine yazdırılan bir seri numarası "
+"Size bir jeton cihazı verildiyse, bu cihazı cihazınıza bağlayabilirsiniz.\n"
+"     hesap. Jetonu ters çevirin, üzerinde basılı bir seri numarası "
 "bulabilirsiniz.\n"
-"    jeton. Lütfen bu seri numarasını girin ve bir belirteç PIN kodlayın."
+"     jeton. Lütfen bu seri numarasını girin ve bir jeton pini oluşturun."
 
 #: privacyidea/static/components/token/views/token.html:53
 msgid "Import Tokens"
@@ -4340,7 +4340,7 @@ msgstr "Jeton {{selectedtoken.serial}} kayboldu?"
 #: privacyidea/static/components/dashboard/views/dashboard.html:7
 #: privacyidea/static/templates/menu.html:46
 msgid "Tokens"
-msgstr "Belirteç"
+msgstr "Jetonlar"
 
 #: privacyidea/static/components/machine/views/machine.details.html:34
 msgid "Tokens and Applications for machine {{ machineid }}"
