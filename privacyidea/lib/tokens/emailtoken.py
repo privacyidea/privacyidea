@@ -282,7 +282,6 @@ class EmailTokenClass(HotpTokenClass):
             counter = self.get_otp_count()
             log.debug("counter={0!r}".format(counter))
 
-
             # At this point we must not bail out in case of an
             # Gateway error, since checkPIN is successful. A bail
             # out would cancel the checking of the other tokens
@@ -512,12 +511,13 @@ class EmailTokenClass(HotpTokenClass):
         return {"message": VERIFY_ENROLLMENT_MESSAGE}
 
     @classmethod
-    def enroll_via_validate(cls, content, user_obj):
+    def enroll_via_validate(cls, g, content, user_obj):
         """
         This class method is used in the policy ENROLL_VIA_MULTICHALLENGE.
         It enrolls a new token of this type and returns the necessary information
         to the client by modifying the content.
 
+        :param g: context object
         :param content: The content of a response
         :param user_obj: A user object
         :return: None, the content is modified
@@ -540,7 +540,7 @@ class EmailTokenClass(HotpTokenClass):
                 "client_mode": CLIENTMODE.INTERACTIVE,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
-                "message": "Please enter your new email address!"}
+                "message": _("Please enter your new email address!")}
         detail["multi_challenge"] = [chal]
         detail.update(chal)
 

@@ -583,8 +583,8 @@ class PolicyClass(object):
             if searchvalue is not None:
                 reduced_policies = [policy for policy in reduced_policies if
                                     policy.get(searchkey) == searchvalue]
-                log.debug("Policies after matching {1!s}: {0!s}".format(
-                    reduced_policies, searchkey))
+                log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
+                    reduced_policies, searchkey, searchvalue))
 
         p = [("action", action), ("user", user), ("realm", realm)]
         # If this is an admin-policy, we also do check the adminrealm
@@ -608,8 +608,8 @@ class PolicyClass(object):
                         if value_found and not value_excluded:
                             new_policies.append(policy)
                 reduced_policies = new_policies
-                log.debug("Policies after matching {1!s}: {0!s}".format(
-                    reduced_policies, searchkey))
+                log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
+                    reduced_policies, searchkey, searchvalue))
 
         # We need to act individually on the resolver key word
         # We either match the resolver exactly or we match another resolver (
@@ -643,8 +643,8 @@ class PolicyClass(object):
                         new_policies.append(policy)
 
             reduced_policies = new_policies
-            log.debug("Policies after matching resolver: {0!s}".format(
-                reduced_policies))
+            log.debug("Policies after matching resolver={1!s}: {0!s}".format(
+                reduced_policies, resolver))
 
         # Match the privacyIDEA node
         if pinode is not None:
@@ -655,7 +655,7 @@ class PolicyClass(object):
                     new_policies.append(policy)
 
             reduced_policies = new_policies
-            log.debug("Policies after matching pinode: {0!s}".format(reduced_policies))
+            log.debug("Policies after matching pinode={1!s}: {0!s}".format(reduced_policies, pinode))
 
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
@@ -685,8 +685,8 @@ class PolicyClass(object):
                 if not policy.get("client"):
                     new_policies.append(policy)
             reduced_policies = new_policies
-            log.debug("Policies after matching client: {0!s}".format(
-                reduced_policies))
+            log.debug("Policies after matching client={1!s}: {0!s}".format(
+                reduced_policies, client))
 
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))

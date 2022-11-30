@@ -405,9 +405,10 @@ have to enter the OTP value sent via email or test message.
 **PUSH**
 
 After the fist successful authentication step the user is presented a QR code for push token
-enrollment. After the user has scanned the QR code and enrolled the push token, he will have to
-hit enter. Finally the user finishes the authentication process by confirming the login on his
-smartphone.
+enrollment. The user needs to scan the QR code with the privacyIDEA Authenticator App.
+If the token is successfully enrolled, the user is logged in without any further interaction.
+Since the successful enrollment of the Push token already verifies the presence of the user's smartphone,
+there is no additional authentication step anymore during enrollment.
 
 .. note:: Enrolling multiple token types one after another is not supported. It is currently possible to
    enroll only one token type.

@@ -5078,6 +5078,8 @@ class TriggeredPoliciesTestCase(MyApiTestCase):
 
 class MultiChallengeEnrollTest(MyApiTestCase):
 
+    # Note: Testing the enrollment of the push token is done in test_api_push_validate.py
+
     def setUp(self):
         super(MultiChallengeEnrollTest, self).setUp()
 

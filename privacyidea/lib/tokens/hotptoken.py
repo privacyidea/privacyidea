@@ -810,12 +810,13 @@ class HotpTokenClass(TokenClass):
         return r >= 0
 
     @classmethod
-    def enroll_via_validate(cls, content, user_obj):
+    def enroll_via_validate(cls, g, content, user_obj):
         """
         This class method is used in the policy ENROLL_VIA_MULTICHALLENGE.
         It enrolls a new token of this type and returns the necessary information
         to the client by modifying the content.
 
+        :param g: context object
         :param content: The content of a response
         :param user_obj: A user object
         :return: None, the content is modified
@@ -836,7 +837,7 @@ class HotpTokenClass(TokenClass):
                 "client_mode": CLIENTMODE.INTERACTIVE,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
-                "message": "Please scan the QR code!"}
+                "message": _("Please scan the QR code!")}
         detail["multi_challenge"] = [chal]
         detail.update(chal)
 
