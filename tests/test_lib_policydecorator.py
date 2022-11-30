@@ -58,8 +58,7 @@ class LibPolicyTestCase(MyTestCase):
         return pin == "FAKE"
 
     @staticmethod
-    def fake_check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=True,
-                              result=False):
+    def fake_check_token_list(tokenobject_list, passw, user=None, options=None, allow_reset_all_tokens=True, result=False):
         return result, "some text"
 
     def test_01_otppin(self):

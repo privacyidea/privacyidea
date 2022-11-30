@@ -4082,6 +4082,8 @@ class AChallengeResponse(MyApiTestCase):
             detail = data.get("detail")
             self.assertTrue("No active challenge response" in detail.get("message"), detail.get("message"))
 
+        delete_policy("pol_cr")
+
     @smtpmock.activate
     def test_02_two_challenge_response_tokens(self):
         smtpmock.setdata(response={"bla@example.com": (200, 'OK')})
@@ -4285,7 +4287,7 @@ class AChallengeResponse(MyApiTestCase):
         set_privacyidea_config("sms.concurrent_challenges", "True")
         # remove tokens for user cornelius
         remove_token(user=User("cornelius", self.realm1))
-        # Enroll an Email-Token to the user
+        # Enroll an SMS-Token to the user
         init_token(user=User("cornelius", self.realm1),
                    param={"serial": self.serial_sms,
                           "type": "sms",
@@ -4362,7 +4364,7 @@ class AChallengeResponse(MyApiTestCase):
 
         # remove tokens for user cornelius
         remove_token(user=User("cornelius", self.realm1))
-        # Enroll an Email-Token to the user
+        # Enroll an SMS-Token to the user
         init_token(user=User("cornelius", self.realm1),
                    param={"serial": self.serial_sms,
                           "type": "sms",
@@ -5210,6 +5212,73 @@ class AChallengeResponse(MyApiTestCase):
                 self.assertEqual("Response did not match the challenge.", detail.get("message"))
 
         remove_token(serial)
+
+    def test_19_increase_failcounter_on_challenge(self):
+        # Create email token
+        init_token({
+            "type": "email",
+            "serial": self.serial_email,
+            "email": "hans@dampf.com",
+            "pin": "pin"},
+            user=User("cornelius", self.realm1))
+
+        # Create SMS token
+        init_token({
+            "type": "sms",
+            "serial": self.serial_sms,
+            "phone": "123456",
+            "pin": "pin"},
+            user=User("cornelius", self.realm1))
+
+        # Create HOTP token
+        init_token({
+            "type": "hotp",
+            "serial": "hotp_serial",
+            "otpkey": "abcde12345",
+            "pin": "pin"},
+            user=User("cornelius", self.realm1))
+
+        # Now check the fail counters of the tokens, all should be 0
+        self.assertEqual(0, get_one_token(serial=self.serial_email).token.failcount)
+        self.assertEqual(0, get_one_token(serial=self.serial_sms).token.failcount)
+        self.assertEqual(0, get_one_token(serial="hotp_serial").token.failcount)
+
+        # Set the increase_failcounter_on_challenge policy
+        set_policy(name="increase_failcounter_on_challenge",
+                   scope=SCOPE.AUTH,
+                   action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+
+        # Now we create the challenges via validate/check
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # The failcounter (email, sms) increased by 1
+        self.assertEqual(1, get_one_token(serial=self.serial_email).token.failcount)
+        self.assertEqual(1, get_one_token(serial=self.serial_sms).token.failcount)
+        self.assertEqual(0, get_one_token(serial="hotp_serial").token.failcount)
+
+        # Trigger a challenge for all token via validate/triggerchallenge
+        with self.app.test_request_context('/validate/triggerchallenge',
+                                           method='POST',
+                                           data={"user": "cornelius"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # All failcounter increased by 1
+        self.assertEqual(2, get_one_token(serial=self.serial_email).token.failcount)
+        self.assertEqual(2, get_one_token(serial=self.serial_sms).token.failcount)
+        self.assertEqual(1, get_one_token(serial="hotp_serial").token.failcount)
+
+        # Clean up
+        remove_token(self.serial_email)
+        remove_token(self.serial_sms)
+        remove_token("hotp_serial")
+        delete_policy("increase_failcounter_on_challenge")
 
 
 class TriggeredPoliciesTestCase(MyApiTestCase):

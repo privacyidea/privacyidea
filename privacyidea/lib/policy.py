@@ -358,6 +358,7 @@ class ACTION(object):
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
+    INCREASE_FAILCOUNTER_ON_CHALLENGE = "increase_failcounter_on_challenge"
     ENROLLPIN = "enrollpin"
     MANAGESUBSCRIPTION = "managesubscription"
     SEARCH_ON_ENTER = "search_on_enter"
@@ -2297,6 +2298,10 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _('If a user authenticates successfully reset the '
                           'failcounter of all of his tokens.')
+            },
+            ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE: {
+                'type': 'bool',
+                'desc': _('Increase the failcounter for all the tokens, for which a challenge has been triggered.')
             },
             ACTION.AUTH_CACHE: {
                 'type': 'str',

@@ -70,7 +70,6 @@ from six import string_types
 from sqlalchemy import (and_, func)
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import expression
-
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
@@ -2381,12 +2380,14 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
     elif challenge_request_token_list:
         # This is the initial REQUEST of a challenge response token
         active_challenge_token = [t for t in challenge_request_token_list
-                                  if t.token.active ]
+                                  if t.token.active]
         if len(active_challenge_token) == 0:
             reply_dict["message"] = _("No active challenge response token found")
         else:
             for token_obj in challenge_request_token_list:
                 token_obj.check_reset_failcount()
+                if is_true(options.get("increase_failcounter_on_challenge")):
+                    token_obj.inc_failcount()
             create_challenges_from_tokens(active_challenge_token, reply_dict, options)
 
     elif pin_matching_token_list:

@@ -74,6 +74,7 @@ from .lib.utils import required
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
+from privacyidea.lib.utils import is_true
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
@@ -84,7 +85,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
                                            check_base_action, pushtoken_wait, webauthntoken_auth, webauthntoken_authz,
-                                           webauthntoken_request, check_application_tokentype)
+                                           webauthntoken_request, check_application_tokentype,
+                                           increase_failcounter_on_challenge)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             check_tokeninfo,
@@ -213,6 +215,7 @@ def offlinerefill():
 @prepolicy(pushtoken_wait, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
+@prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(save_client_application_type, request=request)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
@@ -435,6 +438,7 @@ def check():
 @add_serial_from_response_to_g
 @check_user_or_serial_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
+@prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(check_base_action, request, action=ACTION.TRIGGERCHALLENGE)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_auth, request=request)
@@ -566,6 +570,9 @@ def trigger_challenge():
     token_objs = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)
     # Only use the tokens, that are allowed to do challenge response
     chal_resp_tokens = [token_obj for token_obj in token_objs if "challenge" in token_obj.mode]
+    if is_true(options.get("increase_failcounter_on_challenge")):
+        for token_obj in chal_resp_tokens:
+            token_obj.inc_failcount()
     create_challenges_from_tokens(chal_resp_tokens, details, options)
     result_obj = len(details.get("multi_challenge"))
 
