@@ -376,7 +376,7 @@ class Audit(AuditBase):
         :type le: LogEntry
         :rtype str
         """
-        # TODO: Add thread_id
+        # TODO: Add thread_id. We really should add a versioning to identify which audit data is signed.
         s = u"id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s," \
             u"ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
                                                    le.date,
