@@ -376,8 +376,9 @@ class Audit(AuditBase):
         :type le: LogEntry
         :rtype str
         """
+        # TODO: Add thread_id
         s = u"id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s," \
-            u"ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s,thid=%s" % (le.id,
+            u"ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
                                                    le.date,
                                                    le.action,
                                                    le.success,
@@ -391,8 +392,7 @@ class Audit(AuditBase):
                                                    le.privacyidea_server,
                                                    le.client,
                                                    le.loglevel,
-                                                   le.clearance_level,
-                                                   le.thread_id)
+                                                   le.clearance_level)
         # If we have the new log entries, we also add them for signing and verification.
         if le.startdate:
             s += ",{0!s}".format(le.startdate)
