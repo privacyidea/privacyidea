@@ -33,12 +33,13 @@ jobs:
     name: 'Run tests with Python'
     needs: pre_check
     if: needs.pre_check.outputs.run_tests == 'true'
-    runs-on: ubuntu-latest
+    # we need to fix the ubuntu version until we drop Python 2.7 and 3.6
+    runs-on: ubuntu-20.04
     strategy:
       # don't cancel running matrix tests when one test fails
       fail-fast: false
       matrix:
-        # current supported Python versions (and 2.7 and 3.5 for legacy support)
+        # current supported Python versions (and 2.7 and 3.6 for legacy support)
         python-version: ['2.7', '3.6', '3.7', '3.8', '3.9', '3.10']
 
     steps:
