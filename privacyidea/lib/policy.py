@@ -611,7 +611,7 @@ class PolicyClass(object):
                         if value_found and not value_excluded:
                             new_policies.append(policy)
                 reduced_policies = new_policies
-                log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
+                log.debug(u"Policies after matching {1!s}={2!s}: {0!s}".format(
                     reduced_policies, searchkey, searchvalue))
 
         # We need to act individually on the resolver key word
