@@ -38,11 +38,11 @@ import sys
 import logging
 import inspect
 import threading
-
+import traceback
 
 from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
-                      save_config_timestamp, Policy, EventHandler)
+                      save_config_timestamp, Policy, EventHandler, CAConnector)
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
 from privacyidea.lib.utils import to_list
 from privacyidea.lib.utils.export import (register_import, register_export)
@@ -92,6 +92,7 @@ class SharedConfigClass(object):
         self.policies = []
         self.events = []
         self.timestamp = None
+        self.caconnectors = []
 
     def _reload_from_db(self):
         """
@@ -111,6 +112,7 @@ class SharedConfigClass(object):
                 default_realm = None
                 policies = []
                 events = []
+                caconnectors = []
                 # Load system configuration
                 for sysconf in Config.query.all():
                     config[sysconf.Key] = {
@@ -151,6 +153,19 @@ class SharedConfigClass(object):
                 # Load all events
                 for event in EventHandler.query.order_by(EventHandler.ordering):
                     events.append(event.get())
+                # Load all CA connectors
+                from privacyidea.lib.caconnector import get_caconnector_object
+                for ca in CAConnector.query.all():
+                    try:
+                        ca_obj = get_caconnector_object(ca.name)
+                        caconnectors.append({"connectorname": ca.name,
+                                             "type": ca.catype,
+                                             "data": ca_obj.config,
+                                             "templates": ca_obj.get_templates()})
+                    except Exception as exx:  # pragma: no cover
+                        log.debug(u"{0!s}".format(traceback.format_exc()))
+                        log.error(exx)
+
                 # Finally, set the current timestamp
                 timestamp = datetime.datetime.now()
                 with self._config_lock:
@@ -161,6 +176,7 @@ class SharedConfigClass(object):
                     self.policies = policies
                     self.events = events
                     self.timestamp = timestamp
+                    self.caconnectors = caconnectors
 
     def _clone(self):
         """
@@ -174,6 +190,7 @@ class SharedConfigClass(object):
                 self.default_realm,
                 self.policies,
                 self.events,
+                self.caconnectors,
                 self.timestamp
             )
 
@@ -195,13 +212,14 @@ class LocalConfigClass(object):
     It will be cloned from the shared config object at the beginning of the
     request and is supposed to stay alive and unchanged during the request.
     """
-    def __init__(self, config, resolver, realm, default_realm, policies, events, timestamp):
+    def __init__(self, config, resolver, realm, default_realm, policies, events, caconnectors, timestamp):
         self.config = config
         self.resolver = resolver
         self.realm = realm
         self.default_realm = default_realm
         self.policies = policies
         self.events = events
+        self.caconnectors = caconnectors
         self.timestamp = timestamp
 
     def get_config(self, key=None, default=None, role="admin",

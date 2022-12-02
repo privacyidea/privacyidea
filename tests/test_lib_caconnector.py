@@ -160,7 +160,7 @@ class CAConnectorTestCase(MyTestCase):
                                   "cakey": "/opt/ca/key.pem",
                                   "cacert": "/opt/ca/cert.pem"})
         self.assertTrue(ca_id > 0, ca_id)
-        # Update the CA connector
+        # Update the CA connector. Thus we check if SharedConfigClass is updated.
         save_caconnector({"caconnector": "myCA",
                           "type": "local",
                           "WorkingDir": "/opt/ca",

@@ -960,7 +960,7 @@ class Realm(TimestampMethodsMixin, db.Model):
         return ret
 
 
-class CAConnector(MethodsMixin, db.Model):
+class CAConnector(TimestampMethodsMixin, db.Model):
     """
     The table "caconnector" contains the names and types of the defined
     CA connectors. Each connector has a different configuration, that is
@@ -990,6 +990,7 @@ class CAConnector(MethodsMixin, db.Model):
                   .delete()
         # Delete the CA itself
         db.session.delete(self)
+        save_config_timestamp()
         db.session.commit()
         return ret
 
@@ -1036,6 +1037,7 @@ class CAConnectorConfig(db.Model):
     def save(self):
         c = CAConnectorConfig.query.filter_by(caconnector_id=self.caconnector_id,
                                            Key=self.Key).first()
+        save_config_timestamp()
         if c is None:
             # create a new one
             db.session.add(self)

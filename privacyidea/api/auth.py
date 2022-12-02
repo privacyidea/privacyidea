@@ -94,7 +94,7 @@ def before_request():
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     g.event_config = EventConfiguration()
-    # access_route contains the ip adresses of all clients, hops and proxies.
+    # access_route contains the ip addresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request,
                                 get_from_config(SYSCONF.OVERRIDECLIENT))
     # Save the HTTP header in the localproxy object
