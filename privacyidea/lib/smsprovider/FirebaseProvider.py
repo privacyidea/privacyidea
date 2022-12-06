@@ -80,6 +80,8 @@ def get_firebase_access_token(config_file_name):
 
 
 class FIREBASE_CONFIG:
+    REGISTRATION_URL = "registration URL"
+    TTL = "time to live"
     JSON_CONFIG = "JSON config file"
     HTTPS_PROXY = "httpsproxy"
 

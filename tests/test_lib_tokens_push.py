@@ -138,7 +138,9 @@ class PushTokenTestCase(MyTestCase):
         # Unknown config
         self.assertRaises(ParameterError, token.get_init_detail, params={"firebase_config": "bla"})
 
-        fb_config = {FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE}
+        fb_config = {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
+                     FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE,
+                     FIREBASE_CONFIG.TTL: 10}
 
         # Wrong JSON file
         self.assertRaises(ConfigAdminError, set_smsgateway,
