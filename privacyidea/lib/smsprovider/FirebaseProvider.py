@@ -83,7 +83,6 @@ class FIREBASE_CONFIG:
     REGISTRATION_URL = "registration URL"
     TTL = "time to live"
     JSON_CONFIG = "JSON config file"
-    PROJECT_ID = "projectid"
     HTTPS_PROXY = "httpsproxy"
 
 
