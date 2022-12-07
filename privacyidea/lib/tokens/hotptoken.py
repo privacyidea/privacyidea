@@ -96,6 +96,15 @@ class HotpTokenClass(TokenClass):
     # If the token is enrollable via multichallenge
     is_multichallenge_enrollable = True
 
+    desc_hash_func = _('Specify the hashing function to be used. '
+                       'Can be SHA1, SHA256 or SHA512.')
+    desc_otp_len = _('Specify the OTP length to be used. Can be 6 or 8 digits.')
+    desc_key_gen = _("Force the key to be generated on the server.")
+    desc_two_step_user = _('Specify whether users are allowed or forced to use '
+                           'two-step enrollment.')
+    desc_two_step_admin = _('Specify whether admins are allowed or forced to '
+                            'use two-step enrollment.')
+
     @staticmethod
     def get_class_type():
         """
@@ -128,13 +137,6 @@ class HotpTokenClass(TokenClass):
         :return: subsection if key exists or user defined
         :rtype: dict
         """
-        desc_self1 = _('Specify the hashlib to be used. '
-                       'Can be sha1 (1) or sha2-256 (2).')
-        desc_self2 = _('Specify the otplen to be used. Can be 6 or 8 digits.')
-        desc_two_step_user = _('Specify whether users are allowed or forced to use '
-                               'two-step enrollment.')
-        desc_two_step_admin = _('Specify whether admins are allowed or forced to use '
-                                'two-step enrollment.')
         res = {'type': 'hotp',
                'title': 'HOTP Event Token',
                'description': _('HOTP: Event based One Time Passwords.'),
@@ -179,29 +181,29 @@ class HotpTokenClass(TokenClass):
                                         'value': ["sha1",
                                                   "sha256",
                                                   "sha512"],
-                                        'desc': desc_self1},
+                                        'desc': HotpTokenClass.desc_hash_func},
                        'hotp_otplen': {'type': 'int',
                                        'value': [6, 8],
-                                       'desc': desc_self2},
+                                       'desc': HotpTokenClass.desc_otp_len},
                        'hotp_force_server_generate': {
                            'type': 'bool',
-                           'desc': _("Force the key to be generated on the server.")},
+                           'desc': HotpTokenClass.desc_key_gen},
                        'hotp_2step': {'type': 'str',
                                       'value': ['allow', 'force'],
-                                      'desc': desc_two_step_user}
+                                      'desc': HotpTokenClass.desc_two_step_user}
                    },
                    SCOPE.ADMIN: {
                        'hotp_hashlib': {'type': 'str',
                                         'value': ["sha1",
                                                   "sha256",
                                                   "sha512"],
-                                        'desc': desc_self1},
+                                        'desc': HotpTokenClass.desc_hash_func},
                        'hotp_otplen': {'type': 'int',
                                        'value': [6, 8],
-                                       'desc': desc_self2},
+                                       'desc': HotpTokenClass.desc_otp_len},
                        'hotp_2step': {'type': 'str',
                                       'value': ['allow', 'force'],
-                                      'desc': desc_two_step_admin}
+                                      'desc': HotpTokenClass.desc_two_step_admin}
                    }
                }
                }

@@ -60,6 +60,8 @@ class TotpTokenClass(HotpTokenClass):
     # but the last used OTP value, so we need to set this to 0.
     previous_otp_offset = 0
 
+    desc_timestep = _('Specify the time step of the time-based OTP token.')
+
     @log_with(log)
     def __init__(self, db_token):
         """
@@ -113,47 +115,36 @@ class TotpTokenClass(HotpTokenClass):
                    SCOPE.USER: {
                        'totp_timestep': {'type': 'int',
                                          'value': [30, 60],
-                                         'desc': 'Specify the time step of '
-                                                 'the timebased OTP token.'},
+                                         'desc': TotpTokenClass.desc_timestep},
                        'totp_hashlib': {'type': 'str',
                                         'value': ["sha1",
                                                   "sha256",
                                                   "sha512"],
-                                        'desc': 'Specify the hashlib to be used. '
-                                                'Can be SHA1, SHA256 or SHA512.'},
+                                        'desc': TotpTokenClass.desc_hash_func},
                        'totp_otplen': {'type': 'int',
                                        'value': [6, 8],
-                                       'desc': "Specify the OTP length to be "
-                                               "used."},
+                                       'desc': TotpTokenClass.desc_otp_len},
                        'totp_force_server_generate': {'type': 'bool',
-                                                      'desc': _("Force the key to "
-                                                                "be generated on "
-                                                                "the server.")},
+                                                      'desc': TotpTokenClass.desc_key_gen},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
-                                 'desc': _('Specify whether users are allowed or '
-                                           'forced to use two-step enrollment.')}
+                                 'desc': TotpTokenClass.desc_two_step_user}
                    },
                    SCOPE.ADMIN: {
                        'totp_timestep': {'type': 'int',
                                          'value': [30, 60],
-                                         'desc': 'Specify the time step of '
-                                                 'the timebased OTP token.'},
+                                         'desc': TotpTokenClass.desc_timestep},
                        'totp_hashlib': {'type': 'str',
                                         'value': ["sha1",
                                                   "sha256",
                                                   "sha512"],
-                                        'desc': 'Specify the hashlib to be used. '
-                                                'Can be SHA1, SHA256 or SHA512.'},
+                                        'desc': TotpTokenClass.desc_hash_func},
                        'totp_otplen': {'type': 'int',
                                        'value': [6, 8],
-                                       'desc': "Specify the OTP length to be "
-                                               "used."},
+                                       'desc': TotpTokenClass.desc_otp_len},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
-                                 'desc': _('Specify whether admins are allowed or '
-                                           'forced to use two-step enrollment.')
-                                 }
+                                 'desc': TotpTokenClass.desc_two_step_admin}
                    },
                    SCOPE.ENROLL: {
                        '2step_clientsize': {'type': 'int',
