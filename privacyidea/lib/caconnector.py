@@ -42,6 +42,7 @@ from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
 from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.config import get_config_object
 
 log = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ def save_caconnector(params):
     sanity_name_check(connector_name)
     # check the type
     if connector_type not in get_caconnector_types():
-        raise Exception("connector type : {0!s} not in {1!s}".format(connector_type, unicode(get_caconnector_types())))
+        raise Exception(u"connector type : {0!s} not in {1!s}".format(connector_type, get_caconnector_types()))
 
     # check the name
     connectors = get_caconnector_list(filter_caconnector_name=connector_name)
@@ -116,8 +117,6 @@ def save_caconnector(params):
     return connector_id
 
 
-#@log_with(log)
-#@cache.memoize(10)
 def get_caconnector_list(filter_caconnector_type=None,
                          filter_caconnector_name=None,
                          return_config=True):
@@ -132,47 +131,31 @@ def get_caconnector_list(filter_caconnector_type=None,
     :rtype: list of the connectors and their configuration
 
     """
+    all_connector_objs = get_all_caconnectors()
     Connectors = []
-    if filter_caconnector_name:
-        connectors = CAConnector.query\
-                            .filter(func.lower(CAConnector.name) ==
-                                    filter_caconnector_name.lower())
-    elif filter_caconnector_type:
-        connectors = CAConnector.query\
-                            .filter(CAConnector.catype ==
-                                    filter_caconnector_type)
-    else:
-        connectors = CAConnector.query.all()
-    
-    for conn in connectors:
-        c = {"connectorname": conn.name,
-             "type": conn.catype}
-        # Add the connector configuration
-        data = {}
-        for conf in conn.caconfig:
-            value = conf.Value
-            if conf.Type == "password":
-                value = decryptPassword(value)
-            data[conf.Key] = value
-        if return_config:
-            c["data"] = data
+    for c in all_connector_objs:
+        if filter_caconnector_name:
+            if filter_caconnector_name == c.get("connectorname"):
+                Connectors.append(c)
+        elif filter_caconnector_type:
+            if filter_caconnector_type == c.get("type"):
+                Connectors.append(c)
         else:
-            c["data"] = {}
+            Connectors.append(c)
 
-        # Also add templates
-        c_obj_class = get_caconnector_class(conn.catype)
-        if c_obj_class is None:
-            log.error(
-                "unknown CA connector class {0!s} ".format(conn.name))
-        else:
-            # create the resolver instance and load the config
-            c_obj = c_obj_class(conn.name, data)
-            if c_obj:
-                c["templates"] = templates = c_obj.get_templates()
-                if return_config:
-                    c["data"] = c_obj.get_config(data)
-
-        Connectors.append(c)
+    if not return_config:
+        # We need to copy the dict to avoid destroying the dict-by-reference
+        reduced_connectors = []
+        # we strip all config data
+        for conn in Connectors:
+            reduced_connector = {}
+            for key in conn.keys():
+                if key in ["data"]:
+                    reduced_connector[key] = {}
+                else:
+                    reduced_connector[key] = conn.get(key)
+            reduced_connectors.append(reduced_connector)
+        return reduced_connectors
 
     return Connectors
 
@@ -215,7 +198,7 @@ def get_caconnector_config(connector_name):
     :return: the config of the CA connector
     :rtype: dict
     """
-    conn = get_caconnector_list(filter_caconnector_name=connector_name)
+    conn = get_caconnector_list(filter_caconnector_name=connector_name, return_config=True)
     return conn[0].get("data", {})
 
 
@@ -279,8 +262,6 @@ def get_caconnector_type(connector_name):
     return c_type
 
 
-#@log_with(log)
-#@cache.memoize(10)
 def get_caconnector_object(connector_name):
     """
     create a CA Connector object from a connector_name
@@ -302,7 +283,13 @@ def get_caconnector_object(connector_name):
             # create the resolver instance and load the config
             c_obj = c_obj_class(connector_name)
             if c_obj is not None:
-                connector_config = get_caconnector_config(connector_name)
+                connector_config = {}
+                for conf in conn.caconfig:
+                    # Handle passwords
+                    value = conf.Value
+                    if conf.Type == "password":
+                        value = decryptPassword(value)
+                    connector_config[conf.Key] = value
                 c_obj.set_config(connector_config)
 
     return c_obj
@@ -329,3 +316,12 @@ def import_caconnector(data, name=None):
         rid = save_caconnector(res_data)
         log.info('Import of caconnector "{0!s}" finished,'
                  ' id: {1!s}'.format(res_data['caconnector'], rid))
+
+
+def get_all_caconnectors():
+    """
+    Shorthand to retrieve all caconnectors of the request-local config object
+    """
+    conf = get_config_object()
+    return conf.caconnectors
+
