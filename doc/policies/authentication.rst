@@ -449,7 +449,7 @@ If a user authenticates successfully all failcounter of all of his tokens
 will be reset. This can be important, if using empty PINs or *otppin=None*.
 
 increase_failcounter_on_challenge
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: bool
 

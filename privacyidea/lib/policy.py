@@ -2189,13 +2189,15 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.PIN},
             ACTION.TOKENLABEL: {
                 'type': 'str',
-                'desc': _("Set label for a new enrolled soft token. "
-                          "Possible tags are \"{user}\", \"{realm}\", "
-                          "\"{serial}\", \"{givenname}\" and \"{surname}\"."),
+                'desc': _("The label for a new enrolled Smartphone token. "
+                          "Possible tags are <code>{user}</code>, <code>{realm}</code>, "
+                          "<code>{serial}</code>, <code>{givenname}</code> and <code>{surname}</code>."),
                 'group': GROUP.TOKEN},
             ACTION.TOKENISSUER: {
                 'type': 'str',
-                'desc': _("This is the issuer label for new enrolled soft token."),
+                'desc': _("The issuer label for new enrolled Smartphone token."
+                          "Possible tags are <code>{user}</code>, <code>{realm}</code>, "
+                          "<code>{serial}</code>, <code>{givenname}</code> and <code>{surname}</code>."),
                 'group': GROUP.TOKEN
             },
             ACTION.APPIMAGEURL: {
@@ -2412,7 +2414,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.TOKENINFO: {
                 'type': 'str',
                 'desc': _("The user will only be authenticated if the tokeninfo "
-                          "field matches the regexp. key/&lt;regexp&gt;/"),
+                          "field matches the regexp (key/&lt;regexp&gt;/)."),
                 'group': GROUP.CONDITIONS,
             },
             ACTION.SETREALM: {

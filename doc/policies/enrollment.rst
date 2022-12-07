@@ -72,12 +72,12 @@ tokenissuer
 
 type: string
 
-This sets the issuer label for a newly enrolled soft token.
+This sets the issuer label for a newly enrolled Smartphone token.
 This policy takes a fixed string, to add additional information about the
 issuer of the soft token.
 
-Starting with version 2.20 you can use the tags ``{user}``, ``{realm}``, ``{serial}``
-as well as ``{givenname}`` and ``{surname}`` in the field issuer.
+You can use the tags ``{user}``, ``{realm}``, ``{serial}``, ``{givenname}``
+and ``{surname}`` in the label.
 
 .. note:: A good idea is to set this to the instance name of your privacyIDEA
    installation or the name of your company.
@@ -87,19 +87,15 @@ tokenlabel
 
 type: string
 
-This sets the label for a newly enrolled soft token.
-Possible tags to be replaces are ``{user}``, ``{realm}`` and ``{serial}`` as
-well as ``{givenname}`` and ``{surname}``.
+This sets the label for a newly enrolled Smartphone token.
+Possible tags to be replaced are ``{user}``, ``{realm}``, ``{serial}``,
+``{givenname}`` and ``{surname}``.
 
 The default behaviour is to use the serial number.
 
 .. note:: This is useful to identify the token in the Authenticator App.
 
-.. note:: Starting with version 2.19 the usage of ``<u>``, ``<s>`` and ``<r>``
-   is deprecated. Instead you should use ``{user}``, ``{realm}``,
-   ``{serial}`` as well as ``{givenname}`` and ``{surname}``.
-
-.. warning:: If you are only using ``<u>`` or ``{user}`` as tokenlabel and you
+.. warning:: If you are only using ``{user}`` as tokenlabel and you
    enroll the token without a user, this will result in an invalid QR code,
    since it will have an empty label.
    You should rather use a label like ``"{user}@{realm}"``,
@@ -349,7 +345,7 @@ u2f_req
 type: string
 
 Only the specified U2F devices are allowed to be registered.
-The action can be specified like this:
+The action can be specified like this::
 
     u2f_req=subject/.*Yubico.*/
 
@@ -379,13 +375,13 @@ If you do not want to verify the validity period, you can check this action.
 .. _hotp-2step-difficulty:
 .. _totp-2step-difficulty:
 
-{type}_2step_clientsize, {type}_2step_serversize, {type}_2step_difficulty
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2step_clientsize, 2step_serversize, 2step_difficulty
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: string
 
-These are token type specific parameters. They control the key generation during the
-2step token enrollment (see :ref:`2step_enrollment`).
+These are token type specific parameters (with ``hotp_`` or ``totp_`` prefix).
+They control the key generation during the 2step token enrollment (see :ref:`2step_enrollment`).
 
 The ``serversize`` is the optional size (in bytes) of the server's key part.
 The ``clientsize`` is the size (in bytes) of the smartphone's key part.
@@ -399,11 +395,12 @@ This is new in version 2.21.
 .. _hotp-force-app-pin:
 .. _totp-force-app-pin:
 
-hotp_force_app_pin, totp_force_app_pin
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+force_app_pin
+~~~~~~~~~~~~~
 
 type: bool
 
+This is a token type specific parameter (with ``hotp_`` or ``totp_`` prefix).
 During enrollment of a privacyIDEA Authenticator smartphone app this policy is used
 to force the user to protect the token with a PIN.
 
