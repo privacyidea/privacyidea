@@ -1,3 +1,28 @@
+Version 3.8dev2, 2022-12-07
+
+  Features:
+  * Add enrollment of HOTP, TOTP, SMS, Email or PUSH token during
+    authentication via Multi-Challenge (#2993)
+  * Add token groups in preparation for SSH key and Offline-Token
+    management (#3299)
+
+  Enhancements:
+  * Add preferred client mode to define the authentication behaviour of
+    plugins (#3373)
+  * Avoid spamming with SMS or Email by allowing to increase failcounter
+    during challenge-response (#933)
+  * Configure Email address in the subject of a certificate request (#3327)
+
+
+  Fixes:
+  * Fix fetching SSH keys under certain circumstances (#3375)
+  * Add missing sequences for certain database tables (#3356)
+  * Remove user fields from token API (#3343)
+  * Add SMPP encoding check (#3321)
+  * Fix encrpyting empty strings in AES module (#2899)
+  * Rename createdb and dropdb to createtables and droptables (#2996)
+  * Make subscription checking more relaxing (#3296)
+
 Version 3.8dev1, 2022-10-06
 
   Features:
@@ -29,10 +54,10 @@ Version 3.8dev1, 2022-10-06
   * Search and filter for actions in configured policies (#2788)
   Documentation
   * Add a glossary (#2783)
-  
 
 
-  Fixes:  
+
+  Fixes:
   * Automatically delete MachineTokenOptions when a MachineToken is deleted (#3165)
   * Fixing int-str conversion with Python 3.10 (#3303)
   * Remove pillow dependency (#3268)
@@ -69,9 +94,9 @@ Version 3.7.2, 2022-07-04
   Fixes:
   * Fix password recovery link (#3168)
   * Add missing user object in DEL /user/ request (#3192)
-  * Comparie users by uid, thus fixing 2step enrollment with case 
+  * Compare users by uid, thus fixing 2step enrollment with case
     insensitive login names(#3186)
-  * Downgrade ldap3 dependency to fix finding of 5c-users 
+  * Downgrade ldap3 dependency to fix finding of 5c-users
     in objectGUID in Active Directory
 
 Version 3.7.1, 2022-05-11
