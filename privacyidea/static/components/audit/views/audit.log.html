@@ -115,6 +115,7 @@
                 </th>
                 <th ng-show="audit_columns.includes('sig_check')" translate>sig_check</th>
                 <th ng-show="audit_columns.includes('missing_line')" translate>missing_line</th>
+                <th ng-show="audit_columns.includes('thread_id')" translate>thread_id</th>
                 <th ng-show="audit_columns.includes('clearance_level')" translate>clearance</th>
                 <th ng-show="audit_columns.includes('log_level')" translate>log level</th>
                 <th ng-show="audit_columns.includes('privacyidea_server')"
@@ -170,6 +171,7 @@
             </span></td>
                 <td ng-if="audit_columns.includes('missing_line')"><span status-class="{{ audit.missing_line }}">
                 {{ audit.missing_line }}</span></td>
+                <td ng-if="audit_columns.includes('thread_id')">{{ audit.thread_id }}</td>
                 <td ng-if="audit_columns.includes('clearance_level')">{{ audit.clearance_level }}</td>
                 <td ng-if="audit_columns.includes('log_level')">{{ audit.log_level }}</td>
                 <td ng-if="audit_columns.includes('privacyidea_server')">{{ audit.privacyidea_server }}</td>
