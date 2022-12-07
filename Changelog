@@ -1,4 +1,4 @@
-Version 3.8dev2, 2022-12-07
+Version 3.8dev3, 2022-12-07
 
   Features:
   * Add enrollment of HOTP, TOTP, SMS, Email or PUSH token during
@@ -7,6 +7,7 @@ Version 3.8dev2, 2022-12-07
     management (#3299)
 
   Enhancements:
+  * Add thread ID to audit log (#3381)
   * Add preferred client mode to define the authentication behaviour of
     plugins (#3373)
   * Avoid spamming with SMS or Email by allowing to increase failcounter
