@@ -324,3 +324,4 @@ def get_all_caconnectors():
     """
     conf = get_config_object()
     return conf.caconnectors
+
