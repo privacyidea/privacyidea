@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-06-08 16:56+0200\n"
-"PO-Revision-Date: 2022-03-28 10:06+0000\n"
+"PO-Revision-Date: 2022-12-08 16:48+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-ui/de/>\n"
 "Language: de\n"
-"Language-Team: German <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/de/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.15-dev\n"
 "Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:222
@@ -660,14 +661,13 @@ msgstr ""
 "verschlüsselt abgespeichert werden soll, wählen Sie diese Option."
 
 #: lib/policy.py:2130
-#, fuzzy
 msgid ""
 "Set label for a new enrolled Google Authenticator. Possible tags are "
 "&lt;u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
 msgstr ""
-"Setzt die Beschriftung für einen neu ausgerollten Google Authenticator "
-"oder vergleichbare App. Mögliche Tags sind <u> (Benutzer), <r> (Realm) "
-"oder <s> (Seriennummer)."
+"Setzt die Beschriftung für einen neu ausgerollten Google Authenticator oder "
+"vergleichbare App. Mögliche Platzhalter sind &lt;u&gt; (Benutzer), &lt;r&gt; "
+"(Realm) und &lt;s&gt; (Seriennummer)."
 
 #: lib/policy.py:2136
 msgid "This is the issuer label for new enrolled Google Authenticators."
@@ -680,6 +680,8 @@ msgid ""
 "This is the URL to the token image for the privacyIDEA Authenticator and "
 "some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."
 msgstr ""
+"Die URL zum Token-Symbol für den privacyIDEA Authenticator und anderen Apps "
+"wie FreeOTP (unterstützte Bildformate: PNG, JPG und GIF)."
 
 #: lib/policy.py:2149
 msgid ""
@@ -936,13 +938,12 @@ msgstr ""
 "auf diesen regulären Ausdruck passt."
 
 #: lib/policy.py:2335
-#, fuzzy
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
 "regexp. key/&lt;regexp&gt;/"
 msgstr ""
-"Die Autorisierung des Benutzers ist nur erfolgreich, wenn das Tokeninfo "
-"Feld auf den regulären Ausdruck passt. key/<regexp>/"
+"Die Autorisierung des Benutzers ist nur erfolgreich, wenn das Tokeninfo Feld "
+"auf den regulären Ausdruck passt. key/&lt;regexp&gt;/"
 
 #: lib/policy.py:2342
 msgid ""
@@ -1240,15 +1241,15 @@ msgstr ""
 
 #: lib/token.py:564
 msgid "The requested token could not be found."
-msgstr ""
+msgstr "Der gesuchte Token wurde nicht gefunden."
 
 #: lib/token.py:566
 msgid "More than one matching token were found."
-msgstr ""
+msgstr "Es wurde mehr als ein passender Token gefunden."
 
 #: lib/token.py:880
 msgid "multiple tokens are matching this OTP value!"
-msgstr ""
+msgstr "Dieser OTP-Wert passt zu mehreren Token!"
 
 #: lib/token.py:1040
 msgid "init token failed: unknown token type {0!r}"
@@ -3228,4 +3229,3 @@ msgstr ""
 #~ "URL zu einem Bild, das zum Token"
 #~ " in einer App wie FreeOTP angezeigt"
 #~ " wird."
-
