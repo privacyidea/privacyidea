@@ -17,7 +17,7 @@ cachetools==5.0.0; python_version > '3.6'
 cbor2==5.2.0.post1; python_version < '3.0'
 cbor2==5.4.2.post1; python_version == '3.6'
 cbor2==5.4.3; python_version > '3.6'
-certifi==2021.10.8
+certifi==2022.12.7
 cffi==1.15.0
 chardet==4.0.0; python_version < '3.0'
 charset-normalizer==2.0.12; python_version > '3.5'
