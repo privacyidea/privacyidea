@@ -38,6 +38,7 @@
 import binascii
 import six
 import logging
+import traceback
 from datetime import datetime, timedelta
 
 from dateutil.tz import tzutc
@@ -53,7 +54,7 @@ from privacyidea.lib.crypto import (encrypt,
 from sqlalchemy import and_
 from sqlalchemy.schema import Sequence
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy.exc import IntegrityError
 from .lib.log import log_with
 from privacyidea.lib.utils import (is_true, convert_column_to_unicode,
                                    hexlify_and_unicode)
@@ -2609,7 +2610,11 @@ class ClientApplication(MethodsMixin, db.Model):
             if self.hostname is not None:
                 values["hostname"] = self.hostname
             ClientApplication.query.filter(ClientApplication.id == clientapp.id).update(values)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError as e:  # pragma: no cover
+            log.info('Unable to write ClientApplication entry to db: {0!s}'.format(e))
+            log.debug(traceback.format_exc())
 
     def __repr__(self):
         return "<ClientApplication [{0!s}][{1!s}:{2!s}] on {3!s}>".format(
