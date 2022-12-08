@@ -29,35 +29,12 @@ privacyIDEA community website `tagged with push token <https://www.privacyidea.o
    the Firebase service. It has to be located on the privacyIDEA
    server.
 
-**apikey**
 
-   The API key your Android app should use to connect to the Firebase service.
-
-**apiios**
-
-   The API key your iOS app should use to connect to the Firebase service.
-
-**appid**
-
-   The app ID your Android app should use to connect to the Firebase service.
-
-**appidios**
-
-   The app ID your iOS app should use to connect to the Firebase service.
-
-**projectid**
-
-   The project ID of the Firebase project, that is used to connect
-   the app to.
-
-**projectnumber***
-
-   The project number of the Firebase project, that is used to
-   connect the app to.
-
-You can get all the necessary values *JSON config file*,
-*project ID*, *project number*, *app ID* and *API key*
-from your Firebase console.
+You can get the necessary *JSON config file*, from your Firebase console.
+The default PUSH authenticator App (privacyIDEA Authenticator) which you can
+find in Google Play Store and Apple App Store uses a Firebase project, that is 
+managed by the company NetKnights.
+You need to get an SLA to receive a JSON config file for accessing the project.
 
 
 HTTP provider

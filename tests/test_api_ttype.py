@@ -31,10 +31,6 @@ DICT_FILE = "tests/testdata/dictionary"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
 CLIENT_FILE = "tests/testdata/google-services.json"
 FB_CONFIG_VALS = {
-    FIREBASE_CONFIG.API_KEY: "1",
-    FIREBASE_CONFIG.APP_ID: "2",
-    FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-    FIREBASE_CONFIG.PROJECT_ID: "test-123456",
     FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE}
 REGISTRATION_URL = "http://test/ttype/push"
 TTL = "10"
@@ -184,9 +180,6 @@ class TtypePushAPITestCase(MyApiTestCase):
             self.assertTrue("pushurl" in detail)
             # check that the new URL contains the serial number
             self.assertTrue("&serial=PIPU" in detail.get("pushurl").get("value"))
-            self.assertTrue("appid=" in detail.get("pushurl").get("value"))
-            self.assertTrue("appidios=" in detail.get("pushurl").get("value"))
-            self.assertTrue("apikeyios=" in detail.get("pushurl").get("value"))
             self.assertFalse("otpkey" in detail)
             enrollment_credential = detail.get("enrollment_credential")
 

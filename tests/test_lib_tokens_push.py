@@ -45,10 +45,6 @@ CLIENT_FILE = "tests/testdata/google-services.json"
 REGISTRATION_URL = "http://test/ttype/push"
 TTL = 10
 FB_CONFIG_VALS = {
-    FIREBASE_CONFIG.API_KEY: "1",
-    FIREBASE_CONFIG.APP_ID: "2",
-    FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-    FIREBASE_CONFIG.PROJECT_ID: "test-123456",
     FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE}
 
 
@@ -144,45 +140,15 @@ class PushTokenTestCase(MyTestCase):
 
         fb_config = {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
                      FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE,
-                     FIREBASE_CONFIG.TTL: 10,
-                     FIREBASE_CONFIG.API_KEY: "1",
-                     FIREBASE_CONFIG.APP_ID: "2",
-                     FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-                     FIREBASE_CONFIG.PROJECT_ID: "4"}
+                     FIREBASE_CONFIG.TTL: 10}
 
         # Wrong JSON file
         self.assertRaises(ConfigAdminError, set_smsgateway,
                           "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                           fb_config)
 
-        # Wrong Project number
-        fb_config[FIREBASE_CONFIG.JSON_CONFIG] = FIREBASE_FILE
-        self.assertRaises(ConfigAdminError, set_smsgateway,
-                          "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
-                          fb_config)
-
-        # Missing APP_ID
-        self.assertRaises(ConfigAdminError, set_smsgateway,
-                          "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
-                          {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-                           FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE,
-                           FIREBASE_CONFIG.TTL: 10,
-                           FIREBASE_CONFIG.API_KEY: "1",
-                           FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-                           FIREBASE_CONFIG.PROJECT_ID: "4"})
-
-        # Missing API_KEY_IOS
-        self.assertRaises(ConfigAdminError, set_smsgateway,
-                          "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
-                          {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-                           FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE,
-                           FIREBASE_CONFIG.TTL: 10,
-                           FIREBASE_CONFIG.APP_ID_IOS: "1",
-                           FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-                           FIREBASE_CONFIG.PROJECT_ID: "4"})
-
         # Everything is fine
-        fb_config[FIREBASE_CONFIG.PROJECT_ID] = "test-123456"
+        fb_config[FIREBASE_CONFIG.JSON_CONFIG] = FIREBASE_FILE
         r = set_smsgateway("fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                            fb_config)
         self.assertTrue(r > 0)
