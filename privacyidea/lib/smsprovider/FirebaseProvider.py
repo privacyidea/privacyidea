@@ -154,7 +154,7 @@ class FirebaseProvider(ISMSProvider):
             proxies["https"] = self.smsgateway.option_dict.get(FIREBASE_CONFIG.HTTPS_PROXY)
         a = self.smsgateway.option_dict.get(FIREBASE_CONFIG.JSON_CONFIG)
         with open(a) as f:
-            server_config = json.loads(f)
+            server_config = json.load(f)
         url = FIREBASE_URL_SEND.format(server_config["project_id"])
         resp = authed_session.post(url, data=json.dumps(fcm_message), headers=headers, proxies=proxies)
 
@@ -175,7 +175,7 @@ class FirebaseProvider(ISMSProvider):
         json_file = self.smsgateway.option_dict.get(FIREBASE_CONFIG.JSON_CONFIG)
         server_config = None
         with open(json_file) as f:
-            server_config = json.loads(f)
+            server_config = json.load(f)
         if server_config:
             if server_config.get("type") != "service_account":
                 raise ConfigAdminError(description="The JSON file is not a valid firebase credentials file.")
