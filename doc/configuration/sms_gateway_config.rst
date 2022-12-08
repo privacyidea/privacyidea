@@ -31,6 +31,10 @@ privacyIDEA community website `tagged with push token <https://www.privacyidea.o
 
 
 You can get the necessary *JSON config file*, from your Firebase console.
+The default PUSH authenticator App (privacyIDEA Authenticator) which you can
+find in Google Play Store and Apple App Store uses a Firebase project, that is 
+managed by the company NetKnights.
+You need to get an SLA to receive a JSON config file for accessing the project.
 
 
 HTTP provider
