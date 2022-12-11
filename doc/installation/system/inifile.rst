@@ -38,6 +38,8 @@ The file should contain the following contents::
    PI_AUDIT_KEY_PUBLIC = '/home/cornelius/src/privacyidea/public.pem'
    # PI_AUDIT_MODULE = <python audit module>
    # PI_AUDIT_SQL_URI = <special audit log DB uri>
+   # Options passed to the Audit DB engine (supersedes SQLALCHEMY_ENGINE_OPTIONS)
+   # PI_AUDIT_SQL_OPTIONS = {}
    # Truncate Audit entries to fit into DB columns
    PI_AUDIT_SQL_TRUNCATE = True
    # PI_LOGFILE = '....'
@@ -100,6 +102,16 @@ can be set, for example::
 Further information on possible parameters can be found in the
 `PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
 
+``PI_PREFERRED_LANGUAGE`` is a list in which the preferred languages can be defined.
+The browser's language settings are compared to this list and the "best match" wins.
+If none of the languages set in the browser match, the first language in the list
+will be used as the default language::
+
+    PI_PREFERRED_LANGUAGE = ["en", "de", "es", "fr"]
+
+.. note:: If ``PI_PREFERRED_LANGUAGE`` is not defined, the following list is used.
+   ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr']
+
 Logging
 -------
 
@@ -156,6 +168,9 @@ to the audit log using the variable ``PI_AUDIT_SERVERNAME``.
 
 You can run the database for the audit module on another database or even
 server. For this you can specify the database URI via ``PI_AUDIT_SQL_URI``.
+With ``PI_AUDIT_SQL_OPTIONS`` You can pass a dictionary of options to the
+database engine. If ``PI_AUDIT_SQL_OPTIONS`` is not set,
+``SQLALCHEMY_ENGINE_OPTIONS`` will be used.
 
 ``PI_AUDIT_SQL_TRUNCATE = True`` lets you truncate audit entries to the length
 of the database fields.

@@ -29,7 +29,7 @@ This module is tested in tests/test_lib_caconnector.py
 """
 from privacyidea.lib.error import CAError
 from privacyidea.lib.utils import int_to_hex, to_unicode
-from privacyidea.lib.caconnectors.baseca import BaseCAConnector
+from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConnectors
 from OpenSSL import crypto
 from subprocess import Popen, PIPE
 import yaml
@@ -185,6 +185,8 @@ authorityKeyIdentifier=keyid:always,issuer:always
 
 [ crl_dp_policy ]
 """
+
+AvailableCAConnectors.append("privacyidea.lib.caconnectors.localca.LocalCAConnector")
 
 
 def _get_crl_next_update(filename):
@@ -359,8 +361,8 @@ class LocalCAConnector(BaseCAConnector):
         :param options: Additional options like the validity time or the
             template or spkac=1
         :type options: dict
-        :return: Returns the certificate object
-        :rtype: X509
+        :return: Returns a return value (0) and the certificate object
+        :rtype: (int, X509)
         """
         # Sign the certificate for one year
         options = options or {}
@@ -439,26 +441,7 @@ class LocalCAConnector(BaseCAConnector):
         else:
             filetype = crypto.FILETYPE_PEM
         cert_obj = crypto.load_certificate(filetype, certificate)
-        return cert_obj
-
-    def view_pending_certs(self):
-        """
-        CA Manager approval
-        the token/init of would not create a certificate but a
-        pending certificate request, that needs to be approved by a
-        CA manager. So we need some kind of approve method.
-        :return:
-        """
-        pass
-
-    def request_cert(self):
-        """
-        create key server side
-        create key on client side
-        via PKCS10
-        :return:
-        """
-        pass
+        return 0, cert_obj
 
     def get_templates(self):
         """
@@ -479,13 +462,7 @@ class LocalCAConnector(BaseCAConnector):
                 log.debug(u'{0!s}'.format(traceback.format_exc()))
         return content
 
-    def publish_cert(self):
-        """
-        The certificate might get published somewhere
-        """
-        pass
-
-    def revoke_cert(self, certificate, reason=CRL_REASONS[0]):
+    def revoke_cert(self, certificate, request_id=None, reason=CRL_REASONS[0]):
         """
         Revoke the specified certificate. At this point only the database
         index.txt is updated.

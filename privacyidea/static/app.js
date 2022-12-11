@@ -75,6 +75,7 @@ myApp.constant("clientUrl", backendUrl + instance + "/client");
 myApp.constant("subscriptionsUrl", backendUrl + instance + "/subscriptions");
 myApp.constant("policyUrl", backendUrl + instance + "/policy");
 myApp.constant("registerUrl", backendUrl + instance + "/register");
+myApp.constant("tokengroupUrl", backendUrl + instance + "/tokengroup");
 myApp.constant("CAConnectorUrl", backendUrl + instance + "/caconnector");
 myApp.constant("smtpServerUrl", backendUrl + instance + "/smtpserver");
 myApp.constant("radiusServerUrl", backendUrl + instance + "/radiusserver");
@@ -154,10 +155,14 @@ myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
 
 myApp.config(['$compileProvider',
     function ($compileProvider) {
-        // allow otpauth scheme in URLs
-        $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|tel|file|blob|otpauth):/);
-        // allow only links to our readthedocs documentation
-        $compileProvider.aHrefSanitizationTrustedUrlList(/^\s*https:\/\/privacyidea.readthedocs.io\//);
+        // allow only links to our readthedocs documentation, netknights homepage and "otpauth:" links
+        let url_re = /^\s*(https:\/\/(privacyidea.readthedocs.io|netknights.it)\/|otpauth:|mailto:|file:|blob:)/;
+        $compileProvider.aHrefSanitizationTrustedUrlList(url_re);
+}]);
+
+// disable debug info: https://docs.angularjs.org/guide/production#disabling-debug-data
+myApp.config(['$compileProvider', function ($compileProvider) {
+    $compileProvider.debugInfoEnabled(false);
 }]);
 
 // A function to escape regexp queries

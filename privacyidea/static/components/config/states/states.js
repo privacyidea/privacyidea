@@ -103,6 +103,14 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                     url: "/local/:connectorname",
                     templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get()
                 })
+                .state('config.caconnectors.addmicrosoft', {
+                    url: "/microsoft",
+                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get()
+                })
+                .state('config.caconnectors.editmicrosoft', {
+                    url: "/microsoft/:connectorname",
+                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get()
+                })
                 .state('config.mresolvers', {
                     url: "/machineresolvers",
                     templateUrl: configpath + "config.machineresolvers.html" + versioningSuffixProviderProvider.$get().$get()
@@ -235,6 +243,26 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                     url: "/edit/",
                     templateUrl: configpath + "config.radius.edit.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "radiusServerController"
+                })
+                .state('config.tokengroup', {
+                    url: "/tokengroup",
+                    templateUrl: configpath + "config.tokengroup.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "tokengroupController"
+                })
+                .state('config.tokengroup.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.tokengroup.list.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "tokengroupController"
+                })
+                .state('config.tokengroup.edit', {
+                    url: "/edit/:groupname",
+                    templateUrl: configpath + "config.tokengroup.edit.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "tokengroupController"
+                })
+                .state('config.tokengroup.add', {
+                    url: "/edit/",
+                    templateUrl: configpath + "config.tokengroup.edit.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "tokengroupController"
                 })
                 .state('config.privacyideaserver', {
                     url: "/privacyideaserver",

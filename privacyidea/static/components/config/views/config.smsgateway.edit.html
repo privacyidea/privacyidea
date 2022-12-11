@@ -45,6 +45,19 @@
         </div>
     </div>
 
+        <!-- button -->
+    <div class="text-center"
+         ng-show="checkRight('smsgateway_write')">
+        <button ng-click="createSMSgateway()"
+                id="createTopGatewayButton"
+                ng-disabled="formGatewayAdd.$invalid"
+                class="btn btn-primary">
+            <span class="glyphicon glyphicon-plus"></span>
+            <span translate>Save SMS gateway</span>
+        </button>
+    </div>
+
+
     <!-- parameters -->
     <h3 translate>Parameters</h3>
     <table class="table table-hover">
@@ -146,17 +159,15 @@
         </tr>
     </table>
     </div>
-
     <!-- button -->
     <div class="text-center"
          ng-show="checkRight('smsgateway_write')">
         <button ng-click="createSMSgateway()"
-                id="createGatewayButton"
+                id="createBottomGatewayButton"
                 ng-disabled="formGatewayAdd.$invalid"
                 class="btn btn-primary">
             <span class="glyphicon glyphicon-plus"></span>
             <span translate>Save SMS gateway</span>
         </button>
     </div>
-
 </form>

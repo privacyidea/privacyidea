@@ -55,14 +55,14 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                                 "policyUrl", "eventUrl", "smtpServerUrl",
                                 "radiusServerUrl", "smsgatewayUrl",
                                 "defaultRealmUrl", "systemUrl", "periodicTaskUrl",
-                                "privacyideaServerUrl", "CAConnectorUrl",
+                                "privacyideaServerUrl", "CAConnectorUrl", "tokengroupUrl",
                                 function (AuthFactory, $http, $state, $rootScope,
                                           resolverUrl, realmUrl, machineResolverUrl,
                                           policyUrl, eventUrl, smtpServerUrl,
                                           radiusServerUrl, smsgatewayUrl,
                                           defaultRealmUrl, systemUrl,
                                           periodicTaskUrl, privacyideaServerUrl,
-                                          CAConnectorUrl) {
+                                          CAConnectorUrl, tokengroupUrl) {
     /**
      Each service - just like this service factory - is a singleton.
      */
@@ -305,6 +305,13 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                            'Content-Type': 'application/json'}
                 }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
         },
+        getCASpecificOptions: function(catype, params, callback) {
+            //encodeURI("/random?len=" + len + "&encode=" + encode)
+            var pstring = new URLSearchParams(params).toString()
+            $http.get(CAConnectorUrl + "/specific/" + catype + "?" + pstring,
+                {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
+        },
         testResolver: function (params, callback) {
             $http.post(resolverUrl + "/test", params,
                 {headers: {'PI-Authorization': AuthFactory.getAuthToken(),
@@ -456,6 +463,24 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
         },
         testRadius: function(params, callback) {
             $http.post(radiusServerUrl + "/test_request", params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
+        },
+        getTokengroup: function(groupname, callback) {
+            $http.get(tokengroupUrl + "/" + groupname, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
+        },
+        addTokengroup: function(params, callback) {
+            $http.post(tokengroupUrl + "/" + params["groupname"], params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
+        },
+        delTokengroup: function(groupname, callback) {
+            $http.delete(tokengroupUrl + "/" + groupname, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken(),
                           'Content-Type': 'application/json'}
             }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });

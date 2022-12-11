@@ -94,24 +94,34 @@ class Audit(AuditBase):
     """
     This is the SQLAudit module, which writes the audit entries
     to an SQL database table.
-    It requires the configuration parameters in pi.cfg:
-    * PI_AUDIT_KEY_PUBLIC
-    * PI_AUDIT_KEY_PRIVATE
+
+    It requires the following configuration parameters in :ref:`cfgfile`:
+
+    * ``PI_AUDIT_KEY_PUBLIC``
+    * ``PI_AUDIT_KEY_PRIVATE``
 
     If you want to host the SQL Audit database in another DB than the
     token DB, you can use:
-    * PI_AUDIT_SQL_URI
 
-    It also takes the optional parameters:
-    * PI_AUDIT_POOL_SIZE
-    * PI_AUDIT_POOL_RECYCLE
-    * PI_AUDIT_SQL_TRUNCATE
-    * PI_AUDIT_NO_SIGN
+    * ``PI_AUDIT_SQL_URI`` and
+    * ``PI_AUDIT_SQL_OPTIONS``
 
-    You can use PI_AUDIT_NO_SIGN = True to avoid signing of the audit log.
+    With ``PI_AUDIT_SQL_OPTIONS = {}`` You can pass options to the DB engine
+    creation. If ``PI_AUDIT_SQL_OPTIONS`` is not set,
+    ``SQLALCHEMY_ENGINE_OPTIONS`` will be used.
 
-    If PI_CHECK_OLD_SIGNATURES = True old style signatures (text-book RSA) will
-    be checked as well, otherwise they will be marked as 'FAIL'.
+    This module also takes the following optional parameters:
+
+    * ``PI_AUDIT_POOL_SIZE``
+    * ``PI_AUDIT_POOL_RECYCLE``
+    * ``PI_AUDIT_SQL_TRUNCATE``
+    * ``PI_AUDIT_NO_SIGN``
+    * ``PI_CHECK_OLD_SIGNATURES``
+
+    You can use ``PI_AUDIT_NO_SIGN = True`` to avoid signing of the audit log.
+
+    If ``PI_CHECK_OLD_SIGNATURES = True`` old style signatures (text-book RSA) will
+    be checked as well, otherwise they will be marked as ``FAIL``.
     """
 
     is_readable = True
@@ -154,16 +164,22 @@ class Audit(AuditBase):
         connect_string = self.config.get("PI_AUDIT_SQL_URI", self.config.get(
             "SQLALCHEMY_DATABASE_URI"))
         log.debug("using the connect string {0!s}".format(censor_connect_string(connect_string)))
+        # if no specific audit engine options are given, use the default from
+        # SQLALCHEMY_ENGINE_OPTIONS or none
+        sqa_options = self.config.get("PI_AUDIT_SQL_OPTIONS",
+                                      self.config.get('SQLALCHEMY_ENGINE_OPTIONS', {}))
+        log.debug("Using Audit SQLAlchemy engine options: {0!s}".format(sqa_options))
         try:
             pool_size = self.config.get("PI_AUDIT_POOL_SIZE", 20)
             engine = create_engine(
                 connect_string,
                 pool_size=pool_size,
-                pool_recycle=self.config.get("PI_AUDIT_POOL_RECYCLE", 600))
+                pool_recycle=self.config.get("PI_AUDIT_POOL_RECYCLE", 600),
+                **sqa_options)
             log.debug("Using SQL pool size of {}".format(pool_size))
         except TypeError:
             # SQLite does not support pool_size
-            engine = create_engine(connect_string)
+            engine = create_engine(connect_string, **sqa_options)
             log.debug("Using no SQL pool_size.")
         return engine
 
@@ -289,7 +305,8 @@ class Audit(AuditBase):
                           clearance_level=self.audit_data.get("clearance_level"),
                           policies=self.audit_data.get("policies"),
                           startdate=self.audit_data.get("startdate"),
-                          duration=duration
+                          duration=duration,
+                          thread_id=self.audit_data.get("thread_id")
                           )
             self.session.add(le)
             self.session.commit()
@@ -359,6 +376,7 @@ class Audit(AuditBase):
         :type le: LogEntry
         :rtype str
         """
+        # TODO: Add thread_id. We really should add a versioning to identify which audit data is signed.
         s = u"id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s," \
             u"ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
                                                    le.date,
@@ -404,12 +422,14 @@ class Audit(AuditBase):
                     'client': LogEntry.client,
                     'log_level': LogEntry.loglevel,
                     'policies': LogEntry.policies,
-                    'clearance_level': LogEntry.clearance_level}
+                    'clearance_level': LogEntry.clearance_level,
+                    'thread_id': LogEntry.thread_id}
         return sortname.get(key)
 
     def csv_generator(self, param=None, user=None, timelimit=None):
         """
         Returns the audit log as csv file.
+
         :param timelimit: Limit the number of dumped entries by time
         :type timelimit: datetime.timedelta
         :param param: The request parameters
@@ -419,7 +439,7 @@ class Audit(AuditBase):
         """
         filter_condition = self._create_filter(param,
                                                timelimit=timelimit)
-        logentries = self.session.query(LogEntry).filter(filter_condition).all()
+        logentries = self.session.query(LogEntry).filter(filter_condition).order_by(LogEntry.date).all()
 
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
@@ -570,4 +590,5 @@ class Audit(AuditBase):
         audit_dict['clearance_level'] = audit_entry.clearance_level
         audit_dict['startdate'] = audit_entry.startdate.isoformat() if audit_entry.startdate else None
         audit_dict['duration'] = audit_entry.duration.total_seconds() if audit_entry.duration else None
+        audit_dict['thread_id'] = audit_entry.thread_id
         return audit_dict

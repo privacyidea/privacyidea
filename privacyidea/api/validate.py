@@ -74,6 +74,7 @@ from .lib.utils import required
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
+from privacyidea.lib.utils import is_true
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
@@ -84,7 +85,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
                                            check_base_action, pushtoken_wait, webauthntoken_auth, webauthntoken_authz,
-                                           webauthntoken_request, check_application_tokentype)
+                                           webauthntoken_request, check_application_tokentype,
+                                           increase_failcounter_on_challenge)
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
                                             check_tokeninfo,
@@ -92,7 +94,8 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             no_detail_on_success, autoassign,
                                             offline_info,
                                             add_user_detail_to_response, construct_radius_response,
-                                            mangle_challenge_response, is_authorized)
+                                            mangle_challenge_response, is_authorized,
+                                            multichallenge_enroll_via_validate, preferred_client_mode)
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 import logging
@@ -186,7 +189,8 @@ def offlinerefill():
                 response = send_result(True)
                 content = response.json
                 content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
-                                                      "response": otps}]}
+                                                      "response": otps,
+                                                      "serial": serial}]}
                 response.set_data(json.dumps(content))
                 return response
         raise ParameterError("Token is not an offline token or refill token is incorrect")
@@ -198,6 +202,7 @@ def offlinerefill():
 @postpolicy(is_authorized, request=request)
 @postpolicy(mangle_challenge_response, request=request)
 @postpolicy(construct_radius_response, request=request)
+@postpolicy(multichallenge_enroll_via_validate, request=request)
 @postpolicy(no_detail_on_fail, request=request)
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)
@@ -206,11 +211,13 @@ def offlinerefill():
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
+@postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(pushtoken_wait, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
+@prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(save_client_application_type, request=request)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
@@ -298,14 +305,14 @@ def check():
                 "serial": "PIEM0000AB00",
                 "type": "email",
                 "transaction_id": "12345678901234567890",
-                "multi_challenge: [ {"serial": "PIEM0000AB00",
-                                     "transaction_id":  "12345678901234567890",
-                                     "message": "Please enter otp from your email",
-                                     "client_mode": "interactive"},
-                                    {"serial": "PISM12345678",
-                                     "transaction_id": "12345678901234567890",
-                                     "message": "Please enter otp from your SMS",
-                                     "client_mode": "interactive"}
+                "multi_challenge": [ {"serial": "PIEM0000AB00",
+                                      "transaction_id":  "12345678901234567890",
+                                      "message": "Please enter otp from your email",
+                                      "client_mode": "interactive"},
+                                     {"serial": "PISM12345678",
+                                      "transaction_id": "12345678901234567890",
+                                      "message": "Please enter otp from your SMS",
+                                      "client_mode": "interactive"}
                 ]
               },
               "id": 2,
@@ -416,10 +423,11 @@ def check():
                     # additional attributes
                     for k, v in ui.items():
                         result["attributes"][k] = v
-
+    serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]]) \
+        if 'multi_challenge' in details else details.get('serial')
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": success,
-                        "serial": serial or details.get("serial"),
+                        "serial": serials,
                         "token_type": details.get("type")})
     return send_result(result, rid=2, details=details)
 
@@ -428,9 +436,11 @@ def check():
 @admin_required
 @postpolicy(is_authorized, request=request)
 @postpolicy(mangle_challenge_response, request=request)
+@postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
 @check_user_or_serial_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
+@prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(check_base_action, request, action=ACTION.TRIGGERCHALLENGE)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_auth, request=request)
@@ -562,6 +572,9 @@ def trigger_challenge():
     token_objs = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)
     # Only use the tokens, that are allowed to do challenge response
     chal_resp_tokens = [token_obj for token_obj in token_objs if "challenge" in token_obj.mode]
+    if is_true(options.get("increase_failcounter_on_challenge")):
+        for token_obj in chal_resp_tokens:
+            token_obj.inc_failcount()
     create_challenges_from_tokens(chal_resp_tokens, details, options)
     result_obj = len(details.get("multi_challenge"))
 

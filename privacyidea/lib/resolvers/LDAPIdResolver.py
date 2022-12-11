@@ -57,6 +57,7 @@ The file is tested in tests/test_lib_resolver.py
 """
 
 import logging
+
 import yaml
 import threading
 import functools
@@ -77,7 +78,7 @@ import traceback
 from passlib.hash import ldap_salted_sha1
 import hashlib
 import binascii
-from privacyidea.lib.utils import is_true
+from privacyidea.lib.utils import is_true, to_bytes
 from privacyidea.lib.framework import get_app_local_store, get_app_config_value
 import datetime
 
@@ -88,9 +89,17 @@ import uuid
 from ldap3.utils.conv import escape_bytes
 from operator import itemgetter
 
+log = logging.getLogger(__name__)
+
+try:
+    import gssapi
+    have_gssapi = True
+except ImportError:
+    log.warning('Could not import gssapi package. Kerberos authentication not available')
+    have_gssapi = False
+
 CACHE = {}
 
-log = logging.getLogger(__name__)
 ENCODING = "utf-8"
 # The number of rounds the resolver tries to reach a responding server in the
 #  pool
@@ -283,6 +292,7 @@ class AUTHTYPE(object):
     SIMPLE = "Simple"
     SASL_DIGEST_MD5 = "SASL Digest-MD5"
     NTLM = "NTLM"
+    SASL_KERBEROS = "SASL Kerberos"
 
 
 class IdResolver (UserIdResolver):
@@ -298,7 +308,7 @@ class IdResolver (UserIdResolver):
         self.bindpw = ""
         self.object_classes = []
         self.dn_template = ""
-        self.timeout = 5.0  # seconds!
+        self.timeout = 5  # seconds!
         self.sizelimit = 500
         self.loginname_attribute = [""]
         self.searchfilter = u""
@@ -316,6 +326,7 @@ class IdResolver (UserIdResolver):
         self.serverpool_rounds = SERVERPOOL_ROUNDS
         self.serverpool_skip = SERVERPOOL_SKIP
         self.serverpool = None
+        self.keytabfile = None
         # The number of seconds that ldap3 waits if no server is left in the pool, before
         # starting the next round
         pooling_loop_timeout = get_app_config_value("PI_LDAP_POOLING_LOOP_TIMEOUT", 10)
@@ -329,13 +340,27 @@ class IdResolver (UserIdResolver):
         -         false if password does not match
 
         """
-        if self.authtype == AUTHTYPE.NTLM:  # pragma: no cover
+        if self.authtype == AUTHTYPE.SASL_KERBEROS:
+            if not have_gssapi:
+                log.warning('gssapi module not available. Kerberos authentication not possible')
+                return False
+            # we need to check credentials with kerberos differently since we
+            # can not use bind for every user
+            name = gssapi.Name(self.getUserInfo(uid).get('username'))
+            try:
+                gssapi.raw.ext_password.acquire_cred_with_password(name, to_bytes(password))
+            except gssapi.exceptions.GSSError as e:
+                log.info('Failed to authenticate user {0!s} with GSSAPI: {1!r}'.format(name, e))
+                log.debug(traceback.format_exc())
+                return False
+            return True
+        elif self.authtype == AUTHTYPE.NTLM:  # pragma: no cover
             # fetch the PreWindows 2000 Domain from the self.binddn
             # which would be of the format DOMAIN\username and compose the
-            # bind_user to DOMAIN\sAMAcountName
+            # bind_user to DOMAIN\sAMAccountName
             domain_name = self.binddn.split('\\')[0]
             uinfo = self.getUserInfo(uid)
-            # In fact we need the sAMAccountName. If the username mapping is
+            # In fact, we need the sAMAccountName. If the username mapping is
             # another attribute than the sAMAccountName the authentication
             # will fail!
             bind_user = u"{0!s}\\{1!s}".format(domain_name, uinfo.get("username"))
@@ -503,7 +528,8 @@ class IdResolver (UserIdResolver):
                                             receive_timeout=self.timeout,
                                             auto_referrals=not
                                             self.noreferrals,
-                                            start_tls=self.start_tls)
+                                            start_tls=self.start_tls,
+                                            keytabfile=self.keytabfile)
             #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
             if not self.l.bind():
                 raise Exception("Wrong credentials")
@@ -786,6 +812,7 @@ class IdResolver (UserIdResolver):
         '#ldap_noreferrals' : 'NOREFERRALS',
         '#ldap_editable' : 'EDITABLE',
         '#ldap_certificate': 'CACERTIFICATE',
+        '#ldap_keytabfile': 'KEYTABFILE',
 
         """
         self.uri = config.get("LDAPURI")
@@ -796,7 +823,7 @@ class IdResolver (UserIdResolver):
         self.object_classes = [cl.strip() for cl in config.get("OBJECT_CLASSES", "").split(",")]
         self.dn_template = config.get("DN_TEMPLATE", "")
         self.bindpw = config.get("BINDPW")
-        self.timeout = float(config.get("TIMEOUT", 5))
+        self.timeout = int(config.get("TIMEOUT", 5))
         self.cache_timeout = int(config.get("CACHE_TIMEOUT", 120))
         self.sizelimit = int(config.get("SIZELIMIT", 500))
         self.loginname_attribute = [la.strip() for la in config.get("LOGINNAMEATTRIBUTE","").split(",")]
@@ -809,12 +836,13 @@ class IdResolver (UserIdResolver):
         self.map = yaml.safe_load(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = is_true(config.get("NOREFERRALS", False))
-        self.start_tls = is_true(config.get("START_TLS", False))
+        self.start_tls = is_true(config.get("START_TLS", False)) and not self.uri.lower().startswith("ldaps")
         self.get_info = get_info_configuration(is_true(config.get("NOSCHEMAS", False)))
         self._editable = config.get("EDITABLE", False)
         self.scope = config.get("SCOPE") or ldap3.SUBTREE
         self.resolverId = self.uri
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
+        self.keytabfile = config.get('KEYTABFILE', None)
         self.tls_verify = is_true(config.get("TLS_VERIFY", False))
         # Fallback to DEFAULT_TLS_PROTOCOL (TLSv1: 3, TLSv1.1: 4, v1.2: 5, TLS negotiation: 2)
         self.tls_version = int(config.get("TLS_VERSION") or DEFAULT_TLS_PROTOCOL)
@@ -984,6 +1012,7 @@ class IdResolver (UserIdResolver):
                                 'LDAPBASE': 'string',
                                 'BINDDN': 'string',
                                 'BINDPW': 'password',
+                                'KEYTABFILE': 'string',
                                 'TIMEOUT': 'int',
                                 'SIZELIMIT': 'int',
                                 'LOGINNAMEATTRIBUTE': 'string',
@@ -1026,13 +1055,14 @@ class IdResolver (UserIdResolver):
         """
         success = False
         uidtype = param.get("UIDTYPE")
-        timeout = float(param.get("TIMEOUT", 5))
+        timeout = int(param.get("TIMEOUT", 5))
         ldap_uri = param.get("LDAPURI")
         size_limit = int(param.get("SIZELIMIT", 500))
         serverpool_rounds = int(param.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         serverpool_skip = int(param.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
+        start_tls = is_true(param.get("START_TLS", False)) and not ldap_uri.lower().startswith("ldaps")
         tls_context = cls._get_tls_context(ldap_uri=ldap_uri,
-                                           start_tls=param.get("START_TLS"),
+                                           start_tls=start_tls,
                                            tls_version=param.get("TLS_VERSION"),
                                            tls_verify=param.get("TLS_VERIFY"),
                                            tls_ca_file=param.get("TLS_CA_FILE"),
@@ -1045,15 +1075,16 @@ class IdResolver (UserIdResolver):
                                                 rounds=serverpool_rounds,
                                                 exhaust=serverpool_skip)
             l = cls.create_connection(authtype=param.get("AUTHTYPE",
-                                                          AUTHTYPE.SIMPLE),
+                                                         AUTHTYPE.SIMPLE),
                                       server=server_pool,
                                       user=param.get("BINDDN"),
                                       password=param.get("BINDPW"),
                                       receive_timeout=timeout,
                                       auto_referrals=not param.get(
                                            "NOREFERRALS"),
-                                      start_tls=is_true(param.get("START_TLS", False)))
-            #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
+                                      start_tls=start_tls,
+                                      keytabfile=param.get('KEYTABFILE', None))
+
             if not l.bind():
                 raise Exception("Wrong credentials")
             # create searchattributes
@@ -1247,12 +1278,13 @@ class IdResolver (UserIdResolver):
 
     @staticmethod
     def create_connection(authtype=None, server=None, user=None,
-                          password=None, auto_bind=False,
+                          password=None, auto_bind=ldap3.AUTO_BIND_NONE,
                           client_strategy=ldap3.SYNC,
                           check_names=True,
                           auto_referrals=False,
                           receive_timeout=5,
-                          start_tls=False):
+                          start_tls=False,
+                          keytabfile=None):
         """
         Create a connection to the LDAP server.
 
@@ -1265,56 +1297,51 @@ class IdResolver (UserIdResolver):
         :param check_names:
         :param auto_referrals:
         :param receive_timeout: At the moment we do not use this,
-            since receive_timeout is not supported by ldap3 < 2.
+                                since receive_timeout is not supported by ldap3 < 2
+        :type receive_timeout: float
+        :param start_tls: Use startTLS for connection to server
+        :type start_tls: bool
+        :param keytabfile: Path to keytab file for service account
+        :type keytabfile: str
         :return:
         """
+        conn_opts = {'auto_bind': auto_bind,
+                     'client_strategy': client_strategy,
+                     'check_names': check_names,
+                     'receive_timeout': receive_timeout,
+                     'auto_referrals': auto_referrals}
 
-        authentication = None
         if not user:
-            authentication = ldap3.ANONYMOUS
-
-        if authtype == AUTHTYPE.SIMPLE:
-            if not authentication:
-                authentication = ldap3.SIMPLE
+            # without a user we can only use an anonymous binds
+            conn_opts.update({'authentication': ldap3.ANONYMOUS})
+        elif authtype == AUTHTYPE.SIMPLE:
             # SIMPLE works with passwords as UTF8 and unicode
-            l = ldap3.Connection(server, user=user,
-                                 password=password,
-                                 auto_bind=auto_bind,
-                                 client_strategy=client_strategy,
-                                 authentication=authentication,
-                                 check_names=check_names,
-                                 # receive_timeout=receive_timeout,
-                                 auto_referrals=auto_referrals)
+            password = to_utf8(password)
+            conn_opts.update({'user': user,
+                              'password': password,
+                              'authentication': ldap3.SIMPLE})
         elif authtype == AUTHTYPE.NTLM:  # pragma: no cover
-            if not authentication:
-                authentication = ldap3.NTLM
             # NTLM requires the password to be unicode
-            l = ldap3.Connection(server,
-                                 user=user,
-                                 password=password,
-                                 auto_bind=auto_bind,
-                                 client_strategy=client_strategy,
-                                 authentication=authentication,
-                                 check_names=check_names,
-                                 # receive_timeout=receive_timeout,
-                                 auto_referrals=auto_referrals)
+            password = to_utf8(password)
+            conn_opts.update({'user': user,
+                              'password': password,
+                              'authentication': ldap3.NTLM})
         elif authtype == AUTHTYPE.SASL_DIGEST_MD5:  # pragma: no cover
-            if not authentication:
-                authentication = ldap3.SASL
             password = to_utf8(password)
             sasl_credentials = (str(user), str(password))
-            l = ldap3.Connection(server,
-                                 sasl_mechanism="DIGEST-MD5",
-                                 sasl_credentials=sasl_credentials,
-                                 auto_bind=auto_bind,
-                                 client_strategy=client_strategy,
-                                 authentication=authentication,
-                                 check_names=check_names,
-                                 # receive_timeout=receive_timeout,
-                                 auto_referrals=auto_referrals)
+            conn_opts.update({'sasl_mechanism': ldap3.DIGEST_MD5,
+                              'sasl_credentials': sasl_credentials,
+                              'authentication': ldap3.SASL})
+        elif authtype == AUTHTYPE.SASL_KERBEROS:
+            cred_store = {'client_keytab': keytabfile} if keytabfile else None
+            conn_opts.update({'sasl_mechanism': ldap3.KERBEROS,
+                              'authentication': ldap3.SASL,
+                              'user': user,
+                              'cred_store': cred_store})
         else:
             raise Exception("Authtype {0!s} not supported".format(authtype))
 
+        l = ldap3.Connection(server, **conn_opts)
         if start_tls:
             l.open(read_server_info=False)
             log.debug("Doing start_tls")

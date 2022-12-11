@@ -254,7 +254,7 @@ def get_all_params(request):
         # Add the unquoted HTML and form parameters
         return_param = {key: unquote(value) for (key, value) in param.items()}
 
-    if request.json:
+    if request.is_json:
         log.debug(u"Update params in request {0!s} {1!s} with JSON data.".format(request.method,
                                                                                  request.base_url))
         # Add the original JSON data
@@ -344,7 +344,7 @@ def verify_auth_token(auth_token, required_role=None):
         except jwt.DecodeError as err:
             raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
                             id=ERROR.AUTHENTICATE_DECODING_ERROR)
-        except jwt.ExpiredSignature as err:
+        except jwt.ExpiredSignatureError as err:
             raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
                             id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
     if wrong_username:
@@ -400,7 +400,6 @@ def attestation_certificate_allowed(cert_info, allowed_certs_pols):
     if not cert_info:
         return not allowed_certs_pols
 
-
     if allowed_certs_pols:
         for allowed_cert in allowed_certs_pols:
             tag, matching, _rest = allowed_cert.split("/", 3)
@@ -411,6 +410,7 @@ def attestation_certificate_allowed(cert_info, allowed_certs_pols):
                 return False
 
     return True
+
 
 def is_fqdn(x):
     """

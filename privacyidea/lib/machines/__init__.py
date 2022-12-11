@@ -22,7 +22,7 @@
 #
 __doc__ = '''
 Machine Resolvers are used to find machines in directories like LDAP, Active
-Directory, puppet, salt, or the /etc/hosts file.
+Directory or the /etc/hosts file.
 
 Machines can then be used to assign applications and tokens to those machines.
 '''

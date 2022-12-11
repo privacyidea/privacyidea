@@ -323,6 +323,8 @@ spass_otp_pin_contents
 
 type: str
 
+.. _spass-otp-pin-minlength:
+.. _spass-otp-pin-maxlength:
 
 
 spass_otp_pin_minlength and spass_otp_pin_maxlength
@@ -370,6 +372,44 @@ make the spare tokens available to several realm administrators.
 Then all administrators can see these tokens and assign the tokens.
 But as soon as the token is assigned to a user in one realm, the
 administrator of another realm can not manage the token anymore.
+
+.. _tokengroups:
+
+tokengroups
+~~~~~~~~~~~
+
+type: bool
+
+If the ``tokengroups``action is defined, the administrator is allowed to
+manage the tokengroups of a token.
+
+Tokens can be grouped into tokengroups, so that such tokens can be more easily
+addressed in certain situations.
+
+Administrators can also be allowed to define tokengroups and delete tokengroup definitions.
+
+tokengroup_list
+~~~~~~~~~~~~~~~
+
+type: bool
+
+This allows the administrator to list all defined tokengroups.
+
+tokengroup_add
+~~~~~~~~~~~~~~
+
+type: bool
+
+If the policy ``tokengroup_add`` is defined, the administrator is allowed to
+define new tokengroups.
+
+tokengroup_delete
+~~~~~~~~~~~~~~~~~
+
+type: bool
+
+If the policy ``tokengroup_delete`` is defined, the administrator is allowed to
+delete existing tokengroup definitions.
 
 getserial
 ~~~~~~~~~
@@ -571,6 +611,9 @@ type: bool
 
 Allow the administrator to read the :ref:`privacyideaserver_config` definitions.
 
+.. _policywrite:
+.. _policyread:
+.. _policydelete:
 
 policywrite, policyread, policydelete
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -583,6 +626,10 @@ Allow the administrator to write, read or delete policies.
    or realms. Having the right to read policies, will allow the
    administrator to see all policies.
 
+.. _resolverwrite:
+.. _resolverread:
+.. _resolverdelete:
+
 resolverwrite, resolverread, resolverdelete
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -594,6 +641,10 @@ Allow the administrator to write, read or delete user resolvers and realms.
    or realms. Having the right to read resolvers, will allow the
    administrator to see all resolvers and realms.
 
+.. _mresolverwrite:
+.. _mresolverread:
+.. _mresolverdelete:
+
 mresolverwrite, mresolverread, mresolverdelete
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -601,6 +652,9 @@ type: bool
 
 Allow the administrator to write, read or delete machine resolvers.
 
+.. _configwrite:
+.. _configread:
+.. _configdelete:
 
 configwrite, configread, configdelete
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -609,6 +663,9 @@ type: bool
 
 Allow the administrator to write, read or delete system configuration.
 
+.. _caconnectorwrite:
+.. _caconnectorread:
+.. _caconnectordelete:
 
 caconnectorwrite, caconnectorread, caconnectordelete
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -695,6 +752,8 @@ and is only used for triggering challenges.
 New in version 2.17.
 
 .. _admin_policy_2step:
+.. _hotp-2step:
+.. _totp-2step:
 
 hotp_2step and totp_2step
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -709,7 +768,11 @@ This works in conjunction with the enrollment parameters :ref:`2step_parameters`
 
 Such a policy can also be set for the user. See :ref:`user_policy_2step`.
 
-New in version 2.21
+.. note:: This does not work in combination with the enrollment policy :ref:`verify_enrollment`, since
+   the usage of 2step already ensures, that the user has successfully scanned the QR code.
+
+.. _hotp-hashlib:
+.. _totp-totp-hashlib:
 
 hotp_hashlib and totp_hashlib
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -721,6 +784,9 @@ The corresponding input selector will be disabled in the web UI.
 Possible values are *sha1*, *sha256* and *sha512*, default is *sha1*.
 
 New in 3.2
+
+.. _hotp-otplen:
+.. _totp-otplen:
 
 hotp_otplen and totp_otplen
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

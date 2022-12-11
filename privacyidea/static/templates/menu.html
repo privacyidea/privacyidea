@@ -133,14 +133,14 @@
                             <span class="sr-only">Toggle Dropdown</span>
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a href="http://privacyidea.readthedocs.org/en/v{{ privacyideaVersionNumber }}"
+                            <li><a ng-href="https://privacyidea.readthedocs.io/en/v{{ privacyideaVersionNumber }}"
 				                   target="documentation" translate>
                                 Online Documentation</a></li>
                             <li ng-show="piExternalLinks !== 'False'">
                                 <a href="https://community.privacyidea.org"
 				                   target="_external" translate>Community</a></li>
                             <li ng-show="piExternalLinks !== 'False'">
-                                <a href="{{ privacyideaSupportLink }}"
+                                <a ng-href="{{ privacyideaSupportLink }}"
 				                   target="_external" translate
 				>Support</a></li>
                             <li class="divider"></li>

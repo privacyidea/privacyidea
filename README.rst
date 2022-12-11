@@ -130,9 +130,9 @@ Running it
 First You need to create a `config-file <https://privacyidea.readthedocs
 .io/en/latest/installation/system/inifile.html>`_.
 
-Then create the database and encryption key::
+Then create the database tables and the encryption key::
 
-    ./pi-manage createdb
+    ./pi-manage create_tables
     ./pi-manage create_enckey
 
 If You want to keep the development database upgradable, You should `stamp
@@ -195,6 +195,35 @@ for the database table ``realm``. Several resolvers are combined into a realm.
 Based on the realm there is the library ``lib/user.py`` which provides functions 
 for users. There is no database table user, since users are dynamically read 
 from the user sources like SQL, LDAP, SCIM or flat files.
+
+Plugins
+=======
+
+The privacyIDEA project also provides several plugins for 3rd party applications like SSO Identity Providers
+or Windows Login.
+
+Subscriptions
+-------------
+
+Plugins can be limited in the number of users. I.e. the plugin will complain, if the total number of users
+in privacyIDEA with an active token exceeds a certain limit. There is a certain base number of users, with which
+the plugin will work. To enhance this number, you will need a subscription. In some cases an additional
+demo subscription can be found in the release list of the corresponding github plugin repository,
+you can get a subscription from the company NetKnights
+or if you have a very good understanding of this Open Source code, you could create a subscription on your own.
+
+====================  ==============  ========================
+Plugin                Number of users
+--------------------  ----------------------------------------
+Name                  contained       in demo subscription
+====================  ==============  ========================
+Keycloak              10000           N/A
+SimpleSAMLphp         10000           N/A
+ADFS                  50              50
+Credential Provider   50              50
+OwnCloud              50              N/A
+LDAP proxy            50              N/A
+====================  ==============  ========================
 
 Versioning
 ==========

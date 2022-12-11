@@ -19,7 +19,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    get_client_ip, sanity_name_check, to_utf8,
                                    to_byte_string, hexlify_and_unicode,
                                    b32encode_and_unicode, to_bytes,
-                                   b64encode_and_unicode, create_png, create_img,
+                                   b64encode_and_unicode, create_img,
                                    convert_timestamp_to_utc, modhex_encode,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
@@ -794,21 +794,15 @@ class UtilsTestCase(MyTestCase):
                           u'-vv8_f7_')
 
     def test_27_images(self):
-        png_b64 = u'iVBORw0KGgoAAAANSUhEUgAAASIAAAEiAQAAAAB1xeIbAAABgElEQVR4nO2ZQ' \
-                  u'Y6DMBAEaxbujpQH5CnwdPOglexjJKLeQ2xCsofdC4HA+IDAlERrGKx2Y+LvMX' \
-                  u'z9AwKnnHLKKae2TlkZLZBbrM91pl9V1yGoTpKUwOx0M0UaSZKeqffrOgSVS49' \
-                  u'LqZH1QPkMVtZ1KGq4jG9+4mGp9uXaoP1d/K2q3wcVJEVAsd6RNL5S79e1Z6r0' \
-                  u'/WAANFiXzgA3W1fXEah77R/BgobL1SA8Rw1bVf/ZFHcr2aXmfpDSNKfxfqa4V' \
-                  u'fWfTZU6E8Zi8mOQpNRI8TG3VfWfTc36XqrNTzdtq7z2y1G17wHFMH8Lkq85y1' \
-                  u'Kz2peyP5Z/1eG1X4R69jkjRvhuNVyuJvKp3tiq+j1Qjxyz7K1y8f3Wr6pr39T' \
-                  u'kJ6u7UYKZ7fE1Z3mq5phmJ1DMLYrcPL9/J6VII7oEkKclaH1dR6CsB6wPkvWU' \
-                  u'JH8LuvZI1Qw5CMgg8hmRzyOEq7nPWZCa+3uY9rWpZsi+r12O+pVjwojKTOP/a' \
-                  u'51yyimn9kL9ACOsApMnN2KuAAAAAElFTkSuQmCC'
-        self.assertEqual(b64encode_and_unicode(create_png('Hallo')), png_b64)
-        self.assertEqual(create_img('Hello', raw=True),
-                          u'data:image/png;base64,SGVsbG8=')
-        self.assertEqual(create_img('Hallo'),
-                          u'data:image/png;base64,{0!s}'.format(png_b64))
+        hallo_qr_png = "iVBORw0KGgoAAAANSUhEUgAAASIAAAEiAQAAAAB1xeIbAAABC0lEQV" \
+                       "R42u2aQQ6EIBAEJ7sP8El8nSftA0xYGBiM8eIe6E1McTCofSpnmka1" \
+                       "cmNkQ4UKFSpUj1DZGO86//ghriRXvezOQPWbarB3xBP7mM0bsF/Kvh" \
+                       "V6asRzFL+3AezV7H0GezV7s2036v4/fp8r+94B+L2G/cw5vfgTOUfG" \
+                       "/hgV9n5Jp7Bfyr4nSzf92QGwl6211epLZMwSCy6es7zu83aC3di7+8" \
+                       "BelDFtRpzeAVs4P+zXrrWVc26nx742kTHVOad3QCn4vTzfz1RPztHv" \
+                       "a3u8DAuCve59ToR8fwrsa6Xs4wEM96Hulez9PeaM+7CX+n0P+acFF/" \
+                       "aSnBOfcY26l+d7/i1AhQoVqmeqvi4sW6dMYAvIAAAAAElFTkSuQmCC"
+        self.assertEqual(create_img('Hallo'), 'data:image/png;base64,{0!s}'.format(hallo_qr_png))
 
     def test_28_yubikey_utils(self):
         self.assertEqual(modhex_encode(b'\x47'), 'fi')

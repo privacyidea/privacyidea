@@ -1,4 +1,191 @@
-Version 3.7dev4
+Version 3.8dev3, 2022-12-07
+
+  Features:
+  * Add enrollment of HOTP, TOTP, SMS, Email or PUSH token during
+    authentication via Multi-Challenge (#2993)
+  * Add token groups in preparation for SSH key and Offline-Token
+    management (#3299)
+
+  Enhancements:
+  * Add thread ID to audit log (#3381)
+  * Add preferred client mode to define the authentication behaviour of
+    plugins (#3373)
+  * Avoid spamming with SMS or Email by allowing to increase failcounter
+    during challenge-response (#933)
+  * Configure Email address in the subject of a certificate request (#3327)
+
+
+  Fixes:
+  * Fix fetching SSH keys under certain circumstances (#3375)
+  * Add missing sequences for certain database tables (#3356)
+  * Remove user fields from token API (#3343)
+  * Add SMPP encoding check (#3321)
+  * Fix encrpyting empty strings in AES module (#2899)
+  * Rename createdb and dropdb to createtables and droptables (#2996)
+  * Make subscription checking more relaxing (#3296)
+
+Version 3.8dev1, 2022-10-06
+
+  Features:
+  * Drop support for Python 3.5 and 2.7 (#3263)
+  * Add MS CA connector to issue certificates from a Microsoft CA (#3233,
+  #3232, #2966, #2158)
+  * Add webhook event handler (#3178, #2938)
+  * Allow Kerebos Authentication for LDAP resolvers (#770)
+
+  Enhancements:
+  * add policy for audit_page_size (#3167)
+  * Be more relaxing about subscription checking of plugins (#3296)
+  * Display multiple serials in auditlog in case of C/R (#3285)
+  * Add PI_LOGOUT_REDIRECT_URL for using a SAML logout link from the WebUI  (#3257)
+  * Add passthru policy to audit log, even if password was wrong (#3212)
+  * Avoid double registration of webauthn tokens per user (#3207)
+  * Add WebAuthn attestation format "packed" (#3150)
+  * Support Windows Hello as WebAuthn token (#3142)
+  * Improve the description for appimageurl (#3133)
+  * Allow to choose padding for defaul security module (#3115)
+  * Make available languages configureable in pi.cfg (#3076)
+  * Add translation for admin error messages (#3066)
+  * Allow HTTPSMSProvider to send data as JSON (#3056)
+  * Rename pi-manage createdb to create-tables (#2996)
+  * Add ed25519-sk/ecdsa-sk for SSH tokens (#2792)
+  UI
+  * Add search highlighting in event handler conditions (#3062)
+  * Link online documentation in WebUI (#2952)
+  * Search and filter for actions in configured policies (#2788)
+  Documentation
+  * Add a glossary (#2783)
+
+
+
+  Fixes:
+  * Automatically delete MachineTokenOptions when a MachineToken is deleted (#3165)
+  * Fixing int-str conversion with Python 3.10 (#3303)
+  * Remove pillow dependency (#3268)
+  * Fix default AD attributes to (ObjectCategory=person) (#3218)
+  * Fix WebAuthn trust anchor directory (#3216)
+  * Fix enrolling SSH keys with an empty comment (#3198)
+  * Avoid fails in case of content-type header mismatch (#3194)
+  * Fix App device in certain cases as WebAuthn token (#3136)
+  * Fix ImportException to be subclass of privacyIDEAError (#3131)
+  * Fix URL encoding in TiQR URL (#3121)
+  * Add index for timestamp in DB (#3120)
+  * AES module also encrypts empty strings (#2899)
+  * Fix Push_Wait if user presses decline on smartphone (#2865)
+  WebUI:
+  * Disable realm button in case of reasolverread (UI) (#3149)
+  * Add missing translation for PSKC import (#3129)
+
+Version 3.7.4, 2022-10-18
+
+  Fixes:
+  * Fix the PassOnNoToken and passthru in Offline mode with Credential
+  Provider (#3333)
+  * URLencode password and username for remote token (#3337)
+
+
+Version 3.7.3, 2022-08-01
+
+  Fixes:
+  * Preserve client information, when disabling a policy (#3243)
+  * Fix spanish translation
+
+Version 3.7.2, 2022-07-04
+
+  Fixes:
+  * Fix password recovery link (#3168)
+  * Add missing user object in DEL /user/ request (#3192)
+  * Compare users by uid, thus fixing 2step enrollment with case
+    insensitive login names(#3186)
+  * Downgrade ldap3 dependency to fix finding of 5c-users
+    in objectGUID in Active Directory
+
+Version 3.7.1, 2022-05-11
+
+  Fixes:
+  * Fix WebUI login with HOTP/TOTP challenge-response token (#3038)
+  * Improve error handling for "/ttype" endpoint (#3090)
+  * Removed redundant "user" option from offline token assignment (#3077)
+  * Fix creation of download-links for certificates due to HTML sanitizer (#3088)
+  * Fix policy descriptions containing HTML-like tags (#3118)
+  * Add documentation for the CustomUserAttributeHandler (#3075)
+  * Send Push message as notification and data to FireBase (#3117)
+  * Fix translation issue in PSKC-import (#3126)
+  * Add App-PIN policy for Push token (#3116)
+
+Version 3.7, 2022-03-31
+
+  Features:
+  * Allow Offline Token without assigning to a specific IP address (#2926)
+  * The enrollment of HOTP, TOTP, SMS and Email Tokens can be verified
+    by entering a valid OTP value after the enrollment. (#2441)
+  * Security: Add security module to decrypt encryption keys using HSM (#3003)
+
+  Enhancements:
+  * Token: Policy for Password token can create human readable passwords (#2864)
+  * Token: Redesign the code logic of is_previous_otp and make it more robust for HOTP and TOTP tokens (#2916)
+  * Token: Allow resyncing of a token via Multi-Challenge (#2349)
+  * Token: consolidate client_wait in token enrollment. All tokens now
+    get the rollout_state "clientwait" or "enrolled" which can
+    be used in Token Handlers and in the token-janitor (#2784)
+  * Security and Speed: Allow to choosing hashing algorithms in pi.cfg (#2981)
+  * Policies: Also honor the user resolver in policies, when administrator is managing tokens (#2778)
+  * Policies: Add policy extended conditions of webserver environment (#2510)
+  * Event Handler: Token Handler can use the serial numbers of the tokens
+    during token import (#2698)
+  * Event Handler: Notification Handler now allows placeholders like "tokenowner" in reply-to. (#2711)
+  * UI: Allow to login to WebUI using Push-Tokens (#2893)
+  * UI: If an adminitrator is allowed to manage only one realm, this realm is autoselected in the UI. (#2908)
+  * UI: Rename buttons from "create" to "save" to avoid misunderstanding (#2932)
+  * UI: Use new dependency injection in javascript code (#1917)
+  * UI: Policy to exclude tokeninfo in token details (#2819)
+  * UI: Highlight policy search term (#2577)
+  * Tools: The tokenjanitor can check for the pure existence of a tokeninfo key (#2753)
+  * Tools: Improve the token janitor documentation (#2885)
+  * Tools: LinOTP miration script now also works with PostgreSQL (#2770)
+  * Tools: The "orphaned" parameter of the token-janitor allows to use
+    0/False or 1/True to also search for non-orphaned tokens (#2838)
+  * Tools: Add more export/import functions to pi-manage (#2455)
+  * Add nightly tests with a MySQL database (2477)
+  * Add new translated languages from the community: cs, es, it nb_NO, pl, ru, si, tr, uk, zh_HANS
+  * Add extra_require in setup.py for PyKCS11 to allow installing via pip also in case of use with HSMs. (#2951)
+  * Support SMTPS (#2568)
+  * Documentation: Add documentation for max_identifier_length for Oracle DBs (#2986)
+  * Documentation: Improve Event Handler documentation
+  * Documentation: Add missing policy documentation (#2768)
+  * Documentation: Add documentation about importance of time in privacyIDEA (#3026)
+  * Add detailed log messages to track HSM sessions (#3000)
+
+  Fixes:
+  * Failures in submission to Firebase will not block Push-Poll (#2904)
+  * Fix problems with CA certificate and StartTLS (#2892)
+  * Dependency update (Pillow)
+  * Token: Remove the tokenowner entry after the automatic deletion of the registration token (#2907)
+  * Fix the usage of secondary login attribute (#2919)
+  * Fix removal of the "alembic_version" table with dropdb (#2848)
+  * Fix "validate_mac no_check" when importing tokens with the token janitor (#2755)
+  * Update dependencies
+  * UI: Fix reload of policy list (#2967)
+  * UI: Remove the client side keygen tag for x509 certificates, since it is not supported by browsers anymore (#2968)
+  * UI: Fix submenu links like "new" and the routing highlighting (#2546)
+  * UI: Check the sanity of client IPs during creation of a policy (#2949)
+  * Event Handler: Fix loading of boolean values in event handler options (#2310)
+  * Token: Fix email token without an assigned user (#2990)
+  * Token: Handle modhex error for invalid passwords in Yubikey token (#2896)
+  * Do not use not-readily enrolled tokens for auth  (#2852)
+  * Allow tokens in client_wait to be rolled over (#2763)
+  * Make token-janitor robust against unknown chars in last_auth check (#2780)
+  * Fix the manual setting of U2F tokens, which was overwritten by an
+    automatic description (#2793)
+  * Improve parameter parsing and decoding (#2810)
+  * Fix policy import with missing "condition" keyword (#2829)
+  * Add failsafe to raise an exception on the lib level when trying to assign a token
+    to a user, if the token is already assigned. (#2860)
+  * Fix AD little endian in objectGUID
+  * Fix upper case realm names in policy check (#2869)
+  * Fix deleting expired auth_cache entries (#2481)
+
+Version 3.7dev4, 2022-03-20
 
   Features:
   * Security: Add security module to decrypt encryption keys using HSM (#3003)

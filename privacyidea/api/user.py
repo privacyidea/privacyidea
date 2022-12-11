@@ -239,7 +239,7 @@ def delete_user(resolvername=None, username=None):
        Accept: application/json
 
     """
-    user_obj = User(login=username, resolver=resolvername)
+    user_obj = request.User
     res = user_obj.delete()
     g.audit_object.log({"success": res,
                         "info": u"{0!s}".format(user_obj)})

@@ -38,6 +38,7 @@
 import binascii
 import six
 import logging
+import traceback
 from datetime import datetime, timedelta
 
 from dateutil.tz import tzutc
@@ -53,7 +54,7 @@ from privacyidea.lib.crypto import (encrypt,
 from sqlalchemy import and_
 from sqlalchemy.schema import Sequence
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.expression import ColumnElement
+from sqlalchemy.exc import IntegrityError
 from .lib.log import log_with
 from privacyidea.lib.utils import (is_true, convert_column_to_unicode,
                                    hexlify_and_unicode)
@@ -184,7 +185,7 @@ class Token(MethodsMixin, db.Model):
                        default=6)
     pin_hash = db.Column(db.Unicode(512),
                          default=u'')  # hashed
-    key_enc = db.Column(db.Unicode(1024),
+    key_enc = db.Column(db.Unicode(2800),
                         default=u'')  # encrypt
     key_iv = db.Column(db.Unicode(32),
                        default=u'')
@@ -306,6 +307,38 @@ class Token(MethodsMixin, db.Model):
         self.count = 0
         if reset_failcount is True:
             self.failcount = 0
+
+    def set_tokengroups(self, tokengroups, add=False):
+        """
+        Set the list of the tokengroups.
+
+        This is done by filling the :py:class:`privacyidea.models.TokenTokengroup` table.
+
+        :param tokengroups: the tokengroups
+        :type tokengroups: list[str]
+        :param add: If set, the tokengroups are added. I.e. old tokengroups are not deleted
+        :type add: bool
+        """
+        # delete old Tokengroups
+        if not add:
+            db.session.query(TokenTokengroup)\
+                      .filter(TokenTokengroup.token_id == self.id)\
+                      .delete()
+        # add new Tokengroups
+        # We must not set the same tokengroup more than once...
+        # uniquify: tokengroups -> set(tokengroups)
+        for tokengroup in set(tokengroups):
+            # Get the id of the realm to add
+            g = Tokengroup.query.filter_by(name=tokengroup).first()
+            if g:
+                # Check if TokenTokengroup already exists
+                tg = TokenTokengroup.query.filter_by(token_id=self.id,
+                                                     tokengroup_id=g.id).first()
+                if not tg:
+                    # If the Tokengroup is not yet attached to the token
+                    Tg = TokenTokengroup(token_id=self.id, tokengroup_id=g.id)
+                    db.session.add(Tg)
+        db.session.commit()
 
     def set_realms(self, realms, add=False):
         """
@@ -550,6 +583,11 @@ class Token(MethodsMixin, db.Model):
         for realm_entry in self.realm_list:
             realm_list.append(realm_entry.realm.name)
         ret['realms'] = realm_list
+        # list of tokengroups
+        tokengroup_list = []
+        for tg_entry in self.tokengroup_list:
+            tokengroup_list.append(tg_entry.tokengroup.name)
+        ret['tokengroup'] = tokengroup_list
         return ret
 
     __str__ = __unicode__
@@ -608,6 +646,28 @@ class Token(MethodsMixin, db.Model):
             tokeninfos = TokenInfo.query.filter_by(token_id=self.id)
         for ti in tokeninfos:
             ti.delete()
+
+    def del_tokengroup(self, tokengroup=None, tokengroup_id=None):
+        """
+        Deletes the tokengroup from the given token.
+        If tokengroup name and id are omitted, all tokengroups are deleted.
+
+        :param tokengroup: The name of the tokengroup
+        :param tokengroup_id: The id of the tokengroup
+        :return:
+        """
+        if tokengroup:
+            # We need to resolve the id of the tokengroup
+            t = Tokengroup.query.filter_by(name=tokengroup).first()
+            if not t:
+                raise Exception("tokengroup does not exist")
+            tokengroup_id = t.id
+        if tokengroup_id:
+            tgs = TokenTokengroup.query.filter_by(tokengroup_id=tokengroup_id, token_id=self.id)
+        else:
+            tgs = TokenTokengroup.query.filter_by(token_id=self.id)
+        for tg in tgs:
+            tg.delete()
 
     def get_info(self):
         """
@@ -901,7 +961,7 @@ class Realm(TimestampMethodsMixin, db.Model):
         return ret
 
 
-class CAConnector(MethodsMixin, db.Model):
+class CAConnector(TimestampMethodsMixin, db.Model):
     """
     The table "caconnector" contains the names and types of the defined
     CA connectors. Each connector has a different configuration, that is
@@ -931,6 +991,7 @@ class CAConnector(MethodsMixin, db.Model):
                   .delete()
         # Delete the CA itself
         db.session.delete(self)
+        save_config_timestamp()
         db.session.commit()
         return ret
 
@@ -977,6 +1038,7 @@ class CAConnectorConfig(db.Model):
     def save(self):
         c = CAConnectorConfig.query.filter_by(caconnector_id=self.caconnector_id,
                                            Key=self.Key).first()
+        save_config_timestamp()
         if c is None:
             # create a new one
             db.session.add(self)
@@ -1319,7 +1381,7 @@ class Challenge(MethodsMixin, db.Model):
     session = db.Column(db.Unicode(512), default=u'', quote=True, name="session")
     # The token serial number
     serial = db.Column(db.Unicode(40), default=u'', index=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow())
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow(), index=True)
     expiration = db.Column(db.DateTime)
     received_count = db.Column(db.Integer(), default=0)
     otp_valid = db.Column(db.Boolean, default=False)
@@ -1657,6 +1719,17 @@ class MachineToken(MethodsMixin, db.Model):
             self.token_id = Token.query.filter_by(serial=serial).first().id
         self.machine_id = machine_id
         self.application = application
+
+    def delete(self):
+        ret = self.id
+        db.session.query(MachineTokenOptions) \
+            .filter(MachineTokenOptions.machinetoken_id == self.id) \
+            .delete()
+        db.session.delete(self)
+        save_config_timestamp()
+        db.session.commit()
+        return ret
+
 
 """
 class MachineUser(db.Model):
@@ -2514,7 +2587,7 @@ class ClientApplication(MethodsMixin, db.Model):
     ip = db.Column(db.Unicode(255), nullable=False, index=True)
     hostname = db.Column(db.Unicode(255))
     clienttype = db.Column(db.Unicode(255), nullable=False, index=True)
-    lastseen = db.Column(db.DateTime)
+    lastseen = db.Column(db.DateTime, index=True, default=datetime.utcnow())
     node = db.Column(db.Unicode(255), nullable=False)
     __table_args__ = (db.UniqueConstraint('ip',
                                           'clienttype',
@@ -2537,7 +2610,11 @@ class ClientApplication(MethodsMixin, db.Model):
             if self.hostname is not None:
                 values["hostname"] = self.hostname
             ClientApplication.query.filter(ClientApplication.id == clientapp.id).update(values)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError as e:  # pragma: no cover
+            log.info('Unable to write ClientApplication entry to db: {0!s}'.format(e))
+            log.debug(traceback.format_exc())
 
     def __repr__(self):
         return "<ClientApplication [{0!s}][{1!s}:{2!s}] on {3!s}>".format(
@@ -2675,6 +2752,7 @@ audit_column_length = {"signature": 620,
                        "client": 50,
                        "loglevel": 12,
                        "clearance_level": 12,
+                       "thread_id": 20,
                        "policies": 255}
 AUDIT_TABLE_NAME = 'pidea_audit'
 
@@ -2686,7 +2764,7 @@ class Audit(MethodsMixin, db.Model):
     __tablename__ = AUDIT_TABLE_NAME
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("audit_seq"), primary_key=True)
-    date = db.Column(db.DateTime)
+    date = db.Column(db.DateTime, index=True)
     startdate = db.Column(db.DateTime)
     duration = db.Column(db.Interval(second_precision=6))
     signature = db.Column(db.Unicode(audit_column_length.get("signature")))
@@ -2708,6 +2786,7 @@ class Audit(MethodsMixin, db.Model):
     loglevel = db.Column(db.Unicode(audit_column_length.get("loglevel")))
     clearance_level = db.Column(db.Unicode(audit_column_length.get(
         "clearance_level")))
+    thread_id = db.Column(db.Unicode(audit_column_length.get("thread_id")))
     policies = db.Column(db.Unicode(audit_column_length.get("policies")))
 
     def __init__(self,
@@ -2725,6 +2804,7 @@ class Audit(MethodsMixin, db.Model):
                  client="",
                  loglevel="default",
                  clearance_level="default",
+                 thread_id="0",
                  policies="",
                  startdate=None,
                  duration=None
@@ -2747,6 +2827,7 @@ class Audit(MethodsMixin, db.Model):
         self.client = convert_column_to_unicode(client)
         self.loglevel = convert_column_to_unicode(loglevel)
         self.clearance_level = convert_column_to_unicode(clearance_level)
+        self.thread_id = convert_column_to_unicode(thread_id)
         self.policies = convert_column_to_unicode(policies)
 
 
@@ -2760,7 +2841,7 @@ class UserCache(MethodsMixin, db.Model):
     used_login = db.Column(db.Unicode(64), default=u"", index=True)
     resolver = db.Column(db.Unicode(120), default=u'')
     user_id = db.Column(db.Unicode(320), default=u'', index=True)
-    timestamp = db.Column(db.DateTime)
+    timestamp = db.Column(db.DateTime, index=True)
 
     def __init__(self, username, used_login, resolver, user_id, timestamp):
         self.username = username
@@ -2774,8 +2855,8 @@ class AuthCache(MethodsMixin, db.Model):
     __tablename__ = 'authcache'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column(db.Integer, Sequence("usercache_seq"), primary_key=True)
-    first_auth = db.Column(db.DateTime)
-    last_auth = db.Column(db.DateTime)
+    first_auth = db.Column(db.DateTime, index=True)
+    last_auth = db.Column(db.DateTime, index=True)
     username = db.Column(db.Unicode(64), default=u"", index=True)
     resolver = db.Column(db.Unicode(120), default=u'', index=True)
     realm = db.Column(db.Unicode(120), default=u'', index=True)
@@ -3045,7 +3126,7 @@ class MonitoringStats(MethodsMixin, db.Model):
     id = db.Column(db.Integer, Sequence("monitoringstats_seq"),
                    primary_key=True)
     # We store this as a naive datetime in UTC
-    timestamp = db.Column(db.DateTime(False), nullable=False)
+    timestamp = db.Column(db.DateTime(False), nullable=False, index=True)
     stats_key = db.Column(db.Unicode(128), nullable=False)
     stats_value = db.Column(db.Integer, nullable=False, default=0)
 
@@ -3069,3 +3150,107 @@ class MonitoringStats(MethodsMixin, db.Model):
         self.stats_value = value
         #self.save()
 
+
+class Tokengroup(TimestampMethodsMixin, db.Model):
+    """
+    The tokengroup table contains the definition of available token groups.
+    A token can then be assigned to several of these tokengroups.
+    """
+    __tablename__ = 'tokengroup'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    id = db.Column(db.Integer, Sequence("tokengroup_seq"), primary_key=True,
+                   nullable=False)
+    name = db.Column(db.Unicode(255), default=u'',
+                     unique=True, nullable=False)
+    Description = db.Column(db.Unicode(2000), default=u'')
+
+    @log_with(log)
+    def __init__(self, groupname, description=None):
+        self.name = groupname
+        self.Description = description
+
+    def delete(self):
+        ret = self.id
+        # delete all TokenTokenGroup
+        db.session.query(TokenTokengroup)\
+                  .filter(TokenTokengroup.tokengroup_id == ret)\
+                  .delete()
+        # delete the tokengroup
+        db.session.delete(self)
+        save_config_timestamp()
+        db.session.commit()
+        return ret
+
+    def save(self):
+        ti_func = Tokengroup.query.filter_by(name=self.name).first
+        ti = ti_func()
+        if ti is None:
+            return TimestampMethodsMixin.save(self)
+        else:
+            # update
+            Tokengroup.query.filter_by(id=ti.id).update({'Description': self.Description})
+            ret = ti.id
+            db.session.commit()
+        return ret
+
+
+class TokenTokengroup(TimestampMethodsMixin, db.Model):
+    """
+    This table stores the assignment of tokens to tokengroups.
+    A token can be assigned to several different token groups.
+    """
+    __tablename__ = 'tokentokengroup'
+    __table_args__ = (db.UniqueConstraint('token_id',
+                                          'tokengroup_id',
+                                          name='ttgix_2'),
+                      {'mysql_row_format': 'DYNAMIC'})
+    id = db.Column(db.Integer(), Sequence("tokentokengroup_seq"), primary_key=True,
+                   nullable=True)
+    token_id = db.Column(db.Integer(),
+                         db.ForeignKey('token.id'))
+    tokengroup_id = db.Column(db.Integer(),
+                              db.ForeignKey('tokengroup.id'))
+    # This creates an attribute "tokengroup_list" in the Token object
+    token = db.relationship('Token',
+                            lazy='joined',
+                            backref='tokengroup_list')
+    # This creates an attribute "token_list" in the Tokengroup object
+    tokengroup = db.relationship('Tokengroup',
+                                 lazy='joined',
+                                 backref='token_list')
+
+    def __init__(self, tokengroup_id=0, token_id=0, tokengroupname=None):
+        """
+        Create a new TokenTokengroup assignment
+        :param tokengroup_id: The id of the token group
+        :param tokengroupname: the name of the tokengroup
+        :param token_id: The id of the token
+        """
+        if tokengroupname:
+            r = Tokengroup.query.filter_by(name=tokengroupname).first()
+            if not r:
+                raise Exception("tokengroup does not exist")
+            self.tokengroup_id = r.id
+        if tokengroup_id:
+            self.tokengroup_id = tokengroup_id
+        self.token_id = token_id
+
+    def save(self):
+        """
+        We only save this, if it does not exist, yet.
+        """
+        tr_func = TokenTokengroup.query.filter_by(tokengroup_id=self.tokengroup_id,
+                                                  token_id=self.token_id).first
+        tr = tr_func()
+        if tr is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            if get_app_config_value(SAFE_STORE, False):
+                tr = tr_func()
+                ret = tr.id
+            else:
+                ret = self.id
+        else:
+            ret = self.id
+        return ret

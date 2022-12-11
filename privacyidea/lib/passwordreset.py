@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #
+#  2022-06-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#             Fix recovery link
 #  2015-01-06 Cornelius Kölbel <cornelius@privacyidea.org>
 #             The Password reset functions
 #
@@ -64,7 +66,7 @@ def create_recoverycode(user, email=None, expiration_seconds=3600,
     :return: bool
     """
     base_url = base_url.strip("recover")
-    base_url += "#"
+    base_url += "#!"
     recoverycode = recoverycode or generate_password(size=24)
     hash_code = hash_with_pepper(recoverycode)
     # send this recoverycode

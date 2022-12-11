@@ -85,6 +85,7 @@ from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed,
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 import functools
 import jwt
 import re
@@ -97,7 +98,8 @@ from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse,
                                              ATTESTATION_FORMS)
 from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION,
                                                   DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
-                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
+                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
+                                                  PUBKEY_CRED_ALGORITHMS_ORDER,
                                                   DEFAULT_TIMEOUT, DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
@@ -601,6 +603,70 @@ def init_tokenlabel(request=None, action=None):
         request.all_data[ACTION.FORCE_APP_PIN] = True
 
     return True
+
+
+def init_ca_connector(request=None, action=None):
+    """
+    This is a pre decorator for the endpoint '/token/init'.
+    It reads the policy scope=enrollment, action=certificate_ca_connector and
+    sets the API parameter "ca" accordingly.
+
+    :param request: The request to enhance
+    :return: None, but we modify the request
+    """
+    params = request.all_data
+    user_object = get_user_from_param(params)
+    token_type = getParam(request.all_data, "type", optional)
+    if token_type and token_type.lower() == "certificate":
+        # get the CA connectors from the policies
+        ca_pols = Match.user(g, scope=SCOPE.ENROLL, action=CERTIFICATE_ACTION.CA_CONNECTOR,
+                             user_object=user_object).action_values(unique=True)
+        if len(ca_pols) == 1:
+            # The policy was set, so we need to set the CA in the request
+            request.all_data["ca"] = list(ca_pols)[0]
+
+
+def init_ca_template(request=None, action=None):
+    """
+    This is a pre decorator for the endpoint '/token/init'.
+    It reads the policy scope=enrollment, action=certificate_template and
+    sets the API parameter "template" accordingly.
+
+    :param request: The request to enhance
+    :return: None, but we modify the request
+    """
+    params = request.all_data
+    user_object = get_user_from_param(params)
+    token_type = getParam(request.all_data, "type", optional)
+    if token_type and token_type.lower() == "certificate":
+        # get the CA template from the policies
+        template_pols = Match.user(g, scope=SCOPE.ENROLL, action=CERTIFICATE_ACTION.CERTIFICATE_TEMPLATE,
+                                   user_object=user_object).action_values(unique=True)
+        if len(template_pols) == 1:
+            # The policy was set, so we need to set the template in the request
+            request.all_data["template"] = list(template_pols)[0]
+
+
+def init_subject_components(request=None, action=None):
+    """
+    This is a pre decorator for the endpoint '/token/init'.
+    It reads the policy scope=enrollment, action=certificate_request_subject_component and
+    sets the API parameter "subject_component" accordingly.
+
+    :param request: The request to enhance
+    :return: None, but we modify the request
+    """
+    params = request.all_data
+    user_object = get_user_from_param(params)
+    token_type = getParam(request.all_data, "type", optional)
+    if token_type and token_type.lower() == "certificate":
+        # get the subject list from the policies
+        subject_pols = Match.user(g, scope=SCOPE.ENROLL,
+                                  action=CERTIFICATE_ACTION.CERTIFICATE_REQUEST_SUBJECT_COMPONENT,
+                                  user_object=user_object).action_values(unique=False)
+        if len(list(subject_pols)):
+            # The policy was set, we need to add the list to the parameters
+            request.all_data["subject_components"] = list(subject_pols)
 
 
 def twostep_enrollment_activation(request=None, action=None):
@@ -1856,6 +1922,7 @@ def webauthntoken_enroll(request, action):
     WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL,
     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM,
+    WEAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
     WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, and
     ACTION.CHALLENGETEXT, respectively.
 
@@ -1916,20 +1983,21 @@ def webauthntoken_enroll(request, action):
                and list(authenticator_attachment_policies)[0] in AUTHENTICATOR_ATTACHMENT_TYPES \
             else None
 
-        public_key_credential_algorithm_preference_policies = Match\
-            .user(g,
-                  scope=SCOPE.ENROLL,
-                  action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
-                  user_object=request.User if hasattr(request, 'User') else None) \
-            .action_values(unique=True)
-        public_key_credential_algorithm_preference = list(public_key_credential_algorithm_preference_policies)[0] \
-            if public_key_credential_algorithm_preference_policies \
+        # we need to set `unique` to False since this policy can contain multiple values
+        public_key_credential_algorithm_pref_policies = Match.user(
+            g,
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
+            user_object=request.User if hasattr(request, 'User') else None
+        ).action_values(unique=False)
+        public_key_credential_algorithm_pref = public_key_credential_algorithm_pref_policies.keys() \
+            if public_key_credential_algorithm_pref_policies \
             else DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
-        if public_key_credential_algorithm_preference not in PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS.keys():
+        if not all([x in PUBLIC_KEY_CREDENTIAL_ALGORITHMS for x in public_key_credential_algorithm_pref]):
             raise PolicyError(
                 "{0!s} must be one of {1!s}"
-                    .format(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
-                            ', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS.keys())))
+                    .format(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
+                            ', '.join(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())))
 
         authenticator_attestation_level_policies = Match\
             .user(g,
@@ -1971,19 +2039,28 @@ def webauthntoken_enroll(request, action):
             if challengetext_policies \
             else DEFAULT_CHALLENGE_TEXT_ENROLL
 
+        avoid_double_registration_policy = Match\
+            .user(g,
+                  scope=SCOPE.ENROLL,
+                  action=WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION,
+                  user_object=request.User if hasattr(request, 'User') else None).any()
+
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_ID] = rp_id
         request.all_data[WEBAUTHNACTION.RELYING_PARTY_NAME] = rp_name
 
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT] \
             = authenticator_attachment
-        request.all_data[WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE] \
-            = PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS[public_key_credential_algorithm_preference]
+        request.all_data[WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS] \
+            = [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
+               for x in PUBKEY_CRED_ALGORITHMS_ORDER
+               if x in public_key_credential_algorithm_pref]
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL] \
             = authenticator_attestation_level
         request.all_data[WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM] \
             = authenticator_attestation_form
         request.all_data["{0!s}_{1!s}".format(WebAuthnTokenClass.get_class_type(), ACTION.CHALLENGETEXT)] \
             = challengetext
+        request.all_data[WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION] = avoid_double_registration_policy
 
     return True
 
@@ -2094,8 +2171,8 @@ def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
     against, while attestation_certificate_required() expects the plain fields
     from the token info, containing just the issuer, serial and subject.
 
-    :param cert_info: The cert.
-    :type cert_info: X509 or None
+    :param attestation_cert: The attestation certificate.
+    :type attestation_cert: OpenSSL.crypto.X509 or None
     :param allowed_certs_pols: The policies restricting enrollment, or authorization.
     :type allowed_certs_pols: dict or None
     :return: Whether the token should be allowed to complete enrollment, or authorization, based on its attestation.
@@ -2166,3 +2243,13 @@ def hide_tokeninfo(request=None, action=None):
 
     request.all_data['hidden_tokeninfo'] = list(hidden_fields)
     return True
+
+
+def increase_failcounter_on_challenge(request=None, action=None):
+    """
+    This is a decorator for /validate/check, validate/triggerchallenge and auth
+    which sets the parameter increase_failcounter_on_challenge
+    """
+    inc_fail_counter = Match.user(g, scope=SCOPE.AUTH, action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE,
+                                  user_object=request.User if hasattr(request, 'User') else None).any()
+    request.all_data["increase_failcounter_on_challenge"] = inc_fail_counter

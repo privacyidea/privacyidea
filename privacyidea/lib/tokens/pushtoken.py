@@ -36,17 +36,17 @@ from dateutil.parser import isoparse
 import traceback
 
 from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.token import get_one_token
+from privacyidea.lib.token import get_one_token, init_token
 from privacyidea.lib.utils import prepare_result, to_bytes, is_true
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
                                    privacyIDEAError, ConfigAdminError, PolicyError)
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options, Match
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 
-from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE, CLIENTMODE, ROLLOUTSTATE
+from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE, CLIENTMODE, ROLLOUTSTATE, CHALLENGE_SESSION
 from privacyidea.models import Challenge, db
 from privacyidea.lib.decorators import check_token_locked
 import logging
@@ -262,6 +262,8 @@ class PushTokenClass(TokenClass):
     client_mode = CLIENTMODE.POLL
     # A disabled PUSH token has to be removed from the list of checked tokens.
     check_if_disabled = False
+    # If the token is enrollable via multichallenge
+    is_multichallenge_enrollable = True
 
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
@@ -335,6 +337,11 @@ class PushTokenClass(TokenClass):
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of active Push tokens assigned."),
                            'group': GROUP.TOKEN
+                       },
+                       'push_' + ACTION.FORCE_APP_PIN: {
+                           'type': 'bool',
+                           'group': "PUSH",
+                           'desc': _('Require to unlock the Smartphone before Push requests can be accepted')
                        }
                    },
                    SCOPE.AUTH: {
@@ -473,16 +480,15 @@ class PushTokenClass(TokenClass):
                 firebase_configs = get_smsgateway(identifier=fb_identifier, gwtype=GWTYPE)
                 if len(firebase_configs) != 1:
                     raise ParameterError("Unknown Firebase configuration!")
-                fb_options = firebase_configs[0].option_dict
-                for k in [FIREBASE_CONFIG.PROJECT_NUMBER, FIREBASE_CONFIG.PROJECT_ID,
-                          FIREBASE_CONFIG.APP_ID, FIREBASE_CONFIG.API_KEY,
-                          FIREBASE_CONFIG.APP_ID_IOS, FIREBASE_CONFIG.API_KEY_IOS]:
-                    extra_data[k] = fb_options.get(k)
-                self.add_tokeninfo(FIREBASE_CONFIG.PROJECT_ID, fb_options.get(FIREBASE_CONFIG.PROJECT_ID))
             # this allows to upgrade our crypto
             extra_data["v"] = 1
             extra_data["serial"] = self.get_serial()
             extra_data["sslverify"] = sslverify
+
+            # enforce App pin
+            if params.get(ACTION.FORCE_APP_PIN):
+                extra_data.update({'pin': True})
+
             # We display this during the first enrollment step!
             qr_url = create_push_token_url(url=registration_url,
                                            user=user.login,
@@ -495,12 +501,12 @@ class PushTokenClass(TokenClass):
                                            ttl=ttl)
             response_detail["pushurl"] = {"description": _("URL for privacyIDEA Push Token"),
                                           "value": qr_url,
-                                          "img": create_img(qr_url, width=250)
+                                          "img": create_img(qr_url)
                                           }
 
             response_detail["enrollment_credential"] = self.get_tokeninfo("enrollment_credential")
 
-        elif self.token.rollout_state == "enrolled":
+        elif self.token.rollout_state == ROLLOUTSTATE.ENROLLED:
             # in the second enrollment step we return the public key of the server to the smartphone.
             pubkey = strip_key(self.get_tokeninfo(PUBLIC_KEY_SERVER))
             response_detail["public_key"] = pubkey
@@ -556,6 +562,11 @@ class PushTokenClass(TokenClass):
                                           tokentype="push",
                                           rollout_state=ROLLOUTSTATE.CLIENTWAIT)
                 token_obj.update(request_data)
+                # in case of validate/check enrollment
+                chals = get_challenges(serial=serial)
+                if chals and chals[0].is_valid() and chals[0].get_session() == CHALLENGE_SESSION.ENROLLMENT:
+                    chals[0].set_otp_status(True)
+                    chals[0].save()
             except ResourceNotFoundError:
                 raise ResourceNotFoundError("No token with this serial number "
                                             "in the rollout state 'clientwait'.")
@@ -567,6 +578,7 @@ class PushTokenClass(TokenClass):
             log.debug("Handling the authentication response from the smartphone.")
             challenge = getParam(request_data, "nonce")
             signature = getParam(request_data, "signature")
+            decline = is_true(getParam(request_data, "decline", default=False))
 
             # get the token_obj for the given serial:
             token_obj = get_one_token(serial=serial, tokentype="push")
@@ -580,6 +592,8 @@ class PushTokenClass(TokenClass):
                 for chal in challengeobject_list:
                     # verify the signature of the nonce
                     sign_data = u"{0!s}|{1!s}".format(challenge, serial)
+                    if decline:
+                        sign_data += u"|decline"
                     try:
                         pubkey_obj.verify(b32decode(signature),
                                           sign_data.encode("utf8"),
@@ -587,8 +601,12 @@ class PushTokenClass(TokenClass):
                                           hashes.SHA256())
                         # The signature was valid
                         log.debug("Found matching challenge {0!s}.".format(chal))
-                        chal.set_otp_status(True)
-                        chal.save()
+                        if decline:
+                            # If the challenge is decline, we delete it from the DB
+                            chal.delete()
+                        else:
+                            chal.set_otp_status(True)
+                            chal.save()
                         result = True
                     except InvalidSignature as _e:
                         pass
@@ -732,7 +750,20 @@ class PushTokenClass(TokenClass):
 
               serial=<token serial>
               nonce=<the actual challenge>
-              signature=<the signed nonce>
+              signature=<signature over {nonce}|{serial}>
+
+        - The smartphone can also decline the authentication request, by sending
+          a response to the server:
+
+            .. sourcecode:: http
+
+              POST /ttype/push HTTP/1.1
+              Host: https://yourprivacyideaserver
+
+              serial=<token serial>
+              nonce=<the actual challenge>
+              decline=1
+              signature=<signature over {nonce}|{serial}|decline
 
         - In some cases the Firebase service changes the token of a device. This
           needs to be communicated to privacyIDEA through this endpoint
@@ -827,16 +858,17 @@ class PushTokenClass(TokenClass):
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
         if fb_identifier:
             challenge = b32encode_and_unicode(geturandom())
-            if fb_identifier != POLL_ONLY:
-                # We only push to Firebase if this tokens does NOT POLL_ONLY.
-                fb_gateway = create_sms_instance(fb_identifier)
-                registration_url = get_action_values_from_options(
-                    SCOPE.ENROLL, PUSH_ACTION.REGISTRATION_URL, options=options)
-                pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
-                smartphone_data = _build_smartphone_data(self.token.serial,
-                                                         challenge, registration_url,
-                                                         pem_privkey, options)
-                res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
+            if options.get("session") != CHALLENGE_SESSION.ENROLLMENT:
+                if fb_identifier != POLL_ONLY:
+                    # We only push to Firebase if this tokens does NOT POLL_ONLY.
+                    fb_gateway = create_sms_instance(fb_identifier)
+                    registration_url = get_action_values_from_options(
+                        SCOPE.ENROLL, PUSH_ACTION.REGISTRATION_URL, options=options)
+                    pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
+                    smartphone_data = _build_smartphone_data(self.token.serial,
+                                                             challenge, registration_url,
+                                                             pem_privkey, options)
+                    res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
 
             # Create the challenge in the challenge table if either the message
             # was successfully submitted to the Firebase API or if polling is
@@ -972,3 +1004,57 @@ class PushTokenClass(TokenClass):
                         break
 
         return otp_counter
+
+    @classmethod
+    def enroll_via_validate(cls, g, content, user_obj):
+        """
+        This class method is used in the policy ENROLL_VIA_MULTICHALLENGE.
+        It enrolls a new token of this type and returns the necessary information
+        to the client by modifying the content.
+
+        :param g: context object
+        :param content: The content of a response
+        :param user_obj: A user object
+        :return: None, the content is modified
+        """
+        # Get the firebase configuration from the policies
+        firebase_config = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.FIREBASE_CONFIG,
+                                     user_object=user_obj if user_obj else None) \
+            .action_values(unique=True, allow_white_space_in_action=True)
+        registration_url = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.REGISTRATION_URL,
+                                      user_object=user_obj if user_obj else None)\
+            .action_values(unique=True)
+        ssl_verify = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.SSL_VERIFY,
+                                      user_object=user_obj if user_obj else None) \
+            .action_values(unique=True)
+        # do an early exit
+        if (not firebase_config) or (not registration_url) or (not ssl_verify):
+            log.warning("Multichallenge Enrollment for PUSH token. But either of "
+                        "{0!s}, {1!s} or {2!s} is missing in policies.".format(
+                PUSH_ACTION.FIREBASE_CONFIG, PUSH_ACTION.REGISTRATION_URL, PUSH_ACTION.SSL_VERIFY))
+            return
+        token_obj = init_token({"type": cls.get_class_type(),
+                                "genkey": 1,
+                                "2stepinit": 1}, user=user_obj)
+        # We are in step 1:
+        token_obj.add_tokeninfo("enrollment_credential", geturandom(20, hex=True))
+        # We also store the Firebase config, that was used during the enrollment.
+        token_obj.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, list(firebase_config)[0])
+        content.get("result")["value"] = False
+        content.get("result")["authentication"] = "CHALLENGE"
+
+        detail = content.setdefault("detail", {})
+        # Create a challenge!
+        c = token_obj.create_challenge(options={"session": CHALLENGE_SESSION.ENROLLMENT})
+        # get details of token
+        init_details = token_obj.get_init_detail(params={PUSH_ACTION.REGISTRATION_URL: list(registration_url)[0],
+                                                         PUSH_ACTION.SSL_VERIFY: list(ssl_verify)[0]})
+        detail["transaction_ids"] = [c[2]]
+        chal = {"transaction_id": c[2],
+                "image": init_details.get("pushurl", {}).get("img"),
+                "client_mode": CLIENTMODE.POLL,
+                "serial": token_obj.token.serial,
+                "type": token_obj.type,
+                "message": _("Please scan the QR code!")}
+        detail["multi_challenge"] = [chal]
+        detail.update(chal)

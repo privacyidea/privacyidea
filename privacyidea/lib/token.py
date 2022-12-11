@@ -70,7 +70,6 @@ from six import string_types
 from sqlalchemy import (and_, func)
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import expression
-
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
@@ -81,7 +80,7 @@ from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_se
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
-                                MachineToken, TokenInfo, TokenOwner)
+                                MachineToken, TokenInfo, TokenOwner, TokenTokengroup, Tokengroup)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
@@ -150,7 +149,7 @@ def create_tokenclass_object(db_token):
         try:
             token_object = token_class(db_token)
         except Exception as e:  # pragma: no cover
-            raise TokenAdminError("create_tokenclass_object failed:  {0!r}".format(e),
+            raise TokenAdminError(_("create_tokenclass_object failed:  {0!r}").format(e),
                                   id=1609)
     else:
         log.error('type {0!r} not found in tokenclasses'.format(tokentype))
@@ -180,8 +179,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                 tokentype.lower().replace("*", "%")))
         else:
             # exact match
-            sql_query = sql_query.filter(func.lower(Token.tokentype) ==
-                                         tokentype.lower())
+            sql_query = sql_query.filter(func.lower(Token.tokentype) == tokentype.lower())
 
     if description is not None and description.strip("*"):
         # filter for Description
@@ -191,8 +189,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
                 description.lower().replace("*", "%")))
         else:
             # exact match
-            sql_query = sql_query.filter(func.lower(Token.description) ==
-                                         description.lower())
+            sql_query = sql_query.filter(func.lower(Token.description) == description.lower())
 
     if assigned is not None:
         # filter if assigned or not
@@ -209,14 +206,12 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         if "*" in realm:
             sql_query = sql_query.filter(and_(func.lower(Realm.name).like(realm.replace("*", "%").lower()),
                                               TokenRealm.realm_id == Realm.id,
-                                              TokenRealm.token_id ==
-                                              Token.id)).distinct()
+                                              TokenRealm.token_id == Token.id)).distinct()
         else:
             # exact matching
             sql_query = sql_query.filter(and_(func.lower(Realm.name) == realm.lower(),
                                               TokenRealm.realm_id == Realm.id,
-                                              TokenRealm.token_id ==
-                                              Token.id)).distinct()
+                                              TokenRealm.token_id == Token.id)).distinct()
 
     if allowed_realms is not None:
         sql_query = sql_query.filter(and_(func.lower(Realm.name).in_([r.lower() for r in allowed_realms]),
@@ -299,13 +294,19 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
 
     if rollout_state is not None:
         # Filter for tokens with the given rollout state
-        sql_query = sql_query.filter(Token.rollout_state == rollout_state)
+        if "*" in rollout_state:
+            # match with "like"
+            sql_query = sql_query.filter(func.lower(Token.rollout_state).like(
+                rollout_state.lower().replace("*", "%")))
+        else:
+            # exact match
+            sql_query = sql_query.filter(func.lower(Token.rollout_state) == rollout_state.lower())
 
     if tokeninfo is not None:
         # Filter for tokens with token token.info.<key> and token.info.<value>
         if len(tokeninfo) != 1:
-            raise privacyIDEAError("I can only create SQL filters from "
-                                   "tokeninfo of length 1.")
+            raise privacyIDEAError(_("I can only create SQL filters from "
+                                   "tokeninfo of length 1."))
         sql_query = sql_query.filter(TokenInfo.Key == list(tokeninfo)[0])
         sql_query = sql_query.filter(clob_to_varchar(TokenInfo.Value) == list(tokeninfo.values())[0])
         sql_query = sql_query.filter(TokenInfo.token_id == Token.id)
@@ -561,9 +562,9 @@ def get_one_token(*args, **kwargs):
     """
     result = get_tokens(*args, **kwargs)
     if not result:
-        raise ResourceNotFoundError(u"The requested token could not be found.")
+        raise ResourceNotFoundError(_(u"The requested token could not be found."))
     elif len(result) > 1:
-        raise ParameterError(u"More than one matching token were found.")
+        raise ParameterError(_(u"More than one matching token were found."))
     else:
         return result[0]
 
@@ -877,7 +878,7 @@ def get_token_by_otp(token_list, otp="", window=10):
     if len(result_list) == 1:
         result_token = result_list[0]
     elif result_list:
-        raise TokenAdminError('multiple tokens are matching this OTP value!',
+        raise TokenAdminError(_('multiple tokens are matching this OTP value!'),
                               id=1200)
 
     return result_token
@@ -1037,7 +1038,7 @@ def init_token(param, user=None, tokenrealms=None,
     tokentypes = get_token_types()
     if tokentype.lower() not in tokentypes:
         log.error('type {0!r} not found in tokentypes: {1!r}'.format(tokentype, tokentypes))
-        raise TokenAdminError("init token failed: unknown token type {0!r}".format(tokentype), id=1610)
+        raise TokenAdminError(_("init token failed: unknown token type {0!r}").format(tokentype), id=1610)
 
     # Check, if a token with this serial already exist
     # create a list of the found tokens
@@ -1058,7 +1059,7 @@ def init_token(param, user=None, tokenrealms=None,
                                                                   old_typ,
                                                                   tokentype))
             log.error(msg)
-            raise TokenAdminError("initToken failed: {0!s}".format(msg))
+            raise TokenAdminError(_("initToken failed: {0!s}").format(msg))
 
     # if there is a realm as parameter (and the realm is not empty), but no
     # user, we assign the token to this realm.
@@ -1097,7 +1098,7 @@ def init_token(param, user=None, tokenrealms=None,
     except Exception as e:  # pragma: no cover
         log.error('token create failed!')
         log.debug("{0!s}".format(traceback.format_exc()))
-        raise TokenAdminError("token create failed {0!r}".format(e), id=1112)
+        raise TokenAdminError(_("token create failed {0!r}").format(e), id=1112)
 
     # We only set the tokenkind here, if it was explicitly set in the
     # init_token call.
@@ -1213,7 +1214,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False, err_message=None):
     old_user = tokenobject.user
     if old_user:
         log.warning("token already assigned to user: {0!r}".format(old_user))
-        err_message = err_message or "Token already assigned to user {0!r}".format(old_user)
+        err_message = err_message or _("Token already assigned to user {0!r}").format(old_user)
         raise TokenAdminError(err_message, id=1103)
 
     tokenobject.add_user(user)
@@ -1227,7 +1228,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False, err_message=None):
         tokenobject.save()
     except Exception as e:  # pragma: no cover
         log.error('update Token DB failed')
-        raise TokenAdminError("Token assign failed for {0!r}/{1!s} : {2!r}".format(user, serial, e), id=1105)
+        raise TokenAdminError(_("Token assign failed for {0!r}/{1!s} : {2!r}").format(user, serial, e), id=1105)
 
     log.debug("successfully assigned token with serial "
               "{0!r} to user {1!r}".format(serial, user))
@@ -1255,7 +1256,7 @@ def unassign_token(serial, user=None):
             tokenobject.save()
         except Exception as e:  # pragma: no cover
             log.error('update token DB failed')
-            raise TokenAdminError("Token unassign failed for {0!r}/{1!r}: {2!r}".format(serial, user, e), id=1105)
+            raise TokenAdminError(_("Token unassign failed for {0!r}/{1!r}: {2!r}").format(serial, user, e), id=1105)
 
         log.debug("successfully unassigned token with serial {0!r}".format(tokenobject))
     # TODO: test with more than 1 token
@@ -1331,7 +1332,7 @@ def set_pin(serial, pin, user=None, encrypt_pin=False):
         # check if by accident the wrong parameter (like PIN)
         # is put into the user attribute
         log.warning("Parameter user must not be a string: {0!r}".format(user))
-        raise ParameterError("Parameter user must not be a string: {0!r}".format(
+        raise ParameterError(_("Parameter user must not be a string: {0!r}").format(
                              user), id=1212)
 
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
@@ -1870,7 +1871,7 @@ def lost_token(serial, new_serial=None, password=None,
     log.debug("doing lost token for serial {0!r} and user {1!r}".format(serial, user))
 
     if user is None or user.is_empty():
-        err = "You can only define a lost token for an assigned token."
+        err = _("You can only define a lost token for an assigned token.")
         log.warning("{0!s}".format(err))
         raise TokenAdminError(err, id=2012)
 
@@ -1896,7 +1897,7 @@ def lost_token(serial, new_serial=None, password=None,
 
     tokenobject = init_token({"otpkey": password, "serial": new_serial,
                               "type": "pw",
-                              "description": "temporary replacement for {0!s}".format(
+                              "description": _("temporary replacement for {0!s}").format(
                                              serial)})
 
     res['init'] = tokenobject is not None
@@ -1952,7 +1953,7 @@ def check_realm_pass(realm, passw, options=None,
     #  of an inactive token.
     tokenobject_list = get_tokens(realm=realm, assigned=True, active=True)
     if not tokenobject_list:
-        reply_dict["message"] = "There is no active and assigned token in this realm"
+        reply_dict["message"] = _("There is no active and assigned token in this realm")
         return False, reply_dict
     else:
         # reduce tokens by type
@@ -1964,9 +1965,9 @@ def check_realm_pass(realm, passw, options=None,
             tokenobject_list = [tok for tok in tokenobject_list if tok.type not in excl]
 
         if not tokenobject_list:
-            reply_dict["message"] = 'There is no active and assigned token in ' \
-                                    'this realm, included types: {0!s}, excluded '\
-                                    'types: {1!s}'.format(include_types, exclude_types)
+            reply_dict["message"] = _('There is no active and assigned token in '
+                                      'this realm, included types: {0!s}, excluded '
+                                      'types: {1!s}').format(include_types, exclude_types)
             return False, reply_dict
 
         return check_token_list(tokenobject_list, passw, options=options,
@@ -2018,7 +2019,7 @@ def check_otp(serial, otpval):
     tokenobject = get_one_token(serial=serial)
     res = tokenobject.check_otp(otpval) >= 0
     if not res:
-        reply_dict["message"] = "OTP verification failed."
+        reply_dict["message"] = _("OTP verification failed.")
     return res, reply_dict
 
 
@@ -2051,7 +2052,7 @@ def check_user_pass(user, passw, options=None):
     if not tokenobject_list:
         # The user has no tokens assigned
         res = False
-        reply_dict["message"] = "The user has no tokens assigned"
+        reply_dict["message"] = _("The user has no tokens assigned")
     else:
         tokenobject = tokenobject_list[0]
         res, reply_dict = check_token_list(tokenobject_list, passw,
@@ -2267,7 +2268,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
     if valid_token_list:
         # One ore more successfully authenticating tokens found
         # We need to return success
-        message_list = ["matching {0:d} tokens".format(len(valid_token_list))]
+        message_list = [_("matching {0:d} tokens").format(len(valid_token_list))]
         # write serial numbers or something to audit log
         for token_obj in valid_token_list:
             # Reset the failcounter, if there is a timeout set
@@ -2319,7 +2320,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                 matching_challenge = True
                 messages = []
                 if not tokenobject.is_fit_for_challenge(messages, options=options):
-                    messages.insert(0, "Challenge matches, but token is not fit for challenge")
+                    messages.insert(0, _("Challenge matches, but token is not fit for challenge"))
                     reply_dict["message"] = ". ".join(messages)
                     log.info("Received a valid response to a "
                              "challenge for a non-fit token {0!s}. {1!s}".format(tokenobject.token.serial,
@@ -2329,7 +2330,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                     res = True
                     if increase_auth_counters:
                         tokenobject.inc_count_auth_success()
-                    reply_dict["message"] = "Found matching challenge"
+                    reply_dict["message"] = _("Found matching challenge")
                     # If exist, add next pin and next password change
                     next_pin = tokenobject.get_tokeninfo("next_pin_change")
                     if next_pin:
@@ -2371,20 +2372,22 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                 if len(challenge_response_token_list) == 1:
                     reply_dict["serial"] = challenge_response_token_list[0].token.serial
                     reply_dict["type"] = challenge_response_token_list[0].token.tokentype
-                    reply_dict["message"] = "Response did not match the challenge."
+                    reply_dict["message"] = _("Response did not match the challenge.")
                 else:
-                    reply_dict["message"] = "Response did not match for " \
-                                            "{0!s} tokens.".format(len(challenge_response_token_list))
+                    reply_dict["message"] = _("Response did not match for "
+                                              "{0!s} tokens.").format(len(challenge_response_token_list))
 
     elif challenge_request_token_list:
         # This is the initial REQUEST of a challenge response token
         active_challenge_token = [t for t in challenge_request_token_list
-                                  if t.token.active ]
+                                  if t.token.active]
         if len(active_challenge_token) == 0:
-            reply_dict["message"] = "No active challenge response token found"
+            reply_dict["message"] = _("No active challenge response token found")
         else:
             for token_obj in challenge_request_token_list:
                 token_obj.check_reset_failcount()
+                if is_true(options.get("increase_failcounter_on_challenge")):
+                    token_obj.inc_failcount()
             create_challenges_from_tokens(active_challenge_token, reply_dict, options)
 
     elif pin_matching_token_list:
@@ -2395,14 +2398,14 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
             tokenobject.inc_failcount()
             if get_from_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY, False, return_bool=True):
                 tokenobject.check_reset_failcount()
-            reply_dict["message"] = "wrong otp value"
+            reply_dict["message"] = _("wrong otp value")
             if len(pin_matching_token_list) == 1:
                 # If there is only one pin matching token, we look if it was
                 # a previous OTP value
                 token = pin_matching_token_list[0]
                 _r, pin, otp = token.split_pin_pass(passw)
                 if token.is_previous_otp(otp):
-                    reply_dict["message"] += ". previous otp used again"
+                    reply_dict["message"] += _(". previous otp used again")
             if increase_auth_counters:
                 for token_obj in pin_matching_token_list:
                     token_obj.inc_count_auth()
@@ -2416,7 +2419,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
         # There were only tokens, that did not match the OTP value and
         # not even the PIN.
         # Depending of IncFailCountOnFalsePin, we increase the failcounter.
-        reply_dict["message"] = "wrong otp pin"
+        reply_dict["message"] = _("wrong otp pin")
         if get_inc_fail_count_on_false_pin():
             for tokenobject in invalid_token_list:
                 tokenobject.inc_failcount()
@@ -2512,3 +2515,70 @@ def get_dynamic_policy_definitions(scope=None):
         pol = pol[scope]
 
     return pol
+
+
+def set_tokengroups(serial, tokengroups=None, add=False):
+    """
+    Set a list of tokengroups for one token
+
+    :param serial: The serial of the token
+    :param tokengroups: The list of tokengroups (names)
+    :param add: Whether the list of tokengropus should be added
+    :return:
+    """
+    tokengroups = tokengroups or []
+
+    tokenobject = get_one_token(serial=serial)
+    tokenobject.set_tokengroups(tokengroups, add=add)
+    tokenobject.save()
+
+
+def assign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
+    """
+    Assign a new tokengroup to a token
+
+    :param serial: The serial number of the token
+    :param tokengroup: The name of the tokengroup
+    :param tokengroup_id: alternatively the id of the tokengroup
+    :return: True
+    """
+    tokenobject = get_one_token(serial=serial)
+    try:
+        return tokenobject.add_tokengroup(tokengroup, tokengroup_id)
+    except Exception:
+        raise ResourceNotFoundError(_(u"The tokengroup does not exist."))
+
+
+def unassign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
+    """
+    Removes a tokengroup from a token
+
+    :param serial: The serial number of the token
+    :param tokengroup: The name of the tokengroup
+    :param tokengroup_id: alternatively the id of the tokengroup
+    :return: True
+    """
+    try:
+        tokenobject = get_one_token(serial=serial)
+        return tokenobject.del_tokengroup(tokengroup, tokengroup_id)
+    except Exception:
+        raise ResourceNotFoundError(_(u"The tokengroup does not exist."))
+
+
+def list_tokengroups(tokengroup=None):
+    """
+    Return a list of tokens that are assigned to a certain tokengroup
+    If no tokengroup is specified, all groups/tokens are returned.
+
+    :param tokengroup. The name of the token group
+    :return:
+    """
+    tg = None
+    if tokengroup:
+        tg = Tokengroup.query.filter_by(name=tokengroup).first()
+    if tg:
+        tgs = TokenTokengroup.query.filter_by(tokengroup_id=tg.id).all()
+    else:
+        tgs = TokenTokengroup.query.all()
+
+    return tgs

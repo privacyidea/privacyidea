@@ -1,6 +1,6 @@
 
 # -*- coding: utf-8 -*-
-__doc__="""
+__doc__ = """
 This test file tests the modules:
  lib.smsprovider.httpsmsprovider
  lib.smsprovider.sipgateprovider
@@ -8,6 +8,8 @@ This test file tests the modules:
  lib.smsprovider.smppsmsprovider
  lib.smsprovider.scriptsmsprovider
 """
+
+import six
 
 from .base import MyTestCase
 from privacyidea.lib.smsprovider.HttpSMSProvider import HttpSMSProvider
@@ -27,9 +29,11 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      create_sms_instance)
 from privacyidea.lib.smtpserver import add_smtpserver
 import responses
+from responses import matchers
 import os
 from . import smtpmock
 from . import smppmock
+import mock
 
 
 class SMSTestCase(MyTestCase):
@@ -445,7 +449,6 @@ class HttpSMSTestCase(MyTestCase):
         self.missing_provider = HttpSMSProvider()
         self.missing_provider.load_config(self.config_missing)
 
-
     @responses.activate
     def test_01_send_sms_post_success(self):
         responses.add(responses.POST,
@@ -560,6 +563,7 @@ class HttpSMSTestCase(MyTestCase):
         id = set_smsgateway(identifier, provider_module, description="test",
                             options={"HTTP_METHOD": "POST",
                                      "URL": "http://example.com",
+                                     "SEND_DATA_AS_JSON": "no",
                                      "RETURN_SUCCESS": "ID",
                                      "text": "{otp}",
                                      "phone": "{phone}"},
@@ -586,6 +590,42 @@ class HttpSMSTestCase(MyTestCase):
         r = self.post_provider.submit_message("123456", u"Hallöle Smørrebrød")
         self.assertTrue(r)
 
+    @responses.activate
+    def test_12_send_sms_post_success_as_json(self):
+        identifier = "myGWJSON"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider" \
+                          ".HttpSMSProvider"
+        id = set_smsgateway(identifier, provider_module, description="test",
+                            options={"HTTP_METHOD": "POST",
+                                     "URL": "http://some.other.service",
+                                     "RETURN_SUCCESS": "ID",
+                                     "SEND_DATA_AS_JSON": "yes",
+                                     "text": "{otp}",
+                                     "phone": "{phone}"},
+                            headers={"Authorization": "QWERTZ"})
+        self.assertTrue(id > 0)
+        provider = create_sms_instance(identifier=identifier)
+
+        # also check that the parameters are sent as json
+        responses.add(responses.POST,
+                      "http://some.other.service",
+                      body=self.success_body,
+                      match=[
+                          matchers.json_params_matcher({"text": 'Hello: 7',
+                                                        'phone': '123456'})
+                      ],)
+        # Here we need to send the SMS
+        with mock.patch("logging.Logger.debug") as mock_log:
+            r = provider.submit_message("123456", 'Hello: 7')
+            self.assertTrue(r)
+            if six.PY2:
+                mock_log.assert_any_call("passing JSON data: {u'text': u'Hello: "
+                                         "7', u'phone': u'123456'}")
+            else:
+                call = [x[0][0] for x in mock_log.call_args_list if x[0][0].startswith('passing')][0]
+                self.assertRegex(call, r'passing JSON data: {.*Hello: 7.*}', call)
+        delete_smsgateway(identifier)
+
 
 class SmppSMSTestCase(MyTestCase):
 
@@ -593,7 +633,6 @@ class SmppSMSTestCase(MyTestCase):
               'SMSC_PORT': "1234",
               'SYSTEM_ID': "privacyIDEA",
               'PASSWORD': "secret",
-              'SYSTEM_ID': "privacyIDEA",
               'S_ADDR_TON': "0x5",
               'S_ADDR_NPI': "0x1",
               'S_ADDR': "privacyIDEA",

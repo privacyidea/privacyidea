@@ -33,6 +33,14 @@ myApp.controller("policyListController", ["$scope", "$stateParams", "$location",
             $scope.policies = data.result.value;
             //debug: console.log("Fetched all policies");
             //debug: console.log($scope.policies);
+
+            // converts action object to string and creates new list "action_desc"
+            $scope.policies.forEach(function (value, i) {
+                $scope.policies[i]['action_desc'] = [];
+                for (const [key, value] of Object.entries($scope.policies[i]['action'])) {
+                    $scope.policies[i]['action_desc'].push((`${key}: ${value}`));
+                }
+            });
         });
     };
 
@@ -243,7 +251,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             }
             $scope.actions.push({name: key, help: value.desc, ticked: ticked});
             // Check if we need to do actionValues
-            if (value.type != "bool") {
+            if (value.type !== "bool") {
                 $scope.isActionValues = true;
             }
         });
@@ -258,17 +266,37 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             // This scope contains action values. We need to create
             // a list of checkboxes and input fields.
             angular.forEach(actions, function(value, key) {
+                let val = []
+                // handle select with multiple options
+                if (value.multiple === true) {
+                    value.value.forEach(function(entry) {
+                        val.push({
+                            'name': entry,
+                            'ticked': false
+                        });
+                    });
+                } else
+                    val = value.value;
+
                 $scope.actions.push({name: key,
                                      type: value.type,
                                      desc: value.desc,
                                      group: value.group,
-                                     allowedValues: value.value});
+                                     allowedValues: val,
+                                     multiple: value.multiple});
                 // preset the fields
                 if (policyActions && policyActions[key]) {
                     $scope.actionCheckBox[key] = true;
                     if (policyActions[key] !== true) {
-                        if (value.type === "str")
+                        if (value.type === "str") {
                             $scope.actionValuesStr[key] = policyActions[key];
+                            if (value.multiple === true) {
+                                let vals = $scope.actions.find(x => x.name === key).allowedValues;
+                                policyActions[key].split(' ').forEach(function(n) {
+                                    vals.find(x => x.name === n).ticked = true;
+                                })
+                            }
+                        }
                         if (value.type === "int")
                             $scope.actionValuesNum[key] = parseInt(policyActions[key]);
                         if (value.type === "text")
@@ -299,24 +327,32 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             angular.forEach($scope.actionCheckBox, function(value, key){
                 if (value) {
                     // The action is checked. So try to get an action value.
-                    // either a string, a num or only a bool
-                    var aval = $scope.actionValuesStr[key];
-                    if (!aval) {
-                        // No 'str' so lets try a 'text'.
-                        aval = $scope.actionValuesText[key];
-                    }
-                    if (aval) {
-                        $scope.params.action.push(key + "=" + aval);
-                    } else {
-                        aval = $scope.actionValuesNum[key];
-                        if (aval === false || aval === undefined) {
-                            // We must avoid getting here if aval==0
-                            // it is a bool value
+                    // The type is given in the $scope.actions array
+                    // It is either a string/text, a num or only a bool
+                    let vtype = $scope.actions.find(o => o.name === key)['type'];
+                    let aval = undefined;
+                    switch (vtype) {
+                        case 'bool':
                             $scope.params.action.push(key);
-                        } else {
+                            break;
+                        case 'int':
+                            aval = $scope.actionValuesNum[key];
                             $scope.params.action.push(key + "=" + aval);
-                        }
-                    }
+                            break;
+                        case 'text':
+                            aval = $scope.actionValuesText[key];
+                            $scope.params.action.push(key + "=" + aval);
+                            break;
+                        case 'str':
+                            aval = $scope.actionValuesStr[key];
+                            if (Array.isArray(aval))
+                                $scope.params.action.push(key + '=' + aval.map((o) => {return o.name}).join(' '));
+                            else
+                                $scope.params.action.push(key + "=" + aval);
+                            break;
+                        default:
+                            console.error('Unknown policy value type: ' + vtype);
+                   }
                 }
             });
         } else {
@@ -582,7 +618,7 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
     // TODO: This information needs to be fetched from the server
     $scope.availableMachineResolverTypes = ['hosts', 'ldap'];
     // TODO: This information needs to be fetched from the server
-    $scope.availableCAConnectorTypes = ['local'];
+    $scope.availableCAConnectorTypes = ['local', 'microsoft'];
 
     $scope.getResolvers = function () {
         ConfigFactory.getResolvers(function (data) {
@@ -713,18 +749,6 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
     $scope.selectedPINodes = {};
     $scope.getSmtpIdentifiers();
     $scope.getRADIUSIdentifiers();
-
-    $scope.testResolver = function () {
-        ConfigFactory.testResolver($scope.params, function (data) {
-            if (data.result.value === true) {
-                inform.add(data.detail.description,
-                    {type: "success", ttl: 10000});
-            } else {
-                inform.add(data.detail.description,
-                    {type: "danger", ttl: 10000});
-            }
-        });
-    };
 
     $scope.saveSystemConfig = function () {
         ConfigFactory.saveSystemConfig($scope.params, function (data) {
@@ -890,6 +914,46 @@ myApp.controller("LocalCAConnectorController", ["$scope", "$stateParams",
 
 }]);
 
+myApp.controller("MicrosoftCAConnectorController", ["$scope", "$stateParams",
+                                                "ConfigFactory", "$state",
+                                                function($scope, $stateParams,
+                                                         ConfigFactory, $state) {
+    $scope.params = {
+        type: 'microsoft'
+    };
+
+    $scope.connectorname = $stateParams.connectorname;
+    if ($scope.connectorname) {
+        /* If we have a connectorname, we do an Edit
+         and we need to fill all the $scope.params */
+        ConfigFactory.getCAConnector($scope.connectorname, function (data) {
+            //debug: console.log(data.result.value);
+            var caconnector = data.result.value[0];
+            $scope.params = caconnector.data;
+            $scope.params.type = 'microsoft';
+            $scope.params['type.ssl_client_key_password'] = 'password';
+            $scope.getCASpecificOptions($scope.params.type);
+        });
+    }
+
+    $scope.setCAConnector = function () {
+        ConfigFactory.setCAConnector($scope.connectorname,
+                                     $scope.params, function (data) {
+            $scope.set_result = data.result.value;
+            $scope.getCAConnectors();
+            $state.go("config.caconnectors.list");
+        });
+    };
+
+    $scope.getCASpecificOptions = function (catype) {
+        ConfigFactory.getCASpecificOptions(catype,
+            $scope.params, function (data) {
+            $scope.available_cas = data.result.value.available_cas;
+        });
+    }
+
+
+}]);
 
 myApp.controller("machineResolverController", ["$scope", "ConfigFactory",
                                                "$state", "$rootScope",
@@ -935,12 +999,17 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
      LDAPSEARCHFILTER,
      USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE, AUTHTYPE, EDITABLE
      */
+    $scope.authtypes = Object.freeze({"Anonymous": "Anonymous",
+        "Simple": "Simple",
+        "SASL Digest-MD5": "SASL Digest-MD5",
+        "NTLM": "NTLM",
+        "SASL Kerberos": "SASL Kerberos"});
     $scope.params = {
         SIZELIMIT: 500,
         TIMEOUT: 5,
         UIDTYPE: "DN",
         type: 'ldapresolver',
-        AUTHTYPE: "Simple",
+        AUTHTYPE: $scope.authtypes["Simple"],
         SCOPE: "SUBTREE",
         CACHE_TIMEOUT: 120,
         NOSCHEMAS: false,
@@ -952,7 +1021,6 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
     };
     $scope.result = {};
     $scope.resolvername = $stateParams.resolvername;
-    $scope.authtypes = ["Simple", "SASL Digest-MD5", "NTLM"];
     $scope.scopes = ["SUBTREE", "BASE", "LEVEL"];
     $scope.tls_version_options = [{value: "3", name: "TLS v1.0"},
                                   {value: "4", name: "TLS v1.1"},
@@ -980,14 +1048,11 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
 
     $scope.presetAD = function () {
         $scope.params.LOGINNAMEATTRIBUTE = "sAMAccountName";
-        $scope.params.LDAPSEARCHFILTER = "(sAMAccountName=*)(objectClass=person)";
+        $scope.params.LDAPSEARCHFILTER = "(sAMAccountName=*)(objectCategory=person)";
         $scope.params.USERINFO = '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }';
         $scope.params.NOREFERRALS = true;
         $scope.params.EDITABLE = false;
-        $scope.params.SIZELIMIT = 500;
         $scope.params.UIDTYPE = "objectGUID";
-        $scope.params.AUTHTYPE = "Simple";
-        $scope.params.SCOPE = "SUBTREE";
     };
 
     $scope.presetLDAP = function () {
@@ -996,10 +1061,7 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         $scope.params.USERINFO = '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }';
         $scope.params.NOREFERRALS = true;
         $scope.params.EDITABLE = false;
-        $scope.params.SIZELIMIT = 500;
         $scope.params.UIDTYPE = "entryUUID";
-        $scope.params.AUTHTYPE = "Simple";
-        $scope.params.SCOPE = "SUBTREE";
     };
 
     $scope.setLDAPResolver = function () {
@@ -1014,6 +1076,11 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         var params = $.extend({}, $scope.params);
         params["SIZELIMIT"] = size_limit;
         params["resolver"] = $scope.resolvername;
+        if (params['AUTHTYPE'] === $scope.authtypes['Anonymous']) {
+            params['AUTHTYPE'] = $scope.authtypes['Simple'];
+            params['BINDPW'] = '';
+            params['BINDDN'] = '';
+        }
         ConfigFactory.testResolver(params, function (data) {
             if (data.result.value === true) {
                 inform.add(data.detail.description,

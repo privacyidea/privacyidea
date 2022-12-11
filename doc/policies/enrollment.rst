@@ -113,8 +113,8 @@ appimageurl
 type: string
 
 With this action the administrator may specify the URL to a token image which is included in the
-QR code during enrollment (key in otpauth URL: ``image``). It is used by some smartphone
-apps like FreeOTP.
+QR code during enrollment (key in otpauth URL: ``image``). It is used by the privacyIDEA Authenticator
+and some other smartphone apps like FreeOTP (supported file formats: PNG, JPG and GIF).
 
 .. _autoassignment:
 
@@ -372,6 +372,12 @@ If you do not want to verify the validity period, you can check this action.
 
 
 .. _2step_parameters:
+.. _hotp-2step-clientsize:
+.. _totp-2step-clientsize:
+.. _hotp-2step-serversize:
+.. _totp-2step-serversize:
+.. _hotp-2step-difficulty:
+.. _totp-2step-difficulty:
 
 {type}_2step_clientsize, {type}_2step_serversize, {type}_2step_difficulty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -390,6 +396,8 @@ specifies the number of rounds.
 This is new in version 2.21.
 
 .. _force_app_pin:
+.. _hotp-force-app-pin:
+.. _totp-force-app-pin:
 
 hotp_force_app_pin, totp_force_app_pin
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -457,7 +465,7 @@ The smartphone needs to verify the SSL certificate of the privacyIDEA server dur
 the enrollment of push tokens. By default, the verification is enabled. To disable
 verification during authentication, see :ref:`policy_push_ssl_verify_auth`.
 
-.. _policy_webauthn_enroll_relying_party_id:
+.. _policy_verify_enrollment:
 
 
 verify_enrollment
@@ -476,6 +484,10 @@ successfully enrolled the token.
 As long as no OTP value is provided by the user during the enrollment process, the
 token can not be used for authentication.
 
+.. note:: This does not work in combination with the admin policy :ref:`admin_policy_2step` and
+  the user policy :ref:`user_policy_2step`.
+
+.. _policy_webauthn_enroll_relying_party_id:
 
 webauthn_relying_party_id
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -617,21 +629,22 @@ supported by the token.
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_authn_user_verification_requirement`.
 
-.. _policy_webauthn_enroll_public_key_credential_algorithm_preference:
+.. _policy_webauthn_enroll_public_key_credential_algorithms:
 
-webauthn_public_key_credential_algorithm_preference
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+webauthn_public_key_credential_algorithms
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: string
 
-This action configures which algorithms should be preferred for the creation
-of WebAuthn asymmetric cryptography key pairs, and in which order. privacyIDEA
-currently supports ECDSA as well as RSASSA-PSS. Please check back with the
-manufacturer of your authenticators to get information on which algorithms are
-acceptable to your model of authenticator.
+This action configures which algorithms should be available for the creation
+of WebAuthn asymmetric cryptography key pairs. privacyIDEA
+currently supports ECDSA, RSASSA-PSS and RSASSA-PKCS1-v1_5. Please check back
+with the manufacturer of your authenticators to get information on which
+algorithms are acceptable to your model of authenticator.
 
-The default is to allow both ECDSA and RSASSA-PSS, but to prefer ECDSA over
-RSASSA-PSS.
+The default is to allow both ECDSA and RSASSA-PSS.
+
+The Order of preferred algorithms is `ECDSA > RSASSA-PSS > RSASSA-PKCS1-v1_5`
 
 .. note:: Not all authenticators will supports all algorithms. It should not
     usually be necessary to configure this action. Do *not* change this
@@ -716,7 +729,7 @@ type: string
 This action allows filtering of WebAuthn tokens by the fields of the
 attestation certificate.
 
-The action can be specified like this:
+The action can be specified like this::
 
     webauthn_req=subject/.*Yubico.*/
 
@@ -742,6 +755,18 @@ challenge text received during authentication
 (see :ref:`policy_webauthn_challenge_text_auth`).
 
 
+.. _policy_webauthn_avoid_double_registration:
+
+webauthn_avoid_double_registration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: bool
+
+If this policy is set, a user or an admin can not register the same webauthn
+token to a user more than once.
+However, the same webauthn token could be registered to a different user.
+
+
 .. _require_attestation:
 
 certificate_require_attestation
@@ -764,7 +789,52 @@ The trusted root certificate authorities and intermediate certificate authoritie
 the policies :ref:`admin_trusted_attestation_CA` and :ref:`user_trusted_attestation_CA`
 
 
+.. _policy_certificate_ca_connector:
 
+certificate_ca_connector
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+During enrollment of a `certificate` token the user needs to specify the CA connector
+from which the CSR should be signed.
+This policy adds the given CA connector parameter to the request.
+The list of CA connectors is read from the configured connectors.
+
+.. note:: When using the privacyIDEA Smartcard Enrollment Tool, this policy needs to be set, otherwise
+   the enrollment will fail.
+
+
+.. _policy_certificate_template:
+
+certificate_template
+~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+During enrollment of a `certificate` token the user needs to specify the certificate template that should be used
+for enrollment. This policy adds the given template parameter to the request.
+The administrator needs to add the name of the template manually in this policy.
+
+.. note:: When using the privacyIDEA Smartcard Enrollment Tool in combination with a Microsoft CA,
+   this policy needs to be set, otherwise the enrollment will fail.
+
+
+.. _policy_certificate_request_subject_component:
+
+certificate_request_subject_component
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+During enrollment of a `certificate` by creating a request, privacyIDEA can add additional
+components to the request subject.
+
+This can be "email" (The email of the user read from the userstore) and/or "realm", which
+is written to the orgnaizationalUnit (OU) of the request.
+
+.. note:: A couple of certificate templates on the Microsoft CA will not allow to have the
+   email component directly in the subject!
 
 .. rubric:: Footnotes
 

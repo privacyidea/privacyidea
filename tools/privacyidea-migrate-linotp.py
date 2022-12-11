@@ -139,7 +139,11 @@ def reencrypt(enc_data, iv, old_key, new_key):
         raise Exception('invalid encoded secret!')
     # unpad
     output = output.rstrip(b'\0')
-    data = binascii.unhexlify(output)
+    # The stripping of the ascii chars was missing for LinOTP 2.7.2
+    eof = output.rfind(b"\x01\x02")
+    if eof >= 0:
+        output = output[:eof]
+    data = binascii.a2b_hex(output)
 
     # encrypt anew
     iv = os.urandom(16)

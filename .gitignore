@@ -33,3 +33,4 @@ __pycache__/
 /public.pem
 /private.pem
 dist/
+*.swp

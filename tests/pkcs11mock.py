@@ -30,8 +30,8 @@ try:
 except ImportError:
     # PyKCS11 not installed, let's use our simple mock module
     class MockPyKCS11Error(Exception):
-        def __init__(self, code):
-            self.code = code
+        def __init__(self, value):
+            self.value = value
 
 
     MOCK_CONSTANTS = ['CKA_CLASS', 'CKO_SECRET_KEY', 'CKA_LABEL', 'CKR_SLOT_ID_INVALID', 'CKR_DEVICE_ERROR']
@@ -140,10 +140,13 @@ class PKCS11Mock(object):
         This is just a shortcut for calling ``simulate_failure`` on ``generateRandom``, ``encrypt``,
         ``decrypt`` and ``openSession``.
         """
-        with self.simulate_failure(self.session_mock.generateRandom, count), \
-            self.simulate_failure(self.session_mock.encrypt, count), \
-            self.simulate_failure(self.session_mock.decrypt, count), \
-            self.simulate_failure(self.mock.openSession, count):
+        with self.simulate_failure(self.session_mock.generateRandom, count,
+                                   error=PyKCS11.CKR_SESSION_HANDLE_INVALID), \
+                self.simulate_failure(self.session_mock.encrypt, count,
+                                      error=PyKCS11.CKR_SESSION_HANDLE_INVALID), \
+                self.simulate_failure(self.session_mock.decrypt, count,
+                                      error=PyKCS11.CKR_SESSION_HANDLE_INVALID), \
+                self.simulate_failure(self.mock.openSession, count):
             yield
 
     def _mock_openSession(self, slot):

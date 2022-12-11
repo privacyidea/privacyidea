@@ -52,7 +52,13 @@ import pyparsing
 
 from .smtpmock import get_wrapped
 
-from collections import namedtuple, Sequence, Sized
+from collections import namedtuple
+
+try:
+    from collections import Sequence, Sized
+except ImportError:
+    from collections.abc import Sequence, Sized
+
 from privacyidea.lib.utils import to_bytes, to_unicode
 
 DIRECTORY = "tests/testdata/tmp_directory"
@@ -732,7 +738,7 @@ class Ldap3Mock(object):
         # Reload the directory just in case a change has been made to
         # user credentials
         self.directory = self._load_data(DIRECTORY)
-        if authentication == ldap3.ANONYMOUS and user == "":
+        if authentication == ldap3.ANONYMOUS and user is None:
             correct_password = True
         for entry in self.directory:
             if to_unicode(entry.get("dn")) == user:
@@ -763,13 +769,13 @@ class Ldap3Mock(object):
                                    self._server_mock)
         self._patcher.start()
 
-        def unbound_on_Connection(server, user,
-                                  password,
-                                  auto_bind,
-                                  client_strategy,
-                                  authentication,
-                                  check_names,
-                                  auto_referrals, *a, **kwargs):
+        def unbound_on_Connection(server=None, user=None,
+                                  password=None,
+                                  auto_bind=None,
+                                  client_strategy=None,
+                                  authentication=None,
+                                  check_names=None,
+                                  auto_referrals=None, *a, **kwargs):
             return self._on_Connection(server, user,
                                        password,
                                        auto_bind,

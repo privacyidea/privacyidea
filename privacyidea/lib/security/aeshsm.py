@@ -187,12 +187,17 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 break
             except PyKCS11.PyKCS11Error as exx:
                 log.warning(u"Generate Random failed: {0!s}".format(exx))
-                # If something goes wrong in this process, we free memory, session and handles
-                self.pkcs11.lib.C_Finalize()
-                self.initialize_hsm()
-                retries += 1
-                if retries > self.max_retries:
-                    raise HSMException("Failed to generate random number after multiple retries.")
+                # If we get an CKR_SESSION_HANDLE_INVALID error code, we free
+                # memory, session and handles and retry
+                if exx.value == PyKCS11.CKR_SESSION_HANDLE_INVALID:
+                    self.pkcs11.lib.C_Finalize()
+                    self.initialize_hsm()
+                    retries += 1
+                    if retries > self.max_retries:
+                        raise HSMException("Failed to generate random number after multiple retries.")
+                else:
+                    raise HSMException("HSM random number generation failed "
+                                       "with {0!s}".format(exx))
 
         # convert the array of the random integers to a string
         return int_list_to_bytestring(r_integers)
@@ -202,8 +207,6 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
 
         :rtype: bytes
         """
-        if len(data) == 0:
-            return bytes()
         log.debug("Encrypting {} bytes with key {}".format(len(data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
         retries = 0
@@ -215,12 +218,16 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 break
             except PyKCS11.PyKCS11Error as exx:
                 log.warning(u"Encryption failed: {0!s}".format(exx))
-                # If something goes wrong in this process, we free memory,session and handles
-                self.pkcs11.lib.C_Finalize()
-                self.initialize_hsm()
-                retries += 1
-                if retries > self.max_retries:
-                    raise HSMException("Failed to encrypt after multiple retries.")
+                # If we get an CKR_SESSION_HANDLE_INVALID error code, we free
+                # memory, session and handles and retry
+                if exx.value == PyKCS11.CKR_SESSION_HANDLE_INVALID:
+                    self.pkcs11.lib.C_Finalize()
+                    self.initialize_hsm()
+                    retries += 1
+                    if retries > self.max_retries:
+                        raise HSMException("Failed to encrypt after multiple retries")
+                else:
+                    raise HSMException("HSM encryption failed with {0!s}".format(exx))
 
         return int_list_to_bytestring(r)
 
@@ -229,8 +236,9 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
 
         :rtype bytes
         """
+        # we keep this for legacy reasons, even though it hasn't worked anyway
         if len(enc_data) == 0:
-            return bytes("")
+            return bytes()
         log.debug("Decrypting {} bytes with key {}".format(len(enc_data), key_id))
         m = PyKCS11.Mechanism(PyKCS11.CKM_AES_CBC_PAD, iv)
         start = datetime.datetime.now()
@@ -242,15 +250,19 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 self.session_lastused_time = datetime.datetime.now()
                 break
             except PyKCS11.PyKCS11Error as exx:
-                log.warning(u"Decryption retry: {0!s}".format(exx))
-                # If something goes wrong in this process, we free memory, session and handlers
-                self.pkcs11.lib.C_Finalize()
-                self.initialize_hsm()
-                retries += 1
-                if retries > self.max_retries:
-                    td = datetime.datetime.now() - start
-                    log.warning(u"Decryption finally failed: {0!s}. Time taken: {1!s}.".format(exx, td))
-                    raise HSMException("Failed to decrypt after multiple retries.")
+                log.warning("Decryption failed: {0!s}".format(exx))
+                # If we get an CKR_SESSION_HANDLE_INVALID error code, we free
+                # memory, session and handles and retry
+                if exx.value == PyKCS11.CKR_SESSION_HANDLE_INVALID:
+                    self.pkcs11.lib.C_Finalize()
+                    self.initialize_hsm()
+                    retries += 1
+                    if retries > self.max_retries:
+                        td = datetime.datetime.now() - start
+                        log.warning(u"Decryption finally failed: {0!s}. Time taken: {1!s}.".format(exx, td))
+                        raise HSMException("Failed to decrypt after multiple retries.")
+                else:
+                    raise HSMException("HSM decrypt failed with {0!s}".format(exx))
 
         if retries > 0:
             td = datetime.datetime.now() - start
@@ -283,7 +295,6 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 (PyKCS11.CKA_KEY_TYPE, PyKCS11.CKK_AES),
                 (PyKCS11.CKA_VALUE_LEN, 32),
                 (PyKCS11.CKA_LABEL, label),
-                (PyKCS11.CKA_ID, label),
                 (PyKCS11.CKA_TOKEN, PyKCS11.CK_TRUE),
                 (PyKCS11.CKA_PRIVATE, True),
                 (PyKCS11.CKA_SENSITIVE, True),

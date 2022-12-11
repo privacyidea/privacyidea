@@ -45,7 +45,7 @@ from privacyidea.api.application import application_blueprint
 from privacyidea.api.caconnector import caconnector_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.auth import jwtauth
-from privacyidea.webui.login import login_blueprint
+from privacyidea.webui.login import login_blueprint, get_accepted_language
 from privacyidea.webui.certificate import cert_blueprint
 from privacyidea.api.machineresolver import machineresolver_blueprint
 from privacyidea.api.machine import machine_blueprint
@@ -60,10 +60,13 @@ from privacyidea.api.smsgateway import smsgateway_blueprint
 from privacyidea.api.clienttype import client_blueprint
 from privacyidea.api.subscriptions import subscriptions_blueprint
 from privacyidea.api.monitoring import monitoring_blueprint
+from privacyidea.api.tokengroup import tokengroup_blueprint
 from privacyidea.lib import queue
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
 from privacyidea.models import db
+from privacyidea.lib.crypto import init_hsm
+
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 
@@ -87,7 +90,7 @@ class PiResponseClass(Response):
 
 def create_app(config_name="development",
                config_file='/etc/privacyidea/pi.cfg',
-               silent=False):
+               silent=False, init_hsm=False):
     """
     First the configuration from the config.py is loaded depending on the
     config type like "production" or "development" or "testing".
@@ -103,6 +106,8 @@ def create_app(config_name="development",
     :param silent: If set to True the additional information are not printed
         to stdout
     :type silent: bool
+    :param init_hsm: Whether the HSM should be initialized on app startup
+    :type init_hsm: bool
     :return: The flask application
     :rtype: App object
     """
@@ -170,6 +175,7 @@ def create_app(config_name="development",
     app.register_blueprint(client_blueprint, url_prefix='/client')
     app.register_blueprint(subscriptions_blueprint, url_prefix='/subscriptions')
     app.register_blueprint(monitoring_blueprint, url_prefix='/monitoring')
+    app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
     db.init_app(app)
     migrate = Migrate(app, db)
 
@@ -214,17 +220,13 @@ def create_app(config_name="development",
 
     @babel.localeselector
     def get_locale():
-        # if we are not in the request context, return None to use the default
-        # locale
-        if not request:
-            return None
-        # otherwise try to guess the language from the user accept
-        # header the browser transmits.  We support de/fr/en in this
-        # example.  The best match wins.
-        return request.accept_languages.best_match(['de', 'nl',
-                                                    'fr', 'cs', 'it', 'es', 'en'])
+        return get_accepted_language(request)
 
     queue.register_app(app)
+
+    if init_hsm:
+        with app.app_context():
+            init_hsm()
 
     logging.debug(u"Reading application from the static folder {0!s} and "
                   u"the template folder {1!s}".format(app.static_folder, app.template_folder))

@@ -12,7 +12,7 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               DEFAULT_CHALLENGE_TEXT, strip_key,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
                                               PUBLIC_KEY_SERVER,
-                                              PushAllowPolling, POLLING_ALLOWED)
+                                              PushAllowPolling, POLLING_ALLOWED, POLL_ONLY)
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.token import get_tokens, remove_token, init_token
 from privacyidea.lib.challenge import get_challenges
@@ -45,10 +45,6 @@ CLIENT_FILE = "tests/testdata/google-services.json"
 REGISTRATION_URL = "http://test/ttype/push"
 TTL = 10
 FB_CONFIG_VALS = {
-    FIREBASE_CONFIG.API_KEY: "1",
-    FIREBASE_CONFIG.APP_ID: "2",
-    FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-    FIREBASE_CONFIG.PROJECT_ID: "test-123456",
     FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE}
 
 
@@ -56,6 +52,24 @@ def _create_credential_mock():
     c = service_account.Credentials('a', 'b', 'c')
     return mock.MagicMock(spec=c, expired=False, expiry=None,
                           access_token='my_new_bearer_token')
+
+
+def _check_firebase_params(request):
+    payload = json.loads(request.body)
+    # check the signature in the payload!
+    data = payload.get("message").get("data")
+
+    sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**data)
+    token_obj = get_tokens(serial=data.get("serial"))[0]
+    pem_pubkey = token_obj.get_tokeninfo(PUBLIC_KEY_SERVER)
+    pubkey_obj = load_pem_public_key(to_bytes(pem_pubkey), backend=default_backend())
+    signature = b32decode(data.get("signature"))
+    # If signature does not match it will raise InvalidSignature exception
+    pubkey_obj.verify(signature, sign_string.encode("utf8"),
+                      padding.PKCS1v15(),
+                      hashes.SHA256())
+    headers = {'request-id': '728d329e-0e86-11e4-a748-0c84dc037c13'}
+    return (200, headers, json.dumps({}))
 
 
 class PushTokenTestCase(MyTestCase):
@@ -126,45 +140,15 @@ class PushTokenTestCase(MyTestCase):
 
         fb_config = {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
                      FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE,
-                     FIREBASE_CONFIG.TTL: 10,
-                     FIREBASE_CONFIG.API_KEY: "1",
-                     FIREBASE_CONFIG.APP_ID: "2",
-                     FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-                     FIREBASE_CONFIG.PROJECT_ID: "4"}
+                     FIREBASE_CONFIG.TTL: 10}
 
         # Wrong JSON file
         self.assertRaises(ConfigAdminError, set_smsgateway,
                           "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                           fb_config)
 
-        # Wrong Project number
-        fb_config[FIREBASE_CONFIG.JSON_CONFIG] = FIREBASE_FILE
-        self.assertRaises(ConfigAdminError, set_smsgateway,
-                          "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
-                          fb_config)
-
-        # Missing APP_ID
-        self.assertRaises(ConfigAdminError, set_smsgateway,
-                          "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
-                          {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-                           FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE,
-                           FIREBASE_CONFIG.TTL: 10,
-                           FIREBASE_CONFIG.API_KEY: "1",
-                           FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-                           FIREBASE_CONFIG.PROJECT_ID: "4"})
-
-        # Missing API_KEY_IOS
-        self.assertRaises(ConfigAdminError, set_smsgateway,
-                          "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
-                          {FIREBASE_CONFIG.REGISTRATION_URL: "http://test/ttype/push",
-                           FIREBASE_CONFIG.JSON_CONFIG: CLIENT_FILE,
-                           FIREBASE_CONFIG.TTL: 10,
-                           FIREBASE_CONFIG.APP_ID_IOS: "1",
-                           FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-                           FIREBASE_CONFIG.PROJECT_ID: "4"})
-
         # Everything is fine
-        fb_config[FIREBASE_CONFIG.PROJECT_ID] = "test-123456"
+        fb_config[FIREBASE_CONFIG.JSON_CONFIG] = FIREBASE_FILE
         r = set_smsgateway("fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                            fb_config)
         self.assertTrue(r > 0)
@@ -175,6 +159,7 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(detail.get("rollout_state"), "clientwait")
         enrollment_credential = detail.get("enrollment_credential")
         self.assertTrue("pushurl" in detail)
+        self.assertNotIn('pin=True', detail['pushurl']['value'])
         self.assertFalse("otpkey" in detail)
 
         # Run enrollment step 2
@@ -207,6 +192,16 @@ class PushTokenTestCase(MyTestCase):
             default_backend())
         self.assertEqual(parsed_server_pubkey.public_numbers(), parsed_stripped_server_pubkey.public_numbers())
         remove_token(self.serial1)
+
+    def test_01a_enroll_with_app_pin(self):
+        tparams = {'type': 'push', 'genkey': 1}
+        tparams.update(FB_CONFIG_VALS)
+        tok = init_token(param=tparams)
+        detail = tok.get_init_detail(params={PUSH_ACTION.FIREBASE_CONFIG: POLL_ONLY,
+                                             PUSH_ACTION.REGISTRATION_URL: "https://privacyidea.com/enroll",
+                                             ACTION.FORCE_APP_PIN: True})
+        self.assertIn('pin=True', detail['pushurl']['value'])
+        remove_token(tok.get_serial())
 
     def test_02a_lib_enroll(self):
         r = set_smsgateway(self.firebase_config_name,
@@ -592,23 +587,6 @@ class PushTokenTestCase(MyTestCase):
         tokenobj.set_pin("pushpin")
         tokenobj.add_user(User("cornelius", self.realm1))
 
-        def check_firebase_params(request):
-            payload = json.loads(request.body)
-            # check the signature in the payload!
-            data = payload.get("message").get("data")
-
-            sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**data)
-            token_obj = get_tokens(serial=data.get("serial"))[0]
-            pem_pubkey = token_obj.get_tokeninfo(PUBLIC_KEY_SERVER)
-            pubkey_obj = load_pem_public_key(to_bytes(pem_pubkey), backend=default_backend())
-            signature = b32decode(data.get("signature"))
-            # If signature does not match it will raise InvalidSignature exception
-            pubkey_obj.verify(signature, sign_string.encode("utf8"),
-                              padding.PKCS1v15(),
-                              hashes.SHA256())
-            headers = {'request-id': '728d329e-0e86-11e4-a748-0c84dc037c13'}
-            return (200, headers, json.dumps({}))
-
         # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
                         '.from_service_account_file') as mySA:
@@ -617,7 +595,7 @@ class PushTokenTestCase(MyTestCase):
 
             # add responses, to simulate the communication to firebase
             responses.add_callback(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
-                          callback=check_firebase_params,
+                          callback=_check_firebase_params,
                           content_type="application/json")
 
             # Send the first authentication request to trigger the challenge
@@ -760,6 +738,90 @@ class PushTokenTestCase(MyTestCase):
             jsonresp = res.json
             # Result-Value is True
             self.assertTrue(jsonresp.get("result").get("value"))
+
+    def test_04_decline_auth_request(self):
+        # get enrolled push token
+        toks = get_tokens(tokentype="push")
+        self.assertEqual(len(toks), 1)
+        tokenobj = toks[0]
+
+        # set PIN
+        tokenobj.set_pin("pushpin")
+        tokenobj.add_user(User("cornelius", self.realm1))
+
+        # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
+                        '.from_service_account_file') as mySA:
+            # alternative: side_effect instead of return_value
+            mySA.from_json_keyfile_name.return_value = _create_credential_mock()
+
+            # add responses, to simulate the communication to firebase
+            responses.add_callback(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                                   callback=_check_firebase_params,
+                                   content_type="application/json")
+
+            # Send the first authentication request to trigger the challenge
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                jsonresp = res.json
+                self.assertFalse(jsonresp.get("result").get("value"))
+                self.assertTrue(jsonresp.get("result").get("status"))
+                self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
+                self.assertTrue("transaction_id" in jsonresp.get("detail"))
+                transaction_id = jsonresp.get("detail").get("transaction_id")
+
+            # Our ServiceAccountCredentials mock has not been called because we use a cached token
+            self.assertEqual(len(mySA.from_json_keyfile_name.mock_calls), 0)
+            self.assertIn(FIREBASE_FILE, get_app_local_store()["firebase_token"])
+
+        # The challenge is sent to the smartphone via the Firebase service, so we do not know
+        # the challenge from the /validate/check API.
+        # So lets read the challenge from the database!
+
+        challengeobject_list = get_challenges(serial=tokenobj.token.serial,
+                                              transaction_id=transaction_id)
+        challenge = challengeobject_list[0].challenge
+
+        sign_data = "{0!s}|{1!s}|decline".format(challenge, tokenobj.token.serial)
+        signature = b32encode_and_unicode(
+            self.smartphone_private_key.sign(sign_data.encode("utf-8"),
+                                             padding.PKCS1v15(),
+                                             hashes.SHA256()))
+
+        # Simulate the decline request to a pre privacyIDEA 3.8 system.
+        # It will ignore the "decline" parameter, so we do not add it in the
+        # request. The request should fail due to an invalid signature
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": challenge,
+                                                 "signature": signature}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            rj = res.json
+            self.assertTrue(rj['result']['status'])
+            self.assertFalse(rj['result']['value'])
+
+        # Now decline the auth request for real
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": tokenobj.token.serial,
+                                                 "nonce": challenge,
+                                                 "decline": 1,
+                                                 "signature": signature}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            self.assertTrue(res.json['result']['status'])
+            self.assertTrue(res.json['result']['value'])
+        # check, that the challenge does not exist anymore.
+        challengeobject_list = get_challenges(serial=tokenobj.token.serial,
+                                              transaction_id=transaction_id)
+        self.assertEqual(0, len(challengeobject_list))
 
     def test_05_strip_key(self):
         stripped_pubkey = strip_key(self.smartphone_public_key_pem)

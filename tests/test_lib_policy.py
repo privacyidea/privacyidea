@@ -23,7 +23,6 @@ from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.user import User
-import datetime
 from .base import PWFILE as FILE_PASSWORDS
 from .base import PWFILE2 as FILE_PASSWD
 
@@ -1512,6 +1511,29 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(sorted(d.get("set").get("*")), ["off", "on"])
         self.assertEqual(sorted(d.get("set").get("hello")), ["one", "three", "two"])
         self.assertEqual(sorted(d.get("set").get("hello2")), ["*"])
+
+    def test_40_disable_policy_client_remains(self):
+        pname = "client_must_not_vanish"
+        test_ip = "1.2.3.4"
+        set_policy(pname, scope=SCOPE.AUTH,
+                   action="otppin=none", client=test_ip)
+        p = PolicyClass()
+        plist = p.list_policies(name=pname)
+        self.assertIn(test_ip, plist[0].get("client"))
+        # Now disable the policy
+        enable_policy(pname, enable=False)
+        # client is still there
+        p = PolicyClass()
+        plist = p.list_policies(name=pname)
+        self.assertIn(test_ip, plist[0].get("client"))
+        # enable policy again
+        enable_policy(pname, enable=True)
+        # client is still there
+        p = PolicyClass()
+        plist = p.list_policies(name=pname)
+        self.assertIn(test_ip, plist[0].get("client"))
+        # clean up
+        delete_policy(pname)
 
 
 class PolicyMatchTestCase(MyTestCase):

@@ -21,7 +21,8 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_token_classes, get_token_prefix,
                                     get_machine_resolver_class_dict,
                                     get_privacyidea_node, get_privacyidea_nodes,
-                                    this, get_config_object, invalidate_config_object)
+                                    this, get_config_object, invalidate_config_object,
+                                    get_multichallenge_enrollable_tokentypes)
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
@@ -258,3 +259,14 @@ class ConfigTestCase(MyTestCase):
         invalidate_config_object()
         # ... and the new config object knows!
         self.assertEqual(get_from_config("some_key", "default"), "some_value")
+
+    def test_10_enrollable_tokentypes(self):
+        ttypes = get_multichallenge_enrollable_tokentypes()
+        self.assertIn("hotp", ttypes)
+        self.assertIn("totp", ttypes)
+        self.assertIn("sms", ttypes)
+        self.assertIn("email", ttypes)
+        self.assertIn("push", ttypes)
+        self.assertNotIn("tan", ttypes)
+        self.assertNotIn("daplug", ttypes)
+        self.assertNotIn("paper", ttypes)

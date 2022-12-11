@@ -16,7 +16,10 @@
                 <button class="btn btn-default unsorted" pi-sort-by="scope" translate>Scope</button>
                 <pi-filter ng-model="filter.scope" ng-change="$apply()"></pi-filter>
             </th>
-            <th translate>Action</th>
+             <th class="pifilter">
+                <button class="btn btn-default unsorted" pi-sort-by="action" translate>Action</button>
+                <pi-filter ng-model="filter.action_desc" ng-change="$apply()"></pi-filter>
+            </th>
             <th translate>Realm</th>
             <th translate>User</th>
             <th translate>Resolver</th>
@@ -53,7 +56,7 @@
                 {{ policy.scope }}
             </td>
             <td>
-                {{ policy.action | json | truncate: 120 }}
+                {{ policy.action_desc.join(' | ') | truncate: 120 }}
             </td>
             <td>
                 {{ policy.realm | json }}

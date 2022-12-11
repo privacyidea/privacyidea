@@ -1,0 +1,171 @@
+<div ng-controller="MicrosoftCAConnectorController">
+
+    <h2 class="form-signin-heading"
+        ng-show="connectorname" translate>Edit Microsoft CA Connector
+        {{ connectorname }}</h2>
+
+    <h2 class="form-signin-heading"
+        ng-hide="connectorname" translate>Create a new Microsoft CA Connector</h2>
+
+    <form name="formAddCA" role="form" validate
+          class="form-horizontal">
+
+        <div class="form-group">
+            <label for="connectorname" class="col-sm-3
+            control-label" translate>Connector name</label>
+
+            <div class="col-sm-9">
+                <input name="connectorname" id="connectorname"
+                       class="form-control"
+                       ng-model="connectorname" required
+                       placeholder="MyConnector1"
+                       ng-pattern="inputNamePatterns.simple.pattern"
+                       title="{{ inputNamePatterns.simple.title | translate }}"
+                       autofocus/>
+            </div>
+        </div>
+
+        <h3 translate>Base Config</h3>
+
+        <div class="form-group">
+            <label for="hostname"
+                   class="col-sm-3 control-label" translate>
+                Microsoft CA worker hostname</label>
+
+            <div class="col-sm-9">
+                <input name="hostname" id="hostname"
+                       class="form-control"
+                       ng-model="params.hostname" required
+                       placeholder="example.net"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="port"
+                   class="col-sm-3 control-label" translate>Microsoft CA worker port</label>
+
+            <div class="col-sm-9">
+                <input name="port" id="port"
+                       class="form-control"
+                       ng-model="params.port" required
+                       placeholder="1234"/>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="http_proxy"
+                   class="col-sm-3 control-label" translate>
+                Use HTTP proxy</label>
+            <div class="col-sm-9">
+                <input type="checkbox"
+                       name="http_proxy"
+                       ng-model="params['http_proxy']"
+                       id="http_proxy">
+            </div>
+        </div>
+
+        <h3 translate>SSL Config</h3>
+
+        <div class="form-group">
+            <label for="use_ssl"
+                   class="col-sm-3 control-label" translate>
+                Use SSL</label>
+            <div class="col-sm-9">
+                <input type="checkbox"
+                       name="use_ssl"
+                       ng-model="params['use_ssl']"
+                       id="use_ssl">
+            </div>
+        </div>
+
+        <div class="form-group" ng-show="params.use_ssl">
+            <label for="ssl_ca_cert"
+                   class="col-sm-3 control-label" translate>
+                CA certificate (filename)</label>
+
+            <div class="col-sm-9">
+                <input name="ssl_ca_cert" id="ssl_ca_cert"
+                       class="form-control"
+                       ng-model="params.ssl_ca_cert"
+                       placeholder="/etc/privacyidea/ca/ca.crt"/>
+            </div>
+        </div>
+
+        <div class="form-group" ng-show="params.use_ssl">
+            <label for="ssl_client_cert"
+                   class="col-sm-3 control-label" translate>
+                Client certificate (filename)</label>
+
+            <div class="col-sm-9">
+                <input name="ssl_client_cert" id="ssl_client_cert"
+                       class="form-control"
+                       ng-model="params.ssl_client_cert"
+                       placeholder="/etc/privacyidea/ca/privacyidea.crt"/>
+            </div>
+        </div>
+
+        <div class="form-group" ng-show="params.use_ssl">
+            <label for="ssl_client_key"
+                   class="col-sm-3 control-label" translate>
+                Client private key (filename)</label>
+
+            <div class="col-sm-9">
+                <input name="ssl_client_key" id="ssl_client_key"
+                       class="form-control"
+                       ng-model="params.ssl_client_key"
+                       placeholder="/etc/privacyidea/ca/privacyidea.key"/>
+            </div>
+        </div>
+
+        <div class="form-group" ng-show="params.use_ssl">
+            <label for="ssl_client_key_password"
+                   class="col-sm-3 control-label" translate>
+                Password of encrypted client private key</label>
+
+            <div class="col-sm-9">
+                <input type=password
+                       name="ssl_client_key_password" id="ssl_client_key_password"
+                       class="form-control"
+                       ng-model="params.ssl_client_key_password"
+                       placeholder="top secret"/>
+            </div>
+        </div>
+
+        <!-- -->
+
+        <div class="form-group">
+            <label class="col-sm-3 control-label" translate>
+                CA specific options</label>
+            <div class="col-sm-9">
+                <button ng-click="getCASpecificOptions('microsoft')"
+                        ng-enabled="params.port && params.hostname"
+                        class="btn btn-success" translate>Get available CAs
+                </button>
+            </div>
+        </div>
+
+        <div class="form-group" ng-show="available_cas">
+            <label for="available_cas"
+                   class="col-sm-3 control-label" translate>
+                Domain CA</label>
+            <div class="col-sm-9">
+                <select class="form-control"
+                    id="available_cas"
+                    ng-model="params.ca" required
+                    ng-options="ca as ca for ca in available_cas"
+                    ng-change="getHandlerActions()"
+                    >
+            </select>
+            </div>
+        </div>
+
+        <div class="text-center" ng-show="checkRight('caconnectorwrite')">
+            <button ng-click="setCAConnector()"
+                    ng-disabled="formAddCA.$invalid"
+                    class="btn btn-primary" translate>Save CA
+            </button>
+        </div>
+
+    </form>
+
+</div>

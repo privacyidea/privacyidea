@@ -29,7 +29,7 @@ myApp.controller("auditController", ["AuditFactory", "$scope", "$rootScope",
                                                $stateParams, $http, AuthFactory,
                                                instanceUrl, $location, gettextCatalog) {
     $scope.params = {sortorder: "desc",
-                     page_size: 10,
+                     page_size: $scope.audit_page_size,
                      page: 1};
     $scope.instanceUrl = instanceUrl;
     var df = "yyyy-MM-dd HH:mm:ss";

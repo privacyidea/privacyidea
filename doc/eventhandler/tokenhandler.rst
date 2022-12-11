@@ -46,6 +46,8 @@ enable
 The token which was identified in the request will be enabled
 if all conditions are matched.
 
+.. _event_token_enroll:
+
 enroll
 ......
 
@@ -204,6 +206,18 @@ Sets a random PIN for the handled token. The PIN is then added to the response i
 Please take care, that probably the PIN needs to be removed from the response
 using the *response mangler handler* after
 handling it with the notification handler.
+
+add tokengroup
+..............
+
+The token is assigned to the given tokengroup.
+
+.. Note:: A token can be assigned to several different tokengroups at the same time.
+
+remove tokengroup
+.................
+
+The token is unassigned from the given tokengroup.
 
 Code
 ~~~~

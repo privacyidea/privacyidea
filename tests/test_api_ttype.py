@@ -31,10 +31,6 @@ DICT_FILE = "tests/testdata/dictionary"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
 CLIENT_FILE = "tests/testdata/google-services.json"
 FB_CONFIG_VALS = {
-    FIREBASE_CONFIG.API_KEY: "1",
-    FIREBASE_CONFIG.APP_ID: "2",
-    FIREBASE_CONFIG.PROJECT_NUMBER: "3",
-    FIREBASE_CONFIG.PROJECT_ID: "test-123456",
     FIREBASE_CONFIG.JSON_CONFIG: FIREBASE_FILE}
 REGISTRATION_URL = "http://test/ttype/push"
 TTL = "10"
@@ -85,6 +81,17 @@ class TtypeAPITestCase(MyApiTestCase):
             self.assertTrue(len(auditdata) > 0)
             self.assertEqual(auditdata[0].get("token_type"), "u2f")
 
+    def test_03_wrong(self):
+        # Test the ttype endpoint for wrong ttype, here /ttype/wrong
+        init_token({"serial": "TIQR1",
+                    "type": "tiqr"}, User("cornelius", self.realm1))
+        with self.app.test_request_context('/ttype/wrong',
+                                           method='POST',
+                                           data={"action": "metadata",
+                                                 "serial": "TIQR1",
+                                                 "session": "12345"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res.status_code)
 
 class TtypePushAPITestCase(MyApiTestCase):
     """
@@ -173,9 +180,6 @@ class TtypePushAPITestCase(MyApiTestCase):
             self.assertTrue("pushurl" in detail)
             # check that the new URL contains the serial number
             self.assertTrue("&serial=PIPU" in detail.get("pushurl").get("value"))
-            self.assertTrue("appid=" in detail.get("pushurl").get("value"))
-            self.assertTrue("appidios=" in detail.get("pushurl").get("value"))
-            self.assertTrue("apikeyios=" in detail.get("pushurl").get("value"))
             self.assertFalse("otpkey" in detail)
             enrollment_credential = detail.get("enrollment_credential")
 

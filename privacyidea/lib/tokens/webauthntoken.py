@@ -31,10 +31,9 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.error import ParameterError, RegistrationError, PolicyError
+from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
-from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode, WebAuthnRegistrationResponse,
                                              ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
                                              WebAuthnMakeCredentialOptions, WebAuthnAssertionOptions, WebAuthnUser,
@@ -46,7 +45,7 @@ import logging
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.lib.utils import hexlify_and_unicode, is_true
 
 __doc__ = """
 WebAuthn  is the Web Authentication API specified by the FIDO Alliance.
@@ -78,44 +77,69 @@ The enrollment/registering can be completely performed within privacyIDEA.
 But if you want to enroll the WebAuthn token via the REST API you need to do
 it in two steps:
 
-Step 1
-~~~~~~
+**Step 1**
 
 .. sourcecode:: http
 
     POST /token/init HTTP/1.1
-    Host: example.com
+    Host: <privacyIDEA server>
     Accept: application/json
-    
+
     type=webauthn
-    
-This step returns a nonce, a relying party (containing a name and an ID
-generated from your domain), and a serial number, along with a transaction ID,
-and a message to display to the user. It will also pass some additional options
+    user=<username>
+
+The request returns:
+
+.. sourcecode:: http
+
+    HTTP/1.1 200 OK
+    Content-Type: application/json
+
+    {
+        "detail": {
+            "serial": "<serial number>",
+            "webAuthnRegisterRequest": {
+                "attestation": "direct",
+                "authenticatorSelection": {
+                    "userVerification": "preferred"
+                },
+                "displayName": "<user.resolver@realm>",
+                "message": "Please confirm with your WebAuthn token",
+                "name": "<username>",
+                "nonce": "<nonce>",
+                "pubKeyCredAlgorithms": [
+                    {
+                        "alg": -7,
+                        "type": "public-key"
+                    },
+                    {
+                        "alg": -37,
+                        "type": "public-key"
+                    }
+                ],
+                "relyingParty": {
+                    "id": "<relying party ID>",
+                    "name": "<relying party name>"
+                },
+                "serialNumber": "<serial number>",
+                "timeout": 60000,
+                "transaction_id": "<transaction ID>"
+            }
+        },
+        "result": {
+            "status": true,
+            "value": true
+        },
+        "version": "<privacyIDEA version>"
+    }
+
+This step returns a *webAuthnRegisterRequest* which contains a nonce, a relying party (containing a
+name and an ID generated from your domain), a serial number along with a transaction ID
+and a message to display to the user. It will also contain some additional options
 regarding timeout, which authenticators are acceptable, and what key types are
 acceptable to the server.
 
-Step 2
-~~~~~~
-
-.. sourcecode:: http
-
-    POST /token/init HTTP/1.1
-    Host: example.com
-    Accept: application/json
-    
-    type=webauthn
-    transaction_id=<transaction_id>
-    description=<description>
-    clientdata=<clientDataJSON>
-    regdata=<attestationObject>
-    registrationclientextensions=<registrationClientExtensions>
-
-*clientDataJSON* and *attestationObject* are the values returned by the
-WebAuthn authenticator. *description* is an optional description string for 
-the new token.
-
-You need to call the javascript function
+With the received data You need to call the javascript function
 
 .. sourcecode:: javascript
 
@@ -129,16 +153,7 @@ You need to call the javascript function
                 name: <name>,
                 displayName: <displayName>
             },
-            pubKeyCredParams: [
-                {
-                    alg: <preferredAlgorithm>,
-                    type: "public-key"
-                },
-                {
-                    alg: <alternativeAlgorithm>,
-                    type: "public-key"
-                }
-            ],
+            pubKeyCredParams: <pubKeyCredAlgorithms>,
             authenticatorSelection: <authenticatorSelection>,
             timeout: <timeout>,
             attestation: <attestation>,
@@ -149,11 +164,11 @@ You need to call the javascript function
         .then(function(credential) { <responseHandler> })
         .catch(function(error) { <errorHandler> });
 
-Here *nonce*, *relyingParty*, *serialNumber*, *preferredAlgorithm*,
-*alternativeAlgorithm*, *authenticatorSelection*, *timeout*, *attestation*,
+Here *nonce*, *relyingParty*, *serialNumber*, *pubKeyCredAlgorithms*,
+*authenticatorSelection*, *timeout*, *attestation*,
 *authenticatorSelectionList*, *name*, and *displayName* are the values
 provided by the server in the *webAuthnRegisterRequest* field in the response
-from the first step. *alternativeAlgorithm*, *authenticatorSelection*,
+from the first step. *authenticatorSelection*,
 *timeout*, *attestation*, and *authenticatorSelectionList* are optional. If
 *attestation* is not provided, the client should default to `direct`
 attestation. If *timeout* is not provided, it may be omitted, or a sensible
@@ -170,10 +185,30 @@ company-provided token.
 
 The *responseHandler* needs to then send the *clientDataJSON*,
 *attestationObject*, and *registrationClientExtensions* contained in the
-*response* field of the *credential* (2. step) back to the server. If
+*response* field of the *credential* back to the server. If
 enrollment succeeds, the server will send a response with a
 *webAuthnRegisterResponse* field, containing a *subject* field with the
 description of the newly created token.
+
+
+**Step 2**
+
+.. sourcecode:: http
+
+    POST /token/init HTTP/1.1
+    Host: <privacyIDEA server>
+    Accept: application/json
+
+    type=webauthn
+    transaction_id=<transaction_id>
+    description=<description>
+    clientdata=<clientDataJSON>
+    regdata=<attestationObject>
+    registrationclientextensions=<registrationClientExtensions>
+
+The values *clientDataJSON* and *attestationObject* are returned by the
+WebAuthn authenticator. *description* is an optional description string for
+the new token.
 
 The server expects the *clientDataJSON* and *attestationObject* encoded as
 web-safe base64 as defined by the WebAuthn standard. This encoding is similar
@@ -181,7 +216,7 @@ to standard base64, but '-' and '_' should be used in the alphabet instead of
 '+' and '/', respectively, and any padding should be omitted.
 
 The *registrationClientExtensions* are optional and should simply be omitted,
-if the client does not provide them. It the *registrationClientExtensions* are
+if the client does not provide them. If the *registrationClientExtensions* are
 available, they must be encoded as a utf-8 JSON string, then sent to the server
 as web-safe base64.
 
@@ -208,52 +243,61 @@ Get the challenge (using /validate/check)
 The /validate/check endpoint can be used to trigger a challenge using the PIN
 for the token (without requiring any special permissions).
 
-**Request**
+**Request:**
 
 .. sourcecode:: http
 
     POST /validate/check HTTP/1.1
-    Host: example.com
+    Host: <privacyIDEA server>
     Accept: application/json
-    
+
     user=<username>
     pass=<password>
-    
-**Response**
+
+**Response:**
 
 .. sourcecode:: http
 
     HTTP/1.1 200 OK
     Content-Type: application/json
-    
+
     {
         "detail": {
             "attributes": {
                 "hideResponseInput": true,
-                "img": <imageUrl>,
+                "img": "<image URL>",
                 "webAuthnSignRequest": {
-                    "challenge": <nonce>,
-                    "allowCredentials": [{
-                        "id": <credentialId>,
-                        "type": <credentialType>,
-                        "transports": <allowedTransports>,
-                    }],
-                    "rpId": <relyingPartyId>,
-                    "userVerification": <userVerificationRequirement>,
-                    "timeout": <timeout>
+                    "allowCredentials": [
+                        {
+                            "id": "<credential ID>",
+                            "transports": [
+                                "<allowed transports>"
+                            ],
+                            "type": "<credential type>"
+                        }
+                    ],
+                    "challenge": "<nonce>",
+                    "rpId": "<relying party ID>",
+                    "timeout": 60000,
+                    "userVerification": "<user verification requirement>"
                 }
             },
+            "client_mode": "webauthn",
             "message": "Please confirm with your WebAuthn token",
-            "transaction_id": <transactionId>
+            "serial": "<token serial>",
+            "transaction_id": "<transaction ID>",
+            "type": "webauthn"
         },
         "id": 1,
         "jsonrpc": "2.0",
         "result": {
+            "authentication": "CHALLENGE",
             "status": true,
             "value": false
         },
-        "versionnumber": <privacyIDEAversion>
+        "version": "<privacyIDEA version>"
     }
+
 
 Get the challenge (using /validate/triggerchallenge)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -266,13 +310,13 @@ using a service account (without requiring the PIN for the token).
 .. sourcecode:: http
 
     POST /validate/triggerchallenge HTTP/1.1
-    Host: example.com
+    Host: <privacyIDEA server>
     Accept: application/json
     PI-Authorization: <authToken>
-    
+
     user=<username>
     serial=<tokenSerial>
-    
+
 Providing the *tokenSerial* is optional. If just a user is provided, a
 challenge will be triggered for every challenge response token the user has.
 
@@ -282,23 +326,24 @@ challenge will be triggered for every challenge response token the user has.
 
     HTTP/1.1 200 OK
     Content-Type: application/json
-    
-    
+
     {
         "detail": {
             "attributes": {
                 "hideResponseInput": true,
-                "img": <imageUrl>,
+                "img": "<image URL>",
                 "webAuthnSignRequest": {
-                    "challenge": <nonce>,
+                    "challenge": "<nonce>",
                     "allowCredentials": [{
-                        "id": <credentialId>,
-                        "type": <credentialType>,
-                        "transports": <allowedTransports>,
+                        "id": "<credential ID>",
+                        "transports": [
+                            "<allowed transports>"
+                        ],
+                        "type": "<credential type>",
                     }],
-                    "rpId": <relyingPartyId>,
-                    "userVerification": <userVerificationRequirement>,
-                    "timeout": <timeout>
+                    "rpId": "<relying party ID>",
+                    "userVerification": "<user verification requirement>",
+                    "timeout": 60000
                 }
             },
             "message": "Please confirm with your WebAuthn token",
@@ -306,28 +351,29 @@ challenge will be triggered for every challenge response token the user has.
             "multi_challenge": [{
                 "attributes": {
                     "hideResponseInput": true,
-                    "img": <imageUrl>,
+                    "img": "<image URL>",
                     "webAuthnSignRequest": {
-                        "challenge": <nonce>,
+                        "challenge": "<nonce>",
                         "allowCredentials": [{
-                            "id": <credentialId>,
-                            "type": <credentialType>,
-                            "transports": <allowedTransports>,
+                            "id": "<credential ID>",
+                            "transports": [
+                                "<allowedTransports>"
+                            ],
+                            "type": "<credential type>",
                         }],
-                        "rpId": <relyingPartyId>,
-                        "userVerification": <userVerificationRequirement>,
-                        "timeout": <timeout>
+                        "rpId": "<relying party ID>",
+                        "userVerification": "<user verification requirement>",
+                        "timeout": 60000
                     }
                 },
                 "message": "Please confirm with your WebAuthn token",
-                "serial": <tokenSerial>,
-                "transaction_id": <transactionId>,
+                "serial": "<token serial>",
+                "transaction_id": "<transaction ID>",
                 "type": "webauthn"
             }],
-            "serial": <tokenSerial>,
-            "threadid": <threadId>,
-            "transaction_id": <transactionId>,
-            "transaction_ids": [<transactionId>],
+            "serial": "<token serial>",
+            "transaction_id": "<transaction ID>",
+            "transaction_ids": ["<transaction IDs>"],
             "type": "webauthn"
         },
         "id": 1,
@@ -336,15 +382,15 @@ challenge will be triggered for every challenge response token the user has.
             "status": true,
             "value": 1
         },
-        "versionnumber": <privacyIDEAversion>
+        "version": "<privacyIDEA version>"
     }
-    
+
 Send the Response
 ~~~~~~~~~~~~~~~~~
 
 The application now needs to call the javascript function
-*navigator.credentials.get* with *publicKeyCredentialRequestOptions* built using
-the *nonce*, *credentialId*, *allowedTransports*, *userVerificationRequirement*
+*navigator.credentials.get* with the *publicKeyCredentialRequestOptions* built
+using the *nonce*, *credentialId*, *allowedTransports*, *userVerificationRequirement*
 and *timeout* from the server.  The timeout is optional and may be omitted, if
 not provided, the client may also pick a sensible default. Please note that the
 nonce will be a binary, encoded using the web-safe base64 algorithm specified by
@@ -394,7 +440,7 @@ native encoding of the language (usually utf-16).
     POST /validate/check HTTP/1.1
     Host: example.com
     Accept: application/json
-    
+
     user=<user>
     pass=
     transaction_id=<transaction_id>
@@ -418,28 +464,20 @@ DEFAULT_ALLOWED_TRANSPORTS = "usb ble nfc internal"
 DEFAULT_TIMEOUT = 60
 DEFAULT_USER_VERIFICATION_REQUIREMENT = 'preferred'
 DEFAULT_AUTHENTICATOR_ATTACHMENT = 'either'
-DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = 'ecdsa_preferred'
+DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = ['ecdsa', 'rsassa-pss']
 DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL = 'untrusted'
 DEFAULT_AUTHENTICATOR_ATTESTATION_FORM = 'direct'
 DEFAULT_CHALLENGE_TEXT_AUTH = _(u'Please confirm with your WebAuthn token ({0!s})')
 DEFAULT_CHALLENGE_TEXT_ENROLL = _(u'Please confirm with your WebAuthn token')
 
-PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS = {
-    'ecdsa_preferred': [
-        COSE_ALGORITHM.ES256,
-        COSE_ALGORITHM.PS256
-    ],
-    'ecdsa_only': [
-        COSE_ALGORITHM.ES256
-    ],
-    'rsassa-pss_preferred': [
-        COSE_ALGORITHM.PS256,
-        COSE_ALGORITHM.ES256
-    ],
-    'rsassa-pss_only': [
-        COSE_ALGORITHM.PS256
-    ]
+PUBLIC_KEY_CREDENTIAL_ALGORITHMS = {
+    'ecdsa': COSE_ALGORITHM.ES256,
+    'rsassa-pss': COSE_ALGORITHM.PS256,
+    'rsassa-pkcs1v1_5': COSE_ALGORITHM.RS256
 }
+# since in Python < 3.7 the insert order of a dictionary is not guaranteed, we
+# need a list to define the proper order
+PUBKEY_CRED_ALGORITHMS_ORDER = ['ecdsa', 'rsassa-pss', 'rsassa-pkcs1v1_5']
 
 log = logging.getLogger(__name__)
 optional = True
@@ -474,10 +512,11 @@ class WEBAUTHNACTION(object):
     AUTHENTICATOR_ATTACHMENT = 'webauthn_authenticator_attachment'
     AUTHENTICATOR_SELECTION_LIST = 'webauthn_authenticator_selection_list'
     USER_VERIFICATION_REQUIREMENT = 'webauthn_user_verification_requirement'
-    PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = 'webauthn_public_key_credential_algorithm_preference'
+    PUBLIC_KEY_CREDENTIAL_ALGORITHMS = 'webauthn_public_key_credential_algorithms'
     AUTHENTICATOR_ATTESTATION_FORM = 'webauthn_authenticator_attestation_form'
     AUTHENTICATOR_ATTESTATION_LEVEL = 'webauthn_authenticator_attestation_level'
     REQ = 'webauthn_req'
+    AVOID_DOUBLE_REGISTRATION = 'webauthn_avoid_double_registration'
 
 
 class WEBAUTHNINFO(object):
@@ -605,6 +644,11 @@ class WebAuthnTokenClass(TokenClass):
                     }
                 },
                 SCOPE.ENROLL: {
+                    WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION: {
+                        'type': 'bool',
+                        'desc': _("One webauthn token can not be registered to a user more than once."),
+                        'group': WEBAUTHNGROUP.WEBAUTHN
+                    },
                     WEBAUTHNACTION.RELYING_PARTY_NAME: {
                         'type': 'str',
                         'desc': _("A human readable name for the organization rolling out WebAuthn tokens."),
@@ -651,17 +695,15 @@ class WebAuthnTokenClass(TokenClass):
                             "discouraged"
                         ]
                     },
-                    WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE: {
+                    WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS: {
                         'type': 'str',
-                        'desc': _("Which algorithm to use for creating public key credentials for WebAuthn tokens. "
-                                  "Default: ecdsa_preferred"),
+                        'desc': _("Which algorithm are available to use for creating public key "
+                                  "credentials for WebAuthn tokens. (Default: [{0!s}], Order: "
+                                  "[{1!s}]".format(', '.join(DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
+                                                   ', '.join(PUBKEY_CRED_ALGORITHMS_ORDER))),
                         'group': WEBAUTHNGROUP.WEBAUTHN,
-                        'value': [
-                            "ecdsa_preferred",
-                            "ecdsa_only",
-                            "rsassa-pss_preferred",
-                            "rsassa-pss_only"
-                        ]
+                        'multiple': True,
+                        'value': list(PUBLIC_KEY_CREDENTIAL_ALGORITHMS.keys())
                     },
                     WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM: {
                         'type': 'str',
@@ -832,7 +874,7 @@ class WebAuthnTokenClass(TokenClass):
 
             # Since we are still enrolling the token, there should be exactly one challenge.
             if not len(challengeobject_list):
-                raise RegistrationError(
+                raise EnrollmentError(
                     "The enrollment challenge does not exist or has timed out for {0!s}".format(serial))
             challengeobject = challengeobject_list[0]
             challenge = binascii.unhexlify(challengeobject.challenge)
@@ -841,56 +883,54 @@ class WebAuthnTokenClass(TokenClass):
             #
             # All data is parsed and verified. If any errors occur an exception
             # will be raised.
-            web_authn_credential = WebAuthnRegistrationResponse(
-                rp_id=rp_id,
-                origin=http_origin,
-                registration_response={
-                    'clientData': client_data,
-                    'attObj': reg_data,
-                    'registrationClientExtensions':
-                        webauthn_b64_decode(registration_client_extensions)
+            try:
+                webauthn_credential = WebAuthnRegistrationResponse(
+                    rp_id=rp_id,
+                    origin=http_origin,
+                    registration_response={
+                        'clientData': client_data,
+                        'attObj': reg_data,
+                        'registrationClientExtensions':
+                            webauthn_b64_decode(registration_client_extensions)
                             if registration_client_extensions
                             else None
-                },
-                challenge=webauthn_b64_encode(challenge),
-                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[attestation_level],
-                trust_anchor_dir=get_from_config(WEBAUTHNCONFIG.TRUST_ANCHOR_DIR),
-                uv_required=uv_req == USER_VERIFICATION_LEVEL.REQUIRED
-            ).verify([
-                token.decrypt_otpkey() for token in get_tokens(tokentype=self.type)
-            ])
+                    },
+                    challenge=webauthn_b64_encode(challenge),
+                    attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[attestation_level],
+                    trust_anchor_dir=get_from_config(WEBAUTHNCONFIG.TRUST_ANCHOR_DIR),
+                    uv_required=uv_req == USER_VERIFICATION_LEVEL.REQUIRED
+                ).verify([
+                    # TODO: this might get slow when a lot of webauthn tokens are registered
+                    token.decrypt_otpkey() for token in get_tokens(tokentype=self.type) if token.get_serial() != self.get_serial()
+                ])
+            except Exception as e:
+                log.warning('Enrollment of {0!s} token failed: '
+                            '{1!s}!'.format(self.get_class_type(), e))
+                raise EnrollmentError("Could not enroll {0!s} token!".format(self.get_class_type()))
 
-            self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(web_authn_credential.credential_id)))
-            self.set_otp_count(web_authn_credential.sign_count)
+            self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(webauthn_credential.credential_id)))
+            self.set_otp_count(webauthn_credential.sign_count)
             self.add_tokeninfo(WEBAUTHNINFO.PUB_KEY,
-                               hexlify_and_unicode(webauthn_b64_decode(web_authn_credential.public_key)))
+                               hexlify_and_unicode(webauthn_b64_decode(webauthn_credential.public_key)))
             self.add_tokeninfo(WEBAUTHNINFO.ORIGIN,
-                               web_authn_credential.origin)
+                               webauthn_credential.origin)
             self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_LEVEL,
-                               web_authn_credential.attestation_level)
+                               webauthn_credential.attestation_level)
 
             self.add_tokeninfo(WEBAUTHNINFO.AAGUID,
-                               hexlify_and_unicode(web_authn_credential.aaguid))
+                               hexlify_and_unicode(webauthn_credential.aaguid))
 
             # Add attestation info.
-            if web_authn_credential.attestation_cert:
-                # attestation_cert is of type X509. If you get warnings from your IDE
-                # here, it is because your IDE mistakenly assumes it to be of type PKey,
-                # due to a bug in pyOpenSSL 18.0.0. This bug is – however – purely
-                # cosmetic (a wrongly hinted return type in X509.from_cryptography()),
-                # and can be safely ignored.
-                #
-                # See also:
-                # https://github.com/pyca/pyopenssl/commit/4121e2555d07bbba501ac237408a0eea1b41f467
-                attestation_cert = crypto.X509.from_cryptography(web_authn_credential.attestation_cert)
+            if webauthn_credential.attestation_cert:
+                # attestation_cert is of type cryptography.x509.Certificate.
                 self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_ISSUER,
-                                   x509name_to_string(attestation_cert.get_issuer()))
+                                   webauthn_credential.attestation_cert.issuer.rfc4514_string())
                 self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_SUBJECT,
-                                   x509name_to_string(attestation_cert.get_subject()))
+                                   webauthn_credential.attestation_cert.subject.rfc4514_string())
                 self.add_tokeninfo(WEBAUTHNINFO.ATTESTATION_SERIAL,
-                                   attestation_cert.get_serial_number())
+                                   webauthn_credential.attestation_cert.serial_number)
 
-                cn = web_authn_credential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+                cn = webauthn_credential.attestation_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
                 automatic_description = cn[0].value if len(cn) else None
 
             # If no description has already been set, set the automatic description or the
@@ -948,6 +988,16 @@ class WebAuthnTokenClass(TokenClass):
                                   validitytime=self._get_challenge_validity_time())
             challenge.save()
 
+            credential_ids = []
+            if is_true(getParam(params, WEBAUTHNACTION.AVOID_DOUBLE_REGISTRATION, optional)):
+                # Get the other webauthn tokens of the user
+                webauthn_toks = get_tokens(tokentype=self.type, user=self.user)
+                # add their credential ids
+                for tok in webauthn_toks:
+                    if tok.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
+                        credential_id = tok.decrypt_otpkey()
+                        credential_ids.append(credential_id)
+
             public_key_credential_creation_options = WebAuthnMakeCredentialOptions(
                 challenge=webauthn_b64_encode(nonce),
                 rp_name=getParam(params,
@@ -969,14 +1019,15 @@ class WebAuthnTokenClass(TokenClass):
                                            WEBAUTHNACTION.USER_VERIFICATION_REQUIREMENT,
                                            required),
                 public_key_credential_algorithms=getParam(params,
-                                                          WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+                                                          WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
                                                           required),
                 authenticator_attachment=getParam(params,
                                                   WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT,
                                                   optional),
                 authenticator_selection_list=getParam(params,
                                                       WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST,
-                                                      optional)
+                                                      optional),
+                credential_ids=credential_ids
             ).registration_dict
 
             response_detail["webAuthnRegisterRequest"] = {
@@ -985,13 +1036,10 @@ class WebAuthnTokenClass(TokenClass):
                 "nonce": public_key_credential_creation_options["challenge"],
                 "relyingParty": public_key_credential_creation_options["rp"],
                 "serialNumber": public_key_credential_creation_options["user"]["id"],
-                "preferredAlgorithm": public_key_credential_creation_options["pubKeyCredParams"][0],
+                "pubKeyCredAlgorithms": public_key_credential_creation_options["pubKeyCredParams"],
                 "name": public_key_credential_creation_options["user"]["name"],
                 "displayName": public_key_credential_creation_options["user"]["displayName"]
             }
-            if len(public_key_credential_creation_options.get("pubKeyCredParams")) > 1:
-                response_detail["webAuthnRegisterRequest"]["alternativeAlgorithm"] \
-                    = public_key_credential_creation_options["pubKeyCredParams"][1]
             if public_key_credential_creation_options.get("authenticatorSelection"):
                 response_detail["webAuthnRegisterRequest"]["authenticatorSelection"] \
                     = public_key_credential_creation_options["authenticatorSelection"]
@@ -1004,6 +1052,9 @@ class WebAuthnTokenClass(TokenClass):
             if (public_key_credential_creation_options.get("extensions") or {}).get("authnSel"):
                 response_detail["webAuthnRegisterRequest"]["authenticatorSelectionList"] \
                     = public_key_credential_creation_options["extensions"]["authnSel"]
+            if public_key_credential_creation_options.get("excludeCredentials"):
+                response_detail["webAuthnRegisterRequest"]["excludeCredentials"] = \
+                    public_key_credential_creation_options.get("excludeCredentials")
 
             self.add_tokeninfo(WEBAUTHNINFO.RELYING_PARTY_ID,
                                public_key_credential_creation_options["rp"]["id"])
@@ -1131,7 +1182,7 @@ class WebAuthnTokenClass(TokenClass):
                       "image": user.icon_url}
 
         return True, message, db_challenge.transaction_id, reply_dict
-    
+
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
         """
@@ -1215,9 +1266,10 @@ class WebAuthnTokenClass(TokenClass):
                     getParam(options, WEBAUTHNACTION.REQ, optional)
             ):
                 log.warning(
-                    "The WebAuthn token {0!s} is not allowed to authenticate due to policy restriction {1!s}"
-                        .format(self.token.serial, WEBAUTHNACTION.REQ))
-                raise PolicyError("The WebAuthn token is not allowed to authenticate due to a policy restriction.")
+                    "The WebAuthn token {0!s} is not allowed to authenticate "
+                    "due to policy restriction {1!s}".format(self.token.serial, WEBAUTHNACTION.REQ))
+                raise PolicyError("The WebAuthn token is not allowed to "
+                                  "authenticate due to a policy restriction.")
 
             # Now we need to check, if a whitelist for AAGUIDs exists, and if
             # so, if this device is whitelisted. If not, we again raise a
@@ -1225,9 +1277,10 @@ class WebAuthnTokenClass(TokenClass):
             allowed_aaguids = getParam(options, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST, optional)
             if allowed_aaguids and self.get_tokeninfo(WEBAUTHNINFO.AAGUID) not in allowed_aaguids:
                 log.warning(
-                    "The WebAuthn token {0!s} is not allowed to authenticate due to policy restriction {1!s}"
-                        .format(self.token.serial, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST))
-                raise PolicyError("The WebAuthn token is not allowed to authenticate due to a policy restriction.")
+                    "The WebAuthn token {0!s} is not allowed to authenticate due to policy "
+                    "restriction {1!s}".format(self.token.serial, WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST))
+                raise PolicyError("The WebAuthn token is not allowed to "
+                                  "authenticate due to a policy restriction.")
 
             # All clear? Nice!
             return self.get_otp_count()

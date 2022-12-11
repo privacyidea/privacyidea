@@ -58,6 +58,7 @@ import base64
 import html
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from privacyidea.lib.error import TokenImportException
 from privacyidea.lib.utils import (modhex_decode, modhex_encode,
                                    hexlify_and_unicode, to_unicode, to_utf8,
                                    b64encode_and_unicode)
@@ -90,14 +91,6 @@ def _create_static_password(key_hex):
     password = modhex_encode(password_bin)
 
     return password
-
-
-class ImportException(Exception):
-    def __init__(self, description):
-        self.description = description
-
-    def __str__(self):
-        return ('{0!s}'.format(self.description))
 
 
 def getTagName(elem):
@@ -357,10 +350,10 @@ def parseSafeNetXML(xml):
         elem_tokencontainer = etree.fromstring(xml)
     except etree.ParseError as e:
         log.debug(traceback.format_exc())
-        raise ImportException('Could not parse XML data: {0!s}'.format(e))
+        raise TokenImportException('Could not parse XML data: {0!s}'.format(e))
 
     if getTagName(elem_tokencontainer) != "Tokens":
-        raise ImportException("No toplevel element Tokens")
+        raise TokenImportException("No toplevel element Tokens")
 
     for elem_token in list(elem_tokencontainer):
         SERIAL = None
@@ -437,13 +430,13 @@ def derive_key(xml, password):
     :return: The derived key, hexlified
     """
     if not password:
-        raise ImportException("The XML KeyContainer specifies a derived "
+        raise TokenImportException("The XML KeyContainer specifies a derived "
                               "encryption key, but no password given!")
 
     keymeth = xml.keycontainer.encryptionkey.derivedkey.keyderivationmethod
     derivation_algo = keymeth["algorithm"].split("#")[-1]
     if derivation_algo.lower() != "pbkdf2":
-        raise ImportException("We only support PBKDF2 as Key derivation "
+        raise TokenImportException("We only support PBKDF2 as Key derivation "
                               "function!")
     salt = keymeth.find("salt").text.strip()
     keylength = keymeth.find("keylength").text.strip()
@@ -488,7 +481,7 @@ def parsePSKCdata(xml_data,
     xml = strip_prefix_from_soup(BeautifulSoup(xml_data, "lxml"))
 
     if not xml.keycontainer:
-        raise ImportException("No KeyContainer found in PSKC data. Could not "
+        raise TokenImportException("No KeyContainer found in PSKC data. Could not "
                               "import any tokens.")
     if xml.keycontainer.encryptionkey and \
             xml.keycontainer.encryptionkey.derivedkey:
@@ -549,7 +542,7 @@ def parsePSKCdata(xml_data,
                 encryptionmethod = key.data.secret.encryptedvalue.encryptionmethod
                 enc_algorithm = encryptionmethod["algorithm"].split("#")[-1]
                 if enc_algorithm.lower() != "aes128-cbc":
-                    raise ImportException("We only import PSKC files with "
+                    raise TokenImportException("We only import PSKC files with "
                                           "AES128-CBC.")
                 enc_data = key.data.secret.encryptedvalue.ciphervalue.text
                 enc_data = enc_data.strip()
@@ -587,7 +580,7 @@ def parsePSKCdata(xml_data,
         except Exception as exx:
             log.error("Failed to import tokendata: {0!s}".format(exx))
             log.debug(traceback.format_exc())
-            raise ImportException("Failed to import tokendata. Wrong "
+            raise TokenImportException("Failed to import tokendata. Wrong "
                                   "encryption key? %s" % exx)
 
         if token["type"] in ["hotp", "totp"] and key.data.counter:

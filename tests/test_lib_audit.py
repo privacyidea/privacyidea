@@ -8,6 +8,7 @@ import datetime
 import os
 import types
 
+import sqlalchemy.engine
 from mock import mock
 
 from privacyidea.config import TestingConfig
@@ -304,6 +305,24 @@ class AuditTestCase(MyTestCase):
         audit_log = audit.search({"realm": "realm1"})
         self.assertEqual(audit_log.total, 1)
         self.assertEqual(audit_log.auditdata[0].get("sig_check"), "FAIL")
+
+        # check that SQLALCHEMY_ENGINE_OPTIONS get passed to create_engin()
+        with mock.patch('privacyidea.lib.auditmodules.sqlaudit.create_engine') as engine_mock:
+            cfg = self.app.config.copy()
+            cfg.update({'SQLALCHEMY_ENGINE_OPTIONS': {'foo': 'bar'}})
+            _audit = getAudit(cfg)
+            engine_mock.assert_called_once_with(AUDIT_DB, pool_size=20,
+                                                pool_recycle=600, foo='bar')
+
+        # check that PI_AUDIT_SQL_OPTIONS overwrite SQLALCHEMY_ENGINE_OPTIONS
+        with mock.patch('privacyidea.lib.auditmodules.sqlaudit.create_engine') as engine_mock:
+            cfg = self.app.config.copy()
+            cfg.update({'SQLALCHEMY_ENGINE_OPTIONS': {'foo': 'bar', 'temp': 100}})
+            cfg.update({'PI_AUDIT_SQL_OPTIONS': {'foo': 'baz'}})
+            _audit = getAudit(cfg)
+            engine_mock.assert_called_once_with(AUDIT_DB, pool_size=20,
+                                                pool_recycle=600, foo='baz')
+
         # TODO: add new audit entry and check for new style signature
         # remove the audit SQL URI from app config
         self.app.config.pop("PI_AUDIT_SQL_URI", None)

@@ -19,7 +19,8 @@ from privacyidea.models import (Token,
                                 EventHandlerCondition, PrivacyIDEAServer,
                                 ClientApplication, Subscription, UserCache,
                                 EventCounter, PeriodicTask, PeriodicTaskLastRun,
-                                PeriodicTaskOption, MonitoringStats, PolicyCondition, db)
+                                PeriodicTaskOption, MonitoringStats, PolicyCondition, db,
+                                Tokengroup, TokenTokengroup)
 from .base import MyTestCase
 from dateutil.tz import tzutc
 from datetime import datetime
@@ -230,7 +231,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(u'Hellö', t2.get_otpkey().getKey().decode('utf8'), t2)
 
         # key too long
-        k = os.urandom(256)
+        k = os.urandom(1500)
         t2.set_otpkey(k)
         self.assertGreater(len(t2.key_enc), Token.key_enc.property.columns[0].type.length)
 
@@ -1012,3 +1013,80 @@ class TokenModelTestCaseDeleting(MyTestCase):
         reso.delete()
         rc = ResolverConfig.query.filter_by(Value="this_very_specific_file_try_delete").first()
         self.assertIsNone(rc)
+
+
+class TokengroupTestCase(MyTestCase):
+
+    def test_01_create_update_delete_tokengroup(self):
+        tg = Tokengroup("gruppe1", "coolest group ever")
+        self.assertIsInstance(tg, Tokengroup)
+        rid = tg.save()
+        self.assertGreaterEqual(rid, 1)
+
+        # Test, if it does exist
+        r = Tokengroup.query.filter_by(name="gruppe1").all()
+        self.assertEqual(len(r), 1)
+        self.assertIsInstance(r[0], Tokengroup)
+
+        # delete
+        r = tg.delete()
+        self.assertEqual(r, rid)
+
+        # Test, if it is gone
+        r = Tokengroup.query.filter_by(name="gruppe1").all()
+        self.assertEqual(len(r), 0)
+
+    def test_02_assign_tokens_to_tokengroup(self):
+        # create token groups
+        tg1 = Tokengroup("gruppe1", "coolest group ever")
+        self.assertIsInstance(tg1, Tokengroup)
+        rid = tg1.save()
+        self.assertGreaterEqual(rid, 1)
+        tg2 = Tokengroup("gruppe2", "2nd group")
+        self.assertIsInstance(tg2, Tokengroup)
+        rid = tg2.save()
+        self.assertGreaterEqual(rid, 1)
+
+        # create tokens
+        tok1 = Token(tokentype="spass", serial="tok1")
+        tok1.save()
+        tok2 = Token(tokentype="spass", serial="tok2")
+        tok2.save()
+        self.assertEqual(tok1.serial, "tok1")
+        self.assertEqual(tok2.serial, "tok2")
+
+        # assign tokens to token groups
+        t = TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe1").save()
+        t = TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe2").save()
+        t = TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
+        ttg = TokenTokengroup.query.all()
+        self.assertEqual(len(ttg), 3)
+        # It does not change anything, if we try to save the same assignment!
+        t = TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
+        ttg = TokenTokengroup.query.all()
+        self.assertEqual(len(ttg), 3)
+
+        ttg = TokenTokengroup.query.filter_by(token_id=tok1.id).all()
+        self.assertEqual(len(ttg), 2)
+
+        ttg = TokenTokengroup.query.filter_by(token_id=tok2.id).all()
+        self.assertEqual(len(ttg), 1)
+
+        self.assertEqual(len(tok1.tokengroup_list), 2)
+        self.assertEqual(len(tok2.tokengroup_list), 1)
+
+        self.assertEqual(tok2.tokengroup_list[0].tokengroup.name, "gruppe2")
+
+        # remove tokengroups and check that tokentokengroups assignments are removed
+        tg1.delete()
+        ttg = TokenTokengroup.query.all()
+        self.assertEqual(len(ttg), 2)
+
+        tg2.delete()
+        ttg = TokenTokengroup.query.all()
+        self.assertEqual(len(ttg), 0)
+
+        # cleanup
+        tok1.delete()
+        tok2.delete()
+

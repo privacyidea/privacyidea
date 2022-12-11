@@ -235,20 +235,17 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
 
                 // tick selected handlerConditions, if type===multi
                 angular.forEach($scope.handlerConditions, function(condition, name){
-                     if (condition.type === "multi" && Object.keys($scope.conds).indexOf(name) >= 0) {
-                        //debug: console.log("The multi condition " + name + " is" +
-                        //    " configured! We need to tick the values.");
-                        var tickedConditions = $scope.conds[name].split(",");
-                        // Now we iterate over the possible values of this
-                        // condition
-                        var possibleValues = $scope.handlerConditions[name].value;
-                        for (var i=0; i<possibleValues.length; i++) {
-                            //debug: console.log("check " + possibleValues[i].name);
-                            if (tickedConditions.indexOf(
-                                $scope.handlerConditions[name].value[i].name) >= 0) {
-                                $scope.handlerConditions[name].value[i].ticked = true;
-                            }
-                        }
+                    if (condition.type === "multi"
+                        && Object.keys($scope.conds).indexOf(name) >= 0
+                        && $scope.conds[name].length > 0) {
+                        // multi value conditions are comma separated in one string
+                        let tickedConditions = $scope.conds[name].split(',').map(cond => {
+                            return cond.trim();
+                        });
+                        // Now we iterate over the given values and set them as `ticked`
+                        angular.forEach(tickedConditions, function (cond) {
+                            condition.value.find(x => x.name === cond).ticked = true;
+                        });
                     }
                     if ($scope.conditionGroups.indexOf(condition.group) < 0) {
                         $scope.conditionGroups.push(condition.group)
@@ -257,6 +254,14 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
             });
     };
 
+    // test if the accordion group should be open or closed
+    $scope.checkOpenConditionGroup = function(condition, conditionname, pattern) {
+        let pat = escapeRegexp(pattern);
+        let re = RegExp(pat, 'i');
+        return ($scope.conditionCheckBox[conditionname] ||
+                !$scope.onlySelectedVisible) &&
+            (re.test(conditionname) || re.test(condition.desc));
+    };
 
 
     $scope.handlerModuleChanged = function () {
@@ -271,5 +276,4 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
 
     $scope.getAvailableEvents();
     $scope.getHandlerModules();
-
 }]);

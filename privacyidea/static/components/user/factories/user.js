@@ -56,7 +56,7 @@ myApp.factory("UserFactory", ['AuthFactory', '$http', '$state', '$rootScope',
                             function(error) { AuthFactory.authError(error.data) });
             },
             deleteUser: function(resolver, username, callback) {
-                $http.delete(userUrl + "/" + resolver + "/" + username,
+                $http.delete(userUrl + "/" + resolver + "/" + encodeURIComponent(username),
                     {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).then(function(response) { callback(response.data)},
                             function(error) { AuthFactory.authError(error.data) });
@@ -87,7 +87,7 @@ myApp.factory("UserFactory", ['AuthFactory', '$http', '$state', '$rootScope',
                     function(error) {AuthFactory.authError(error.data)});
             },
             deleteCustomAttribute: function(username, realmname, key, callback) {
-                $http.delete(userUrl + "/attribute/" + key + "/" + username + "/" + realmname,
+                $http.delete(userUrl + "/attribute/" + encodeURIComponent(key) + "/" + encodeURIComponent(username) + "/" + realmname,
                     {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                     }).then(function(response) {callback(response.data)},
                     function(error) {AuthFactory.authError(error.data)});

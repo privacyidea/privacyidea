@@ -1,0 +1,27 @@
+<div class="row" ng-controller="tokengroupController">
+    <div class="col-lg-3">
+        <div class="pa-sidebar panel">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.tokengroup.list')}">
+                    <a ui-sref="config.tokengroup.list"
+                            translate>List Tokengroup definitions</a></li>
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.tokengroup.add')}"
+                    ng-show="checkRight('tokengroup_add')">
+                    <a ui-sref="config.tokengroup.add" translate>
+                        New Tokengroup definition</a></li>
+                <hr>
+                <li role="presentation">
+                    <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                       privacyideaVersionNumber+'/configuration/tokengroups.html'}}">
+                        <span class="glyphicon glyphicon-info-sign"></span>
+                        <span translate>Help on Tokengroups</span></a></li>
+            </ul>
+        </div>
+
+    </div>
+    <div ui-view class="col-lg-9 slide panel">
+    </div>
+</div>
+

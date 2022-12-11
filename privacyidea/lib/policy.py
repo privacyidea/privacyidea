@@ -175,7 +175,8 @@ import six
 import logging
 from ..models import (Policy, db, save_config_timestamp, Token)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
-                                    get_config_object, get_privacyidea_node)
+                                    get_config_object, get_privacyidea_node,
+                                    get_multichallenge_enrollable_tokentypes)
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
@@ -203,6 +204,7 @@ required = False
 
 DEFAULT_ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=it.netknights.piauthenticator"
 DEFAULT_IOS_APP_URL = "https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301"
+DEFAULT_PREFERRED_CLIENT_MODE = ['interactive', 'webauthn', 'poll', 'u2f']
 
 
 class SCOPE(object):
@@ -228,6 +230,7 @@ class ACTION(object):
     AUDIT = "auditlog"
     AUDIT_AGE = "auditlog_age"
     AUDIT_DOWNLOAD = "auditlog_download"
+    AUDITPAGESIZE = "audit_page_size"
     AUTHITEMS = "fetch_authentication_items"
     AUTHMAXSUCCESS = "auth_max_success"
     AUTHMAXFAIL = "auth_max_fail"
@@ -255,6 +258,7 @@ class ACTION(object):
     IMPORT = "importtokens"
     LASTAUTH = "last_auth"
     LOGINMODE = "login_mode"
+    LOGOUT_REDIRECT = "logout_redirect"
     LOGOUTTIME = "logout_time"
     LOSTTOKEN = 'losttoken'
     LOSTTOKENPWLEN = "losttoken_PW_length"
@@ -352,9 +356,11 @@ class ACTION(object):
     CHANGE_PIN_EVERY = "change_pin_every"
     CHANGE_PIN_VIA_VALIDATE = "change_pin_via_validate"
     RESYNC_VIA_MULTICHALLENGE = "resync_via_multichallenge"
+    ENROLL_VIA_MULTICHALLENGE = "enroll_via_multichallenge"
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
+    INCREASE_FAILCOUNTER_ON_CHALLENGE = "increase_failcounter_on_challenge"
     ENROLLPIN = "enrollpin"
     MANAGESUBSCRIPTION = "managesubscription"
     SEARCH_ON_ENTER = "search_on_enter"
@@ -378,6 +384,11 @@ class ACTION(object):
     SET_USER_ATTRIBUTES = "set_custom_user_attributes"
     DELETE_USER_ATTRIBUTES = "delete_custom_user_attributes"
     VERIFY_ENROLLMENT = "verify_enrollment"
+    TOKENGROUPS = "tokengroups"
+    TOKENGROUP_LIST = "tokengroup_list"
+    TOKENGROUP_ADD = "tokengroup_add"
+    TOKENGROUP_DELETE = "tokengroup_delete"
+    PREFERREDCLIENTMODE = "preferred_client_mode"
 
 
 class TYPE(object):
@@ -405,6 +416,7 @@ class GROUP(object):
     MODIFYING_RESPONSE = "modifying response"
     CONDITIONS = "conditions"
     SETTING_ACTIONS = "setting actions"
+    TOKENGROUP= "tokengroup"
 
 
 class MAIN_MENU(object):
@@ -574,8 +586,8 @@ class PolicyClass(object):
             if searchvalue is not None:
                 reduced_policies = [policy for policy in reduced_policies if
                                     policy.get(searchkey) == searchvalue]
-                log.debug("Policies after matching {1!s}: {0!s}".format(
-                    reduced_policies, searchkey))
+                log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
+                    reduced_policies, searchkey, searchvalue))
 
         p = [("action", action), ("user", user), ("realm", realm)]
         # If this is an admin-policy, we also do check the adminrealm
@@ -599,8 +611,8 @@ class PolicyClass(object):
                         if value_found and not value_excluded:
                             new_policies.append(policy)
                 reduced_policies = new_policies
-                log.debug("Policies after matching {1!s}: {0!s}".format(
-                    reduced_policies, searchkey))
+                log.debug(u"Policies after matching {1!s}={2!s}: {0!s}".format(
+                    reduced_policies, searchkey, searchvalue))
 
         # We need to act individually on the resolver key word
         # We either match the resolver exactly or we match another resolver (
@@ -634,8 +646,8 @@ class PolicyClass(object):
                         new_policies.append(policy)
 
             reduced_policies = new_policies
-            log.debug("Policies after matching resolver: {0!s}".format(
-                reduced_policies))
+            log.debug("Policies after matching resolver={1!s}: {0!s}".format(
+                reduced_policies, resolver))
 
         # Match the privacyIDEA node
         if pinode is not None:
@@ -646,7 +658,7 @@ class PolicyClass(object):
                     new_policies.append(policy)
 
             reduced_policies = new_policies
-            log.debug("Policies after matching pinode: {0!s}".format(reduced_policies))
+            log.debug("Policies after matching pinode={1!s}: {0!s}".format(reduced_policies, pinode))
 
         # Match the client IP.
         # Client IPs may be direct match, may be located in subnets or may
@@ -676,8 +688,8 @@ class PolicyClass(object):
                 if not policy.get("client"):
                     new_policies.append(policy)
             reduced_policies = new_policies
-            log.debug("Policies after matching client: {0!s}".format(
-                reduced_policies))
+            log.debug("Policies after matching client={1!s}: {0!s}".format(
+                reduced_policies, client))
 
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
@@ -1344,11 +1356,11 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         resolver = ", ".join(resolver)
     if type(client) == list:
         client = ", ".join(client)
-    try:
-        client = client or ""
-        check_ip_in_policy("127.0.0.1", [c.strip() for c in client.split(",")])
-    except AddrFormatError:
-        raise privacyIDEAError(_("Invalid client definition!"), id=302)
+    if client is not None:
+        try:
+            check_ip_in_policy("127.0.0.1", [c.strip() for c in client.split(",")])
+        except AddrFormatError:
+            raise privacyIDEAError(_("Invalid client definition!"), id=302)
     if type(pinode) == list:
         pinode = ", ".join(pinode)
     # validate conditions parameter
@@ -1943,7 +1955,26 @@ def get_static_policy_definitions(scope=None):
                 'type': TYPE.STRING,
                 'desc': _('A whitespace-separated list of tokeninfo fields '
                           'which are not displayed to the admin.'),
-                'group': GROUP.TOKEN}
+                'group': GROUP.TOKEN},
+            ACTION.TOKENGROUP_LIST: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed list the available tokengroups."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.TOKENGROUP},
+            ACTION.TOKENGROUP_ADD: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to add a new tokengroup."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.TOKENGROUP},
+            ACTION.TOKENGROUP_DELETE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed delete a tokengroup."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.TOKENGROUP},
+            ACTION.TOKENGROUPS: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to manage the tokengroups of a token."),
+                'group': GROUP.TOKEN},
         },
 
         SCOPE.USER: {
@@ -2128,8 +2159,8 @@ def get_static_policy_definitions(scope=None):
             ACTION.TOKENLABEL: {
                 'type': 'str',
                 'desc': _("Set label for a new enrolled Google Authenticator. "
-                          "Possible tags are <u> (user), <r> ("
-                          "realm), <s> (serial)."),
+                          "Possible tags are &lt;u&gt; (user), &lt;r&gt; ("
+                          "realm), &lt;s&gt; (serial)."),
                 'group': GROUP.TOKEN},
             ACTION.TOKENISSUER: {
                 'type': 'str',
@@ -2139,8 +2170,8 @@ def get_static_policy_definitions(scope=None):
             },
             ACTION.APPIMAGEURL: {
                 'type': 'str',
-                'desc': _("This is the URL to the token image for smartphone apps "
-                          "like FreeOTP."),
+                'desc': _("This is the URL to the token image for the privacyIDEA Authenticator "
+                          "and some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."),
                 'group': GROUP.TOKEN
             },
             ACTION.AUTOASSIGN: {
@@ -2233,6 +2264,12 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("The autoresync of a token can be done via a challenge response message."
                           "You need to activate 'Automatic resync' in the general settings!"),
             },
+            ACTION.ENROLL_VIA_MULTICHALLENGE: {
+                'type': 'str',
+                'desc': _("In case of a successful authentication the following tokentype is enrolled. The "
+                          "maximum number of tokens for a user is checked."),
+                'value': [t.upper() for t in get_multichallenge_enrollable_tokentypes()]
+            },
             ACTION.PASSTHRU: {
                 'type': 'str',
                 'value': radiusconfigs,
@@ -2270,12 +2307,22 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('If a user authenticates successfully reset the '
                           'failcounter of all of his tokens.')
             },
+            ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE: {
+                'type': 'bool',
+                'desc': _('Increase the failcounter for all the tokens, for which a challenge has been triggered.')
+            },
             ACTION.AUTH_CACHE: {
                 'type': 'str',
                 'desc': _('Cache the password used for authentication and '
                           'allow authentication with the same credentials for a '
                           'certain amount of time. '
                           'Specify timeout like 4h or 4h/5m.')
+            },
+            ACTION.PREFERREDCLIENTMODE: {
+                'type': 'str',
+                'desc': _('You can set the client modes in the order that you prefer. '
+                          'For example: "interactive webauthn poll u2f". Accepted'
+                          ' values are:"interactive, webauthn, poll, u2f"')
             }
         },
         SCOPE.AUTHZ: {
@@ -2333,7 +2380,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.TOKENINFO: {
                 'type': 'str',
                 'desc': _("The user will only be authenticated if the tokeninfo "
-                          "field matches the regexp. key/<regexp>/"),
+                          "field matches the regexp. key/&lt;regexp&gt;/"),
                 'group': GROUP.CONDITIONS,
             },
             ACTION.SETREALM: {
@@ -2432,6 +2479,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("Set how many users should be displayed in the user "
                           "view on one page.")
             },
+            ACTION.AUDITPAGESIZE: {
+                'type': 'int',
+                'desc': _("Set how many audit entries should be displayed in the audit "
+                          "view on one page.")
+            },
             ACTION.CUSTOM_MENU: {
                 'type': 'str',
                 'desc': _("Use your own html template for the web UI menu.")
@@ -2455,6 +2507,11 @@ def get_static_policy_definitions(scope=None):
                           "templates can be found.  (Default "
                           "https: //raw.githubusercontent.com/ privacyidea/"
                           "policy-templates /master/templates/)")
+            },
+            ACTION.LOGOUT_REDIRECT: {
+              'type': 'str',
+              'desc': _("The URL of an SSO provider for redirect at logout."
+                        "(The URL must start with http:// or https://)")
             },
             ACTION.TOKENWIZARD: {
                 'type': 'bool',

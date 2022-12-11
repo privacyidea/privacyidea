@@ -141,7 +141,7 @@ From now on the ``pi-manage``-tool can be used to configure and manage the priva
 
     (privacyidea)$ pi-manage create_enckey  # encryption key for the database
     (privacyidea)$ pi-manage create_audit_keys  # key for verification of audit log entries
-    (privacyidea)$ pi-manage createdb  # create the database structure
+    (privacyidea)$ pi-manage create_tables  # create the database structure
     (privacyidea)$ pi-manage db stamp head -d /opt/privacyidea/lib/privacyidea/migrations/  # stamp the db
 
 An administrative account is needed to configure and maintain privacyIDEA:
@@ -187,7 +187,7 @@ configuration first::
     $ cd /etc/httpd/conf.d
     $ mv ssl.conf ssl.conf.inactive
     $ mv welcome.conf welcome.conf.inactive
-    $ curl -o privacyidea.conf https://raw.githubusercontent.com/NetKnights-GmbH/centos7/master/SOURCES/privacyidea.conf.disabled
+    $ curl -o privacyidea.conf https://raw.githubusercontent.com/NetKnights-GmbH/centos7/master/SOURCES/privacyidea.conf
 
 In order to avoid recreation of the configuration files during update You can
 create empty dummy files for ``ssl.conf`` and ``welcome.conf``.

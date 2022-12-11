@@ -147,8 +147,18 @@ class User(object):
         :return: True or False
         :rtype: bool
         """
-        return isinstance(other, type(self)) and (self.login == other.login) and (
-                self.resolver == other.resolver) and (self.realm == other.realm)
+        if not isinstance(other, type(self)):
+            log.info("Comparing a non-user object: {0!s} != {1!s}.".format(self, type(other)))
+            return False
+        if (self.resolver != other.resolver) or (self.realm != other.realm):
+            log.info("Users are not in the same resolver and realm: "
+                     "{0!s} != {1!s}.".format(self, other))
+            return False
+        if self.uid and other.uid:
+            log.debug(u"Comparing based on uid: {0!s} vs {1!s}".format(self.uid, other.uid))
+            return self.uid == other.uid
+        log.debug(u"Comparing based on login: {0!s} vs {1!s}".format(self.login, other.login))
+        return self.login == other.login
 
     def __ne__(self, other):
         """
@@ -295,6 +305,8 @@ class User(object):
             # An empty user has no info
             return {}
         (uid, _rtype, _resolver) = self.get_user_identifiers()
+        if uid == None:
+            return {}
         y = get_resolver_object(self.resolver)
         userInfo = y.getUserInfo(uid)
         # Now add the custom attributes, this is used e.g. in ADDUSERINRESPONSE

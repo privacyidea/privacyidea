@@ -447,8 +447,7 @@ class APIMachinesTestCase(MyApiTestCase):
 
         # Attach the token to the machine "gandalf" with the application offline
         r = attach_token(hostname="gandalf", serial=self.serial4,
-                         application="offline", options={"user": "cornelius",
-                                                         "count": 17})
+                         application="offline", options={"count": 17})
 
         self.assertEqual(r.machine_id, "192.168.0.1")
 

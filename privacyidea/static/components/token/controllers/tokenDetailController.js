@@ -63,6 +63,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
     $scope.selectedToken.serial = $scope.tokenSerial;
     $scope.editCountWindow = false;
     $scope.selectedRealms = {};
+    $scope.selectedTokenGroups = {};
     $scope.newUser = {user: "", realm: $scope.defaultRealm};
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.machinesPerPage = 15;
@@ -151,6 +152,15 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         TokenFactory.reset($scope.tokenSerial, $scope.get);
     };
 
+    $scope.startEditTokenGroups = function() {
+        // fill the selectedTokenGroups with the groups of the token
+        $scope.selectedTokenGroups = {};
+        $scope.editTokenGroups = true;
+        angular.forEach($scope.token.tokengroup, function (groupname, _index) {
+            $scope.selectedTokenGroups[groupname] = true;
+        });
+    };
+
     $scope.startEditRealm = function () {
         // fill the selectedRealms with the realms of the token
         $scope.selectedRealms = {};
@@ -160,9 +170,25 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         });
     };
 
+    $scope.cancelEditTokenGroups = function () {
+        $scope.editTokenGroups = false;
+        $scope.selectedTokenGroups = {};
+    }
+
     $scope.cancelEditRealm = function () {
         $scope.editTokenRealm = false;
         $scope.selectedRealms = {};
+    };
+
+    $scope.saveTokenGroups = function () {
+        var tokengroups = [];
+        for (var tokengroup in $scope.selectedTokenGroups) {
+            if ($scope.selectedTokenGroups[tokengroup] === true) {
+                tokengroups.push(tokengroup);
+            }
+        }
+        TokenFactory.settokengroups($scope.tokenSerial, tokengroups, $scope.get);
+        $scope.cancelEditTokenGroups();
     };
 
     $scope.saveRealm = function () {
@@ -323,7 +349,11 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         // If the loggedInUser is only a user, we do not need the realm list,
         // as we do not assign a token
         ConfigFactory.getRealms(function (data) {
-                $scope.realms = data.result.value;
+            $scope.realms = data.result.value;
+        });
+
+        ConfigFactory.getTokengroup("", function (data) {
+            $scope.tokengroups = data.result.value;
         });
 
         $scope.attachMachine = function () {

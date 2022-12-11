@@ -256,6 +256,14 @@ class APIUsersTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("value"))
 
+        with self.app.test_request_context('/user/{0!s}/{1!s}'.format(resolver, "wordy"),
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"))
+
     def test_03_create_update_delete_unicode_user(self):
         realm = "sqlrealm"
         resolver = "SQL1"

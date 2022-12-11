@@ -267,6 +267,8 @@ email with a link to reset the password is sent to the user.
 
 
 .. _user_policy_2step:
+.. _hotp-2step:
+.. _totp-2step:
 
 hotp_2step and totp_2step
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -281,7 +283,8 @@ This works in conjunction with the enrollment parameters :ref:`2step_parameters`
 
 Such a policy can also be set for the administrator. See :ref:`admin_policy_2step`.
 
-New in version 2.21
+.. note:: This does not work in combination with the enrollment policy :ref:`verify_enrollment`, since
+   the usage of 2step already ensures, that the user has successfully scanned the QR code.
 
 sms_gateways
 ~~~~~~~~~~~~
@@ -294,6 +297,9 @@ It allows the user to define an individual SMS gateway during token enrollment.
 
 New in version 3.0.
 
+.. _hotp-hashlib:
+.. _totp-hashlib:
+
 hotp_hashlib and totp_hashlib
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -303,6 +309,9 @@ Force the user to enroll HOTP/TOTP Tokens with the specified hashlib.
 The corresponding input selector will be disabled/hidden in the web UI.
 Possible values are *sha1*, *sha256* and *sha512*, default is *sha1*.
 
+.. _hotp-otplen:
+.. _totp-otplen:
+
 hotp_otplen and totp_otplen
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -311,6 +320,9 @@ type: int
 Force the user to enroll HOTP/TOTP Tokens with the specified otp length.
 The corresponding input selector will be disabled/hidden in the web UI.
 Possible values are *6* or *8*, default is *6*.
+
+.. _hotp-force-server-generate:
+.. _totp-force-server-generate:
 
 hotp_force_server_generate and totp_force_server_generate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

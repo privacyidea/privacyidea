@@ -27,7 +27,13 @@ from __future__ import (
     absolute_import, print_function, division, unicode_literals
 )
 
-from collections import namedtuple, Sequence, Sized
+from collections import namedtuple
+
+try:
+    from collections import Sequence, Sized
+except ImportError:
+    from collections.abc import Sequence, Sized
+
 from pyrad import packet
 from pyrad.client import Timeout
 from pyrad.packet import AccessReject, AccessAccept, AccessChallenge

@@ -21,7 +21,7 @@
 #               GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-__doc__="""This is the SMSClass to send SMS via SMPP protocol to SMS center
+__doc__ = """This is the SMSClass to send SMS via SMPP protocol to SMS center
 It requires smpplib installation, this lib works with ascii only, but message support unicode 
 
 """
@@ -31,14 +31,10 @@ from privacyidea.lib import _
 from privacyidea.lib.utils import parse_int
 import logging
 import traceback
-log = logging.getLogger(__name__)
+import smpplib
+import smpplib.gsm
 
-try:
-    import smpplib
-    import_successful = True
-except ImportError:     # pragma: no cover
-    log.warning("Failed to import smpplib.")
-    import_successful = False
+log = logging.getLogger(__name__)
 
 
 class SmppSMSProvider(ISMSProvider):
@@ -51,10 +47,6 @@ class SmppSMSProvider(ISMSProvider):
         :param message: the message to submit to the phone
         :return:
         """
-        if not import_successful:  # pragma: no cover
-            log.error("smpplib can not be found!")
-            raise SMSError(404, "smpplib can not be found!")
-
         log.debug("submitting message {0!s} to {1!s}".format(message, phone))
         if not self.smsgateway:
             # this should not happen. We now always use sms gateway definitions.
@@ -83,20 +75,24 @@ class SmppSMSProvider(ISMSProvider):
         client = None
         error_message = None 
         try:
+            msg_parts, encoding_flag, msg_type_flag = smpplib.gsm.make_parts(message)
             client = smpplib.client.Client(smsc_host,
                                            smsc_port)
             client.connect()
             r = client.bind_transmitter(system_id=sys_id,
                                         password=passwd)
-            log.debug("bind_transmitter returns {0!r}".format(r))
-            r = client.send_message(source_addr_ton=s_addr_ton,
-                                    source_addr_npi=s_addr_npi,
-                                    source_addr=s_addr,
-                                    dest_addr_ton=d_addr_ton,
-                                    dest_addr_npi=d_addr_npi,
-                                    destination_addr=phone,
-                                    short_message=message)
-            log.debug("send_message returns {0!r}".format(r))
+            log.debug("bind_transmitter returns {0!r}".format(r.get_status_desc()))
+            for part in msg_parts:
+                r = client.send_message(source_addr_ton=s_addr_ton,
+                                        source_addr_npi=s_addr_npi,
+                                        source_addr=s_addr,
+                                        dest_addr_ton=d_addr_ton,
+                                        dest_addr_npi=d_addr_npi,
+                                        destination_addr=phone,
+                                        short_message=part,
+                                        data_coding=encoding_flag,
+                                        esm_class=msg_type_flag)
+                log.debug("send_message returns {0!r}".format(r.get_status_desc()))
 
         except Exception as err:
             error_message = "{0!r}".format(err)

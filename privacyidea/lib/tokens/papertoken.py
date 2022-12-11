@@ -47,6 +47,8 @@ class PaperTokenClass(HotpTokenClass):
     This sheet of paper can be used to authenticate and strike out the used
     OTP values.
     """
+    # If the token is enrollable via multichallenge
+    is_multichallenge_enrollable = False
 
     @log_with(log)
     def __init__(self, db_token):

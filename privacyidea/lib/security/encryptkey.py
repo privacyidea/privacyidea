@@ -62,26 +62,34 @@ def int_list_to_bytestring(int_list):  # pragma: no cover
 
 import os
 import time
-DIR = "/dev/shm/pilock"
+DEFAULT_LOCK_DIR = "/dev/shm/pilock"
 DEFAULT_TIMEOUT = 15
 
 
 @contextlib.contextmanager
-def hsm_lock(timeout=DEFAULT_TIMEOUT):
+def hsm_lock(timeout=DEFAULT_TIMEOUT, lock_dir=DEFAULT_LOCK_DIR):
     # Wait, that we are free to go
+    i_created_the_lock = False
     while timeout > 0:
         timeout -= 1
         try:
             # Try to get the Lock, since we are acting.
-            os.mkdir(DIR)
+            log.debug("Requesting lock")
+            os.mkdir(lock_dir)
+            log.debug("Lock acquired")
+            i_created_the_lock = True
             yield
-            # Cleanup
-            os.rmdir(DIR)
             break
         except FileExistsError:
             # Some other process got the lock in the meantime.
-            log.info("Can not get the lock on {0!s}. Can not initialize the HSM, yet.".format(DIR))
+            log.info("Can not get the lock on {0!s}. Can not initialize the HSM, yet.".format(lock_dir))
             time.sleep(1)
+        finally:
+            # Cleanup
+            if i_created_the_lock:
+                log.debug("Going to release lock")
+                os.rmdir(lock_dir)
+                log.debug("Lock released")
 
 
 class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cover
@@ -144,11 +152,15 @@ class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cov
         self.is_ready = False
 
         timeout = self.config.get("timeout") or DEFAULT_TIMEOUT
+        lock_dir = self.config.get("lock_dir") or DEFAULT_LOCK_DIR
 
-        with hsm_lock(timeout=timeout):
+        log.debug("Starting Lock")
+        with hsm_lock(timeout=timeout, lock_dir=lock_dir):
+            log.info("Initializing PKCS11")
             self.pkcs11 = PyKCS11.PyKCS11Lib()
             self.pkcs11.load(self.config.get("module"))
             self.pkcs11.lib.C_Initialize()
+            log.debug("PKCS11 initialized")
 
             slotlist = self.pkcs11.getSlotList()
             log.debug("Found the slots: {0!s}".format(slotlist))
@@ -167,15 +179,16 @@ class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cov
                         if slotinfo.slotDescription.startswith(self.slotname):
                             self.slot = slot
                             break
+            log.info("Using slot {0!s}".format(self.slot))
 
             if self.slot not in slotlist:
                 raise HSMException("Slot {0:d} ({1:s}) not present".format(self.slot, self.slotname))
 
             slotinfo = self.pkcs11.getSlotInfo(self.slot)
-            log.debug("Setting up slot {0!s}: '{1!s}'".format(self.slot, slotinfo.slotDescription))
+            log.info("Setting up slot {0!s}: '{1!s}'".format(self.slot, slotinfo.slotDescription))
 
             self.session = self.pkcs11.openSession(slot=self.slot)
-            log.debug("Logging on to '{}'".format(slotinfo.slotDescription))
+            log.info("Logging on to '{}'".format(slotinfo.slotDescription))
             try:
                 self.session.login(self.password)
             except PyKCS11.PyKCS11Error as e:
@@ -192,10 +205,11 @@ class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cov
                     raise e
                 else:
                     raise e
+            log.info("Logged into slot {0!s}".format(self.slot))
 
             if "encfile" in self.config:
                 self._decrypt_file(self.config.get("encfile"))
-            log.debug("Successfully setup the security module.")
+            log.info("Successfully setup the security module.")
             self.is_ready = True
             # We need this for the base class
             self.crypted = True
@@ -214,11 +228,9 @@ class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cov
         """
         Returns the handle to the private key for decryption.
         """
+        log.debug("Getting private key handles")
         objs = self.session.findObjects(self._add_template([(PyKCS11.CKA_CLASS, PyKCS11.CKO_PRIVATE_KEY)]))
         log.debug("Found {0!s} private keys.".format(len(objs)))
-        for obj in objs:
-            log.debug("========================================================")
-            log.debug("Found object {0!s}".format(obj))
         return objs[0]
 
     def _encrypt_file(self, infile, outfile):
@@ -251,12 +263,17 @@ class EncryptKeyHardwareSecurityModule(DefaultSecurityModule):  # pragma: no cov
             log.debug("Found object {0!s}".format(obj))
 
     def _decrypt_file(self, filename):
+        log.info("Reading encrypted key file")
         f = open(filename, "rb")
         filecontents = f.read()
         f.close()
+        log.debug("Decrypting encryption keys")
         privkey = self._get_private_key()
+        log.debug("Defining mechanism")
         m = PyKCS11.Mechanism(MECHANISM)
+        log.debug("Calling session.decrypt with private key")
         r = self.session.decrypt(privkey, filecontents, m)
+        log.debug("Keys decrypted")
         r = int_list_to_bytestring(r)
         for key_id in [0, 1, 2]:
             self.secrets[key_id] = r[key_id * 32: (key_id + 1) * 32]

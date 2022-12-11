@@ -7,8 +7,9 @@ import pytest
 
 from .base import MyTestCase
 from privacyidea.lib.importotp import (parseOATHcsv, parseYubicoCSV,
-                                       parseSafeNetXML, ImportException,
+                                       parseSafeNetXML,
                                        parsePSKCdata, GPGImport)
+from privacyidea.lib.error import TokenImportException
 from privacyidea.lib.token import remove_token
 from privacyidea.lib.token import init_token
 from privacyidea.lib.importotp import export_pskc
@@ -600,13 +601,13 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens.get("tok3").get("user").get("resolver"), "resolver3")
 
     def test_01_import_aladdin_xml(self):
-        self.assertRaises(ImportException, parseSafeNetXML, 'no xml')
+        self.assertRaises(TokenImportException, parseSafeNetXML, 'no xml')
         tokens = parseSafeNetXML(ALADDINXML)
         self.assertTrue(len(tokens) == 2)
         self.assertTrue("00040008CFA52" in tokens, tokens)
 
         # fail to import without toplevel TOKENS tag
-        self.assertRaises(ImportException, parseSafeNetXML,
+        self.assertRaises(TokenImportException, parseSafeNetXML,
                           ALADDINXML_WITHOUT_TOKENS)
 
     def test_02_import_yubikey(self):
@@ -625,7 +626,7 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens["UBOM10944003_1"]["type"], "hotp")
 
     def test_03_import_pskc(self):
-        self.assertRaises(ImportException, parsePSKCdata, 'not xml')
+        self.assertRaises(TokenImportException, parsePSKCdata, 'not xml')
 
         tokens, _ = parsePSKCdata(XML_PSKC)
         self.assertEqual(len(tokens), 7)
@@ -688,7 +689,7 @@ class ImportOTPTestCase(MyTestCase):
     def test_05_import_pskc_password(self):
         password = "qwerty"
 
-        self.assertRaises(ImportException, parsePSKCdata,
+        self.assertRaises(TokenImportException, parsePSKCdata,
                           XML_PSKC_PASSWORD_PREFIX)
 
         tokens, _ = parsePSKCdata(XML_PSKC_PASSWORD_PREFIX, password=password)

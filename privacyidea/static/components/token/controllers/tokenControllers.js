@@ -44,6 +44,7 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
             $scope.params.tokenrealm = "*" + ($scope.tokenrealmFilter || "") + "*";
             $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
             $scope.params.description = "*" + ($scope.descriptionFilter || "") + "*";
+            $scope.params.rollout_state = "*" + ($scope.rolloutStateFilter || "") + "*";
             $scope.params.userid = "*" + ($scope.userIdFilter || "") + "*";
             $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
             $scope.params.pagesize = $scope.token_page_size;
@@ -666,12 +667,21 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
 myApp.controller("tokenImportController", ['$scope', 'Upload', 'AuthFactory',
                                            'tokenUrl', 'ConfigFactory', 'inform',
+                                           'gettextCatalog',
                                            function ($scope, Upload,
                                                      AuthFactory, tokenUrl,
-                                                     ConfigFactory, inform) {
+                                                     ConfigFactory, inform,
+                                                     gettextCatalog) {
     $scope.formInit = {
         fileTypes: ["aladdin-xml", "OATH CSV", "Yubikey CSV", "pskc"]
     };
+
+    $scope.verify_pskc_opts = {
+        no_check: gettextCatalog.getString('Do not verify the authenticity'),
+        check_fail_soft: gettextCatalog.getString('Skip tokens that can not be verified'),
+        check_fail_hard: gettextCatalog.getString('Abort operation on unverifiable token'),
+    }
+
     // These are values that are also sent to the backend!
     $scope.form = {
         type: "OATH CSV",

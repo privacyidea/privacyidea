@@ -59,6 +59,7 @@ import os
 import struct
 
 import cbor2
+import cryptography.x509
 import six
 from OpenSSL import crypto
 from cryptography import x509
@@ -68,7 +69,7 @@ from cryptography.hazmat.primitives import constant_time
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicNumbers, SECP256R1, ECDSA
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15, PSS, MGF1
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
-from cryptography.hazmat.primitives.hashes import SHA256
+from cryptography.hazmat.primitives.hashes import SHA256, SHA1
 from cryptography.x509 import load_der_x509_certificate
 
 from privacyidea.lib.tokens.u2f import url_encode, url_decode
@@ -134,11 +135,13 @@ class ATTESTATION_FORMAT(object):
     TPM = 'tpm'
     ANDROID_KEY = 'android-key'
     ANDROID_SAFETYNET = 'android-safetynet'
+    APPLE = 'apple'
     FIDO_U2F = 'fido-u2f'
     NONE = 'none'
 
 
 # Only supporting 'fido-u2f', 'packed', and 'none' attestation formats for now.
+# TODO: implement android, apple and TPM authentication formats
 SUPPORTED_ATTESTATION_FORMATS = (
     ATTESTATION_FORMAT.FIDO_U2F,
     ATTESTATION_FORMAT.PACKED,
@@ -146,12 +149,12 @@ SUPPORTED_ATTESTATION_FORMATS = (
 )
 
 
-# Still waiting for Apple Anonymous Attestation.
 REGISTERED_ATTESTATION_FORMATS = (
     ATTESTATION_FORMAT.PACKED,
     ATTESTATION_FORMAT.TPM,
     ATTESTATION_FORMAT.ANDROID_KEY,
     ATTESTATION_FORMAT.ANDROID_SAFETYNET,
+    ATTESTATION_FORMAT.APPLE,
     ATTESTATION_FORMAT.FIDO_U2F,
     ATTESTATION_FORMAT.NONE
 )
@@ -180,6 +183,7 @@ class COSE_ALGORITHM(object):
     ES256 = -7
     PS256 = -37
     RS256 = -257
+    RS1 = -65535  # for tests, otherwise unsupported
 
 
 SUPPORTED_COSE_ALGORITHMS = (
@@ -409,7 +413,8 @@ class WebAuthnMakeCredentialOptions(object):
                  icon_url=None,
                  authenticator_attachment=None,
                  authenticator_selection_list=None,
-                 location=None):
+                 location=None,
+                 credential_ids=None):
         """
         Create a new WebAuthnMakeCredentialOptions object.
 
@@ -421,9 +426,9 @@ class WebAuthnMakeCredentialOptions(object):
         :type rp_id: basestring
         :param user_id: The ID for the user credential being generated. This is the privacyIDEA token serial.
         :type user_id: basestring
-        :param user_name: The user name the user logs in with.
+        :param user_name: The username the user logs in with.
         :type user_name: basestring
-        :param user_display_name: The human readable name of the user.
+        :param user_display_name: The human-readable name of the user.
         :type user_display_name: basestring
         :param icon_url: An optional icon url.
         :type icon_url: basestring
@@ -441,6 +446,8 @@ class WebAuthnMakeCredentialOptions(object):
         :type authenticator_selection_list: list of basestring
         :param location: Whether to ask for the inclusion of location information in the attestation.
         :type location: bool
+        :param credential_ids: A list of ids that are already enrolled to the user.
+        :type credential_ids: list
         :return: A WebAuthnMakeCredentialOptions object.
         :rtype: WebAuthnMakeCredentialOptions
         """
@@ -454,6 +461,14 @@ class WebAuthnMakeCredentialOptions(object):
         self.icon_url = icon_url
         self.authenticator_selection_list = authenticator_selection_list
         self.location = bool(location)
+        self.exclude_credentials = []
+        if credential_ids:
+            for cred_id in credential_ids:
+                self.exclude_credentials.append({
+                    "id": cred_id,
+                    "type": "public-key",
+                    "transports": list(TRANSPORTS)
+                })
 
         attestation = str(attestation).lower()
         if attestation not in ATTESTATION_FORMS:
@@ -491,7 +506,6 @@ class WebAuthnMakeCredentialOptions(object):
         :return: The publicKeyCredentialCreationOptions dictionary.
         :rtype: dict
         """
-
         registration_dict = {
             'challenge': self.challenge,
             'rp': {
@@ -506,7 +520,7 @@ class WebAuthnMakeCredentialOptions(object):
             'pubKeyCredParams': self.public_key_credential_parameters,
             'authenticatorSelection': {},
             'timeout': self.timeout,
-            'excludeCredentials': [],
+            'excludeCredentials': self.exclude_credentials,
             # Relying parties may use AttestationConveyancePreference to specify their
             # preference regarding attestation conveyance during credential generation.
             'attestation': self.attestation,
@@ -651,9 +665,9 @@ class WebAuthnUser(object):
 
         :param user_id: The ID for the user credential being stored. This is the privacyIDEA token serial.
         :type user_id: basestring
-        :param user_name: The user name the user logs in with.
+        :param user_name: The username the user logs in with.
         :type user_name: basestring
-        :param user_display_name: The human readable name of the user.
+        :param user_display_name: The human-readable name of the user.
         :type user_display_name: basestring
         :param icon_url: An optional icon url.
         :type icon_url: basestring
@@ -686,7 +700,8 @@ class WebAuthnUser(object):
         self.rp_id = rp_id
 
     def __str__(self):
-        return '{} ({}, {}, {})'.format(self.user_id, self.user_name, self.user_display_name, self.sign_count)
+        return '{!r} ({}, {}, {})'.format(self.user_id, self.user_name,
+                                          self.user_display_name, self.sign_count)
 
 
 class WebAuthnCredential(object):
@@ -757,8 +772,9 @@ class WebAuthnCredential(object):
 
         return not ATTESTATION_REQUIREMENT_LEVEL[self.attestation_level]['self_attestation_permitted']
 
-    def __str_(self):
-        return '{} ({}, {}, {})'.format(self.credential_id, self.rp_id, self.origin, self.sign_count)
+    def __str__(self):
+        return '{!r} ({}, {}, {})'.format(self.credential_id, self.rp_id,
+                                          self.origin, self.sign_count)
 
 
 class WebAuthnRegistrationResponse(object):
@@ -779,7 +795,7 @@ class WebAuthnRegistrationResponse(object):
         """
         Create a new WebAuthnRegistrationResponse object.
 
-        :param rp_id: The relying party id.
+        :param rp_id: The Relying party id.
         :type rp_id: basestring
         :param origin: The origin of the user.
         :type origin: basestring
@@ -941,6 +957,9 @@ class WebAuthnRegistrationResponse(object):
             #
             # Verify the sig using verificationData and certificate public
             # key per [SEC1].
+            # TODO: we need to check here what happens if we do not have a
+            #  client_data_hash (this happens during the webauthntoken_allowed
+            #  pre-policy).
             if client_data_hash:
                 try:
                     _verify_signature(certificate_public_key, alg, verification_data, signature)
@@ -1013,6 +1032,7 @@ class WebAuthnRegistrationResponse(object):
             # If x5c is present, this indicates that the attestation
             # type is not ECDAA.
             if 'x5c' in att_stmt:
+                # TODO: this could be a certificate chain, we should treat it as such
                 att_cert = att_stmt['x5c'][0]
                 x509_att_cert = load_der_x509_certificate(att_cert, default_backend())
                 certificate_public_key = x509_att_cert.public_key()
@@ -1125,7 +1145,7 @@ class WebAuthnRegistrationResponse(object):
                     aaguid
                 )
             elif 'ecdaaKeyId' in att_stmt:
-                # We do not support this. If attestation is optional, have it go through anyways.
+                # We do not support this. If attestation is optional, have it go through anyway.
                 if none_attestation_permitted:
                     attestation_type = ATTESTATION_TYPE.ECDAA
                     trust_path = []
@@ -1148,13 +1168,56 @@ class WebAuthnRegistrationResponse(object):
                 #   * If successful, return attestation type ECDAA and
                 #     attestation trust path ecdaaKeyId.
                 raise RegistrationRejectedException('ECDAA attestation type is not currently supported.')
+            else:
+                # self-attestation
+                # Step 1:
+                # Validate that alg matches the algorithm of the credentialPublicKey
+                # in authenticatorData.
+                try:
+                    public_key_alg, credential_public_key = _load_cose_public_key(credential_pub_key)
+                except COSEKeyException as e:
+                    raise RegistrationRejectedException(str(e))
+                if alg != public_key_alg:
+                    raise RegistrationRejectedException('credentialPublicKey algorithm {0!s} does '
+                                                        'not match algorithm from attestation '
+                                                        'statement {1!s}'.format(public_key_alg, alg))
+                # Step 2:
+                # Verify that sig is a valid signature over the concatenation of authenticatorData
+                # and clientDataHash using the credential public key with alg.
+                try:
+                    _verify_signature(credential_public_key, alg, verification_data, signature)
+                except InvalidSignature:
+                    raise RegistrationRejectedException('Invalid signature received.')
+                except NotImplementedError:  # pragma: no cover
+                    log.warning('Unsupported algorithm ({0!s}) for signature '
+                                'verification'.format(alg))
+                    # We do not support this algorithm. Treat as none attestation, if acceptable.
+                    if none_attestation_permitted:
+                        return (
+                            ATTESTATION_TYPE.NONE,
+                            [],
+                            credential_pub_key,
+                            cred_id,
+                            aaguid
+                        )
+                    else:
+                        raise RegistrationRejectedException('Unsupported algorithm '
+                                                            '({0!s}).'.format(alg))
+                return (
+                    ATTESTATION_TYPE.SELF_ATTESTATION,
+                    [],
+                    credential_pub_key,
+                    cred_id,
+                    aaguid
+                )
         else:
             # Attestation is either none, or unsupported.
             if not none_attestation_permitted:
                 if fmt == ATTESTATION_FORMAT.NONE:
                     raise RegistrationRejectedException('Authenticator attestation is required.')
                 else:
-                    raise RegistrationRejectedException('Unsupported authenticator attestation format.')
+                    raise RegistrationRejectedException(
+                        'Unsupported authenticator attestation format ({0!s})!'.format(fmt))
 
             # Treat as none attestation.
             #
@@ -1186,6 +1249,9 @@ class WebAuthnRegistrationResponse(object):
         """
 
         try:
+            # As described in https://www.w3.org/TR/webauthn/#sctn-registering-a-new-credential
+            # In the docs it starts at step 5.
+            #
             # Step 1.
             #
             # Let JSONtext be the result of running UTF-8 decode on the value of
@@ -1298,7 +1364,7 @@ class WebAuthnRegistrationResponse(object):
             # supported WebAuthn Attestation Statement Format Identifier
             # values. The up-to-date list of registered WebAuthn
             # Attestation Statement Format Identifier values is maintained
-            # in the in the IANA registry of the same name.
+            # in the IANA registry of the same name.
             if not _verify_attestation_statement_format(fmt):
                 raise RegistrationRejectedException('Unable to verify attestation statement format.')
 
@@ -1354,11 +1420,10 @@ class WebAuthnRegistrationResponse(object):
             #       certificate.
             if attestation_type == ATTESTATION_TYPE.SELF_ATTESTATION and not self.self_attestation_permitted:
                 raise RegistrationRejectedException('Self attestation is not permitted.')
-            is_trusted_attestation_cert = \
-                attestation_type == ATTESTATION_TYPE.BASIC \
-                    and _is_trusted_x509_attestation_cert(trust_path, trust_anchors) \
-                or attestation_type == ATTESTATION_TYPE.ECDAA \
-                    and _is_trusted_ecdaa_attestation_certificate(None, trust_anchors)
+            is_trusted_attestation_cert = ((attestation_type == ATTESTATION_TYPE.BASIC
+                                            and _is_trusted_x509_attestation_cert(trust_path, trust_anchors))
+                                           or (attestation_type == ATTESTATION_TYPE.ECDAA
+                                               and _is_trusted_ecdaa_attestation_certificate(None, trust_anchors)))
             is_signed_attestation_cert = attestation_type in SUPPORTED_ATTESTATION_TYPES
 
             if is_trusted_attestation_cert:
@@ -1751,7 +1816,7 @@ def _load_cose_public_key(key_bytes):
         y = int(codecs.encode(cose_public_key[COSE_PUBLIC_KEY.Y], 'hex'), 16)
 
         return alg, EllipticCurvePublicNumbers(x, y, SECP256R1()).public_key(backend=default_backend())
-    elif alg in (COSE_ALGORITHM.PS256, COSE_ALGORITHM.RS256):
+    elif alg in (COSE_ALGORITHM.PS256, COSE_ALGORITHM.RS256, COSE_ALGORITHM.RS1):
 
         required_keys = {
             COSE_PUBLIC_KEY.ALG,
@@ -1770,6 +1835,7 @@ def _load_cose_public_key(key_bytes):
 
         return alg, RSAPublicNumbers(e, n).public_key(backend=default_backend())
     else:
+        log.warning('Unsupported webAuthn COSE algorithm: {0!s}'.format(alg))
         raise COSEKeyException('Unsupported algorithm.')
 
 
@@ -1777,18 +1843,25 @@ def _get_trust_anchors(attestation_type, attestation_fmt, trust_anchor_dir):
     """
     Return a list of trusted attestation root certificates.
 
-    This will fetch all CA certificates from the given directory, silently skipping any invalid ones.
+    This will fetch all CA certificates from the given directory, silently
+    skipping any invalid ones.
 
-    :param attestation_type: The attestation type being used. If the type is unsupported, an empty list is returned.
-    :type attestation_type: basestring
-    :param attestation_fmt: The attestation format being used. If the format is unsupported, an empty list is returned.
-    :type attestation_fmt: basestring
+    :param attestation_type: The attestation type being used. If the type is
+                             unsupported, an empty list is returned.
+    :type attestation_type: str
+    :param attestation_fmt: The attestation format being used. If the format is
+                            unsupported, an empty list is returned.
+    :type attestation_fmt: str
     :param trust_anchor_dir: The path to the directory that contains the CA certificates.
-    :type trust_anchor_dir: basestring
+    :type trust_anchor_dir: str
     :return: The list of trust anchors.
+    :rtype: list
     """
 
-    if attestation_type not in SUPPORTED_ATTESTATION_TYPES or attestation_fmt not in SUPPORTED_ATTESTATION_FORMATS:
+    if attestation_type not in SUPPORTED_ATTESTATION_TYPES \
+            or attestation_fmt not in SUPPORTED_ATTESTATION_FORMATS:
+        log.debug('Unsupported attestation type ({0!s}) or attestation format '
+                  '({1!s}).'.format(attestation_type, attestation_fmt))
         return []
 
     trust_anchors = []
@@ -1797,24 +1870,32 @@ def _get_trust_anchors(attestation_type, attestation_fmt, trust_anchor_dir):
         for trust_anchor_name in os.listdir(trust_anchor_dir):
             trust_anchor_path = os.path.join(trust_anchor_dir, trust_anchor_name)
             if os.path.isfile(trust_anchor_path):
-                with open(trust_anchor_path, 'rb') as f:
-                    pem_data = f.read().strip()
-                    try:
-                        pem = crypto.load_certificate(crypto.FILETYPE_PEM, pem_data)
+                try:
+                    with open(trust_anchor_path, 'rb') as f:
+                        pem_data = f.read().strip()
+                        pem = cryptography.x509.load_pem_x509_certificate(pem_data.strip())
                         trust_anchors.append(pem)
-                    except Exception:
-                        pass
+                except Exception as e:
+                    log.info('Could not load certificate {0!s}: '
+                             '{1!s}'.format(trust_anchor_path, e))
+    else:
+        log.debug('Trust anchor directory ({0!s}) not available.'.format(trust_anchor_dir))
+
+    return trust_anchors
 
 
 def _is_trusted_x509_attestation_cert(trust_path, trust_anchors):
     if not trust_path or not isinstance(trust_path, list) or not trust_anchors or not isinstance(trust_anchors, list):
         return False
 
+    # TODO: this could be a certificate chain. We should treat it as such
     attestation_cert = trust_path[0]
     store = crypto.X509Store()
+    # Since the certificates are in pyca.cryptography format, we need to convert
+    # them to the OpenSSL.crypto format
     for i in trust_anchors:
-        store.add_cert(i)
-    store_ctx = crypto.X509StoreContext(store, attestation_cert)
+        store.add_cert(crypto.X509.from_cryptography(i))
+    store_ctx = crypto.X509StoreContext(store, crypto.X509.from_cryptography(attestation_cert))
 
     try:
         store_ctx.verify_certificate()
@@ -1826,8 +1907,8 @@ def _is_trusted_x509_attestation_cert(trust_path, trust_anchors):
 
 
 def _is_trusted_ecdaa_attestation_certificate(ecdaa_issuer_public_key, trust_anchors):
-    # Unsupported
-    return False
+    # TODO: implement
+    raise NotImplementedError
 
 
 def _verify_type(received_type, expected_type):
@@ -1853,7 +1934,8 @@ def _verify_origin(client_data, origin):
 
 def _verify_token_binding_id(client_data):
     """
-    Verify tokenBinding. Currently this is unimplemented, so it will simply return false if tokenBinding is required.
+    Verify tokenBinding. Currently, this is unimplemented, so it will simply
+    return false if tokenBinding is required.
 
     The tokenBinding member contains information about the state of the
     Token Binding protocol used when communicating with the Relying Party.
@@ -1965,5 +2047,7 @@ def _verify_signature(public_key, alg, data, signature):
     elif alg == COSE_ALGORITHM.PS256:
         padding = PSS(mgf=MGF1(SHA256()), salt_length=PSS.MAX_LENGTH)
         public_key.verify(signature, data, padding, SHA256())
+    elif alg == COSE_ALGORITHM.RS1:
+        public_key.verify(signature, data, PKCS1v15(), SHA1())
     else:
         raise NotImplementedError()

@@ -12,12 +12,13 @@ from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_
                                              USER_VERIFICATION_LEVEL)
 from privacyidea.lib.tokens.webauthntoken import (WEBAUTHNACTION, DEFAULT_ALLOWED_TRANSPORTS,
                                                   WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
-                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS,
+                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
                                                   DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                                                   DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
-                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT)
+                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT,
+                                                  PUBKEY_CRED_ALGORITHMS_ORDER)
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from .base import (MyApiTestCase)
@@ -48,7 +49,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            webauthntoken_enroll, webauthntoken_request,
                                            webauthntoken_allowed, check_application_tokentype,
                                            required_piv_attestation, check_custom_user_attributes,
-                                           hide_tokeninfo)
+                                           hide_tokeninfo, init_ca_template, init_ca_connector,
+                                           init_subject_components, increase_failcounter_on_challenge)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -71,6 +73,7 @@ from privacyidea.lib.tokens.smstoken import SMSACTION
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
+from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 
 from flask import Request, g, current_app, jsonify
 from werkzeug.test import EnvironBuilder
@@ -104,6 +107,23 @@ SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx366cmSSs/89j" \
          "Dq5IRDQqXH2KybHpSLATnbSY7zjVD+evJeU994yTaXTFi5hBmd0aWTC+ph79mmE" \
          "tu3dokA2YbLa7uWkAIXvX/HHauGLMTyCOpYi1BxN47c/kccxyNg" \
          "jPw== corny@schnuck"
+
+YUBIKEY_CSR = """-----BEGIN CERTIFICATE REQUEST-----
+MIICbTCCAVUCAQAwFzEVMBMGA1UEAwwMY249Y29ybmVsaXVzMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzqQ5MCVz5J3mNzuFWYPvo275g7n3SLAL1egF
+QGHNxVq8ES9bTtBPuNDofwWrrSQLkNQ/YOwVtk6+jtkmq/IvfzXCpqG8UjrZiPuz
++nEguVEO+K8NFr69XbmrMNWsazy87ihKT2/UCRX3mK932zYVLh7uD9DZYK3bucQ/
+xiUy+ePpULjshKDE0pz9ziWAhX46rUynQBsKWBifwl424dFE6Ua23LQoouztAvcl
+eeGGjmlnUu6CIbeELcznqDlXfaMe6VBjdymr5KX/3O5MS14IK2IILXW4JmyT6/VF
+6s2DWFMVRuZrQ8Ev2YhLPdX9DP9RUu1U+yctWe9MUM5xzetamQIDAQABoBEwDwYJ
+KoZIhvcNAQkOMQIwADANBgkqhkiG9w0BAQsFAAOCAQEArLWY74prQRtKojwMEOsw
+4efmzCwOvLoO/WXDwzrr7kgSOawQanhFzD+Z4kCwapf1ZMmobBnyWREpL4EC9PzC
+YH+mgSDCI0jDj/4OSfklb31IzRhuWcCVOpV9xuiDW875WM792t09ILCpx4rayw2a
+8t92zv49IcWHtJNqpo2Q8064p2fzYf1J1r4OEBKUUxEIcw2/nifIiHHTb7DqDF4+
+XjcD3ygUfTVbCzPYBmLPwvt+80AxgT2Nd6E612L/fbI9clv5DsvMwnVeSvlP1wXo
+5BampVY4p5CQRFLlCQa9fGWZrT+ArC9Djo0mHf32x6pEsSz0zMOlmjHrh+ChVkAs
+tA==
+-----END CERTIFICATE REQUEST-----"""
 
 
 class PrePolicyDecoratorTestCase(MyApiTestCase):
@@ -2416,10 +2436,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                          rp_name)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
                          None)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
-                         PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS[
-                             DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE
-                         ])
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
+                         [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[x]
+                          for x in PUBKEY_CRED_ALGORITHMS_ORDER
+                          if x in DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE])
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
                          DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM),
@@ -2439,7 +2459,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                          None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
                          None)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
                          None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
                          None)
@@ -2450,7 +2470,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # With policies
         authenticator_attachment = AUTHENTICATOR_ATTACHMENT_TYPE.CROSS_PLATFORM
-        public_key_credential_algorithm_preference = 'ecdsa_only'
+        public_key_credential_algorithm_preference = 'ecdsa'
         authenticator_attestation_level = ATTESTATION_LEVEL.TRUSTED
         authenticator_attestation_form = ATTESTATION_FORM.INDIRECT
         challengetext = "Lorem Ipsum"
@@ -2458,10 +2478,11 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             name="WebAuthn2",
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT + '=' + authenticator_attachment + ','
-                  +WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE + '=' + public_key_credential_algorithm_preference + ','
-                  +WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + authenticator_attestation_level + ','
-                  +WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM + '=' + authenticator_attestation_form + ','
-                  +WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
+                   + WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS + '='
+                   + public_key_credential_algorithm_preference + ','
+                   + WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL + '=' + authenticator_attestation_level + ','
+                   + WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM + '=' + authenticator_attestation_form + ','
+                   + WebAuthnTokenClass.get_class_type() + '_' + ACTION.CHALLENGETEXT + '=' + challengetext
         )
         request = RequestMock()
         request.all_data = {
@@ -2470,10 +2491,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         webauthntoken_enroll(request, None)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTACHMENT),
                          authenticator_attachment)
-        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE),
-                         PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE_OPTIONS[
+        self.assertEqual(request.all_data.get(WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
+                         [PUBLIC_KEY_CREDENTIAL_ALGORITHMS[
                              public_key_credential_algorithm_preference
-                         ])
+                         ]])
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL),
                          authenticator_attestation_level)
         self.assertEqual(request.all_data.get(WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_FORM),
@@ -2489,7 +2510,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(
             name="WebAuthn2",
             scope=SCOPE.ENROLL,
-            action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE + '=' + 'b0rked'
+            action=WEBAUTHNACTION.PUBLIC_KEY_CREDENTIAL_ALGORITHMS + '=' + 'b0rked'
         )
         with self.assertRaises(PolicyError):
             webauthntoken_enroll(request, None)
@@ -2906,8 +2927,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         class RequestMock(object):
             pass
 
-        allowed_certs = "subject/.*Yubico.*/"
-
         request = RequestMock()
         request.all_data = {
             "type": WebAuthnTokenClass.get_class_type(),
@@ -2915,13 +2934,24 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "regdata": REGISTRATION_RESPONSE_TMPL['attObj']
         }
 
+        allowed_certs = "subject/.*Yubico.*/"
         set_policy(
             name="WebAuthn",
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.REQ + "=" + allowed_certs
         )
-
         self.assertTrue(webauthntoken_allowed(request, None))
+
+        allowed_certs = "subject/.*Feitian.*/"
+        set_policy(
+            name="WebAuthn",
+            scope=SCOPE.ENROLL,
+            action=WEBAUTHNACTION.REQ + "=" + allowed_certs
+        )
+        self.assertRaisesRegexp(PolicyError,
+                                'The WebAuthn token is not allowed to be registered '
+                                'due to a policy restriction.',
+                                webauthntoken_allowed, request, None)
 
         set_policy(
             name="WebAuthn",
@@ -3214,6 +3244,103 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.all_data = {"user": "cornelius", "realm": self.realm1,
                         "key": "size", "value": "3"}
         check_custom_user_attributes(req, "set")
+
+    def test_50_enroll_ca_connector(self):
+        g.logged_in_user = {"username": "admin1",
+                            "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'type': "certificate", "genkey": 1},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+
+        # first test without any policy
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "certificate", "genkey": 1}
+        init_ca_connector(req)
+        init_ca_template(req)
+        init_subject_components(req)
+        # Check, if that there is no parameter set
+        self.assertNotIn("ca", req.all_data)
+        self.assertNotIn("template", req.all_data)
+        self.assertNotIn("subject_components", req.all_data)
+
+        # now create a policy for the CA connector and the template
+        set_policy(name="ca",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s},{2!s}={3!s}".format(
+                     CERTIFICATE_ACTION.CA_CONNECTOR, "caconnector",
+                     CERTIFICATE_ACTION.CERTIFICATE_TEMPLATE, "catemplate"
+                   ))
+        set_policy(name="sub1",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}=email".format(
+                       CERTIFICATE_ACTION.CERTIFICATE_REQUEST_SUBJECT_COMPONENT))
+        set_policy(name="sub2",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}=email realm".format(
+                       CERTIFICATE_ACTION.CERTIFICATE_REQUEST_SUBJECT_COMPONENT))
+        # request, that matches the policy
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "certificate", "genkey": 1}
+        # check that the parameters were added
+        init_ca_connector(req)
+        init_ca_template(req)
+        init_subject_components(req)
+        # Check, if that there is no parameter set
+        self.assertIn("ca", req.all_data)
+        self.assertIn("template", req.all_data)
+        self.assertIn("subject_components", req.all_data)
+        self.assertEqual("caconnector", req.all_data.get("ca"))
+        self.assertEqual("catemplate", req.all_data.get("template"))
+        self.assertIn("email", req.all_data.get("subject_components"))
+        self.assertIn("realm", req.all_data.get("subject_components"))
+
+        # request, that matches the policy
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "hotp", "genkey": 1}
+        # check that it only works for certificate tokens
+        init_ca_connector(req)
+        init_ca_template(req)
+        init_subject_components(req)
+        # Check, if that there is no parameter set
+        self.assertNotIn("ca", req.all_data)
+        self.assertNotIn("template", req.all_data)
+        self.assertNotIn("subject_components", req.all_data)
+
+        # delete policy
+        delete_policy("ca")
+        delete_policy("sub1")
+        delete_policy("sub2")
+
+    def test_60_increase_failcounter_on_challenge(self):
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "hans", "pass": "123456"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.User = User()
+
+        # Check, if that there is no parameter set
+        req.all_data = {"user": "hans", "pass": "123456"}
+        self.assertNotIn("increase_failcounter_on_challenge", req.all_data)
+
+        # Check that the parameters were added
+        increase_failcounter_on_challenge(req)
+        self.assertIn("increase_failcounter_on_challenge", req.all_data)
+
+        # Check that value is False with no policy
+        self.assertEqual(False, req.all_data.get("increase_failcounter_on_challenge"))
+
+        # Set policy
+        set_policy(name="increase_failcounter_on_challenge",
+                   scope=SCOPE.AUTH,
+                   action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+
+        # Check that value is True with set policy
+        increase_failcounter_on_challenge(req)
+        self.assertEqual(True, req.all_data.get("increase_failcounter_on_challenge"))
+
+        # delete policy
+        delete_policy("increase_failcounter_on_challenge")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
@@ -3814,24 +3941,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(sign_object.verify(json.dumps(jresult, sort_keys=True), sig))
 
     def test_08_get_webui_settings(self):
-        # Test that a machine definition will return offline hashes
         self.setUp_user_realms()
-        serial = "offline01"
-        tokenobject = init_token({"serial": serial, "type": "hotp",
-                                  "otpkey": "3132333435363738393031"
-                                            "323334353637383930",
-                                  "pin": "offline",
-                                  "user": "cornelius"})
-
-        # Set the Machine and MachineToken
-        resolver1 = save_resolver({"name": "reso1",
-                                   "type": "hosts",
-                                   "filename": HOSTSFILE})
-
-        mt = attach_token(serial, "offline", hostname="gandalf")
-        self.assertEqual(mt.token.serial, serial)
-        self.assertEqual(mt.token.machine_list[0].machine_id, "192.168.0.1")
-
         # The request with an OTP value and a PIN of a user, who has not
         # token assigned
         builder = EnvironBuilder(method='POST',
@@ -3849,7 +3959,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                           "value": {"role": "user",
                                     "username": "cornelius"}},
                "version": "privacyIDEA test",
-               "detail": {"serial": serial},
+               "detail": {"serial": None},
                "id": 1}
         resp = jsonify(res)
 
@@ -3857,6 +3967,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
             "token_wizard"), False)
+        self.assertEqual(jresult.get("result").get("value").get("logout_redirect_url"),
+                         "", jresult)
 
         # Set a policy. User has not token, so "token_wizard" will be True
         set_policy(name="pol_wizard",
@@ -3902,39 +4014,39 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
-        self.assertEqual("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCAQAAAABUY/ToAAADkElEQVR4nO2cTW"
-                         "7bMBBG35QEsqQBH6BHoW7WM/UG0lFygALiMgCF6YI/ouJ0k9iI7c4sHEHRAyXgw/CbISVRPhfLj0+CYKSRRh"
-                         "pppJFGGnl/pNTwyMQmIieQKYkAW/mRKbWrpm++WyPvi/TlT5wB0hklncopXU4uC2FVwCkklwGQr45p5HOSqe"
-                         "cXnBJfa0aipyAARMRfb0wjn5OUiU10BoiaIa7AcgKZbjamkY9N+stTLgs4IJ2VRUCX6apjGvlcZNNQUCABhDc"
-                         "h/j6jpE0Al4nrOQvA2JB8rOc08ubkIlKqMUgvRSky4ZS47tPYVsqya41p5JOQJQ+N+SVkgE10OTl0OTnaJcdl"
-                         "kcd6TiNvR6KqqkTVknOIq1MIqqpruyb2I0K9WOfHek4jb0cWDRW9xHqsTUi1LitlGkHLuXKNacjIFoOGwKnOY"
-                         "RSSziF3DWV0xqlpyMhjNA05VdWeZHCqMzUFVYU1NZmGjPyIXH6+iUzJwyIe+bVuIlNx1yBTyOg8FGzffLdG3h"
-                         "U5eGqdiwFyvf6quamabdVmti0PGTlG0RCtF9SEBLsfatdlwPyQkR+TqusmtTWUXmr5VeSTfE1By4lDlf+Iz2n"
-                         "kLcjSYxRC9roICGzCIiBx3vzYVkx+aDk+2nMaeTuyF2JQG0KaqWVar+2LKSpzntVlRr6P5odozZ+hK+S0SYqi"
-                         "q+KRTENGHmJoCA2rHpqp9ijUFLSbbdOQkcdotXpuJ4pytHasazKq013rRZqGjBxin8sOjie32p62XhabKTING"
-                         "XmMqqHQbM88dIp2cfUsZf0hIy+iuaDcjtZDP3EOrYtdlvZXZ3s/jHwXY20Pg3/e9w+paltunTFPbeT72LPPXo"
-                         "gNTrrLp21Ts7nMyPdRJbG2oqu6IFd+2gzW7JFpyMh/kkFV5GeG+OrZd57VffpQ9oOUo+lKYxr5HOS4bl9MdO9"
-                         "O1yV7p+NKq9VlRl6EHmPcjh+aH9JWje31m2nIyCO5f/eDuG7CcgLVV49MyVN3NCb/Afkdd2vkfZHjPsa+3Fqi"
-                         "Lpr11lCf86w/ZORHZPvuh0zJsxdnOidPeS1o2V9xvdKYRj4nOWx+ncsWxjeBJFJ7jD1L3cXdGnkP5MV3P+Lri"
-                         "wph87pMDiH8qR+tius5Q/JZvzqmkc9FXvqh/V+hr3r04qwT5oeM7NH6Q8DwcgfdXYe9om9raOapjRxD7BvnRh"
-                         "pppJFGGmnkf07+BXIeTK/jr1P8AAAAAElFTkSuQmCC",
+        self.assertEqual('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZoAAAG'
+                         'aAQAAAAAefbjOAAACFElEQVR42u1cS07FMBCL6AFypHd1jtQDVJrX'
+                         'zD+FBbBDdhZPbVpviOV4nClDfj8+B0EEEUQQQQQRRFCAho/jnpnrd'
+                         'uozHyJnXL4U9DH+MAj6HyBnhK60nIeRwVd/3eaD9h4ZgcCI0ylwa8'
+                         'TlUiByX4371qkyDjICkBF9w1Bu1AMyAlMjljKYKKw5lQxqBLSPaLQ'
+                         'wy1lz9BFAjMhaw/3k84e1BhgjtqHy4BbidhTH15KVfz0QjSgpaJKh'
+                         'FFhmwhwFGYGiEUqGWauvMZXWoe4s7RXuGjjO8so8wm+DKmtuHOLJB'
+                         'BkBU31GhWHG4fzecpIRQM7ysoVXjTBaZBRhOabuKWQEjkaMEWTY5S'
+                         'FpYfUHGQGiES2anCEZLdTevQUZAVF91pFG5lISkuHegj4CSiO2Q29'
+                         '94LrhWwc1Aq/WeAQQVpHqeByTkxEIu0Zrmupp1ONwnBqBoxHRHVNd'
+                         'EVF4imyRBRmBkke4vWxXmVXRR0DWGrrwIlsbXb4SvTP0EVjOsrfaZ'
+                         'mDVfqgRUIwojfBWqao/PMUe9BFozrL3R+QpaM1NdtWBOcstnNqPPW'
+                         'tjISOgnGULsK8UhTjheJ2DPgJp1+gpdjXL2DuvarwjI5CcZX6oE/0'
+                         'RfSfxrYOMgGNEbg4+V19usGMGVyOaZ2hf9dBHQPqIOPss95CbCPMI'
+                         'zFqjjRlt+y4ZzCwR8wj+PxaCCCKIIIIIIuinoDczovv0cx3r0AAAA'
+                         'ABJRU5ErkJggg==',
                          jresult.get("result").get("value").get("qr_image_android"))
-        self.assertEqual("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCAQAAAABUY/ToAAADr0lEQVR4nO2cXYr"
-                         "jOBCAv1oJ8mhDHyBHkW827JH6BtZRcoCA9BiwqXmQZCvpaRaGhCS9VQ8hsv1hCYpS/cmi/J3Ef/4SBCONNNJI"
-                         "I4000sjXI6WKL/+I4yrAKjJlEZFxFcjtqenJszXytUhUVZWgqqrJqc6Dqqou6Dws6DyoAq7e3R+e32udRj6ez"
-                         "Jt9yR7i6FQmnAKrqOpFABARf793GvkzSH8zFoazKNkvhE+/SDh55M7vNPJnkbc6BNkjQUHj6FBYvMYJJHze65"
-                         "1G/iyy6dCgQAYYEgKrp1iksqG5BTL0Ccn3WqeRDyejiIiMQDh5IB+UcDqoTNkjvxLIxFrCsufP1siXIosd6ux"
-                         "LHBGFhfITj5cS5VdTdY93GvmzyC62JyQAnOqMa9f2oB+AwWJ7I2+k+UN5RONx8QqrENIHWq6NZ0+YL0JQiqOk"
-                         "z5utka9IFjtUjVHLMcLQcoyqC4REGVKyjWaHjOylqkSi5qRDSUcv7X5LW7ddrRGmQ0Y2ubJDQNBmbroyR1Mp1"
-                         "fKI6ZCRnTQ75LQVyNrm1V0DijtN2d9Mh4zspGpESSVWS7OXW80fMvK/ZfeHum1M03Y3OS03yk8yHTLyVoortG"
-                         "lOMzzbMG27GtRdzfwhI6+kWpXm51RjNGhvfRi2a8niMiNv5coOtW0spJanBjp/SGfzh4z8Il1Yz7B51+1fNVB"
-                         "b8tHskJHfkPrvURWyCCGtonMWgeEikA8qE7Wfeo/f3nOdRj6C7Pup99TQ3BygPUIrTlFQyw8Z+Q2Zpdgc4rhl"
-                         "ik4e4gg1gZ2AKAezQ0ZeS+0fisfFS9BVlDwKIa20aOzsS+tQHM8QPj+eOVsjX5HsfOrWNXQV5ZdhqqmhvbHI9"
-                         "jIjN+l0aKtrtLhsL7I2vaplfNMhI3fZemEXXxrRQFur2XD2xAk0CghDohwaet5sjXxFcuv92Ctie321f6SW7J"
-                         "Plh4z8IykyOiWKp7Z45EM9NT3jVCagHDybgDp8x3Ua+QiyO9ehABIFYDgL4eQXYBWN4hbCDNId7nivdRr5OLL"
-                         "oUDsz5hbALWUYjwsSdPUS0geQP/oN7s3WaeTDydCaiPZorBY88qF8uKGki6J9s8HIL9LVXENqxbCqUnsTkdMb"
-                         "wnxqI78ji75E8YgcLyLTsJR/5W7nYr/CbI18SbJ8Aq31ThPFt+7F5NrBs3u/08i3Jr98B61uba71D8HWGuusf"
-                         "8jIP0nrYwTYDnfsp4S2rtjulJDVy4zsRewb50YaaaSRRhpp5P+c/A3Ni1KFc5UNygAAAABJRU5ErkJggg==",
+        self.assertEqual('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZoAAAG'
+                         'aAQAAAAAefbjOAAACC0lEQVR42u2cUW7DMAxDheUAPlKvniPlAAa8'
+                         'xpYtufnZ9jfw5aPo0vCnJiSSUmft99dpgAABAgQIECBAE2R+He/31'
+                         '9Hsdd3vWh133/fmA68O+rI/XID+B8gZ0U86keHy0zcr/kF6DkYoMK'
+                         'JTIB189YpzljZY0isIjNBjxDh4K3fDKLluwAjVGnGmNhE6Akbo6oh'
+                         'eHm6CuORER2gyYnmN0SEeL3gNMUZsfrTfq1NWlPp8hG9PpEaMUnBT'
+                         '4FwvQ0ykP2GERo04h2ystpmLWS08uqJrSNWIY9IiEqotvaRG6NWIu'
+                         'NxrdDM69KQXDxihoyw/E6qWk4keXA4fCiNUasTQjqtKbJ4zBVboCB'
+                         'kdMccX3ib2SZf3FHSEECNGZtm2uDLNPtEReoy43Guk/pF1RLU8D+X'
+                         'bU1CWeciV+kfoCKcFjBBSlpFBeQCxzEWZwSU1QkdHeAblGnMbhcba'
+                         'DIzQ6Rqbdtw2ZjyhQkfoeY3H5tTkwfAf6Ag997m8xiRDziPQEWru0'
+                         '+ec0T+SI229Rhg6QowR3hz63bL5j3692KrTUpYx9sz7Ebb2bf0DGC'
+                         'FSI9Lpxy7dGnflBRoYIaQs2xVrMzOrWg7DDB0hqCOO3YdWy/0DryH'
+                         'MiLSTT2apzgiz+DlXVhTDgsIIOR0xzcVMJmJZhjxC1GtEFHGuuUZ/'
+                         'jl1szTyC/8cCCBAgQIAAAfop6Bt9aCglBgbq7QAAAABJRU5ErkJgg'
+                         'g==',
                          jresult.get("result").get("value").get("qr_image_ios"))
         qr_image_custom = jresult.get("result").get("value").get("qr_image_custom")
         self.assertEqual(len(custom_url), len(qr_image_custom))
@@ -3966,7 +4078,20 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(1, jresult.get("result").get("value").get("indexedsecret_force_attribute"))
         delete_policy("pol_indexed_force")
 
-    def test_09_get_webui_settings(self):
+        # Test if the logout_redirect URL is set
+        redir_uri = 'https://redirect.to'
+        set_policy(name="pol_logout_redirect", scope=SCOPE.WEBUI,
+                   action="{0!s}={1!s}".format(ACTION.LOGOUT_REDIRECT, redir_uri))
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertEqual(redir_uri,
+                         jresult.get("result").get("value").get("logout_redirect_url"),
+                         jresult)
+        delete_policy("pol_logout_redirect")
+
+
+    def test_09_get_webui_settings_token_pagesize(self):
         # Test that policies like tokenpagesize are also user dependent
         self.setUp_user_realms()
 
@@ -3993,7 +4118,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
         self.assertEqual(jresult.get("result").get("value").get(
-            "token_wizard"), False)
+            ACTION.TOKENPAGESIZE), 15)
 
         # Set a policy. User has not token, so "token_wizard" will be True
         set_policy(name="pol_pagesize",
@@ -4021,7 +4146,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("pol_pagesize")
 
-    def test_10_get_webui_settings(self):
+    def test_10_get_webui_settings_admin_dashboard(self):
         # Test admin_dashboard
         self.setUp_user_realms()
 

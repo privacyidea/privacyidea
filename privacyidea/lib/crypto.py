@@ -316,7 +316,8 @@ def encryptPassword(password):
         ret = hsm.encrypt_password(to_bytes(password))
     except Exception as exx:  # pragma: no cover
         log.warning(exx)
-        ret = "FAILED TO ENCRYPT PASSWORD!"
+        log.info(traceback.format_exc())
+        raise HSMException("Failed to encrypt password!")
     return ret
 
 
@@ -415,8 +416,7 @@ def aes_cbc_decrypt(key, iv, enc_data):
     :param iv: The initialization vector
     :type iv: bytes
     :param enc_data: The cipher text
-    :type enc_data: binary string
-    :param mode: The AES MODE
+    :type enc_data: bytes
     :return: plain text in binary data
     :rtype: bytes
     """
@@ -436,12 +436,11 @@ def aes_cbc_encrypt(key, iv, data):
     AES block size). The calling function must take care of this!
 
     :param key: The encryption key
-    :type key: binary string
+    :type key: bytes
     :param iv: The initialization vector
-    :type iv: binary string
+    :type iv: bytes
     :param data: The cipher text
     :type data: bytes
-    :param mode: The AES MODE
     :return: plain text in binary data
     :rtype: bytes
     """
