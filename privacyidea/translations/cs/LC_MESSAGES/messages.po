@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-12-07 15:43+0100\n"
-"PO-Revision-Date: 2022-08-03 08:22+0000\n"
+"PO-Revision-Date: 2022-12-14 20:50+0000\n"
 "Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/cs/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
-"X-Generator: Weblate 4.14-dev\n"
+"X-Generator: Weblate 4.15-dev\n"
 "Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:225
@@ -1011,6 +1011,8 @@ msgid ""
 "contain a QR code that leads to the privacyIDEA Authenticator in the Google "
 "Play Store."
 msgstr ""
+"Pokud je zaškrtnuto, registrační stránka pro HOTP, TOTP a Push tokeny bude "
+"obsahovat QR kód odkazující na privacyIDEA authenticator v Google Play."
 
 #: lib/policy.py:2578
 msgid ""
@@ -1018,12 +1020,16 @@ msgid ""
 "contain a QR code that leads to the privacyIDEA Authenticator in the iOS App "
 "Store."
 msgstr ""
+"Pokud je zaškrtnuto, registrační stránka pro HOTP, TOTP a Push tokeny bude "
+"obsahovat QR kód odkazující na privacyIDEA authenticator v iOS App Store."
 
 #: lib/policy.py:2585
 msgid ""
 "This action adds a QR code in the enrollment page for HOTP, TOTP and Push "
 "tokens, that lead to this given URL."
 msgstr ""
+"Tato akce přidá QR kód do registrační stránky pro HOTP, TOTP a Push tokeny, "
+"který bude odkazovat na zadanou URL."
 
 #: lib/policy.py:2630
 msgid ""
@@ -1871,16 +1877,16 @@ msgstr "Počet uživatelů s přiřazenými tokeny"
 
 #: lib/tokens/certificatetoken.py:282
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr ""
+msgstr "Certifikát: token ve formě x509 certifikátu."
 
 #: lib/tokens/certificatetoken.py:293
 msgid "The user may only have this maximum number of certificates assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet certifikátů."
 
 #: lib/tokens/certificatetoken.py:298
 msgid ""
 "The user may only have this maximum number of active certificates assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet certifikátů."
 
 #: lib/tokens/certificatetoken.py:303
 msgid ""
@@ -1912,12 +1918,12 @@ msgstr ""
 
 #: lib/tokens/daplugtoken.py:130
 msgid "The user may only have this maximum number of daplug tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet daplug tokenů."
 
 #: lib/tokens/daplugtoken.py:135
 msgid ""
 "The user may only have this maximum number of active daplug tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet daplug tokenů."
 
 #: lib/tokens/emailtoken.py:156
 msgid "EMail Token"
@@ -1954,12 +1960,12 @@ msgstr ""
 
 #: lib/tokens/emailtoken.py:190
 msgid "The user may only have this maximum number of email tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet e-mail tokenů."
 
 #: lib/tokens/emailtoken.py:195
 msgid ""
 "The user may only have this maximum number of active email tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet e-mail tokenů."
 
 #: lib/tokens/emailtoken.py:277
 msgid "Enter the OTP from the Email:"
@@ -1981,12 +1987,12 @@ msgstr ""
 
 #: lib/tokens/foureyestoken.py:143
 msgid "The user may only have this maximum number of 4eyes tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet 4eyes tokenů."
 
 #: lib/tokens/foureyestoken.py:148
 msgid ""
 "The user may only have this maximum number of active 4eyes tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet 4eyes tokenů."
 
 #: lib/tokens/hotptoken.py:84
 msgid "Please enter a valid OTP value of the new token."
@@ -2019,12 +2025,12 @@ msgstr ""
 
 #: lib/tokens/hotptoken.py:150
 msgid "The user may only have this maximum number of HOTP tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet HOTP tokenů."
 
 #: lib/tokens/hotptoken.py:155
 msgid ""
 "The user may only have this maximum number of active HOTP tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet HOTP tokenů."
 
 #: lib/tokens/hotptoken.py:160 lib/tokens/totptoken.py:151
 msgid "The size of the OTP seed part contributed by the client (in bytes)"
@@ -2102,12 +2108,12 @@ msgstr ""
 
 #: lib/tokens/motptoken.py:105
 msgid "The user may only have this maximum number of mOTP tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet mOTP tokenů."
 
 #: lib/tokens/motptoken.py:110
 msgid ""
 "The user may only have this maximum number of active mOTP tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet mOTP tokenů."
 
 #: lib/tokens/motptoken.py:153
 msgid "URL for MOTP token"
@@ -2119,12 +2125,12 @@ msgstr ""
 
 #: lib/tokens/ocratoken.py:101
 msgid "The user may only have this maximum number of OCRA tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet OCRA tokenů."
 
 #: lib/tokens/ocratoken.py:106
 msgid ""
 "The user may only have this maximum number of active OCRA tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet OCRA tokenů."
 
 #: lib/tokens/papertoken.py:109 lib/tokens/tantoken.py:107
 msgid "The number of OTP values, which are printed on the paper."
@@ -2132,12 +2138,12 @@ msgstr ""
 
 #: lib/tokens/papertoken.py:114
 msgid "The user may only have this maximum number of paper tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet záložních kódů."
 
 #: lib/tokens/papertoken.py:119
 msgid ""
 "The user may only have this maximum number of active paper tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet záložních kódů."
 
 #: lib/tokens/passwordtoken.py:112
 msgid ""
@@ -2148,12 +2154,13 @@ msgstr ""
 #: lib/tokens/passwordtoken.py:124
 msgid "The user may only have this maximum number of password tokens assigned."
 msgstr ""
+"Uživatelé si mohou zaregistrovat maximálně tento počet tokenů typu heslo."
 
 #: lib/tokens/passwordtoken.py:129
 msgid ""
 "The user may only have this maximum number of active password tokens "
 "assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet tokenů typu heslo."
 
 #: lib/tokens/pushtoken.py:70
 msgid "Please confirm the authentication on your mobile device!"
@@ -2198,16 +2205,16 @@ msgstr ""
 
 #: lib/tokens/pushtoken.py:333
 msgid "The user may only have this maximum number of Push tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet Push tokenů."
 
 #: lib/tokens/pushtoken.py:338
 msgid ""
 "The user may only have this maximum number of active Push tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet Push tokenů."
 
 #: lib/tokens/pushtoken.py:344
 msgid "Require to unlock the Smartphone before Push requests can be accepted"
-msgstr ""
+msgstr "Vyžadovat odemčení telefonu před akceptováním push notifikace"
 
 #: lib/tokens/pushtoken.py:350
 msgid "The question the user sees on his mobile phone."
@@ -2229,11 +2236,11 @@ msgstr ""
 
 #: lib/tokens/pushtoken.py:372
 msgid "Configure whether to allow push tokens to poll for challenges"
-msgstr ""
+msgstr "Nastavit jestli je povoleno dotazování na push výzvy"
 
 #: lib/tokens/pushtoken.py:508
 msgid "URL for privacyIDEA Push Token"
-msgstr ""
+msgstr "URL pro privacyIDEA Push token"
 
 #: lib/tokens/questionnairetoken.py:98
 msgid "Questionnaire: Enroll Questions for the user."
@@ -2265,12 +2272,12 @@ msgstr ""
 
 #: lib/tokens/radiustoken.py:117
 msgid "The user may only have this maximum number of RADIUS tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet RADIUS tokenů."
 
 #: lib/tokens/radiustoken.py:122
 msgid ""
 "The user may only have this maximum number of active RADIUS tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet RADIUS tokenů."
 
 #: lib/tokens/registrationtoken.py:129
 msgid ""
@@ -2338,12 +2345,12 @@ msgstr ""
 
 #: lib/tokens/smstoken.py:243
 msgid "The user may only have this maximum number of SMS tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet SMS tokenů."
 
 #: lib/tokens/smstoken.py:248
 msgid ""
 "The user may only have this maximum number of active SMS tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet SMS tokenů."
 
 #: lib/tokens/smstoken.py:325
 msgid "Enter the OTP from the SMS:"
@@ -2365,12 +2372,12 @@ msgstr "SPass: Jednoduchý token se statickým heslem."
 
 #: lib/tokens/spasstoken.py:99
 msgid "The user may only have this maximum number of SPASS tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet SPASS tokenů."
 
 #: lib/tokens/spasstoken.py:104
 msgid ""
 "The user may only have this maximum number of active SPASS tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet SPASS tokenů."
 
 #: lib/tokens/sshkeytoken.py:84
 msgid "SSH Public Key: The public SSH key."
@@ -2378,11 +2385,11 @@ msgstr ""
 
 #: lib/tokens/sshkeytoken.py:93
 msgid "The user may only have this maximum number of SSH keys assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet SSH klíčů."
 
 #: lib/tokens/sshkeytoken.py:98
 msgid "The user may only have this maximum number of active SSH keys assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet SSH klíčů."
 
 #: lib/tokens/tantoken.py:112
 msgid "The user may only have this maximum number of TAN tokens assigned."
@@ -2399,12 +2406,12 @@ msgstr ""
 
 #: lib/tokens/tiqrtoken.py:169
 msgid "The user may only have this maximum number of TiQR tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet TiQR tokenů."
 
 #: lib/tokens/tiqrtoken.py:174
 msgid ""
 "The user may only have this maximum number of active TiQR tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet TiQR tokenů."
 
 #: lib/tokens/tiqrtoken.py:239
 msgid "URL for TiQR enrollment"
@@ -2446,12 +2453,12 @@ msgstr ""
 
 #: lib/tokens/u2ftoken.py:288
 msgid "The user may only have this maximum number of U2F tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet U2F tokenů."
 
 #: lib/tokens/u2ftoken.py:293
 msgid ""
 "The user may only have this maximum number of active U2F tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet U2F tokenů."
 
 #: lib/tokens/u2ftoken.py:378
 msgid "You need to define the appId in the token config!"
@@ -2467,12 +2474,12 @@ msgstr ""
 
 #: lib/tokens/vascotoken.py:110
 msgid "The user may only have this maximum number of Vasco tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet Vasco tokenů."
 
 #: lib/tokens/vascotoken.py:115
 msgid ""
 "The user may only have this maximum number of active Vasco tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet Vasco tokenů."
 
 #: lib/tokens/webauthntoken.py:460
 msgid "Generic WebAuthn Token"
@@ -2609,12 +2616,12 @@ msgstr ""
 
 #: lib/tokens/yubicotoken.py:112
 msgid "The user may only have this maximum number of Yubico tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet Yubico tokenů."
 
 #: lib/tokens/yubicotoken.py:117
 msgid ""
 "The user may only have this maximum number of active Yubico tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet Yubico tokenů."
 
 #: lib/tokens/yubikeytoken.py:161
 msgid "Yubikey AES mode: One Time Passwords with Yubikey."
@@ -2622,12 +2629,12 @@ msgstr ""
 
 #: lib/tokens/yubikeytoken.py:170
 msgid "The user may only have this maximum number of Yubikey tokens assigned."
-msgstr ""
+msgstr "Uživatelé si mohou zaregistrovat maximálně tento počet Yubikey tokenů."
 
 #: lib/tokens/yubikeytoken.py:175
 msgid ""
 "The user may only have this maximum number of active Yubikey tokens assigned."
-msgstr ""
+msgstr "Uživatelé mohou mít aktivní maximálně tento počet Yubikey tokenů."
 
 #: lib/tokens/yubikeytoken.py:181
 msgid ""
