@@ -27,7 +27,8 @@ Version 3.8dev3, 2022-12-07
 Version 3.8dev1, 2022-10-06
 
   Features:
-  * Drop support for Python 3.5 and 2.7 (#3263)
+  * Drop support for Python 3.5. Support for 2.7 will be dropped 
+    in privacyIDEA 3.9 (#3263)
   * Add MS CA connector to issue certificates from a Microsoft CA (#3233,
   #3232, #2966, #2158)
   * Add webhook event handler (#3178, #2938)
