@@ -4,7 +4,12 @@
        <div class="col-lg-4">
            <div class="panel panel-default"
                   ng-show="checkRight('tokenlist')">
-               <div class="panel-heading" translate>Tokens</div>
+               <div class="panel-heading">
+	           <a ui-sref="token.list">
+                       <span class="glyphicon glyphicon-phone"></span>
+                       <span translate>Tokens</span>
+                   </a>
+	       </div>
                 <div class="panel-body">
                     <table class="table">
                         <tbody>
@@ -35,7 +40,7 @@
                 </div>
            </div>
        </div>
-       <div class="col-lg-4">
+       <div class="col-lg-3">
              <div class="panel panel-default"
                   ng-show="checkRight('auditlog')">
                  <div class="panel-heading" translate>Authentications</div>
@@ -55,11 +60,11 @@
                                 <td translate>failed users / tokens</td>
                                 <td>
                                     <span ng-repeat="userobj in authentications.users">
-                                        | <a ui-sref="user.details({username: userobj.user, realmname: userobj.realm})">
+					    {{ ! $first ? "| " : "" }}<a ui-sref="user.details({username: userobj.user, realmname: userobj.realm})">
                                         {{ userobj.user }}@{{ userobj.realm }}</a>
                                     </span>
                                     <span ng-repeat="serial in authentications.serials">
-                                        | <a ui-sref="token.details({tokenSerial: serial})">
+                                        <a ui-sref="token.details({tokenSerial: serial})">
                                         {{ serial }}</a>
                                     </span>
                                 </td>
@@ -69,7 +74,7 @@
                  </div>
            </div>
        </div>
-       <div class="col-lg-4">
+       <div class="col-lg-5">
             <div class="panel panel-default"
                   ng-show="checkRight('auditlog')">
                  <div class="panel-heading" translate>Administration</div>
@@ -101,7 +106,12 @@
        <div class="col-lg-4">
            <div class="panel panel-default"
                 ng-show="checkRight('policyread')">
-                 <div class="panel-heading" translate>Policies</div>
+                 <div class="panel-heading">
+                    <a ui-sref="config.policies.list">
+                    <span class="glyphicon glyphicon-hand-up"
+                          aria-hidden="true"></span>
+                    <span translate>Policies</span></a>
+		 </div>
                  <div class="panel-body">
                     <table class="table">
                         <tbody>
@@ -112,7 +122,7 @@
                             <tr>
                                 <td span="2">
                                     <span ng-repeat="pol in policies.active">
-                                        | <a ui-sref="config.policies.details({policyname:pol})"
+                                        {{ ! $first ? "| " : "" }}<a ui-sref="config.policies.details({policyname:pol})"
                                            ng-click="$rootScope.returnTo=dashboard;">{{ pol }}</a>
                                     </span>
                                 </td>
@@ -124,7 +134,7 @@
                             <tr>
                                 <td span="2">
                                     <span ng-repeat="pol in policies.inactive">
-                                        | <a ui-sref="config.policies.details({policyname:pol})"
+                                        {{ ! $first ? "| " : "" }}<a ui-sref="config.policies.details({policyname:pol})"
                                            ng-click="$rootScope.returnTo=dashboard;">{{ pol }}</a>
                                     </span>
 
@@ -149,7 +159,7 @@
                             <tr>
                                 <td span="2">
                                     <span ng-repeat="event in events.active">
-                                        | <a ui-sref="config.events.details({eventid:event.id})"
+                                        {{ ! $first ? "| " : "" }}<a ui-sref="config.events.details({eventid:event.id})"
                                            ng-click="$rootScope.returnTo=dashboard;">{{ event.name }}</a>
                                     </span>
                                 </td>
@@ -161,7 +171,7 @@
                             <tr>
                                 <td span="2">
                                     <span ng-repeat="event in events.inactive">
-                                        | <a ui-sref="config.events.details({eventid:event.id})"
+                                        {{ ! $first ? "| " : "" }}<a ui-sref="config.events.details({eventid:event.id})"
                                            ng-click="$rootScope.returnTo=dashboard;">{{ event.name }}</a>
                                     </span>
 
@@ -174,7 +184,12 @@
        </div>
        <div class="col-lg-4">
              <div class="panel panel-default" ng-show="checkRight('managesubscription')">
-                 <div class="panel-heading" translate>Subscriptions</div>
+                 <div class="panel-heading" translate>
+                    <a ui-sref="component.subscriptions">
+                    <span class="glyphicon glyphicon-calendar"
+                          aria-hidden="true"></span>
+                    <span translate>Subscriptions</span></a>
+		 </div>
                  <div class="panel-body">
                      <table class="table">
                          <tbody>
