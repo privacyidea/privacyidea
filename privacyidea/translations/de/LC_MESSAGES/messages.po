@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-12-07 15:43+0100\n"
-"PO-Revision-Date: 2022-12-08 16:48+0000\n"
+"PO-Revision-Date: 2022-12-14 20:50+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/de/>\n"
@@ -49,8 +49,8 @@ msgid ""
 "Authentication failure. The username {0!s} is not allowed to impersonate via "
 "JWT."
 msgstr ""
-"Fehler bei der Authentifizierung. Der Benutzername {0!s} ist nicht berechtig "
-"mittels JWT zuzugreifen."
+"Fehler bei der Authentifizierung. Der Benutzername {0!s} ist nicht "
+"berechtigt mittels JWT zuzugreifen."
 
 #: api/lib/utils.py:356
 msgid ""
@@ -58,7 +58,7 @@ msgid ""
 "this resource!"
 msgstr ""
 "Authentifizierungsfehler. Sie haben nicht die nötige Rolle ({0!s}), um auf "
-"die Resource zuzugreifen!"
+"die Ressource zuzugreifen!"
 
 #: api/lib/utils.py:374
 msgid "'{0!s}' is an invalid policy name."
@@ -459,7 +459,7 @@ msgstr "Der Administrator darf Definitionen von SMS-Gateways lesen."
 msgid ""
 "Admin is allowed to get the list of authenticated clients and their types."
 msgstr ""
-"Der Administrator kann die Liste der authentifizierten Clients-Applikationen "
+"Der Administrator kann die Liste der authentifizierten Client-Applikationen "
 "anzeigen."
 
 #: lib/policy.py:1928
@@ -501,28 +501,20 @@ msgstr ""
 "Administrator nicht angezeigt werden."
 
 #: lib/policy.py:1961
-#, fuzzy
-#| msgid "The Admin is allowed to list the machines."
 msgid "The Admin is allowed list the available tokengroups."
-msgstr "Der Administrator kann Maschinen auflisten."
+msgstr "Der Administrator kann die verfügbaren Token-Gruppen anzeigen."
 
 #: lib/policy.py:1966
-#, fuzzy
-#| msgid "Admin is allowed to disable tokens."
 msgid "The Admin is allowed to add a new tokengroup."
-msgstr "Der Adminitrator kann Token deaktivieren."
+msgstr "Der Administrator kann neue Token-Gruppen hinzufügen."
 
 #: lib/policy.py:1971
-#, fuzzy
-#| msgid "Admin is allowed to revoke a token"
 msgid "The Admin is allowed delete a tokengroup."
-msgstr "Der Administrator kann Token revozieren"
+msgstr "Der Administrator kann Token-Gruppen löschen."
 
 #: lib/policy.py:1976
-#, fuzzy
-#| msgid "Admin is allowed to manage the realms of a token."
 msgid "The Admin is allowed to manage the tokengroups of a token."
-msgstr "Der Administrator kann die Realms eines Tokens bearbeiten."
+msgstr "Der Administrator kann die Token-Gruppen eines Tokens bearbeiten."
 
 #: lib/policy.py:1983
 msgid ""
@@ -895,16 +887,12 @@ msgstr ""
 "Fehlerzähler all seiner Token zurückgesetzt."
 
 #: lib/policy.py:2312
-#, fuzzy
-#| msgid ""
-#| "Increase or decrease the fail counter of the token. Values of +n, -n with "
-#| "n being an integer are accepted."
 msgid ""
 "Increase the failcounter for all the tokens, for which a challenge has been "
 "triggered."
 msgstr ""
-"Der Fehlerzähler wird inkrementiert oder dekrementiert. Werte +n und -n, "
-"wobei n eine Zahl ist, werden akzeptiert."
+"Der Fehlerzähler aller Token, die eine Challenge ausgelöst haben, wird "
+"inkrementiert."
 
 #: lib/policy.py:2316
 msgid ""
@@ -1111,13 +1099,11 @@ msgstr ""
 "angezeigt werden."
 
 #: lib/policy.py:2484
-#, fuzzy
-#| msgid "Set how many users should be displayed in the user view on one page."
 msgid ""
 "Set how many audit entries should be displayed in the audit view on one page."
 msgstr ""
-"Anzahl der Benutzer, die in der Tabelle auf der Tokenübersichtsseite "
-"angezeigt werden."
+"Anzahl der Audit-Enträge, die in der Tabelle auf der Audit-Seite angezeigt "
+"werden."
 
 #: lib/policy.py:2489
 msgid "Use your own html template for the web UI menu."
@@ -1429,7 +1415,7 @@ msgstr ""
 
 #: lib/token.py:2549 lib/token.py:2565
 msgid "The tokengroup does not exist."
-msgstr ""
+msgstr "Die Token-Gruppe existiert nicht."
 
 #: lib/tokenclass.py:1657
 msgid "please enter otp: "
@@ -1894,16 +1880,12 @@ msgid "Delete this tokeninfo key."
 msgstr "Diesen Tokeninfo-Eintrag löschen."
 
 #: lib/eventhandler/tokenhandler.py:303
-#, fuzzy
-#| msgid "The type of the token."
 msgid "Add a tokengroup to the token."
-msgstr "Der Tokentyp."
+msgstr "Füge dem Token eine Token-Gruppe hinzu."
 
 #: lib/eventhandler/tokenhandler.py:312
-#, fuzzy
-#| msgid "Set the failcounter of the token."
 msgid "Remote a tokengroup from the token."
-msgstr "Setze den Fehlerzähler des Tokens."
+msgstr "Entferne eine Token-Gruppe vom Token."
 
 #: lib/eventhandler/usernotification.py:126
 msgid "Send notification email via this email server."
@@ -2241,29 +2223,23 @@ msgstr ""
 "(Standard: \"ignore\")"
 
 #: lib/tokens/certificatetoken.py:312
-#, fuzzy
-#| msgid "The attribute whose value should be force set during enrollment."
 msgid "The CA connector that should be used during certificate enrollment."
 msgstr ""
-"Das Attribute, dessen Wert zwingend, automatisch beim Ausrollen gesetzt wird."
+"Der CA-Konnektor welcher für die Zertifikatserstellung genutzt werden soll."
 
 #: lib/tokens/certificatetoken.py:318
-#, fuzzy
-#| msgid "The parameter that should be added or modified."
 msgid "The template that should be used to issue a certificate."
-msgstr "Der Parameter der hinzugefügt oder verändert werden soll."
+msgstr ""
+"Die Zertifikatsvorlage die für das Ausstellen von Zertifikaten genutzt "
+"werden soll."
 
 #: lib/tokens/certificatetoken.py:323
-#, fuzzy
-#| msgid ""
-#| "This is a whitespace separated list of tokentypes, that can be used with "
-#| "challenge response."
 msgid ""
 "This takes a space separated list of elements to be added to the subject. "
 "Can be 'email' and 'realm'."
 msgstr ""
-"Liste von Tokentypen, die für das Challenge-Response Verfahren verwendet "
-"werden können (durch Leerzeichen getrennt)."
+"Eine durch Leerzeichen getrennte Liste von Elementen, die dem Subjekt des "
+"Zertifikats hinzugefügt werden. Mögliche Elemente sind 'email' und 'realm'."
 
 #: lib/tokens/certificatetoken.py:331 lib/tokens/certificatetoken.py:338
 msgid "The directory containing attestation certificate chains."
@@ -2826,10 +2802,8 @@ msgid "The PIN was correct, but the SMS could not be sent!"
 msgstr "Die PIN ist korrekt aber die SMS konnte nicht gesendet werden!"
 
 #: lib/tokens/smstoken.py:603
-#, fuzzy
-#| msgid "Please enter a new PIN"
 msgid "Please enter your new phone number!"
-msgstr "Vergeben Sie bitte eine neue PIN"
+msgstr "Bitte geben Sie Ihre neue Telefonnummer ein!"
 
 #: lib/tokens/spasstoken.py:87
 msgid "SPass: Simple Pass token. Static passwords."
