@@ -228,7 +228,8 @@ def create_app(config_name="development",
         with app.app_context():
             init_hsm()
 
-    logging.debug(u"Reading application from the static folder {0!s} and "
-                  u"the template folder {1!s}".format(app.static_folder, app.template_folder))
+    logging.getLogger(__name__).debug(u"Reading application from the static "
+                                      u"folder {0!s} and the template folder "
+                                      u"{1!s}".format(app.static_folder, app.template_folder))
 
     return app
