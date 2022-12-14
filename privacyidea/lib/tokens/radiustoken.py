@@ -49,6 +49,7 @@ import logging
 
 import traceback
 import binascii
+import random
 from privacyidea.lib.utils import is_true, to_bytes, hexlify_and_unicode, to_unicode
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
@@ -467,105 +468,121 @@ class RadiusTokenClass(RemoteTokenClass):
         if radius_identifier:
             # New configuration
             radius_server_object = get_radius(radius_identifier)
-            radius_server = radius_server_object.config.server
+            radius_servers = radius_server_object.config.server
             radius_port = radius_server_object.config.port
-            radius_server = u"{0!s}:{1!s}".format(radius_server, radius_port)
             radius_secret = radius_server_object.get_secret()
             radius_dictionary = radius_server_object.config.dictionary
             radius_timeout = int(radius_server_object.config.timeout or 10)
             radius_retries = int(radius_server_object.config.retries or 1)
         elif system_radius_settings:
             # system configuration
-            radius_server = get_from_config("radius.server")
+            radius_servers = get_from_config("radius.server")
             radius_secret = get_from_config("radius.secret")
         else:
             # individual token settings
-            radius_server = self.get_tokeninfo("radius.server")
+            radius_servers = self.get_tokeninfo("radius.server")
             # Read the secret
             secret = self.token.get_otpkey()
             radius_secret = binascii.unhexlify(secret.getKey())
 
-        # here we also need to check for radius.user
-        log.debug(u"checking OTP len:{0!s} on radius server: "
-                  u"{1!s}, user: {2!r}".format(len(otpval), radius_server,
-                                               radius_user))
-
         try:
             # pyrad does not allow to set timeout and retries.
+            # here we also need to check for radius.user
+            log.debug(u"checking OTP len:{0!s} on radius server: "
+                      u"{1!s}, user: {2!r}".format(len(otpval), radius_servers,
+                                                   radius_user))
+
             # it defaults to retries=3, timeout=5
 
-            # TODO: At the moment we support only one radius server.
-            # No round robin.
-            server = radius_server.split(':')
-            r_server = server[0]
-            r_authport = 1812
-            if len(server) >= 2:
-                r_authport = int(server[1])
-            nas_identifier = get_from_config("radius.nas_identifier",
-                                             "privacyIDEA")
-            if not radius_dictionary:
-                radius_dictionary = get_from_config("radius.dictfile",
-                                                    "/etc/privacyidea/dictionary")
-            log.debug(u"NAS Identifier: %r, "
-                      u"Dictionary: %r" % (nas_identifier, radius_dictionary))
-            log.debug(u"constructing client object "
-                      u"with server: %r, port: %r, secret: %r" %
-                      (r_server, r_authport, to_unicode(radius_secret)))
+            tmp_radius_state = radius_state
+            for radius_retry in range(1, radius_retries):
+                radius_servers_list = radius_servers.split(',')
+                random.shuffle(radius_servers_list)
+                for radius_server in radius_servers_list:
+                    tmp_radius_state = radius_state
+                    # TODO: IPv6 break the split
+                    server = radius_server.split(':')
+                    r_server = server[0]
+                    if len(server) >= 2:
+                        r_authport = int(server[1])
+                    else:
+                        if radius_identifier:
+                            r_authport = radius_server_object.config.port
+                        else:
+                            r_authport = 1812
+                    nas_identifier = get_from_config("radius.nas_identifier",
+                                                     "privacyIDEA")
+                    if not radius_dictionary:
+                        radius_dictionary = get_from_config("radius.dictfile",
+                                                            "/etc/privacyidea/dictionary")
+                    log.debug(u"NAS Identifier: %r, "
+                              u"Dictionary: %r" % (nas_identifier, radius_dictionary))
+                    log.debug(u"constructing client object "
+                              u"with server: %r, port: %r, secret: %r" %
+                              (r_server, r_authport, to_unicode(radius_secret)))
 
-            srv = Client(server=r_server,
-                         authport=r_authport,
-                         secret=to_bytes(radius_secret),
-                         dict=Dictionary(radius_dictionary))
+                    srv = Client(server=r_server,
+                                 authport=r_authport,
+                                 secret=to_bytes(radius_secret),
+                                 dict=Dictionary(radius_dictionary))
 
-            # Set retries and timeout of the client
-            srv.timeout = radius_timeout
-            srv.retries = radius_retries
+                    # Set retries and timeout of the client
+                    srv.timeout = radius_timeout
+                    srv.retries = 1
 
-            req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
-                                       User_Name=radius_user.encode('utf-8'),
-                                       NAS_Identifier=nas_identifier.encode('ascii'))
+                    req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
+                                               User_Name=radius_user.encode('utf-8'),
+                                               NAS_Identifier=nas_identifier.encode('ascii'))
 
-            req["User-Password"] = req.PwCrypt(otpval)
+                    req["User-Password"] = req.PwCrypt(otpval)
 
-            if radius_state:
-                req["State"] = radius_state
-                log.info(u"Sending saved challenge to radius server: {0!r} ".format(radius_state))
+                    if tmp_radius_state:
+                        req["State"] = tmp_radius_state
+                        log.info(u"Sending saved challenge to radius server: {0!r} ".format(tmp_radius_state))
 
-            try:
-                response = srv.SendPacket(req)
-            except Timeout:
-                log.warning(u"The remote RADIUS server {0!s} timeout out for user {1!s}.".format(
-                    r_server, radius_user))
+                    try:
+                        response = srv.SendPacket(req)
+                    except Timeout:
+                        log.warning(u"The remote RADIUS server {0!s} timeout out for user {1!s}.".format(
+                            r_server, radius_user))
+                        result = Timeout
+                        continue
+
+                    # handle the RADIUS challenge
+                    if response.code == pyrad.packet.AccessChallenge:
+                        # now we map this to a privacyidea challenge
+                        if "State" in response:
+                            tmp_radius_state = response["State"][0]
+                        if "Reply-Message" in response:
+                            radius_message = response["Reply-Message"][0]
+
+                        result = AccessChallenge
+                    elif response.code == pyrad.packet.AccessAccept:
+                        tmp_radius_state = '<SUCCESS>'
+                        radius_message = 'RADIUS authentication succeeded'
+                        log.info(u"RADIUS server {0!s} granted "
+                                 u"access to user {1!s}.".format(r_server, radius_user))
+                        result = AccessAccept
+                    else:
+                        tmp_radius_state = '<REJECTED>'
+                        radius_message = 'RADIUS authentication failed'
+                        log.debug(u'radius response code {0!s}'.format(response.code))
+                        log.info(u"Radiusserver {0!s} "
+                                 u"rejected access to user {1!s}.".format(r_server, radius_user))
+                        result = AccessReject
+                    break 
+
+                if result != Timeout:
+                    break
+
+            if result == Timeout:
                 return AccessReject
-
-            # handle the RADIUS challenge
-            if response.code == pyrad.packet.AccessChallenge:
-                # now we map this to a privacyidea challenge
-                if "State" in response:
-                    radius_state = response["State"][0]
-                if "Reply-Message" in response:
-                    radius_message = response["Reply-Message"][0]
-
-                result = AccessChallenge
-            elif response.code == pyrad.packet.AccessAccept:
-                radius_state = '<SUCCESS>'
-                radius_message = 'RADIUS authentication succeeded'
-                log.info(u"RADIUS server {0!s} granted "
-                         u"access to user {1!s}.".format(r_server, radius_user))
-                result = AccessAccept
-            else:
-                radius_state = '<REJECTED>'
-                radius_message = 'RADIUS authentication failed'
-                log.debug(u'radius response code {0!s}'.format(response.code))
-                log.info(u"Radiusserver {0!s} "
-                         u"rejected access to user {1!s}.".format(r_server, radius_user))
-                result = AccessReject
 
         except Exception as ex:  # pragma: no cover
             log.error("Error contacting radius Server: {0!r}".format((ex)))
             log.info("{0!s}".format(traceback.format_exc()))
 
         options.update({'radius_result': result})
-        options.update({'radius_state': radius_state})
+        options.update({'radius_state': tmp_radius_state})
         options.update({'radius_message': radius_message})
         return result
