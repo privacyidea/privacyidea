@@ -13,7 +13,7 @@ Ubuntu 14.04 LTS and Ubuntu 16.04 LTS from a public ppa repository [#ppa]_.
 Using these is deprecated.
 
 For recent releases of privacyIDEA starting from version 3.0 a repository is
-available which provides packages for Ubuntu 16.04 LTS, 18.04 LTS and 20.04LTS [#ubuntu]_.
+available which provides packages for Ubuntu 18.04 LTS, 20.04LTS and 22.04LTS [#ubuntu]_.
 
 .. note:: The packages ``privacyidea-apache2`` and ``privacyidea-nginx`` assume
    that you want to run a privacyIDEA system. These packages deactivate all
@@ -38,11 +38,7 @@ The packages are digitally signed. First you need to download the signing key::
 
    wget https://lancelot.netknights.it/NetKnights-Release.asc
 
-On Ubuntu 16.04 check the fingerprint of the key::
-
-   gpg --with-fingerprint NetKnights-Release.asc
-
-On 18.04 and 20.04 you need to run::
+Then you can verify the fingerprint::
 
    gpg --import --import-options show-only --with-fingerprint NetKnights-Release.asc
 
@@ -51,23 +47,27 @@ The fingerprint of the key is::
    pub 4096R/AE250082 2017-05-16 NetKnights GmbH <release@netknights.it>
    Key fingerprint = 0940 4ABB EDB3 586D EDE4 AD22 00F7 0D62 AE25 0082
 
-Now add the signing key to your system::
+On Ubuntu 18.04LTS and 20.04LTS you can now add the signing key to your system::
 
    apt-key add NetKnights-Release.asc
 
-Now you need to add the repository for your release (either xenial/16.04LTS, bionic/18.04LTS, focal/20.04LTS)
+On Ubuntu 22.04LTS you can add the signing key by::
+
+   mv NetKnights-Release.asc /etc/apt/trusted.gpg.d/
+
+Now you need to add the repository for your release (either bionic/18.04LTS, focal/20.04LTS or jammy/22.04LTS)
 
 You can do this by running the command::
-
-   add-apt-repository http://lancelot.netknights.it/community/xenial/stable
-
-or::
 
    add-apt-repository http://lancelot.netknights.it/community/bionic/stable
 
 or::
 
    add-apt-repository http://lancelot.netknights.it/community/focal/stable
+
+or::
+
+   add-apt-repository http://lancelot.netknights.it/community/jammy/stable
 
 As an alternative you can add the repo in a dedicated file. Create a new 
 file ``/etc/apt/sources.list.d/privacyidea-community.list`` with the
@@ -129,6 +129,7 @@ For further details see :ref:`rlm_perl`.
    provided. Starting with privacyIDEA 3.0 Ubuntu 16.04 and 18.04 packages
    are provided, Ubuntu 14.04 packages are dropped.
    Starting with privacyIDEA 3.5 Ubuntu 20.04 packages are available.
+   Starting with privacyIDEA 3.8 Ubuntu 22.04 packages are available, Ubuntu 16.04 packages are dropped.
 .. [#simpleSAML] https://github.com/privacyidea/simplesamlphp-module-privacyidea
 .. [#otrs] http://www.otrs.com/
 
