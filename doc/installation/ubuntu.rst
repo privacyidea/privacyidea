@@ -47,9 +47,13 @@ The fingerprint of the key is::
    pub 4096R/AE250082 2017-05-16 NetKnights GmbH <release@netknights.it>
    Key fingerprint = 0940 4ABB EDB3 586D EDE4 AD22 00F7 0D62 AE25 0082
 
-Now add the signing key to your system::
+On Ubuntu 18.04LTS and 20.04LTS you can now add the signing key to your system::
 
    apt-key add NetKnights-Release.asc
+
+On Ubuntu 22.04LTS you can add the signing key by::
+
+   mv NetKnights-Release.asc /etc/apt/trusted.gpg.d/
 
 Now you need to add the repository for your release (either bionic/18.04LTS, focal/20.04LTS or jammy/22.04LTS)
 
