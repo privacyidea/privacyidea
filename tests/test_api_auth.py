@@ -52,6 +52,9 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual(4031, result['error']['code'], result)
             self.assertEqual('Authentication failure. Wrong credentials',
                              result['error']['message'], result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 0, aentry)
 
         # test with realm added to user
         with self.app.test_request_context('/auth',
@@ -119,6 +122,8 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertIn('token', result.get("value"), result)
             # realm1 should be the default realm
             self.assertEqual('realm1', result['value']['realm'], result)
+
+        # TODO: Add test with empty realm parameter and user@realm not in default realm
 
         # test with realm parameter and wrong realm added to user
         with mock.patch("logging.Logger.error") as mock_log:
