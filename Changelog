@@ -23,7 +23,7 @@ Enhancements:
 * Add passthru policy to audit log, even if password was wrong (#3212)
 * Improve the description for appimageurl (#3133)
 * Allow to choose padding for default security module (#3115)
-* Make available languages configureable in pi.cfg (#3076)
+* Make available languages configurable in pi.cfg (#3076)
 * Add translation for admin error messages (#3066)
 * Allow HTTPSMSProvider to send data as JSON (#3056)
 * Rename pi-manage createdb to create-tables (#2996)
