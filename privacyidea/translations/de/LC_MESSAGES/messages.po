@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-12-07 15:43+0100\n"
-"PO-Revision-Date: 2022-12-14 20:50+0000\n"
+"PO-Revision-Date: 2022-12-16 17:48+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-ui/de/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.15-dev\n"
+"X-Generator: Weblate 4.15\n"
 "Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:225
@@ -831,6 +831,8 @@ msgid ""
 "In case of a successful authentication the following tokentype is enrolled. "
 "The maximum number of tokens for a user is checked."
 msgstr ""
+"Im Falle einer erfolgreichen Authentisierung wird der folgende Tokentyp "
+"ausgerollt. Die maximale Anzahl von Token für einen Benutzer wird überprüft."
 
 #: lib/policy.py:2276
 msgid ""
@@ -979,8 +981,8 @@ msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
 "regexp. key/&lt;regexp&gt;/"
 msgstr ""
-"Die Autorisierung des Benutzers ist nur erfolgreich, wenn das Tokeninfo Feld "
-"auf den regulären Ausdruck passt. key/&lt;regexp&gt;/"
+"Der Benutzer kann sich nur mit einem Token anmelden, wenn dessen Tokeninfo "
+"Feld auf den regulären Ausdruck passt. key/&lt;regexp&gt;/"
 
 #: lib/policy.py:2389
 msgid ""
@@ -1310,9 +1312,8 @@ msgid "token create failed {0!r}"
 msgstr ""
 
 #: lib/token.py:1217
-#, fuzzy
 msgid "Token already assigned to user {0!r}"
-msgstr "Anzahl der Benutzern zugewiesenen Token"
+msgstr "Der Token ist schon dem Benutzer {0!r} zugewiesen"
 
 #: lib/token.py:1231
 msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
@@ -1349,9 +1350,8 @@ msgid "OTP verification failed."
 msgstr ""
 
 #: lib/token.py:2055
-#, fuzzy
 msgid "The user has no tokens assigned"
-msgstr "Anzahl der Benutzer mit zugewiesenen Token"
+msgstr "Der Benutzer hat keinen zugewiesenen Token"
 
 #: lib/token.py:2271
 msgid "matching {0:d} tokens"
@@ -2328,10 +2328,8 @@ msgid "The PIN was correct, but the EMail could not be sent!"
 msgstr "Die PIN ist korrekt aber die EMail konnte nicht gesendet werden!"
 
 #: lib/tokens/emailtoken.py:543
-#, fuzzy
-#| msgid "Please enter a new PIN"
 msgid "Please enter your new email address!"
-msgstr "Vergeben Sie bitte eine neue PIN"
+msgstr "Bitte geben Sie ihre neue Email-Adresse ein!"
 
 #: lib/tokens/foureyestoken.py:132
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
@@ -2356,10 +2354,8 @@ msgid "Please enter a valid OTP value of the new token."
 msgstr "Bitte geben Sie einen gültigen OTP-Wert des neuen Tokens ein."
 
 #: lib/tokens/hotptoken.py:99
-#, fuzzy
-#| msgid "Specify the hashlib to be used. Can be sha1 (1) or sha2-256 (2)."
 msgid "Specify the hashing function to be used. Can be SHA1, SHA256 or SHA512."
-msgstr "Der zu verwendende Hash-Algorithmus. SHA1 (1) oder SHA2-256 (2)."
+msgstr "Der zu verwendende Hash-Algorithmus, SHA1, SHA-256 oder SHA-512."
 
 #: lib/tokens/hotptoken.py:101
 #, fuzzy
@@ -2425,10 +2421,8 @@ msgid "URL for OATH token"
 msgstr "URL für OATH Token"
 
 #: lib/tokens/hotptoken.py:842 lib/tokens/pushtoken.py:1064
-#, fuzzy
-#| msgid "Please scan the QR Code"
 msgid "Please scan the QR code!"
-msgstr "Bitte scannen Sie den QR-Code"
+msgstr "Bitte scannen Sie den QR-Code!"
 
 #: lib/tokens/indexedsecrettoken.py:51
 msgid "Please enter the positions {0!s} from your secret."
@@ -3065,16 +3059,12 @@ msgstr ""
 "Token dies unterstützt)"
 
 #: lib/tokens/webauthntoken.py:703
-#, fuzzy
-#| msgid ""
-#| "Which algorithm to use for creating public key credentials for WebAuthn "
-#| "tokens. Default: ecdsa_preferred"
 msgid ""
 "Which algorithm are available to use for creating public key credentials for "
 "WebAuthn tokens. (Default: [{0!s}], Order: [{1!s}]"
 msgstr ""
 "Der Algorithmus, mit dem öffentliche Schlüssel für WebAuthn Token erzeugt "
-"werden sollen. Standard: \"ecdsa_preferred\""
+"werden sollen. Standard: [{0!s}], Reihenfolge: [{1!s}])"
 
 #: lib/tokens/webauthntoken.py:710
 msgid ""
