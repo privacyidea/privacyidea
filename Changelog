@@ -1,3 +1,70 @@
+Version 3.8, 2022-12-20
+
+Features:
+* Drop support for Python 3.5. Support for 2.7 will be dropped
+  in privacyIDEA 3.9 (#3263)
+* Add MS CA connector to issue certificates from a Microsoft CA
+  (#3233, #3232, #2966, #2158)
+* Add enrollment of HOTP, TOTP, SMS, Email or PUSH token during
+  authentication via Multi-Challenge (#2993)
+* Add webhook event handler (#3178, #2938)
+* Allow Kerebos Authentication for LDAP resolvers (#770)
+* Add token groups in preparation for SSH key and Offline-Token
+  management (#3299)
+
+Enhancements:
+* Avoid double registration of webauthn tokens per user (#3207)
+* Add WebAuthn attestation format "packed" (#3150)
+* Support Windows Hello as WebAuthn token (#3142)
+* Add preferred client mode to define the authentication behaviour of
+  plugins (#3373)
+* Display multiple serials in auditlog in case of C/R (#3285)
+* Add PI_LOGOUT_REDIRECT_URL for using a SAML logout link from the WebUI  (#3257)
+* Add passthru policy to audit log, even if password was wrong (#3212)
+* Improve the description for appimageurl (#3133)
+* Allow to choose padding for default security module (#3115)
+* Make available languages configureable in pi.cfg (#3076)
+* Add translation for admin error messages (#3066)
+* Allow HTTPSMSProvider to send data as JSON (#3056)
+* Rename pi-manage createdb to create-tables (#2996)
+* Add ed25519-sk/ecdsa-sk for SSH tokens (#2792)
+* Avoid spamming with SMS or Email by allowing to increase failcounter
+* Add thread ID to audit log (#3381)
+  during challenge-response (#933)
+* Configure Email address in the subject of a certificate request (#3327)
+* Be more relaxing about subscription checking of plugins (#3296)
+UI
+* Add policy for audit_page_size (#3167)
+* Add search highlighting in event handler conditions (#3062)
+* Link online documentation in WebUI (#2952)
+* Search and filter for actions in configured policies (#2788)
+Documentation
+* Add a glossary (#2783)
+
+Fixes:
+* Automatically delete MachineTokenOptions when a MachineToken is deleted (#3165)
+* Fixing int-str conversion with Python 3.10 (#3303)
+* Remove pillow dependency (#3268)
+* Fix default AD attributes to (ObjectCategory=person) (#3218)
+* Fix WebAuthn trust anchor directory (#3216)
+* Fix enrolling SSH keys with an empty comment (#3198)
+* Avoid fails in case of content-type header mismatch (#3194)
+* Fix App device in certain cases as WebAuthn token (#3136)
+* Fix ImportException to be subclass of privacyIDEAError (#3131)
+* Fix URL encoding in TiQR URL (#3121)
+* Add index for timestamp in DB (#3120)
+* AES module also encrypts empty strings (#2899)
+* Fix Push_Wait if user presses decline on smartphone (#2865)
+* Fix fetching SSH keys under certain circumstances (#3375)
+* Add missing sequences for certain database tables (#3356)
+* Remove user fields from token API (#3343)
+* Add SMPP encoding check (#3321)
+WebUI:
+* Disable realm button in case of reasolverread (UI) (#3149)
+* Add missing translation for PSKC import (#3129)
+
+
+
 Version 3.8dev3, 2022-12-07
 
   Features:
@@ -14,7 +81,6 @@ Version 3.8dev3, 2022-12-07
     during challenge-response (#933)
   * Configure Email address in the subject of a certificate request (#3327)
 
-
   Fixes:
   * Fix fetching SSH keys under certain circumstances (#3375)
   * Add missing sequences for certain database tables (#3356)
@@ -27,7 +93,7 @@ Version 3.8dev3, 2022-12-07
 Version 3.8dev1, 2022-10-06
 
   Features:
-  * Drop support for Python 3.5. Support for 2.7 will be dropped 
+  * Drop support for Python 3.5. Support for 2.7 will be dropped
     in privacyIDEA 3.9 (#3263)
   * Add MS CA connector to issue certificates from a Microsoft CA (#3233,
   #3232, #2966, #2158)
@@ -56,8 +122,6 @@ Version 3.8dev1, 2022-10-06
   * Search and filter for actions in configured policies (#2788)
   Documentation
   * Add a glossary (#2783)
-
-
 
   Fixes:
   * Automatically delete MachineTokenOptions when a MachineToken is deleted (#3165)
