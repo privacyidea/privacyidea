@@ -607,8 +607,9 @@ class AuthApiTestCase(MyApiTestCase):
         ldap3mock.set_exception(False)
 
     def test_06_auth_user_not_in_defrealm(self):
-        self.setUp_user_realm3()
         self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_default_realm(self.realm3)
         # check that realm3 is the default realm
         self.assertEqual(self.realm3, get_default_realm())
         # authentication with "@realm1" works
