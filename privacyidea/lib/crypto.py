@@ -313,6 +313,7 @@ def encryptPassword(password):
     """
     hsm = get_hsm()
     try:
+        password = password or ""
         ret = hsm.encrypt_password(to_bytes(password))
     except Exception as exx:  # pragma: no cover
         log.warning(exx)

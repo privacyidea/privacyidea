@@ -1,8 +1,31 @@
 # Update Notes
 
+## Update from 3.7 to 3.8
+
+* The algorithms for WebAuthn tokens have been enhanced. This is why it
+  was necessary to change the policy definition for WebAuthn Token enrollment.
+  In enrollment policy action name "webauthn_public_key_credential_algorithm_preference"
+  will be changed to "webauthn_public_key_credential_algorithms".
+  The values will also be adapted from
+    ecdsa_preferred -> ecdsa rsassa-pss
+    ecdsa_only -> ecdsa
+    rsassa-pss_preferred -> rsassa-pss ecdsa
+    rsassa-pss_only -> rsassa-pss
+  Existing policies are changed in the schema update script.
+
+Several database changes have been added. These are all *adds* without data migration.
+
+* Several datatime columns get an index.
+* New tables "tokengroup" and "tokentokengroup".
+* Sequence for the tables "customuserattribute" has been added.
+* The size of the "key_enc" column in the table "token" has been increased.
+* The "pidea_audit" table gets a new column "thread_id".
+
+Be sure to run the schema update script!
+
 ## Update from 3.6 to 3.7
 
-* The database schema in table "machinetoken" was changed to support a new way of 
+* The database schema in table "machinetoken" was changed to support a new way of
   handling offline tokens.
 * The notification handler can contain more complex reply_to emails.
   The handler optiones were adapted in the database.
@@ -16,7 +39,7 @@ Be sure to run the schema update script!
   migration script sets resolvers without a configured TLS_VERSION to 1.2.
 
   **WARNING**: On Ubuntu 20.04 using TLS 1.0 will fail and users will not be found.
-  Either change to TLS 1.2 before running the update or use a local admin to change 
+  Either change to TLS 1.2 before running the update or use a local admin to change
   the TLS version after the update.
 
 Be sure to run the schema update script!
@@ -26,7 +49,7 @@ Be sure to run the schema update script!
 * The audit log table now also records the start date and the duration
   of a request.
 
-* The authcache database table gets a longer column "authentication" 
+* The authcache database table gets a longer column "authentication"
   to cope with the longer Argon2 hashes.
 
 Be sure to run the schema update script.

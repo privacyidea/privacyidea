@@ -8,7 +8,8 @@ from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, REMOTE_USER,
                                     delete_policy)
 from privacyidea.lib.auth import create_db_admin
 from privacyidea.lib.resolver import save_resolver, delete_resolver
-from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
+from privacyidea.lib.realm import (set_realm, set_default_realm, delete_realm,
+                                   get_default_realm)
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.token import get_tokens, remove_token
@@ -52,6 +53,9 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual(4031, result['error']['code'], result)
             self.assertEqual('Authentication failure. Wrong credentials',
                              result['error']['message'], result)
+        aentry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(aentry['action'], 'POST /auth', aentry)
+        self.assertEqual(aentry['success'], 0, aentry)
 
         # test with realm added to user
         with self.app.test_request_context('/auth',
@@ -119,6 +123,8 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertIn('token', result.get("value"), result)
             # realm1 should be the default realm
             self.assertEqual('realm1', result['value']['realm'], result)
+
+        # TODO: Add test with empty realm parameter and user@realm not in default realm
 
         # test with realm parameter and wrong realm added to user
         with mock.patch("logging.Logger.error") as mock_log:
@@ -533,7 +539,7 @@ class AuthApiTestCase(MyApiTestCase):
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
-        self.assertEqual(aentry['policies'], '', aentry)
+        self.assertEqual(None, aentry['policies'], aentry)
 
         # check split@sign is working correctly
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
@@ -599,6 +605,48 @@ class AuthApiTestCase(MyApiTestCase):
         delete_realm("ldap1")
         delete_resolver("ldap1")
         ldap3mock.set_exception(False)
+
+    def test_06_auth_user_not_in_defrealm(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_default_realm(self.realm3)
+        # check that realm3 is the default realm
+        self.assertEqual(self.realm3, get_default_realm())
+        # authentication with "@realm1" works
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertIn('token', result.get("value"), result)
+            self.assertEqual('realm1', result['value']['realm'], result)
+
+        # while authentication without a realm fails (user "selfservice"
+        # doesn't exist in default realm "realm3")
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+
+        # A given empty realm parameter should not change the realm of the user
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "selfservice@realm1",
+                                                 "password": "test",
+                                                 "realm": ""}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertIn('token', result.get("value"), result)
+            self.assertEqual('realm1', result['value']['realm'], result)
 
 
 class AdminFromUserstore(OverrideConfigTestCase):
