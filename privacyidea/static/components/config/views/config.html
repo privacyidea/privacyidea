@@ -73,6 +73,46 @@
                         <span translate>CAs</span>
                     </a>
                 </li>
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.smtp')}"
+                    ng-show="checkRight('smtpserver_read')">
+                    <a ui-sref="config.smtp">
+                        <span class="glyphicon glyphicon-envelope"></span>
+                        <span translate>SMTP servers</span>
+                    </a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.radius')}"
+                    ng-show="checkRight('radiusserver_read')">
+                    <a ui-sref="config.radius">
+                        <span class="glyphicon glyphicon-off"></span>
+                        <span translate>RADIUS servers</span>
+                    </a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.privacyideaserver')}"
+                    ng-show="checkRight('privacyideaserver_read')">
+                    <a ui-sref="config.privacyideaserver">
+                        <span class="glyphicon glyphicon-forward"></span>
+                        <span translate>privacyIDEA servers</span>
+                    </a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.smsgateway')}"
+                    ng-show="checkRight('smsgateway_read')">
+                    <a ui-sref="config.smsgateway">
+                        <span class="glyphicon glyphicon-phone"></span>
+                        <span translate>SMS Gateways</span>
+                    </a>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: $state.includes('config.tokengroup')}"
+                    ng-show="checkRight('tokengroup_list')">
+                    <a ui-sref="config.tokengroup">
+                        <span class="glyphicon glyphicon-phone"></span>
+                        <span translate>Tokengroups</span>
+                    </a>
+                </li>
             </ul>
 
         </div>
