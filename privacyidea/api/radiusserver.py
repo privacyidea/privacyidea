@@ -118,7 +118,7 @@ def test():
     """
     param = request.all_data
     identifier = getParam(param, "identifier", required)
-    servers = getParam(param, "server", required)
+    server = getParam(param, "server", required)
     port = int(getParam(param, "port", default=1812))
     secret = getParam(param, "secret", required)
     retries = int(getParam(param, "retries", default=3))
@@ -127,10 +127,9 @@ def test():
     password = getParam(param, "password", required)
     dictionary = getParam(param, "dictionary",
                           default="/etc/privacyidea/dictionary")
-    r = 0
-    for server in servers.split(','):
-        r = test_radius(identifier, server, secret, user, password, port=port,
+
+    r = test_radius(identifier, server, secret, user, password, port=port,
                     dictionary=dictionary, retries=retries, timeout=timeout)
-        g.audit_object.log({'success': r > 0,
+    g.audit_object.log({'success': r > 0,
                         'info':  r})
     return send_result(r > 0)
