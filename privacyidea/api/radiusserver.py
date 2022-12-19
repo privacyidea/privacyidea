@@ -129,7 +129,13 @@ def test():
                           default="/etc/privacyidea/dictionary")
     r = 0
     for server in servers.split(','):
-        r = test_radius(identifier, server, secret, user, password, port=port,
+        # TODO: IPv6 break the split
+        serveraddr = server.split(':')
+        if len(serveraddr) >= 2:
+            serverport = int(serveraddr[1])
+        else:
+            serverport = port
+        r = test_radius(identifier, serveraddr[0], secret, user, password, port=serverport,
                     dictionary=dictionary, retries=retries, timeout=timeout)
         g.audit_object.log({'success': r > 0,
                         'info':  r})

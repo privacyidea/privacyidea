@@ -4,6 +4,7 @@
         <tr>
             <th translate>Identifier</th>
             <th translate>IP/FQDN</th>
+            <th translate>Port</th>
             <th translate>Dictionary</th>
             <th translate>Description</th>
         </tr>
@@ -15,7 +16,10 @@
                         {{ identifier }}</a>
             </td>
             <td>
-                {{ server.server }}:{{ server.port }}
+                {{ server.server }}
+            </td>
+            <td>
+                {{ server.port }}
             </td>
             <td>
                 {{ server.dictionary }}

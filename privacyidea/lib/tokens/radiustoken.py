@@ -495,7 +495,7 @@ class RadiusTokenClass(RemoteTokenClass):
             # it defaults to retries=3, timeout=5
 
             tmp_radius_state = radius_state
-            for radius_retry in range(1, radius_retries):
+            for radius_retry in range(0, radius_retries):
                 radius_servers_list = radius_servers.split(',')
                 random.shuffle(radius_servers_list)
                 for radius_server in radius_servers_list:
