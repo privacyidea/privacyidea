@@ -9,8 +9,13 @@
          ng-class="$state.includes('token.wizard') == true && form['2stepinit'] == false ? 'col-sm-12' : 'col-sm-6'">
         <uib-accordion close-others="oneAtATime" ng-show="show_seed">
             <div uib-accordion-group
-                 class="panel-default"
-                 heading="{{ 'The OTP key'|translate }}">
+                 class="panel-default">
+                <uib-accordion-heading ng-click="isopen=!isopen">
+                    <div >{{ 'The OTP values'|translate }} <i class="pull-right glyphicon"
+                        ng-class="{'glyphicon-chevron-down': isopen, 'glyphicon-chevron-right': !isopen}"></i>
+                    </div>
+                </uib-accordion-heading>
+
                 Hex: {{ enrolledToken.otpkey.value }}<br/>
                 Base32: {{ enrolledToken.otpkey.value_b32 }}
             </div>
