@@ -586,7 +586,10 @@ class Token(MethodsMixin, db.Model):
         # list of tokengroups
         tokengroup_list = []
         for tg_entry in self.tokengroup_list:
-            tokengroup_list.append(tg_entry.tokengroup.name)
+            if (tg_entry.tokengroup): 
+                tokengroup_list.append(tg_entry.tokengroup.name)
+            else:
+                tokengroup_list.append('Missing ' + str(tg_entry))
         ret['tokengroup'] = tokengroup_list
         return ret
 
