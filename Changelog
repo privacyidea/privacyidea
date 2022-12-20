@@ -1,4 +1,4 @@
-Version 3.8dev4, 2022-12-16
+Version 3.8, 2022-12-20
 
   Features:
   * Drop support for Python 3.5. Support for 2.7 will be dropped
