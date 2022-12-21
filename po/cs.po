@@ -1,19 +1,20 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-12-13 16:50+0000\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2022-12-22 14:47+0100\n"
 "Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/cs/>\n"
 "Language: cs\n"
+"MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
-"X-Generator: Weblate 4.15-dev\n"
+"X-Generator: Poedit 3.2.2\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
-#, fuzzy
 msgctxt "subscription"
 msgid "Level"
 msgstr "Stupeň"
@@ -672,9 +673,8 @@ msgid "Client Part"
 msgstr "Klientská část"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:95
-#, fuzzy
 msgid "Client certificate (filename)"
-msgstr "Ověření registrace selhalo."
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:108
 msgid "Client private key (filename)"
@@ -848,9 +848,8 @@ msgid "Create realm"
 msgstr "Vytvořit doménu"
 
 #: privacyidea/static/components/user/views/user.details.html:107
-#, fuzzy
 msgid "Custom attribute name"
-msgstr "Přidat vlastní atribut"
+msgstr ""
 
 #: privacyidea/static/components/user/views/user.details.html:79
 msgid "Custom attributes for user {{ username }}"
@@ -1147,9 +1146,8 @@ msgid "Edit SQL Resolver {{ resolvername }}"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:2
-#, fuzzy
 msgid "Edit Tokengroup {{ groupname }}"
-msgstr "Upravit resolver {{ resolvername }}"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:3
 msgid ""
@@ -1481,18 +1479,16 @@ msgid "Help about Events"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.html:21
-#, fuzzy
 msgid "Help about Policies"
-msgstr "Všechny politiky"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.html:19
 msgid "Help about RADIUS-Server"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.realms.html:17
-#, fuzzy
 msgid "Help about Realms"
-msgstr "Zvolte doménu"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.smsgateway.html:20
 msgid "Help about SMS-Gateways"
@@ -1503,23 +1499,20 @@ msgid "Help about SMTP-Servers"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:90
-#, fuzzy
 msgid "Help about Token"
-msgstr "Odstranit token"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:108
-#, fuzzy
 msgid "Help about Token Details"
-msgstr "Nastavení WebAuthn tokenu"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:102
 msgid "Help about Token Import"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.tokens.html:64
-#, fuzzy
 msgid "Help about Token Settings"
-msgstr "Nastavení WebAuthn tokenu"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:96
 msgid "Help about Tokentypes"
@@ -2751,9 +2744,8 @@ msgid "SSH public Key"
 msgstr "Veřejný SSH klíč"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:67
-#, fuzzy
 msgid "SSL Config"
-msgstr "Konfigurace"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:40
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:37
@@ -2808,18 +2800,16 @@ msgid "Save System Config"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:369
-#, fuzzy
 msgid "Save Token Groups"
-msgstr "Uložit informace o tokenu"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:281
 msgid "Save Token Info"
 msgstr "Uložit informace o tokenu"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:39
-#, fuzzy
 msgid "Save Tokengroup"
-msgstr "Uložit informace o tokenu"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:90
 msgid "Save privacyIDEA server"
@@ -4154,9 +4144,8 @@ msgid "Tokengroup saved."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.system.html:55
-#, fuzzy
 msgid "Tokengroups"
-msgstr "Tokeny"
+msgstr ""
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33
 #: privacyidea/static/components/config/views/config.html:44
@@ -4271,9 +4260,8 @@ msgid "Use HTTP proxy"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:70
-#, fuzzy
 msgid "Use SSL"
-msgstr "Použít StartTLS"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:48
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:45
@@ -4687,7 +4675,6 @@ msgid "an optional serial substring"
 msgstr "volitelné hledání v sériovém čísle"
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:9
-#, fuzzy
 msgid "appId"
 msgstr "appId"
 
@@ -5014,7 +5001,6 @@ msgid "{{ auditdata.count }} entries found."
 msgstr "Nalezeno {{ auditdata.count }} záznamů."
 
 #: privacyidea/static/components/token/views/token.enroll.html:181
-#, fuzzy
 msgid "{{ enrolledToken.verify.message }}"
 msgstr "{{ enrolledToken.verify.message }}"
 

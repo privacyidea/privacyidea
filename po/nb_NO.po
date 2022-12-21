@@ -1,15 +1,17 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2020-09-19 04:36+0000\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2022-12-22 15:09+0100\n"
 "Last-Translator: Allan Nordhøy <epost@anotheragency.no>\n"
 "Language-Team: Norwegian Bokmål <https://hosted.weblate.org/projects/"
 "privacyidea/privacyidea-server/nb_NO/>\n"
 "Language: nb_NO\n"
+"MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.3-dev\n"
+"X-Generator: Poedit 3.2.2\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -1443,9 +1445,8 @@ msgid "Help about Events"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.html:21
-#, fuzzy
 msgid "Help about Policies"
-msgstr "Alle praksiser"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.html:19
 msgid "Help about RADIUS-Server"
@@ -1456,9 +1457,8 @@ msgid "Help about Realms"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.smsgateway.html:20
-#, fuzzy
 msgid "Help about SMS-Gateways"
-msgstr "Alle SMS-portnere"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.html:19
 msgid "Help about SMTP-Servers"
@@ -2622,9 +2622,8 @@ msgid "Rollover Token"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:5
-#, fuzzy
 msgid "Rollover token {{ form.serial }}"
-msgstr "Tildel et nytt symbol {{ newToken.serial }}"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:79
 msgid "Run search"
@@ -2679,9 +2678,8 @@ msgid "SSH public Key"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:67
-#, fuzzy
 msgid "SSL Config"
-msgstr "Oppsett"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:40
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:37
@@ -2711,9 +2709,8 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:120
 #: privacyidea/static/components/config/views/config.policies.details.html:441
-#, fuzzy
 msgid "Save Policy"
-msgstr "Aktive praksiser"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:120
 msgid "Save RADIUS server"
@@ -4508,9 +4505,8 @@ msgid "distinct users with active tokens"
 msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:39
-#, fuzzy
 msgid "duration"
-msgstr "Administrasjon"
+msgstr ""
 
 #: privacyidea/static/components/user/views/user.list.html:29
 msgid "email"

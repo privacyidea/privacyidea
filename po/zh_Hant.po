@@ -1,15 +1,17 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2021-12-31 21:53+0000\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2022-12-22 15:22+0100\n"
 "Last-Translator: Michael Yang <pcgames99@gmail.com>\n"
 "Language-Team: Chinese (Traditional) <https://hosted.weblate.org/projects/"
 "privacyidea/privacyidea-server/zh_Hant/>\n"
-"Language: zh_Hant\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 4.10.1\n"
+"X-Generator: Poedit 3.2.2\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -583,9 +585,8 @@ msgid "CA Key"
 msgstr "CA 金鑰"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:82
-#, fuzzy
 msgid "CA certificate (filename)"
-msgstr "證書 (PEM)"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:137
 msgid "CA specific options"
@@ -761,9 +762,8 @@ msgid "Client Part"
 msgstr "用戶端部分"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:95
-#, fuzzy
 msgid "Client certificate (filename)"
-msgstr "證書範本"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:108
 msgid "Client private key (filename)"
@@ -856,9 +856,8 @@ msgid "Create a new Local CA Connector"
 msgstr "創建新的本地 CA 連接器"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:7
-#, fuzzy
 msgid "Create a new Microsoft CA Connector"
-msgstr "創建新的本地 CA 連接器"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:7
 msgid "Create a new Passwd Resolver"
@@ -893,9 +892,8 @@ msgid "Create a new SQL Resolver"
 msgstr "創建新的 SQL 解析程式"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:5
-#, fuzzy
 msgid "Create a new Tokengroup {{ params.groupname }}"
-msgstr "創建一個新的 SMTP 伺服器 {{ params.identifier }}"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:7
 msgid ""
@@ -1201,13 +1199,10 @@ msgid "Edit Machine Resolvers"
 msgstr "編輯計算機解析器"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:3
-#, fuzzy
 msgid ""
 "Edit Microsoft CA Connector\n"
 "        {{ connectorname }}"
 msgstr ""
-"編輯本地 CA 連接器\n"
-"        {{ connectorname }}"
 
 #: privacyidea/static/components/machine/views/machine.details.html:94
 #: privacyidea/static/components/token/views/token.details.html:633
@@ -1252,9 +1247,8 @@ msgid "Edit SQL Resolver {{ resolvername }}"
 msgstr "編輯 SQL 解析器 {{ resolvername }}"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:2
-#, fuzzy
 msgid "Edit Tokengroup {{ groupname }}"
-msgstr "編輯密碼解析器 {{ resolvername }}"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:3
 msgid ""
@@ -1604,47 +1598,40 @@ msgid "Help about Events"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.html:21
-#, fuzzy
 msgid "Help about Policies"
-msgstr "所有政策"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.html:19
-#, fuzzy
 msgid "Help about RADIUS-Server"
-msgstr "新的RADIUS伺服器"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.realms.html:17
-#, fuzzy
 msgid "Help about Realms"
-msgstr "選擇領域"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.smsgateway.html:20
-#, fuzzy
 msgid "Help about SMS-Gateways"
-msgstr "所有簡訊閘道"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.html:19
 msgid "Help about SMTP-Servers"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:90
-#, fuzzy
 msgid "Help about Token"
-msgstr "删除令牌"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:108
-#, fuzzy
 msgid "Help about Token Details"
-msgstr "網路身份驗證令牌設置"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:102
 msgid "Help about Token Import"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.tokens.html:64
-#, fuzzy
 msgid "Help about Token Settings"
-msgstr "網路身份驗證令牌設置"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:96
 msgid "Help about Tokentypes"
@@ -1655,9 +1642,8 @@ msgid "Help about User Details"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.html:34
-#, fuzzy
 msgid "Help about UserResolver"
-msgstr "使用者解析器"
+msgstr ""
 
 #: privacyidea/static/components/user/views/user.html:56
 msgid "Help about Users"
@@ -1940,9 +1926,8 @@ msgid "List SMTP server definitions"
 msgstr "列出 SMTP 伺服器定義"
 
 #: privacyidea/static/components/config/views/config.tokengroup.html:7
-#, fuzzy
 msgid "List Tokengroup definitions"
-msgstr "列出 SMTP 伺服器定義"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.html:7
 #, fuzzy
@@ -2609,14 +2594,11 @@ msgid "Quick links"
 msgstr "快速連結"
 
 #: privacyidea/static/components/user/views/user.html:44
-#, fuzzy
 msgid ""
 "Quick links\n"
 "                        <a ui-sref=\"config.realms.list\" translate>Edit "
 "realms</a>"
 msgstr ""
-"選擇預定義的\n"
-"                    <a ui-sref=\"config.smtp\">SMTP 伺服器配置</a>。"
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
 msgid "RADIUS Config saved."
@@ -2866,9 +2848,8 @@ msgid "Rollover Token"
 msgstr "滾動令牌"
 
 #: privacyidea/static/components/token/views/token.enroll.html:5
-#, fuzzy
 msgid "Rollover token {{ form.serial }}"
-msgstr "分配一個新令牌 {{ newToken.serial }}"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:79
 msgid "Run search"
@@ -2983,18 +2964,16 @@ msgid "Save System Config"
 msgstr "保存系統配置"
 
 #: privacyidea/static/components/token/views/token.details.html:369
-#, fuzzy
 msgid "Save Token Groups"
-msgstr "保存令牌資訊"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:281
 msgid "Save Token Info"
 msgstr "保存令牌資訊"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:39
-#, fuzzy
 msgid "Save Tokengroup"
-msgstr "保存令牌資訊"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:90
 #, fuzzy
@@ -4539,14 +4518,12 @@ msgid "Token {{ selectedToken.serial }} is lost?"
 msgstr "令牌 {{ selectedToken.serial }} 丟失了嗎？"
 
 #: privacyidea/static/components/config/controllers/tokengroupController.js:71
-#, fuzzy
 msgid "Tokengroup saved."
-msgstr "SMTP 配置已保存。"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.system.html:55
-#, fuzzy
 msgid "Tokengroups"
-msgstr "令牌"
+msgstr ""
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33
 #: privacyidea/static/components/config/views/config.html:44
@@ -4664,9 +4641,8 @@ msgid "Use HTTP proxy"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:70
-#, fuzzy
 msgid "Use SSL"
-msgstr "使用 TLS"
+msgstr "使用 SSL"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:48
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:45
@@ -4674,9 +4650,8 @@ msgid "Use STARTTLS on a plain LDAP connection usually on port 389."
 msgstr "通常在端口 389 上的普通 LDAP 連接上使用 STARTTLS。"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:113
-#, fuzzy
 msgid "Use StartTLS"
-msgstr "使用 TLS"
+msgstr "使用 StartTLS"
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:35
 #: privacyidea/static/components/token/views/token.enroll.totp.html:35
@@ -4792,9 +4767,8 @@ msgstr "驗證 TLS"
 
 #: privacyidea/static/components/token/views/token.details.html:78
 #: privacyidea/static/components/token/views/token.enroll.html:188
-#, fuzzy
 msgid "Verify Token"
-msgstr "驗證 TLS"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:64
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:81

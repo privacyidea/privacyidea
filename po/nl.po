@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-04-12 20:12+0000\n"
+"PO-Revision-Date: 2022-12-22 15:25+0100\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/nl/>\n"
@@ -11,11 +11,10 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.12-dev\n"
+"X-Generator: Poedit 3.2.2\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
-#, fuzzy
 msgctxt "subscription"
 msgid "Level"
 msgstr "Niveau"
@@ -583,9 +582,8 @@ msgid "CA Key"
 msgstr "CA sleutel"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:82
-#, fuzzy
 msgid "CA certificate (filename)"
-msgstr "Certificaat (PEM)"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:137
 msgid "CA specific options"
@@ -762,9 +760,8 @@ msgid "Client Part"
 msgstr "Cliënt deel"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:95
-#, fuzzy
 msgid "Client certificate (filename)"
-msgstr "Certificaat sjabloon"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:108
 msgid "Client private key (filename)"
@@ -857,9 +854,8 @@ msgid "Create a new Local CA Connector"
 msgstr "Maak een nieuwe lokale CA-connector"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:7
-#, fuzzy
 msgid "Create a new Microsoft CA Connector"
-msgstr "Maak een nieuwe lokale CA-connector"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:7
 msgid "Create a new Passwd Resolver"
@@ -894,9 +890,8 @@ msgid "Create a new SQL Resolver"
 msgstr "Maak een nieuwe SQL resolver"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:5
-#, fuzzy
 msgid "Create a new Tokengroup {{ params.groupname }}"
-msgstr "Maak een nieuwe SMTP-server {{ params.identifier }}"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:7
 msgid ""
@@ -1201,13 +1196,10 @@ msgid "Edit Machine Resolvers"
 msgstr "Bewerk machine resolvers"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:3
-#, fuzzy
 msgid ""
 "Edit Microsoft CA Connector\n"
 "        {{ connectorname }}"
 msgstr ""
-"Bewerk lokale CA connector\n"
-"        {{ connectorname }}"
 
 #: privacyidea/static/components/machine/views/machine.details.html:94
 #: privacyidea/static/components/token/views/token.details.html:633
@@ -1252,9 +1244,8 @@ msgid "Edit SQL Resolver {{ resolvername }}"
 msgstr "Bewerk SQL-resolverr {{ resolvername }}"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:2
-#, fuzzy
 msgid "Edit Tokengroup {{ groupname }}"
-msgstr "Bewerk resolver {{ resolvername }}"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:3
 msgid ""
@@ -1603,47 +1594,40 @@ msgid "Help about Events"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.html:21
-#, fuzzy
 msgid "Help about Policies"
-msgstr "Elk Beleid"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.html:19
-#, fuzzy
 msgid "Help about RADIUS-Server"
-msgstr "Nieuwe RADIUS-server"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.realms.html:17
-#, fuzzy
 msgid "Help about Realms"
-msgstr "Selecteer realm"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.smsgateway.html:20
-#, fuzzy
 msgid "Help about SMS-Gateways"
-msgstr "Alle SMS Gateways"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.html:19
 msgid "Help about SMTP-Servers"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:90
-#, fuzzy
 msgid "Help about Token"
-msgstr "Verwijder token"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:108
-#, fuzzy
 msgid "Help about Token Details"
-msgstr "WebAuthn-token instellingen"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:102
 msgid "Help about Token Import"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.tokens.html:64
-#, fuzzy
 msgid "Help about Token Settings"
-msgstr "WebAuthn-token instellingen"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:96
 msgid "Help about Tokentypes"
@@ -1654,9 +1638,8 @@ msgid "Help about User Details"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.html:34
-#, fuzzy
 msgid "Help about UserResolver"
-msgstr "Gebruikers-resolver"
+msgstr ""
 
 #: privacyidea/static/components/user/views/user.html:56
 msgid "Help about Users"
@@ -1952,9 +1935,8 @@ msgid "List SMTP server definitions"
 msgstr "Lijst SMTP-server definities"
 
 #: privacyidea/static/components/config/views/config.tokengroup.html:7
-#, fuzzy
 msgid "List Tokengroup definitions"
-msgstr "Lijst SMTP-server definities"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.html:7
 msgid ""
@@ -2609,14 +2591,11 @@ msgid "Quick links"
 msgstr "Snelle links"
 
 #: privacyidea/static/components/user/views/user.html:44
-#, fuzzy
 msgid ""
 "Quick links\n"
 "                        <a ui-sref=\"config.realms.list\" translate>Edit "
 "realms</a>"
 msgstr ""
-"Selecteer een voorgedefinieerde\n"
-"                    <a ui-sref=\"config.smtp\">SMTP server-configuratie</a>."
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
 msgid "RADIUS Config saved."
@@ -2976,18 +2955,16 @@ msgid "Save System Config"
 msgstr "Bewaar systeemconfiguratie"
 
 #: privacyidea/static/components/token/views/token.details.html:369
-#, fuzzy
 msgid "Save Token Groups"
-msgstr "Bewaar token-info"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:281
 msgid "Save Token Info"
 msgstr "Bewaar token-info"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:39
-#, fuzzy
 msgid "Save Tokengroup"
-msgstr "Bewaar token-info"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:90
 msgid "Save privacyIDEA server"
@@ -4347,13 +4324,10 @@ msgstr ""
 "privacyidea)."
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:22
-#, fuzzy
 msgid ""
 "This is the unique identifying name\n"
 "                for this group definition."
 msgstr ""
-"Dit is de unieke naam voor de \n"
-"                  SMTP-server definitie."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:22
 msgid ""
@@ -4558,14 +4532,12 @@ msgid "Token {{ selectedToken.serial }} is lost?"
 msgstr "Is token {{ selectedToken.serial }} verloren?"
 
 #: privacyidea/static/components/config/controllers/tokengroupController.js:71
-#, fuzzy
 msgid "Tokengroup saved."
-msgstr "SMTP-configuratie bewaard."
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.system.html:55
-#, fuzzy
 msgid "Tokengroups"
-msgstr "Tokens"
+msgstr ""
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33
 #: privacyidea/static/components/config/views/config.html:44
@@ -4680,9 +4652,8 @@ msgid "Use HTTP proxy"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:70
-#, fuzzy
 msgid "Use SSL"
-msgstr "Gebruik StartTLS"
+msgstr "Gebruik SSL"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:48
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:45

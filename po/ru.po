@@ -1,16 +1,18 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2021-09-29 09:38+0000\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2022-12-22 15:18+0100\n"
 "Last-Translator: Konstantin Burov <sad.2.shade@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/ru/>\n"
 "Language: ru\n"
+"MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 4.9-dev\n"
+"X-Generator: Poedit 3.2.2\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -506,9 +508,8 @@ msgid "CA Key"
 msgstr "Ключ УЦ"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:82
-#, fuzzy
 msgid "CA certificate (filename)"
-msgstr "Сертификат (PEM)"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:137
 msgid "CA specific options"
@@ -676,9 +677,8 @@ msgid "Client Part"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:95
-#, fuzzy
 msgid "Client certificate (filename)"
-msgstr "Шаблон Сертификата"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:108
 msgid "Client private key (filename)"
@@ -1482,9 +1482,8 @@ msgid "Help about Events"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.html:21
-#, fuzzy
 msgid "Help about Policies"
-msgstr "Все Политики"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.html:19
 msgid "Help about RADIUS-Server"
@@ -1495,9 +1494,8 @@ msgid "Help about Realms"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.smsgateway.html:20
-#, fuzzy
 msgid "Help about SMS-Gateways"
-msgstr "Все СМС Шлюзы"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.smtp.html:19
 msgid "Help about SMTP-Servers"
@@ -2661,9 +2659,8 @@ msgid "Rollover Token"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:5
-#, fuzzy
 msgid "Rollover token {{ form.serial }}"
-msgstr "Назначить новый токен {{ newToken.serial }}"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:79
 msgid "Run search"
