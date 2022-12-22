@@ -309,7 +309,7 @@ class TokenEventHandler(BaseEventHandler):
                             {
                                 "type": "string",
                                 "required": True,
-                                "description": _("Remote a tokengroup from the token."),
+                                "description": _("Remove a tokengroup from the token."),
                                 "value": [tg.name for tg in get_tokengroups()]
                             }
                         }
