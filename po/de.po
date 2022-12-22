@@ -2,16 +2,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-12-16 16:57+0100\n"
+"PO-Revision-Date: 2022-12-22 23:49+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/de/>\n"
+"privacyidea-webui/de/>\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 3.2.2\n"
+"X-Generator: Weblate 4.15.1-dev\n"
 
 # This is the level in the subscriptions
 #. level of subscription
@@ -58,6 +58,10 @@ msgid ""
 "\"true\"></span>\n"
 "                    <span translate>Subscriptions</span></a>"
 msgstr ""
+"<a ui-sref=\"component.subscriptions\">\n"
+"                    <span class=\"glyphicon glyphicon-calendar\" aria-hidden="
+"\"true\"></span>\n"
+"                    <span translate>Subskriptionen</span></a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
@@ -108,10 +112,10 @@ msgid ""
 "                        like code audits.\n"
 "                    </li>"
 msgstr ""
-"<li><b>Support</b> mit definierten Reaktionszeiten,  <a target=\"netknights"
-"\" href=\"https://netknights.it/en/leistungen/service-level-agreements/"
-"\">Service Level Agreements</a>, durch die NetKnights GmbH.</li>\n"
-"<li>Stabile Enterprise-Pakete für Debian, Ubuntu, RHEL ermöglichen leichte "
+"<li><b>Support</b> mit definierten Reaktionszeiten, <a target=\"netknights\" "
+"href=\"https://netknights.it/en/leistungen/service-level-agreements/\""
+">Service Level Agreements</a>, durch die NetKnights GmbH.</li>\n"
+"<li>Stabile Enterprise-Pakete für Ubuntu und RHEL ermöglichen leichte "
 "Updates und einen sicheren Betrieb.</li>\n"
 "<li>Ein exklusives <b>Appliance</b>-Tool, das bspw. die leichte Einrichtung "
 "von RADIUS-Clients, Administratoren oder eine Master-Master-Replikation "
@@ -267,7 +271,7 @@ msgstr "API Client ID"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:682
 msgid "Abort operation on unverifiable token"
-msgstr ""
+msgstr "Import abbrechen, wenn Token nicht verifiziert werden können"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
@@ -565,7 +569,7 @@ msgstr "CA-Zertifikat (Dateiname)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:137
 msgid "CA specific options"
-msgstr ""
+msgstr "CA-spezifische Optionen"
 
 #: privacyidea/static/components/config/views/config.html:73
 msgid "CAs"
@@ -619,7 +623,7 @@ msgstr "Zertifikatsvorlage"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:212
 msgid "Certificate: Enroll an x509 Certificate Token."
-msgstr "Zertifikate: Ein x509 Zertifikats-Token ausrollen."
+msgstr "Certificate: Ein x509 Zertifikats-Token ausrollen."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:69
 msgid "Certificates Templates file"
@@ -736,7 +740,7 @@ msgstr "Client-Zertifikat (Dateiname)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:108
 msgid "Client private key (filename)"
-msgstr ""
+msgstr "Privater Schlüssel des Clients (Dateiname)"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:36
 msgid "Clients"
@@ -1063,7 +1067,7 @@ msgstr "Den Authentifizierungszähler pro Token nicht verwenden."
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:680
 msgid "Do not verify the authenticity"
-msgstr ""
+msgstr "Token nicht verifizieren"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:16
 msgid ""
@@ -1083,7 +1087,7 @@ msgstr "Wollen Sie wirklich den Benutzer in der Benutzerquelle löschen?"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:148
 msgid "Domain CA"
-msgstr ""
+msgstr "Domänen-CA"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:3
 msgid "Download"
@@ -1495,7 +1499,7 @@ msgstr "System Dokumentation"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:140
 msgid "Get available CAs"
-msgstr ""
+msgstr "Verfügbare CAs abrufen"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:418
 msgid "Get the Authenticator App for Android."
@@ -1547,7 +1551,7 @@ msgstr "Header (JSON Format)"
 
 #: privacyidea/static/components/config/views/config.events.html:20
 msgid "Help about Events"
-msgstr ""
+msgstr "Hilfe zu Ereignissen"
 
 #: privacyidea/static/components/config/views/config.policies.html:21
 msgid "Help about Policies"
@@ -1567,7 +1571,7 @@ msgstr "Hilfe zu SMS-Gateways"
 
 #: privacyidea/static/components/config/views/config.smtp.html:19
 msgid "Help about SMTP-Servers"
-msgstr ""
+msgstr "Hilfe zu SMTP-Servern"
 
 #: privacyidea/static/components/token/views/token.html:90
 msgid "Help about Token"
@@ -1579,7 +1583,7 @@ msgstr "Hilfe zu Token Details"
 
 #: privacyidea/static/components/token/views/token.html:102
 msgid "Help about Token Import"
-msgstr ""
+msgstr "Hilfe zum Token-Import"
 
 #: privacyidea/static/components/config/views/config.tokens.html:64
 msgid "Help about Token Settings"
@@ -1587,11 +1591,11 @@ msgstr "Hilfe zu Tokenenstellungen"
 
 #: privacyidea/static/components/token/views/token.html:96
 msgid "Help about Tokentypes"
-msgstr ""
+msgstr "Hilfe zu Tokentypen"
 
 #: privacyidea/static/components/user/views/user.html:68
 msgid "Help about User Details"
-msgstr ""
+msgstr "Hilfe zu Benutzerdetails"
 
 #: privacyidea/static/components/config/views/config.resolvers.html:34
 msgid "Help about UserResolver"
@@ -1599,15 +1603,15 @@ msgstr "Hilfe zu Benutzer-Resolvern"
 
 #: privacyidea/static/components/user/views/user.html:56
 msgid "Help about Users"
-msgstr ""
+msgstr "Hilfe zu Benutzern"
 
 #: privacyidea/static/components/user/views/user.html:62
 msgid "Help about manage Users"
-msgstr ""
+msgstr "Hilfe zur Benutzerverwaltung"
 
 #: privacyidea/static/components/config/views/config.tokengroup.html:19
 msgid "Help on Tokengroups"
-msgstr ""
+msgstr "Hilfe zu Tokengruppen"
 
 #: privacyidea/static/components/config/views/config.token.sms.html:8
 msgid ""
@@ -1847,7 +1851,7 @@ msgstr "Schlüssel"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:147
 msgid "Keyfile Path"
-msgstr ""
+msgstr "Pfad zur KeyTab-Datei"
 
 #: privacyidea/static/components/audit/views/audit.log.html:8
 #: privacyidea/static/components/machine/views/machine.details.html:42
@@ -2014,11 +2018,11 @@ msgstr "Methode"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:31
 msgid "Microsoft CA worker hostname"
-msgstr ""
+msgstr "Hostname des Microsoft CA-Workers"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:44
 msgid "Microsoft CA worker port"
-msgstr ""
+msgstr "Port für Microsoft CA-Worker"
 
 #: privacyidea/static/components/register/views/register.html:57
 #: privacyidea/static/components/register/views/register.html:60
@@ -2061,7 +2065,7 @@ msgstr "Neuen SMTP-Server anlegen"
 
 #: privacyidea/static/components/config/views/config.tokengroup.html:12
 msgid "New Tokengroup definition"
-msgstr ""
+msgstr "Neue Tokengruppen Definition"
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.html:13
 msgid "New privacyIDEA server"
@@ -2325,7 +2329,7 @@ msgstr "Passwort Hash für neu angelegte Benutzer"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:121
 msgid "Password of encrypted client private key"
-msgstr ""
+msgstr "Passwort des verschlüsselten privaten Schlüssels des Clients"
 
 #: privacyidea/static/components/user/controllers/userControllers.js:97
 msgid "Password set successfully."
@@ -3135,7 +3139,7 @@ msgstr "Größenbeschränkung"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:681
 msgid "Skip tokens that can not be verified"
-msgstr ""
+msgstr "Token überspringen, die nicht verifiziert werden können"
 
 #: privacyidea/static/components/token/views/token.import.html:141
 msgid "Skipped Tokens"
@@ -3376,7 +3380,7 @@ msgid ""
 "        the HSM and reload this page."
 msgstr ""
 "Das Security-Modul ist nicht bereit. privacyIDEA wird nicht wie erwartet "
-"funktionieren, da es verschlüsselte Daten nicht entschlüsseln kann.    Bitte "
+"funktionieren, da es verschlüsselte Daten nicht entschlüsseln kann. Bitte "
 "starten Sie das Security-Modul und laden Sie diese Seite neu."
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:13
@@ -3420,10 +3424,10 @@ msgid ""
 "    When authenticating with this type of token, you will be asked a random\n"
 "    question and then need to provide the previously defined answer."
 msgstr ""
-"Für einen \"Fragenkatalog\"-Token  können Sie eine Reihe an Antworten auf "
-"die Fragen festlegen. Bei der Authentisierung mit diesem Tokentyp wird eine "
-"der Fragen zufällig ausgewählt und Ihnen gestellt. Darauf müssen Sie dann "
-"die richtige Antwort geben."
+"Für einen \"Fragenkatalog\"-Token können Sie eine Reihe an Antworten auf die "
+"Fragen festlegen. Bei der Authentisierung mit diesem Tokentyp wird eine der "
+"Fragen zufällig ausgewählt und Ihnen gestellt. Darauf müssen Sie dann die "
+"richtige Antwort geben."
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:1
 msgid ""
@@ -3457,7 +3461,7 @@ msgid ""
 "    privacyIDEA server."
 msgstr ""
 "Der Remote-Token leitet die Authentisierungsanfrage an einen privacyIDEA "
-"server weiter."
+"Server weiter."
 
 #: privacyidea/static/components/config/views/config.token.sms.html:2
 msgid ""
@@ -3516,9 +3520,8 @@ msgid ""
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc6238\">RFC\n"
 "    6238</a>."
 msgstr ""
-"Der TOTP-Token ist ein zeitbasierter Einmal-Passwort-Token.Er ist in  <a "
-"href=\"https://tools.ietf.org/html/rfc6238\">RFC\n"
-"    6238</a> beschrieben."
+"Der TOTP-Token ist ein zeit-basierter Einmal-Passwort-Token.Er ist in <a "
+"href=\"https://tools.ietf.org/html/rfc6238\">RFC 6238</a> beschrieben."
 
 #: privacyidea/static/components/token/views/token.enroll.totp.html:1
 msgid ""
@@ -3527,7 +3530,7 @@ msgid ""
 "    smartphone app like the Google Authenticator or FreeOTP turning your\n"
 "    smartphone into an authentication device."
 msgstr ""
-"Der TOTP-Token ist ein zeitbasierter Token. Sie können den geheimen OTP-"
+"Der TOTP-Token ist ein zeit-basierter Token. Sie können den geheimen OTP-"
 "Schlüssel hier einfügen oder den Server einen Schlüssel generieren lassen. "
 "Diesen können Sie in Ihre Smartphone-App wie Google Authenticator oder "
 "FreeOTP importieren, indem Sie den QR-Code scannen."
@@ -3617,8 +3620,8 @@ msgid ""
 "    Alliance. You can register this token with any webservice and with\n"
 "    as many web services you wish to."
 msgstr ""
-"Der WebAuthn-Token ist vom W3C und der Fido Alliance definiert. \n"
-"Sie können diesen Token bei mehreren, verschiedenen Webdiensten registrieren."
+"Der WebAuthn-Token ist vom W3C und der Fido Alliance definiert. Sie können "
+"diesen Token bei mehreren, verschiedenen Webdiensten registrieren."
 
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:1
 msgid ""
@@ -4537,7 +4540,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:56
 msgid "Use HTTP proxy"
-msgstr ""
+msgstr "HTTP-Proxy verwenden"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:70
 msgid "Use SSL"
@@ -4847,7 +4850,7 @@ msgstr "Sie werden nach {{ myCountdown }} Sekunden abgemeldet."
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:8
 msgid "Your CSR to the certificate authority failed."
-msgstr ""
+msgstr "Der CSR an die Zertifizierungsstelle ist fehlgeschlagen."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:396
 msgid "Your OTP pin expires on"
@@ -4858,6 +4861,8 @@ msgid ""
 "Your certificate request is taken under submission and waiting for\n"
 "    administrative approval."
 msgstr ""
+"Ihre Zertifikatsanforderung ist eingegangen und wartet auf die Genehmigung "
+"eine Administrators."
 
 #: privacyidea/static/components/user/views/user.html:12
 #: privacyidea/static/components/user/views/user.password.html:2
@@ -5226,7 +5231,7 @@ msgstr "Nachname"
 
 #: privacyidea/static/components/audit/views/audit.log.html:118
 msgid "thread_id"
-msgstr ""
+msgstr "thread_id"
 
 #: privacyidea/static/components/token/views/token.challenges.html:20
 msgid "timestamp"
