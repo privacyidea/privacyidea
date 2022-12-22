@@ -2,16 +2,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-12-22 15:25+0100\n"
-"Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
+"PO-Revision-Date: 2022-12-22 23:49+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/nl/>\n"
+"privacyidea-webui/nl/>\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 3.2.2\n"
+"X-Generator: Weblate 4.15.1-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -2898,9 +2898,8 @@ msgid "SSH public Key"
 msgstr "SSH publieke sleutel"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:67
-#, fuzzy
 msgid "SSL Config"
-msgstr "Configuratie"
+msgstr "SSL-configuratie"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:40
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:37
