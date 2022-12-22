@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-12-21 16:58+0100\n"
-"PO-Revision-Date: 2022-12-14 20:50+0000\n"
+"PO-Revision-Date: 2022-12-22 23:48+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-server/de/>\n"
 "Language: de\n"
-"Language-Team: German <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/de/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.15.1-dev\n"
 "Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:225
@@ -825,6 +826,8 @@ msgid ""
 "In case of a successful authentication the following tokentype is "
 "enrolled. The maximum number of tokens for a user is checked."
 msgstr ""
+"Im Falle einer erfolgreichen Authentisierung wird der folgende Tokentyp "
+"ausgerollt. Die maximale Anzahl von Token für einen Benutzer wird überprüft."
 
 #: lib/policy.py:2276
 msgid ""
@@ -906,6 +909,9 @@ msgid ""
 "\"interactive webauthn poll u2f\". Accepted values are:\"interactive, "
 "webauthn, poll, u2f\""
 msgstr ""
+"Sie können die Client-Modi in der von Ihnen bevorzugten Reihenfolge "
+"festlegen. Zum Beispiel: \"interactive webauthn poll u2f\". Akzeptierte "
+"Werte sind:\"interactive, webauthn, poll, u2f\""
 
 #: lib/policy.py:2331
 msgid ""
@@ -1140,6 +1146,8 @@ msgid ""
 "The URL of an SSO provider for redirect at logout.(The URL must start "
 "with http:// or https://)"
 msgstr ""
+"Die URL eines SSO-Anbieters für die Weiterleitung beim Abmelden. (Die URL "
+"muss mit http:// oder https:// beginnen.)"
 
 #: lib/policy.py:2518
 msgid "As long as a user has no token, he will only see a token wizard in the UI."
@@ -1283,11 +1291,11 @@ msgstr "Das RADIUS Secret ist zu lang"
 
 #: lib/token.py:152
 msgid "create_tokenclass_object failed:  {0!r}"
-msgstr ""
+msgstr "create_tokenclass_object fehlgeschlagen: {0!r}"
 
 #: lib/token.py:308
 msgid "I can only create SQL filters from tokeninfo of length 1."
-msgstr ""
+msgstr "Es können nur SQL-Filter aus einem Tokeninfo Eintrag erstellt werden."
 
 #: lib/token.py:565
 msgid "The requested token could not be found."
@@ -1303,15 +1311,15 @@ msgstr "Dieser OTP-Wert passt zu mehreren Token!"
 
 #: lib/token.py:1041
 msgid "init token failed: unknown token type {0!r}"
-msgstr ""
+msgstr "init_token fehlgeschlagen: unbekannter Token-Typ {0!r}"
 
 #: lib/token.py:1062
 msgid "initToken failed: {0!s}"
-msgstr ""
+msgstr "init_token fehlgeschlagen: {0!s}"
 
 #: lib/token.py:1101
 msgid "token create failed {0!r}"
-msgstr ""
+msgstr "Token-Erstellung fehlgeschlagen: {0!r}"
 
 #: lib/token.py:1217
 msgid "Token already assigned to user {0!r}"
@@ -1319,37 +1327,41 @@ msgstr "Der Token wurde schon dem Benutzer {0!r} zugewiesen"
 
 #: lib/token.py:1231
 msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
-msgstr ""
+msgstr "Tokenzuweisung fehlgeschlagen für {0!r}/{1!s} : {2!r}"
 
 #: lib/token.py:1259
 msgid "Token unassign failed for {0!r}/{1!r}: {2!r}"
-msgstr ""
+msgstr "Fehler beim Aufheben der Tokenzuweisung für {0!r}/{1!r}: {2!r}"
 
 #: lib/token.py:1335
 msgid "Parameter user must not be a string: {0!r}"
-msgstr ""
+msgstr "Parameter \"user\" darf kein String sein: {0!r}"
 
 #: lib/token.py:1874
 msgid "You can only define a lost token for an assigned token."
 msgstr ""
+"Sie können einen verlorenen Token nur für einen zugewiesenen Token "
+"definieren."
 
 #: lib/token.py:1900
 msgid "temporary replacement for {0!s}"
-msgstr ""
+msgstr "vorübergehender Ersatz für Token {0!s}"
 
 #: lib/token.py:1956
 msgid "There is no active and assigned token in this realm"
-msgstr ""
+msgstr "Es gibt keinen aktiven und zugewiesenen Token in diesem Realm"
 
 #: lib/token.py:1968
 msgid ""
 "There is no active and assigned token in this realm, included types: "
 "{0!s}, excluded types: {1!s}"
 msgstr ""
+"Es gibt keinen aktiven und zugeordneten Token in diesem Realm, enthaltene "
+"Typen: {0!s}, ausgeschlossene Typen: {1!s}"
 
 #: lib/token.py:2022
 msgid "OTP verification failed."
-msgstr ""
+msgstr "OTP-Überprüfung fehlgeschlagen."
 
 #: lib/token.py:2055
 msgid "The user has no tokens assigned"
@@ -1357,39 +1369,41 @@ msgstr "Dem Benutzer sind keine Token zugewiesen"
 
 #: lib/token.py:2271
 msgid "matching {0:d} tokens"
-msgstr ""
+msgstr "{0:d} passende Token"
 
 #: lib/token.py:2323
 msgid "Challenge matches, but token is not fit for challenge"
 msgstr ""
+"Challenge stimmt überein aber der Token ist nicht für Challenge-Response "
+"geeignet"
 
 #: lib/token.py:2333
 msgid "Found matching challenge"
-msgstr ""
+msgstr "Passende Challenge gefunden"
 
 #: lib/token.py:2375
 msgid "Response did not match the challenge."
-msgstr ""
+msgstr "Die Antwort passt nicht zur Challenge."
 
 #: lib/token.py:2377
 msgid "Response did not match for {0!s} tokens."
-msgstr ""
+msgstr "Die Antwort stimmte für {0!s} Token nicht überein."
 
 #: lib/token.py:2385
 msgid "No active challenge response token found"
-msgstr ""
+msgstr "Kein aktiver Challenge-Response Token gefunden"
 
 #: lib/token.py:2401
 msgid "wrong otp value"
-msgstr ""
+msgstr "falscher OTP-Wert"
 
 #: lib/token.py:2408
 msgid ". previous otp used again"
-msgstr ""
+msgstr "früherer OTP-Wert wieder verwendet"
 
 #: lib/token.py:2422
 msgid "wrong otp pin"
-msgstr ""
+msgstr "falsche OTP-Pin"
 
 #: lib/token.py:2452
 msgid "Admin is allowed to initalize {0!s} tokens."
@@ -1958,19 +1972,19 @@ msgstr ""
 
 #: lib/eventhandler/webhookeventhandler.py:85
 msgid "The URL the WebHook is posted to"
-msgstr ""
+msgstr "Die URL, an die der WebHook gesendet wird"
 
 #: lib/eventhandler/webhookeventhandler.py:90
 msgid "The encoding that is sent to the WebHook, for example json"
-msgstr ""
+msgstr "Das Format, welches an den WebHook gesendet wird, beispielsweise json"
 
 #: lib/eventhandler/webhookeventhandler.py:98
 msgid "You can replace placeholder like {logged_in_user}"
-msgstr ""
+msgstr "Sie können Platzhalter wie {logged_in_user} benutzen"
 
 #: lib/eventhandler/webhookeventhandler.py:103
 msgid "The data posted in the WebHook"
-msgstr ""
+msgstr "Die an den WebHook gesendeten Daten"
 
 #: lib/machines/ldap.py:338
 #, python-format
@@ -2041,7 +2055,7 @@ msgstr "Das SSL-Zertifikat wird überprüft."
 
 #: lib/smsprovider/HttpSMSProvider.py:289
 msgid "Should the data in a POST Request be sent as JSON."
-msgstr ""
+msgstr "Sollen die Daten in einer POST-Anfrage als JSON gesendet werden."
 
 #: lib/smsprovider/HttpSMSProvider.py:294
 msgid ""
@@ -2579,6 +2593,8 @@ msgstr ""
 #: lib/tokens/pushtoken.py:344
 msgid "Require to unlock the Smartphone before Push requests can be accepted"
 msgstr ""
+"Das Smartphone muss entsperrt werden, bevor Push-Anfragen akzeptiert werden "
+"können"
 
 #: lib/tokens/pushtoken.py:350
 msgid "The question the user sees on his mobile phone."
@@ -2838,7 +2854,7 @@ msgstr "Bitte scannen Sie den QR-Code"
 
 #: lib/tokens/totptoken.py:63
 msgid "Specify the time step of the time-based OTP token."
-msgstr ""
+msgstr "Geben Sie den Zeitschritt des zeitbasierten OTP-Tokens an."
 
 #: lib/tokens/totptoken.py:110
 msgid "TOTP: Time based One Time Passwords."
@@ -2972,6 +2988,8 @@ msgstr "Lediglich die angegebenen WebAuthn Token sind autorisiert."
 #: lib/tokens/webauthntoken.py:649
 msgid "One webauthn token can not be registered to a user more than once."
 msgstr ""
+"Ein Webauthn-Token kann nicht mehr als einmal für einen Benutzer registriert "
+"werden."
 
 #: lib/tokens/webauthntoken.py:654
 msgid "A human readable name for the organization rolling out WebAuthn tokens."
@@ -3181,7 +3199,7 @@ msgid ""
 " integer value"
 msgstr ""
 "Wahr, wenn der Zahlenwert des linken Attributes kleiner ist als der "
-"Zahlenwert auf der rechten Seite."
+"Zahlenwert auf der rechten Seite"
 
 #: lib/utils/compare.py:204
 msgid ""
@@ -3189,7 +3207,7 @@ msgid ""
 "integer value"
 msgstr ""
 "Wahr, wenn der Zahlenwert des linken Attributes größer ist als der "
-"Zahlenwert auf der rechten Seite."
+"Zahlenwert auf der rechten Seite"
 
 #~ msgid ""
 #~ "Specifiy the required contents of the"
@@ -3358,4 +3376,3 @@ msgstr ""
 #~ "Der API Schlüssel für den iOS "
 #~ "Client. Sie finden diesen in der "
 #~ "Firebase Konsole."
-
