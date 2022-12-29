@@ -366,6 +366,7 @@ class ACTION(object):
     SEARCH_ON_ENTER = "search_on_enter"
     TIMEOUT_ACTION = "timeout_action"
     AUTH_CACHE = "auth_cache"
+    DELETION_CONFIRMATION = "deletion_confirmation"
     HIDE_BUTTONS = "hide_buttons"
     HIDE_WELCOME = "hide_welcome_info"
     SHOW_SEED = "show_seed"
@@ -2555,6 +2556,11 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("Per default disabled actions result in disabled buttons. When"
                           " checking this action, buttons of disabled actions are hidden.")
+            },
+            ACTION.DELETION_CONFIRMATION: {
+                'type': 'bool',
+                'desc': _("If this is checked, there will be a confirmation prompt when "
+                          "deleting policies, events, mresolver, resolver or periodic tasks!")
             },
             ACTION.SHOW_SEED: {
                 'type': 'bool',

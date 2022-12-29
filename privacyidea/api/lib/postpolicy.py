@@ -576,6 +576,8 @@ def get_webui_settings(request, response):
                                      user=loginname, realm=realm).any()
         hide_buttons = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.HIDE_BUTTONS,
                                      user=loginname, realm=realm).any()
+        deletion_confirmation = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.DELETION_CONFIRMATION,
+                                     user=loginname, realm=realm).any()
         default_tokentype_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.DEFAULT_TOKENTYPE,
                                               user=loginname, realm=realm).action_values(unique=True)
         show_seed = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.SHOW_SEED,
@@ -649,6 +651,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["token_rollover"] = token_rollover
         content["result"]["value"]["hide_welcome"] = hide_welcome
         content["result"]["value"]["hide_buttons"] = hide_buttons
+        content["result"]["value"]["deletion_confirmation"] = deletion_confirmation
         content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["show_node"] = get_privacyidea_node() if show_node else ""
         content["result"]["value"]["subscription_status"] = subscription_status()

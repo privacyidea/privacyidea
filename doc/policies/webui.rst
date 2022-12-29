@@ -334,6 +334,19 @@ being disabled.
 
 (Since privacyIDEA 3.0)
 
+deletion_confirmation
+~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+To avoid accidents when deleting important configurations, this policy can be
+activated. After activation, an additional confirmation for the deletion is
+requested for policies, events, mresolvers, resolvers and periodic-tasks.
+
+.. note:: After activating the policy, the UI must be reloaded once for the change to take effect
+
+(Since privacyIDEA 3.9)
+
 token_rollover
 ~~~~~~~~~~~~~~
 

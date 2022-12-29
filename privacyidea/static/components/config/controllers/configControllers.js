@@ -73,6 +73,17 @@ myApp.controller("policyListController", ["$scope", "$stateParams", "$location",
 
     // listen to the reload broadcast
     $scope.$on("piReload", $scope.getPolicies);
+
+    $scope.confirmDeletePolicy = function (policyName) {
+        // prompt to confirm whether policy should be deleted
+        if ($scope.deletion_confirmation) {
+            if (confirm("Do you really want to delete this policy?")) {
+                $scope.delPolicy(policyName);
+            }
+        } else {
+            $scope.delPolicy(policyName);
+        }
+    };
 }]);
 
 myApp.controller("policyDetailsController", ["$scope", "$stateParams",
@@ -743,6 +754,17 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
         $rootScope.returnTo = "config.resolvers.list";
     };
 
+    $scope.confirmDeleteResolver = function (resolvername) {
+        // prompt to confirm whether resolver should be deleted
+        if ($scope.deletion_confirmation) {
+            if (confirm("Do you really want to delete this resolver?")) {
+                $scope.delResolver(resolvername);
+            }
+        } else {
+            $scope.delResolver(resolvername);
+        }
+    };
+
     $scope.getRealms();
     $scope.getResolvers();
     $scope.selectedResolvers = {};
@@ -982,6 +1004,17 @@ myApp.controller("machineResolverController", ["$scope", "ConfigFactory",
         // change the view to the config.mresolvers.edit
         $state.go("config.mresolvers.edit" + r_type, {'resolvername': resolvername});
         $rootScope.returnTo = "config.mresolvers.list";
+    };
+
+    $scope.confirmDeleteMResolver = function (resolvername) {
+        // prompt to confirm whether resolver should be deleted
+        if ($scope.deletion_confirmation) {
+            if (confirm("Do you really want to delete this resolver?")) {
+                $scope.delResolver(resolvername);
+            }
+        } else {
+            $scope.delResolver(resolvername);
+        }
     };
 
     // listen to the reload broadcast

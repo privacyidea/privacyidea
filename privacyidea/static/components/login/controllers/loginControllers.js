@@ -447,6 +447,7 @@ angular.module("privacyideaApp")
             $scope.logout_redirect_url = data.result.value.logout_redirect_url;
             $scope.hide_welcome = data.result.value.hide_welcome;
             $scope.hide_buttons = data.result.value.hide_buttons;
+            $scope.deletion_confirmation = data.result.value.deletion_confirmation;
             $scope.show_seed = data.result.value.show_seed;
             $scope.show_node = data.result.value.show_node;
             $scope.token_rollover = data.result.value.token_rollover;
