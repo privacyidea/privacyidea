@@ -31,6 +31,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+if [[ $(id -u) != 0 ]]; then
+  echo "Script must be run as root user"
+  exit 1
+fi
+
 PICFG="/etc/privacyidea/pi.cfg"
 
 if [ "$#" -gt 0 ]; then
@@ -55,16 +60,6 @@ case $OS in
 		echo  "Your operating system $OS is not supported!"
 		;;
 esac
-
-check_root() {
-	log "SECTION: Check Root"
-	log "==================="
-  if [ "$(id -u)" == 0 ]; then
-    log "This script is running as root."
-  else
-    log "This script is not running as root."
-  fi
-}
 
 log() {
 	echo "$1" >> "$tempfile"
@@ -253,7 +248,6 @@ pi_auditlog() {
 	call_pi_manage audit dump -f - -t 2d >> "${diag_info}/privacyidea.auditlog"
 }
 
-check_root
 get_os
 get_pi_cfg
 current_db_revision
