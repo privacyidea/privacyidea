@@ -30,7 +30,7 @@ import os
 import logging
 
 from privacyidea.lib.error import privacyIDEAError
-from privacyidea.models import Tokengroup, db
+from privacyidea.models import TokenTokengroup, Tokengroup, db
 
 log = logging.getLogger(__name__)
 
@@ -42,6 +42,10 @@ def set_tokengroup(name, description=None):
 
 
 def delete_tokengroup(name=None, id=None):
+    tokengroup_count = db.session.query(TokenTokengroup)\
+        .filter(TokenTokengroup.tokengroup_id == 1).count();
+    if ( tokengroup_count > 0 ):
+        raise privacyIDEAError("This tokengroup is " + str(tokengroup_count) + " times assigned.")
     if not name and not id:
         raise privacyIDEAError("You need to specify either a tokengroup ID or a name.")
     if id:
