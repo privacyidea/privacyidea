@@ -31,6 +31,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+if [[ $(id -u) != 0 ]]; then
+  echo "Script must be run as root user"
+  exit 1
+fi
+
 PICFG="/etc/privacyidea/pi.cfg"
 
 if [ "$#" -gt 0 ]; then
@@ -137,6 +142,16 @@ pi_config() {
 	call_pi_manage policy p_export >> "$tempfile"
 }
 
+server_config() {
+	# Extract configurations for smtp, privacyIDEA and RADIUS server
+  server_config=$(call_pi_manage config exporter -t smtpserver privacyideaserver radiusserver -f json)
+
+  log
+  log "SECTION: SMTP|privacyIDEA|RADIUS Server Configuration"
+	log "====================================================="
+	log "$server_config"
+}
+
 FreeRADIUS_config() {
 	log
 	log "SECTION: FreeRADIUS Configurations"
@@ -210,6 +225,20 @@ apache_log() {
 	fi
 }
 
+ngnix_log(){
+	# Check if NGNIX logs exist
+	if [ -f /var/log/nginx/error.log ] && [ -f /var/log/nginx/access.log ]; then
+		log
+		log "SECTION: NGNIX-ERROR.LOG"
+		log "========================"
+		tail -n 100 /var/log/nginx/error.log >> "$tempfile"
+		log
+		log "SECTION: NGNIX-ACCESS.LOG"
+		log "========================"
+		tail -n 100 /var/log/nginx/access.log >> "$tempfile"
+	fi
+}
+
 pi_logfile() {
 	R=$( grep "^PI_LOGFILE" "$PICFG" | cut -d "=" -f2 | tr -d "\t \'\"" )
 	[ -f ${R} ] && cp ${R} "${diag_info}/privacyidea.logfile" || echo "Could not read logfile ${R}" >> "$tempfile"
@@ -219,18 +248,19 @@ pi_auditlog() {
 	call_pi_manage audit dump -f - -t 2d >> "${diag_info}/privacyidea.auditlog"
 }
 
-
 get_os
 get_pi_cfg
 current_db_revision
 pi_versions
 pi_config
+server_config
 FreeRADIUS_config
 system_status
 if [[ "${OS}" == "centos" ]]; then
 	centos_auditlog
 fi
 apache_log
+ngnix_log
 pi_logfile
 pi_auditlog
 

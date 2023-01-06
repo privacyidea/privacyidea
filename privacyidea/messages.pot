@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-12-07 15:43+0100\n"
+"POT-Creation-Date: 2022-12-21 16:58+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1575,7 +1575,7 @@ msgid "Add a tokengroup to the token."
 msgstr ""
 
 #: lib/eventhandler/tokenhandler.py:312
-msgid "Remote a tokengroup from the token."
+msgid "Remove a tokengroup from the token."
 msgstr ""
 
 #: lib/eventhandler/usernotification.py:126
@@ -1664,49 +1664,13 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:218
-msgid ""
-"The project ID, that the client should use. Get it from your Firebase "
-"console."
-msgstr ""
-
-#: lib/smsprovider/FirebaseProvider.py:222
-msgid ""
-"The project number, that the client should use. Get it from your Firebase"
-" console."
-msgstr ""
-
-#: lib/smsprovider/FirebaseProvider.py:227
-msgid ""
-"The App ID, that the Android client should use. Get it from your Firebase"
-" console."
-msgstr ""
-
-#: lib/smsprovider/FirebaseProvider.py:232
-msgid ""
-"The API Key, that the Android client should use. Get it from your "
-"Firebase console."
-msgstr ""
-
-#: lib/smsprovider/FirebaseProvider.py:237
-msgid ""
-"The App ID, that the iOS client should use. Get it from your Firebase "
-"console."
-msgstr ""
-
-#: lib/smsprovider/FirebaseProvider.py:242
-msgid ""
-"The API Key, that the iOS client should use. Get it from your Firebase "
-"console."
-msgstr ""
-
-#: lib/smsprovider/FirebaseProvider.py:247
+#: lib/smsprovider/FirebaseProvider.py:201
 msgid ""
 "The filename of the JSON config file, that allows privacyIDEA to talk to "
 "the Firebase REST API."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:252
+#: lib/smsprovider/FirebaseProvider.py:206
 msgid "Proxy setting for HTTPS connections to googleapis.com."
 msgstr ""
 
@@ -2032,7 +1996,7 @@ msgstr ""
 msgid "URL for OATH token"
 msgstr ""
 
-#: lib/tokens/hotptoken.py:842 lib/tokens/pushtoken.py:1064
+#: lib/tokens/hotptoken.py:843 lib/tokens/pushtoken.py:1058
 msgid "Please scan the QR code!"
 msgstr ""
 
@@ -2208,7 +2172,7 @@ msgstr ""
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:508
+#: lib/tokens/pushtoken.py:502
 msgid "URL for privacyIDEA Push Token"
 msgstr ""
 

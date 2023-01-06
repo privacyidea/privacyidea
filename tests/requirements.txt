@@ -1,31 +1,16 @@
 -r ../requirements.txt
-atomicwrites==1.4.0; python_version < '3.0'
 attrs==21.4.0
-cookies==2.2.1; python_version < '3.0'
-coverage==5.5; python_version <= '3.5'
 coverage==6.2; python_version == '3.6'
 coverage==6.3.2; python_version > '3.6'
-funcsigs==1.0.2; python_version < '3.0'
-iniconfig==1.1.1; python_version > '3.0'
-mock==3.0.5; python_version <= '3.5'
-mock==4.0.3; python_version > '3.5'
-more-itertools==5.0.0; python_version < '3.0'
-packaging==20.9; python_version == '3.5'
-pathlib2==2.3.7.post1; python_version == '3.5'
-pluggy==0.13.1; python_version <= '3.5'
-pluggy==1.0.0; python_version > '3.5'
+iniconfig==1.1.1
+mock==4.0.3
+pluggy==1.0.0
 py==1.11.0
-pyparsing==2.4.7; python_version <= '3.5'
-pytest==4.6.11; python_version < '3.0'
-pytest==6.1.2; python_version == '3.5'
 pytest==7.0.1; python_version == '3.6'
 pytest==7.1.2; python_version > '3.6'
-pytest-cov==2.12.1; python_version <= '3.5'
-pytest-cov==3.0.0; python_version > '3.5'
-responses==0.17.0; python_version <= '3.6'
+pytest-cov==3.0.0
+responses==0.17.0; python_version == '3.6'
 responses==0.20.0; python_version > '3.6'
 testfixtures==6.18.5
-toml==0.10.2; python_version <= '3.5'
 tomli==1.2.3; python_version == '3.6'
 tomli==2.0.1; python_version > '3.6'
-wcwidth==0.2.5; python_version < '3.0'
