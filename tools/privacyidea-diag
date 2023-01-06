@@ -197,31 +197,38 @@ centos_auditlog() {
 
 apache_log() {
 	if [[ "${OS}" == "centos" || "${OS}" == "rhel" ]]; then
-		log
-		log "SECTION: httpd SSL_error_log"
-		log "============================"
-		tail -100 /var/log/httpd/ssl_error_log  >> "$tempfile"
-		log
-		log "SECTION: httpd Access_log"
-		log "========================="
-		tail -100 /var/log/httpd/ssl_access_log  >> "$tempfile"
-		log
-		log "SECTION: apache configuration"
-		log "============================="
-		tail -n +1 /etc/httpd/conf/httpd.conf /etc/httpd/conf.d/privacyidea.conf >>  "$tempfile"
+		if [ -f /var/log/httpd/ssl_error_log ] && [ -f /var/log/httpd/ssl_access_log ]; then
+			log
+			log "SECTION: httpd SSL_error_log"
+			log "============================"
+  		tail -100 /var/log/httpd/ssl_error_log  >> "$tempfile"
+			log
+			log "SECTION: httpd SSL_error_log"
+			log "============================"
+			tail -100 /var/log/httpd/ssl_error_log  >> "$tempfile"
+		fi
+		if [ -f /etc/httpd/conf/httpd.conf ] && [ -f /etc/httpd/conf.d/privacyidea.conf ]; then
+			log
+			log "SECTION: apache configuration"
+			log "============================="
+			tail -n +1 /etc/httpd/conf/httpd.conf /etc/httpd/conf.d/privacyidea.conf >>  "$tempfile"
+		fi
 	elif [[ "${OS}" == "ubuntu" || "${OS}" == "debian" ]]; then
-		log
-		log "SECTION: apache2 error_log"
-		log "=========================="
-		tail -100 /var/log/apache2/error.log >> "$tempfile"
-		log
-		log "SECTION: apache2 SSL_access_log"
-		log "==============================="
-		tail -100 /var/log/apache2/ssl_access.log >> "$tempfile"
-		log
-		log "SECTION: apache configuration"
-		log "============================="
-		tail -n +1 /etc/apache2/apache2.conf /etc/apache2/sites-enabled/* >> "$tempfile"
+		if [ -f /var/log/apache2/error.log ] && [ -f /var/log/apache2/ssl_access.log ]; then
+			log
+			log "SECTION: apache2 error_log"
+			log "=========================="
+			tail -100 /var/log/apache2/error.log >> "$tempfile"
+			log
+			log "SECTION: apache2 SSL_access_log"
+			log "==============================="
+			tail -100 /var/log/apache2/ssl_access.log >> "$tempfile"
+		fi
+		if [ -f /etc/apache2/apache2.conf ] && [ -d /etc/apache2/sites-enabled ]; then
+			log
+			log "SECTION: apache configuration"
+			log "============================="
+			tail -n +1 /etc/apache2/apache2.conf /etc/apache2/sites-enabled/* >> "$tempfile"
 	fi
 }
 
@@ -241,7 +248,7 @@ ngnix_log(){
 
 pi_logfile() {
 	R=$( grep "^PI_LOGFILE" "$PICFG" | cut -d "=" -f2 | tr -d "\t \'\"" )
-	[ -f ${R} ] && cp ${R} "${diag_info}/privacyidea.logfile" || echo "Could not read logfile ${R}" >> "$tempfile"
+	[[ -f ${R} ]] && cp ${R} "${diag_info}/privacyidea.logfile" || echo "Could not read logfile ${R}" >> "$tempfile"
 }
 
 pi_auditlog() {
