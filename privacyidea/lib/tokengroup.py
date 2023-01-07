@@ -42,16 +42,20 @@ def set_tokengroup(name, description=None):
 
 
 def delete_tokengroup(name=None, id=None):
-    tokengroup_count = db.session.query(TokenTokengroup)\
-        .filter(TokenTokengroup.tokengroup_id == 1).count();
-    if ( tokengroup_count > 0 ):
-        raise privacyIDEAError("This tokengroup is " + str(tokengroup_count) + " times assigned.")
     if not name and not id:
         raise privacyIDEAError("You need to specify either a tokengroup ID or a name.")
-    if id:
-        Tokengroup.query.filter_by(id=id).delete()
-    elif name:
-        Tokengroup.query.filter_by(name=name).delete()
+
+    delete_id = id
+    if (name):
+        tokengroup_id = Tokengroup.query.filter(Tokengroup.name == name).all()
+        delete_id =tokengroup_id[0].id
+
+    tokengroup_count = db.session.query(TokenTokengroup)\
+        .filter(TokenTokengroup.tokengroup_id == delete_id).count();
+    if ( tokengroup_count > 0 ):
+        raise privacyIDEAError("This tokengroup is " + str(tokengroup_count) + " times assigned.")
+
+    Tokengroup.query.filter_by(id=delete_id).delete()
     db.session.commit()
 
 
