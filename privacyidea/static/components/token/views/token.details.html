@@ -337,7 +337,7 @@
             </td>
         </tr>
 
-        <tr>
+        <tr ng-show="checkRight('tokengroup_list')">
             <td>Token groups</td>
             <td>
                 <span ng-hide="editTokenGroups">
@@ -368,7 +368,7 @@
                     </button>
                     <button class="btn btn-primary"
                             id="tgSaveButton"
-                            ng-show="editTokenGroups"
+                            ng-show="editTokenGroups && checkRight('tokengroups')"
                             ng-click="saveTokenGroups()"
                             translate>Save Token Groups
                     </button>
