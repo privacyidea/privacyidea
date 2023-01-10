@@ -229,6 +229,7 @@ apache_log() {
 			log "SECTION: apache configuration"
 			log "============================="
 			tail -n +1 /etc/apache2/apache2.conf /etc/apache2/sites-enabled/* >> "$tempfile"
+		fi
 	fi
 }
 
