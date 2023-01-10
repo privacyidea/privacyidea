@@ -63,8 +63,8 @@
                                         {{ !$first ? "| " : "" }}
                                         <a ui-sref="user.details({
                                         username: userobj.user,
-                                        realmname: userobj.realm.split(' ')[0]})">
-                                            {{ userobj.user }}@{{ userobj.realm }}
+                                        realmname: userobj.realm})">
+                                            {{ userobj.user }}@{{ userobj.realm }}[{{ userobj.fails }}]
                                         </a>
                                     </span>
                                     <span ng-repeat="serial in authentications.serials">

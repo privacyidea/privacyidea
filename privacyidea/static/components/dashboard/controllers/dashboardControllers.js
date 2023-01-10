@@ -147,11 +147,6 @@ $scope.getAuthentication = function () {
             }
             return b.fails - a.fails;
           });
-          // Add the number of fails in brackets after the username
-          $scope.authentications.users = $scope.authentications.users.map(function(user) {
-              user.realm += " [" + user.fails + "]";
-              return user;
-          });
       });
 };
 
