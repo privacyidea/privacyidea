@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2023-01-11 17:52+0000\n"
-"Last-Translator: Marco Malavolti <marco.malavolti@gmail.com>\n"
+"PO-Revision-Date: 2023-01-11 18:26+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/it/>\n"
 "Language: it\n"
@@ -964,7 +964,7 @@ msgstr "Nome attributo personalizzato"
 
 #: privacyidea/static/components/user/views/user.details.html:79
 msgid "Custom attributes for user {{ username }}"
-msgstr "Attributi personalizzati per l'utente {{ nome utente }}"
+msgstr "Attributi personalizzati per l'utente {{ username }}"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:250
 msgid "DN of a new created user object"
@@ -1178,7 +1178,7 @@ msgstr "Modifica"
 
 #: privacyidea/static/components/config/views/config.caconnectors.html:14
 msgid "Edit CA Connector {{ connectorname }}"
-msgstr "Modifica connettore CA {{ nome connettore }}"
+msgstr "Modifica connettore CA {{ connectorname }}"
 
 #: privacyidea/static/components/config/views/config.events.details.html:3
 msgid "Edit Event Handler {{ eventid }}"
