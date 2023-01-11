@@ -9,7 +9,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-12-21 16:58+0100\n"
 "PO-Revision-Date: 2023-01-12 18:48+0000\n"
-"Last-Translator: Enrico M. V. Fasanelli <enrico@infn.it>\n"
+"Last-Translator: Marco Malavolti <marco.malavolti@gmail.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/it/>\n"
 "Language: it\n"
@@ -2020,7 +2020,7 @@ msgstr ""
 
 #: lib/tokens/emailtoken.py:543
 msgid "Please enter your new email address!"
-msgstr ""
+msgstr "Inserisci la tua mail"
 
 #: lib/tokens/foureyestoken.py:132
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
@@ -2401,7 +2401,7 @@ msgstr ""
 
 #: lib/tokens/smstoken.py:603
 msgid "Please enter your new phone number!"
-msgstr ""
+msgstr "Inserisci il tuo numero di telefono"
 
 #: lib/tokens/spasstoken.py:87
 msgid "SPass: Simple Pass token. Static passwords."
