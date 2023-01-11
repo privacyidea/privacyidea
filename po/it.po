@@ -1,10 +1,11 @@
 # Marco Malavolti <marco.malavolti@gmail.com>, 2024.
 # "Enrico M. V. Fasanelli" <enrico@infn.it>, 2024.
+# Paul Lettich <paul.lettich@netknights.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/it/>\n"
 "Language: it\n"
