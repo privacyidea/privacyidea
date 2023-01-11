@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "PO-Revision-Date: 2023-01-11 17:52+0000\n"
-"Last-Translator: Enrico M. V. Fasanelli <enrico@infn.it>\n"
+"Last-Translator: Marco Malavolti <marco.malavolti@gmail.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/it/>\n"
 "Language: it\n"
@@ -600,13 +600,12 @@ msgid "CA Key"
 msgstr "Chiave CA"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:82
-#, fuzzy
 msgid "CA certificate (filename)"
-msgstr "Certificato (PEM)"
+msgstr "CA certificate (nome del file)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:137
 msgid "CA specific options"
-msgstr ""
+msgstr "CA opzioni specifiche"
 
 #: privacyidea/static/components/config/views/config.html:73
 msgid "CAs"
@@ -788,7 +787,7 @@ msgstr "Certificato client (nome del file)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:108
 msgid "Client private key (filename)"
-msgstr ""
+msgstr "Chiave privata del Client (nome file)"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:36
 msgid "Clients"
