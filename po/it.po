@@ -1,20 +1,19 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-08-03 08:18+0000\n"
-"Last-Translator: Marco Malavolti <marco.malavolti@gmail.com>\n"
+"PO-Revision-Date: 2023-01-11 16:21+0000\n"
+"Last-Translator: Enrico M. V. Fasanelli <enrico@infn.it>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/it/>\n"
+"privacyidea-webui/it/>\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.14-dev\n"
+"X-Generator: Weblate 4.15.1-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
-#, fuzzy
 msgctxt "subscription"
 msgid "Level"
 msgstr "Livello"
@@ -303,7 +302,7 @@ msgstr "API client ID"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:682
 msgid "Abort operation on unverifiable token"
-msgstr ""
+msgstr "Operazione abortita per token non verificato"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
@@ -325,7 +324,7 @@ msgstr "Informazioni su privacyIDEA Web Client"
 #: privacyidea/static/components/config/views/config.policies.list.html:20
 #: privacyidea/static/components/dashboard/views/dashboard.html:87
 msgid "Action"
-msgstr "Azione"
+msgstr "Action"
 
 #: privacyidea/static/components/config/views/config.events.list.html:9
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:6
