@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-12-21 16:58+0100\n"
-"PO-Revision-Date: 2023-01-11 17:52+0000\n"
+"PO-Revision-Date: 2023-01-12 18:48+0000\n"
 "Last-Translator: Enrico M. V. Fasanelli <enrico@infn.it>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/it/>\n"
@@ -102,7 +102,7 @@ msgstr "È necessario fornire utente o seriale"
 
 #: lib/policy.py:1363
 msgid "Invalid client definition!"
-msgstr ""
+msgstr "Definizione client non valida!"
 
 #: lib/policy.py:1544
 msgid "Define in which resolver the user should be registered."
@@ -504,22 +504,24 @@ msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the admin."
 msgstr ""
+"Un elenco separato da spazi di campi tokeninfo che non vengono visualizzati "
+"all'amministratore."
 
 #: lib/policy.py:1961
 msgid "The Admin is allowed list the available tokengroups."
-msgstr ""
+msgstr "L'amministratore è autorizzato a elencare i tokengroup disponibili."
 
 #: lib/policy.py:1966
 msgid "The Admin is allowed to add a new tokengroup."
-msgstr ""
+msgstr "L'amministratore può aggiungere un nuovo tokengroup."
 
 #: lib/policy.py:1971
 msgid "The Admin is allowed delete a tokengroup."
-msgstr ""
+msgstr "L'amministratore può eliminare un tokengroup."
 
 #: lib/policy.py:1976
 msgid "The Admin is allowed to manage the tokengroups of a token."
-msgstr ""
+msgstr "L'amministratore è autorizzato a gestire i tokengroup di un token."
 
 #: lib/policy.py:1983
 msgid ""
@@ -636,6 +638,8 @@ msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed "
 "to the user."
 msgstr ""
+"Un elenco separato da spazi di campi tokeninfo che non vengono visualizzati "
+"all'utente."
 
 #: lib/policy.py:2118
 msgid "Limit the number of allowed tokens in a realm."
@@ -677,12 +681,16 @@ msgid ""
 "The user needs to change his PIN on a regular basis. To change the PIN "
 "every 180 days, enter '180d'."
 msgstr ""
+"L'utente deve modificare regolarmente il proprio PIN. Per modificare il PIN "
+"ogni 180 giorni, inserisci '180d'."
 
 #: lib/policy.py:2156
 msgid ""
 "The OTP PIN can be hashed or encrypted. Hashing the PIN is the default "
 "behaviour."
 msgstr ""
+"Il PIN OTP può essere sottoposto a hashing o crittografato. L'hashing del "
+"PIN è il comportamento predefinito."
 
 #: lib/policy.py:2161
 msgid ""
