@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "PO-Revision-Date: 2023-01-11 16:21+0000\n"
-"Last-Translator: Enrico M. V. Fasanelli <enrico@infn.it>\n"
+"Last-Translator: Marco Malavolti <marco.malavolti@gmail.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/it/>\n"
 "Language: it\n"
@@ -37,7 +37,7 @@ msgstr "(nessuno)"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:8
 msgid "45% Complete"
-msgstr "45% al completamento"
+msgstr "45% Completato"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:114
 msgid ""
@@ -57,6 +57,10 @@ msgid ""
 "\"true\"></span>\n"
 "                    <span translate>Subscriptions</span></a>"
 msgstr ""
+"<a ui-sref=\"component.subscriptions\">\n"
+"                    <span class=\"glyphicon glyphicon-calendar\" aria-hidden="
+"\"true\"></span>\n"
+"                    <span translate>Subscriptions</span></a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
@@ -313,7 +317,10 @@ msgid ""
 "According to the\n"
 "                    <a target=\"license\" href=\"https://github.com/"
 "privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
-msgstr "Informazioni su privacyIDEA Web Client"
+msgstr ""
+"In accordo con la\n"
+"                    <a target=\"license\" href=\"https://github.com/"
+"privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
 
 #: privacyidea/static/components/config/views/config.events.details.html:113
 #: privacyidea/static/components/config/views/config.events.details.html:240
