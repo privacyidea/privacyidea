@@ -832,10 +832,10 @@ class HotpTokenClass(TokenClass):
         # Create a challenge!
         c = token_obj.create_challenge()
         # get details of token
-        init_details = token_obj.get_init_detail()
+        init_details = token_obj.get_init_detail(user=user_obj)
         detail["transaction_ids"] = [c[2]]
         chal = {"transaction_id": c[2],
-                "image": init_details.get("otpkey").get("img"),
+                "image": init_details.get("googleurl").get("img"),
                 "client_mode": CLIENTMODE.INTERACTIVE,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
