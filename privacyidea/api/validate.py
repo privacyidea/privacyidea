@@ -202,6 +202,7 @@ def offlinerefill():
 @postpolicy(is_authorized, request=request)
 @postpolicy(mangle_challenge_response, request=request)
 @postpolicy(construct_radius_response, request=request)
+@postpolicy(preferred_client_mode, request=request)
 @postpolicy(multichallenge_enroll_via_validate, request=request)
 @postpolicy(no_detail_on_fail, request=request)
 @postpolicy(no_detail_on_success, request=request)
@@ -211,7 +212,6 @@ def offlinerefill():
 @postpolicy(check_tokentype, request=request)
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
-@postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(pushtoken_wait, request=request)
