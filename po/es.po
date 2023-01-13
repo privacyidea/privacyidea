@@ -1,10 +1,11 @@
 # Jose Maria GJ <josema.gj@gmail.com>, 2024.
+# "Enrico M. V. Fasanelli" <enrico@infn.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"Last-Translator: \"Enrico M. V. Fasanelli\" <enrico@infn.it>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/es/>\n"
 "Language: es\n"
