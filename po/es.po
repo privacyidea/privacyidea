@@ -2,16 +2,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-12-22 14:58+0100\n"
-"Last-Translator: Jose Maria GJ <josema.gj@gmail.com>\n"
+"PO-Revision-Date: 2023-01-16 21:51+0000\n"
+"Last-Translator: Enrico M. V. Fasanelli <enrico@infn.it>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/es/>\n"
+"privacyidea-webui/es/>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 3.2.2\n"
+"X-Generator: Weblate 4.15.1-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -2743,7 +2743,7 @@ msgstr "Respuesta de mapeo (formato JSON)"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:69
 msgid "Response contains (JSON format):"
-msgstr "Contenido de la respuesta (formato JSON)"
+msgstr "Contenido de la respuesta (formato JSON):"
 
 #: privacyidea/static/components/token/views/token.details.html:407
 msgid "Resync Token"
