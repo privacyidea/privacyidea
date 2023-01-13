@@ -1,10 +1,11 @@
 # Ishdorj Idree <ishdorjidree@gmail.com>, 2024.
+# "Enrico M. V. Fasanelli" <enrico@infn.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Ishdorj Idree <ishdorjidree@gmail.com>\n"
+"Last-Translator: \"Enrico M. V. Fasanelli\" <enrico@infn.it>\n"
 "Language-Team: Mongolian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/mn/>\n"
 "Language: mn\n"
