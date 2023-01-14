@@ -128,7 +128,7 @@ def test():
     dictionary = getParam(param, "dictionary",
                           default="/etc/privacyidea/dictionary")
     r = 0
-    for server in servers.split(','):
+    for server in [x.strip() for x in servers.split(',')]:
         # TODO: IPv6 break the split
         serveraddr = server.split(':')
         if len(serveraddr) >= 2:
@@ -139,4 +139,6 @@ def test():
                     dictionary=dictionary, retries=retries, timeout=timeout)
         g.audit_object.log({'success': r > 0,
                         'info':  r})
+        if (r > 0):
+            break
     return send_result(r > 0)

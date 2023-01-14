@@ -502,7 +502,7 @@ class RadiusTokenClass(RemoteTokenClass):
                     tmp_radius_state = radius_state
                     # TODO: IPv6 break the split
                     server = radius_server.split(':')
-                    r_server = server[0]
+                    r_server = server[0].strip()
                     if len(server) >= 2:
                         r_authport = int(server[1])
                     else:
