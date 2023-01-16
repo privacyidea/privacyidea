@@ -295,7 +295,7 @@ class Token(MethodsMixin, db.Model):
 
         return data
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     def set_otpkey(self, otpkey, reset_failcount=True):
         iv = geturandom(16)
         self.key_enc = encrypt(otpkey, iv)

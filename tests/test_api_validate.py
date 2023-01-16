@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import six
+import logging
+from testfixtures import log_capture
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -42,7 +44,6 @@ import datetime
 import time
 import responses
 import mock
-import binascii
 from . import smtpmock, ldap3mock, radiusmock
 
 
@@ -5336,9 +5337,11 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         self.assertTrue(r > 0)
 
     @ldap3mock.activate
-    def test_01_enroll_HOTP(self):
+    @log_capture(level=logging.DEBUG)
+    def test_01_enroll_HOTP(self, capture):
         # Init LDAP
         ldap3mock.setLDAPDirectory(LDAPDirectory)
+        logging.getLogger('privacyidea').setLevel(logging.DEBUG)
         # create realm
         r = set_realm("ldaprealm", resolvers=["catchall"])
         set_default_realm("ldaprealm")
@@ -5400,6 +5403,12 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
+
+        log_msg = str(capture)
+        self.assertNotIn('alicepw', log_msg, log_msg)
+        self.assertNotIn('ldappw', log_msg, log_msg)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        logging.getLogger('privacyidea').setLevel(logging.INFO)
 
         # Cleanup
         delete_policy("pol_passthru")
