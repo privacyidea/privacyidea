@@ -4,7 +4,11 @@ This test file tests the lib.user
 
 The lib.user.py only depends on the database model
 """
+import logging
+
 import six
+from testfixtures import log_capture
+
 PWFILE = "tests/testdata/passwd"
 PWFILE2 = "tests/testdata/passwords"
 
@@ -18,6 +22,7 @@ from privacyidea.lib.user import (User, create_user,
                                   split_user,
                                   get_user_from_param,
                                   UserError)
+from privacyidea.lib.user import log as user_log
 from . import ldap3mock
 from .test_lib_resolver import LDAPDirectory_small
 
@@ -182,7 +187,8 @@ class UserTestCase(MyTestCase):
         user = split_user("user@non_existing_realm.com")
         self.assertEqual(user, ("user@non_existing_realm.com", ""))
 
-    def test_09_get_user_from_param(self):
+    @log_capture(level=logging.DEBUG)
+    def test_09_get_user_from_param(self, capture):
         # enable splitAtSign
         set_privacyidea_config("splitAtSign", True)
         user = get_user_from_param({"user": "cornelius"})
@@ -242,6 +248,19 @@ class UserTestCase(MyTestCase):
         user = get_user_from_param(param)
         self.assertEqual(user.login, "cornelius//realm1", user)
         self.assertEqual(user.realm, "realm2", user)
+
+        # check debug log for passwords
+        user_log.setLevel(logging.DEBUG)
+        _user = get_user_from_param({
+            'user': 'cornelius',
+            'realm': self.realm2,
+            'pass': 'barracuda',
+            'password': 'swordfish'})
+        log_msg = str(capture)
+        self.assertNotIn('barracuda', log_msg, log_msg)
+        self.assertNotIn('swordfish', log_msg, log_msg)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        user_log.setLevel(logging.INFO)
 
         # reset splitAtSign setting
         set_privacyidea_config("splitAtSign", True)

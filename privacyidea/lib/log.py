@@ -93,7 +93,7 @@ class log_with(object):
     # Customize these messages
     ENTRY_MESSAGE = u'Entering {0} with arguments {1} and keywords {2}'
     EXIT_MESSAGE = 'Exiting {0} with result {1}'
-    
+
     def __init__(self, logger=None, log_entry=True, log_exit=True,
                  hide_args=None, hide_kwargs=None,
                  hide_args_keywords=None):
@@ -111,8 +111,8 @@ class log_with(object):
         :param hide_kwargs: list of key word arguments, that should be hidden
             from the log entry.
         :type hide_kwargs: list of keywords
-        :param hide_args_keys: Hide the keywords in positional arguments,
-            if the positional argument is a dict
+        :param hide_args_keywords: Hide the keywords in positional arguments,
+            if the positional argument is a dictionary
         :type hide_args_keywords: dict
         """
         self.logger = logger
@@ -131,13 +131,7 @@ class log_with(object):
         :param func: The function that is decorated
         :return: function
         """
-        # set logger if it was not set earlier
-        # TODO: Remove me
-        # CKO: Performance: I think we always set the logger!
-        #if not self.logger:
-        #    logging.basicConfig()
-        #    self.logger = logging.getLogger(func.__module__)
-            
+
         @functools.wraps(func)
         def log_wrapper(*args, **kwds):
             """
@@ -147,7 +141,9 @@ class log_with(object):
             the result of ``func(*args, **kwds)`` to improve performance.
 
             :param args: The positional arguments starting with index
-            :param kwds: The keyword arguemnts
+            :type args: tuple
+            :param kwds: The keyword arguments
+            :type kwds: dict
             :return: The wrapped function
             """
             # Exit early if self.logger disregards DEBUG messages.
@@ -164,7 +160,7 @@ class log_with(object):
                     # I.e. we only do password logging if log_level < 10.
                     if level != 0 and level >= 10:
                         # Hide specific arguments or keyword arguments
-                        log_args = deepcopy(args)
+                        log_args = list(deepcopy(args))
                         log_kwds = deepcopy(kwds)
                         for arg_index in self.hide_args:
                             log_args[arg_index] = "HIDDEN"
@@ -190,9 +186,9 @@ class log_with(object):
             except Exception as exx:
                 self.logger.error(exx)
                 self.logger.error("Error during logging of function {0}! {1}".format(func.__name__, exx))
-                
+
             f_result = func(*args, **kwds)
-            
+
             try:
                 if self.log_exit:
                     self.logger.debug(self.EXIT_MESSAGE.format(func.__name__, f_result))
@@ -201,5 +197,5 @@ class log_with(object):
             except Exception as exx:
                 self.logger.error("Error during logging of function {0}! {1}".format(func.__name__, exx))
             return f_result
-        
+
         return log_wrapper
