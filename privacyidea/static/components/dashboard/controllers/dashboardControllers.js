@@ -139,13 +139,10 @@ $scope.getAuthentication = function () {
                   $scope.authentications.serials.push(auditentry.serial);
               }
           });
-          // Convert the dictionary to an array and sort it by the number of fails and the latest error date
+          // Convert the dictionary to an array and sort it by the latest error date
           $scope.authentications.users = Object.values($scope.authentications.users);
           $scope.authentications.users.sort(function(a, b) {
-            if (a.fails == b.fails) {
                 return b.latestError - a.latestError;
-            }
-            return b.fails - a.fails;
           });
       });
 };
