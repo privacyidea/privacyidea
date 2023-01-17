@@ -2,16 +2,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-12-22 15:07+0100\n"
-"Last-Translator: Ishdorj Idree <ishdorjidree@gmail.com>\n"
+"PO-Revision-Date: 2023-01-16 21:51+0000\n"
+"Last-Translator: Enrico M. V. Fasanelli <enrico@infn.it>\n"
 "Language-Team: Mongolian <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/mn/>\n"
+"privacyidea-webui/mn/>\n"
 "Language: mn\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 3.2.2\n"
+"X-Generator: Weblate 4.15.1-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -38,7 +38,7 @@ msgstr "(байхгүй)"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:8
 msgid "45% Complete"
-msgstr "45%  Гүйцэтгэлтэй"
+msgstr "45% Гүйцэтгэлтэй"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:114
 msgid ""
