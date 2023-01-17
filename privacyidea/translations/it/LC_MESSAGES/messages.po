@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-12-21 16:58+0100\n"
-"PO-Revision-Date: 2023-01-15 18:48+0000\n"
+"PO-Revision-Date: 2023-01-16 22:50+0000\n"
 "Last-Translator: Enrico M. V. Fasanelli <enrico@infn.it>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/it/>\n"
@@ -78,7 +78,7 @@ msgstr "Si prega di inserire un nuovo PIN"
 
 #: lib/challengeresponsedecorators.py:201
 msgid "To resync your token, please enter the next OTP value"
-msgstr ""
+msgstr "Per risincronizzare il token, inserisci il valore OTP successivo"
 
 #: lib/decorators.py:43 lib/token.py:2188
 msgid "This action is not possible, since the token is locked"
@@ -697,40 +697,49 @@ msgid ""
 "Set label for a new enrolled Google Authenticator. Possible tags are "
 "&lt;u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
 msgstr ""
+"Imposta l'etichetta per un nuovo Google Authenticator registrato. I tag "
+"possibili sono &lt;u&gt; (utente), &lt;r&gt; (realm), &lt;s&gt; (seriale)."
 
 #: lib/policy.py:2167
 msgid "This is the issuer label for new enrolled Google Authenticators."
 msgstr ""
+"Questa è l'etichetta dell'issuer per i nuovi Google Authenticator registrati."
 
 #: lib/policy.py:2173
 msgid ""
 "This is the URL to the token image for the privacyIDEA Authenticator and "
 "some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."
 msgstr ""
+"Questo è l'URL dell'immagine del token per privacyIDEA Authenticator e "
+"alcune altre app come FreeOTP (formati di file supportati: PNG, JPG e GIF)."
 
 #: lib/policy.py:2180
 msgid ""
 "Users can assign a token just by using the unassigned token to "
 "authenticate."
 msgstr ""
+"Gli utenti possono assegnare un token semplicemente usando il token non "
+"assegnato per autenticarsi."
 
 #: lib/policy.py:2186
 msgid "The length of the password in case of temporary token (lost token)."
-msgstr ""
+msgstr "La lunghezza della password in caso di token temporaneo (token perso)."
 
 #: lib/policy.py:2190
 msgid ""
 "The contents of the temporary password, described by the characters C, c,"
 " n, s, 8."
 msgstr ""
+"Il contenuto della password temporanea, descritto dai caratteri C, c, n, s, "
+"8."
 
 #: lib/policy.py:2195
 msgid "The length of the validity for the temporary token (in days)."
-msgstr ""
+msgstr "La durata della validità del token temporaneo (in giorni)."
 
 #: lib/policy.py:2200
 msgid "Set the length of registration codes."
-msgstr ""
+msgstr "Imposta la lunghezza dei codici di registrazione."
 
 #: lib/policy.py:2204
 msgid ""
@@ -738,10 +747,13 @@ msgid ""
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
 "[1234567890]"
 msgstr ""
+"Specificare il contenuto richiesto del codice di registrazione. (c)aratteri, "
+"(n)numerici, (s)speciali. Utilizzare i modificatori +/- o un elenco di "
+"caratteri consentiti [1234567890]"
 
 #: lib/policy.py:2213
 msgid "Set the length of the password of generated password tokens."
-msgstr ""
+msgstr "Imposta la lunghezza della password dei token password generati."
 
 #: lib/policy.py:2217
 msgid ""
@@ -758,36 +770,48 @@ msgid ""
 "Specify a white space separated list of token types, that should be "
 "verified during enrollment."
 msgstr ""
+"Specificare un elenco separato da spazi di tipi di token che devono essere "
+"verificati durante la registrazione."
 
 #: lib/policy.py:2234
 msgid ""
 "Either use the Token PIN , use the Userstore Password or use no fixed "
 "password component."
 msgstr ""
+"Utilizzare il PIN del token, utilizzare la password dell'archivio utente o "
+"non utilizzare alcun componente password fissa."
 
 #: lib/policy.py:2239
 msgid ""
 "This is a whitespace separated list of tokentypes, that can be used with "
 "challenge response."
 msgstr ""
+"Questo è un elenco separato da spazi bianchi di tipi di token, che può "
+"essere utilizzato con la risposta alla richiesta."
 
 #: lib/policy.py:2244
 msgid ""
 "Use an alternate challenge text for telling the user to enter an OTP "
 "value."
 msgstr ""
+"Utilizza un testo di verifica alternativo per indicare all'utente di "
+"inserire un valore OTP."
 
 #: lib/policy.py:2249
 msgid ""
 "If there are several different challenges, this text precedes the list of"
 " the challenge texts."
 msgstr ""
+"Se ci sono più sfide diverse, questo testo precede l'elenco dei testi delle "
+"sfide."
 
 #: lib/policy.py:2254
 msgid ""
 "If there are several different challenges, this text follows the list of "
 "the challenge texts."
 msgstr ""
+"Se ci sono più sfide diverse, questo testo segue l'elenco dei testi delle "
+"sfide."
 
 #: lib/policy.py:2259
 msgid ""
