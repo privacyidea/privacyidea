@@ -339,7 +339,7 @@ deletion_confirmation
 
 type: ``bool``
 
-To avoid accidents when deleting important configurations, this policy can be
+To avoid careless deletion of important configurations, this policy can be
 activated. After activation, an additional confirmation for the deletion is
 requested for policies, events, mresolvers, resolvers and periodic-tasks.
 
