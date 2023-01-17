@@ -52,17 +52,6 @@ myApp.controller("periodicTaskController", ["$scope", "$stateParams", "$state",
         });
     };
 
-    $scope.confirmDeletePeriodicTask = function (ptaskid) {
-        // prompt to confirm whether periodic_task should be deleted
-        if ($scope.deletion_confirmation) {
-            if (confirm("Do you really want to delete this event?")) {
-                $scope.delPeriodicTask(ptaskid);
-            }
-        } else {
-            $scope.delPeriodicTask(ptaskid);
-        }
-    };
-
     $scope.orderChanged = function (ptask) {
         // we cannot directly pass ``ptask`` because we need to join the nodes list
         var params = {

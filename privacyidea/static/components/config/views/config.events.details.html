@@ -14,7 +14,8 @@
         Enable
     </button>
     <button class="btn btn-danger"
-        ng-click="confirmDeleteEvent(eventid)">
+            ng-click="confirmDelete(delEvent, eventid,
+            'Do you really want to delete this event?')">
         <span class="glyphicon glyphicon-trash"></span>
         <span translate>Delete</span>
     </button>

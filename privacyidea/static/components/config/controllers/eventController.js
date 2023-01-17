@@ -65,17 +65,6 @@ myApp.controller("eventController", ["$scope", "$stateParams", "$state",
         );
     };
 
-    $scope.confirmDeleteEvent = function (eventid) {
-        // prompt to confirm whether event should be deleted
-        if ($scope.deletion_confirmation) {
-            if (confirm("Do you really want to delete this event?")) {
-                $scope.delEvent(eventid);
-            }
-        } else {
-            $scope.delEvent(eventid);
-        }
-    };
-
     // Get all events
     $scope.getEvents();
 

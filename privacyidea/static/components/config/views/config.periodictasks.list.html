@@ -49,7 +49,8 @@
             <td>
                 <button class="btn btn-danger"
                         ng-show="checkRight('periodictask_write')"
-                        ng-click="confirmDeletePeriodicTask(ptask.id)">
+                        ng-click="confirmDelete(delPeriodicTask, ptask.id,
+                        'Do you really want to delete this task?')">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Delete</span>
                 </button>

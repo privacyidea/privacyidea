@@ -21,7 +21,8 @@
                         translate>Edit</button>
                 <button class="btn btn-sm btn-danger"
                         ng-show="checkRight('resolverdelete')"
-                        ng-click="confirmDeleteResolver(resolver.resolvername)">
+                        ng-click="confirmDelete(delResolver, resolver.resolvername,
+                        'Do you really want to delete this resolver?')">
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
                 </button>

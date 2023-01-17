@@ -97,6 +97,15 @@ angular.module("privacyideaApp")
     $scope.piCustomBaselineFile = angular.element(document.querySelector('#CUSTOM_BASELINE')).val();
     // TODO: We can change this after login, if there is a user dependent customization!
 
+    $scope.confirmDelete = function(delete_function, identifier, question) {
+        if ($scope.deletion_confirmation) {
+            if (confirm(gettextCatalog.getString(question))) {
+                delete_function(identifier);
+            }
+        } else {
+            delete_function(identifier);
+        }
+    };
     hotkeys.add({
         combo: 'alt+e',
         description: gettextCatalog.getString('Enroll a new token'),
