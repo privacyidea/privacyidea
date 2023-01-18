@@ -542,7 +542,6 @@ class EmailTokenClass(HotpTokenClass):
                 "type": token_obj.type,
                 "message": _("Please enter your new email address!")}
         detail["multi_challenge"] = [chal]
-        detail.update({"preferred_client_mode": CLIENTMODE.INTERACTIVE})
         detail.update(chal)
 
     def enroll_via_validate_2nd_step(self, passw, options=None):

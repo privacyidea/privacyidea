@@ -1057,5 +1057,4 @@ class PushTokenClass(TokenClass):
                 "type": token_obj.type,
                 "message": _("Please scan the QR code!")}
         detail["multi_challenge"] = [chal]
-        detail.update({"preferred_client_mode": CLIENTMODE.POLL})
         detail.update(chal)
