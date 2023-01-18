@@ -60,12 +60,16 @@
                                 <td translate>failed users / tokens</td>
                                 <td>
                                     <span ng-repeat="userobj in authentications.users">
-					    {{ ! $first ? "| " : "" }}<a ui-sref="user.details({username: userobj.user, realmname: userobj.realm})">
-                                        {{ userobj.user }}@{{ userobj.realm }}</a>
+                                        {{ !$first ? "| " : "" }}
+                                        <a ui-sref="user.details({
+                                        username: userobj.user,
+                                        realmname: userobj.realm})">
+                                            {{ userobj.user }}@{{ userobj.realm }}[{{ userobj.fails }}]
+                                        </a>
                                     </span>
                                     <span ng-repeat="serial in authentications.serials">
                                         <a ui-sref="token.details({tokenSerial: serial})">
-                                        {{ serial }}</a>
+                                            {{ serial }}</a>
                                     </span>
                                 </td>
                             </tr>

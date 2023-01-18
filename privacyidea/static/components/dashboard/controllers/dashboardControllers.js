@@ -111,26 +111,41 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
         });
      };
 
-     $scope.getAuthentication = function () {
-        $scope.authentications = {"success": 0, "fail": 0};
-        AuditFactory.get({"timelimit": "1d", "action": "*validate*", "success": "1"},
-            function (data) {
-                $scope.authentications.success = data.result.value.count;
-            });
-        AuditFactory.get({"timelimit": "1d", "action": "*validate*", "success": "0"},
-            function (data) {
-                $scope.authentications.fail = data.result.value.count;
-                $scope.authentications.users = Array();
-                $scope.authentications.serials = Array();
-                angular.forEach(data.result.value.auditdata, function(auditentry){
-                    if (auditentry.user) {
-                        $scope.authentications.users.push({"user": auditentry.user, "realm": auditentry.realm});
-                    } else {
-                        $scope.authentications.serials.push(auditentry.serial);
-                    }
-                });
-            });
-     };
+$scope.getAuthentication = function () {
+  $scope.authentications = {"success": 0, "fail": 0};
+  AuditFactory.get({"timelimit": "1d", "action": "*validate*", "success": "1"},
+      function (data) {
+          $scope.authentications.success = data.result.value.count;
+      });
+  AuditFactory.get({"timelimit": "1d", "action": "*validate*", "success": "0"},
+      function (data) {
+          $scope.authentications.fail = data.result.value.count;
+          $scope.authentications.users = {}; // Declare the users object as a dictionary
+          $scope.authentications.serials = Array();
+          angular.forEach(data.result.value.auditdata, function(auditentry){
+              if (auditentry.user) {
+                  // Check if the user already exists in the dictionary
+                  if (!$scope.authentications.users[auditentry.user + "-" + auditentry.realm]) {
+                      // Add the user to the dictionary with a count of 1 and the latest error date
+                      $scope.authentications.users[auditentry.user + "-" + auditentry.realm] = {"user": auditentry.user, "realm": auditentry.realm, "fails": 1, "latestError": auditentry.date};
+                  } else {
+                      // Increment the number of fails for the existing user and update the latest error date
+                      $scope.authentications.users[auditentry.user + "-" + auditentry.realm].fails++;
+                      if (auditentry.date > $scope.authentications.users[auditentry.user + "-" + auditentry.realm].latestError) {
+                          $scope.authentications.users[auditentry.user + "-" + auditentry.realm].latestError = auditentry.date;
+                      }
+                  }
+              } else {
+                  $scope.authentications.serials.push(auditentry.serial);
+              }
+          });
+          // Convert the dictionary to an array and sort it by the latest error date
+          $scope.authentications.users = Object.values($scope.authentications.users);
+          $scope.authentications.users.sort(function(a, b) {
+                return b.latestError - a.latestError;
+          });
+      });
+};
 
      $scope.getAdministration = function () {
          $scope.administration = [];
