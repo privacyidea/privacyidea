@@ -1308,6 +1308,7 @@ def create_tag_dict(logged_in_user=None,
                     googleurl_value=None,
                     client_ip=None,
                     pin=None,
+                    challenge=None,
                     escape_html=False):
     """
     This helper function creates a dictionary with tags to be used in sending emails
@@ -1324,7 +1325,8 @@ def create_tag_dict(logged_in_user=None,
     :param registrationcode: The registration code of a token
     :param googleurl_value: The URL for the QR code during token enrollemnt
     :param client_ip: The IP of the client
-    :param pin: the PIN of a token
+    :param pin: The PIN of a token
+    :param challenge: The challenge data
     :param escape_html: Whether the values for the tags should be html escaped
     :return: The tag dictionary
     """
@@ -1351,7 +1353,8 @@ def create_tag_dict(logged_in_user=None,
                 client_ip=client_ip,
                 pin=pin,
                 ua_browser=request.user_agent.browser if request else "",
-                ua_string=request.user_agent.string if request else "")
+                ua_string=request.user_agent.string if request else "",
+                challenge=challenge if challenge else "")
     if escape_html:
         escaped_tags = {}
         for key, value in tags.items():
