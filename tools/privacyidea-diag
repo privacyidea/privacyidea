@@ -32,8 +32,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 if [[ $(id -u) != 0 ]]; then
-  echo "Script must be run as root user"
-  exit 1
+	echo "Script must be run as root user"
+	exit 1
 fi
 
 PICFG="/etc/privacyidea/pi.cfg"
@@ -149,10 +149,10 @@ pi_config() {
 
 server_config() {
 	# Extract configurations for smtp, privacyIDEA and RADIUS server
-  server_config=$(call_pi_manage config exporter -t smtpserver privacyideaserver radiusserver -f json)
+	server_config=$(call_pi_manage config exporter -t smtpserver privacyideaserver radiusserver -f json)
 
-  log_pi_config
-  log_pi_config "SECTION: SMTP|privacyIDEA|RADIUS Server Configuration"
+	log_pi_config
+	log_pi_config "SECTION: SMTP|privacyIDEA|RADIUS Server Configuration"
 	log_pi_config "====================================================="
 	log_pi_config "$server_config"
 }
@@ -206,7 +206,7 @@ apache_log() {
 			log
 			log "SECTION: httpd SSL_error_log"
 			log "============================"
-  		tail -100 /var/log/httpd/ssl_error_log  >> "$tempfile"
+			tail -100 /var/log/httpd/ssl_error_log  >> "$tempfile"
 			log
 			log "SECTION: httpd SSL_error_log"
 			log "============================"
