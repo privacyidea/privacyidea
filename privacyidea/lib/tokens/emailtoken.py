@@ -295,6 +295,7 @@ class EmailTokenClass(HotpTokenClass):
                                                                        EMAILACTION.EMAILSUBJECT,
                                                                        "Your OTP")
                     success, sent_message = self._compose_email(
+                        options,
                         message=message_template,
                         subject=subject_template,
                         mimetype=mimetype)
