@@ -418,7 +418,7 @@ class IdResolver (UserIdResolver):
         user = {}
         try:
             if self.map.get("userid") in r:
-                user["id"] = r[self.map.get("userid")]
+                user["id"] = convert_column_to_unicode(r[self.map.get("userid")])
         except UnicodeEncodeError:  # pragma: no cover
             log.error("Failed to convert user: {0!r}".format(r))
             log.debug("{0!s}".format(traceback.format_exc()))
