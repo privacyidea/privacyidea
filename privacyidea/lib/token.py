@@ -419,10 +419,10 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 
     # Warning for unintentional exact serial matches
     if serial is not None and "*" in serial:
-        log.info(u"Exact match on a serial containing a wildcard: {!r}".format(serial))
+        log.info("Exact match on a serial containing a wildcard: {!r}".format(serial))
     # Warning for unintentional wildcard serial matches
     if serial_wildcard is not None and "*" not in serial_wildcard:
-        log.info(u"Wildcard match on serial without a wildcard: {!r}".format(serial_wildcard))
+        log.info("Wildcard match on serial without a wildcard: {!r}".format(serial_wildcard))
 
     # Decide, what we are supposed to return
     if count is True:
@@ -562,9 +562,9 @@ def get_one_token(*args, **kwargs):
     """
     result = get_tokens(*args, **kwargs)
     if not result:
-        raise ResourceNotFoundError(_(u"The requested token could not be found."))
+        raise ResourceNotFoundError(_("The requested token could not be found."))
     elif len(result) > 1:
-        raise ParameterError(_(u"More than one matching token were found."))
+        raise ParameterError(_("More than one matching token were found."))
     else:
         return result[0]
 
@@ -1187,7 +1187,7 @@ def set_defaults(serial):
     db_token.count_window = int(get_from_config("DefaultCountWindow", 15))
     db_token.maxfail = int(get_from_config("DefaultMaxFailCount", 15))
     db_token.sync_window = int(get_from_config("DefaultSyncWindow", 1000))
-    db_token.tokentype = u"hotp"
+    db_token.tokentype = "hotp"
     db_token.save()
 
 
@@ -2357,7 +2357,7 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                     # all challenges with this very transaction_id!
                     transaction_id = options.get("transaction_id") or \
                                      options.get("state")
-                    Challenge.query.filter(Challenge.transaction_id == u'' +
+                    Challenge.query.filter(Challenge.transaction_id == '' +
                                            transaction_id).delete()
                     # We have one successful authentication, so we bail out
                     break
@@ -2449,7 +2449,7 @@ def get_dynamic_policy_definitions(scope=None):
     for ttype in get_token_types():
         pol[SCOPE.ADMIN]["enroll{0!s}".format(ttype.upper())] \
             = {'type': 'bool',
-               'desc': _(u"Admin is allowed to initalize {0!s} tokens.").format(ttype.upper()),
+               'desc': _("Admin is allowed to initalize {0!s} tokens.").format(ttype.upper()),
                'mainmenu': [MAIN_MENU.TOKENS],
                'group': GROUP.ENROLLMENT}
 
@@ -2457,7 +2457,7 @@ def get_dynamic_policy_definitions(scope=None):
         if 'enroll' in conf:
             pol[SCOPE.USER]["enroll{0!s}".format(ttype.upper())] = {
                 'type': 'bool',
-                'desc': _(u"The user is allowed to enroll a {0!s} token.").format(ttype.upper()),
+                'desc': _("The user is allowed to enroll a {0!s} token.").format(ttype.upper()),
                 'mainmenu': [MAIN_MENU.TOKENS],
                 'group': GROUP.ENROLLMENT}
 
@@ -2546,7 +2546,7 @@ def assign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
     try:
         return tokenobject.add_tokengroup(tokengroup, tokengroup_id)
     except Exception:
-        raise ResourceNotFoundError(_(u"The tokengroup does not exist."))
+        raise ResourceNotFoundError(_("The tokengroup does not exist."))
 
 
 def unassign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
@@ -2562,7 +2562,7 @@ def unassign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
         tokenobject = get_one_token(serial=serial)
         return tokenobject.del_tokengroup(tokengroup, tokengroup_id)
     except Exception:
-        raise ResourceNotFoundError(_(u"The tokengroup does not exist."))
+        raise ResourceNotFoundError(_("The tokengroup does not exist."))
 
 
 def list_tokengroups(tokengroup=None):

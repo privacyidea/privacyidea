@@ -18,7 +18,7 @@ class AuthCacheTestCase(MyTestCase):
     """
     Test the policies on a database level
     """
-    password = u"secret123456"
+    password = "secret123456"
     username = "hans"
     realm = "realm"
     resolver = "resolver"
@@ -139,7 +139,7 @@ class AuthCacheTestCase(MyTestCase):
 
     def test_06_delete_other_invalid_entries(self):
         # Test deletion of expired entries
-        r1 = add_to_cache(self.username, self.realm, self.resolver, u"somethingDifferent")
+        r1 = add_to_cache(self.username, self.realm, self.resolver, "somethingDifferent")
         r2 = add_to_cache(self.username, self.realm, self.resolver, self.password)
 
         auth1 = AuthCache.query.filter(AuthCache.id == r1).first()
@@ -168,7 +168,7 @@ class AuthCacheTestCase(MyTestCase):
 
         # Test deletion if max_auths is reached
         r1 = add_to_cache(self.username, self.realm, self.resolver, self.password)
-        r2 = add_to_cache(self.username, self.realm, self.resolver, u"somethingDifferent")
+        r2 = add_to_cache(self.username, self.realm, self.resolver, "somethingDifferent")
 
         update_cache(r2)
         update_cache(r2)

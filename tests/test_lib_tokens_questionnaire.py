@@ -91,9 +91,9 @@ class QuestionnaireTokenTestCase(MyTestCase):
         token.delete_token()
 
     def test_05_unicode_question(self):
-        questions = {u'cité': u'Nîmes',
-                     u'城市': u'北京',
-                     'ciudad': u'Almería'}
+        questions = {'cité': 'Nîmes',
+                     '城市': '北京',
+                     'ciudad': 'Almería'}
         set_privacyidea_config("question.num_answers", 2)
         token = init_token({"type": "question",
                             "pin": self.pin,
@@ -115,7 +115,7 @@ class QuestionnaireTokenTestCase(MyTestCase):
         token.delete_token()
 
     def test_06_wrong_answer(self):
-        questions = {'ciudad': u'Almería'}
+        questions = {'ciudad': 'Almería'}
         set_privacyidea_config("question.num_answers", 1)
         token = init_token({"type": "question",
                             "pin": self.pin,
@@ -131,11 +131,11 @@ class QuestionnaireTokenTestCase(MyTestCase):
         self.assertTrue(question in questions)
 
         # What happens if the answer is wrong?
-        r = token.check_challenge_response(passw=u'Málaga',
+        r = token.check_challenge_response(passw='Málaga',
                                            options={"transaction_id": transactionid})
         self.assertEqual(r, -1)
         # Try to answer again
-        r = token.check_challenge_response(passw=u'Almería',
+        r = token.check_challenge_response(passw='Almería',
                                            options={"transaction_id": transactionid})
         self.assertEqual(r, 1)
         token.delete_token()

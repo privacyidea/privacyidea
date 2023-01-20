@@ -358,7 +358,7 @@ class APIPolicyTestCase(MyApiTestCase):
             status = result.get("status")
             self.assertFalse(status)
             message = result.get("error").get("message")
-            self.assertEqual(message, u"Admin actions are defined, but you are not allowed to enroll this token type!")
+            self.assertEqual(message, "Admin actions are defined, but you are not allowed to enroll this token type!")
 
         # Delete the policy
         with self.app.test_request_context('/policy/pol1adminuser',
@@ -442,7 +442,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200)
             result = res.json
             self.assertTrue("detail" in result)
-            self.assertEqual(result.get("detail").get("message"), u"matching 1 tokens")
+            self.assertEqual(result.get("detail").get("message"), "matching 1 tokens")
 
         # set a policy with conditions
         # Request from a certain user agent will not see the detail
@@ -468,7 +468,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200)
             result = res.json
             self.assertTrue("detail" in result)
-            self.assertEqual(result.get("detail").get("message"), u"matching 1 tokens")
+            self.assertEqual(result.get("detail").get("message"), "matching 1 tokens")
 
         # A request with the dedicated header will not display the details
         with self.app.test_request_context('/validate/check',
@@ -490,9 +490,9 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
-            self.assertIn(u"Unknown HTTP header key referenced in condition of policy",
+            self.assertIn("Unknown HTTP header key referenced in condition of policy",
                           result["result"]["error"]["message"])
-            self.assertIn(u"User-Agent", result["result"]["error"]["message"])
+            self.assertIn("User-Agent", result["result"]["error"]["message"])
 
         # A request without such a specific header - always has a header
         with self.app.test_request_context('/validate/check',
@@ -502,9 +502,9 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
-            self.assertIn(u"Unknown HTTP header key referenced in condition of policy",
+            self.assertIn("Unknown HTTP header key referenced in condition of policy",
                           result["result"]["error"]["message"])
-            self.assertIn(u"User-Agent", result["result"]["error"]["message"])
+            self.assertIn("User-Agent", result["result"]["error"]["message"])
 
         # Test http header policy with broken matching
         # update the policy
@@ -529,7 +529,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
-            self.assertIn(u"Invalid comparison in the HTTP header conditions of policy",
+            self.assertIn("Invalid comparison in the HTTP header conditions of policy",
                           result["result"]["error"]["message"])
 
         # Also check for an unknown section
@@ -585,7 +585,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200)
             result = res.json
             self.assertTrue("detail" in result)
-            self.assertEqual(result.get("detail").get("message"), u"matching 1 tokens")
+            self.assertEqual(result.get("detail").get("message"), "matching 1 tokens")
 
         # set a policy with conditions
         # Request with a certain request method will not see the user details
@@ -610,7 +610,7 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200)
             result = res.json
             self.assertTrue("detail" in result)
-            self.assertEqual(result.get("detail").get("message"), u"matching 1 tokens")
+            self.assertEqual(result.get("detail").get("message"), "matching 1 tokens")
 
         # A POST request will NOT contain the details!
         with self.app.test_request_context('/validate/check',
@@ -643,9 +643,9 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json
-            self.assertIn(u"Unknown HTTP environment key referenced in condition of policy",
+            self.assertIn("Unknown HTTP environment key referenced in condition of policy",
                           result["result"]["error"]["message"])
-            self.assertIn(u"NON_EXISTING", result["result"]["error"]["message"])
+            self.assertIn("NON_EXISTING", result["result"]["error"]["message"])
 
         delete_policy("cond1")
         remove_token("sp1")

@@ -379,8 +379,8 @@ class Audit(AuditBase):
         :rtype str
         """
         # TODO: Add thread_id. We really should add a versioning to identify which audit data is signed.
-        s = u"id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s," \
-            u"ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
+        s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s," \
+            "ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
                                                    le.date,
                                                    le.action,
                                                    le.success,
@@ -445,7 +445,7 @@ class Audit(AuditBase):
 
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
-            yield u",".join([u"'{0!s}'".format(x) for x in audit_dict.values()]) + u"\n"
+            yield ",".join(["'{0!s}'".format(x) for x in audit_dict.values()]) + "\n"
 
     def get_count(self, search_dict, timedelta=None, success=None):
         # create filter condition

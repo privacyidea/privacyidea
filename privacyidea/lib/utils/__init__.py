@@ -286,7 +286,7 @@ def modhex_encode(s):
     :return: the encoded string
     :rtype: str
     """
-    return u''.join([hex2ModDict[c] for c in hexlify_and_unicode(s)])
+    return ''.join([hex2ModDict[c] for c in hexlify_and_unicode(s)])
 
 
 def modhex_decode(m):
@@ -601,14 +601,14 @@ def check_proxy(path_to_client, proxy_settings):
     #   as the proxy path does not match completely because 10.2.3.4 is not allowed to map to 192.168.1.1.
     # After having processed all paths in the proxy settings, we return the "deepest" IP from ``path_to_client`` that
     # is allowed according to any proxy path of the proxy settings.
-    log.debug(u"Determining the mapped IP from {!r} given the proxy settings {!r} ...".format(
+    log.debug("Determining the mapped IP from {!r} given the proxy settings {!r} ...".format(
         path_to_client, proxy_settings))
     max_idx = 0
     for proxy_path in proxy_dict:
-        log.debug(u"Proxy path: {!r}".format(proxy_path))
+        log.debug("Proxy path: {!r}".format(proxy_path))
         # If the proxy path contains more subnets than the path to the client, we already know that it cannot match.
         if len(proxy_path) > len(path_to_client):
-            log.debug(u"... ignored because it is longer than the path to the client")
+            log.debug("... ignored because it is longer than the path to the client")
             continue
         # Hence, we can now be sure that len(path_to_client) >= len(proxy_path).
         current_max_idx = 0
@@ -618,7 +618,7 @@ def check_proxy(path_to_client, proxy_settings):
             # We check if the network in the proxy path contains the IP from path_to_client.
             if client_path_ip not in proxy_path_ip:
                 # If not, the current proxy path does not match and we do not have to keep checking it.
-                log.debug(u"... ignored because {!r} is not in subnet {!r}".format(client_path_ip, proxy_path_ip))
+                log.debug("... ignored because {!r} is not in subnet {!r}".format(client_path_ip, proxy_path_ip))
                 break
             else:
                 current_max_idx = idx
@@ -626,10 +626,10 @@ def check_proxy(path_to_client, proxy_settings):
             # This branch is only executed if we did *not* break out of the loop. This means that the proxy path
             # completely matches the path to client, so the mapped client IP is a viable candidate.
             if current_max_idx >= max_idx:
-                log.debug(u"... setting new candidate for client IP: {!r}".format(path_to_client[current_max_idx]))
+                log.debug("... setting new candidate for client IP: {!r}".format(path_to_client[current_max_idx]))
             max_idx = max(max_idx, current_max_idx)
 
-    log.debug(u"Determined mapped client IP: {!r}".format(path_to_client[max_idx]))
+    log.debug("Determined mapped client IP: {!r}".format(path_to_client[max_idx]))
     return path_to_client[max_idx]
 
 
@@ -695,7 +695,7 @@ def check_ip_in_policy(client_ip, policy):
         if ipdef[0] in ['-', '!']:
             # exclude the client?
             if IPAddress(client_ip) in IPNetwork(ipdef[1:]):
-                log.debug(u"the client {0!s} is excluded by {1!s}".format(client_ip, ipdef))
+                log.debug("the client {0!s} is excluded by {1!s}".format(client_ip, ipdef))
                 client_excluded = True
         elif IPAddress(client_ip) in IPNetwork(ipdef):
             client_found = True
@@ -801,7 +801,7 @@ def compare_condition(condition, value):
             return value == int(condition)
 
     except ValueError:
-        log.warning(u"Invalid condition {0!s}. Needs to contain an integer.".format(condition))
+        log.warning("Invalid condition {0!s}. Needs to contain an integer.".format(condition))
         return False
 
 
@@ -1063,7 +1063,7 @@ def fetch_one_resource(table, **query):
     try:
         return table.query.filter_by(**query).one()
     except sqlalchemy.orm.exc.NoResultFound:
-        raise ResourceNotFoundError(u"The requested {!s} could not be found.".format(table.__name__))
+        raise ResourceNotFoundError("The requested {!s} could not be found.".format(table.__name__))
 
 
 def truncate_comma_list(data, max_len):
@@ -1083,7 +1083,7 @@ def truncate_comma_list(data, max_len):
     if len(data) >= max_len:
         r = ",".join(data)[:max_len]
         # Also mark this string
-        r = u"{0!s}+".format(r[:-1])
+        r = "{0!s}+".format(r[:-1])
         return r
 
     while len(",".join(data)) > max_len:
@@ -1092,7 +1092,7 @@ def truncate_comma_list(data, max_len):
         for d in data:
             if d == longest:
                 # Shorten the longest and mark with "+"
-                d = u"{0!s}+".format(d[:-2])
+                d = "{0!s}+".format(d[:-2])
             new_data.append(d)
         data = new_data
     return ",".join(data)
@@ -1204,12 +1204,12 @@ def get_module_class(package_name, class_name, check_method=None):
     """
     mod = import_module(package_name)
     if not hasattr(mod, class_name):
-        raise ImportError(u"{0} has no attribute {1}".format(package_name, class_name))
+        raise ImportError("{0} has no attribute {1}".format(package_name, class_name))
     klass = getattr(mod, class_name)
     log.debug("klass: {0!s}".format(klass))
     if check_method and not hasattr(klass, check_method):
-        raise NameError(u"Class AttributeError: {0}.{1} "
-                        u"instance has no attribute '{2}'".format(package_name, class_name, check_method))
+        raise NameError("Class AttributeError: {0}.{1} "
+                        "instance has no attribute '{2}'".format(package_name, class_name, check_method))
     return klass
 
 
@@ -1403,7 +1403,7 @@ def determine_logged_in_userparams(logged_in_user, params):
     elif role == "user":
         pass
     else:
-        raise PolicyError(u"Unknown role: {}".format(role))
+        raise PolicyError("Unknown role: {}".format(role))
 
     return role, username, realm, admin_user, admin_realm
 

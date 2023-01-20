@@ -204,7 +204,7 @@ class TokenClass(object):
         :param tokentype: The type of the token like HOTP or TOTP
         :type tokentype: string
         """
-        tokentype = u'' + tokentype
+        tokentype = '' + tokentype
         self.type = tokentype
         self.token.tokentype = tokentype
 
@@ -240,8 +240,8 @@ class TokenClass(object):
         # prevent to init update a token changing the token owner
         # FIXME: We need to remove this, if we one day want to assign several users to one token
         if self.user and self.user != user:
-            log.info(u"The token with serial {0!s} is already assigned "
-                     u"to user {1!s}. Can not assign to {2!s}.".format(self.token.serial, self.user, user))
+            log.info("The token with serial {0!s} is already assigned "
+                     "to user {1!s}. Can not assign to {2!s}.".format(self.token.serial, self.user, user))
             raise TokenAdminError("This token is already assigned to another user.")
 
         if not self.user:
@@ -318,8 +318,8 @@ class TokenClass(object):
         """
         user_object = self.user
         user_info = user_object.info
-        user_identifier = u"{0!s}_{1!s}".format(user_object.login, user_object.realm)
-        user_displayname = u"{0!s} {1!s}".format(user_info.get("givenname", "."),
+        user_identifier = "{0!s}_{1!s}".format(user_object.login, user_object.realm)
+        user_displayname = "{0!s} {1!s}".format(user_info.get("givenname", "."),
                                       user_info.get("surname", "."))
         return user_identifier, user_displayname
 
@@ -667,7 +667,7 @@ class TokenClass(object):
         :param description: description of the token
         :type description: string
         """
-        self.token.set_description(u'' + description)
+        self.token.set_description('' + description)
         return
 
     def set_defaults(self):
@@ -681,7 +681,7 @@ class TokenClass(object):
         self.token.sync_window = int(get_from_config("DefaultSyncWindow")
                                      or 1000)
 
-        self.token.tokentype = u'' + self.type
+        self.token.tokentype = '' + self.type
         return
 
     def delete_token(self):

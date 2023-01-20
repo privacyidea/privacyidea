@@ -161,8 +161,8 @@ class RadiusTokenTestCase(MyTestCase):
         self.assertTrue(r > 0)
         token = init_token({"type": "radius",
                             "radius.identifier": "myserver",
-                            "radius.user": u"nönäscii"})
-        r = token.authenticate(u"passwörd")
+                            "radius.user": "nönäscii"})
+        r = token.authenticate("passwörd")
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], 1)
 
@@ -174,7 +174,7 @@ class RadiusTokenTestCase(MyTestCase):
         token = init_token({"type": "radius",
                             "radius.identifier": "myserver",
                             "radius.local_checkpin": True,
-                            "radius.user": u"nönäscii"})
+                            "radius.user": "nönäscii"})
 
         # check the working of internal _check_radius
         radiusmock.setdata(response=radiusmock.AccessChallenge)
@@ -201,7 +201,7 @@ class RadiusTokenTestCase(MyTestCase):
                             "pin": "local",
                             "radius.identifier": "myserver",
                             "radius.local_checkpin": True,
-                            "radius.user": u"nönäscii"})
+                            "radius.user": "nönäscii"})
 
         r = token.is_challenge_request("local")
         self.assertTrue(r)
@@ -240,7 +240,7 @@ class RadiusTokenTestCase(MyTestCase):
         token = init_token({"type": "radius",
                             "radius.identifier": "myserver",
                             "radius.local_checkpin": False,
-                            "radius.user": u"nönäscii"})
+                            "radius.user": "nönäscii"})
 
         # Check if the remote PIN would create a RADIUS challenge
         state1 = [b"123456"]
@@ -290,7 +290,7 @@ class RadiusTokenTestCase(MyTestCase):
         token = init_token({"type": "radius",
                             "radius.identifier": "myserver",
                             "radius.local_checkpin": False,
-                            "radius.user": u"nönäscii"})
+                            "radius.user": "nönäscii"})
 
         # Check if the remote PIN would create a RADIUS challenge
         state1 = [b"123456"]
@@ -356,7 +356,7 @@ class RadiusTokenTestCase(MyTestCase):
         token = init_token({"type": "radius",
                             "radius.identifier": "myserver",
                             "radius.local_checkpin": False,
-                            "radius.user": u"nönäscii"})
+                            "radius.user": "nönäscii"})
         radiusmock.setdata(timeout=False, response=radiusmock.AccessAccept)
         r, otp_count, _rpl = token.authenticate("some_remote_value")
         self.assertTrue(r)

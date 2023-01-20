@@ -396,8 +396,8 @@ class UserTestCase(MyTestCase):
         delete_realm("sort_realm")
 
     def test_17_check_nonascii_user(self):
-        realm = u"sqlrealm"
-        resolver = u"SQL1"
+        realm = "sqlrealm"
+        resolver = "SQL1"
         parameters = self.parameters
         parameters["resolver"] = resolver
         parameters["type"] = "sqlresolver"
@@ -410,25 +410,25 @@ class UserTestCase(MyTestCase):
         self.assertEqual(len(added), 1)
 
         # check non-ascii password of non-ascii user
-        self.assertFalse(User(login=u"nönäscii",
+        self.assertFalse(User(login="nönäscii",
                               realm=realm).check_password("wrong"))
-        self.assertTrue(User(login=u"nönäscii",
-                             realm=realm).check_password(u"sömepassword"))
+        self.assertTrue(User(login="nönäscii",
+                             realm=realm).check_password("sömepassword"))
 
         # check proper unicode() and str() handling
-        user_object = User(login=u"nönäscii", realm=realm)
+        user_object = User(login="nönäscii", realm=realm)
         if six.PY2:
-            self.assertEqual(unicode(user_object), u'<nönäscii.SQL1@sqlrealm>')
+            self.assertEqual(unicode(user_object), '<nönäscii.SQL1@sqlrealm>')
             self.assertEqual(str(user_object), '<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
         else:
-            self.assertEqual(six.text_type(user_object), u'<nönäscii.SQL1@sqlrealm>')
+            self.assertEqual(six.text_type(user_object), '<nönäscii.SQL1@sqlrealm>')
             self.assertEqual(six.text_type(user_object).encode('utf8'),
                              b'<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
         # also check the User object representation
         user_repr = repr(user_object)
         if six.PY2:
-            self.assertEqual("User(login=u'n\\xf6n\\xe4scii', "
-                             "realm=u'sqlrealm', resolver=u'SQL1')",
+            self.assertEqual("User(login='n\\xf6n\\xe4scii', "
+                             "realm='sqlrealm', resolver='SQL1')",
                              user_repr, user_repr)
         else:
             self.assertEqual("User(login='nönäscii', "

@@ -45,7 +45,7 @@ This module is tested in tests/test_lib_passwordreset.py
 
 log = logging.getLogger(__name__)
 
-BODY = u"""Someone requested to reset the password within privacyIDEA.
+BODY = """Someone requested to reset the password within privacyIDEA.
 
 To reset your user password please visit the link
 
@@ -123,7 +123,7 @@ def check_recoverycode(user, recoverycode):
     for pwr in sql_query:
         if verify_with_pepper(pwr.recoverycode, recoverycode):
             recoverycode_valid = True
-            log.debug(u"Found valid recoverycode for user {0!r}".format(user))
+            log.debug("Found valid recoverycode for user {0!r}".format(user))
             # Delete the recovery code, so that it can only be used once!
             r = pwr.delete()
             log.debug("{0!s} used password recoverycode deleted.".format(r))

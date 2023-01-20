@@ -205,7 +205,7 @@ def send_csv_result(obj, data_key="tokens",
     :rtype: Response object
     """
     delim = "'"
-    output = u""
+    output = ""
     # check if there is any data
     if data_key in obj and len(obj[data_key]) > 0:
         # Do the header
@@ -249,13 +249,13 @@ def get_all_params(request):
     body = request.data
     return_param = {}
     if param:
-        log.debug(u"Update params in request {0!s} {1!s} with values.".format(request.method,
+        log.debug("Update params in request {0!s} {1!s} with values.".format(request.method,
                                                                               request.base_url))
         # Add the unquoted HTML and form parameters
         return_param = {key: unquote(value) for (key, value) in param.items()}
 
     if request.is_json:
-        log.debug(u"Update params in request {0!s} {1!s} with JSON data.".format(request.method,
+        log.debug("Update params in request {0!s} {1!s} with JSON data.".format(request.method,
                                                                                  request.base_url))
         # Add the original JSON data
         return_param.update(request.json)
@@ -269,7 +269,7 @@ def get_all_params(request):
             log.debug("Can not get param: {0!s}".format(exx))
 
     if request.view_args:
-        log.debug(u"Update params in request {0!s} {1!s} with view_args.".format(request.method,
+        log.debug("Update params in request {0!s} {1!s} with view_args.".format(request.method,
                                                                                  request.base_url))
         # We add the unquoted view_args
         return_param.update({key: unquote(value) for (key, value) in request.view_args.items()})
@@ -330,9 +330,9 @@ def verify_auth_token(auth_token, required_role=None):
                         else:
                             r = wrong_username = j.get("username")
                 else:
-                    log.warning(u"Unsupported JWT algorithm in PI_TRUSTED_JWT.")
+                    log.warning("Unsupported JWT algorithm in PI_TRUSTED_JWT.")
             except jwt.DecodeError as err:
-                log.info(u"A given JWT definition does not match.")
+                log.info("A given JWT definition does not match.")
             except jwt.ExpiredSignatureError as err:
                 # We have the correct token. It expired, so we raise an error
                 raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
@@ -371,7 +371,7 @@ def check_policy_name(name):
                            ("^pi-update-policy-", re.IGNORECASE)]
     for disallowed_pattern in disallowed_patterns:
         if re.search(disallowed_pattern[0], name, flags=disallowed_pattern[1]):
-            raise ParameterError(_(u"'{0!s}' is an invalid policy name.").format(name))
+            raise ParameterError(_("'{0!s}' is an invalid policy name.").format(name))
 
     if not re.match(r'^[a-zA-Z0-9_.\- ]*$', name):
         raise ParameterError(_("The name of the policy may only contain "

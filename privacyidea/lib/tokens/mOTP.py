@@ -150,6 +150,6 @@ class mTimeOtp(object):
         if key is None:
             key = self.key
 
-        vhash = u"{0:d}{1!s}{2!s}".format(counter, key, pin)
+        vhash = "{0:d}{1!s}{2!s}".format(counter, key, pin)
         motp = md5(to_bytes(vhash)).hexdigest()[:self.digits]
         return to_unicode(motp)

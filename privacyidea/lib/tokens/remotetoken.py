@@ -81,7 +81,7 @@ class RemoteTokenClass(TokenClass):
         :param aToken: the db bound token
         """
         TokenClass.__init__(self, db_token)
-        self.set_type(u"remote")
+        self.set_type("remote")
         self.mode = ['authenticate', 'challenge']
 
     @staticmethod

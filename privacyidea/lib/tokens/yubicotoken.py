@@ -76,7 +76,7 @@ class YubicoTokenClass(TokenClass):
 
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
-        self.set_type(u"yubico")
+        self.set_type("yubico")
         self.tokenid = ""
 
     @staticmethod

@@ -81,7 +81,7 @@ class JobCollector(object):
             package_name, class_name = app.config[JOB_QUEUE_CLASS].rsplit(".", 1)
             queue_class = get_module_class(package_name, class_name)
         except (ImportError, ValueError) as exx:
-            log.warning(u"Could not import job queue class {!r}: {!r}".format(app.config[JOB_QUEUE_CLASS], exx))
+            log.warning("Could not import job queue class {!r}: {!r}".format(app.config[JOB_QUEUE_CLASS], exx))
             return
         # Extract configuration from app config: All options starting with PI_JOB_QUEUE_
         options = {}
@@ -89,7 +89,7 @@ class JobCollector(object):
             if k.startswith(JOB_QUEUE_OPTION_PREFIX) and k != JOB_QUEUE_CLASS:
                 options[k[len(JOB_QUEUE_OPTION_PREFIX):].lower()] = v
         job_queue = queue_class(options)
-        log.info(u"Created a new job queue: {!r}".format(job_queue))
+        log.info("Created a new job queue: {!r}".format(job_queue))
         store["job_queue"] = job_queue
         for name, (func, args, kwargs) in self._jobs.items():
             job_queue.register_job(name, func, *args, **kwargs)

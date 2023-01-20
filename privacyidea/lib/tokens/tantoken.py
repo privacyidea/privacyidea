@@ -57,7 +57,7 @@ class TanTokenClass(PaperTokenClass):
         :type db_token:  orm object
         """
         TokenClass.__init__(self, db_token)
-        self.set_type(u"tan")
+        self.set_type("tan")
         self.hKeyRequired = False
 
     @staticmethod

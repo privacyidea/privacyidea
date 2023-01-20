@@ -868,14 +868,14 @@ class PolicyTestCase(MyTestCase):
     def test_22_non_ascii_user(self):
         set_policy(name="polnonascii",
                    action="enroll, otppin=1",
-                   user=u'nönäscii',
+                   user='nönäscii',
                    scope='s')
 
         P = PolicyClass()
         p = P.match_policies(action="enroll", user='somebodyelse')
         self.assertEqual(len(p), 0)
 
-        p = P.match_policies(action="enroll", user=u'nönäscii')
+        p = P.match_policies(action="enroll", user='nönäscii')
         self.assertEqual(len(p), 1)
 
         delete_policy(name="polnonascii")
@@ -989,7 +989,7 @@ class PolicyTestCase(MyTestCase):
         g.policy_object = PolicyClass()
 
         val = get_action_values_from_options(SCOPE.AUTH, ACTION.CHALLENGETEXT, options)
-        self.assertEqual(val, u"Wo du wolle?")
+        self.assertEqual(val, "Wo du wolle?")
 
         delete_policy("chaltext")
 
@@ -1037,17 +1037,17 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(len(added), 1)
 
         cornelius = User(login="cornelius", realm="realm1")
-        nonascii = User(login=u"nönäscii", realm="realm1")
+        nonascii = User(login="nönäscii", realm="realm1")
         selfservice = User(login="selfservice", realm="realm1")
         whoopsie = User(login="whoopsie", realm="realm2")
         set_policy("act1", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
-                   user=u"cornelius, nönäscii")
+                   user="cornelius, nönäscii")
         set_policy("act2", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
                    resolver="reso1")
         set_policy("act3", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN),
                    realm="realm1")
         set_policy("act4", scope=SCOPE.AUTH, action="{0!s}=none".format(ACTION.OTPPIN),
-                   user=u"nönäscii", realm="realm1")
+                   user="nönäscii", realm="realm1")
 
         P = PolicyClass()
         self.assertEqual(set(p['name'] for p in P.match_policies(user_object=cornelius)),

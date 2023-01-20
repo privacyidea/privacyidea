@@ -41,12 +41,12 @@ class HueyQueue(BaseQueue):
 
     def register_job(self, name, func):
         if name in self._jobs:
-            raise QueueError(u"Job function {!r} already exists".format(name))
+            raise QueueError("Job function {!r} already exists".format(name))
         self._jobs[name] = self._huey.task(name=name)(func)
 
     def enqueue(self, name, args, kwargs):
         if name not in self._jobs:
-            raise QueueError(u"Unknown job: {!r}".format(name))
-        log.info(u"Sending {!r} job to the queue ...".format(name))
+            raise QueueError("Unknown job: {!r}".format(name))
+        log.info("Sending {!r} job to the queue ...".format(name))
         # We do not care about results
         self._jobs[name](*args, **kwargs)

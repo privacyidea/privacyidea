@@ -89,9 +89,9 @@ class Monitoring(MonitoringBase):
                                                                 MonitoringStats.timestamp < utc_timestamp)).delete()
                 self.session.commit()
         except Exception as exx:  # pragma: no cover
-            log.error(u"exception {0!r}".format(exx))
-            log.error(u"DATA: {0!s} -> {1!s}".format(stats_key, stats_value))
-            log.debug(u"{0!s}".format(traceback.format_exc()))
+            log.error("exception {0!r}".format(exx))
+            log.error("DATA: {0!s} -> {1!s}".format(stats_key, stats_value))
+            log.debug("{0!s}".format(traceback.format_exc()))
             self.session.rollback()
 
         finally:
@@ -110,9 +110,9 @@ class Monitoring(MonitoringBase):
             r = self.session.query(MonitoringStats).filter(and_(*conditions)).delete()
             self.session.commit()
         except Exception as exx:  # pragma: no cover
-            log.error(u"exception {0!r}".format(exx))
-            log.error(u"could not delete statskeys {0!s}".format(stats_key))
-            log.debug(u"{0!s}".format(traceback.format_exc()))
+            log.error("exception {0!r}".format(exx))
+            log.error("could not delete statskeys {0!s}".format(stats_key))
+            log.debug("{0!s}".format(traceback.format_exc()))
             self.session.rollback()
 
         finally:
@@ -130,9 +130,9 @@ class Monitoring(MonitoringBase):
             for monStat in self.session.query(MonitoringStats).with_entities(MonitoringStats.stats_key).distinct():
                 keys.append(monStat.stats_key)
         except Exception as exx:  # pragma: no cover
-            log.error(u"exception {0!r}".format(exx))
-            log.error(u"could not fetch list of keys")
-            log.debug(u"{0!s}".format(traceback.format_exc()))
+            log.error("exception {0!r}".format(exx))
+            log.error("could not fetch list of keys")
+            log.debug("{0!s}".format(traceback.format_exc()))
             self.session.rollback()
 
         finally:
@@ -155,9 +155,9 @@ class Monitoring(MonitoringBase):
                 aware_timestamp = ms.timestamp.replace(tzinfo=tzutc())
                 values.append((aware_timestamp, ms.stats_value))
         except Exception as exx:  # pragma: no cover
-            log.error(u"exception {0!r}".format(exx))
-            log.error(u"could not fetch list of keys")
-            log.debug(u"{0!s}".format(traceback.format_exc()))
+            log.error("exception {0!r}".format(exx))
+            log.error("could not fetch list of keys")
+            log.debug("{0!s}".format(traceback.format_exc()))
             self.session.rollback()
 
         finally:
@@ -173,9 +173,9 @@ class Monitoring(MonitoringBase):
             if s:
                 val = s.stats_value
         except Exception as exx:  # pragma: no cover
-            log.error(u"exception {0!r}".format(exx))
-            log.error(u"could not fetch list of keys")
-            log.debug(u"{0!s}".format(traceback.format_exc()))
+            log.error("exception {0!r}".format(exx))
+            log.error("could not fetch list of keys")
+            log.debug("{0!s}".format(traceback.format_exc()))
             self.session.rollback()
 
         finally:

@@ -747,7 +747,7 @@ def twostep_enrollment_parameters(request=None, action=None):
     if is_true(getParam(request.all_data, "2stepinit", optional)):
         parameters = ("2step_serversize", "2step_clientsize", "2step_difficulty")
         for parameter in parameters:
-            action = u"{}_{}".format(token_type, parameter)
+            action = "{}_{}".format(token_type, parameter)
             # SCOPE.ENROLL does not have an admin realm
             action_values = Match.generic(g, action=action,
                                           scope=SCOPE.ENROLL,

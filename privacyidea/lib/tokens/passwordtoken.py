@@ -84,7 +84,7 @@ class PasswordTokenClass(TokenClass):
         self.otp_len = DEFAULT_LENGTH
         self.otp_contents = DEFAULT_CONTENTS
         self.hKeyRequired = True
-        self.set_type(u"pw")
+        self.set_type("pw")
 
     @staticmethod
     def get_class_type():

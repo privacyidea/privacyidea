@@ -64,7 +64,7 @@ class ERROR:
 @six.python_2_unicode_compatible
 class privacyIDEAError(Exception):
 
-    def __init__(self, description=u"privacyIDEAError!", id=10):
+    def __init__(self, description="privacyIDEAError!", id=10):
         self.id = id
         self.message = description
         Exception.__init__(self, description)
@@ -76,15 +76,15 @@ class privacyIDEAError(Exception):
         return self.message
 
     def __str__(self):
-        pstr = u"ERR%d: %r"
+        pstr = "ERR%d: %r"
         if isinstance(self.message, six.string_types):
-            pstr = u"ERR%d: %s"
+            pstr = "ERR%d: %s"
 
         ### if we have here unicode, we might fail with conversion error
         try:
             res = pstr % (self.id, self.message)
         except Exception as exx:
-            res = u"ERR{0:d}: {1!r}".format(self.id, self.message)
+            res = "ERR{0:d}: {1!r}".format(self.id, self.message)
         return res
 
     def __repr__(self):

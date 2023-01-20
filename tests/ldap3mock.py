@@ -372,7 +372,7 @@ class Connection(object):
                         values_from_directory = values_from_directory.decode(
                             "utf-8")
                     elif type(values_from_directory) == int:
-                        values_from_directory = u"{0!s}".format(values_from_directory)
+                        values_from_directory = "{0!s}".format(values_from_directory)
                     if value == values_from_directory:
                         entry["type"] = "searchResEntry"
                         matches.append(entry)

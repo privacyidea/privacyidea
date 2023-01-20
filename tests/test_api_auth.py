@@ -138,8 +138,8 @@ class AuthApiTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 self.assertFalse(result.get("status"), result)
             if six.PY2:
-                expected = "The user User(login=u'cornelius@unknown', " \
-                           "realm=u'realm1', resolver='') exists in NO resolver."
+                expected = "The user User(login='cornelius@unknown', " \
+                           "realm='realm1', resolver='') exists in NO resolver."
             else:
                 expected = "The user User(login='cornelius@unknown', " \
                            "realm='realm1', resolver='') exists in NO resolver."
@@ -190,8 +190,8 @@ class AuthApiTestCase(MyApiTestCase):
                                  result['error']['message'], result)
             # the realm will be split from the login name
             if six.PY2:
-                expected = "The user User(login=u'selfservice', " \
-                           "realm=u'realm3', resolver='') exists in NO resolver."
+                expected = "The user User(login='selfservice', " \
+                           "realm='realm3', resolver='') exists in NO resolver."
             else:
                 expected = "The user User(login='selfservice', " \
                            "realm='realm3', resolver='') exists in NO resolver."
@@ -239,8 +239,8 @@ class AuthApiTestCase(MyApiTestCase):
                 self.assertEqual('Authentication failure. Wrong credentials',
                                  result['error']['message'], result)
             if six.PY2:
-                expected = "The user User(login=u'cornelius@realm1', " \
-                           "realm=u'realm1', resolver='') exists in NO resolver."
+                expected = "The user User(login='cornelius@realm1', " \
+                           "realm='realm1', resolver='') exists in NO resolver."
             else:
                 expected = "The user User(login='cornelius@realm1', " \
                            "realm='realm1', resolver='') exists in NO resolver."
@@ -313,8 +313,8 @@ class AuthApiTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 self.assertFalse(result.get("status"), result)
             if six.PY2:
-                expected = "The user User(login=u'cornelius@unknown', " \
-                           "realm=u'realm1', resolver='') exists in NO resolver."
+                expected = "The user User(login='cornelius@unknown', " \
+                           "realm='realm1', resolver='') exists in NO resolver."
             else:
                 expected = "The user User(login='cornelius@unknown', " \
                            "realm='realm1', resolver='') exists in NO resolver."
@@ -349,8 +349,8 @@ class AuthApiTestCase(MyApiTestCase):
                 self.assertFalse(result.get("status"), result)
                 self.assertEqual(4031, result['error']['code'], result)
             if six.PY2:
-                expected = "The user User(login=u'selfservice@realm3', " \
-                           "realm=u'realm1', resolver='') exists in NO resolver."
+                expected = "The user User(login='selfservice@realm3', " \
+                           "realm='realm1', resolver='') exists in NO resolver."
             else:
                 expected = "The user User(login='selfservice@realm3', " \
                            "realm='realm1', resolver='') exists in NO resolver."
@@ -372,8 +372,8 @@ class AuthApiTestCase(MyApiTestCase):
                                  result['error']['message'], result)
             # the realm will be split from the login name
             if six.PY2:
-                expected = "The user User(login=u'selfservice@realm1', " \
-                           "realm=u'realm3', resolver='') exists in NO resolver."
+                expected = "The user User(login='selfservice@realm1', " \
+                           "realm='realm3', resolver='') exists in NO resolver."
             else:
                 expected = "The user User(login='selfservice@realm1', " \
                            "realm='realm3', resolver='') exists in NO resolver."
@@ -523,7 +523,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res)
             # The login page contains the info about force remote_user, which will hide the
             # "login with credentials" button.
-            self.assertIn(u'input type=hidden id=FORCE_REMOTE_USER value="True"', to_unicode(res.data))
+            self.assertIn('input type=hidden id=FORCE_REMOTE_USER value="True"', to_unicode(res.data))
 
         # bind the remote user policy to an unknown realm
         set_policy(name="remote", scope=SCOPE.WEBUI, realm='unknown',

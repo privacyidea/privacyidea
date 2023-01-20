@@ -118,7 +118,7 @@ class SMTPServer(object):
             mail = smtplib.SMTP(smtp_url.hostname,
                                 port=smtp_url.port or int(config['port']),
                                 timeout=config.get('timeout', TIMEOUT))
-        log.debug(u"submitting message to {0!s}".format(msg["To"]))
+        log.debug("submitting message to {0!s}".format(msg["To"]))
         log.debug("Saying EHLO to mailserver {0!s}".format(config['server']))
         r = mail.ehlo()
         log.debug("mailserver responded with {0!s}".format(r))

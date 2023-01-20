@@ -84,7 +84,7 @@ log = logging.getLogger(__name__)
 # The decorated functions are called before and after *every* request.
 @token_blueprint.before_app_request
 def log_begin_request():
-    log.debug(u"Begin handling of request {!r}".format(request.full_path))
+    log.debug("Begin handling of request {!r}".format(request.full_path))
     g.startdate = datetime.datetime.now()
 
 
@@ -99,7 +99,7 @@ def teardown_request(exc):
         # Also during calling webui, there is not audit_object, yet.
         pass
     call_finalizers()
-    log.debug(u"End handling of request {!r}".format(request.full_path))
+    log.debug("End handling of request {!r}".format(request.full_path))
 
 
 @token_blueprint.before_request
@@ -224,7 +224,7 @@ def before_request():
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "action_detail": "",
-                        "thread_id": u"{0!s}".format(threading.current_thread().ident),
+                        "thread_id": "{0!s}".format(threading.current_thread().ident),
                         "info": ""})
 
     if g.logged_in_user.get("role") == "admin":
@@ -299,7 +299,7 @@ def auth_error(error):
         if hasattr(error, 'details'):
             if error.details:
                 if 'message' in error.details:
-                    message = u'{}|{}'.format(message, error.details['message'])
+                    message = '{}|{}'.format(message, error.details['message'])
 
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
     return send_error(error.message,

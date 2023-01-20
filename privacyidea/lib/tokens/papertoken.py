@@ -59,7 +59,7 @@ class PaperTokenClass(HotpTokenClass):
         :type db_token:  orm object
         """
         TokenClass.__init__(self, db_token)
-        self.set_type(u"paper")
+        self.set_type("paper")
         self.hKeyRequired = False
 
     @staticmethod

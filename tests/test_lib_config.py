@@ -250,7 +250,7 @@ class ConfigTestCase(MyTestCase):
         # Ensure we have a config object
         get_config_object()
         # Add a config option *without invalidating the config*
-        db.session.add(Config(Key=u"some_key", Value=u"some_value"))
+        db.session.add(Config(Key="some_key", Value="some_value"))
         save_config_timestamp(False)
         db.session.commit()
         # The request-local config does not know about the new config option
