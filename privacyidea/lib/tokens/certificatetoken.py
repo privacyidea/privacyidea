@@ -67,7 +67,7 @@ class ACTION(BASE_ACTION):
     __doc__ = """This is the list of special certificate actions."""
     TRUSTED_CA_PATH = "certificate_trusted_Attestation_CA_path"
     REQUIRE_ATTESTATION = "certificate_require_attestation"
-    CA_CONNECTOR = "ca_connector"
+    CA_CONNECTOR = "certificate_ca_connector"
     CERTIFICATE_TEMPLATE = "certificate_template"
     CERTIFICATE_REQUEST_SUBJECT_COMPONENT = "certificate_request_subject_component"
 

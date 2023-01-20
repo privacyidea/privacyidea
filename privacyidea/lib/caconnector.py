@@ -292,6 +292,9 @@ def get_caconnector_object(connector_name):
                     connector_config[conf.Key] = value
                 c_obj.set_config(connector_config)
 
+    if not c_obj:
+        log.warning("A CA connector with the name {0!s} could not be found!".format(connector_name))
+
     return c_obj
 
 
