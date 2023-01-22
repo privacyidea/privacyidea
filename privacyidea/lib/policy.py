@@ -3053,3 +3053,39 @@ def import_policy(data, name=None):
         #  existed before.
         log.info('Import of policy "{0!s}" finished,'
                  ' id: {1!s}'.format(res_data['name'], rid))
+
+
+def get_enrollment_parameters(g, params=None, token_type="hotp", user_object=None):
+    """
+    This helper function modifies the request parameters in regards
+    to enrollment policies tokenlabel, tokenissuer, appimage, force_app_pin
+
+    :param params: The request parameter
+    :param user_object: User object in the request
+    :return: modified request parameters
+    """
+    params = params or {}
+    label_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.TOKENLABEL,
+                            user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
+    if len(label_pols) == 1:
+        # The policy was set, so we need to set the tokenlabel in the request.
+        params[ACTION.TOKENLABEL] = list(label_pols)[0]
+
+    issuer_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.TOKENISSUER,
+                             user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
+    if len(issuer_pols) == 1:
+        params[ACTION.TOKENISSUER] = list(issuer_pols)[0]
+
+    imageurl_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.APPIMAGEURL,
+                               user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
+    if len(imageurl_pols) == 1:
+        params[ACTION.APPIMAGEURL] = list(imageurl_pols)[0]
+
+    # check the force_app_pin policy
+    app_pin_pols = Match.user(g, scope=SCOPE.ENROLL,
+                              action='{0!s}_{1!s}'.format(token_type, ACTION.FORCE_APP_PIN),
+                              user_object=user_object).any()
+    if app_pin_pols:
+        params[ACTION.FORCE_APP_PIN] = True
+
+    return params

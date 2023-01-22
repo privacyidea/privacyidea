@@ -832,7 +832,11 @@ class HotpTokenClass(TokenClass):
         # Create a challenge!
         c = token_obj.create_challenge()
         # get details of token
-        init_details = token_obj.get_init_detail(user=user_obj)
+        from privacyidea.lib.policy import get_enrollment_parameters
+        enroll_params = get_enrollment_parameters(g, user_object=user_obj,
+                                                  token_type=cls.get_class_type())
+        init_details = token_obj.get_init_detail(params=enroll_params,
+                                                 user=user_obj)
         detail["transaction_ids"] = [c[2]]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("googleurl").get("img"),
