@@ -81,7 +81,7 @@ from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     SYSCONF, ensure_no_config_object)
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.decorators import add_serial_from_response_to_g
-from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
+from privacyidea.api.lib.prepolicy import (prepolicy, set_realm, init_tokenlabel,
                                            api_key_required, mangle,
                                            save_client_application_type,
                                            check_base_action, pushtoken_wait, webauthntoken_auth, webauthntoken_authz,
@@ -213,6 +213,7 @@ def offlinerefill():
 @postpolicy(check_serial, request=request)
 @postpolicy(autoassign, request=request)
 @add_serial_from_response_to_g
+@prepolicy(init_tokenlabel, request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(pushtoken_wait, request=request)
 @prepolicy(set_realm, request=request)

@@ -812,7 +812,7 @@ class HotpTokenClass(TokenClass):
         return r >= 0
 
     @classmethod
-    def enroll_via_validate(cls, g, content, user_obj):
+    def enroll_via_validate(cls, g, content, user_obj, request):
         """
         This class method is used in the policy ENROLL_VIA_MULTICHALLENGE.
         It enrolls a new token of this type and returns the necessary information
@@ -832,7 +832,8 @@ class HotpTokenClass(TokenClass):
         # Create a challenge!
         c = token_obj.create_challenge()
         # get details of token
-        init_details = token_obj.get_init_detail(user=user_obj)
+        params = request.all_data
+        init_details = token_obj.get_init_detail(user=user_obj, params=params)
         detail["transaction_ids"] = [c[2]]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("googleurl").get("img"),

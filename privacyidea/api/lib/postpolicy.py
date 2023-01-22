@@ -762,7 +762,7 @@ def multichallenge_enroll_via_validate(request, response):
                 if len(get_tokens(tokentype=tokentype, user=user_obj)) == 0:
                     if tokentype.lower() in get_multichallenge_enrollable_tokentypes():
                         tclass = get_token_class(tokentype)
-                        tclass.enroll_via_validate(g, content, user_obj)
+                        tclass.enroll_via_validate(g, content, user_obj, request)
                         response.set_data(json.dumps(content))
 
     return response
