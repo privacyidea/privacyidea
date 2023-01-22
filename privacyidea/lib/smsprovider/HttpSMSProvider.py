@@ -99,7 +99,14 @@ class HttpSMSProvider(ISMSProvider):
             for k, v in self.smsgateway.option_dict.items():
                 if k not in self.parameters().get("parameters"):
                     # This is an additional option
-                    parameter[k] = v.format(otp=message, phone=phone)
+                    v = v.format(otp=message, phone=phone)
+                    if v.startswith('['):
+                        values = json.loads(v)
+                        parameter[k] = list()
+                        for v in values:
+                            parameter[k].append(v)
+                    else:
+                        parameter[k] = v
             headers = self.smsgateway.header_dict
         else:
             phone = self._mangle_phone(phone, self.config)
