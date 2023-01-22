@@ -101,10 +101,7 @@ class HttpSMSProvider(ISMSProvider):
                     # This is an additional option
                     v = v.format(otp=message, phone=phone)
                     if v.startswith('['):
-                        values = json.loads(v)
-                        parameter[k] = list()
-                        for v in values:
-                            parameter[k].append(v)
+                        parameter[k] = json.loads(v)
                     else:
                         parameter[k] = v
             headers = self.smsgateway.header_dict
