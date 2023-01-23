@@ -527,7 +527,7 @@ class SQLResolverTestCase(MyTestCase):
         y.map["userid"] = "username"
         user = "cornelius"
         user_info = y.getUserInfo(user)
-        self.assertEqual(user_info.get("id"), "cornelius")      
+        self.assertEqual(user_info.get("userid"), "cornelius")
 
     def test_99_testconnection_fail(self):
         y = SQLResolver()
