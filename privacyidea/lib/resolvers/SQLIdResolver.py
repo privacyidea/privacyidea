@@ -401,7 +401,7 @@ class IdResolver (UserIdResolver):
                     raise Exception("More than one user with loginname"
                                     " %s found!" % LoginName)
                 user = self._get_user_from_mapped_object(r)
-                userid = convert_column_to_unicode(user["id"])
+                userid = convert_column_to_unicode(user["userid"])
         except Exception as exx:    # pragma: no cover
             log.error("Could not get the userinformation: {0!r}".format(exx))
 
@@ -416,18 +416,13 @@ class IdResolver (UserIdResolver):
         """
         r = ro.__dict__
         user = {}
-        try:
-            if self.map.get("userid") in r:
-                user["id"] = r[self.map.get("userid")]
-        except UnicodeEncodeError:  # pragma: no cover
-            log.error("Failed to convert user: {0!r}".format(r))
-            log.debug("{0!s}".format(traceback.format_exc()))
-
         for key in self.map.keys():
             try:
                 raw_value = r.get(self.map.get(key))
                 if raw_value:
-                    if isinstance(raw_value, bytes):
+                    if key == 'userid':
+                        val = convert_column_to_unicode(raw_value)
+                    elif isinstance(raw_value, bytes):
                         val = raw_value.decode(self.encoding)
                     else:
                         val = raw_value
@@ -466,7 +461,7 @@ class IdResolver (UserIdResolver):
 
         for r in result:
             user = self._get_user_from_mapped_object(r)
-            if "id" in user:
+            if "userid" in user:
                 users.append(user)
 
         return users
