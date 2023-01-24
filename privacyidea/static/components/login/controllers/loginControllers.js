@@ -97,9 +97,17 @@ angular.module("privacyideaApp")
     $scope.piCustomBaselineFile = angular.element(document.querySelector('#CUSTOM_BASELINE')).val();
     // TODO: We can change this after login, if there is a user dependent customization!
 
-    $scope.confirmDelete = function(delete_function, identifier, question) {
+    $scope.confirmDelete = function(delete_function, identifier, type) {
+        const questionString = {
+            event: gettextCatalog.getString("Do you really want to delete this event?"),
+            policy: gettextCatalog.getString("Do you really want to delete this policy?"),
+            resolver: gettextCatalog.getString("Do you really want to delete this resolver?"),
+            mresolver: gettextCatalog.getString("Do you really want to delete this mresolver?"),
+            task: gettextCatalog.getString("Do you really want to delete this task?")
+        };
+
         if ($scope.deletion_confirmation) {
-            if (confirm(gettextCatalog.getString(question))) {
+            if (confirm(questionString[type])) {
                 delete_function(identifier);
             }
         } else {
