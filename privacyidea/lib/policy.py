@@ -3055,7 +3055,8 @@ def import_policy(data, name=None):
                  ' id: {1!s}'.format(res_data['name'], rid))
 
 
-def get_enrollment_parameters(g, params=None, token_type="hotp", user_object=None):
+@log_with(log)
+def get_init_tokenlabel_parameters(g, params=None, token_type="hotp", user_object=None):
     """
     This helper function modifies the request parameters in regards
     to enrollment policies tokenlabel, tokenissuer, appimage, force_app_pin

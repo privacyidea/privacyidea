@@ -72,7 +72,7 @@ from OpenSSL import crypto
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
-from privacyidea.lib.policy import Match, check_pin, get_enrollment_parameters
+from privacyidea.lib.policy import Match, check_pin, get_init_tokenlabel_parameters
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
@@ -578,7 +578,7 @@ def init_tokenlabel(request=None, action=None):
     params = request.all_data
     user_object = get_user_from_param(params)
     token_type = getParam(params, "type", optional, "hotp").lower()
-    request.all_data = get_enrollment_parameters(g, params=params, token_type=token_type, user_object=user_object)
+    request.all_data = get_init_tokenlabel_parameters(g, params=params, token_type=token_type, user_object=user_object)
     return True
 
 
