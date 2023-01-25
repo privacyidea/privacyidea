@@ -37,6 +37,7 @@ import jwt
 import threading
 import six
 import re
+from copy import copy
 from six.moves.urllib.parse import unquote
 from flask import (jsonify,
                    current_app)
@@ -238,6 +239,32 @@ def getLowerParams(param):
     return ret
 
 
+def check_unquote(request, data):
+    """
+    Check if we need to unquote the given data.
+    Based on the user-agent header of the request we unquote the given values
+    in `data`. The user-agent string parsing is based on
+    https://httpwg.org/specs/rfc9110.html#field.user-agent
+
+    :param request: The Flask request context
+    :type request: flask.Request
+    :param data: The dictionary containing the requested data
+    :type data: dict
+    :return: New dictionary with the possibly unquoted values
+    :rtype: dict
+    """
+    # if no user agent is available, we assume that we must unquote the data
+    if not request.user_agent.string:
+        return {key: unquote(value) for (key, value) in data.items()}
+
+    ua_match = re.match(r'^(?P<agent>[a-zA-Z0-9_-]+)(/(?P<version>\d+[\d.]*)(\s.*)?)?',
+                        request.user_agent.string)
+    if ua_match and not ua_match.group('agent') in ['privacyIDEA-LDAP-Proxy']:
+        return {key: unquote(value) for (key, value) in data.items()}
+    else:
+        return copy(data)
+
+
 def get_all_params(request):
     """
     Retrieve all parameters from a request, no matter if these are GET or POST requests
@@ -252,7 +279,7 @@ def get_all_params(request):
         log.debug(u"Update params in request {0!s} {1!s} with values.".format(request.method,
                                                                               request.base_url))
         # Add the unquoted HTML and form parameters
-        return_param = {key: unquote(value) for (key, value) in param.items()}
+        return_param = check_unquote(request, request.values)
 
     if request.is_json:
         log.debug(u"Update params in request {0!s} {1!s} with JSON data.".format(request.method,
@@ -272,7 +299,7 @@ def get_all_params(request):
         log.debug(u"Update params in request {0!s} {1!s} with view_args.".format(request.method,
                                                                                  request.base_url))
         # We add the unquoted view_args
-        return_param.update({key: unquote(value) for (key, value) in request.view_args.items()})
+        return_param.update(check_unquote(request, request.view_args))
 
     return return_param
 
