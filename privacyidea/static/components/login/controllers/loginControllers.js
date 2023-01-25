@@ -99,11 +99,11 @@ angular.module("privacyideaApp")
 
     $scope.confirmDelete = function(delete_function, identifier, type) {
         const questionString = {
-            event: gettextCatalog.getString("Do you really want to delete this event?"),
-            policy: gettextCatalog.getString("Do you really want to delete this policy?"),
-            resolver: gettextCatalog.getString("Do you really want to delete this resolver?"),
-            mresolver: gettextCatalog.getString("Do you really want to delete this mresolver?"),
-            task: gettextCatalog.getString("Do you really want to delete this task?")
+            event: gettextCatalog.getString("Do You really want to delete this event?"),
+            policy: gettextCatalog.getString("Do You really want to delete this policy?"),
+            resolver: gettextCatalog.getString("Do You really want to delete this resolver?"),
+            mresolver: gettextCatalog.getString("Do You really want to delete this machine-resolver?"),
+            task: gettextCatalog.getString("Do You really want to delete this periodic-task?")
         };
 
         if ($scope.deletion_confirmation) {
