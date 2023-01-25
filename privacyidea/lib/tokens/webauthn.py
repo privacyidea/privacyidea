@@ -1918,8 +1918,8 @@ def _verify_type(received_type, expected_type):
 def _verify_challenge(received_challenge, sent_challenge):
     return received_challenge \
         and sent_challenge \
-        and isinstance(received_challenge, six.string_types) \
-        and isinstance(sent_challenge, six.string_types) \
+        and isinstance(received_challenge, str) \
+        and isinstance(sent_challenge, str) \
         and constant_time.bytes_eq(
             to_bytes(sent_challenge),
             to_bytes(received_challenge)
@@ -2010,7 +2010,7 @@ def _verify_attestation_statement_format(fmt):
     :rtype: bool
     """
 
-    return isinstance(fmt, six.string_types) and fmt in REGISTERED_ATTESTATION_FORMATS
+    return isinstance(fmt, str) and fmt in REGISTERED_ATTESTATION_FORMATS
 
 
 def _get_auth_data_rp_id_hash(auth_data):
@@ -2036,7 +2036,7 @@ def _get_client_data_hash(decoded_client_data):
 
 
 def _validate_credential_id(credential_id):
-    return isinstance(credential_id, six.string_types)
+    return isinstance(credential_id, str)
 
 
 def _verify_signature(public_key, alg, data, signature):

@@ -1327,7 +1327,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :rtype: int
     """
     active = is_true(active)
-    if isinstance(priority, six.string_types):
+    if isinstance(priority, str):
         priority = int(priority)
     if priority is not None and priority <= 0:
         raise ParameterError("Priority must be at least 1")
@@ -1368,10 +1368,10 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         for condition in conditions:
             if len(condition) != 5:
                 raise ParameterError(u"Conditions must be 5-tuples: {!r}".format(condition))
-            if not (isinstance(condition[0], six.string_types)
-                    and isinstance(condition[1], six.string_types)
-                    and isinstance(condition[2], six.string_types)
-                    and isinstance(condition[3], six.string_types)
+            if not (isinstance(condition[0], str)
+                    and isinstance(condition[1], str)
+                    and isinstance(condition[2], str)
+                    and isinstance(condition[3], str)
                     and isinstance(condition[4], bool)):
                 raise ParameterError(u"Conditions must be 5-tuples of four strings and one boolean: {!r}".format(
                     condition))
