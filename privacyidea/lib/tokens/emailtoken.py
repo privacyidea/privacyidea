@@ -297,7 +297,8 @@ class EmailTokenClass(HotpTokenClass):
                     success, sent_message = self._compose_email(
                         message=message_template,
                         subject=subject_template,
-                        mimetype=mimetype)
+                        mimetype=mimetype,
+                        options=options)
 
                 # Create the challenge in the database
                 if is_true(get_from_config("email.concurrent_challenges")):
@@ -416,7 +417,7 @@ class EmailTokenClass(HotpTokenClass):
         return autosms
 
     @log_with(log)
-    def _compose_email(self, message="<otp>", subject="Your OTP", mimetype="plain"):
+    def _compose_email(self, message="<otp>", subject="Your OTP", mimetype="plain", options=None):
         """
         send email
 
@@ -430,6 +431,7 @@ class EmailTokenClass(HotpTokenClass):
         :rtype: string
         """
         ret = None
+        options = options or {}
 
         recipient = self._email_address
         otp = self.get_otp()[2]
@@ -440,12 +442,16 @@ class EmailTokenClass(HotpTokenClass):
 
         tags = create_tag_dict(serial=serial,
                                tokenowner=self.user,
+                               username=self.user.login,
+                               userrealm=self.user.realm,
                                tokentype=self.get_tokentype(),
+                               givenname=self.user.info.get("givenname") if self.user else "",
+                               surname=self.user.info.get("surname") if self.user else "",
                                recipient={"givenname": self.user.info.get("givenname") if self.user else "",
                                           "surname": self.user.info.get("surname") if self.user else ""},
                                escape_html=mimetype.lower() == "html")
 
-        message = message.format(otp=otp, **tags)
+        message = message.format(otp=otp, challenge=options.get("challenge"), **tags)
 
         subject = subject.replace("<otp>", otp)
         subject = subject.replace("<serial>", serial)

@@ -162,20 +162,7 @@ the challenge data that was passed in the first authentication request in the
 challenge parameter. This could contain banking transaction data.
 
 Starting with version 3.6 the `smstext` can contain a lot more tags similar to the
-policy :ref:`emailtext`:
-
-  * {otp} or *<otp>* the One-Time-Password
-  * {serial} or *<serial>* the serial number of the token.
-  * {user} the given name of the token owner.
-  * {givenname} the given name of the token owner.
-  * {surname} the surname of the token owner.
-  * {username} the loginname of the token owner.
-  * {userrealm} the realm of the token owner.
-  * {tokentype} the type of the token.
-  * {recipient_givenname} the given name of the recipient.
-  * {recipient_surname} the surname of the recipient.
-  * {time} the current server time in the format HH:MM:SS.
-  * {date} the current server date in the format YYYY-MM-DD
+policy :ref:`emailtext`.
 
 In the :ref:`sms_gateway_config` the tag *{otp}* will be replaced by the custom
 message, set with this policy.
@@ -221,16 +208,11 @@ The text can contain the following tags, that will be filled:
 
   * {otp} or *<otp>* the One-Time-Password
   * {serial} or *<serial>* the serial number of the token.
-  * {user} the given name of the token owner.
   * {givenname} the given name of the token owner.
   * {surname} the surname of the token owner.
   * {username} the loginname of the token owner.
   * {userrealm} the realm of the token owner.
   * {tokentype} the type of the token.
-  * {recipient_givenname} the given name of the recipient.
-  * {recipient_surname} the surname of the recipient.
-  * {time} the current server time in the format HH:MM:SS.
-  * {date} the current server date in the format YYYY-MM-DD
 
 Starting with version 2.20 you can use the tag *{challenge}*. This will add
 the challenge data that was passed in the first authentication request in the

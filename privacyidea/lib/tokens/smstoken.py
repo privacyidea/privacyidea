@@ -427,7 +427,11 @@ class SmsTokenClass(HotpTokenClass):
         message = message.replace("<serial>", serial)
         tags = create_tag_dict(serial=serial,
                                tokenowner=User,
+                               username=User.login,
+                               userrealm=User.realm,
                                tokentype="sms",
+                               givenname=User.info.get("givenname") if User else "",
+                               surname=User.info.get("surname") if User else "",
                                recipient={"givenname": User.info.get("givenname") if User else "",
                                           "surname": User.info.get("surname") if User else ""})
         message = message.format(otp=otp, challenge=options.get("challenge"), **tags)
