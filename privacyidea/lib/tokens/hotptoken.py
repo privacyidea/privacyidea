@@ -63,7 +63,7 @@ from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
                                    hexlify_and_unicode, determine_logged_in_userparams)
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP, Match
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP, Match, get_init_tokenlabel_parameters
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenclass import CLIENTMODE
 from privacyidea.lib import _
@@ -832,7 +832,6 @@ class HotpTokenClass(TokenClass):
         # Create a challenge!
         c = token_obj.create_challenge()
         # get details of token
-        from privacyidea.lib.policy import get_init_tokenlabel_parameters
         enroll_params = get_init_tokenlabel_parameters(g, user_object=user_obj,
                                                        token_type=cls.get_class_type())
         init_details = token_obj.get_init_detail(params=enroll_params,
