@@ -72,7 +72,7 @@ from OpenSSL import crypto
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
-from privacyidea.lib.policy import Match, check_pin, get_init_tokenlabel_parameters
+from privacyidea.lib.policy import Match, check_pin, get_init_tokenlabel_parameters, get_pushtoken_add_config
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
@@ -1485,40 +1485,7 @@ def pushtoken_add_config(request, action):
     """
     ttype = request.all_data.get("type")
     if ttype and ttype.lower() == "push":
-        ttl = None
-        registration_url = None
-        # Get the firebase configuration from the policies
-        firebase_config = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.FIREBASE_CONFIG,
-                                     user_object=request.User if request.User else None)\
-            .action_values(unique=True, allow_white_space_in_action=True)
-        if len(firebase_config) == 1:
-            request.all_data[PUSH_ACTION.FIREBASE_CONFIG] = list(firebase_config)[0]
-        else:
-            raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.FIREBASE_CONFIG))
-
-        # Get the sslverify definition from the policies
-        ssl_verify = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.SSL_VERIFY,
-                                user_object=request.User if request.User else None).action_values(unique=True)
-        if len(ssl_verify) == 1:
-            request.all_data[PUSH_ACTION.SSL_VERIFY] = list(ssl_verify)[0]
-        else:
-            request.all_data[PUSH_ACTION.SSL_VERIFY] = "1"
-
-        # Get the TTL and the registration URL from the policies
-        registration_url = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.REGISTRATION_URL,
-                                      user_object=request.User if request.User else None) \
-            .action_values(unique=True, allow_white_space_in_action=True)
-        if len(registration_url) == 1:
-            request.all_data[PUSH_ACTION.REGISTRATION_URL] = list(registration_url)[0]
-        else:
-            raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.REGISTRATION_URL))
-        ttl = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.TTL,
-                         user_object=request.User if request.User else None) \
-            .action_values(unique=True, allow_white_space_in_action=True)
-        if len(ttl) == 1:
-            request.all_data[PUSH_ACTION.TTL] = list(ttl)[0]
-        else:
-            request.all_data[PUSH_ACTION.TTL] = "10"
+        request.all_data = get_pushtoken_add_config(g, request.all_data, request.User)
 
 
 def u2ftoken_verify_cert(request, action):

@@ -396,17 +396,6 @@ class PushAPITestCase(MyApiTestCase):
         # Set Policy scope:auth, action:enroll_via_multichallenge=push
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
                    action="{0!s}=push".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
-        # We still do a passthru, since we do not have a firebase config, yet.
-        with self.app.test_request_context('/validate/check',
-                                           method='POST',
-                                           data={"user": "alice",
-                                                 "pass": "alicepw"}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(200, res.status_code)
-            result = res.json.get("result")
-            self.assertTrue(result.get("status"))
-            self.assertTrue(result.get("value"))
-
         # Set Policy scope:enrollment, action:push_config
         set_policy("pol_push2", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s},{6!s}={7!s}".format(
