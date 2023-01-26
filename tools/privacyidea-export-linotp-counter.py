@@ -23,42 +23,42 @@ metadata = MetaData()
 linotp_token_table = Table('Token', metadata,
                            Column('LinOtpTokenId', Integer(), primary_key=True, nullable=False),
                            Column(
-                               'LinOtpTokenDesc', Unicode(80), default=u''),
+                               'LinOtpTokenDesc', Unicode(80), default=''),
                            Column('LinOtpTokenSerialnumber', Unicode(
-                               40), default=u'', unique=True, nullable=False,
+                               40), default='', unique=True, nullable=False,
                                   index=True),
                            Column(
-                               'LinOtpTokenType', Unicode(30), default=u'HMAC',
+                               'LinOtpTokenType', Unicode(30), default='HMAC',
                                index=True),
                            Column(
-                               'LinOtpTokenInfo', Unicode(2000), default=u''),
+                               'LinOtpTokenInfo', Unicode(2000), default=''),
                            Column(
-                               'LinOtpTokenPinUser', Unicode(512), default=u''),
+                               'LinOtpTokenPinUser', Unicode(512), default=''),
                            Column(
                                'LinOtpTokenPinUserIV', Unicode(32),
-                               default=u''),
+                               default=''),
                            Column(
-                               'LinOtpTokenPinSO', Unicode(512), default=u''),
+                               'LinOtpTokenPinSO', Unicode(512), default=''),
                            Column(
-                               'LinOtpTokenPinSOIV', Unicode(32), default=u''),
+                               'LinOtpTokenPinSOIV', Unicode(32), default=''),
                            Column(
-                               'LinOtpIdResolver', Unicode(120), default=u'',
+                               'LinOtpIdResolver', Unicode(120), default='',
                                index=True),
                            Column(
-                               'LinOtpIdResClass', Unicode(120), default=u''),
+                               'LinOtpIdResClass', Unicode(120), default=''),
                            Column(
-                               'LinOtpUserid', Unicode(320), default=u'',
+                               'LinOtpUserid', Unicode(320), default='',
                                index=True),
                            Column(
-                               'LinOtpSeed', Unicode(32), default=u''),
+                               'LinOtpSeed', Unicode(32), default=''),
                            Column(
                                'LinOtpOtpLen', Integer(), default=6),
                            Column(
-                               'LinOtpPinHash', Unicode(512), default=u''),
+                               'LinOtpPinHash', Unicode(512), default=''),
                            Column(
-                               'LinOtpKeyEnc', Unicode(1024), default=u''),
+                               'LinOtpKeyEnc', Unicode(1024), default=''),
                            Column(
-                               'LinOtpKeyIV', Unicode(32), default=u''),
+                               'LinOtpKeyIV', Unicode(32), default=''),
                            Column(
                                'LinOtpMaxFail', Integer(), default=10),
                            Column(
@@ -105,7 +105,7 @@ def main():
     result = conn_linotp.execute(s)
 
     for r in result:
-        print(u"{0!s}, {1!s}".format(r.LinOtpTokenSerialnumber, r.LinOtpCount))
+        print("{0!s}, {1!s}".format(r.LinOtpTokenSerialnumber, r.LinOtpCount))
 
 
 if __name__ == '__main__':

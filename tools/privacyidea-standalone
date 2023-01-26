@@ -208,7 +208,7 @@ def create():
     """ Create a new privacyIDEA instance """
     instance_dir = os.path.abspath(manager.app.instance_directory)
     if os.path.exists(manager.app.instance_directory):
-        print(u"Instance at {!s} exists already! Aborting.".format(manager.app.instance_directory))
+        print("Instance at {!s} exists already! Aborting.".format(manager.app.instance_directory))
     else:
         try:
             os.makedirs(instance_dir)

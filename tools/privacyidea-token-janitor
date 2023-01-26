@@ -350,21 +350,21 @@ def export_token_data(token_list, attributes=None):
     """
     tokens = []
     for token_obj in token_list:
-        token_data = [u"{0!s}".format(token_obj.token.serial),
-                      u"{0!s}".format(token_obj.token.tokentype)]
+        token_data = ["{0!s}".format(token_obj.token.serial),
+                      "{0!s}".format(token_obj.token.tokentype)]
         try:
             user = token_obj.user
             if user:
-                token_data.append(u"{0!s}".format(user.info.get("username", "")))
-                token_data.append(u"{0!s}".format(user.info.get("givenname", "")))
-                token_data.append(u"{0!s}".format(user.info.get("surname", "")))
-                token_data.append(u"{0!s}".format(user.uid))
-                token_data.append(u"{0!s}".format(user.resolver))
-                token_data.append(u"{0!s}".format(user.realm))
+                token_data.append("{0!s}".format(user.info.get("username", "")))
+                token_data.append("{0!s}".format(user.info.get("givenname", "")))
+                token_data.append("{0!s}".format(user.info.get("surname", "")))
+                token_data.append("{0!s}".format(user.uid))
+                token_data.append("{0!s}".format(user.resolver))
+                token_data.append("{0!s}".format(user.realm))
 
             if attributes:
                 for att in attributes.split(","):
-                    token_data.append(u"{0!s}".format(
+                    token_data.append("{0!s}".format(
                         user.info.get(att, ""))
                     )
         except Exception:
@@ -393,7 +393,7 @@ def export_user_data(token_list, attributes=None):
                 token_obj.token.serial
             ))
         if user:
-            uid = u"'{0!s}','{1!s}','{2!s}','{3!s}','{4!s}','{5!s}'".format(
+            uid = "'{0!s}','{1!s}','{2!s}','{3!s}','{4!s}','{5!s}'".format(
                 user.info.get("username", ""),
                 user.info.get("givenname", ""),
                 user.info.get("surname", ""),
@@ -407,7 +407,7 @@ def export_user_data(token_list, attributes=None):
                         user.info.get(att, "")
                     )
         else:
-            uid = u"N/A" + u", " * 5
+            uid = "N/A" + ", " * 5
 
         if uid in users.keys():
             users[uid].append(token_obj.token.serial)
@@ -525,7 +525,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                         token_obj.get_tokeninfo()))
             else:
                 for token_obj in tlist:
-                    print(u"'{!s}','{!s}','{!s}','{!s}'".format(
+                    print("'{!s}','{!s}','{!s}','{!s}'".format(
                         token_obj.token.serial,
                         token_obj.token.tokentype,
                         token_obj.token.description,
@@ -536,11 +536,11 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
             if not sum_tokens:
                 tokens = export_token_data(tlist, attributes)
                 for token in tokens:
-                    print(u",".join([u"'{0!s}'".format(x) for x in token]))
+                    print(",".join(["'{0!s}'".format(x) for x in token]))
             else:
                 users = export_user_data(tlist, attributes)
                 for user, tokens in users.items():
-                    print(u"{0!s},{1!s}".format(user, len(tokens)))
+                    print("{0!s},{1!s}".format(user, len(tokens)))
 
         elif action == "export":
             if csv:
@@ -548,7 +548,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                     if tokenobj.type.lower() not in ["totp", "hotp"]:
                         continue
                     type = tokenobj.type.lower()
-                    owner = u"{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm) if tokenobj.user else "n/a"
+                    owner = "{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm) if tokenobj.user else "n/a"
                     serial = tokenobj.token.serial
                     otplen = tokenobj.token.otplen
                     otpkey = tokenobj.token.get_otpkey().getKey()
@@ -557,9 +557,9 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                     otpkey = to_unicode(otpkey)
                     if type == "totp":
                         timestep = tokenobj.get_tokeninfo("timeStep")
-                        print(u"{!s}, {!s}, {!s}, {!s}, {!s}, {!s}".format(owner, serial, otpkey, type, otplen, timestep))
+                        print("{!s}, {!s}, {!s}, {!s}, {!s}, {!s}".format(owner, serial, otpkey, type, otplen, timestep))
                     else:
-                        print(u"{!s}, {!s}, {!s}, {!s}, {!s}".format(owner, serial, otpkey, type, otplen))
+                        print("{!s}, {!s}, {!s}, {!s}, {!s}".format(owner, serial, otpkey, type, otplen))
             else:
                 key, token_num, soup = export_pskc(tlist)
                 sys.stderr.write("\n{0!s} tokens exported.\n".format(token_num))
@@ -597,7 +597,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 except Exception as exx:
                     print("Failed to process token {0}.".format(
                         token_obj.token.serial))
-                    print(u"{0}".format(exx))
+                    print("{0}".format(exx))
         del tlist
 
 

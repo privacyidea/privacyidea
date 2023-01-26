@@ -2449,7 +2449,7 @@ def get_dynamic_policy_definitions(scope=None):
     for ttype in get_token_types():
         pol[SCOPE.ADMIN]["enroll{0!s}".format(ttype.upper())] \
             = {'type': 'bool',
-               'desc': _("Admin is allowed to initalize {0!s} tokens.").format(ttype.upper()),
+               'desc': _("Admin is allowed to initialize {0!s} tokens.").format(ttype.upper()),
                'mainmenu': [MAIN_MENU.TOKENS],
                'group': GROUP.ENROLLMENT}
 

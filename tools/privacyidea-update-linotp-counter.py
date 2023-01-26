@@ -32,22 +32,22 @@ class LinToken(Base):
     __tablename__ = "Token"
 
     LinOtpTokenId = Column(Integer, primary_key=True, nullable=False)
-    LinOtpTokenDesc = Column(Unicode(80), default=u'')
-    LinOtpTokenSerialnumber = Column(Unicode(40), default=u'', unique=True, nullable=False, index=True)
-    LinOtpTokenType = Column(Unicode(30), default=u'HMAC',index=True)
-    LinOtpTokenInfo = Column(Unicode(2000), default=u'')
-    LinOtpTokenPinUser = Column(Unicode(512), default=u'')
-    LinOtpTokenPinUserIV =Column(Unicode(32), default=u'')
-    LinOtpTokenPinSO = Column(Unicode(512), default=u'')
-    LinOtpTokenPinSOIV = Column(Unicode(32), default=u'')
-    LinOtpIdResolver = Column(Unicode(120), default=u'', index=True)
-    LinOtpIdResClass = Column(Unicode(120), default=u'')
-    LinOtpUserid = Column(Unicode(320), default=u'', index=True)
-    LinOtpSeed = Column(Unicode(32), default=u'')
+    LinOtpTokenDesc = Column(Unicode(80), default='')
+    LinOtpTokenSerialnumber = Column(Unicode(40), default='', unique=True, nullable=False, index=True)
+    LinOtpTokenType = Column(Unicode(30), default='HMAC',index=True)
+    LinOtpTokenInfo = Column(Unicode(2000), default='')
+    LinOtpTokenPinUser = Column(Unicode(512), default='')
+    LinOtpTokenPinUserIV =Column(Unicode(32), default='')
+    LinOtpTokenPinSO = Column(Unicode(512), default='')
+    LinOtpTokenPinSOIV = Column(Unicode(32), default='')
+    LinOtpIdResolver = Column(Unicode(120), default='', index=True)
+    LinOtpIdResClass = Column(Unicode(120), default='')
+    LinOtpUserid = Column(Unicode(320), default='', index=True)
+    LinOtpSeed = Column(Unicode(32), default='')
     LinOtpOtpLen = Column(Integer, default=6)
-    LinOtpPinHash = Column(Unicode(512), default=u'')
-    LinOtpKeyEnc = Column(Unicode(1024), default=u'')
-    LinOtpKeyIV = Column(Unicode(32), default=u'')
+    LinOtpPinHash = Column(Unicode(512), default='')
+    LinOtpKeyEnc = Column(Unicode(1024), default='')
+    LinOtpKeyIV = Column(Unicode(32), default='')
     LinOtpMaxFail = Column(Integer, default=10)
     LinOtpIsactive = Column(Boolean(), default=True)
     LinOtpFailCount = Column(Integer, default=0)
@@ -73,7 +73,7 @@ def read_counter_file(import_file):
     for line in import_file.readlines():
         try:
             serial, counter = [v.strip() for v in line.split(",")]
-            update_list.append((u"{0!s}".format(serial), int(counter)))
+            update_list.append(("{0!s}".format(serial), int(counter)))
         except ValueError as ve:
             # If there is a line, that does not comply
             sys.stderr.write("Failed to parse line: {0!s}\n".format(line))
