@@ -101,7 +101,12 @@ class HttpSMSProvider(ISMSProvider):
                     # This is an additional option
                     v = v.format(otp=message, phone=phone)
                     if v.startswith('['):
-                        parameter[k] = json.loads(v)
+                        try:
+                            parameter[k] = json.loads(v)
+                        except json.decoder.JSONDecodeError:
+                            log.warning(u"Is not a valid JSON list. "
+                                    u"Please check your parameter:'{0!s}' with value:'{1!s}'".format(k,v))
+                            continue
                     else:
                         parameter[k] = v
             headers = self.smsgateway.header_dict
