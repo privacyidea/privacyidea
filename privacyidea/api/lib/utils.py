@@ -48,6 +48,12 @@ TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
                      "RS256", "RS384", "RS512",
                      "PS256", "PS384", "PS512"]
 
+# The following user-agents (with versions) do not need extra unquoting
+# TODO: we should probably switch this when we do not do the extra unquote anymore
+NO_UNQUOTE_USER_AGENTS = {
+    'privacyIDEA-LDAP-Proxy': None
+}
+
 SESSION_KEY_LENGTH = 32
 
 optional = True
@@ -259,7 +265,7 @@ def check_unquote(request, data):
 
     ua_match = re.match(r'^(?P<agent>[a-zA-Z0-9_-]+)(/(?P<version>\d+[\d.]*)(\s.*)?)?',
                         request.user_agent.string)
-    if ua_match and not ua_match.group('agent') in ['privacyIDEA-LDAP-Proxy']:
+    if ua_match and not ua_match.group('agent') in NO_UNQUOTE_USER_AGENTS:
         return {key: unquote(value) for (key, value) in data.items()}
     else:
         return copy(data)
