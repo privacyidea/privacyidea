@@ -71,7 +71,7 @@ class TotpTokenClass(HotpTokenClass):
         :type db_token:  orm object
         """
         TokenClass.__init__(self, db_token)
-        self.set_type(u"totp")
+        self.set_type("totp")
         self.hKeyRequired = True
 
     @staticmethod
@@ -219,7 +219,7 @@ class TotpTokenClass(HotpTokenClass):
     @property
     def hashlib(self):
         hashlibStr = self.get_tokeninfo("hashlib") or \
-                     get_from_config("totp.hashlib", u'sha1')
+                     get_from_config("totp.hashlib", 'sha1')
         return hashlibStr
 
     @property

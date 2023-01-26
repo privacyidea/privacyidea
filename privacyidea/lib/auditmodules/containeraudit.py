@@ -56,7 +56,7 @@ class Audit(AuditBase):
                               for audit_module in write_conf]
         self.read_module = get_module_class(read_conf, "Audit", "log")(config, startdate)
         if not self.read_module.is_readable:
-            log.warning(u"The specified PI_AUDIT_CONTAINER_READ {0!s} is not readable.".format(self.read_module))
+            log.warning("The specified PI_AUDIT_CONTAINER_READ {0!s} is not readable.".format(self.read_module))
 
     @property
     def has_data(self):

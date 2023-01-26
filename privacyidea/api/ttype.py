@@ -92,8 +92,8 @@ def token(ttype=None):
     """
     tokenc = get_token_class(ttype)
     if tokenc is None:
-        log.error(u"Invalid tokentype provided. ttype: {}".format(ttype.lower()))
-        raise ParameterError(u"Invalid tokentype provided. ttype: {}".format(ttype.lower()))
+        log.error("Invalid tokentype provided. ttype: {}".format(ttype.lower()))
+        raise ParameterError("Invalid tokentype provided. ttype: {}".format(ttype.lower()))
     res = tokenc.api_endpoint(request, g)
     serial = getParam(request.all_data, "serial")
     user = get_user_from_param(request.all_data)

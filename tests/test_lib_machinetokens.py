@@ -88,7 +88,7 @@ class MachineTokenTestCase(MyTestCase):
             if option.mt_key == "option1":
                 self.assertEqual(option.mt_value, "value1")
             elif option.mt_key == "option2":
-                self.assertEqual(option.mt_value, u"valü2")
+                self.assertEqual(option.mt_value, "valü2")
             else:
                 self.fail("Unspecified Option! {0!s}".format(option.mt_key))
 

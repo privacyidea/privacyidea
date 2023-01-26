@@ -490,7 +490,7 @@ class SMSTokenTestCase(MyTestCase):
             self.assertTrue(c[1].startswith("The PIN was correct, but"), c[1])
             if six.PY2:
                 expected = "Failed to load SMSProvider: ImportError" \
-                           "(u'privacyidea.lib.smsprovider.HttpSMSProvider has no attribute HttpSMSProviderWRONG',)"
+                           "('privacyidea.lib.smsprovider.HttpSMSProvider has no attribute HttpSMSProviderWRONG',)"
             else:
                 expected = "Failed to load SMSProvider: ImportError" \
                            "('privacyidea.lib.smsprovider.HttpSMSProvider has no attribute HttpSMSProviderWRONG'"

@@ -45,7 +45,7 @@ if not PY2:
     long = int
 
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
-SIGN_FORMAT = u"""{application}
+SIGN_FORMAT = """{application}
 {for_name}
 {for_address}
 {for_email}
@@ -115,7 +115,7 @@ def subscription_status(component="privacyidea", tokentype=None):
     try:
         check_subscription(component)
     except SubscriptionError as exx:
-        log.warning(u"{0}".format(exx))
+        log.warning("{0}".format(exx))
         return 2
 
     return 3
@@ -304,7 +304,7 @@ def check_signature(subscription):
     enckey = get_app_config_value("PI_ENCFILE", "/etc/privacyidea/enckey")
     dirname = os.path.dirname(enckey)
     # In dirname we are searching for <vendor>.pem
-    filename = u"{0!s}/{1!s}.pem".format(dirname, vendor)
+    filename = "{0!s}/{1!s}.pem".format(dirname, vendor)
 
     try:
         # remove the minutes 00:00:00

@@ -99,7 +99,7 @@ def verify_certificate_path(certificate, trusted_ca_paths):
                     verify_certificate(to_byte_string(certificate), chain)
                     return True
                 except Exception as exx:
-                    log.debug(u"Can not verify attestation certificate against chain {0!s}.".format(chain))
+                    log.debug("Can not verify attestation certificate against chain {0!s}.".format(chain))
         else:
             log.warning("The configured attestation CA directory does not exist.")
     return False
@@ -249,7 +249,7 @@ class CertificateTokenClass(TokenClass):
 
     def __init__(self, aToken):
         TokenClass.__init__(self, aToken)
-        self.set_type(u"certificate")
+        self.set_type("certificate")
         self.otp_len = 0
         try:
             self._update_rollout_state()

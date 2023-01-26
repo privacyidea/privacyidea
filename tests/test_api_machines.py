@@ -27,9 +27,9 @@ SSHKEY = "ssh-rsa " \
          "afLE9AtAL4nnMPuubC87L0wJ88un9teza/N02KJMHy01Yz3iJKt3Ou9eV6kqO" \
          "ei3kvLs5dXmriTHp6g9whtnN6/Liv9SzZPJTs8YfThi34Wccrw== " \
          "NetKnights GmbH"
-SSHKEY_ecdsa = u"ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzd" \
-               u"HAyNTYAAABBBHGCdIk0pO1HFr/mF4oLb43ZRyQJ4K7ICLrAhAiQERVa0tUvyY5TE" \
-               u"zurWTqxSMx203rY77t6xnHLZBMPPpv8rk0= cornelius@puck"
+SSHKEY_ecdsa = "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzd" \
+               "HAyNTYAAABBBHGCdIk0pO1HFr/mF4oLb43ZRyQJ4K7ICLrAhAiQERVa0tUvyY5TE" \
+               "zurWTqxSMx203rY77t6xnHLZBMPPpv8rk0= cornelius@puck"
 OTPKEY = "3132333435363738393031323334353637383930"
 
 

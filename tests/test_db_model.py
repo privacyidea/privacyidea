@@ -85,14 +85,14 @@ class TokenModelTestCase(MyTestCase):
         t.set_user_pin(b'HalloDuDa')
         self.assertTrue(t.get_user_pin().getPin() == b'HalloDuDa')
 
-        t.set_user_pin(u'HelloWörld')
-        self.assertTrue(t.get_user_pin().getPin().decode('utf8') == u'HelloWörld')
+        t.set_user_pin('HelloWörld')
+        self.assertTrue(t.get_user_pin().getPin().decode('utf8') == 'HelloWörld')
 
         t.set_hashed_pin(b'1234')
         self.assertTrue(t.check_pin(b'1234'))
 
-        t.set_hashed_pin(u'HelloWörld')
-        self.assertTrue(t.check_pin(u'HelloWörld'))
+        t.set_hashed_pin('HelloWörld')
+        self.assertTrue(t.check_pin('HelloWörld'))
 
         t.pin_hash = None
         self.assertTrue(t.check_pin(''))
@@ -160,8 +160,8 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(r)
         pin = t2.get_pin()
         self.assertEqual("thepin", pin)
-        t2.set_pin(u'pinwithä', hashed=False)
-        self.assertEqual(t2.get_pin(), u'pinwithä')
+        t2.set_pin('pinwithä', hashed=False)
+        self.assertEqual(t2.get_pin(), 'pinwithä')
 
         # set the so pin
         (enc, iv) = t2.set_so_pin("topsecret")
@@ -172,7 +172,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(enc)
         self.assertTrue(iv)
 
-        (enc, iv) = t2.set_so_pin(u"topsecrät")
+        (enc, iv) = t2.set_so_pin("topsecrät")
         self.assertTrue(enc)
         self.assertTrue(iv)
 
@@ -226,9 +226,9 @@ class TokenModelTestCase(MyTestCase):
         t2.set_otpkey(b'12345')
         self.assertEqual(b'12345', t2.get_otpkey().getKey(), t2)
         t2.failcount = 5
-        t2.set_otpkey(u'Hellö', reset_failcount=True)
+        t2.set_otpkey('Hellö', reset_failcount=True)
         self.assertTrue(t2.failcount == 0, t2)
-        self.assertEqual(u'Hellö', t2.get_otpkey().getKey().decode('utf8'), t2)
+        self.assertEqual('Hellö', t2.get_otpkey().getKey().decode('utf8'), t2)
 
         # key too long
         k = os.urandom(1500)
@@ -256,7 +256,7 @@ class TokenModelTestCase(MyTestCase):
 
         cid = c.save()
         self.assertTrue(cid == "splitRealm", cid)
-        self.assertTrue(u"{0!s}".format(c) == "<splitRealm (string)>", c)
+        self.assertTrue("{0!s}".format(c) == "<splitRealm (string)>", c)
 
         # delete the config
         config = Config.query.filter_by(Key="splitRealm").first()
@@ -454,7 +454,7 @@ class TokenModelTestCase(MyTestCase):
                    adminuser="jan, hein, klaas, pit")
         r = p.save()
         adminusers = p.get("adminuser")
-        self.assertEqual([u"jan", u"hein", u"klaas", u"pit"], adminusers)
+        self.assertEqual(["jan", "hein", "klaas", "pit"], adminusers)
         p2 = Policy.query.filter_by(id=r).one()
         self.assertEqual("jan, hein, klaas, pit", p2.adminuser)
 
@@ -866,7 +866,7 @@ class TokenModelTestCase(MyTestCase):
             task1 = PeriodicTask("task1", False, "0 5 * * *", ["localhost"], "some.module", 2, {
                 "key1": "value2",
                 "KEY2": True,
-                "key3": u"öfføff",
+                "key3": "öfføff",
             })
             task2 = PeriodicTask("some other task", True, "0 6 * * *", ["localhost"], "some.other.module", 1, {
                 "foo": "bar"
@@ -891,7 +891,7 @@ class TokenModelTestCase(MyTestCase):
             "options": {
                 "key1": "value2",
                 "KEY2": "True",
-                "key3": u"öfføff",
+                "key3": "öfføff",
             },
             "retry_if_failed": True,
             "last_runs": {}})

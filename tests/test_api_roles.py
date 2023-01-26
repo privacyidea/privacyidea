@@ -1205,7 +1205,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         # disabled policy: by default, login is disabled
         with self.app.test_request_context('/policy/disabled',
-                                           json={'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.DISABLE),
+                                           json={'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.DISABLE),
                                                  'scope': SCOPE.WEBUI,
                                                  'realm': '',
                                                  'priority': 2,
@@ -1217,7 +1217,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         # userstore policy: for admins, require the userstore password
         with self.app.test_request_context('/policy/userstore',
-                                           json={'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.USERSTORE),
+                                           json={'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.USERSTORE),
                                                  'scope': SCOPE.WEBUI,
                                                  'realm': '',
                                                  'priority': 1,
@@ -1232,7 +1232,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         # privacyidea policy: for helpdesk users, require the token PIN
         with self.app.test_request_context('/policy/privacyidea',
-                                           json={'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA),
+                                           json={'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA),
                                                  'scope': SCOPE.WEBUI,
                                                  'realm': '',
                                                  'priority': 1,
@@ -1306,7 +1306,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
         # if we now disable the condition on userstore and privacyidea, we get a conflicting policy error
         with self.app.test_request_context('/policy/privacyidea',
                                            json={'scope': SCOPE.WEBUI,
-                                                 'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA),
+                                                 'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA),
                                                  'realm': '',
                                                  'active': True,
                                                  'conditions': [
@@ -1319,7 +1319,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/policy/userstore',
                                            json={'scope': SCOPE.WEBUI,
-                                                 'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.USERSTORE),
+                                                 'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.USERSTORE),
                                                  'realm': '',
                                                  'active': True,
                                                  'conditions': [
@@ -1384,7 +1384,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "bob",
-                                                 "password": u"bobpwééé"}):
+                                                 "password": "bobpwééé"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")

@@ -424,8 +424,8 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertEqual(result.get("status"), False)
             self.assertEqual(result.get("error").get("code"), ERROR.POLICY)
             self.assertEqual(result.get("error").get("message"),
-                             u'The U2F device is not allowed to authenticate '
-                             u'due to policy restriction.')
+                             'The U2F device is not allowed to authenticate '
+                             'due to policy restriction.')
 
         delete_policy("u2f01")
         remove_token(serial)
@@ -471,8 +471,8 @@ class APIU2fTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result.get("status"), False)
             self.assertEqual(result.get("error").get("message"),
-                             u'The U2F device is not allowed to be registered '
-                             u'due to policy restriction.')
+                             'The U2F device is not allowed to be registered '
+                             'due to policy restriction.')
 
         delete_policy("u2f01")
         remove_token(serial)

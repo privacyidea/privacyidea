@@ -792,7 +792,7 @@ def set_description_api(serial=None):
         serial = getParam(request.all_data, "serial", required)
     g.audit_object.log({"serial": serial})
     description = getParam(request.all_data, "description", optional=required)
-    g.audit_object.add_to_log({'action_detail': u"description={0!r}".format(description)})
+    g.audit_object.add_to_log({'action_detail': "description={0!r}".format(description)})
     res = set_description(serial, description, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -1033,7 +1033,7 @@ def loadtokens_api(filename=None):
                      TOKENS[serial],
                      tokenrealms=tokenrealms)
 
-    g.audit_object.log({'info': u"{0!s}, {1!s} (imported: {2:d})".format(file_type,
+    g.audit_object.log({'info': "{0!s}, {1!s} (imported: {2:d})".format(file_type,
                                                            token_file,
                                                            len(TOKENS)),
                         'serial': ', '.join(TOKENS),
@@ -1172,7 +1172,7 @@ def get_serial_by_otp_api(otp=None):
         serial = get_serial_by_otp(tokenobj_list, otp=otp, window=window)
 
     g.audit_object.log({"success": True,
-                        "info": u"get {0!s} by OTP. {1!s} tokens".format(
+                        "info": "get {0!s} by OTP. {1!s} tokens".format(
                             serial, count)})
 
     return send_result({"serial": serial,

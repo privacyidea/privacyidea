@@ -314,7 +314,7 @@ class U2fTokenClass(TokenClass):
         :type db_token: DB object
         """
         TokenClass.__init__(self, db_token)
-        self.set_type(u"u2f")
+        self.set_type("u2f")
         self.hKeyRequired = False
 
     def update(self, param, reset_failcount=True):
@@ -440,7 +440,7 @@ class U2fTokenClass(TokenClass):
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  "{0!s}_{1!s}".format(self.get_class_type(),
                                                                       ACTION.CHALLENGETEXT),
-                                                 options)or _(u'Please confirm with your U2F token ({0!s})').format(
+                                                 options)or _('Please confirm with your U2F token ({0!s})').format(
             self.token.description)
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))

@@ -280,15 +280,15 @@ def check_tokeninfo(request, response):
                         key, regex, _r = tokeninfo_pol.split("/")
                         value = token_obj.get_tokeninfo(key, "")
                         if re.search(regex, value):
-                            log.debug(u"Regular expression {0!s} "
-                                      u"matches the tokeninfo field {1!s}.".format(regex, key))
+                            log.debug("Regular expression {0!s} "
+                                      "matches the tokeninfo field {1!s}.".format(regex, key))
                         else:
-                            log.info(u"Tokeninfo field {0!s} with contents {1!s} "
-                                     u"does not match {2!s}".format(key, value, regex))
+                            log.info("Tokeninfo field {0!s} with contents {1!s} "
+                                     "does not match {2!s}".format(key, value, regex))
                             raise PolicyError("Tokeninfo field {0!s} with contents does not"
                                               " match regular expression.".format(key))
                     except ValueError:
-                        log.warning(u"invalid tokeinfo policy: {0!s}".format(tokeninfo_pol))
+                        log.warning("invalid tokeinfo policy: {0!s}".format(tokeninfo_pol))
 
     return response
 
@@ -825,7 +825,7 @@ def mangle_challenge_response(request, response):
             messages = sorted(set(messages))
             if message[-4:].lower() in ["<ol>", "<ul>"]:
                 for m in messages:
-                    message += u"<li>{0!s}</li>\n".format(m)
+                    message += "<li>{0!s}</li>\n".format(m)
             else:
                 message += "\n"
                 message += ", ".join(messages)

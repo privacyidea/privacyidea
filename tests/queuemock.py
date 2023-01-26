@@ -46,12 +46,12 @@ class FakeQueue(BaseQueue):
 
     def register_job(self, name, func):
         if name in self._jobs:
-            raise QueueError(u"Job {!r} already exists".format(name))
+            raise QueueError("Job {!r} already exists".format(name))
         self._jobs[name] = func
 
     def enqueue(self, name, args, kwargs):
         if name not in self._jobs:
-            raise QueueError(u"Unknown job: {!r}".format(name))
+            raise QueueError("Unknown job: {!r}".format(name))
         self.enqueued_jobs.append((name, args, kwargs))
         self._jobs[name](*args, **kwargs)
 

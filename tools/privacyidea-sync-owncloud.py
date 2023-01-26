@@ -206,7 +206,7 @@ def main():
         elif o in ("-c", "--config"):
             config_file = a
         else:
-            print(u"Unknown parameter: {0!s}".format(o))
+            print("Unknown parameter: {0!s}".format(o))
             sys.exit(3)
 
     if config_file:

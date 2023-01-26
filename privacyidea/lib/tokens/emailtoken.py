@@ -106,7 +106,7 @@ class EmailTokenClass(HotpTokenClass):
 
     def __init__(self, aToken):
         HotpTokenClass.__init__(self, aToken)
-        self.set_type(u"email")
+        self.set_type("email")
         self.mode = ['challenge']
         # we support various hashlib methods, but only on create
         # which is effectively set in the update
@@ -315,7 +315,7 @@ class EmailTokenClass(HotpTokenClass):
                 info = _("The PIN was correct, but the "
                          "EMail could not be sent!")
                 log.warning(info + " ({0!r})".format(e))
-                log.debug(u"{0!s}".format(traceback.format_exc()))
+                log.debug("{0!s}".format(traceback.format_exc()))
                 return_message = info
                 if is_true(options.get("exception")):
                     raise Exception(info)
@@ -392,8 +392,8 @@ class EmailTokenClass(HotpTokenClass):
                     mimetype = "html"
             except Exception as e:  # pragma: no cover
                 message = default
-                log.warning(u"Failed to read email template: {0!r}".format(e))
-                log.debug(u"{0!s}".format(traceback.format_exc()))
+                log.warning("Failed to read email template: {0!r}".format(e))
+                log.debug("{0!s}".format(traceback.format_exc()))
 
         return message, mimetype
 

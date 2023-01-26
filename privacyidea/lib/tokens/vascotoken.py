@@ -67,7 +67,7 @@ class VascoTokenClass(TokenClass):
         :param aToken: the db bound token
         """
         TokenClass.__init__(self, db_token)
-        self.set_type(u"vasco")
+        self.set_type("vasco")
         self.hKeyRequired = True
 
     @staticmethod
