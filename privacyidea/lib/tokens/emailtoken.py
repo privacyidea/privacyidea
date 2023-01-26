@@ -385,7 +385,6 @@ class EmailTokenClass(HotpTokenClass):
             if len(messages) == 1:
                 message = list(messages)[0]
 
-        message = message.format(challenge=options.get("challenge"))
         if message.startswith("file:"):
             # We read the template from the file.
             try:
