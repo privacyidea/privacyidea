@@ -77,8 +77,9 @@ class privacyIDEAError(Exception):
 
     def __str__(self):
         pstr = "ERR%d: %r"
-        if isinstance(self.message, six.string_types):
+        if isinstance(self.message, str):
             pstr = "ERR%d: %s"
+
 
         ### if we have here unicode, we might fail with conversion error
         try:

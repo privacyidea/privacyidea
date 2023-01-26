@@ -32,8 +32,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 if [[ $(id -u) != 0 ]]; then
-  echo "Script must be run as root user"
-  exit 1
+	echo "Script must be run as root user"
+	exit 1
 fi
 
 PICFG="/etc/privacyidea/pi.cfg"
@@ -49,7 +49,8 @@ fi
 
 OS=$(grep "^ID=" /etc/os-release | sed -e 's/^ID=//g' | tr -d '"')
 diag_info=$(mktemp -d -t pi_diag_XXXXXXXXXX)
-tempfile="${diag_info}/privacyidea.config"
+tempfile="${diag_info}/system.config"
+pi_config="${diag_info}/privacyidea.config"
 timestamp=$(date +"%y-%m-%d")
 diag_file="/tmp/${timestamp}_$(basename "$diag_info").tar.gz"
 
@@ -63,6 +64,10 @@ esac
 
 log() {
 	echo "$1" >> "$tempfile"
+}
+
+log_pi_config() {
+	echo "$1" >> "$pi_config"
 }
 
 call_pi_manage() {
@@ -83,28 +88,28 @@ get_os() {
 }
 
 get_pi_cfg() {
-	log
-	log "SECTION: pi.cfg file"
-	log "===================="
-	grep -v -e 'SECRET_KEY\|PI_PEPPER\|SQLALCHEMY_DATABASE_URI' "$PICFG" >> "$tempfile"
+	log_pi_config
+	log_pi_config "SECTION: pi.cfg file"
+	log_pi_config "===================="
+	grep -v -e 'SECRET_KEY\|PI_PEPPER\|SQLALCHEMY_DATABASE_URI' "$PICFG" >> "$pi_config"
 	# only write the driver part of the URI to the logfile.
 	# So we see if eg. pymysql, mysql or any other dialect is used.
-	grep ^SQLALCHEMY_DATABASE_URI "$PICFG" | cut -d':' -f 1 >> "$tempfile"
+	grep ^SQLALCHEMY_DATABASE_URI "$PICFG" | cut -d':' -f 1 >> "$pi_config"
 }
 
 current_db_revision() {
-	log
-	log "SECTION: current_db_revision"
-	log "============================"
-	call_pi_manage db current -d /opt/privacyidea/lib/privacyidea/migrations/ >> "$tempfile"
+	log_pi_config
+	log_pi_config "SECTION: current_db_revision"
+	log_pi_config "============================"
+	call_pi_manage db current -d /opt/privacyidea/lib/privacyidea/migrations/ >> "$pi_config"
 }
 
 pi_versions() {
-	log
-	log "SECTION: privacyIDEA Versions"
-	log "============================="
-	log "Installed packages"
-	log "------------------"
+	log_pi_config
+	log_pi_config "SECTION: privacyIDEA Versions"
+	log_pi_config "============================="
+	log_pi_config "Installed packages"
+	log_pi_config "------------------"
 	FileName=$(mktemp)
 	if [[ "${OS}" == "centos" || "${OS}" == "rhel" ]]; then
 		# In case it is CentOS/RHEL
@@ -114,42 +119,42 @@ pi_versions() {
 		dpkg -l | sort >> "$FileName";
 	fi
 	# save all installed packages
-	cat "$FileName" >> "$tempfile"
+	cat "$FileName" >> "$pi_config"
 	rm -f "$FileName"
-	log
-	log "Python packages in /opt/privacyidea:"
-	log "===================================="
+	log_pi_config
+	log_pi_config "Python packages in /opt/privacyidea:"
+	log_pi_config "===================================="
 	if [[ -x  /opt/privacyidea/bin/pip ]]; then
-		/opt/privacyidea/bin/pip freeze >> "$tempfile"
+		/opt/privacyidea/bin/pip freeze >> "$pi_config"
 	fi
 }
 
 pi_config() {
-	log
-	log "SECTION: privacyIDEA Configuration"
-	log "=================================="
-	log "Resolvers"
-	log "---------"
-	call_pi_manage resolver list -v >> "$tempfile"
-	log "Realms"
-	log "------"
-	call_pi_manage realm list >> "$tempfile"
-	log "Events"
-	log "------"
-	call_pi_manage event e_export >> "$tempfile"
-	log "Policies"
-	log "--------"
-	call_pi_manage policy p_export >> "$tempfile"
+	log_pi_config
+	log_pi_config "SECTION: privacyIDEA Configuration"
+	log_pi_config "=================================="
+	log_pi_config "Resolvers"
+	log_pi_config "---------"
+	call_pi_manage resolver list -v >> "$pi_config"
+	log_pi_config "Realms"
+	log_pi_config "------"
+	call_pi_manage realm list >> "$pi_config"
+	log_pi_config "Events"
+	log_pi_config "------"
+	call_pi_manage event e_export >> "$pi_config"
+	log_pi_config "Policies"
+	log_pi_config "--------"
+	call_pi_manage policy p_export >> "$pi_config"
 }
 
 server_config() {
 	# Extract configurations for smtp, privacyIDEA and RADIUS server
-  server_config=$(call_pi_manage config exporter -t smtpserver privacyideaserver radiusserver -f json)
+	server_config=$(call_pi_manage config exporter -t smtpserver privacyideaserver radiusserver -f json)
 
-  log
-  log "SECTION: SMTP|privacyIDEA|RADIUS Server Configuration"
-	log "====================================================="
-	log "$server_config"
+	log_pi_config
+	log_pi_config "SECTION: SMTP|privacyIDEA|RADIUS Server Configuration"
+	log_pi_config "====================================================="
+	log_pi_config "$server_config"
 }
 
 FreeRADIUS_config() {
@@ -197,31 +202,39 @@ centos_auditlog() {
 
 apache_log() {
 	if [[ "${OS}" == "centos" || "${OS}" == "rhel" ]]; then
-		log
-		log "SECTION: httpd SSL_error_log"
-		log "============================"
-		tail -100 /var/log/httpd/ssl_error_log  >> "$tempfile"
-		log
-		log "SECTION: httpd Access_log"
-		log "========================="
-		tail -100 /var/log/httpd/ssl_access_log  >> "$tempfile"
-		log
-		log "SECTION: apache configuration"
-		log "============================="
-		tail -n +1 /etc/httpd/conf/httpd.conf /etc/httpd/conf.d/privacyidea.conf >>  "$tempfile"
+		if [ -f /var/log/httpd/ssl_error_log ] && [ -f /var/log/httpd/ssl_access_log ]; then
+			log
+			log "SECTION: httpd SSL_error_log"
+			log "============================"
+			tail -100 /var/log/httpd/ssl_error_log  >> "$tempfile"
+			log
+			log "SECTION: httpd SSL_error_log"
+			log "============================"
+			tail -100 /var/log/httpd/ssl_error_log  >> "$tempfile"
+		fi
+		if [ -f /etc/httpd/conf/httpd.conf ] && [ -f /etc/httpd/conf.d/privacyidea.conf ]; then
+			log
+			log "SECTION: apache configuration"
+			log "============================="
+			tail -n +1 /etc/httpd/conf/httpd.conf /etc/httpd/conf.d/privacyidea.conf >>  "$tempfile"
+		fi
 	elif [[ "${OS}" == "ubuntu" || "${OS}" == "debian" ]]; then
-		log
-		log "SECTION: apache2 error_log"
-		log "=========================="
-		tail -100 /var/log/apache2/error.log >> "$tempfile"
-		log
-		log "SECTION: apache2 SSL_access_log"
-		log "==============================="
-		tail -100 /var/log/apache2/ssl_access.log >> "$tempfile"
-		log
-		log "SECTION: apache configuration"
-		log "============================="
-		tail -n +1 /etc/apache2/apache2.conf /etc/apache2/sites-enabled/* >> "$tempfile"
+		if [ -f /var/log/apache2/error.log ] && [ -f /var/log/apache2/ssl_access.log ]; then
+			log
+			log "SECTION: apache2 error_log"
+			log "=========================="
+			tail -100 /var/log/apache2/error.log >> "$tempfile"
+			log
+			log "SECTION: apache2 SSL_access_log"
+			log "==============================="
+			tail -100 /var/log/apache2/ssl_access.log >> "$tempfile"
+		fi
+		if [ -f /etc/apache2/apache2.conf ] && [ -d /etc/apache2/sites-enabled ]; then
+			log
+			log "SECTION: apache configuration"
+			log "============================="
+			tail -n +1 /etc/apache2/apache2.conf /etc/apache2/sites-enabled/* >> "$tempfile"
+		fi
 	fi
 }
 
@@ -241,7 +254,7 @@ ngnix_log(){
 
 pi_logfile() {
 	R=$( grep "^PI_LOGFILE" "$PICFG" | cut -d "=" -f2 | tr -d "\t \'\"" )
-	[ -f ${R} ] && cp ${R} "${diag_info}/privacyidea.logfile" || echo "Could not read logfile ${R}" >> "$tempfile"
+	[[ -f ${R} ]] && cp ${R} "${diag_info}/privacyidea.logfile" || echo "Could not read logfile ${R}" >> "${diag_info}/privacyidea.logfile"
 }
 
 pi_auditlog() {

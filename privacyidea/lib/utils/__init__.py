@@ -196,7 +196,7 @@ def to_byte_string(value):
     :return: byte string representing the value
     :rtype: bytes
     """
-    if not isinstance(value, (bytes, six.string_types)):
+    if not isinstance(value, (bytes, str)):
         value = str(value)
     value = to_bytes(value)
     return value

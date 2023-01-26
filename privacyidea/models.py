@@ -1556,7 +1556,7 @@ class Policy(TimestampMethodsMixin, db.Model):
                  active=True, scope="", action="", realm="", adminrealm="", adminuser="",
                  resolver="", user="", client="", time="", pinode="", priority=1,
                  check_all_resolvers=False, conditions=None):
-        if isinstance(active, six.string_types):
+        if isinstance(active, str):
             active = is_true(active.lower())
         self.name = name
         self.action = action

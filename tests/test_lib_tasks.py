@@ -15,7 +15,7 @@ class BaseTaskTestCase(MyTestCase):
         task = BaseTask({})
 
         self.assertEqual(task.identifier, "BaseTask")
-        self.assertIsInstance(task.description, six.string_types)
+        self.assertIsInstance(task.description, str)
         self.assertEqual(task.options, {})
 
         result1 = task.do()
