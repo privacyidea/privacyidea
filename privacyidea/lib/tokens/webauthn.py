@@ -1972,6 +1972,13 @@ def _verify_client_extensions(client_extensions, expected_client_extensions):
     :return: Whether there were any unexpected extensions.
     :rtype: bool
     """
+
+    # In case of a present rk property we simply ignore it since it is optional and is not further handled at the moment. This allows us to register e.g. Apple Passkeys.
+    if client_extensions:        
+        extensions = json.loads(client_extensions)
+        if "credProps" in extensions and "rk" in extensions["credProps"]:
+            del extensions["credProps"]
+            client_extensions = json.dumps(extensions)
     return not client_extensions \
            or set(expected_client_extensions.keys()).issuperset(json.loads(client_extensions).keys())
 
