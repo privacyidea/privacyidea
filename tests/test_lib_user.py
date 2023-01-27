@@ -64,12 +64,7 @@ class UserTestCase(MyTestCase):
         
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
-        # check proper unicode() / str() handling
-        if six.PY2:
-            self.assertIsInstance(str(user), bytes)
-            self.assertIsInstance(unicode(user), unicode)
-        else:
-            self.assertIsInstance(six.text_type(user), six.text_type)
+        self.assertIsInstance(six.text_type(user), six.text_type)
         
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
@@ -416,24 +411,15 @@ class UserTestCase(MyTestCase):
                              realm=realm).check_password("sömepassword"))
 
         # check proper unicode() and str() handling
-        user_object = User(login="nönäscii", realm=realm)
-        if six.PY2:
-            self.assertEqual(unicode(user_object), '<nönäscii.SQL1@sqlrealm>')
-            self.assertEqual(str(user_object), '<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
-        else:
-            self.assertEqual(six.text_type(user_object), '<nönäscii.SQL1@sqlrealm>')
-            self.assertEqual(six.text_type(user_object).encode('utf8'),
-                             b'<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
+        user_object = User(login=u"nönäscii", realm=realm)
+        self.assertEqual(six.text_type(user_object), u'<nönäscii.SQL1@sqlrealm>')
+        self.assertEqual(six.text_type(user_object).encode('utf8'),
+                         b'<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
         # also check the User object representation
         user_repr = repr(user_object)
-        if six.PY2:
-            self.assertEqual("User(login='n\\xf6n\\xe4scii', "
-                             "realm='sqlrealm', resolver='SQL1')",
-                             user_repr, user_repr)
-        else:
-            self.assertEqual("User(login='nönäscii', "
-                             "realm='sqlrealm', resolver='SQL1')",
-                             user_repr, user_repr)
+        self.assertEqual("User(login='nönäscii', "
+                         "realm='sqlrealm', resolver='SQL1')",
+                         user_repr, user_repr)
 
     @ldap3mock.activate
     def test_18_user_with_several_phones(self):

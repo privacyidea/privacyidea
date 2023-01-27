@@ -9,8 +9,6 @@ This test file tests the modules:
  lib.smsprovider.scriptsmsprovider
 """
 
-import six
-
 from .base import MyTestCase
 from privacyidea.lib.smsprovider.HttpSMSProvider import HttpSMSProvider
 from privacyidea.lib.smsprovider.SipgateSMSProvider import SipgateSMSProvider
@@ -618,12 +616,8 @@ class HttpSMSTestCase(MyTestCase):
         with mock.patch("logging.Logger.debug") as mock_log:
             r = provider.submit_message("123456", 'Hello: 7')
             self.assertTrue(r)
-            if six.PY2:
-                mock_log.assert_any_call("passing JSON data: {'text': 'Hello: "
-                                         "7', 'phone': '123456'}")
-            else:
-                call = [x[0][0] for x in mock_log.call_args_list if x[0][0].startswith('passing')][0]
-                self.assertRegex(call, r'passing JSON data: {.*Hello: 7.*}', call)
+            call = [x[0][0] for x in mock_log.call_args_list if x[0][0].startswith('passing')][0]
+            self.assertRegex(call, r'passing JSON data: {.*Hello: 7.*}', call)
         delete_smsgateway(identifier)
 
 
