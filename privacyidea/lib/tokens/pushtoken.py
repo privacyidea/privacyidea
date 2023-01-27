@@ -36,6 +36,7 @@ from dateutil.parser import isoparse
 import traceback
 
 from privacyidea.api.lib.utils import getParam
+from privacyidea.api.lib.policyhelper import get_pushtoken_add_config
 from privacyidea.lib.token import get_one_token, init_token
 from privacyidea.lib.utils import prepare_result, to_bytes, is_true
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
@@ -1018,7 +1019,6 @@ class PushTokenClass(TokenClass):
         :return: None, the content is modified
         """
         # Get the firebase configuration from the policies
-        from privacyidea.lib.policy import get_pushtoken_add_config
         params = get_pushtoken_add_config(g, user_obj=user_obj)
         token_obj = init_token({"type": cls.get_class_type(),
                                 "genkey": 1,

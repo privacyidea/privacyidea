@@ -51,6 +51,7 @@ import binascii
 
 from .HMAC import HmacOtp
 from privacyidea.api.lib.utils import getParam
+from privacyidea.api.lib.policyhelper import get_init_tokenlabel_parameters
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import (TokenClass,
                                         TWOSTEP_DEFAULT_DIFFICULTY,
@@ -63,7 +64,7 @@ from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
                                    hexlify_and_unicode, determine_logged_in_userparams)
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.policy import SCOPE, ACTION, GROUP, Match, get_init_tokenlabel_parameters
+from privacyidea.lib.policy import SCOPE, ACTION, GROUP, Match
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenclass import CLIENTMODE
 from privacyidea.lib import _
