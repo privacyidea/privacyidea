@@ -134,7 +134,7 @@ def consumer_main():
         if config.logfile is not None:
             sys.stderr.write("-l is unsupported if PI_LOGCONFIG is used. Exiting.\n")
             sys.exit(1)
-        print(u"Using logging configuration from {!r}".format(log_config_file))
+        print("Using logging configuration from {!r}".format(log_config_file))
     else:
         # If a logfile was given, we write to that logfile. If not, we write to ``privacyidea-queue.log``.
         if config.logfile is not None:
@@ -144,7 +144,7 @@ def consumer_main():
         loglevel = app.config.get("PI_LOGLEVEL", logging.INFO)
         log_config = make_logging_config(logfile, loglevel)
         logging.config.dictConfig(log_config)
-        print(u"Logging to {!r}".format(logfile))
+        print("Logging to {!r}".format(logfile))
 
     queue.huey.register_pre_execute('push_app_context', make_push_app_context(app))
     queue.huey.register_post_execute('pop_app_context', pop_app_context)

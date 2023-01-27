@@ -66,7 +66,7 @@ class IndexedSecretTokenClass(TokenClass):
 
     def __init__(self, aToken):
         TokenClass.__init__(self, aToken)
-        self.set_type(u"indexedsecret")
+        self.set_type("indexedsecret")
         self.mode = ['challenge']
 
     @staticmethod
@@ -332,7 +332,7 @@ class IndexedSecretTokenClass(TokenClass):
                                                                 options) or DEFAULT_POSITION_COUNT)
             if len(challengeobject_list) == 1:
                 session = int(challengeobject_list[0].session or "0") + 1
-                options["session"] = u"{0!s}".format(session)
+                options["session"] = "{0!s}".format(session)
                 if session < position_count:
                     return True
 

@@ -114,10 +114,10 @@ class RecoveryTestCase(MyTestCase):
         r = add_smtpserver(identifier="myserver", server="1.2.3.4")
         self.assertTrue(r > 0)
         set_privacyidea_config("recovery.identifier", "myserver")
-        r = create_recoverycode(User(u"nönäscii", "register"), recoverycode=recoverycode)
+        r = create_recoverycode(User("nönäscii", "register"), recoverycode=recoverycode)
         self.assertEqual(r, True)
 
-        user = User(u"nönäscii", "register")
+        user = User("nönäscii", "register")
 
         r = check_recoverycode(user, recoverycode)
         self.assertEqual(r, True)

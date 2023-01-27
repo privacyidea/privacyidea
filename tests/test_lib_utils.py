@@ -527,8 +527,8 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(convert_column_to_unicode(None), None)
         self.assertEqual(convert_column_to_unicode(True), "True")
         self.assertEqual(convert_column_to_unicode(False), "False")
-        self.assertEqual(convert_column_to_unicode(b"yes"), u"yes")
-        self.assertEqual(convert_column_to_unicode(u"yes"), u"yes")
+        self.assertEqual(convert_column_to_unicode(b"yes"), "yes")
+        self.assertEqual(convert_column_to_unicode("yes"), "yes")
 
     def test_18_censor_connect_string(self):
         self.assertEqual(censor_connect_string("sqlite:////home/foo/privacyidea/privacyidea/data.sqlite"),
@@ -543,10 +543,10 @@ class UtilsTestCase(MyTestCase):
                          "psql+odbc://pi:***@localhost/pi")
         self.assertEqual(censor_connect_string("mysql://pi:kW44s@@qqWtGYX@localhost/pi"),
                          "mysql://pi:***@localhost/pi")
-        self.assertEqual(censor_connect_string(u"mysql://knöbel:föö@localhost/pi"),
-                         u"mysql://knöbel:***@localhost/pi")
-        self.assertEqual(censor_connect_string(u"oracle+cx_oracle://pi:MySecretPassword1234@localhost:1521/?service_name=my_database"),
-                         u"oracle+cx_oracle://pi:***@localhost:1521/?service_name=my_database")
+        self.assertEqual(censor_connect_string("mysql://knöbel:föö@localhost/pi"),
+                         "mysql://knöbel:***@localhost/pi")
+        self.assertEqual(censor_connect_string("oracle+cx_oracle://pi:MySecretPassword1234@localhost:1521/?service_name=my_database"),
+                         "oracle+cx_oracle://pi:***@localhost:1521/?service_name=my_database")
 
     def test_19_truncate_comma_list(self):
         r = truncate_comma_list("123456,234567,345678", 19)
@@ -755,7 +755,7 @@ class UtilsTestCase(MyTestCase):
             sanity_name_check('Hello_World', name_exp='^[A-Za-z]+$')
 
     def test_25_encodings(self):
-        u = u'Hello Wörld'
+        u = 'Hello Wörld'
         b = b'Hello World'
         self.assertEqual(to_utf8(None), None)
         self.assertEqual(to_utf8(u), u.encode('utf8'))
@@ -775,23 +775,23 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(to_byte_string(10), b'10')
 
     def test_26_conversions(self):
-        self.assertEqual(hexlify_and_unicode(u'Hallo'), u'48616c6c6f')
-        self.assertEqual(hexlify_and_unicode(b'Hallo'), u'48616c6c6f')
-        self.assertEqual(hexlify_and_unicode(b'\x00\x01\x02\xab'), u'000102ab')
+        self.assertEqual(hexlify_and_unicode('Hallo'), '48616c6c6f')
+        self.assertEqual(hexlify_and_unicode(b'Hallo'), '48616c6c6f')
+        self.assertEqual(hexlify_and_unicode(b'\x00\x01\x02\xab'), '000102ab')
 
-        self.assertEqual(b32encode_and_unicode(u'Hallo'), u'JBQWY3DP')
-        self.assertEqual(b32encode_and_unicode(b'Hallo'), u'JBQWY3DP')
-        self.assertEqual(b32encode_and_unicode(b'\x00\x01\x02\xab'), u'AAAQFKY=')
+        self.assertEqual(b32encode_and_unicode('Hallo'), 'JBQWY3DP')
+        self.assertEqual(b32encode_and_unicode(b'Hallo'), 'JBQWY3DP')
+        self.assertEqual(b32encode_and_unicode(b'\x00\x01\x02\xab'), 'AAAQFKY=')
 
-        self.assertEqual(b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
-        self.assertEqual(b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
-        self.assertEqual(b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
+        self.assertEqual(b64encode_and_unicode('Hallo'), 'SGFsbG8=')
+        self.assertEqual(b64encode_and_unicode(b'Hallo'), 'SGFsbG8=')
+        self.assertEqual(b64encode_and_unicode(b'\x00\x01\x02\xab'), 'AAECqw==')
 
-        self.assertEqual(urlsafe_b64encode_and_unicode(u'Hallo'), u'SGFsbG8=')
-        self.assertEqual(urlsafe_b64encode_and_unicode(b'Hallo'), u'SGFsbG8=')
-        self.assertEqual(urlsafe_b64encode_and_unicode(b'\x00\x01\x02\xab'), u'AAECqw==')
+        self.assertEqual(urlsafe_b64encode_and_unicode('Hallo'), 'SGFsbG8=')
+        self.assertEqual(urlsafe_b64encode_and_unicode(b'Hallo'), 'SGFsbG8=')
+        self.assertEqual(urlsafe_b64encode_and_unicode(b'\x00\x01\x02\xab'), 'AAECqw==')
         self.assertEqual(urlsafe_b64encode_and_unicode(b'\xfa\xfb\xfc\xfd\xfe\xff'),
-                          u'-vv8_f7_')
+                          '-vv8_f7_')
 
     def test_27_images(self):
         hallo_qr_png = "iVBORw0KGgoAAAANSUhEUgAAASIAAAEiAQAAAAB1xeIbAAABC0lEQV" \
@@ -833,7 +833,7 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(found)
 
         # run a test for empty condition
-        found, excluded = check_ip_in_policy("10.0.1.2", ["10.0.1.0/24", "!10.0.1.2", u'', None])
+        found, excluded = check_ip_in_policy("10.0.1.2", ["10.0.1.0/24", "!10.0.1.2", '', None])
         self.assertTrue(excluded)
         self.assertTrue(found)
 
@@ -855,15 +855,15 @@ class UtilsTestCase(MyTestCase):
             path = "/validate/check"
             url_root = ""
 
-        recipient = {"givenname": u"<b>Sömeone</b>"}
+        recipient = {"givenname": "<b>Sömeone</b>"}
         dict1 = create_tag_dict(request=RequestMock(), recipient=recipient)
         self.assertEqual(dict1["ua_string"], "<b>hello world</b>")
         self.assertEqual(dict1["action"], "/validate/check")
-        self.assertEqual(dict1["recipient_givenname"], u"<b>Sömeone</b>")
+        self.assertEqual(dict1["recipient_givenname"], "<b>Sömeone</b>")
         dict2 = create_tag_dict(request=RequestMock(), recipient=recipient, escape_html=True)
         self.assertEqual(dict2["ua_string"], "&lt;b&gt;hello world&lt;/b&gt;")
         self.assertEqual(dict2["action"], "/validate/check")
-        self.assertEqual(dict2["recipient_givenname"], u"&lt;b&gt;Sömeone&lt;/b&gt;")
+        self.assertEqual(dict2["recipient_givenname"], "&lt;b&gt;Sömeone&lt;/b&gt;")
 
     def test_32_allowed_serial_numbers(self):
         self.assertTrue(check_serial_valid("TOTP12345"))

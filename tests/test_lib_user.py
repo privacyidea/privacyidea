@@ -391,8 +391,8 @@ class UserTestCase(MyTestCase):
         delete_realm("sort_realm")
 
     def test_17_check_nonascii_user(self):
-        realm = u"sqlrealm"
-        resolver = u"SQL1"
+        realm = "sqlrealm"
+        resolver = "SQL1"
         parameters = self.parameters
         parameters["resolver"] = resolver
         parameters["type"] = "sqlresolver"
@@ -405,10 +405,10 @@ class UserTestCase(MyTestCase):
         self.assertEqual(len(added), 1)
 
         # check non-ascii password of non-ascii user
-        self.assertFalse(User(login=u"nönäscii",
+        self.assertFalse(User(login="nönäscii",
                               realm=realm).check_password("wrong"))
-        self.assertTrue(User(login=u"nönäscii",
-                             realm=realm).check_password(u"sömepassword"))
+        self.assertTrue(User(login="nönäscii",
+                             realm=realm).check_password("sömepassword"))
 
         # check proper unicode() and str() handling
         user_object = User(login=u"nönäscii", realm=realm)

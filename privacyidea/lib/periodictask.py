@@ -57,7 +57,7 @@ def get_taskmodule(identifier, config=None):
     :return: instance of a BaseTask subclass
     """
     if identifier not in TASK_MODULES:
-        raise ParameterError(u"Unknown task module: {!r}".format(identifier))
+        raise ParameterError("Unknown task module: {!r}".format(identifier))
     else:
         r = TASK_MODULES[identifier](config=get_app_config())
         return r
@@ -194,7 +194,7 @@ def get_periodic_task_by_name(name):
     """
     periodic_tasks = get_periodic_tasks(name)
     if len(periodic_tasks) != 1:
-        raise ResourceNotFoundError(u"The periodic task with unique name {!r} does not exist".format(name))
+        raise ResourceNotFoundError("The periodic task with unique name {!r} does not exist".format(name))
     return periodic_tasks[0]
 
 
@@ -254,18 +254,18 @@ def get_scheduled_periodic_tasks(node, current_timestamp=None, interval_tzinfo=N
     if current_timestamp is None:
         current_timestamp = datetime.now(tzutc())
     if current_timestamp.tzinfo is None:
-        raise ParameterError(u"expected timezone-aware datetime, got {!r}".format(current_timestamp))
+        raise ParameterError("expected timezone-aware datetime, got {!r}".format(current_timestamp))
     scheduled_ptasks = []
-    log.debug(u"Collecting periodic tasks to run at {!s}".format(current_timestamp.isoformat()))
+    log.debug("Collecting periodic tasks to run at {!s}".format(current_timestamp.isoformat()))
     for ptask in active_ptasks:
         try:
             next_timestamp = calculate_next_timestamp(ptask, node, interval_tzinfo)
-            log.debug(u"Next scheduled run of {!r}: {!s}".format(ptask["name"], next_timestamp.isoformat()))
+            log.debug("Next scheduled run of {!r}: {!s}".format(ptask["name"], next_timestamp.isoformat()))
             if next_timestamp <= current_timestamp:
-                log.debug(u"Scheduling periodic task {!r}".format(ptask["name"]))
+                log.debug("Scheduling periodic task {!r}".format(ptask["name"]))
                 scheduled_ptasks.append(ptask)
         except Exception as e:
-            log.warning(u"Ignoring periodic task {!r}: {!r}".format(ptask["name"], e))
+            log.warning("Ignoring periodic task {!r}: {!r}".format(ptask["name"], e))
     return scheduled_ptasks
 
 
@@ -278,7 +278,7 @@ def execute_task(taskmodule, params):
     :return: boolean returned by the task
     """
     module = get_taskmodule(taskmodule)
-    log.info(u"Running taskmodule {!r} with parameters {!r}".format(module, params))
+    log.info("Running taskmodule {!r} with parameters {!r}".format(module, params))
     return module.do(params)
 
 

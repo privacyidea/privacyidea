@@ -145,6 +145,6 @@ def delete_gateway_option(gwid=None, key=None):
 
     res = delete_smsgateway_key_generic(gwid, key, Type=type)
     g.audit_object.log({"success": res,
-                        "info": u"{0!s}/{1!s}".format(gwid, key)})
+                        "info": "{0!s}/{1!s}".format(gwid, key)})
 
     return send_result(res)

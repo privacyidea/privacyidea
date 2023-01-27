@@ -74,7 +74,7 @@ def save_caconnector(params):
     sanity_name_check(connector_name)
     # check the type
     if connector_type not in get_caconnector_types():
-        raise Exception(u"connector type : {0!s} not in {1!s}".format(connector_type, get_caconnector_types()))
+        raise Exception("connector type : {0!s} not in {1!s}".format(connector_type, get_caconnector_types()))
 
     # check the name
     connectors = get_caconnector_list(filter_caconnector_name=connector_name)

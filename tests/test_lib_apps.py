@@ -35,7 +35,7 @@ class AppsTestCase(MyTestCase):
     def test_02_extra_data(self):
         extra_data = {
             'somekey': 'somevalue',
-            u'sömekey': u'sömevälue',
+            'sömekey': 'sömevälue',
             'anotherkey': 12345,
         }
         r = create_google_authenticator_url("12345678", extra_data=extra_data)

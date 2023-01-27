@@ -156,7 +156,7 @@ class UtilsTestCase(MyApiTestCase):
 
         # We see the user from the trusted JWT in the audit log.
         ae = self.find_most_recent_audit_entry(action="GET /token/")
-        self.assertEqual(ae.get("user"), u"userA")
+        self.assertEqual(ae.get("user"), "userA")
 
     def test_05_is_fqdn(self):
         self.assertTrue(is_fqdn('example.com'))
@@ -224,7 +224,7 @@ class UtilsTestCase(MyApiTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
             # We see the message in the log, that the viewargs was read
-            mock_log.assert_any_call(u"Update params in request DELETE http://localhost/token/TTEST with view_args.")
+            mock_log.assert_any_call("Update params in request DELETE http://localhost/token/TTEST with view_args.")
 
         # test json data
         with mock.patch("logging.Logger.debug") as mock_log:
@@ -235,7 +235,7 @@ class UtilsTestCase(MyApiTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
             # We see the message in the log, that the JSON data was read
-            mock_log.assert_any_call(u"Update params in request POST http://localhost/token/init with JSON data.")
+            mock_log.assert_any_call("Update params in request POST http://localhost/token/init with JSON data.")
 
         remove_token(serial)
         # test raw body, which defaults to x-www-form-encoded
@@ -246,5 +246,5 @@ class UtilsTestCase(MyApiTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertTrue(res.status_code == 200, res)
             # We see the message in the log, that the JSON data was read
-            mock_log.assert_any_call(u"Update params in request POST http://localhost/token/init with values.")
+            mock_log.assert_any_call("Update params in request POST http://localhost/token/init with values.")
         remove_token(serial)

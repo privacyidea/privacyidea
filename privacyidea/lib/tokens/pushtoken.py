@@ -75,7 +75,7 @@ PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
 PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
 POLLING_ALLOWED = "polling_allowed"
-GWTYPE = u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider'
+GWTYPE = 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider'
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 DELAY = 1.0
 
@@ -198,7 +198,7 @@ def _build_smartphone_data(serial, challenge, registration_url, pem_privkey, opt
                        "url": registration_url}
     # Create the signature.
     # value to string
-    sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**smartphone_data)
+    sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**smartphone_data)
 
     privkey_obj = serialization.load_pem_private_key(to_bytes(pem_privkey),
                                                      None, default_backend())
@@ -267,7 +267,7 @@ class PushTokenClass(TokenClass):
 
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
-        self.set_type(u"push")
+        self.set_type("push")
         self.mode = ['challenge', 'authenticate']
         self.hKeyRequired = False
 
@@ -591,9 +591,9 @@ class PushTokenClass(TokenClass):
                 # There are valid challenges, so we check this signature
                 for chal in challengeobject_list:
                     # verify the signature of the nonce
-                    sign_data = u"{0!s}|{1!s}".format(challenge, serial)
+                    sign_data = "{0!s}|{1!s}".format(challenge, serial)
                     if decline:
-                        sign_data += u"|decline"
+                        sign_data += "|decline"
                     try:
                         pubkey_obj.verify(b32decode(signature),
                                           sign_data.encode("utf8"),
@@ -618,7 +618,7 @@ class PushTokenClass(TokenClass):
             try:
                 tok = get_one_token(serial=serial, tokentype=cls.get_class_type())
                 pubkey_obj = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
-                sign_data = u"{new_fb_token}|{serial}|{timestamp}".format(**request_data)
+                sign_data = "{new_fb_token}|{serial}|{timestamp}".format(**request_data)
                 pubkey_obj.verify(b32decode(signature),
                                   sign_data.encode("utf8"),
                                   padding.PKCS1v15(),
@@ -678,7 +678,7 @@ class PushTokenClass(TokenClass):
                     raise PolicyError('Polling not allowed!')
 
             pubkey_obj = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
-            sign_data = u"{serial}|{timestamp}".format(**request_data)
+            sign_data = "{serial}|{timestamp}".format(**request_data)
             pubkey_obj.verify(b32decode(signature),
                               sign_data.encode("utf8"),
                               padding.PKCS1v15(),
@@ -897,14 +897,14 @@ class PushTokenClass(TokenClass):
 
             # If sending the Push message failed, we log a warning
             if not res:
-                log.warning(u"Failed to submit message to Firebase service for token {0!s}."
+                log.warning("Failed to submit message to Firebase service for token {0!s}."
                             .format(self.token.serial))
                 message += " " + ERROR_CHALLENGE_TEXT
                 if is_true(options.get("exception")):
                     raise ValidateError("Failed to submit message to Firebase service.")
         else:
-            log.warning(u"The token {0!s} has no tokeninfo {1!s}. "
-                        u"The message could not be sent.".format(self.token.serial,
+            log.warning("The token {0!s} has no tokeninfo {1!s}. "
+                        "The message could not be sent.".format(self.token.serial,
                                                                  PUSH_ACTION.FIREBASE_CONFIG))
             message += " " + ERROR_CHALLENGE_TEXT
             if is_true(options.get("exception")):

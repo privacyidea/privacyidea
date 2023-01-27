@@ -224,7 +224,7 @@ class HotpTokenClass(TokenClass):
         :type db_token: DB object
         """
         TokenClass.__init__(self, db_token)
-        self.set_type(u"hotp")
+        self.set_type("hotp")
         self.hKeyRequired = True
         self.currently_in_challenge = False
 
@@ -374,7 +374,7 @@ class HotpTokenClass(TokenClass):
     @property
     def hashlib(self):
         hashlibStr = self.get_tokeninfo("hashlib") or \
-                     get_from_config("hotp.hashlib", u'sha1')
+                     get_from_config("hotp.hashlib", 'sha1')
         return hashlibStr
 
     def _calc_otp(self, counter):
@@ -639,9 +639,9 @@ class HotpTokenClass(TokenClass):
         pin = self.token.get_pin()
 
         if get_from_config("PrependPin") == "True":
-            combined = u"{0!s}{1!s}".format(pin, otpval)
+            combined = "{0!s}{1!s}".format(pin, otpval)
         else:
-            combined = u"{0!s}{1!s}".format(otpval, pin)
+            combined = "{0!s}{1!s}".format(otpval, pin)
 
         return 1, pin, otpval, combined
 

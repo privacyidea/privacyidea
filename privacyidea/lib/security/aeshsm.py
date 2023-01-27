@@ -186,7 +186,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 self.session_lastused_time = datetime.datetime.now()
                 break
             except PyKCS11.PyKCS11Error as exx:
-                log.warning(u"Generate Random failed: {0!s}".format(exx))
+                log.warning("Generate Random failed: {0!s}".format(exx))
                 # If we get an CKR_SESSION_HANDLE_INVALID error code, we free
                 # memory, session and handles and retry
                 if exx.value == PyKCS11.CKR_SESSION_HANDLE_INVALID:
@@ -217,7 +217,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 self.session_lastused_time = datetime.datetime.now()
                 break
             except PyKCS11.PyKCS11Error as exx:
-                log.warning(u"Encryption failed: {0!s}".format(exx))
+                log.warning("Encryption failed: {0!s}".format(exx))
                 # If we get an CKR_SESSION_HANDLE_INVALID error code, we free
                 # memory, session and handles and retry
                 if exx.value == PyKCS11.CKR_SESSION_HANDLE_INVALID:
@@ -259,14 +259,14 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                     retries += 1
                     if retries > self.max_retries:
                         td = datetime.datetime.now() - start
-                        log.warning(u"Decryption finally failed: {0!s}. Time taken: {1!s}.".format(exx, td))
+                        log.warning("Decryption finally failed: {0!s}. Time taken: {1!s}.".format(exx, td))
                         raise HSMException("Failed to decrypt after multiple retries.")
                 else:
                     raise HSMException("HSM decrypt failed with {0!s}".format(exx))
 
         if retries > 0:
             td = datetime.datetime.now() - start
-            log.warning(u"Decryption after {0!s} retries successful. Time taken: {1!s}.".format(retries, td))
+            log.warning("Decryption after {0!s} retries successful. Time taken: {1!s}.".format(retries, td))
         return int_list_to_bytestring(r)
 
     def create_keys(self):

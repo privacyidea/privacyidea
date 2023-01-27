@@ -117,7 +117,7 @@ def list_machines_api():
     # so we need to convert the Machine Object to dict
     machines = [mobject.get_dict() for mobject in machines]
     g.audit_object.log({'success': True,
-                        'info': u"hostname: {0!s}, ip: {1!s}".format(hostname, ip)})
+                        'info': "hostname: {0!s}, ip: {1!s}".format(hostname, ip)})
 
     return send_result(machines)
 
@@ -176,7 +176,7 @@ def attach_token_api():
                              options=options)
 
     g.audit_object.log({'success': True,
-                        'info': u"serial: {0!s}, application: {1!s}".format(serial,
+                        'info': "serial: {0!s}, application: {1!s}".format(serial,
                                                                  application)})
 
     return send_result(mt_object.id)

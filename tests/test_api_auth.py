@@ -498,7 +498,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res)
             # The login page contains the info about force remote_user, which will hide the
             # "login with credentials" button.
-            self.assertIn(u'input type=hidden id=FORCE_REMOTE_USER value="True"', to_unicode(res.data))
+            self.assertIn('input type=hidden id=FORCE_REMOTE_USER value="True"', to_unicode(res.data))
 
         # bind the remote user policy to an unknown realm
         set_policy(name="remote", scope=SCOPE.WEBUI, realm='unknown',

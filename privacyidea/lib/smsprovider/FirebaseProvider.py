@@ -73,8 +73,8 @@ def get_firebase_access_token(config_file_name):
         # is written to the dictionary.
         app_store[fbt][config_file_name] = credentials
         readable_time = credentials.expiry.isoformat() if credentials.expiry else 'Never'
-        log.debug(u"Setting the expiration for {!r} of the new access_token "
-                  u"to {!s}.".format(config_file_name, readable_time))
+        log.debug("Setting the expiration for {!r} of the new access_token "
+                  "to {!s}.".format(config_file_name, readable_time))
 
     return app_store[fbt][config_file_name]
 
@@ -162,7 +162,7 @@ class FirebaseProvider(ISMSProvider):
             log.debug("Message sent successfully to Firebase service.")
             res = True
         else:
-            log.warning(u"Failed to send message to firebase service: {0!s}".format(resp.text))
+            log.warning("Failed to send message to firebase service: {0!s}".format(resp.text))
 
         return res
 

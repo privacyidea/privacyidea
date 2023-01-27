@@ -198,7 +198,7 @@ def set_policy_api(name=None):
     conditions = getParam(param, "conditions", optional)
 
     g.audit_object.log({'action_detail': name,
-                        'info': u"{0!s}".format(param)})
+                        'info': "{0!s}".format(param)})
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client, time=time,
                      active=active or True, adminrealm=admin_realm,
@@ -297,7 +297,7 @@ def get_policy(name=None, export=None):
         ret = send_file(export_policies(pol), export, content_type='text/plain')
 
     g.audit_object.log({"success": True,
-                        'info': u"name = {0!s}, realm = {1!s}, scope = {2!s}".format(name, realm, scope)})
+                        'info': "name = {0!s}, realm = {1!s}, scope = {2!s}".format(name, realm, scope)})
     return ret
 
 
@@ -417,7 +417,7 @@ def import_policy_api(filename=None):
 
     policy_num = import_policies(file_contents=file_contents)
     g.audit_object.log({"success": True,
-                        'info': u"imported {0:d} policies from file {1!s}".format(
+                        'info': "imported {0:d} policies from file {1!s}".format(
                             policy_num, filename)})
 
     return send_result(policy_num)
@@ -501,7 +501,7 @@ def check_policy_api():
         policy_names = []
         for pol in policies:
             policy_names.append(pol.get("name"))
-        g.audit_object.log({'info': u"allowed by policy {0!s}".format(policy_names)})
+        g.audit_object.log({'info': "allowed by policy {0!s}".format(policy_names)})
     else:
         res["allowed"] = False
         res["info"] = "No policies found"

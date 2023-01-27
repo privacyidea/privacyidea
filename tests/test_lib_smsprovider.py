@@ -585,7 +585,7 @@ class HttpSMSTestCase(MyTestCase):
                       self.post_url,
                       body=self.success_body)
         # Here we need to send the SMS
-        r = self.post_provider.submit_message("123456", u"Hallöle Smørrebrød")
+        r = self.post_provider.submit_message("123456", "Hallöle Smørrebrød")
         self.assertTrue(r)
 
     @responses.activate

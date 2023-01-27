@@ -195,7 +195,7 @@ class TiqrTokenClass(OcraTokenClass):
         :type db_token: DB object
         """
         TokenClass.__init__(self, db_token)
-        self.set_type(u"tiqr")
+        self.set_type("tiqr")
         self.hKeyRequired = False
 
     def update(self, param):
@@ -426,7 +426,7 @@ class TiqrTokenClass(OcraTokenClass):
 
         # Encode the user to UTF-8 and quote the result
         encoded_user_identifier = quote_plus(user_identifier.encode('utf-8'))
-        authurl = u"tiqrauth://{0!s}@{1!s}/{2!s}/{3!s}/{4!s}".format(
+        authurl = "tiqrauth://{0!s}@{1!s}/{2!s}/{3!s}/{4!s}".format(
                                               encoded_user_identifier,
                                               service_identifier,
                                               db_challenge.transaction_id,

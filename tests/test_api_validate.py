@@ -577,7 +577,7 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
             data = res.json
             self.assertEqual(data.get("result").get("error").get("message"),
-                             u"ERR905: Token is not an offline token or refill token is incorrect")
+                             "ERR905: Token is not an offline token or refill token is incorrect")
 
         # 2nd refill with 10th value
         with self.app.test_request_context('/validate/offlinerefill',
@@ -623,7 +623,7 @@ class AValidateOfflineTestCase(MyApiTestCase):
             data = res.json
             self.assertTrue(res.status_code == 400, res)
             self.assertEqual(data.get("result").get("error").get("message"),
-                             u"ERR401: You provided a wrong OTP value.")
+                             "ERR401: You provided a wrong OTP value.")
         # The failed refill should not modify the token counter!
         self.assertEqual(old_counter, token_obj.token.count)
 
@@ -638,7 +638,7 @@ class AValidateOfflineTestCase(MyApiTestCase):
             data = res.json
             self.assertTrue(res.status_code == 400, res)
             self.assertEqual(data.get("result").get("error").get("message"),
-                             u"ERR905: The token does not exist")
+                             "ERR905: The token does not exist")
 
         # Detach the token, refill should then fail
         r = detach_token(self.serials[0], "offline", "pippin")
@@ -653,7 +653,7 @@ class AValidateOfflineTestCase(MyApiTestCase):
             data = res.json
             self.assertTrue(res.status_code == 400, res)
             self.assertEqual(data.get("result").get("error").get("message"),
-                             u"ERR905: Token is not an offline token or refill token is incorrect")
+                             "ERR905: Token is not an offline token or refill token is incorrect")
 
 
 class ValidateAPITestCase(MyApiTestCase):
@@ -1699,7 +1699,7 @@ class ValidateAPITestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertEqual(detail.get('multi_challenge')[0].get("message"),
-                             u'To resync your token, please enter the next OTP value')
+                             'To resync your token, please enter the next OTP value')
             self.assertEqual(result.get("value"), False)
             transaction_id = res.json.get("detail").get("transaction_id")
             self.assertTrue(transaction_id)
@@ -2031,8 +2031,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
             detail = res.json.get("detail")
             self.assertEqual(detail.get("message"),
-                             u"user does not exist, accepted "
-                             u"due to 'pass_no'")
+                             "user does not exist, accepted "
+                             "due to 'pass_no'")
 
         # Creating a notification event. The non-existing user must
         # still be able to pass!
@@ -2050,8 +2050,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
             detail = res.json.get("detail")
             self.assertEqual(detail.get("message"),
-                             u"user does not exist, accepted "
-                             u"due to 'pass_no'")
+                             "user does not exist, accepted "
+                             "due to 'pass_no'")
 
         delete_event(eid)
 
@@ -2069,8 +2069,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
             detail = res.json.get("detail")
             self.assertEqual(detail.get("message"),
-                             u"user has no token, "
-                             u"accepted due to 'pass_no'")
+                             "user has no token, "
+                             "accepted due to 'pass_no'")
 
         r = get_tokens(user=User(user, self.realm2), count=True)
         self.assertEqual(r, 1)
@@ -2125,7 +2125,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             detail = res.json.get("detail")
             self.assertEqual(detail.get("message"),
-                             u'user does not exist, accepted due to \'pol1\'')
+                             'user does not exist, accepted due to \'pol1\'')
         delete_policy("pol1")
 
     @responses.activate
@@ -2827,7 +2827,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             detail = res.json.get("detail")
-            self.assertEqual(detail.get("message"), u"Authenticated by AuthCache.")
+            self.assertEqual(detail.get("message"), "Authenticated by AuthCache.")
 
         delete_policy("authcache")
 
@@ -2843,7 +2843,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertFalse(result.get("value"))
             detail = res.json.get("detail")
-            self.assertEqual(detail.get("message"), u"wrong otp value. previous otp used again")
+            self.assertEqual(detail.get("message"), "wrong otp value. previous otp used again")
 
         # If there is no authcache, the same value must not be used again!
         with self.app.test_request_context('/validate/check',
@@ -2891,11 +2891,11 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 400, res)
             result = res.json['result']
             self.assertEqual(result['error']['message'],
-                             u"ERR905: Given serial does not belong to given user!",
+                             "ERR905: Given serial does not belong to given user!",
                              result)
 
         # try to authenticate with a token assigned to a different user
-        token.add_user(User(u"nönäscii", self.realm2))
+        token.add_user(User("nönäscii", self.realm2))
         token.set_pin("pin")
         self.assertEqual(token.token.owners.first().user_id, "1116")
         with self.app.test_request_context('/validate/check',
@@ -2907,7 +2907,7 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             result = res.json['result']
             self.assertEqual(result['error']['message'],
-                             u"ERR905: Given serial does not belong to given user!",
+                             "ERR905: Given serial does not belong to given user!",
                              result)
             self.assertEqual(res.status_code, 400, res)
 
@@ -3270,7 +3270,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": quote(u"test{0!s}".format(password))}):
+                                                 "pass": quote("test{0!s}".format(password))}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
@@ -4073,7 +4073,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertEqual(data.get("result").get("authentication"), "CHALLENGE")
             detail = data.get("detail")
             # Only the email token is active and creates a challenge!
-            self.assertEqual(u"Enter the OTP from the Email:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the Email:", detail.get("message"))
 
         # Now test with triggerchallenge
         with self.app.test_request_context('/validate/triggerchallenge',
@@ -4088,7 +4088,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertEqual(data.get("result").get("value"), 1)
             detail = data.get("detail")
             # Only the email token is active and creates a challenge!
-            self.assertEqual(u"Enter the OTP from the Email:", detail.get("messages")[0])
+            self.assertEqual("Enter the OTP from the Email:", detail.get("messages")[0])
         remove_token(self.serial_email)
 
     @smtpmock.activate
@@ -4120,7 +4120,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
             # Only the email token is active and creates a challenge!
-            self.assertEqual(u"Enter the OTP from the Email:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the Email:", detail.get("message"))
             transaction_id1 = detail.get("transaction_id")
 
         # Now we create the second challenge
@@ -4135,7 +4135,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
             # Only the email token is active and creates a challenge!
-            self.assertEqual(u"Enter the OTP from the Email:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the Email:", detail.get("message"))
             transaction_id2 = detail.get("transaction_id")
 
         with self.app.test_request_context('/validate/check',
@@ -4192,7 +4192,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
             # Only the email token is active and creates a challenge!
-            self.assertEqual(u"Enter the OTP from the Email:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the Email:", detail.get("message"))
             transaction_id1 = detail.get("transaction_id")
 
         # Now we create the second challenge
@@ -4207,7 +4207,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
             # Only the email token is active and creates a challenge!
-            self.assertEqual(u"Enter the OTP from the Email:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the Email:", detail.get("message"))
             transaction_id2 = detail.get("transaction_id")
 
         with self.app.test_request_context('/validate/check',
@@ -4268,7 +4268,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
-            self.assertEqual(u"Enter the OTP from the SMS:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the SMS:", detail.get("message"))
             transaction_id1 = detail.get("transaction_id")
 
         # Now we create the second challenge
@@ -4282,7 +4282,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
-            self.assertEqual(u"Enter the OTP from the SMS:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the SMS:", detail.get("message"))
             transaction_id2 = detail.get("transaction_id")
 
         with self.app.test_request_context('/validate/check',
@@ -4345,7 +4345,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
-            self.assertEqual(u"Enter the OTP from the SMS:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the SMS:", detail.get("message"))
             transaction_id1 = detail.get("transaction_id")
 
         # Now we create the second challenge
@@ -4359,7 +4359,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
-            self.assertEqual(u"Enter the OTP from the SMS:", detail.get("message"))
+            self.assertEqual("Enter the OTP from the SMS:", detail.get("message"))
             transaction_id2 = detail.get("transaction_id")
 
         with self.app.test_request_context('/validate/check',
@@ -4419,7 +4419,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
-            self.assertEqual(u"No active challenge response token found", detail.get("message"))
+            self.assertEqual("No active challenge response token found", detail.get("message"))
 
         remove_token(self.serial_sms)
 
@@ -4588,7 +4588,7 @@ class AChallengeResponse(MyApiTestCase):
                             "serial": "rad1",
                             "radius.identifier": "myserver",
                             "radius.local_checkpin": False,
-                            "radius.user": u"nönäscii"},
+                            "radius.user": "nönäscii"},
                            user=user_obj)
         radiusmock.setdata(timeout=False, response=radiusmock.AccessChallenge)
         with self.app.test_request_context('/validate/check',
@@ -4854,8 +4854,8 @@ class AChallengeResponse(MyApiTestCase):
             response = res.json
             result = response.get("result")
             self.assertFalse(result.get("status"))
-            self.assertEqual(u'ERR401: The indexedsecret token has an empty secret '
-                             u'and can not be used for authentication.',
+            self.assertEqual('ERR401: The indexedsecret token has an empty secret '
+                             'and can not be used for authentication.',
                              result.get("error").get("message"))
         remove_token("PIIX01")
 

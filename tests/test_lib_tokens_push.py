@@ -59,7 +59,7 @@ def _check_firebase_params(request):
     # check the signature in the payload!
     data = payload.get("message").get("data")
 
-    sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**data)
+    sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**data)
     token_obj = get_tokens(serial=data.get("serial"))[0]
     pem_pubkey = token_obj.get_tokeninfo(PUBLIC_KEY_SERVER)
     pubkey_obj = load_pem_public_key(to_bytes(pem_pubkey), backend=default_backend())
@@ -144,12 +144,12 @@ class PushTokenTestCase(MyTestCase):
 
         # Wrong JSON file
         self.assertRaises(ConfigAdminError, set_smsgateway,
-                          "fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+                          "fb1", 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                           fb_config)
 
         # Everything is fine
         fb_config[FIREBASE_CONFIG.JSON_CONFIG] = FIREBASE_FILE
-        r = set_smsgateway("fb1", u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
+        r = set_smsgateway("fb1", 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                            fb_config)
         self.assertTrue(r > 0)
 
@@ -169,13 +169,13 @@ class PushTokenTestCase(MyTestCase):
                       "pubkey": self.smartphone_public_key_pem_urlsafe})
         self.assertEqual(token.get_tokeninfo("firebase_token"), "firebasetoken")
         self.assertEqual(token.get_tokeninfo("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
-        self.assertTrue(token.get_tokeninfo("public_key_server").startswith(u"-----BEGIN RSA PUBLIC KEY-----\n"),
+        self.assertTrue(token.get_tokeninfo("public_key_server").startswith("-----BEGIN RSA PUBLIC KEY-----\n"),
                         token.get_tokeninfo("public_key_server"))
         parsed_server_pubkey = serialization.load_pem_public_key(
             to_bytes(token.get_tokeninfo("public_key_server")),
             default_backend())
         self.assertIsInstance(parsed_server_pubkey, RSAPublicKey)
-        self.assertTrue(token.get_tokeninfo("private_key_server").startswith(u"-----BEGIN RSA PRIVATE KEY-----\n"),
+        self.assertTrue(token.get_tokeninfo("private_key_server").startswith("-----BEGIN RSA PRIVATE KEY-----\n"),
                         token.get_tokeninfo("private_key_server"))
         parsed_server_privkey = serialization.load_pem_private_key(
             to_bytes(token.get_tokeninfo("private_key_server")),
@@ -205,7 +205,7 @@ class PushTokenTestCase(MyTestCase):
 
     def test_02a_lib_enroll(self):
         r = set_smsgateway(self.firebase_config_name,
-                           u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                            "myFB", FB_CONFIG_VALS)
         self.assertTrue(r > 0)
         set_policy("push1", scope=SCOPE.ENROLL,
@@ -220,7 +220,7 @@ class PushTokenTestCase(MyTestCase):
         self.setUp_user_realms()
         # create FireBase Service and policies
         set_smsgateway(self.firebase_config_name,
-                       u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                       'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         set_policy("push1", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
@@ -390,7 +390,7 @@ class PushTokenTestCase(MyTestCase):
         self.setUp_user_realms()
         # create FireBase Service and policies
         set_smsgateway(self.firebase_config_name,
-                       u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                       'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
@@ -1091,7 +1091,7 @@ class PushTokenTestCase(MyTestCase):
                                 PushTokenClass.api_endpoint, req, g)
 
         # Create a correct signature
-        sign_string = u"{new_fb_token}|{serial}|{timestamp}".format(**req_data)
+        sign_string = "{new_fb_token}|{serial}|{timestamp}".format(**req_data)
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),
                                                hashes.SHA256())
@@ -1122,7 +1122,7 @@ class PushTokenTestCase(MyTestCase):
         g.policy_object = PolicyClass()
         # set up the Firebase Gateway
         r = set_smsgateway(self.firebase_config_name,
-                           u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                            "myFB", FB_CONFIG_VALS)
         self.assertGreater(r, 0)
 
@@ -1136,7 +1136,7 @@ class PushTokenTestCase(MyTestCase):
         # create a poll request
         # first create a signature
         ts = timestamp.isoformat()
-        sign_string = u"{serial}|{timestamp}".format(serial=serial, timestamp=ts)
+        sign_string = "{serial}|{timestamp}".format(serial=serial, timestamp=ts)
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),
                                                hashes.SHA256())
@@ -1180,7 +1180,7 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(chall['nonce'], challenge, chall)
         self.assertIn('signature', chall, chall)
         # check that the signature matches
-        sign_string = u"{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**chall)
+        sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**chall)
         parsed_stripped_server_pubkey = serialization.load_pem_public_key(
             to_bytes(self.server_public_key_pem),
             default_backend())
@@ -1300,7 +1300,7 @@ class PushTokenTestCase(MyTestCase):
                                     PushTokenClass.api_endpoint, req, g)
 
         # check for a wrongly created signature (inverted timestamp, serial)
-        sign_string2 = u"{timestamp}|{serial}".format(serial=serial, timestamp=ts)
+        sign_string2 = "{timestamp}|{serial}".format(serial=serial, timestamp=ts)
         sig_fail2 = self.smartphone_private_key.sign(sign_string2.encode('utf8'),
                                                      padding.PKCS1v15(),
                                                      hashes.SHA256())

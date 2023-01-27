@@ -175,7 +175,7 @@ def get_ad_timestamp_now():
 
 
 def trim_objectGUID(userId):
-    userId = uuid.UUID(u"{{{0!s}}}".format(userId)).bytes_le
+    userId = uuid.UUID("{{{0!s}}}".format(userId)).bytes_le
     userId = escape_bytes(userId)
     return userId
 
@@ -311,7 +311,7 @@ class IdResolver (UserIdResolver):
         self.timeout = 5  # seconds!
         self.sizelimit = 500
         self.loginname_attribute = [""]
-        self.searchfilter = u""
+        self.searchfilter = ""
         self.userinfo = {}
         self.multivalueattributes = []
         self.uidtype = ""
@@ -363,7 +363,7 @@ class IdResolver (UserIdResolver):
             # In fact, we need the sAMAccountName. If the username mapping is
             # another attribute than the sAMAccountName the authentication
             # will fail!
-            bind_user = u"{0!s}\\{1!s}".format(domain_name, uinfo.get("username"))
+            bind_user = "{0!s}\\{1!s}".format(domain_name, uinfo.get("username"))
         else:
             bind_user = self._getDN(uid)
 
@@ -499,7 +499,7 @@ class IdResolver (UserIdResolver):
             # get the DN for the Object
             self._bind()
             search_userId = self._trim_user_id(userId)
-            filter = u"(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
+            filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
                                                      self.uidtype,
                                                      search_userId)
             self.l.search(search_base=self.basedn,
@@ -579,11 +579,11 @@ class IdResolver (UserIdResolver):
             # encode utf8, so that also german umlauts work in the DN
             self.l.search(search_base=userId,
                           search_scope=self.scope,
-                          search_filter=u"(&" + self.searchfilter + u")",
+                          search_filter="(&" + self.searchfilter + ")",
                           attributes=list(self.userinfo.values()))
         else:
             search_userId = to_unicode(self._trim_user_id(userId))
-            filter = u"(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
+            filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
                                                      self.uidtype,
                                                      search_userId)
             self.l.search(search_base=self.basedn,
@@ -616,7 +616,7 @@ class IdResolver (UserIdResolver):
                 if ldap_k == map_v:
                     if ldap_k == "objectGUID":
                         # An objectGUID should be no list, since it is unique
-                        if isinstance(ldap_v, six.string_types):
+                        if isinstance(ldap_v, str):
                             ret[map_k] = ldap_v.strip("{").strip("}")
                         else:
                             raise Exception("The LDAP returns an objectGUID, that is no string: {0!s}".format(type(ldap_v)))
@@ -658,7 +658,7 @@ class IdResolver (UserIdResolver):
         login_name = self._escape_loginname(LoginName)
 
         if len(self.loginname_attribute) > 1:
-            loginname_filter = u""
+            loginname_filter = ""
             for l_attribute in self.loginname_attribute:
                 # Special case if we have a guid
                 try:
@@ -666,25 +666,25 @@ class IdResolver (UserIdResolver):
                         search_login_name = trim_objectGUID(login_name)
                     else:
                         search_login_name = login_name
-                    loginname_filter += u"({!s}={!s})".format(l_attribute.strip(),
+                    loginname_filter += "({!s}={!s})".format(l_attribute.strip(),
                                                               search_login_name)
                 except ValueError:
                     # This happens if we have a self.loginname_attribute like ["sAMAccountName","objectGUID"],
                     # the user logs in with his sAMAccountName, which can
                     # not be transformed to a UUID
-                    log.debug(u"Can not transform {0!s} to a objectGUID.".format(login_name))
+                    log.debug("Can not transform {0!s} to a objectGUID.".format(login_name))
 
-            loginname_filter = u"|" + loginname_filter
+            loginname_filter = "|" + loginname_filter
         else:
             if self.loginname_attribute[0].lower() == "objectguid":
                 search_login_name = trim_objectGUID(login_name)
             else:
                 search_login_name = login_name
-            loginname_filter = u"{!s}={!s}".format(self.loginname_attribute[0],
+            loginname_filter = "{!s}={!s}".format(self.loginname_attribute[0],
                                                    search_login_name)
 
         log.debug("login name filter: {!r}".format(loginname_filter))
-        filter = u"(&{0!s}({1!s}))".format(self.searchfilter, loginname_filter)
+        filter = "(&{0!s}({1!s}))".format(self.searchfilter, loginname_filter)
 
         # create search attributes
         attributes = list(self.userinfo.values())
@@ -722,7 +722,7 @@ class IdResolver (UserIdResolver):
             attributes.append(str(self.uidtype))
 
         # do the filter depending on the searchDict
-        filter = u"(&" + self.searchfilter
+        filter = "(&" + self.searchfilter
         for search_key in searchDict.keys():
             # convert to unicode
             searchDict[search_key] = to_unicode(searchDict[search_key])
@@ -730,11 +730,11 @@ class IdResolver (UserIdResolver):
                 comperator = ">="
                 if searchDict[search_key] in ["1", 1]:
                     comperator = "<="
-                filter += u"(&({0!s}{1!s}{2!s})(!({3!s}=0)))".format(
+                filter += "(&({0!s}{1!s}{2!s})(!({3!s}=0)))".format(
                     self.userinfo[search_key], comperator,
                     get_ad_timestamp_now(), self.userinfo[search_key])
             else:
-                filter += u"({0!s}={1!s})".format(self.userinfo[search_key],
+                filter += "({0!s}={1!s})".format(self.userinfo[search_key],
                                                   searchDict[search_key])
         filter += ")"
 
@@ -773,7 +773,7 @@ class IdResolver (UserIdResolver):
         :return: the id of the resolver
         :rtype: str
         """
-        s = u"{0!s}{1!s}{2!s}{3!s}".format(self.uri, self.basedn,
+        s = "{0!s}{1!s}{2!s}{3!s}".format(self.uri, self.basedn,
                                            self.searchfilter,
                                            sorted(self.userinfo.items(), key=itemgetter(0)))
         r = binascii.hexlify(hashlib.sha1(s.encode("utf-8")).digest())
@@ -1094,7 +1094,7 @@ class IdResolver (UserIdResolver):
             # search for users...
             g = l.extend.standard.paged_search(
                 search_base=param["LDAPBASE"],
-                search_filter=u"(&" + param["LDAPSEARCHFILTER"] + ")",
+                search_filter="(&" + param["LDAPSEARCHFILTER"] + ")",
                 search_scope=param.get("SCOPE") or ldap3.SUBTREE,
                 attributes=attributes,
                 paged_size=100,

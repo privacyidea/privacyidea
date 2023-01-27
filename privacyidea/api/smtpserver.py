@@ -136,9 +136,9 @@ def test():
              username=username, password=password, sender=sender,
              tls=tls, timeout=timeout, enqueue_job=enqueue_job)
     r = send_or_enqueue_email(s, recipient,
-                              u"Test Email from privacyIDEA",
-                              u"This is a test email from privacyIDEA. "
-                              u"The configuration {} is working.".format(identifier))
+                              "Test Email from privacyIDEA",
+                              "This is a test email from privacyIDEA. "
+                              "The configuration {} is working.".format(identifier))
 
     g.audit_object.log({'success': r > 0,
                         'info':  r})

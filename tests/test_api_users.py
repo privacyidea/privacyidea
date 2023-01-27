@@ -91,9 +91,9 @@ class APIUsersTestCase(MyApiTestCase):
     def test_01_get_passwd_user(self):
         # create resolver
         with self.app.test_request_context('/resolver/r1',
-                                           data=json.dumps({u"resolver": u"r1",
-                                                 u"type": u"passwdresolver",
-                                                 u"fileName": PWFILE}),
+                                           data=json.dumps({"resolver": "r1",
+                                                 "type": "passwdresolver",
+                                                 "fileName": PWFILE}),
                                            method='POST',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
@@ -102,10 +102,10 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertEqual(res.json['result']['value'], 1, res.json)
         
         # create realm
-        realm = u"realm1"
-        resolvers = u"r1, r2"
+        realm = "realm1"
+        resolvers = "r1, r2"
         with self.app.test_request_context('/realm/{0!s}'.format(realm),
-                                           data={u"resolvers": resolvers},
+                                           data={"resolvers": resolvers},
                                            method='POST',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
@@ -117,7 +117,7 @@ class APIUsersTestCase(MyApiTestCase):
                    
         # get user list
         with self.app.test_request_context('/user/',
-                                           query_string=urlencode({u"realm":
+                                           query_string=urlencode({"realm":
                                                                        realm}),
                                            method='GET',
                                            headers={"Authorization": self.at}):
@@ -131,7 +131,7 @@ class APIUsersTestCase(MyApiTestCase):
 
         # get user list with search dict
         with self.app.test_request_context('/user/',
-                                           query_string=urlencode({u"username":
+                                           query_string=urlencode({"username":
                                                                        "cornelius"}),
                                            method='GET',
                                            headers={"Authorization": self.at}):
@@ -281,7 +281,7 @@ class APIUsersTestCase(MyApiTestCase):
         # CREATE a user
         with self.app.test_request_context('/user/',
                                            method='POST',
-                                           data={"user": u"wördy",
+                                           data={"user": "wördy",
                                                  "resolver": resolver,
                                                  "surname": "zappa",
                                                  "givenname": "frank",
@@ -299,19 +299,19 @@ class APIUsersTestCase(MyApiTestCase):
         with self.app.test_request_context('/user/',
                                            method='GET',
                                            query_string=urlencode(
-                                               {"username": u"wördy".encode('utf-8')}),
+                                               {"username": "wördy".encode('utf-8')}),
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
-            self.assertEqual(result.get("value")[0].get("username"), u"wördy")
+            self.assertEqual(result.get("value")[0].get("username"), "wördy")
 
         # Update by administrator. Set the password to "passwort"
         with self.app.test_request_context('/user/',
                                            method='PUT',
                                            query_string=urlencode(
-                                               {"user": u"wördy".encode('utf-8'),
+                                               {"user": "wördy".encode('utf-8'),
                                                 "resolver": resolver,
                                                 "password": "passwort"}),
                                            headers={'Authorization': self.at}):
@@ -323,7 +323,7 @@ class APIUsersTestCase(MyApiTestCase):
         # Get user authentication and update by user.
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username": u"wördy@{0!s}".format(realm).encode('utf-8'),
+                                           data={"username": "wördy@{0!s}".format(realm).encode('utf-8'),
                                                  "password": "passwort"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -340,7 +340,7 @@ class APIUsersTestCase(MyApiTestCase):
         with self.app.test_request_context('/user/',
                                            method='PUT',
                                            query_string=urlencode(
-                                               {"user": u"wördy2".encode('utf-8'),
+                                               {"user": "wördy2".encode('utf-8'),
                                                 "resolver": resolver,
                                                 "password": "newPassword"}),
                                            headers={'Authorization':
@@ -354,7 +354,7 @@ class APIUsersTestCase(MyApiTestCase):
         # "wördy2", he updated his own password.
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username": u"wördy@{0!s}".format(realm).encode('utf-8'),
+                                           data={"username": "wördy@{0!s}".format(realm).encode('utf-8'),
                                                  "password": "newPassword"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -367,7 +367,7 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(role == "user", result)
 
         # Delete the users
-        with self.app.test_request_context(u'/user/{0!s}/{1!s}'.format(resolver, u"wördy").encode('utf-8'),
+        with self.app.test_request_context('/user/{0!s}/{1!s}'.format(resolver, "wördy").encode('utf-8'),
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()

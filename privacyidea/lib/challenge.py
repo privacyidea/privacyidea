@@ -90,7 +90,7 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     sql_query = _create_challenge_query(serial=serial,
                                         transaction_id=transaction_id)
 
-    if isinstance(sortby, six.string_types):
+    if isinstance(sortby, str):
         # convert the string to a Challenge column
         cols = Challenge.__table__.columns
         sortby = cols.get(sortby)

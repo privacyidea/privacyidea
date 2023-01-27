@@ -195,8 +195,8 @@ class LibPolicyTestCase(MyTestCase):
                                         options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
-                         u"user does not exist, accepted due "
-                         u"to 'pol1'")
+                         "user does not exist, accepted due "
+                         "to 'pol1'")
         delete_policy("pol1")
 
     def test_04a_user_does_not_exist_without_resolver(self):
@@ -221,8 +221,8 @@ class LibPolicyTestCase(MyTestCase):
                                       options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
-                         u"user does not exist, accepted due "
-                         u"to 'pol1'")
+                         "user does not exist, accepted due "
+                         "to 'pol1'")
         delete_policy("pol1")
 
     def test_05_user_has_no_tokens(self):
@@ -247,8 +247,8 @@ class LibPolicyTestCase(MyTestCase):
                                       options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
-                         u"user has no token, accepted due to "
-                         u"'pol1'")
+                         "user has no token, accepted due to "
+                         "'pol1'")
         delete_policy("pol1")
 
     @radiusmock.activate
@@ -276,7 +276,7 @@ class LibPolicyTestCase(MyTestCase):
                                 options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
-                         u"against userstore due to 'pol1'")
+                         "against userstore due to 'pol1'")
 
         # Now set a PASSTHRU policy to the userstore (new style)
         set_policy(name="pol1",
@@ -290,7 +290,7 @@ class LibPolicyTestCase(MyTestCase):
                                 options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
-                         u"against userstore due to 'pol1'")
+                         "against userstore due to 'pol1'")
 
         # Now set a PASSTHRU policy to a RADIUS config (new style)
         radiusmock.setdata(response=radiusmock.AccessAccept)
@@ -308,7 +308,7 @@ class LibPolicyTestCase(MyTestCase):
                                 options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
-                         u"against RADIUS server radiusconfig1 due to 'pol1'")
+                         "against RADIUS server radiusconfig1 due to 'pol1'")
 
         # Now assign a token to the user. If the user has a token and the
         # passthru policy is set, the user must not be able to authenticate
@@ -709,7 +709,7 @@ class LibPolicyTestCase(MyTestCase):
                                 options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
-                         u"against userstore due to 'pol1'")
+                         "against userstore due to 'pol1'")
 
         # Now add a PASSTHRU policy to a RADIUS config
         radiusmock.setdata(response=radiusmock.AccessAccept)
@@ -734,7 +734,7 @@ class LibPolicyTestCase(MyTestCase):
         rv = auth_user_passthru(check_user_pass, user, passw, options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
-                         u"against RADIUS server radiusconfig1 due to 'pol2'")
+                         "against RADIUS server radiusconfig1 due to 'pol2'")
 
         # Lower pol2 priority
         set_policy(name="pol2", priority=3)
@@ -742,7 +742,7 @@ class LibPolicyTestCase(MyTestCase):
         rv = auth_user_passthru(check_user_pass, user, passw, options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
-                         u"against userstore due to 'pol1'")
+                         "against userstore due to 'pol1'")
 
         # Add old style priority
         set_policy(name="pol3",
@@ -752,7 +752,7 @@ class LibPolicyTestCase(MyTestCase):
         rv = auth_user_passthru(check_user_pass, user, passw, options=options)
         self.assertTrue(rv[0])
         self.assertEqual(rv[1].get("message"),
-                         u"against userstore due to 'pol3'")
+                         "against userstore due to 'pol3'")
         set_policy(name="pol3", priority=2)
 
         # They will conflict, because they use the same priority
@@ -914,8 +914,8 @@ class LibPolicyTestCase(MyTestCase):
 
         rv = auth_user_passthru(check_user_pass, user, passw, options=options)
         self.assertTrue(rv[0])
-        self.assertTrue(u"against RADIUS server radiusconfig1 due to 'pol1'" in rv[1].get("message"))
-        self.assertTrue(u"autoassigned TOKMATCH" in rv[1].get("message"))
+        self.assertTrue("against RADIUS server radiusconfig1 due to 'pol1'" in rv[1].get("message"))
+        self.assertTrue("autoassigned TOKMATCH" in rv[1].get("message"))
 
         # Check if the token is assigned and can authenticate
         r = check_user_pass(User("cornelius", "r1"), "test{0!s}".format(self.valid_otp_values[2]))

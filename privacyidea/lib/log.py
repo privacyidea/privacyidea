@@ -91,7 +91,7 @@ class log_with(object):
     specific logger.
     """
     # Customize these messages
-    ENTRY_MESSAGE = u'Entering {0} with arguments {1} and keywords {2}'
+    ENTRY_MESSAGE = 'Entering {0} with arguments {1} and keywords {2}'
     EXIT_MESSAGE = 'Exiting {0} with result {1}'
     
     def __init__(self, logger=None, log_entry=True, log_exit=True,

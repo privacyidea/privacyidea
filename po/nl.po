@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-12-22 23:49+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2023-01-25 07:47+0000\n"
+"Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/nl/>\n"
 "Language: nl\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.15.1-dev\n"
+"X-Generator: Weblate 4.16-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -58,6 +58,10 @@ msgid ""
 "\"true\"></span>\n"
 "                    <span translate>Subscriptions</span></a>"
 msgstr ""
+"<a ui-sref=\"component.subscriptions\">\n"
+"                    <span class=\"glyphicon glyphicon-calendar\" aria-hidden="
+"\"true\"></span>\n"
+"                    <span translate>Inschrijvingen</span></a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
@@ -288,7 +292,7 @@ msgstr "ID plaats"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:682
 msgid "Abort operation on unverifiable token"
-msgstr ""
+msgstr "Operatie afbreken bij onverifieerbaar token"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
@@ -583,11 +587,11 @@ msgstr "CA sleutel"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:82
 msgid "CA certificate (filename)"
-msgstr ""
+msgstr "CA certificate (bestandsnaam)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:137
 msgid "CA specific options"
-msgstr ""
+msgstr "CA specifieke opties"
 
 #: privacyidea/static/components/config/views/config.html:73
 msgid "CAs"
@@ -761,11 +765,11 @@ msgstr "Cliënt deel"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:95
 msgid "Client certificate (filename)"
-msgstr ""
+msgstr "Client certificaat (bestandsnaam)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:108
 msgid "Client private key (filename)"
-msgstr ""
+msgstr "Client private sleutel (bestandsnaam)"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:36
 msgid "Clients"
@@ -855,7 +859,7 @@ msgstr "Maak een nieuwe lokale CA-connector"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:7
 msgid "Create a new Microsoft CA Connector"
-msgstr ""
+msgstr "Maak een nieuwe Microsoft CA Connector"
 
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:7
 msgid "Create a new Passwd Resolver"
@@ -891,7 +895,7 @@ msgstr "Maak een nieuwe SQL resolver"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:5
 msgid "Create a new Tokengroup {{ params.groupname }}"
-msgstr ""
+msgstr "Maak een nieuwe tokengroep {{ params.groupname }}"
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:7
 msgid ""
@@ -1096,7 +1100,7 @@ msgstr "Gebruik geen authenticatieteller per token."
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:680
 msgid "Do not verify the authenticity"
-msgstr ""
+msgstr "Authenticiteit niet verifiëren"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:16
 msgid ""
@@ -1116,7 +1120,7 @@ msgstr "Wil je echt de gebruiker verwijderen uit de gebruikersopslag?"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:148
 msgid "Domain CA"
-msgstr ""
+msgstr "Domein CA"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:3
 msgid "Download"
@@ -1200,6 +1204,8 @@ msgid ""
 "Edit Microsoft CA Connector\n"
 "        {{ connectorname }}"
 msgstr ""
+"Bewerk Microsoft CA Connector\n"
+"        {{ connectorname }}"
 
 #: privacyidea/static/components/machine/views/machine.details.html:94
 #: privacyidea/static/components/token/views/token.details.html:633
@@ -1245,7 +1251,7 @@ msgstr "Bewerk SQL-resolverr {{ resolvername }}"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:2
 msgid "Edit Tokengroup {{ groupname }}"
-msgstr ""
+msgstr "Bewerk token-groep {{ groupname }}"
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:3
 msgid ""
@@ -1539,7 +1545,7 @@ msgstr "Vraag systeem-documentatie op"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:140
 msgid "Get available CAs"
-msgstr ""
+msgstr "Haal beschikbare CA's op"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:418
 msgid "Get the Authenticator App for Android."
@@ -1591,67 +1597,67 @@ msgstr "Kopteksten (JSON formaat)"
 
 #: privacyidea/static/components/config/views/config.events.html:20
 msgid "Help about Events"
-msgstr ""
+msgstr "Hulp over gebeurtenissen"
 
 #: privacyidea/static/components/config/views/config.policies.html:21
 msgid "Help about Policies"
-msgstr ""
+msgstr "Hulp over  beleid"
 
 #: privacyidea/static/components/config/views/config.radius.html:19
 msgid "Help about RADIUS-Server"
-msgstr ""
+msgstr "Hulp over RADIUS-Server"
 
 #: privacyidea/static/components/config/views/config.realms.html:17
 msgid "Help about Realms"
-msgstr ""
+msgstr "Hulp over realms"
 
 #: privacyidea/static/components/config/views/config.smsgateway.html:20
 msgid "Help about SMS-Gateways"
-msgstr ""
+msgstr "Hulp over SMS-Gateways"
 
 #: privacyidea/static/components/config/views/config.smtp.html:19
 msgid "Help about SMTP-Servers"
-msgstr ""
+msgstr "Hulp over SMTP-servers"
 
 #: privacyidea/static/components/token/views/token.html:90
 msgid "Help about Token"
-msgstr ""
+msgstr "Hulp over Token"
 
 #: privacyidea/static/components/token/views/token.html:108
 msgid "Help about Token Details"
-msgstr ""
+msgstr "Hulp over token-details"
 
 #: privacyidea/static/components/token/views/token.html:102
 msgid "Help about Token Import"
-msgstr ""
+msgstr "Help over token-import"
 
 #: privacyidea/static/components/config/views/config.tokens.html:64
 msgid "Help about Token Settings"
-msgstr ""
+msgstr "Help over token-instellingen"
 
 #: privacyidea/static/components/token/views/token.html:96
 msgid "Help about Tokentypes"
-msgstr ""
+msgstr "Help over token-types"
 
 #: privacyidea/static/components/user/views/user.html:68
 msgid "Help about User Details"
-msgstr ""
+msgstr "Help over gebruikersdetails"
 
 #: privacyidea/static/components/config/views/config.resolvers.html:34
 msgid "Help about UserResolver"
-msgstr ""
+msgstr "Help over gebruikers-resolver"
 
 #: privacyidea/static/components/user/views/user.html:56
 msgid "Help about Users"
-msgstr ""
+msgstr "Help over gebruikers"
 
 #: privacyidea/static/components/user/views/user.html:62
 msgid "Help about manage Users"
-msgstr ""
+msgstr "Help over gebruikersbeheer"
 
 #: privacyidea/static/components/config/views/config.tokengroup.html:19
 msgid "Help on Tokengroups"
-msgstr ""
+msgstr "Help over token-groepen"
 
 #: privacyidea/static/components/config/views/config.token.sms.html:8
 msgid ""
@@ -1895,7 +1901,7 @@ msgstr "Sleutel"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:147
 msgid "Keyfile Path"
-msgstr ""
+msgstr "Pad sleutelbestand"
 
 #: privacyidea/static/components/audit/views/audit.log.html:8
 #: privacyidea/static/components/machine/views/machine.details.html:42
@@ -1936,7 +1942,7 @@ msgstr "Lijst SMTP-server definities"
 
 #: privacyidea/static/components/config/views/config.tokengroup.html:7
 msgid "List Tokengroup definitions"
-msgstr ""
+msgstr "Lijst token-groepdefinities"
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.html:7
 msgid ""
@@ -2068,11 +2074,11 @@ msgstr "Methode"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:31
 msgid "Microsoft CA worker hostname"
-msgstr ""
+msgstr "Microsoft CA worker hostnaam"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:44
 msgid "Microsoft CA worker port"
-msgstr ""
+msgstr "Microsoft CA worker poort"
 
 #: privacyidea/static/components/register/views/register.html:57
 #: privacyidea/static/components/register/views/register.html:60
@@ -2115,7 +2121,7 @@ msgstr "Nieuwe SMTP-server"
 
 #: privacyidea/static/components/config/views/config.tokengroup.html:12
 msgid "New Tokengroup definition"
-msgstr ""
+msgstr "Nieuwe token-groepdefinitie"
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.html:13
 msgid "New privacyIDEA server"
@@ -2380,7 +2386,7 @@ msgstr "Wachtwoord hash voor bewerkbare gebruikers"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:121
 msgid "Password of encrypted client private key"
-msgstr ""
+msgstr "Wachtwoord van de geëncrypteerde client private sleutel"
 
 #: privacyidea/static/components/user/controllers/userControllers.js:97
 msgid "Password set successfully."
@@ -2596,6 +2602,9 @@ msgid ""
 "                        <a ui-sref=\"config.realms.list\" translate>Edit "
 "realms</a>"
 msgstr ""
+"Quick links\n"
+"                        <a ui-sref=\"config.realms.list\" translate>Bewerk "
+"realms</a>"
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
 msgid "RADIUS Config saved."
@@ -2955,7 +2964,7 @@ msgstr "Bewaar systeemconfiguratie"
 
 #: privacyidea/static/components/token/views/token.details.html:369
 msgid "Save Token Groups"
-msgstr ""
+msgstr "Bewaar token-groepen"
 
 #: privacyidea/static/components/token/views/token.details.html:281
 msgid "Save Token Info"
@@ -2963,7 +2972,7 @@ msgstr "Bewaar token-info"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:39
 msgid "Save Tokengroup"
-msgstr ""
+msgstr "Bewaar token-groep"
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:90
 msgid "Save privacyIDEA server"
@@ -3176,7 +3185,7 @@ msgstr "Limiet grootte"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:681
 msgid "Skip tokens that can not be verified"
-msgstr ""
+msgstr "Tokens die niet geverifieerd kunnen worden overslaan"
 
 #: privacyidea/static/components/token/views/token.import.html:141
 msgid "Skipped Tokens"
@@ -4327,6 +4336,8 @@ msgid ""
 "This is the unique identifying name\n"
 "                for this group definition."
 msgstr ""
+"Dit is de unieke identificatienaam\n"
+"                voor deze groepsdefinitie."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:22
 msgid ""
@@ -4532,11 +4543,11 @@ msgstr "Is token {{ selectedToken.serial }} verloren?"
 
 #: privacyidea/static/components/config/controllers/tokengroupController.js:71
 msgid "Tokengroup saved."
-msgstr ""
+msgstr "Token-groep bewaard."
 
 #: privacyidea/static/components/config/views/config.system.html:55
 msgid "Tokengroups"
-msgstr ""
+msgstr "Token-groepen"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:33
 #: privacyidea/static/components/config/views/config.html:44
@@ -4648,7 +4659,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:56
 msgid "Use HTTP proxy"
-msgstr ""
+msgstr "Gebruik HTTP-proxy"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:70
 msgid "Use SSL"
@@ -4965,7 +4976,7 @@ msgstr "Je zult afgemeld worden in {{ myCountdown }} seconden."
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:8
 msgid "Your CSR to the certificate authority failed."
-msgstr ""
+msgstr "Je CSR naar de certificaatsauthoriteit mislukt."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:396
 msgid "Your OTP pin expires on"
@@ -4976,6 +4987,8 @@ msgid ""
 "Your certificate request is taken under submission and waiting for\n"
 "    administrative approval."
 msgstr ""
+"Je certificaatsaanvraag is in onderzoek en wacht op \n"
+"    administratieve goedkeuring."
 
 #: privacyidea/static/components/user/views/user.html:12
 #: privacyidea/static/components/user/views/user.password.html:2
@@ -5282,9 +5295,8 @@ msgid "revoked"
 msgstr "ingetrokken"
 
 #: privacyidea/static/components/token/views/token.list.html:64
-#, fuzzy
 msgid "rollout state"
-msgstr "Uitrolstatus"
+msgstr "uitrolstatus"
 
 #: privacyidea/static/components/audit/views/audit.log.html:63
 #: privacyidea/static/components/token/views/token.challenges.html:26
@@ -5345,7 +5357,7 @@ msgstr "achternaam"
 
 #: privacyidea/static/components/audit/views/audit.log.html:118
 msgid "thread_id"
-msgstr ""
+msgstr "thread_id"
 
 #: privacyidea/static/components/token/views/token.challenges.html:20
 msgid "timestamp"

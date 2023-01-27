@@ -36,8 +36,8 @@ class APIResolverTestCase(MyApiTestCase):
     def test_00_create_resolver(self):
         
         with self.app.test_request_context('/resolver/r1',
-                                           data={u"type": u"passwdresolver",
-                                                 u"fileName": u"/etc/passwd"},
+                                           data={"type": "passwdresolver",
+                                                 "fileName": "/etc/passwd"},
                                            method='POST',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
@@ -55,10 +55,10 @@ class APIResolverTestCase(MyApiTestCase):
             self.assertTrue(b'"resolvername": "r1"' in res.data, res.data)
             
     def test_01_create_realm(self):
-        realm = u"realm1"
-        resolvers = u"r1, r2"
+        realm = "realm1"
+        resolvers = "r1, r2"
         with self.app.test_request_context('/realm/{0!s}'.format(realm),
-                                           data={u"resolvers": resolvers},
+                                           data={"resolvers": resolvers},
                                            method='POST',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()

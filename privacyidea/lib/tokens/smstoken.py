@@ -166,7 +166,7 @@ class SmsTokenClass(HotpTokenClass):
     """
     def __init__(self, db_token):
         HotpTokenClass.__init__(self, db_token)
-        self.set_type(u"sms")
+        self.set_type("sms")
         self.mode = ['challenge']
         self.hKeyRequired = True
 
@@ -224,7 +224,7 @@ class SmsTokenClass(HotpTokenClass):
                    SCOPE.ADMIN: {
                        SMSACTION.GATEWAYS: {
                            'type': 'str',
-                           'desc': u"{0!s} ({1!s})".format(
+                           'desc': "{0!s} ({1!s})".format(
                                _('Choose the gateways the administrator is allowed to set.'),
                                " ".join(sms_gateways))
                        }
@@ -232,7 +232,7 @@ class SmsTokenClass(HotpTokenClass):
                    SCOPE.USER: {
                        SMSACTION.GATEWAYS: {
                            'type': 'str',
-                           'desc': u"{0!s} ({1!s})".format(
+                           'desc': "{0!s} ({1!s})".format(
                                _('Choose the gateways the user is allowed to set.'),
                                " ".join(sms_gateways))
                        }

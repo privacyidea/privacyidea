@@ -618,7 +618,7 @@ class GPGImport(object):
             self.gpg = gnupg.GPG(gnupghome=self.gnupg_home)
             self.private_keys = self.gpg.list_keys(True)
         else:
-            log.warning(u"Directory {} does not exists!".format(self.gnupg_home))
+            log.warning("Directory {} does not exists!".format(self.gnupg_home))
 
 
 
@@ -635,7 +635,7 @@ class GPGImport(object):
             keys = self.gpg.list_keys(secret=True)
         else:
             keys = []
-            log.warning(u"Directory {} does not exists!".format(self.gnupg_home))
+            log.warning("Directory {} does not exists!".format(self.gnupg_home))
 
         for key in keys:
             ascii_armored_public_key = self.gpg.export_keys(key.get("keyid"))
@@ -659,7 +659,7 @@ class GPGImport(object):
         decrypted = self.gpg.decrypt(message=input_data)
 
         if not decrypted.ok:
-            log.error(u"Decrpytion failed: {0!s}. {1!s}".format(
+            log.error("Decrpytion failed: {0!s}. {1!s}".format(
                 decrypted.status, decrypted.stderr))
             raise Exception(decrypted.stderr)
 
@@ -784,7 +784,7 @@ def export_pskc(tokenobj_list, psk=None):
             soup.macmethod.insert_after(kp2)
             number_of_exported_tokens += 1
         except Exception as e:
-            log.warning(u"Failed to export the token {0!s}: {1!s}".format(serial, e))
+            log.warning("Failed to export the token {0!s}: {1!s}".format(serial, e))
             tb = traceback.format_exc()
             log.debug(tb)
 

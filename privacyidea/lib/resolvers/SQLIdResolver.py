@@ -77,7 +77,7 @@ class phpass_drupal(uh.HasRounds, uh.HasSalt, uh.GenericHandler):  # pragma: no 
     max_rounds = 30
     rounds_cost = "log2"
 
-    ident = u'$S$'
+    ident = '$S$'
 
     @classmethod
     def from_string(cls, hash):
@@ -93,10 +93,10 @@ class phpass_drupal(uh.HasRounds, uh.HasSalt, uh.GenericHandler):  # pragma: no 
         )
 
     def to_string(self):
-        hash = u"%s%s%s%s" % (self.ident,
+        hash = "%s%s%s%s" % (self.ident,
                               h64.encode_int6(self.rounds).decode("ascii"),
                               self.salt,
-                              self.checksum or u'')
+                              self.checksum or '')
         return uascii_to_str(hash)
 
     def _calc_checksum(self, secret):
@@ -150,7 +150,7 @@ class _SaltedBase64DigestHelper(uh.HasRawSalt, uh.HasRawChecksum, uh.GenericHand
 
 class ldap_salted_sha256(_SaltedBase64DigestHelper):
     name = 'ldap_salted_sha256'
-    ident = u'{SSHA256}'
+    ident = '{SSHA256}'
     checksum_size = 32
     max_salt_size = 32
     _hash_func = hashlib.sha256
@@ -159,7 +159,7 @@ class ldap_salted_sha256(_SaltedBase64DigestHelper):
 
 class ldap_salted_sha512(_SaltedBase64DigestHelper):
     name = 'ldap_salted_sha512'
-    ident = u'{SSHA512}'
+    ident = '{SSHA512}'
     checksum_size = 64
     max_salt_size = 64
     _hash_func = hashlib.sha512
@@ -555,8 +555,8 @@ class IdResolver (UserIdResolver):
         return self
 
     def _create_engine(self):
-        log.info(u"using the connect string "
-                 u"{0!s}".format(censor_connect_string(self.connect_string)))
+        log.info("using the connect string "
+                 "{0!s}".format(censor_connect_string(self.connect_string)))
         try:
             log.debug("using pool_size={0!s}, pool_timeout={1!s}, pool_recycle={2!s}".format(
                 self.pool_size, self.pool_timeout, self.pool_recycle))
@@ -614,12 +614,12 @@ class IdResolver (UserIdResolver):
         password = ""
         conParams = ""
         if param.get("Port"):
-            port = u":{0!s}".format(param.get("Port"))
+            port = ":{0!s}".format(param.get("Port"))
         if param.get("Password"):
-            password = u":{0!s}".format(param.get("Password"))
+            password = ":{0!s}".format(param.get("Password"))
         if param.get("conParams"):
-            conParams = u"?{0!s}".format(param.get("conParams"))
-        connect_string = u"{0!s}://{1!s}{2!s}{3!s}{4!s}{5!s}/{6!s}{7!s}".format(param.get("Driver") or "",
+            conParams = "?{0!s}".format(param.get("conParams"))
+        connect_string = "{0!s}://{1!s}{2!s}{3!s}{4!s}{5!s}/{6!s}{7!s}".format(param.get("Driver") or "",
                                                    param.get("User") or "",
                                                    password,
                                                    "@" if (param.get("User")
@@ -654,7 +654,7 @@ class IdResolver (UserIdResolver):
         desc = None
 
         connect_string = cls._create_connect_string(param)
-        log.info(u"using the connect string {0!s}".format(censor_connect_string(connect_string)))
+        log.info("using the connect string {0!s}".format(censor_connect_string(connect_string)))
         engine = create_engine(connect_string)
         # create a configured "Session" class
         Session = scoped_session(sessionmaker(bind=engine))
