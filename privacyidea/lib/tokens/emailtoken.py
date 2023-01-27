@@ -418,7 +418,7 @@ class EmailTokenClass(HotpTokenClass):
         return autosms
 
     @log_with(log)
-    def _compose_email(self, options, message="<otp>", subject="Your OTP", mimetype="plain"):
+    def _compose_email(self, message="<otp>", subject="Your OTP", mimetype="plain", options=None):
         """
         send email
 
@@ -436,6 +436,7 @@ class EmailTokenClass(HotpTokenClass):
         recipient = self._email_address
         otp = self.get_otp()[2]
         serial = self.get_serial()
+        options = options or {}
         challenge = options.get("challenge")
 
         message = message.replace("<otp>", otp)
