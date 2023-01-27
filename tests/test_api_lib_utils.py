@@ -7,12 +7,13 @@ from .base import MyApiTestCase
 from privacyidea.api.lib.utils import (getParam,
                                        check_policy_name,
                                        verify_auth_token, is_fqdn, attestation_certificate_allowed,
-                                       get_priority_from_param, get_all_params)
+                                       get_priority_from_param)
 from privacyidea.lib.error import ParameterError
 import jwt
 import mock
 import datetime
 import warnings
+from six.moves.urllib.parse import quote
 from privacyidea.lib.error import AuthError
 from privacyidea.lib.token import init_token, remove_token
 
@@ -131,8 +132,8 @@ class UtilsTestCase(MyApiTestCase):
                                              "resolver": "resolverX"},
                                     key=key,
                                     algorithm="RS256")
-            r = verify_auth_token(auth_token=auth_token,
-                                  required_role="user")
+            verify_auth_token(auth_token=auth_token,
+                              required_role="user")
             mock_log.assert_any_call("A given JWT definition does not match.")
 
     def test_04_check_jwt_username_in_audit(self):
@@ -248,3 +249,44 @@ class UtilsTestCase(MyApiTestCase):
             # We see the message in the log, that the JSON data was read
             mock_log.assert_any_call(u"Update params in request POST http://localhost/token/init with values.")
         remove_token(serial)
+
+    def test_09_check_unquote(self):
+        self.setUp_user_realms()
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={'username': 'pwpercent',
+                                                 'password': 'pw%45#test'},
+                                           headers={'User-Agent': 'some-generic-agent/1.0'}):
+            res = self.app.full_dispatch_request()
+            # when using a generic user agent, we assume unquoting is required.
+            # This will lead to a failed /auth request since the password is changed
+            self.assertTrue(res.status_code == 401, res)
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={'username': 'pwpercent',
+                                                 'password': quote('pw%45#test')},
+                                           headers={'User-Agent': 'some-generic-agent/1.0'}):
+            res = self.app.full_dispatch_request()
+            # When quoting the password before sending, this should be fine
+            self.assertTrue(res.status_code == 200, res)
+
+        # The LDAP-Proxy does not quote the parameters before sending
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={'username': 'pwpercent',
+                                                 'password': 'pw%45#test'},
+                                           headers={'User-Agent': 'privacyIDEA-LDAP-Proxy'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # We might be versioning the user-agent in the future
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={'username': 'pwpercent',
+                                                 'password': 'pw%45#test'},
+                                           headers={'User-Agent': 'privacyIDEA-LDAP-Proxy/1.0'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # TODO: check if unquoting of url-params (view-args) should be considered as well
