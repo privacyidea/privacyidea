@@ -100,11 +100,11 @@ class HttpSMSProvider(ISMSProvider):
                 if k not in self.parameters().get("parameters"):
                     # This is an additional option
                     v = v.format(otp=message, phone=phone)
-                    if v.startswith('['):
+                    if v.startswith('[') and v.endswith(']'):
                         try:
                             parameter[k] = json.loads(v)
                         except json.decoder.JSONDecodeError:
-                            log.warning(u"Is not a valid JSON list. "
+                            log.warning(u"Error in JSON list definition. "
                                     u"Please check your parameter:'{0!s}' with value:'{1!s}'".format(k,v))
                             continue
                     else:
