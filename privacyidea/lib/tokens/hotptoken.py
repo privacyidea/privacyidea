@@ -824,6 +824,7 @@ class HotpTokenClass(TokenClass):
         :param user_obj: A user object
         :return: None, the content is modified
         """
+        message = _("Please scan the QR code!")
         token_obj = init_token({"type": cls.get_class_type(),
                                 "genkey": 1}, user=user_obj)
         content.get("result")["value"] = False
@@ -838,12 +839,13 @@ class HotpTokenClass(TokenClass):
         init_details = token_obj.get_init_detail(params=enroll_params,
                                                  user=user_obj)
         detail["transaction_ids"] = [c[2]]
+        detail["messages"] = message
         chal = {"transaction_id": c[2],
                 "image": init_details.get("googleurl").get("img"),
                 "client_mode": CLIENTMODE.INTERACTIVE,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
-                "message": _("Please scan the QR code!")}
+                "message": message}
         detail["multi_challenge"] = [chal]
         detail.update(chal)
 
