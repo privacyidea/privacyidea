@@ -839,7 +839,7 @@ class HotpTokenClass(TokenClass):
         init_details = token_obj.get_init_detail(params=enroll_params,
                                                  user=user_obj)
         detail["transaction_ids"] = [c[2]]
-        detail["messages"] = message
+        detail["messages"] = [ message ]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("googleurl").get("img"),
                 "client_mode": CLIENTMODE.INTERACTIVE,
