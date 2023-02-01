@@ -274,7 +274,7 @@
                     <button class="btn btn-primary"
                             id="tiEditButton"
                             ng-hide="editTokenInfo || (!checkRight('set') && hide_buttons)"
-                            ng-disable="!checkRight('set')"
+                            ng-disabled="!checkRight('set')"
                             ng-click="startEditTokenInfo()"
                             translate>Edit
                     </button>
@@ -317,7 +317,7 @@
                     <button class="btn btn-primary"
                             id="trEditButton"
                             ng-hide="editTokenRealm || (!checkRight('tokenrealms') && hide_buttons)"
-                            ng-disable="!checkRight('tokenrealms')"
+                            ng-disabled="!checkRight('tokenrealms')"
                             ng-click="startEditRealm()"
                             translate>Edit
                     </button>
@@ -362,7 +362,7 @@
                     <button class="btn btn-primary"
                             id="tgEditButton"
                             ng-hide="editTokenGroups || (!checkRight('tokengroups') && hide_buttons)"
-                            ng-disable="!checkRight('tokengroups')"
+                            ng-disabled="!checkRight('tokengroups')"
                             ng-click="startEditTokenGroups()"
                             translate>Edit
                     </button>

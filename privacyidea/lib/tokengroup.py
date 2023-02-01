@@ -23,14 +23,11 @@ This module contains the functions to manage tokengroups.
 It depends on the models
 """
 
-import traceback
-import string
-import datetime
-import os
 import logging
 
-from privacyidea.lib.error import privacyIDEAError
-from privacyidea.models import Tokengroup, db
+from privacyidea.lib.utils import fetch_one_resource
+from privacyidea.lib.error import privacyIDEAError, ResourceNotFoundError
+from privacyidea.models import Tokengroup, TokenTokengroup, db
 
 log = logging.getLogger(__name__)
 
@@ -41,14 +38,36 @@ def set_tokengroup(name, description=None):
     return Tokengroup(name, description).save()
 
 
-def delete_tokengroup(name=None, id=None):
-    if not name and not id:
-        raise privacyIDEAError("You need to specify either a tokengroup ID or a name.")
-    if id:
-        Tokengroup.query.filter_by(id=id).delete()
-    elif name:
-        Tokengroup.query.filter_by(name=name).delete()
-    db.session.commit()
+def delete_tokengroup(name=None, tokengroup_id=None):
+    """
+    Delete the tokengroup given by either name or id.
+    If there are still tokens assigned to the tokengroup, the function fails
+    with an error.
+
+    :param name: Name of the tokengroup to be deleted
+    :type name: str
+    :param tokengroup_id: ID of the tokengroup to be deleted
+    :type tokengroup_id: int
+    """
+    tg = None
+    if name:
+        tg = fetch_one_resource(Tokengroup, name=name)
+    if tokengroup_id:
+        if tg:
+            if tg.id != tokengroup_id:
+                raise privacyIDEAError('ID of tokengroup with name {0!s} does not '
+                                       'match given ID ({1:d}).'.format(name, tokengroup_id))
+        else:
+            tg = fetch_one_resource(Tokengroup, id=tokengroup_id)
+    if tg:
+        tok_cnt = TokenTokengroup.query.filter_by(tokengroup_id=tg.id).count()
+        if tok_cnt > 0:
+            raise privacyIDEAError('The tokengroup with name {0!s} still has '
+                                   '{1:d} tokens assigned.'.format(tg.name, tok_cnt))
+        tg.delete()
+        db.session.commit()
+    else:
+        raise ResourceNotFoundError("You need to specify either a tokengroup ID or a name.")
 
 
 def get_tokengroups(name=None, id=None):
