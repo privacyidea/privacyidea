@@ -60,10 +60,10 @@ def delete_tokengroup(name=None, tokengroup_id=None):
         else:
             tg = fetch_one_resource(Tokengroup, id=tokengroup_id)
     if tg:
-        tok_cnt = TokenTokengroup.query.filter_by(tokengroup_id=tg.id).count()
-        if tok_cnt > 0:
+        tok_count = TokenTokengroup.query.filter_by(tokengroup_id=tg.id).count()
+        if tok_count > 0:
             raise privacyIDEAError('The tokengroup with name {0!s} still has '
-                                   '{1:d} tokens assigned.'.format(tg.name, tok_cnt))
+                                   '{1:d} tokens assigned.'.format(tg.name, tok_count))
         tg.delete()
         db.session.commit()
     else:
