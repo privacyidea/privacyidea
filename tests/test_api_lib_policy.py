@@ -3351,7 +3351,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         req.User = User()
 
-        # Check, if that there is no parameter set
+        # Check that parameter is not set
         req.all_data = {"type": "test_type"}
         self.assertNotIn("require_description", req.all_data)
 
