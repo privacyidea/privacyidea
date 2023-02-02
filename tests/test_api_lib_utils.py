@@ -8,6 +8,8 @@ from privacyidea.api.lib.utils import (getParam,
                                        check_policy_name,
                                        verify_auth_token, is_fqdn, attestation_certificate_allowed,
                                        get_priority_from_param)
+from privacyidea.lib.policy import ACTION, SCOPE, set_policy, delete_policy
+from privacyidea.lib.user import User
 from privacyidea.lib.error import ParameterError
 import jwt
 import mock
@@ -289,4 +291,57 @@ class UtilsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
 
+        # Also check the simplesaml plugin
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={'username': 'pwpercent',
+                                                 'password': 'pw%45#test'},
+                                           headers={'User-Agent': 'simpleSAMLphp'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # now check the /validate/check endpoint
+        set_policy(name="otppin",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}={1!s}".format(ACTION.OTPPIN, "userstore"))
+        init_token({"type": "spass", "serial": "spass1d"},
+                   user=User("pwpercent", self.realm1))
+        # fist the request fails due to a wrong otp pin
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "pwpercent",
+                                                 "realm": self.realm1,
+                                                 "pass": "pw%45#test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("value"), res.json)
+            self.assertEqual('wrong otp pin', res.json['detail']['message'], res.json)
+
+        # when quoting the password before sending, the request succeeds
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "pwpercent",
+                                                 "realm": self.realm1,
+                                                 "pass": quote("pw%45#test")}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"), res.json)
+
+        # when using the correct user-agent, quoting is not necessary
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "pwpercent",
+                                                 "realm": self.realm1,
+                                                 "pass": "pw%45#test"},
+                                           headers={'User-Agent': 'simpleSAMLphp'}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"), res.json)
+
+        # cleanup
+        remove_token(serial='spass1d')
+        delete_policy('otppin')
         # TODO: check if unquoting of url-params (view-args) should be considered as well
