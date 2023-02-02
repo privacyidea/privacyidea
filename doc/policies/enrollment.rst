@@ -840,3 +840,18 @@ is written to the orgnaizationalUnit (OU) of the request.
 
 .. [#rpid] https://w3.org/TR/webauthn-2/#rp-id
 .. [#webauthnrelyingparty] https://w3.org/TR/webauthn-2/#webauthn-relying-party
+
+
+.. _policy_description_required:
+
+description_required
+~~~~~~~~~~~~~~~~~~~~
+
+type: list
+
+To prevent tokens from becoming unidentifiable after a device loss. A description can
+be enforced with the "require_description policy". The desired token-types can be
+selected here. After setting up the policy, the selected token types can only be
+enrolled if a description is set.
+
+.. note:: In order to make the change effective in the webui as well, it is necessary to reload it.

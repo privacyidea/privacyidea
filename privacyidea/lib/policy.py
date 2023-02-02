@@ -389,6 +389,7 @@ class ACTION(object):
     TOKENGROUP_ADD = "tokengroup_add"
     TOKENGROUP_DELETE = "tokengroup_delete"
     PREFERREDCLIENTMODE = "preferred_client_mode"
+    REQUIRE_DESCRIPTION = "require_description"
 
 
 class TYPE(object):
@@ -2117,6 +2118,17 @@ def get_static_policy_definitions(scope=None):
                 'type': 'int',
                 'desc': _('Limit the number of allowed tokens in a realm.'),
                 'group': GROUP.TOKEN},
+            ACTION.REQUIRE_DESCRIPTION: {
+                'type': 'str',
+                'desc': _('During the rollout process, this policy makes the '
+                          'description required for all selected token-types.'),
+                'group': GROUP.ENROLLMENT,
+                'multiple': True,
+                'value': ['4eyes', 'certificate', 'email', 'hotp', 'indexedsecret',
+                          'motp', 'paper', 'push', 'question', 'radius', 'registration',
+                          'remote', 'sms', 'spass', 'sshkey', 'tan', 'totp', 'vasco',
+                          'webauthn', 'yubico', 'yubikey', 'tiqr', 'u2f']},
+
             ACTION.MAXTOKENUSER: {
                 'type': 'int',
                 'desc': _('Limit the number of tokens a user may have '

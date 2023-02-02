@@ -2253,3 +2253,27 @@ def increase_failcounter_on_challenge(request=None, action=None):
     inc_fail_counter = Match.user(g, scope=SCOPE.AUTH, action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE,
                                   user_object=request.User if hasattr(request, 'User') else None).any()
     request.all_data["increase_failcounter_on_challenge"] = inc_fail_counter
+
+
+def require_description(request=None, action=None):
+    """
+    Pre Policy
+    This checks if a description is required to roll out a specific token.
+    scope=SCOPE.ENROLL, action=REQUIRE_DESCRIPTION
+
+    An exception is raised, if the token-types specified in the
+    REQUIRE_DESCRIPTION policy match the token to be rolled out.
+
+    :param request:
+    :param action:
+    :return:
+    """
+    # get action values
+    action_values = Match.action_only(g, scope=SCOPE.ENROLL, action=ACTION.REQUIRE_DESCRIPTION).action_values(unique=False)
+    token_types = list(action_values.keys())
+    # Add parameter require_description
+    request.all_data["require_description"] = token_types
+    # check if description is required
+    if request.all_data.get("type") and request.all_data["type"] in token_types:
+        log.warning("Missing description for {} token.".format(request.all_data["type"]))
+        raise PolicyError("Description required for {} token.".format(request.all_data["type"]))

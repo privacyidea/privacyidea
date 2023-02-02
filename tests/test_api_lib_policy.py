@@ -50,7 +50,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            webauthntoken_allowed, check_application_tokentype,
                                            required_piv_attestation, check_custom_user_attributes,
                                            hide_tokeninfo, init_ca_template, init_ca_connector,
-                                           init_subject_components, increase_failcounter_on_challenge)
+                                           init_subject_components, increase_failcounter_on_challenge,
+                                           require_description)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -3341,6 +3342,30 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # delete policy
         delete_policy("increase_failcounter_on_challenge")
+
+    def test_61_required_description_for_specified_token_types(self):
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "hans", "pass": "123456"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.User = User()
+
+        # Check, if that there is no parameter set
+        req.all_data = {"type": "test_type"}
+        self.assertNotIn("require_description", req.all_data)
+
+        # Set policy
+        set_policy(name="require_description",
+                   scope=SCOPE.ENROLL,
+                   action=["{0!s}=hotp".format(ACTION.REQUIRE_DESCRIPTION)])
+
+        # Check that value is set with set policy
+        require_description(req)
+        self.assertEqual(['hotp'], req.all_data.get("require_description"))
+
+        # delete policy
+        delete_policy("require_description")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
