@@ -184,6 +184,8 @@ The following comparators can be used in definitions of policy conditions:
   ``!in`` evaluates to true if the left value is not found in the list given by the right value.
 * ``matches`` evaluates to true if the left value completely matches the regular expression given by the right value.
   ``!matches`` evaluates to true if this is not the case.
+* ``set`` evaluates to true if a user- or tokeninfo with the key set in the left value is set.
+  ``!set`` evaluates to true if this is not the case.
 
 Error Handling
 ~~~~~~~~~~~~~~
