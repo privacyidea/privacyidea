@@ -204,9 +204,9 @@ COMPARATOR_DESCRIPTIONS = {
     COMPARATORS.NOT_IN: _("false if the value of the left attribute is contained in the comma-separated values on the right"),
 
     COMPARATORS.SMALLER: _("true if the integer value of the left attribute is smaller than the right integer value"),
-    COMPARATORS.BIGGER: _("true if the integer value of the left attribute is bigger than the right integer value")
+    COMPARATORS.BIGGER: _("true if the integer value of the left attribute is bigger than the right integer value"),
 
-    COMPARATORS.SET: _("true if the user- or tokeninfo is is available")
+    COMPARATORS.SET: _("true if the user- or tokeninfo is is available"),
     COMPARATORS.NOT_SET: _("true if the user- or tokeninfo is is not available")
 }
 
