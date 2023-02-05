@@ -185,7 +185,7 @@ from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
                                    determine_logged_in_userparams, parse_string_to_dict)
-from privacyidea.lib.utils.compare import compare_values, COMPARATOR_DESCRIPTIONS
+from privacyidea.lib.utils.compare import compare_values, COMPARATOR_DESCRIPTIONS, COMPARATORS
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.lib.user import User
 from privacyidea.lib import _
@@ -962,7 +962,11 @@ class PolicyClass(object):
         if user_object is not None or dbtoken is not None:
             info = user_object.info if user_object is not None else dbtoken.get_info()
 
-            if key in info:
+            if comparator == COMPARATORS.SET:
+                return key in info
+            elif comparator == COMPARATORS.NOT_SET:
+                return not key in info
+            elif key in info:
                 try:
                     return compare_values(info[key], comparator, value)
                 except Exception as exx:

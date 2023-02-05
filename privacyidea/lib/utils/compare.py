@@ -165,6 +165,9 @@ class COMPARATORS(object):
     SMALLER = "<"
     BIGGER = ">"
 
+    SET = "set"
+    NOT_SET = "!set"
+
 
 #: This dictionary connects comparators to comparator functions.
 #: A comparison function takes three parameters ``left``, ``comparator``, ``right``.
@@ -202,6 +205,9 @@ COMPARATOR_DESCRIPTIONS = {
 
     COMPARATORS.SMALLER: _("true if the integer value of the left attribute is smaller than the right integer value"),
     COMPARATORS.BIGGER: _("true if the integer value of the left attribute is bigger than the right integer value")
+
+    COMPARATORS.SET: _("true if the user- or tokeninfo is is available")
+    COMPARATORS.NOT_SET: _("true if the user- or tokeninfo is is not available")
 }
 
 
