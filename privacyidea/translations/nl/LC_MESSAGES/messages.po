@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-12-21 16:58+0100\n"
-"PO-Revision-Date: 2022-06-14 09:19+0000\n"
+"PO-Revision-Date: 2023-02-08 07:37+0000\n"
 "Last-Translator: Koen Roggemans <koen@roggemans.net>\n"
+"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-server/nl/>\n"
 "Language: nl\n"
-"Language-Team: Dutch <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-ui/nl/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.16-dev\n"
 "Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:225
@@ -468,19 +469,19 @@ msgstr ""
 
 #: lib/policy.py:1961
 msgid "The Admin is allowed list the available tokengroups."
-msgstr ""
+msgstr "Admin mag de beschikbare token-groepen oplijsten."
 
 #: lib/policy.py:1966
 msgid "The Admin is allowed to add a new tokengroup."
-msgstr ""
+msgstr "Admin mag een nieuwe token-groep toevoegen."
 
 #: lib/policy.py:1971
 msgid "The Admin is allowed delete a tokengroup."
-msgstr ""
+msgstr "Admin mag een token-groep verwijderen."
 
 #: lib/policy.py:1976
 msgid "The Admin is allowed to manage the tokengroups of a token."
-msgstr ""
+msgstr "Admin mag de token-groepen van een token beheren."
 
 #: lib/policy.py:1983
 msgid ""
@@ -795,6 +796,8 @@ msgid ""
 "In case of a successful authentication the following tokentype is "
 "enrolled. The maximum number of tokens for a user is checked."
 msgstr ""
+"Bij succesvolle authenticatie wordt volgend tokentype aangemeld. Het "
+"maximale aantal tokens voor de gebruiker is gecontroleerd."
 
 #: lib/policy.py:2276
 msgid ""
@@ -856,6 +859,8 @@ msgid ""
 "Increase the failcounter for all the tokens, for which a challenge has "
 "been triggered."
 msgstr ""
+"Vergroot de aanmeldingsteller voor alle tokens waarvoor een challenge is "
+"getriggerd."
 
 #: lib/policy.py:2316
 msgid ""
@@ -873,6 +878,9 @@ msgid ""
 "\"interactive webauthn poll u2f\". Accepted values are:\"interactive, "
 "webauthn, poll, u2f\""
 msgstr ""
+"Je kunt de cliënt-modi instellen in volgorde van jouw keuze. Bijvoorbeeld: "
+"\"intereactive webauthn poll u2f\". Aanvaarde waarden zijn: 'interactive, "
+"webauthn, poll, u2f\""
 
 #: lib/policy.py:2331
 msgid ""
@@ -1070,6 +1078,8 @@ msgid ""
 "Set how many audit entries should be displayed in the audit view on one "
 "page."
 msgstr ""
+"Stel in hoeveel audit-items er getoond moeten worden op één pagina in het "
+"auditscherm."
 
 #: lib/policy.py:2489
 msgid "Use your own html template for the web UI menu."
@@ -1106,6 +1116,8 @@ msgid ""
 "The URL of an SSO provider for redirect at logout.(The URL must start "
 "with http:// or https://)"
 msgstr ""
+"De URL van een SSO-provider voor redirect en afmelden. (De URL moet beginnen "
+"met http:// of https://)"
 
 #: lib/policy.py:2518
 msgid "As long as a user has no token, he will only see a token wizard in the UI."
@@ -1388,7 +1400,7 @@ msgstr ""
 
 #: lib/token.py:2549 lib/token.py:2565
 msgid "The tokengroup does not exist."
-msgstr ""
+msgstr "De token-groep bestaat niet."
 
 #: lib/tokenclass.py:1657
 msgid "please enter otp: "
@@ -1860,11 +1872,11 @@ msgstr "Verwijder deze token-infosleutel."
 
 #: lib/eventhandler/tokenhandler.py:303
 msgid "Add a tokengroup to the token."
-msgstr ""
+msgstr "Voeg een token-groep toe aan het token."
 
 #: lib/eventhandler/tokenhandler.py:312
 msgid "Remove a tokengroup from the token."
-msgstr ""
+msgstr "Verwijder een token-groep van het token."
 
 #: lib/eventhandler/usernotification.py:126
 msgid "Send notification email via this email server."
@@ -1928,19 +1940,19 @@ msgstr ""
 
 #: lib/eventhandler/webhookeventhandler.py:85
 msgid "The URL the WebHook is posted to"
-msgstr ""
+msgstr "De URL van de webhook is gepost naar"
 
 #: lib/eventhandler/webhookeventhandler.py:90
 msgid "The encoding that is sent to the WebHook, for example json"
-msgstr ""
+msgstr "De encodering die naar de webhook gestuurd is, bijvoorbeeld json"
 
 #: lib/eventhandler/webhookeventhandler.py:98
 msgid "You can replace placeholder like {logged_in_user}"
-msgstr ""
+msgstr "Je kunt de plaatshouder vervangen zoals {logged_in_user}"
 
 #: lib/eventhandler/webhookeventhandler.py:103
 msgid "The data posted in the WebHook"
-msgstr ""
+msgstr "De gegevens gepost in de webhook"
 
 #: lib/machines/ldap.py:338
 #, python-format
@@ -2007,7 +2019,7 @@ msgstr "Moet het SSL-certificaat geverifieerd worden."
 
 #: lib/smsprovider/HttpSMSProvider.py:289
 msgid "Should the data in a POST Request be sent as JSON."
-msgstr ""
+msgstr "Moeten de gegevens in een POST-request als JSON verstuurd worden."
 
 #: lib/smsprovider/HttpSMSProvider.py:294
 msgid ""
@@ -2153,16 +2165,21 @@ msgstr ""
 #: lib/tokens/certificatetoken.py:312
 msgid "The CA connector that should be used during certificate enrollment."
 msgstr ""
+"De CA connector die gebruikt zou moeten worden gedurende een aanmelding met "
+"certificaat."
 
 #: lib/tokens/certificatetoken.py:318
 msgid "The template that should be used to issue a certificate."
 msgstr ""
+"Het sjabloon dat gebruikt zou moeten worden om een certificaat uit te reiken."
 
 #: lib/tokens/certificatetoken.py:323
 msgid ""
 "This takes a space separated list of elements to be added to the subject."
 " Can be 'email' and 'realm'."
 msgstr ""
+"Dit gebruikt een spatie-gescheiden lijst met elementen die aan het onderwerp "
+"toegevoegd worden. Kan 'email' en 'realm' zijn."
 
 #: lib/tokens/certificatetoken.py:331 lib/tokens/certificatetoken.py:338
 msgid "The directory containing attestation certificate chains."
@@ -2253,7 +2270,7 @@ msgstr "De PIN-code was juist, maar de e-mail kon niet verzonden worden!"
 
 #: lib/tokens/emailtoken.py:543
 msgid "Please enter your new email address!"
-msgstr ""
+msgstr "Geef je nieuwe e-mailadres!"
 
 #: lib/tokens/foureyestoken.py:132
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
@@ -2727,7 +2744,7 @@ msgstr "De PIN-code was juist, maar de SMS kon niet verzonden worden!"
 
 #: lib/tokens/smstoken.py:603
 msgid "Please enter your new phone number!"
-msgstr ""
+msgstr "Geef je nieuwe telefoonnummer!"
 
 #: lib/tokens/spasstoken.py:87
 msgid "SPass: Simple Pass token. Static passwords."
@@ -2799,7 +2816,7 @@ msgstr "Scan de QR-code"
 
 #: lib/tokens/totptoken.py:63
 msgid "Specify the time step of the time-based OTP token."
-msgstr ""
+msgstr "Geef de tijdsstap van het tijdsgebaseerd OTP-token."
 
 #: lib/tokens/totptoken.py:110
 msgid "TOTP: Time based One Time Passwords."
@@ -2932,6 +2949,7 @@ msgstr "Enkel de opgegeven WebAuthn-tokens worden aanvaard."
 #: lib/tokens/webauthntoken.py:649
 msgid "One webauthn token can not be registered to a user more than once."
 msgstr ""
+"Een webauthn-token kan slechts één keer aan een gebruiker toegewezen worden."
 
 #: lib/tokens/webauthntoken.py:654
 msgid "A human readable name for the organization rolling out WebAuthn tokens."
@@ -2989,6 +3007,8 @@ msgid ""
 "Which algorithm are available to use for creating public key credentials "
 "for WebAuthn tokens. (Default: [{0!s}], Order: [{1!s}]"
 msgstr ""
+"Welke algoritmen kunnen gebruikt worden voor het maken van publieke sleutel-"
+"waarden voor WebAuthn tokens. (Standaard: [{0!s}], Order: [{1!s}]"
 
 #: lib/tokens/webauthntoken.py:710
 msgid ""
@@ -3258,4 +3278,3 @@ msgstr ""
 #~ "De Api-key die de IOS cliënt "
 #~ "moet gebruiken. Haal die uit je "
 #~ "Firebase console."
-
