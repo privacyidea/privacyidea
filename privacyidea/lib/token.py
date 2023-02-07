@@ -2135,7 +2135,7 @@ def weigh_token_type(token_obj):
         return ord(token_obj.type[0])
 
 
-@log_with(log)
+@log_with(log, hide_args=[1])
 @libpolicy(reset_all_user_tokens)
 @libpolicy(generic_challenge_response_reset_pin)
 @libpolicy(generic_challenge_response_resync)

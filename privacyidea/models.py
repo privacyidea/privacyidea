@@ -254,9 +254,8 @@ class Token(MethodsMixin, db.Model):
             
     @log_with(log)
     def delete(self):
-        # some DBs (eg. DB2) run in deadlock, if the TokenRealm entry
-        # is deleted via  key relation
-        # so we delete it explicit
+        # some DBs (e.g. DB2) run in deadlock, if the TokenRealm entry
+        # is deleted via  key relation, so we delete it explicit
         ret = self.id
         db.session.query(TokenRealm)\
                   .filter(TokenRealm.token_id == self.id)\
@@ -273,6 +272,9 @@ class Token(MethodsMixin, db.Model):
         db.session.query(TokenInfo)\
                   .filter(TokenInfo.token_id == self.id)\
                   .delete()
+        db.session.query(TokenTokengroup)\
+            .filter(TokenTokengroup.token_id == self.id)\
+            .delete()
         db.session.delete(self)
         db.session.commit()
         return ret
@@ -295,7 +297,7 @@ class Token(MethodsMixin, db.Model):
 
         return data
 
-    @log_with(log)
+    @log_with(log, hide_args=[1])
     def set_otpkey(self, otpkey, reset_failcount=True):
         iv = geturandom(16)
         self.key_enc = encrypt(otpkey, iv)
@@ -653,7 +655,9 @@ class Token(MethodsMixin, db.Model):
         If tokengroup name and id are omitted, all tokengroups are deleted.
 
         :param tokengroup: The name of the tokengroup
+        :type tokengroup: str
         :param tokengroup_id: The id of the tokengroup
+        :type tokengroup_id: int
         :return:
         """
         if tokengroup:

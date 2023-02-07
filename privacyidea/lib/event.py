@@ -164,6 +164,7 @@ def get_handler_object(handlername):
     from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
     from privacyidea.lib.eventhandler.logginghandler import LoggingEventHandler
     from privacyidea.lib.eventhandler.customuserattributeshandler import CustomUserAttributesHandler
+    from privacyidea.lib.eventhandler.webhookeventhandler import WebHookHandler
     h_obj = None
     if handlername == "UserNotification":
         h_obj = UserNotificationEventHandler()
@@ -183,6 +184,8 @@ def get_handler_object(handlername):
         h_obj = LoggingEventHandler()
     elif handlername == "CustomUserAttributes":
         h_obj = CustomUserAttributesHandler()
+    elif handlername == "WebHook":
+        h_obj = WebHookHandler()
     return h_obj
 
 

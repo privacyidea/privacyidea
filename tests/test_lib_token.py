@@ -2105,6 +2105,11 @@ class TokenGroupTestCase(MyTestCase):
         tok2 = get_one_token(serial="s2")
         self.assertEqual(len(tok2.token.tokengroup_list), 0)
 
+        # check that deleting a tokengroup with tokens still assigned results in an error
+        self.assertRaises(privacyIDEAError, delete_tokengroup, name='g2')
+
         # cleanup
         for s in serials:
             remove_token(s)
+        delete_tokengroup('g1')
+        delete_tokengroup('g2')

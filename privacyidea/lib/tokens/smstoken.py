@@ -429,8 +429,9 @@ class SmsTokenClass(HotpTokenClass):
                                tokenowner=User,
                                tokentype="sms",
                                recipient={"givenname": User.info.get("givenname") if User else "",
-                                          "surname": User.info.get("surname") if User else ""})
-        message = message.format(otp=otp, challenge=options.get("challenge"), **tags)
+                                          "surname": User.info.get("surname") if User else ""},
+                               challenge=options.get("challenge"))
+        message = message.format(otp=otp, **tags)
 
         # First we try to get the new SMS gateway config style
         # The token specific identifier has priority over the system wide identifier
