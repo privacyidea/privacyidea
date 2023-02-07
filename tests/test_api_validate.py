@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import six
+import logging
+from testfixtures import log_capture
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -42,7 +44,6 @@ import datetime
 import time
 import responses
 import mock
-import binascii
 from . import smtpmock, ldap3mock, radiusmock
 
 
@@ -5336,9 +5337,11 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         self.assertTrue(r > 0)
 
     @ldap3mock.activate
-    def test_01_enroll_HOTP(self):
+    @log_capture(level=logging.DEBUG)
+    def test_01_enroll_HOTP(self, capture):
         # Init LDAP
         ldap3mock.setLDAPDirectory(LDAPDirectory)
+        logging.getLogger('privacyidea').setLevel(logging.DEBUG)
         # create realm
         r = set_realm("ldaprealm", resolvers=["catchall"])
         set_default_realm("ldaprealm")
@@ -5362,6 +5365,10 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # Set enroll policy
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
                    action="{0!s}=hotp".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
+
+        # Set force_app_pin
+        set_policy("pol_forcepin", scope=SCOPE.ENROLL,
+                   action="hotp_{0!s}=True".format(ACTION.FORCE_APP_PIN))
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -5377,10 +5384,13 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             transaction_id = detail.get("transaction_id")
             self.assertTrue("Please scan the QR code!" in detail.get("message"), detail.get("message"))
             # Get image and client_mode
-            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"))
+            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"), detail)
             # Check, that multi_challenge is also contained.
-            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
-            self.assertIn("image", detail)
+            chal = detail.get("multi_challenge")[0]
+            self.assertEqual(CLIENTMODE.INTERACTIVE, chal.get("client_mode"), detail)
+            self.assertIn("image", detail, detail)
+            self.assertEqual(1, len(detail.get("messages")))
+            self.assertEqual("Please scan the QR code!", detail.get("messages")[0])
             serial = detail.get("serial")
 
         # 3. scan the qrcode / Get the OTP value
@@ -5400,9 +5410,18 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(result.get("value"))
             self.assertEqual(result.get("authentication"), "ACCEPT")
 
+        log_msg = str(capture)
+        self.assertNotIn('alicepw', log_msg, log_msg)
+        self.assertNotIn('ldappw', log_msg, log_msg)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        # Verify that the force_pin enrollment policy worked for validate-check-enrollment
+        self.assertIn('Exiting get_init_tokenlabel_parameters with result {\'force_app_pin\': True}', log_msg, log_msg)
+        logging.getLogger('privacyidea').setLevel(logging.INFO)
+
         # Cleanup
         delete_policy("pol_passthru")
         delete_policy("pol_multienroll")
+        delete_policy("pol_forcepin")
         remove_token(serial)
 
     @ldap3mock.activate

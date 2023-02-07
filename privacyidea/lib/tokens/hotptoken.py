@@ -51,6 +51,7 @@ import binascii
 
 from .HMAC import HmacOtp
 from privacyidea.api.lib.utils import getParam
+from privacyidea.api.lib.policyhelper import get_init_tokenlabel_parameters
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import (TokenClass,
                                         TWOSTEP_DEFAULT_DIFFICULTY,
@@ -823,6 +824,7 @@ class HotpTokenClass(TokenClass):
         :param user_obj: A user object
         :return: None, the content is modified
         """
+        message = _("Please scan the QR code!")
         token_obj = init_token({"type": cls.get_class_type(),
                                 "genkey": 1}, user=user_obj)
         content.get("result")["value"] = False
@@ -832,14 +834,18 @@ class HotpTokenClass(TokenClass):
         # Create a challenge!
         c = token_obj.create_challenge()
         # get details of token
-        init_details = token_obj.get_init_detail()
+        enroll_params = get_init_tokenlabel_parameters(g, user_object=user_obj,
+                                                       token_type=cls.get_class_type())
+        init_details = token_obj.get_init_detail(params=enroll_params,
+                                                 user=user_obj)
         detail["transaction_ids"] = [c[2]]
+        detail["messages"] = [ message ]
         chal = {"transaction_id": c[2],
-                "image": init_details.get("otpkey").get("img"),
+                "image": init_details.get("googleurl").get("img"),
                 "client_mode": CLIENTMODE.INTERACTIVE,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
-                "message": _("Please scan the QR code!")}
+                "message": message}
         detail["multi_challenge"] = [chal]
         detail.update(chal)
 

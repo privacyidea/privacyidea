@@ -78,12 +78,12 @@ import traceback
 from passlib.hash import ldap_salted_sha1
 import hashlib
 import binascii
-from privacyidea.lib.utils import is_true, to_bytes
 from privacyidea.lib.framework import get_app_local_store, get_app_config_value
 import datetime
 
 from privacyidea.lib import _
-from privacyidea.lib.utils import to_utf8, to_unicode, convert_column_to_unicode
+from privacyidea.lib.utils import (is_true, to_bytes, to_unicode,
+                                   convert_column_to_unicode)
 from privacyidea.lib.error import privacyIDEAError
 import uuid
 from ldap3.utils.conv import escape_bytes
@@ -1316,18 +1316,18 @@ class IdResolver (UserIdResolver):
             conn_opts.update({'authentication': ldap3.ANONYMOUS})
         elif authtype == AUTHTYPE.SIMPLE:
             # SIMPLE works with passwords as UTF8 and unicode
-            password = to_utf8(password)
+            password = to_unicode(password)
             conn_opts.update({'user': user,
                               'password': password,
                               'authentication': ldap3.SIMPLE})
         elif authtype == AUTHTYPE.NTLM:  # pragma: no cover
             # NTLM requires the password to be unicode
-            password = to_utf8(password)
+            password = to_unicode(password)
             conn_opts.update({'user': user,
                               'password': password,
                               'authentication': ldap3.NTLM})
         elif authtype == AUTHTYPE.SASL_DIGEST_MD5:  # pragma: no cover
-            password = to_utf8(password)
+            password = to_unicode(password)
             sasl_credentials = (str(user), str(password))
             conn_opts.update({'sasl_mechanism': ldap3.DIGEST_MD5,
                               'sasl_credentials': sasl_credentials,

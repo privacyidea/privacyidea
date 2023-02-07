@@ -352,9 +352,11 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             $scope.realms = data.result.value;
         });
 
-        ConfigFactory.getTokengroup("", function (data) {
-            $scope.tokengroups = data.result.value;
-        });
+        if (AuthFactory.checkRight("tokengroup_list")) {
+            ConfigFactory.getTokengroup("", function (data) {
+                $scope.tokengroups = data.result.value;
+            });
+        }
 
         $scope.attachMachine = function () {
             // newToken.serial, application

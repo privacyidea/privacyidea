@@ -626,17 +626,19 @@ def split_user(username):
     return user, realm
 
 
-@log_with(log)
+@log_with(log, hide_args_keywords={0: ["pass", "password"]})
 def get_user_from_param(param, optionalOrRequired=optional):
     """
-    Find the parameters user, realm and resolver and
+    Find the parameter user, realm and resolver and
     create a user object from these parameters.
-    
+
     An exception is raised, if a user in a realm is found in more
-    than one resolvers.
-    
+    than one resolver.
+
     :param param: The dictionary of request parameters
     :type param: dict
+    :param optionalOrRequired: whether the user is required
+    :type optionalOrRequired: bool
     :return: User as found in the parameters
     :rtype: User object
     """

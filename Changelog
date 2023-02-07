@@ -1,3 +1,10 @@
+Version 3.8.1dev1, 2023-01-13
+
+  Fixes:
+  * Update diag tool (#3146)
+  * Fix tokengroup error in WebUI (#3441)
+  * Fix wrong QR code in enroll-via-validate (#3427)
+
 Version 3.8, 2022-12-20
 
   Features:
