@@ -15,7 +15,7 @@ charset-normalizer==2.0.12
 click==7.1.2
 configobj==5.0.6
 croniter==1.3.4
-cryptography==38.0.3
+cryptography==39.0.1
 dataclasses==0.8; python_version == '3.6'
 defusedxml==0.7.1
 Deprecated==1.2.13
