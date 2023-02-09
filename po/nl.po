@@ -51,18 +51,6 @@ msgstr ""
 "                               Vraag nu naar de privacyIDEA Enterprise "
 "Editie!</a>"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:187
-msgid ""
-"<a ui-sref=\"component.subscriptions\">\n"
-"                    <span class=\"glyphicon glyphicon-calendar\" aria-hidden="
-"\"true\"></span>\n"
-"                    <span translate>Subscriptions</span></a>"
-msgstr ""
-"<a ui-sref=\"component.subscriptions\">\n"
-"                    <span class=\"glyphicon glyphicon-calendar\" aria-hidden="
-"\"true\"></span>\n"
-"                    <span translate>Inschrijvingen</span></a>"
-
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
 msgstr "<b>DEZE SOFTWARE WORDT GELEVERD ZONDER ENIGE GARANTIE!</b>"
@@ -315,7 +303,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.details.html:130
 #: privacyidea/static/components/config/views/config.policies.details.html:279
 #: privacyidea/static/components/config/views/config.policies.list.html:20
-#: privacyidea/static/components/dashboard/views/dashboard.html:87
+#: privacyidea/static/components/dashboard/views/dashboard.html:91
 msgid "Action"
 msgstr "Actie"
 
@@ -328,11 +316,11 @@ msgstr "Actie"
 msgid "Active"
 msgstr "Actief"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:156
+#: privacyidea/static/components/dashboard/views/dashboard.html:160
 msgid "Active Events"
 msgstr "Actieve gebeurtenissen"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:119
+#: privacyidea/static/components/dashboard/views/dashboard.html:123
 msgid "Active Policies"
 msgstr "Actief beleid"
 
@@ -368,11 +356,11 @@ msgstr "Admin"
 msgid "Admin-Realm"
 msgstr "Admin-Realm"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:80
+#: privacyidea/static/components/dashboard/views/dashboard.html:84
 msgid "Administration"
 msgstr "Beheerder"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:86
+#: privacyidea/static/components/dashboard/views/dashboard.html:90
 msgid "Administrator"
 msgstr "Beheerder"
 
@@ -966,7 +954,7 @@ msgstr "Database"
 msgid "Database Encoding"
 msgstr "Database encodering"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:85
+#: privacyidea/static/components/dashboard/views/dashboard.html:89
 msgid "Date"
 msgstr "Datum"
 
@@ -1058,7 +1046,7 @@ msgstr "Beschrijving"
 msgid "Detach"
 msgstr "Ontkoppel"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:88
+#: privacyidea/static/components/dashboard/views/dashboard.html:92
 msgid "Detail"
 msgstr "Detail"
 
@@ -1395,7 +1383,7 @@ msgstr "Fout gevonden in WebAuthn antwoord."
 #: privacyidea/static/components/config/views/config.events.details.html:44
 #: privacyidea/static/components/config/views/config.events.list.html:16
 #: privacyidea/static/components/config/views/config.html:32
-#: privacyidea/static/components/dashboard/views/dashboard.html:151
+#: privacyidea/static/components/dashboard/views/dashboard.html:155
 msgid "Events"
 msgstr "Events"
 
@@ -1845,11 +1833,11 @@ msgstr ""
 "Bij conflicterend beleid zal het beleid met het laagste prioriteitsnummer "
 "voorrang krijgen."
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:168
+#: privacyidea/static/components/dashboard/views/dashboard.html:172
 msgid "Inactive Events"
 msgstr "Niet-actieve gebeurtenissen"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:131
+#: privacyidea/static/components/dashboard/views/dashboard.html:135
 msgid "Inactive Policies"
 msgstr "Niet actieve beleidsregels"
 
@@ -1960,7 +1948,7 @@ msgstr "Lijst tokens"
 msgid "Loading Machines..."
 msgstr "Machines laden ..."
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:16
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:17
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:15
 msgid "Loading serials..."
 msgstr "Serienummers laden..."
@@ -2173,7 +2161,7 @@ msgstr "Geen machine gevonden"
 msgid "No retrieval of schema information"
 msgstr "Schema-informatie niet opgehaald"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:19
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:20
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:18
 msgid "No serial found"
 msgstr "Geen serienummer gevonden"
@@ -2340,7 +2328,7 @@ msgstr "PAPIER: OTP-waarden op een blad papier."
 msgid "PGP Key"
 msgstr "PGP-sleutel"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:27
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:29
 #: privacyidea/static/components/directives/views/directive.assignuser.html:36
 #: privacyidea/static/components/token/views/token.enroll.html:59
 msgid "PIN"
@@ -2476,7 +2464,7 @@ msgstr ""
 "          taken moeten lopen."
 
 #: privacyidea/static/components/config/views/config.html:26
-#: privacyidea/static/components/dashboard/views/dashboard.html:113
+#: privacyidea/static/components/dashboard/views/dashboard.html:117
 msgid "Policies"
 msgstr "Beleidsregels"
 
@@ -2593,18 +2581,9 @@ msgid "Quick Resolver Test"
 msgstr "Snelle resolver-test"
 
 #: privacyidea/static/components/machine/views/machine.html:15
+#: privacyidea/static/components/user/views/user.html:44
 msgid "Quick links"
 msgstr "Snelle links"
-
-#: privacyidea/static/components/user/views/user.html:44
-msgid ""
-"Quick links\n"
-"                        <a ui-sref=\"config.realms.list\" translate>Edit "
-"realms</a>"
-msgstr ""
-"Quick links\n"
-"                        <a ui-sref=\"config.realms.list\" translate>Bewerk "
-"realms</a>"
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
 msgid "RADIUS Config saved."
@@ -2737,7 +2716,7 @@ msgstr "Externe gebruiker"
 msgid "Repeat new PIN"
 msgstr "Herhaal nieuwe PIN"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:37
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:46
 #: privacyidea/static/components/recovery/views/recovery.reset.html:19
 #: privacyidea/static/components/token/views/token.enroll.html:67
@@ -3224,7 +3203,7 @@ msgid "Subscription issued to"
 msgstr "Inschrijving gegeven aan"
 
 #: privacyidea/static/components/components/views/component.html:28
-#: privacyidea/static/components/dashboard/views/dashboard.html:191
+#: privacyidea/static/components/dashboard/views/dashboard.html:195
 msgid "Subscriptions"
 msgstr "Inschrijvingen"
 
@@ -3781,15 +3760,15 @@ msgstr ""
 msgid ""
 "The authentication request is forwarded to the YubiCloud. For accessing\n"
 "    the YubiCloud you need to enter an API Client ID and an API Key, which\n"
-"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" target="
-"\"_extern\">here</a>."
+"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" "
+"target=\"_extern\">here</a>."
 msgstr ""
 "De authenticatievraag is doorgestuurd naar de YubiCloud. Voor toegang tot "
 "de\n"
 "     YubiCloud moet je een API Client ID en een API-sleutel ingeven, die je "
 "kan\n"
-"     aanvragen bij  <a href=\"https://upgrade.yubico.com/getapikey/\" target="
-"\"_extern\">yubico.com</a>."
+"     aanvragen bij  <a href=\"https://upgrade.yubico.com/getapikey/\" "
+"target=\"_extern\">yubico.com</a>."
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
 msgid "The certificate was enrolled successfully."
@@ -4287,15 +4266,15 @@ msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
 "        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
 "        For more details see the\n"
-"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
-"\">RFC\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" "
+"target=\"OCRA\">RFC\n"
 "            6287</a>."
 msgstr ""
 "Dit is de OCRA suite, gebruikt door de TiQR App.\n"
 "        De standaard OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
 "        Bekijk voor meer details \n"
-"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
-"\">RFC\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" "
+"target=\"OCRA\">RFC\n"
 "            6287</a>."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:115
@@ -4580,7 +4559,7 @@ msgstr "Transactie ID"
 msgid "Type"
 msgstr "Type"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:32
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:34
 #: privacyidea/static/components/directives/views/directive.assignuser.html:41
 #: privacyidea/static/components/recovery/views/recovery.reset.html:14
 #: privacyidea/static/components/token/views/token.enroll.html:63
