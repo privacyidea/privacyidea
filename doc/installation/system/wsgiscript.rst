@@ -1,4 +1,5 @@
 .. _wsgiscript:
+.. index:: wsgi
 
 The WSGI Script
 ===============
@@ -6,26 +7,40 @@ The WSGI Script
 Apache2 and Nginx are using a WSGI script to start the application.
 
 This script is usually located at ``/etc/privacyidea/privacyideaapp.py`` or
-``/etc/privacyidea/privacyideaapp.wsgi`` and has the following contents::
+``/etc/privacyidea/privacyideaapp.wsgi`` and has the following contents:
 
-   import sys
-   sys.stdout = sys.stderr
-   from privacyidea.app import create_app
-   # Now we can select the config file:
-   application = create_app(config_name="production",
-                            config_file="/etc/privacyidea/pi.cfg")
+.. literalinclude:: ../../../deploy/apache/privacyideaapp.wsgi
+    :language: python
 
 In the ``create_app``-call you can also select another config file.
 
-.. note:: This way you can run several instances of privacyIDEA in one
-   Apache2 server by defining several WSGIScriptAlias definitions pointing to
-   different wsgi-scripts, that again reference different config files with
-   different database definitions.
+.. index:: wsgi
 
-Running Apache instances
-------------------------
+WSGI configuration for the Apache webserver
+-------------------------------------------
+
+The site-configuration for the Apache webserver to use WSGI should contain at
+least::
+
+  <VirtualHost _default_:443>
+      ...
+      WSGIScriptAlias /      /etc/privacyidea/privacyideaapp.wsgi
+      WSGIDaemonProcess privacyidea processes=1 threads=15 display-name=%{GROUP} user=privacyidea
+      WSGIProcessGroup privacyidea
+      WSGIApplicationGroup %{GLOBAL}
+      WSGIPassAuthorization On
+      ...
+  </VirtualHost>
+
 
 .. index:: instances
+
+Running several instances with the Apache webserver
+---------------------------------------------------
+
+You can run several instances of privacyIDEA on one Apache2 server by defining
+several `WSGIScriptAlias` definitions pointing to different wsgi-scripts,
+which again reference different config files with different database definitions.
 
 To run further Apache instances add additional lines in your Apache config::
 
@@ -42,10 +57,11 @@ Each config file can define its own
  * database
  * encryption key
  * signing key
+ * logging configuration
  * ...
 
-To create the new database you need the command *pi-manage*. The command
-*pi-manage* reads the configuration from */etc/privacyidea/pi.cfg*.
+To create the new database you need :ref:`pimanage`. The *pi-manage* command
+reads the configuration from */etc/privacyidea/pi.cfg* by default.
 
 If you want to use another instance with another config file, you need to set
 an environment variable and create the database like this::
