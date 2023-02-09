@@ -50,9 +50,6 @@ http_index_ignore_prefixes = ['/token']
 # The suffix of source filenames.
 source_suffix = '.rst'
 
-# The encoding of source files.
-#source_encoding = 'utf-8-sig'
-
 # The master toctree document.
 master_doc = 'index'
 
@@ -73,9 +70,6 @@ project_copyright = '2014-%Y, Cornelius Kölbel'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = ['_build']
-
-# The reST default role (used for this markup: `text`) to use for all documents.
-#default_role = None
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = True
@@ -110,7 +104,6 @@ html_theme = 'flask'
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = ['_themes/flask-sphinx-themes']
-
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -212,7 +205,7 @@ latex_documents = [
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-#latex_logo = None
+latex_logo = 'images/privacyidea-color.png'
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
