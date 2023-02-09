@@ -640,7 +640,7 @@ class Connection(object):
         try:
             if isinstance(search_filter, bytes):
                 # We need to convert to unicode otherwise pyparsing will not
-                # find the u"ö"
+                # find the "ö"
                 search_filter = to_unicode(search_filter)
             expr = Connection._parse_filter()
             s_filter = expr.parseString(search_filter).asList()[0]
