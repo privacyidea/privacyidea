@@ -51,18 +51,6 @@ msgstr ""
 "\">\n"
 "Jetzt Angebot für PrivacyIDEA Enterprise Edition einholen!</a>"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:187
-msgid ""
-"<a ui-sref=\"component.subscriptions\">\n"
-"                    <span class=\"glyphicon glyphicon-calendar\" aria-hidden="
-"\"true\"></span>\n"
-"                    <span translate>Subscriptions</span></a>"
-msgstr ""
-"<a ui-sref=\"component.subscriptions\">\n"
-"                    <span class=\"glyphicon glyphicon-calendar\" aria-hidden="
-"\"true\"></span>\n"
-"                    <span translate>Subskriptionen</span></a>"
-
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
 msgstr "<b>KEINE GEWÄHRLEISTUNG ODER HAFTUNG DURCH DIE ENTWICKLER!</b>"
@@ -113,8 +101,8 @@ msgid ""
 "                    </li>"
 msgstr ""
 "<li><b>Support</b> mit definierten Reaktionszeiten, <a target=\"netknights\" "
-"href=\"https://netknights.it/en/leistungen/service-level-agreements/\""
-">Service Level Agreements</a>, durch die NetKnights GmbH.</li>\n"
+"href=\"https://netknights.it/en/leistungen/service-level-agreements/"
+"\">Service Level Agreements</a>, durch die NetKnights GmbH.</li>\n"
 "<li>Stabile Enterprise-Pakete für Ubuntu und RHEL ermöglichen leichte "
 "Updates und einen sicheren Betrieb.</li>\n"
 "<li>Ein exklusives <b>Appliance</b>-Tool, das bspw. die leichte Einrichtung "
@@ -198,8 +186,8 @@ msgid ""
 msgstr ""
 "<p><b>Sie benutzen privacyIDEA nun mit mehr als 50 aktiven Token.</b></p>\n"
 "<p>Es freut uns sehr, dass Sie privacyIDEA Ihr Vertrauen schenken.</p>\n"
-"<p>Für den produktiven Unternehmenseinsatz raten wir, die <a target="
-"\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/"
+"<p>Für den produktiven Unternehmenseinsatz raten wir, die <a "
+"target=\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/"
 "\">privacyIDEA Enterprise Edition</a> einzusetzen.\n"
 "Die NetKnights GmbH bietet die <a target=\"netknights\" href=\"https://"
 "netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a> "
@@ -294,7 +282,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.details.html:130
 #: privacyidea/static/components/config/views/config.policies.details.html:279
 #: privacyidea/static/components/config/views/config.policies.list.html:20
-#: privacyidea/static/components/dashboard/views/dashboard.html:87
+#: privacyidea/static/components/dashboard/views/dashboard.html:91
 msgid "Action"
 msgstr "Aktion"
 
@@ -307,11 +295,11 @@ msgstr "Aktion"
 msgid "Active"
 msgstr "Aktiv"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:156
+#: privacyidea/static/components/dashboard/views/dashboard.html:160
 msgid "Active Events"
 msgstr "Aktive Ereignisse"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:119
+#: privacyidea/static/components/dashboard/views/dashboard.html:123
 msgid "Active Policies"
 msgstr "Aktive Richtlinien"
 
@@ -347,11 +335,11 @@ msgstr "Administrator"
 msgid "Admin-Realm"
 msgstr "Admin-Realm"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:80
+#: privacyidea/static/components/dashboard/views/dashboard.html:84
 msgid "Administration"
 msgstr "Administration"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:86
+#: privacyidea/static/components/dashboard/views/dashboard.html:90
 msgid "Administrator"
 msgstr "Administrator"
 
@@ -933,7 +921,7 @@ msgstr "Datenbank"
 msgid "Database Encoding"
 msgstr "Datenbank-Enkodierung"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:85
+#: privacyidea/static/components/dashboard/views/dashboard.html:89
 msgid "Date"
 msgstr "Datum"
 
@@ -1025,7 +1013,7 @@ msgstr "Beschreibung"
 msgid "Detach"
 msgstr "abhängen"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:88
+#: privacyidea/static/components/dashboard/views/dashboard.html:92
 msgid "Detail"
 msgstr "Detail"
 
@@ -1354,7 +1342,7 @@ msgstr "Fehler in der WebAuthn-Antwort."
 #: privacyidea/static/components/config/views/config.events.details.html:44
 #: privacyidea/static/components/config/views/config.events.list.html:16
 #: privacyidea/static/components/config/views/config.html:32
-#: privacyidea/static/components/dashboard/views/dashboard.html:151
+#: privacyidea/static/components/dashboard/views/dashboard.html:155
 msgid "Events"
 msgstr "Ereignisse"
 
@@ -1418,8 +1406,9 @@ msgid ""
 "For Email tokens to work properly you need to set the\n"
 "    <a ui-sref=\"config.tokens({tokentype:'email'})\">Email Token Config</a>!"
 msgstr ""
-"Damit E-Mail-Token richtig funktionieren, müssen Sie die   <a ui-sref="
-"\"config.tokens({tokentype:'email'})\">Email-Token Konfiguration</a> setzen!"
+"Damit E-Mail-Token richtig funktionieren, müssen Sie die   <a ui-"
+"sref=\"config.tokens({tokentype:'email'})\">Email-Token Konfiguration</a> "
+"setzen!"
 
 #: privacyidea/static/components/token/views/token.import.html:25
 msgid "For HOTP and TOTP tokens:"
@@ -1796,11 +1785,11 @@ msgstr ""
 "Im Fall eines Richtlinienkonflikts wird die Richtlinie mit dem niedrigsten "
 "\"Priorität\"-Wert berücksichtigt."
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:168
+#: privacyidea/static/components/dashboard/views/dashboard.html:172
 msgid "Inactive Events"
 msgstr "Inaktive Ereginisse"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:131
+#: privacyidea/static/components/dashboard/views/dashboard.html:135
 msgid "Inactive Policies"
 msgstr "Inaktive Richtlinien"
 
@@ -1908,7 +1897,7 @@ msgstr "Tokenliste anzeigen"
 msgid "Loading Machines..."
 msgstr "Lade Maschinen..."
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:16
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:17
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:15
 msgid "Loading serials..."
 msgstr "Laden Seriennummern..."
@@ -2117,7 +2106,7 @@ msgstr "Keine Maschine gefunen"
 msgid "No retrieval of schema information"
 msgstr "Schema-Informationen werden nicht abgerufen"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:19
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:20
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:18
 msgid "No serial found"
 msgstr "Keine Seriennummer gefunden"
@@ -2283,7 +2272,7 @@ msgstr "PAPER: OTP-Liste auf einem Stück Papier."
 msgid "PGP Key"
 msgstr "PGP-Schlüssel"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:27
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:29
 #: privacyidea/static/components/directives/views/directive.assignuser.html:36
 #: privacyidea/static/components/token/views/token.enroll.html:59
 msgid "PIN"
@@ -2419,7 +2408,7 @@ msgstr ""
 "regelmäßigen Aufgaben ausgeführt werden sollen, anzugeben."
 
 #: privacyidea/static/components/config/views/config.html:26
-#: privacyidea/static/components/dashboard/views/dashboard.html:113
+#: privacyidea/static/components/dashboard/views/dashboard.html:117
 msgid "Policies"
 msgstr "Richtlinien"
 
@@ -2536,18 +2525,9 @@ msgid "Quick Resolver Test"
 msgstr "Schneller Resolver-Test"
 
 #: privacyidea/static/components/machine/views/machine.html:15
+#: privacyidea/static/components/user/views/user.html:44
 msgid "Quick links"
 msgstr "Verwandte Themen"
-
-#: privacyidea/static/components/user/views/user.html:44
-msgid ""
-"Quick links\n"
-"                        <a ui-sref=\"config.realms.list\" translate>Edit "
-"realms</a>"
-msgstr ""
-"Verwandte Themen:\n"
-"                        <a ui-sref=\"config.realms.list\" translate>Realms "
-"bearbeiten</a>"
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
 msgid "RADIUS Config saved."
@@ -2688,7 +2668,7 @@ msgstr "Remote Benutzer"
 msgid "Repeat new PIN"
 msgstr "PIN wiederholen"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:37
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:46
 #: privacyidea/static/components/recovery/views/recovery.reset.html:19
 #: privacyidea/static/components/token/views/token.enroll.html:67
@@ -3176,7 +3156,7 @@ msgid "Subscription issued to"
 msgstr "Subskription ausgestellt für"
 
 #: privacyidea/static/components/components/views/component.html:28
-#: privacyidea/static/components/dashboard/views/dashboard.html:191
+#: privacyidea/static/components/dashboard/views/dashboard.html:195
 msgid "Subscriptions"
 msgstr "Subskriptionen"
 
@@ -3492,8 +3472,8 @@ msgid ""
 "The Serial number for the OTP value {{ otp }} is\n"
 "    <a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
 msgstr ""
-"Die Seriennummer für den Token mit dem OTP-Wert {{ otp }} ist <a ui-sref="
-"\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
+"Die Seriennummer für den Token mit dem OTP-Wert {{ otp }} ist <a ui-"
+"sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.spass.html:1
 msgid ""
@@ -3701,18 +3681,18 @@ msgid ""
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "Die Authentifizierung kann von der normalen privacyIDEA <a href=\"http://"
-"privacyidea.readthedocs.org/en/latest/modules/api/validate.html\" target="
-"\"_blank\">validate API</a> aber auch vom <a href=\"http://privacyidea."
-"readthedocs.org/en/latest/modules/lib/tokentypes/yubikey.html#privacyidea."
-"lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" target=\"_blank"
-"\">Yubico Validation Protokoll</a> durchgeführt werden."
+"privacyidea.readthedocs.org/en/latest/modules/api/validate.html\" "
+"target=\"_blank\">validate API</a> aber auch vom <a href=\"http://"
+"privacyidea.readthedocs.org/en/latest/modules/lib/tokentypes/yubikey."
+"html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
+"target=\"_blank\">Yubico Validation Protokoll</a> durchgeführt werden."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
 msgid ""
 "The authentication request is forwarded to the YubiCloud. For accessing\n"
 "    the YubiCloud you need to enter an API Client ID and an API Key, which\n"
-"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" target="
-"\"_extern\">here</a>."
+"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" "
+"target=\"_extern\">here</a>."
 msgstr ""
 "Die Authentisierungsanfrage wird an die YubiCloud weitergeleitet. Um die "
 "YubiCloud ansprechen zu können, benötigt man ein API Client ID und einen API "
@@ -3845,8 +3825,8 @@ msgstr ""
 "Manche Komponenten können im Detail anderen Lizenzen folgen. privacyIDEA "
 "wurde ursprünglich als Fork von LinOTP erstellt, das durch die LSE Leading "
 "Security Experts GmbH lizenziert wurde. Für weitere Details schauen Sie "
-"bitte beim  <a href=\"http://github.com/privacyidea/privacyidea\" target="
-"\"github\">Backend Service</a>."
+"bitte beim  <a href=\"http://github.com/privacyidea/privacyidea\" "
+"target=\"github\">Backend Service</a>."
 
 #: privacyidea/static/app.js:142
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
@@ -4017,11 +3997,11 @@ msgid ""
 "newUser.realm})\">{{ newUser.user }}</a> in realm\n"
 "            {{ newUser.realm }}."
 msgstr ""
-"Der Token mit der Seriennummer <a ui-sref=\"token."
-"details({tokenSerial:enrolledToken.serial})\">{{ enrolledToken.serial }}</a> "
-"wurde erfolgreich für den Benutzer\n"
-"<a ui-sref=\"user.details({username:newUser.user, realmname:newUser.realm})\""
-">{{ newUser.user }}</a> in Realm {{ newUser.realm }} ausgerollt."
+"Der Token mit der Seriennummer <a ui-sref=\"token.details({tokenSerial:"
+"enrolledToken.serial})\">{{ enrolledToken.serial }}</a> wurde erfolgreich "
+"für den Benutzer\n"
+"<a ui-sref=\"user.details({username:newUser.user, realmname:newUser."
+"realm})\">{{ newUser.user }}</a> in Realm {{ newUser.realm }} ausgerollt."
 
 #: privacyidea/static/components/token/views/token.enroll.html:160
 msgid ""
@@ -4185,8 +4165,8 @@ msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
 "        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
 "        For more details see the\n"
-"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
-"\">RFC\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" "
+"target=\"OCRA\">RFC\n"
 "            6287</a>."
 msgstr ""
 "Dies ist die OCRA-Suite, die von der TiQR-App verwendet wird. Standardmäßig "
@@ -4460,7 +4440,7 @@ msgstr "Transaktions-ID"
 msgid "Type"
 msgstr "Typ"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:32
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:34
 #: privacyidea/static/components/directives/views/directive.assignuser.html:41
 #: privacyidea/static/components/recovery/views/recovery.reset.html:14
 #: privacyidea/static/components/token/views/token.enroll.html:63
@@ -4899,8 +4879,8 @@ msgid ""
 msgstr ""
 "Ihre Subskription ist nicht mehr gültig. Entweder haben Sie die Anzahl der "
 "erlaubten Token überschritten oder Ihre Subskription ist abgelaufen. Bitte "
-"überprüfen Sie, ob Sie Ihre <a ui-sref=\"component.subscriptions"
-"\">Subskription</a> erneuern müssen."
+"überprüfen Sie, ob Sie Ihre <a ui-sref=\"component."
+"subscriptions\">Subskription</a> erneuern müssen."
 
 #: privacyidea/static/components/login/views/pinchange.html:5
 msgid ""
@@ -5555,11 +5535,11 @@ msgstr "{{ enrolledToken.verify.message }}"
 #~ "entsprechende Haftbarkeit. Das Unternehmen NetKnights GmbH beschäftigt "
 #~ "die Hauptentwickler von privacyIDEA und kann Sie bei der Integration in "
 #~ "Ihre Umgebung unterstützen. Weiterhin erhalten Sie  <a href=\"https://"
-#~ "netknights.it/leistungen/service-level-agreements/\" target=\"netknights"
-#~ "\">Service Level Agreements</a>, Support und eine <a href=\"https://"
-#~ "netknights.it/produkte/privacyidea/\" target=\"netknights\">Enterprise "
-#~ "Edition</a>, die zustätzliche Paketierungen und Appliance-"
-#~ "Funktionalitäten mitbringt.</p>"
+#~ "netknights.it/leistungen/service-level-agreements/\" "
+#~ "target=\"netknights\">Service Level Agreements</a>, Support und eine <a "
+#~ "href=\"https://netknights.it/produkte/privacyidea/\" "
+#~ "target=\"netknights\">Enterprise Edition</a>, die zustätzliche "
+#~ "Paketierungen und Appliance-Funktionalitäten mitbringt.</p>"
 
 #~ msgid "Professional Services and Enterprise Edition"
 #~ msgstr "Professionelle Leistungen und Enterprise Edition"

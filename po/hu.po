@@ -46,14 +46,6 @@ msgid ""
 "                        Ask for the privacyIDEA Enterprise Edition, now!</a>"
 msgstr ""
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:187
-msgid ""
-"<a ui-sref=\"component.subscriptions\">\n"
-"                    <span class=\"glyphicon glyphicon-calendar\" aria-hidden="
-"\"true\"></span>\n"
-"                    <span translate>Subscriptions</span></a>"
-msgstr ""
-
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
 msgstr ""
@@ -218,7 +210,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.details.html:130
 #: privacyidea/static/components/config/views/config.policies.details.html:279
 #: privacyidea/static/components/config/views/config.policies.list.html:20
-#: privacyidea/static/components/dashboard/views/dashboard.html:87
+#: privacyidea/static/components/dashboard/views/dashboard.html:91
 msgid "Action"
 msgstr "Akció"
 
@@ -231,11 +223,11 @@ msgstr "Akció"
 msgid "Active"
 msgstr "Aktív"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:156
+#: privacyidea/static/components/dashboard/views/dashboard.html:160
 msgid "Active Events"
 msgstr "Aktív Események"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:119
+#: privacyidea/static/components/dashboard/views/dashboard.html:123
 msgid "Active Policies"
 msgstr "Aktív Házirendek"
 
@@ -271,11 +263,11 @@ msgstr "Admin"
 msgid "Admin-Realm"
 msgstr ""
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:80
+#: privacyidea/static/components/dashboard/views/dashboard.html:84
 msgid "Administration"
 msgstr "Adminisztráció"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:86
+#: privacyidea/static/components/dashboard/views/dashboard.html:90
 msgid "Administrator"
 msgstr "Adminisztrátor"
 
@@ -841,7 +833,7 @@ msgstr ""
 msgid "Database Encoding"
 msgstr ""
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:85
+#: privacyidea/static/components/dashboard/views/dashboard.html:89
 msgid "Date"
 msgstr ""
 
@@ -933,7 +925,7 @@ msgstr ""
 msgid "Detach"
 msgstr ""
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:88
+#: privacyidea/static/components/dashboard/views/dashboard.html:92
 msgid "Detail"
 msgstr ""
 
@@ -1255,7 +1247,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.events.details.html:44
 #: privacyidea/static/components/config/views/config.events.list.html:16
 #: privacyidea/static/components/config/views/config.html:32
-#: privacyidea/static/components/dashboard/views/dashboard.html:151
+#: privacyidea/static/components/dashboard/views/dashboard.html:155
 msgid "Events"
 msgstr ""
 
@@ -1655,11 +1647,11 @@ msgid ""
 "will take precedence."
 msgstr ""
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:168
+#: privacyidea/static/components/dashboard/views/dashboard.html:172
 msgid "Inactive Events"
 msgstr ""
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:131
+#: privacyidea/static/components/dashboard/views/dashboard.html:135
 msgid "Inactive Policies"
 msgstr ""
 
@@ -1761,7 +1753,7 @@ msgstr ""
 msgid "Loading Machines..."
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:16
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:17
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:15
 msgid "Loading serials..."
 msgstr ""
@@ -1970,7 +1962,7 @@ msgstr ""
 msgid "No retrieval of schema information"
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:19
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:20
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:18
 msgid "No serial found"
 msgstr ""
@@ -2131,7 +2123,7 @@ msgstr ""
 msgid "PGP Key"
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:27
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:29
 #: privacyidea/static/components/directives/views/directive.assignuser.html:36
 #: privacyidea/static/components/token/views/token.enroll.html:59
 msgid "PIN"
@@ -2255,7 +2247,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.html:26
-#: privacyidea/static/components/dashboard/views/dashboard.html:113
+#: privacyidea/static/components/dashboard/views/dashboard.html:117
 msgid "Policies"
 msgstr ""
 
@@ -2370,14 +2362,8 @@ msgid "Quick Resolver Test"
 msgstr ""
 
 #: privacyidea/static/components/machine/views/machine.html:15
-msgid "Quick links"
-msgstr ""
-
 #: privacyidea/static/components/user/views/user.html:44
-msgid ""
-"Quick links\n"
-"                        <a ui-sref=\"config.realms.list\" translate>Edit "
-"realms</a>"
+msgid "Quick links"
 msgstr ""
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
@@ -2511,7 +2497,7 @@ msgstr ""
 msgid "Repeat new PIN"
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:37
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:46
 #: privacyidea/static/components/recovery/views/recovery.reset.html:19
 #: privacyidea/static/components/token/views/token.enroll.html:67
@@ -2982,7 +2968,7 @@ msgid "Subscription issued to"
 msgstr ""
 
 #: privacyidea/static/components/components/views/component.html:28
-#: privacyidea/static/components/dashboard/views/dashboard.html:191
+#: privacyidea/static/components/dashboard/views/dashboard.html:195
 msgid "Subscriptions"
 msgstr ""
 
@@ -3406,8 +3392,8 @@ msgstr ""
 msgid ""
 "The authentication request is forwarded to the YubiCloud. For accessing\n"
 "    the YubiCloud you need to enter an API Client ID and an API Key, which\n"
-"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" target="
-"\"_extern\">here</a>."
+"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" "
+"target=\"_extern\">here</a>."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
@@ -3770,8 +3756,8 @@ msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
 "        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
 "        For more details see the\n"
-"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
-"\">RFC\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" "
+"target=\"OCRA\">RFC\n"
 "            6287</a>."
 msgstr ""
 
@@ -4017,7 +4003,7 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:32
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:34
 #: privacyidea/static/components/directives/views/directive.assignuser.html:41
 #: privacyidea/static/components/recovery/views/recovery.reset.html:14
 #: privacyidea/static/components/token/views/token.enroll.html:63

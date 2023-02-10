@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-12-21 16:58+0100\n"
+"POT-Creation-Date: 2023-02-09 12:39+0100\n"
 "PO-Revision-Date: 2022-04-27 14:55+0000\n"
 "Last-Translator: Cornelius Kölbel <cornelius.koelbel@netknights.it>\n"
 "Language: es\n"
@@ -31,27 +31,27 @@ msgstr "Fallo la autenticación. Usuario no encontrado"
 msgid "Authentication failure. Wrong credentials"
 msgstr "Fallo la autenticación. Credenciales incorrectas"
 
-#: api/lib/utils.py:310
+#: api/lib/utils.py:344
 msgid "Authentication failure. Missing Authorization header."
 msgstr "Fallo la autenticación. Falta el header de autenticación."
 
-#: api/lib/utils.py:338 api/lib/utils.py:348
+#: api/lib/utils.py:372 api/lib/utils.py:382
 msgid "Authentication failure. Your token has expired: {0!s}"
 msgstr "Fallo la autenticación. El token ha expirado: {0!s}"
 
-#: api/lib/utils.py:345
+#: api/lib/utils.py:379
 msgid "Authentication failure. Error during decoding your token: {0!s}"
 msgstr ""
 "Fallo la autenticación. Hubo un error durante la decodificación de su "
 "token: {0!s}"
 
-#: api/lib/utils.py:352
+#: api/lib/utils.py:386
 msgid ""
 "Authentication failure. The username {0!s} is not allowed to impersonate "
 "via JWT."
 msgstr "Fallo en la autenticación. El usuario {0!s} no puede autenticarse vía JWT."
 
-#: api/lib/utils.py:356
+#: api/lib/utils.py:390
 msgid ""
 "Authentication failure. You do not have the necessary role ({0!s}) to "
 "access this resource!"
@@ -59,11 +59,11 @@ msgstr ""
 "Fallo la autenticación. Usted no tiene el rol ({0!s}) necesario para "
 "acceder al recurso!"
 
-#: api/lib/utils.py:374
+#: api/lib/utils.py:408
 msgid "'{0!s}' is an invalid policy name."
 msgstr "'{0!s}' es un nombre de política inválido."
 
-#: api/lib/utils.py:377
+#: api/lib/utils.py:411
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
 msgstr "El nombre de la política solo puede contener los caracteres a-zA-Z0-9_. -"
 
@@ -95,7 +95,7 @@ msgstr "Numero de serial invalido."
 msgid "Invalid user."
 msgstr "Usuario invalido."
 
-#: lib/error.py:195
+#: lib/error.py:196
 msgid "You either need to provide user or serial"
 msgstr "Usted necesita proveer un usuario o un serial"
 
@@ -1396,7 +1396,8 @@ msgid "wrong otp pin"
 msgstr ""
 
 #: lib/token.py:2452
-msgid "Admin is allowed to initalize {0!s} tokens."
+#, fuzzy
+msgid "Admin is allowed to initialize {0!s} tokens."
 msgstr "El administrador puede inicializar {0!s} tokens."
 
 #: lib/token.py:2460
@@ -2281,11 +2282,11 @@ msgstr ""
 msgid "Enter the OTP from the Email:"
 msgstr "Teclee el OTP del correo electrónico:"
 
-#: lib/tokens/emailtoken.py:315
+#: lib/tokens/emailtoken.py:316
 msgid "The PIN was correct, but the EMail could not be sent!"
 msgstr ""
 
-#: lib/tokens/emailtoken.py:543
+#: lib/tokens/emailtoken.py:547
 msgid "Please enter your new email address!"
 msgstr ""
 
@@ -2307,61 +2308,61 @@ msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens "
 "\"4eyes\" activos."
 
-#: lib/tokens/hotptoken.py:84
+#: lib/tokens/hotptoken.py:85
 msgid "Please enter a valid OTP value of the new token."
 msgstr ""
 
-#: lib/tokens/hotptoken.py:99
+#: lib/tokens/hotptoken.py:100
 msgid "Specify the hashing function to be used. Can be SHA1, SHA256 or SHA512."
 msgstr ""
 "Especifique el \"hashlib\" que se utilizará. Puede ser \"SHA-1\", "
 "\"SHA-256\" o \"SHA-512\"."
 
-#: lib/tokens/hotptoken.py:101
+#: lib/tokens/hotptoken.py:102
 msgid "Specify the OTP length to be used. Can be 6 or 8 digits."
 msgstr ""
 "Especifique la longitud del \"otp\" que se utilizará. Puede tener 6 u 8 "
 "dígitos."
 
-#: lib/tokens/hotptoken.py:102
+#: lib/tokens/hotptoken.py:103
 msgid "Force the key to be generated on the server."
 msgstr "Fuerzar la generación de la clave en el servidor."
 
-#: lib/tokens/hotptoken.py:103
+#: lib/tokens/hotptoken.py:104
 msgid "Specify whether users are allowed or forced to use two-step enrollment."
 msgstr ""
 "Especifique si los usuarios pueden o están obligados a utilizar la "
 "inscripción en dos pasos."
 
-#: lib/tokens/hotptoken.py:105
+#: lib/tokens/hotptoken.py:106
 msgid "Specify whether admins are allowed or forced to use two-step enrollment."
 msgstr ""
 "Especifique si los administradores pueden o están obligados a utilizar la"
 " inscripción en dos pasos."
 
-#: lib/tokens/hotptoken.py:142
+#: lib/tokens/hotptoken.py:143
 msgid "HOTP: Event based One Time Passwords."
 msgstr "HOTP: Contraseñas de un solo uso basadas en eventos."
 
-#: lib/tokens/hotptoken.py:150
+#: lib/tokens/hotptoken.py:151
 msgid "The user may only have this maximum number of HOTP tokens assigned."
 msgstr "El usuario solo puede tener asignado este número máximo de tokens HOTP."
 
-#: lib/tokens/hotptoken.py:155
+#: lib/tokens/hotptoken.py:156
 msgid "The user may only have this maximum number of active HOTP tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens HOTP "
 "activos."
 
-#: lib/tokens/hotptoken.py:160 lib/tokens/totptoken.py:151
+#: lib/tokens/hotptoken.py:161 lib/tokens/totptoken.py:151
 msgid "The size of the OTP seed part contributed by the client (in bytes)"
 msgstr "El tamaño de la semilla de OTP aportada por el cliente (en bytes)"
 
-#: lib/tokens/hotptoken.py:165 lib/tokens/totptoken.py:154
+#: lib/tokens/hotptoken.py:166 lib/tokens/totptoken.py:154
 msgid "The size of the OTP seed part contributed by the server (in bytes)"
 msgstr "El tamaño de la semilla de OTP aportada por el cliente (en bytes)"
 
-#: lib/tokens/hotptoken.py:170 lib/tokens/totptoken.py:157
+#: lib/tokens/hotptoken.py:171 lib/tokens/totptoken.py:157
 msgid ""
 "The difficulty factor used for the OTP seed generation (should be at "
 "least 10000)"
@@ -2369,21 +2370,21 @@ msgstr ""
 "El factor de fortaleza utilizado para la generación de semillas de OTP "
 "(debe ser al menos 10000)"
 
-#: lib/tokens/hotptoken.py:175 lib/tokens/totptoken.py:162
+#: lib/tokens/hotptoken.py:176 lib/tokens/totptoken.py:162
 msgid "Enforce setting an app pin for the privacyIDEA Authenticator App"
 msgstr ""
 "Es necesaria la configuración del pin para la aplicación PrivacyIDEA "
 "Authenticator"
 
-#: lib/tokens/hotptoken.py:281
+#: lib/tokens/hotptoken.py:282
 msgid "URL for google Authenticator"
 msgstr "URL de la aplicación \"google Authenticator\""
 
-#: lib/tokens/hotptoken.py:294
+#: lib/tokens/hotptoken.py:295
 msgid "URL for OATH token"
 msgstr "URL del token OATH"
 
-#: lib/tokens/hotptoken.py:843 lib/tokens/pushtoken.py:1058
+#: lib/tokens/hotptoken.py:827 lib/tokens/pushtoken.py:1044
 msgid "Please scan the QR code!"
 msgstr "Escanee el código QR"
 
@@ -2505,33 +2506,33 @@ msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens de "
 "contraseña\" activos."
 
-#: lib/tokens/pushtoken.py:70
+#: lib/tokens/pushtoken.py:71
 msgid "Please confirm the authentication on your mobile device!"
 msgstr "¡Confirme la autenticación en su dispositivo móvil!"
 
-#: lib/tokens/pushtoken.py:71
+#: lib/tokens/pushtoken.py:72
 msgid ""
 "Use the polling feature of your privacyIDEA Authenticator App to check "
 "for a new Login request."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:73
+#: lib/tokens/pushtoken.py:74
 msgid "Do you want to confirm the login?"
 msgstr "¿Quieres confirmar el inicio de sesión?"
 
-#: lib/tokens/pushtoken.py:299
+#: lib/tokens/pushtoken.py:300
 msgid "PUSH Token"
 msgstr "PUSH Token"
 
-#: lib/tokens/pushtoken.py:301
+#: lib/tokens/pushtoken.py:302
 msgid "PUSH: Send a push notification to a smartphone."
 msgstr "PUSH: envía una notificación de inserción a un \"Smartphone\"."
 
-#: lib/tokens/pushtoken.py:309
+#: lib/tokens/pushtoken.py:310
 msgid "The configuration of your Firebase application."
 msgstr "La configuración de tu aplicación Firebase."
 
-#: lib/tokens/pushtoken.py:317
+#: lib/tokens/pushtoken.py:318
 msgid ""
 "The URL the Push App should contact in the second enrollment step. "
 "Usually it is the endpoint /ttype/push of the privacyIDEA server."
@@ -2540,7 +2541,7 @@ msgstr ""
 "de inscripción. Por lo general, es el \"endpoint/ttype/push\" del "
 "servidor privacyIDEA."
 
-#: lib/tokens/pushtoken.py:323
+#: lib/tokens/pushtoken.py:324
 msgid ""
 "The second enrollment step must be completed within this time (in "
 "minutes)."
@@ -2548,43 +2549,43 @@ msgstr ""
 "El segundo paso de inscripción debe completarse en este intervalo de "
 "tiempo (en minutos)."
 
-#: lib/tokens/pushtoken.py:327
+#: lib/tokens/pushtoken.py:328
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
 msgstr ""
 "El \"smartphone\" debe verificar SSL durante la inscripción. "
 "(predeterminado 1)"
 
-#: lib/tokens/pushtoken.py:333
+#: lib/tokens/pushtoken.py:334
 msgid "The user may only have this maximum number of Push tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens "
 "Push\"."
 
-#: lib/tokens/pushtoken.py:338
+#: lib/tokens/pushtoken.py:339
 msgid "The user may only have this maximum number of active Push tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens "
 "Push\" activos."
 
-#: lib/tokens/pushtoken.py:344
+#: lib/tokens/pushtoken.py:345
 msgid "Require to unlock the Smartphone before Push requests can be accepted"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:350
+#: lib/tokens/pushtoken.py:351
 msgid "The question the user sees on his mobile phone."
 msgstr "La pregunta que ve el usuario en su teléfono móvil."
 
-#: lib/tokens/pushtoken.py:355
+#: lib/tokens/pushtoken.py:356
 msgid "The title of the notification, the user sees on his mobile phone."
 msgstr "El título de la notificación que el usuario ve en su teléfono móvil."
 
-#: lib/tokens/pushtoken.py:360
+#: lib/tokens/pushtoken.py:361
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr ""
 "El \"smarthphone\" debe verificar SSL durante la autenticación. "
 "(predeterminado 1)"
 
-#: lib/tokens/pushtoken.py:366
+#: lib/tokens/pushtoken.py:367
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
@@ -2592,11 +2593,11 @@ msgstr ""
 "Espere unos segundos para que el usuario confirme el desafío de la "
 "primera solicitud."
 
-#: lib/tokens/pushtoken.py:372
+#: lib/tokens/pushtoken.py:373
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr "Configure si desea permitir que los \"tokens push\" sondeen los desafíos"
 
-#: lib/tokens/pushtoken.py:502
+#: lib/tokens/pushtoken.py:503
 msgid "URL for privacyIDEA Push Token"
 msgstr "URL para el \"Push Token\" de privacyIDEA"
 
@@ -2751,7 +2752,7 @@ msgstr "Ingrese la OTP del SMS:"
 msgid "The PIN was correct, but the SMS could not be sent!"
 msgstr ""
 
-#: lib/tokens/smstoken.py:603
+#: lib/tokens/smstoken.py:604
 msgid "Please enter your new phone number!"
 msgstr ""
 
