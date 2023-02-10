@@ -98,18 +98,21 @@ angular.module("privacyideaApp")
     // TODO: We can change this after login, if there is a user dependent customization!
 
     $scope.confirmDelete = function(delete_function, identifier) {
-        var question = document.activeElement.ariaLabel;
-        if (!question) {
-            question = gettextCatalog.getString('Do you really want to delete this object?');
+        $scope.confirmDeleteObj = {
+            question: document.activeElement.ariaLabel,
+            identifier: identifier,
+            delete_function: delete_function
+        };
+        if (!$scope.confirmDeleteObj.question) {
+            $scope.confirmDeleteObj.question = gettextCatalog.getString('Do you really want to delete this object?');
         }
         if ($scope.deletion_confirmation) {
-            if (confirm(question)) {
-                delete_function(identifier);
-            }
+            $('#dialogConfirmDelete').modal();
         } else {
-            delete_function(identifier);
+            $scope.confirmDeleteObj.delete_function($scope.confirmDeleteObj.identifier);
         }
     };
+
     hotkeys.add({
         combo: 'alt+e',
         description: gettextCatalog.getString('Enroll a new token'),
