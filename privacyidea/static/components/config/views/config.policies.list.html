@@ -73,7 +73,8 @@
             <td>
                 <button class="btn btn-danger"
                         ng-show="checkRight('policydelete')"
-                        ng-click="confirmDelete(delPolicy, policy.name, 'policy')">
+                        aria-label='{{ "Do you really want to delete this policy?" |  translate }}'
+                        ng-click="confirmDelete(delPolicy, policy.name)">
                         <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
                 </button>

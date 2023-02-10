@@ -13,7 +13,8 @@
         Enable
     </button>
     <button class="btn btn-danger"
-            ng-click="confirmDelete(delPolicy, existingPolicyname, 'policy')">
+            aria-label="{{ 'Do you really want to delete this policy?' | translate }}"
+            ng-click="confirmDelete(delPolicy, existingPolicyname)">
         <span class="glyphicon glyphicon-trash"></span>
         <span translate>Delete</span>
     </button>

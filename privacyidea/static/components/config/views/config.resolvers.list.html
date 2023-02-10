@@ -21,7 +21,8 @@
                         translate>Edit</button>
                 <button class="btn btn-sm btn-danger"
                         ng-show="checkRight('resolverdelete')"
-                        ng-click="confirmDelete(delResolver, resolver.resolvername, 'resolver')">
+                        aria-label="{{ 'Do you really want to delete this resolver?' | translate }}"
+                        ng-click="confirmDelete(delResolver, resolver.resolvername)">
                     <span class="glyphicon glyphicon-trash"></span>
                     <span translate>Delete</span>
                 </button>
