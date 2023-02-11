@@ -24,7 +24,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
                                    check_serial_valid, determine_logged_in_userparams,
-                                   to_list, parse_string_to_dict)
+                                   to_list, parse_string_to_dict, convert_imagefile_to_dataimage)
 from privacyidea.lib.crypto import generate_password
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
@@ -1012,3 +1012,14 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(d.get("key1"), ["v1", "v2", "v3"])
         self.assertEqual(d.get("key2"), [])
         self.assertEqual(d.get("key3"), ["v5"])
+
+    def test_36_imagefile_to_dataimage(self):
+        file = "./tests/testdata/FIDO-U2F-Security-Key-444x444.png"
+        dataimage = convert_imagefile_to_dataimage(file)
+        self.assertTrue(dataimage.startswith("data:image/png"))
+
+        # File not found returns an empty datatime string
+        file = "./tests/testdata/FIDO-U2F-Security-Key-444x444.XXX"
+        dataimage = convert_imagefile_to_dataimage(file)
+        self.assertEqual("", dataimage)
+

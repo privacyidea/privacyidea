@@ -46,6 +46,7 @@ import importlib_metadata
 import time
 import html
 import segno
+import mimetypes
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
 
@@ -1489,3 +1490,22 @@ def replace_function_event_handler(text, token_serial=None, tokenowner=None, log
     except(ValueError, KeyError) as err:
         log.warning("Unable to replace placeholder: ({0!s})! Please check the webhooks data option.".format(err))
         return text
+
+
+def convert_imagefile_to_dataimage(imagepath):
+    """
+    This helper reads an image file and converts it to a dataimage string,
+    that can be directly used in HTML pages.
+
+    :param imagepath:
+    :return: A dataimage as string
+    """
+    try:
+        mime, _ = mimetypes.guess_type(imagepath)
+        with open(imagepath, "rb") as f:
+            data = f.read()
+            data64 = base64.urlsafe_b64encode(data)
+        return "data:{0!s};base64,{1!s}".format(mime, data64)
+    except FileNotFoundError:
+        log.warning("The file {0!s} could not be found.".format(imagepath))
+        return ""
