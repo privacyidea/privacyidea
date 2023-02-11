@@ -45,7 +45,7 @@ import logging
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import hexlify_and_unicode, is_true
+from privacyidea.lib.utils import hexlify_and_unicode, is_true, convert_imagefile_to_dataimage
 
 __doc__ = """
 WebAuthn  is the Web Authentication API specified by the FIDO Alliance.
@@ -1176,10 +1176,11 @@ class WebAuthnTokenClass(TokenClass):
                              required)
         ).assertion_dict
 
+        dataimage = convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
         reply_dict = {"attributes": {"webAuthnSignRequest": public_key_credential_request_options,
                                      "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
-                                     "img": user.icon_url},
-                      "image": user.icon_url}
+                                     "img": dataimage},
+                      "image": dataimage}
 
         return True, message, db_challenge.transaction_id, reply_dict
 

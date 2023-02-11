@@ -45,7 +45,7 @@ from privacyidea.lib.error import ValidateError, PolicyError, ParameterError
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION, get_action_values_from_options
 from privacyidea.lib.policy import Match
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.utils import is_true, hexlify_and_unicode, to_unicode
+from privacyidea.lib.utils import is_true, hexlify_and_unicode, to_unicode, convert_imagefile_to_dataimage
 import binascii
 import json
 
@@ -483,10 +483,11 @@ class U2fTokenClass(TokenClass):
                             "keyHandle": key_handle_url}
 
         image_url = IMAGES.get(self.token.description.lower().split()[0], "")
+        dataimage = convert_imagefile_to_dataimage(image_url) if image_url else ""
         reply_dict = {"attributes": {"u2fSignRequest": u2f_sign_request,
                                      "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
-                                     "img": image_url},
-                      "image": image_url}
+                                     "img": dataimage},
+                      "image": dataimage}
 
         return True, message, db_challenge.transaction_id, reply_dict
 
