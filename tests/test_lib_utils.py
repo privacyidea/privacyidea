@@ -1016,7 +1016,7 @@ class UtilsTestCase(MyTestCase):
     def test_36_imagefile_to_dataimage(self):
         file = "./tests/testdata/FIDO-U2F-Security-Key-444x444.png"
         dataimage = convert_imagefile_to_dataimage(file)
-        self.assertTrue(dataimage.startswith("data:image/png"))
+        self.assertTrue(dataimage.startswith("data:image/png;base64,iVBOR"))
 
         # File not found returns an empty datatime string
         file = "./tests/testdata/FIDO-U2F-Security-Key-444x444.XXX"

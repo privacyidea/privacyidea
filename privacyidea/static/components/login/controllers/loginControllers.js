@@ -272,11 +272,8 @@ angular.module("privacyideaApp")
                             $scope.webAuthnSignRequests.push(attributes.webAuthnSignRequest);
                         }
                         if (challenge.image) {
+                            // This should always be a base64 encoded image
                             $scope.image = challenge.image;
-                            if ($scope.image.indexOf("data:image") === -1) {
-                                // In case of an Image link, we prepend the instanceUrl
-                                $scope.image = $scope.instanceUrl + "/" + $scope.image;
-                            }
                         }
                         if (challenge.client_mode && challenge.client_mode === 'poll') {
                             $scope.polling = true;

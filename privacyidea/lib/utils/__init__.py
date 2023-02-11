@@ -26,6 +26,8 @@ This is the library with base functions for privacyIDEA.
 
 This module is tested in tests/test_lib_utils.py
 """
+import os
+
 import six
 import logging
 from importlib import import_module
@@ -1504,8 +1506,8 @@ def convert_imagefile_to_dataimage(imagepath):
         mime, _ = mimetypes.guess_type(imagepath)
         with open(imagepath, "rb") as f:
             data = f.read()
-            data64 = base64.urlsafe_b64encode(data)
-        return "data:{0!s};base64,{1!s}".format(mime, data64)
+            data64 = base64.b64encode(data)
+        return "data:{0!s};base64,{1!s}".format(mime, to_unicode(data64))
     except FileNotFoundError:
         log.warning("The file {0!s} could not be found.".format(imagepath))
         return ""
