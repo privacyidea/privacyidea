@@ -64,6 +64,9 @@ class IndexedSecretTokenClass(TokenClass):
     positions in a shared secret.
     """
 
+    # The token type provides means to verify the enrollment
+    can_verify_enrollment = True
+
     def __init__(self, aToken):
         TokenClass.__init__(self, aToken)
         self.set_type("indexedsecret")
@@ -337,3 +340,38 @@ class IndexedSecretTokenClass(TokenClass):
                     return True
 
         return False
+
+    def prepare_verify_enrollment(self):
+        """
+        This is called, if the token should be enrolled in a way, that the user
+        needs to provide a proof, that the server can verify, that the token
+        was successfully enrolled. A challenge for the indexed secret token is created
+        and the user will later have to answer this.
+
+        The returned dictionary is added to the response in "detail" -> "verify".
+
+        :return: A dictionary with information that is needed to trigger the verification.
+        """
+        _, return_message, transaction_id, reply_dict = self.create_challenge()
+        return {"message": return_message}
+
+    def verify_enrollment(self, verify):
+        """
+        This is called during the 2nd step of the verified enrollment.
+        This method verifies the actual response from the user.
+        Returns true, if the verification was successful.
+
+        :param verify: The response given by the user
+        :return: True
+        """
+        # During the enrollment one challenge has been created. The token is not fir
+        # for authentication, yet. So there should only be one challenge for this token
+        # in the challenge table. Find it!
+        chals = get_challenges(serial=self.token.serial)
+        if len(chals) != 1:  # pragma: no cover
+            log.error("Something is wrong. There is more than one challenge!")
+        transaction_id = chals[0].transaction_id
+        r = self.check_challenge_response(passw=verify,
+                                          options={"transaction_id": transaction_id})
+        log.debug("Enrollment verified: {0!s}".format(r))
+        return r >= 0
