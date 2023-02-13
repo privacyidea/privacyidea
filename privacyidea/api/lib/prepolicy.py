@@ -2269,7 +2269,19 @@ def require_description(request=None, action=None):
     :return:
     """
     # get action values
-    action_values = Match.action_only(g, scope=SCOPE.ENROLL, action=ACTION.REQUIRE_DESCRIPTION).action_values(unique=False)
+    params = request.all_data
+    user_object = request.User
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+
+    # get REQUIRE_DESCRIPTION action_values
+    action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION,
+                             scope=SCOPE.ENROLL,
+                             adminrealm=adminrealm,
+                             adminuser=adminuser,
+                             user=username,
+                             realm=realm,
+                             user_object=user_object).action_values(unique=False)
+
     token_types = list(action_values.keys())
     # Add parameter require_description
     request.all_data["require_description"] = token_types
