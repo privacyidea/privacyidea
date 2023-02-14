@@ -53,7 +53,14 @@
             <uib-accordion>
                 <div uib-accordion-group
                      class="panel-default"
-                     heading="{{ 'Examples'|translate}}">
+                     is-open="isOpen">
+                    <uib-accordion-heading ng-click="isOpen=!isOpen">
+                        <div >{{ 'Examples'|translate}}
+                            <span class="pull-right glyphicon" aria-hidden="true"
+                               ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
+                            </span>
+                        </div>
+                    </uib-accordion-heading>
                     <ul translate>
                         <li><b>"5 10 * * *"</b> runs the task every day at 10:05 am.</li>
                         <li><b>"*/10 * * * *"</b> runs the task every ten minutes.</li>
