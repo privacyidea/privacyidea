@@ -1504,6 +1504,9 @@ def convert_imagefile_to_dataimage(imagepath):
     """
     try:
         mime, _ = mimetypes.guess_type(imagepath)
+        if not mime:
+            log.warning("Unknown file type in file {0!s}.".format(imagepath))
+            return ""
         with open(imagepath, "rb") as f:
             data = f.read()
             data64 = base64.b64encode(data)
