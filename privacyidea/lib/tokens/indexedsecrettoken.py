@@ -35,7 +35,7 @@ returns -1.
 
 import logging
 import datetime
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
 from privacyidea.lib.crypto import urandom, safe_compare
 from privacyidea.lib.log import log_with
@@ -63,11 +63,11 @@ class IndexedSecretTokenClass(TokenClass):
     Implementation of the Indexed Secret Token Class, that asks the user for certain
     positions in a shared secret.
     """
+    mode = [AUTHENTICATIONMODE.CHALLENGE]
 
     def __init__(self, aToken):
         TokenClass.__init__(self, aToken)
         self.set_type("indexedsecret")
-        self.mode = ['challenge']
 
     @staticmethod
     def get_class_type():

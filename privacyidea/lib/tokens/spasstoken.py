@@ -39,7 +39,7 @@ This code is tested in tests/test_lib_tokens_spass
 import logging
 from privacyidea.lib import _
 from privacyidea.lib.log import log_with
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
@@ -55,10 +55,11 @@ class SpassTokenClass(TokenClass):
     It does have no OTP component. The OTP checking will always
     succeed. Of course, an OTP PIN can be used.
     """
+    mode = [AUTHENTICATIONMODE.AUTHENTICATE]
+
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
         self.set_type("spass")
-        self.mode = ['authenticate']
 
     @staticmethod
     def get_class_type():
