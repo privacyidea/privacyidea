@@ -364,7 +364,7 @@ class IndexedSecretTokenClass(TokenClass):
         :param verify: The response given by the user
         :return: True
         """
-        # During the enrollment one challenge has been created. The token is not fir
+        # During the enrollment one challenge has been created. The token is not fit
         # for authentication, yet. So there should only be one challenge for this token
         # in the challenge table. Find it!
         chals = get_challenges(serial=self.token.serial)
