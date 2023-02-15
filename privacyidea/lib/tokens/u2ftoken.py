@@ -188,6 +188,7 @@ the signatureData and clientData returned by the U2F device in the *u2fResult*:
 #
 # The solokeys image is copyright (C) 2020 Solokeys. License: CC-BY-SA 4.0
 #
+# The image is a relative file system path.
 IMAGES = {"yubico": "privacyidea/static/img/FIDO-U2F-Security-Key-444x444.png",
           "plug-up": "privacyidea/static/img/plugup.jpg",
           "u2fzero.com": "privacyidea/static/img/u2fzero.png",
