@@ -6,7 +6,14 @@
         <uib-accordion close-others="oneAtATime">
             <div uib-accordion-group
                  class="panel-default"
-                 heading="{{ 'The Enrollment URL'|translate }}">
+                 is-open="isOpen">
+                <uib-accordion-heading ng-click="isOpen=!isOpen">
+                    <div >{{ 'The Enrollment URL'|translate }}
+                        <span class="pull-right glyphicon" aria-hidden="true"
+                           ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
+                        </span>
+                    </div>
+                </uib-accordion-heading>
                 {{ enrolledToken.tiqrenroll.value }}
             </div>
         </uib-accordion>
