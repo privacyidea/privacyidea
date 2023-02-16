@@ -68,7 +68,7 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 import logging
 
 from OpenSSL import crypto
-
+from privacyidea.lib import _
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
@@ -2268,12 +2268,10 @@ def require_description(request=None, action=None):
     :param action:
     :return:
     """
-    # get action values
     params = request.all_data
     user_object = request.User
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
-    # get REQUIRE_DESCRIPTION action_values
     action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION,
                              scope=SCOPE.ENROLL,
                              adminrealm=adminrealm,
@@ -2283,9 +2281,7 @@ def require_description(request=None, action=None):
                              user_object=user_object).action_values(unique=False)
 
     token_types = list(action_values.keys())
-    # Add parameter require_description
-    request.all_data["require_description"] = token_types
-    # check if description is required
     if request.all_data.get("type") and request.all_data["type"] in token_types:
-        log.warning("Missing description for {} token.".format(request.all_data["type"]))
-        raise PolicyError("Description required for {} token.".format(request.all_data["type"]))
+        if not request.all_data.get("description"):
+            log.warning(_("Missing description for {} token.".format(request.all_data["type"])))
+            raise PolicyError(_("Description required for {} token.".format(request.all_data["type"])))
