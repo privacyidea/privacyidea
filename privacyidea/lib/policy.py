@@ -2124,10 +2124,7 @@ def get_static_policy_definitions(scope=None):
                           'description required for all selected token-types.'),
                 'group': GROUP.ENROLLMENT,
                 'multiple': True,
-                'value': ['4eyes', 'certificate', 'email', 'hotp', 'indexedsecret',
-                          'motp', 'paper', 'push', 'question', 'radius', 'registration',
-                          'remote', 'sms', 'spass', 'sshkey', 'tan', 'totp', 'vasco',
-                          'webauthn', 'yubico', 'yubikey', 'tiqr', 'u2f']},
+                'value': list(get_token_types())},
 
             ACTION.MAXTOKENUSER: {
                 'type': 'int',
