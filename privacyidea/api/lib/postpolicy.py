@@ -589,7 +589,8 @@ def get_webui_settings(request, response):
                                                     user=loginname, realm=realm).action_values(unique=True)
         logout_redirect_url_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.LOGOUT_REDIRECT,
                                                 user=loginname, realm=realm).action_values(unique=True)
-        require_description = Match.action_only(g, scope=SCOPE.ENROLL, action=ACTION.REQUIRE_DESCRIPTION).action_values(unique=False)
+        require_description = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.REQUIRE_DESCRIPTION,
+                                            user=loginname, realm=realm).action_values(unique=False)
 
         qr_image_android = create_img(DEFAULT_ANDROID_APP_URL) if qr_android_authenticator else None
         qr_image_ios = create_img(DEFAULT_IOS_APP_URL) if qr_ios_authenticator else None
