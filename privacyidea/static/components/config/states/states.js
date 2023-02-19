@@ -89,27 +89,33 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                 })
                 .state('config.caconnectors', {
                     url: "/caconnectors",
-                    templateUrl: configpath + "config.system.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.system.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "CAConnectorController"
                 })
                 .state('config.caconnectors.list', {
                     url: "/list",
-                    templateUrl: configpath + "config.caconnectors.list.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.caconnectors.list.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "CAConnectorController"
                 })
                 .state('config.caconnectors.addlocal', {
                     url: "/local",
-                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "CAConnectorController"
                 })
                 .state('config.caconnectors.editlocal', {
                     url: "/local/:connectorname",
-                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.caconnectors.local.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "CAConnectorController"
                 })
                 .state('config.caconnectors.addmicrosoft', {
                     url: "/microsoft",
-                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "CAConnectorController"
                 })
                 .state('config.caconnectors.editmicrosoft', {
                     url: "/microsoft/:connectorname",
-                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: configpath + "config.caconnectors.microsoft.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "CAConnectorController"
                 })
                 .state('config.mresolvers', {
                     url: "/machineresolvers",
