@@ -70,7 +70,8 @@
                         <translate>Machines</translate>
                     </a></li>
                 <li ui-sref-active="active"
-                    ng-show="loggedInUser.role == 'admin' && checkMainMenu('config')">
+                    ng-show="loggedInUser.role == 'admin' && checkMainMenu('config')"
+                    ng-class="{ 'active': $state.includes('config')}">
                     <a ui-sref="config.system">
                         <span class="glyphicon glyphicon-cog"
                               aria-hidden="true"></span>

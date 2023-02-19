@@ -4,15 +4,15 @@
             <ul class="nav nav-pills nav-stacked">
                 <li role="presentation">
                     <li role="presentation"
-                        ng-class="{ active: $state.includes('config.system')}">
-                        <a ui-sref="config.system">
+                        ng-class="{ active: $state.includes('config.system.edit')}">
+                        <a ui-sref="config.system.edit">
                             <span class="glyphicon glyphicon-wrench"></span>
                             <span translate>System Config</span></a></li>
                     <li role="presentation"
                         ng-show="checkRight('system_documentation')"
-                        ng-class="{ active: $state.includes('config.sysdoc')}">
+                        ng-class="{ active: $state.includes('config.system.doc')}">
                     <a ng-click="getSystemDocumentation()"
-                            ui-sref="config.sysdoc"><span
+                            ui-sref="config.system.doc"><span
                             class="glyphicon glyphicon-download"></span>
                         <span translate>Get System Documentation</span></a></li>
                     <li role="presentation"
@@ -22,6 +22,23 @@
                             <span class="glyphicon glyphicon-envelope"></span>
                             <span translate>SMTP servers</span>
                         </a>
+                        <ul ng-show="$state.includes('config.smtp')" class="nav nav-pills nav-stacked">
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.smtp.list')}">
+                                <a ui-sref="config.smtp.list"
+                                        translate>List SMTP server definitions</a></li>
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.smtp.add')}"
+                                ng-show="checkRight('smtpserver_write')">
+                                <a ui-sref="config.smtp.add" translate>
+                                    New SMTP server</a></li>
+                            <hr>
+                            <li role="presentation">
+                                <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                                   privacyideaVersionNumber+'/configuration/smtpserver_config.html'}}">
+                                    <span class="glyphicon glyphicon-info-sign"></span>
+                                    <span translate>Help about SMTP-Servers</span></a></li>
+                        </ul>
                     </li>
                     <li role="presentation"
                         ng-class="{ active: $state.includes('config.radius')}"
@@ -30,6 +47,24 @@
                             <span class="glyphicon glyphicon-off"></span>
                             <span translate>RADIUS servers</span>
                         </a>
+                        <ul ng-show="$state.includes('config.radius')" class="nav nav-pills nav-stacked">
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.radius.list')}">
+                                <a ui-sref="config.radius.list"
+                                        translate>List RADIUS server definitions</a></li>
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.radius.add')}"
+                                ng-show="checkRight('radiusserver_write')">
+                                <a ui-sref="config.radius.add" translate>
+                                    New RADIUS server</a></li>
+                            <hr>
+                            <li role="presentation">
+                                <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                                   privacyideaVersionNumber+'/configuration/radiusserver_config.html'}}">
+                                    <span class="glyphicon glyphicon-info-sign"></span>
+                                    <span translate>Help about RADIUS-Server</span></a></li>
+                        </ul>
+
                     </li>
                     <li role="presentation"
                         ng-class="{ active: $state.includes('config.privacyideaserver')}"
@@ -38,6 +73,20 @@
                             <span class="glyphicon glyphicon-forward"></span>
                             <span translate>privacyIDEA servers</span>
                         </a>
+                        <ul ng-show="$state.includes('config.privacyideaserver')" class="nav nav-pills nav-stacked">
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.privacyideaserver.list')}">
+                                <a ui-sref="config.privacyideaserver.list"
+                                        translate>List privacyIDEA server
+                                    definitions</a></li>
+                            <li role="presentation"
+                                ng-show="checkRight('privacyideaserver_write')"
+                                ng-class="{ active: $state.includes('config.privacyideaserver.add')}">
+                                <a ui-sref="config.privacyideaserver.add" translate>
+                                    New privacyIDEA server
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     <li role="presentation"
                         ng-class="{ active: $state.includes('config.smsgateway')}"
@@ -46,6 +95,24 @@
                             <span class="glyphicon glyphicon-phone"></span>
                             <span translate>SMS Gateways</span>
                         </a>
+                        <ul ng-show="$state.includes('config.smsgateway')" class="nav nav-pills nav-stacked">
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.smsgateway.list')}">
+                                <a ui-sref="config.smsgateway.list" translate>
+                                    All SMS Gateways</a></li>
+                            <li role="presentation"
+                                ng-show="checkRight('smsgateway_write')"
+                                ng-class="{ active: $state.includes('config.smsgateway.add')}">
+                                <a ui-sref="config.smsgateway.add" translate>
+                                    Create new SMS Gateway definition
+                                </a></li>
+                            <hr>
+                            <li role="presentation">
+                                <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                                   privacyideaVersionNumber+'/configuration/sms_gateway_config.html'}}">
+                                    <span class="glyphicon glyphicon-info-sign"></span>
+                                    <span translate>Help about SMS-Gateways</span></a></li>
+                        </ul>
                     </li>
                     <li role="presentation"
                         ng-class="{ active: $state.includes('config.tokengroup')}"
@@ -54,6 +121,23 @@
                             <span class="glyphicon glyphicon-phone"></span>
                             <span translate>Tokengroups</span>
                         </a>
+                        <ul ng-show="$state.includes('config.tokengroup')" class="nav nav-pills nav-stacked">
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.tokengroup.list')}">
+                                <a ui-sref="config.tokengroup.list"
+                                        translate>List Tokengroup definitions</a></li>
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.tokengroup.add')}"
+                                ng-show="checkRight('tokengroup_add')">
+                                <a ui-sref="config.tokengroup.add" translate>
+                                    New Tokengroup definition</a></li>
+                            <hr>
+                            <li role="presentation">
+                                <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                                   privacyideaVersionNumber+'/configuration/tokengroups.html'}}">
+                                    <span class="glyphicon glyphicon-info-sign"></span>
+                                    <span translate>Help on Tokengroups</span></a></li>
+                        </ul>
                     </li>
                     <li role="presentation"
                         ng-class="{active: $state.includes('config.caconnectors')}">
@@ -62,263 +146,41 @@
                               aria-hidden="true"></span>
                             <span translate>CAs</span>
                         </a>
+                        <ul ng-show="$state.includes('config.caconnectors')" class="nav nav-pills nav-stacked">
+                            <li role="presentation"
+                                ng-class="{ active:
+                                $state.includes('config.caconnectors.list')}">
+                                <a ui-sref="config.caconnectors.list" translate>
+                                    All CA Connectors</a></li>
+                            <li role="presentation"
+                                ng-class="{ active:
+                                $state.includes('config.caconnectors.edit')}"
+                                    ng-show="$state.includes('config.caconnectors.edit')">
+                                <a ui-sref="config.caconnector.edit" translate>
+                                    Edit CA Connector {{ connectorname }}</a></li>
+
+                            <li class="nav nav-pills nav-header" translate
+                                ng-show="checkRight('caconnectorwrite')">
+                                New Connectors</li>
+                            <!-- Here we can get all connectors and iterated over
+                                 the resolver types.
+                            -->
+                            <li ng-repeat="connectortype in availableCAConnectorTypes"
+                                    role="presentation"
+                                ng-show="checkRight('caconnectorwrite')"
+                                ng-class="{active:
+                                $state.includes('config.caconnectors.add'+connectortype) }">
+                                <a ui-sref="config.caconnectors.add{{ connectortype }}"
+                                   translate>
+                                    New {{ connectortype | uppercase }} CA Connector</a>
+                            </li>
+                        </ul>
                     </li>
             </ul>
         </div>
     </div>
 
-    <div class="col-lg-9 panel"
-            ng-show="$state.includes('config.sysdoc')">
-        <div class="form-group col-sm-12">
-        <p class="help-block" translate>This documentation contains the current
-            configuration of your system in restructured text. You can use
-            this to document your installed system.</p>
-        <textarea ng-model="systemDocumentation"
-                  rows="15"
-                 class="form-group col-sm-12">
-        </textarea>
-        </div>
+    <div ui-view class="col-lg-9 slide panel">
     </div>
-    <div class="col-lg-9 panel"
-            ng-show="$state.includes('config.system')">
-        <form>
-        <div class="form-group col-sm-12">
-            <input name="splitAtSign" id="splitAtSign"
-                   ng-model="params.splitAtSign"
-                   type="checkbox"
-                    ng-checked="isChecked(params.splitAtSign)"/>
-            <label for="splitAtSign" translate>Use @ sign to split the username
-                and the realm.</label>
-        </div>
-        <div class="form-group col-sm-12">
-            <input name="IncFailCountOnFalsePin" id="IncFailCountOnFalsePin"
-                   ng-model="params.IncFailCountOnFalsePin"
-                   type="checkbox"
-                   ng-checked="isChecked(params.IncFailCountOnFalsePin)"/>
-            <label for="IncFailCountOnFalsePin" translate
-                    >Increase the failcounter if the wrong PIN was entered.
-            </label>
-        </div>
-        <div class="form-group">
-            <label for="failcounter_clear_timeout"
-                   class="col-sm-9 control-label" translate>Clear failcounter
-                after minutes
-            </label>
-            <div class="col-sm-3">
-                <input name="failcounter_clear_timeout" class="form-control"
-                       ng-model="params.failcounter_clear_timeout"
-                       placeholder="0"/>
-            </div>
-        </div>
-        <div class="form-group col-sm-12">
-            <input name="NoAuthCounter" id="NoAuthCounter"
-                   ng-model="params.no_auth_counter"
-                   type="checkbox"
-                    ng-checked="isChecked(params.no_auth_counter)"/>
-            <label for="NoAuthCounter" translate>Do not use an authentication counter per token.
-            </label>
-        </div>
-        <div class="form-group col-sm-12">
-            <input name="PrependPin" id="PrependPin"
-                   ng-model="params.PrependPin"
-                   type="checkbox"
-                    ng-checked="isChecked(params.PrependPin)"/>
-            <label for="PrependPin" translate>Prepend the PIN in front of the OTP value
-                . Otherwise it will be post pended.
-            </label>
-        </div>
 
-        <div class="form-group col-sm-12">
-            <input name="ReturnSamlAttributes" id="ReturnSamlAttributes"
-                   ng-model="params.ReturnSamlAttributes"
-                   type="checkbox"
-                    ng-checked="isChecked(params.ReturnSamlAttributes)"/>
-            <label for="ReturnSamlAttributes" translate>
-                Include SAML attributes in the
-                authentication response.
-            </label>
-        </div>
-
-        <div class="form-group col-sm-12">
-            <input name="ReturnSamlAttributesOnFail"
-                   id="ReturnSamlAttributesOnFail"
-                   ng-model="params.ReturnSamlAttributesOnFail"
-                   ng-disabled="!isChecked(params.ReturnSamlAttributes)"
-                   type="checkbox"
-                   ng-checked="isChecked(params.ReturnSamlAttributesOnFail)"/>
-            <label for="ReturnSamlAttributesOnFail" translate>
-                Include SAML attributes even if the user failed to authenticate.
-            </label>
-        </div>
-
-        <div class="form-group col-sm-12">
-            <input name="AutoResync" id="AutoResync"
-                   ng-model="params.AutoResync"
-                   type="checkbox"
-                    ng-checked="isChecked(params.AutoResync)"/>
-            <label for="AutoResync" translate>Automatic resync during authentication
-            </label>
-        </div>
-        <div class="form-group">
-            <label for="AutoResyncTimeout"
-                   class="col-sm-9 control-label" translate>Auto resync timeout
-            </label>
-
-            <div class="col-sm-3">
-                <input name="AutoResyncTimeout" class="form-control"
-                       ng-disabled="!params.AutoResync"
-                       ng-model="params.AutoResyncTimeout"
-                       placeholder="300"/>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="UserCacheExpiration"
-                   class="col-sm-9 control-label" translate>User Cache
-                expiration in seconds
-            </label>
-
-            <div class="col-sm-3">
-                <input name="UserCacheExpiration" class="form-control"
-                       ng-model="params.UserCacheExpiration"
-                       placeholder="0"/>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="OverrideAuthorizationClient"
-                   class="col-sm-4 control-label" translate>
-                Override Authorization Clients
-            </label>
-
-            <div class="col-sm-8">
-                <input name="OverrideAuthorizationClient" class="form-control"
-                       ng-model="params.OverrideAuthorizationClient"
-                       placeholder="127.0.0.1, 10.0.0.8"/>
-
-                <p class="help-block" translate>
-                    These client IP addresses or subnets are
-                    allowed to masquerade as another client.
-                </p>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="recovery.identifier"
-                   class="col-sm-4 control-label" translate>
-                SMTP server for password recovery</label>
-            <div class="col-sm-8">
-                <select class="form-control"
-                    ng-model="params['recovery.identifier']"
-                    name="recovery.identifier"
-                    ng-options="identifier as identifier for (identifier, config) in smtpIdentifiers">
-                </select>
-                    <p class="help-block" translate>Select a predefined
-                    <a ui-sref="config.smtp">SMTP server configuration</a>.</p>
-                </div>
-        </div>
-
-        <div class="well col-sm-12">
-
-            <div class="form-group">
-                <label for="DefaultOtpLen"
-                       class="col-sm-9 control-label" translate>
-                    OTP length of
-                    newly enrolled tokens</label>
-
-                <div class="col-sm-3">
-                    <input name="DefaultOtpLen" class="form-control"
-                           ng-model="params.DefaultOtpLen"
-                           placeholder="6"/>
-                </div>
-            </div>
-
-
-            <div class="form-group">
-                <label for="DefaultCountWindow"
-                       class="col-sm-9 control-label" translate>
-                    Count Window of
-                    newly enrolled tokens</label>
-
-                <div class="col-sm-3">
-                    <input name="DefaultCountWindow" class="form-control"
-                           ng-model="params.DefaultCountWindow"
-                           placeholder="10"/>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="DefaultMaxFailCount"
-                       class="col-sm-9 control-label" translate>
-                    Max Failcount of
-                    newly enrolled tokens</label>
-
-                <div class="col-sm-3">
-                    <input name="DefaultMaxFailCount" class="form-control"
-                           ng-model="params.DefaultMaxFailCount"
-                           placeholder="10"/>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="DefaultSyncWindow"
-                       class="col-sm-9 control-label" translate>
-                    Sync Window of
-                    newly enrolled tokens</label>
-
-                <div class="col-sm-3">
-                    <input name="DefaultSyncWindow" class="form-control"
-                           ng-model="params.DefaultSyncWindow"
-                           placeholder="1000"/>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="DefaultChallengeValidityTime"
-                       class="col-sm-9 control-label" translate>
-                    The challenge validity time
-                </label>
-
-                <div class="col-sm-3">
-                    <input name="DefaultChallengeValidityTime"
-                           class="form-control"
-                           ng-model="params.DefaultChallengeValidityTime"
-                           placeholder="120"/>
-                </div>
-            </div>
-
-        </div>
-
-        <!--
-        <div class="well col-sm-12">
-            <div class="form-group  col-sm-12">
-                <input name="UiLoginDisplayHelpButton"
-                       id="UiLoginDisplayHelpButton"
-                       ng-model="params.UiLoginDisplayHelpButton"
-                       type="checkbox"
-                        ng-checked="isChecked(params.UiLoginDisplayHelpButton)"/>
-                <label for="UiLoginDisplayHelpButton">Display Help Button on
-                    Login
-                    Screen.
-                </label>
-            </div>
-            <div class="form-group  col-sm-12">
-                <input name="UiLoginDisplayRealmBox" id="UiLoginDisplayRealmBox"
-                       ng-model="params.UiLoginDisplayRealmBox"
-                       type="checkbox"
-                        ng-checked="isChecked(params.UiLoginDisplayRealmBox)"/>
-                <label for="UiLoginDisplayRealmBox">Display Realm Box on Login
-                    Screen.
-                </label>
-            </div>
-        </div>
-        -->
-
-        <div class="text-center"
-            ng-show="checkRight('configwrite')">
-            <button ng-click="saveSystemConfig()"
-                    class="btn btn-primary" translate>Save System Config
-            </button>
-        </div>
-    </form>
-    </div>
 </div>
