@@ -3,6 +3,9 @@
 WebUI Policies
 --------------
 
+WebUI policies define the behaviour of the WebUI.
+After activating WebUI policies, the UI must be reloaded once for the change to take effect
+
 .. index:: WebUI Login, WebUI Policy, Login Policy
 
 .. _policy_login_mode:
@@ -342,8 +345,6 @@ type: ``bool``
 To avoid careless deletion of important configurations, this policy can be
 activated. After activation, an additional confirmation for the deletion is
 requested for policies, events, mresolvers, resolvers and periodic-tasks.
-
-.. note:: After activating the policy, the UI must be reloaded once for the change to take effect
 
 (Since privacyIDEA 3.9)
 
