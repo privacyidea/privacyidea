@@ -2,16 +2,16 @@
     <div class="col-lg-3">
         <div class="pa-sidebar panel">
             <ul class="nav nav-pills nav-stacked">
-                <li role="presentation">
                     <li role="presentation"
                         ng-class="{ active: $state.includes('config.system.edit')}">
                         <a ui-sref="config.system.edit">
                             <span class="glyphicon glyphicon-wrench"></span>
-                            <span translate>System Config</span></a></li>
+                            <span translate>System Config</span></a>
+                    </li>
                     <li role="presentation"
                         ng-show="checkRight('system_documentation')"
                         ng-class="{ active: $state.includes('config.system.doc')}">
-                    <a ng-click="getSystemDocumentation()"
+                        <a ng-click="getSystemDocumentation()"
                             ui-sref="config.system.doc"><span
                             class="glyphicon glyphicon-download"></span>
                         <span translate>Get System Documentation</span></a></li>

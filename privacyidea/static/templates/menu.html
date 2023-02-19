@@ -38,7 +38,7 @@
                         <translate>Dashboard</translate>
                     </a></li>
 
-                <li ui-sref-active="active"
+                <li ng-class="{ 'active': $state.includes('token')}"
                     ng-show="loggedInUser.role && checkMainMenu('tokens')">
                     <a ui-sref="token.list">
                     <span class="glyphicon glyphicon-phone"
@@ -46,7 +46,7 @@
                         <translate>Tokens</translate>
                     </a></li>
 
-                <li ui-sref-active="active"
+                <li ng-class="{ 'active': $state.includes('user')}"
                     ng-show="loggedInUser.role == 'admin' && checkMainMenu('users')">
                     <a ui-sref="user.list">
                     <span class="glyphicon glyphicon-user"
@@ -69,8 +69,7 @@
                           aria-hidden="true"></span>
                         <translate>Machines</translate>
                     </a></li>
-                <li ui-sref-active="active"
-                    ng-show="loggedInUser.role == 'admin' && checkMainMenu('config')"
+                <li ng-show="loggedInUser.role == 'admin' && checkMainMenu('config')"
                     ng-class="{ 'active': $state.includes('config')}">
                     <a ui-sref="config.system">
                         <span class="glyphicon glyphicon-cog"
@@ -86,7 +85,7 @@
                         <translate>Audit</translate>
                     </a>
                 </li>
-                <li ui-sref-active="active"
+                <li ng-class="{ 'active': $state.includes('component')}"
                     ng-show="loggedInUser.role == 'admin' && checkMainMenu('components')">
                     <a ui-sref="component.clienttype">
                         <span class="glyphicon glyphicon-calendar"

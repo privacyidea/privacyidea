@@ -13,7 +13,11 @@
 
         <div class="navbar-collapse collapse myConfigNavbar">
             <ul class="nav navbar-nav">
-                <li ng-class="{active: $state.includes('config.system')}">
+                <li ng-class="{active: $state.includes('config.system')
+                || $state.includes('config.smtp') || $state.includes('config.radius')
+                || $state.includes('config.privacyideaserver') || $state.includes('config.smsgateway')
+                || $state.includes('config.tokengroup') || $state.includes('config.caconnectors')
+                }">
                     <a ui-sref="config.system">
                     <span class="glyphicon glyphicon-briefcase"
                           aria-hidden="true"></span>
