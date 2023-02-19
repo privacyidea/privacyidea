@@ -22,7 +22,8 @@
                             <span class="glyphicon glyphicon-envelope"></span>
                             <span translate>SMTP servers</span>
                         </a>
-                        <ul ng-show="$state.includes('config.smtp')" class="nav nav-pills nav-stacked">
+                        <ul  class="nav nav-pills nav-stacked pi-submenu"
+                             ng-show="$state.includes('config.smtp')">
                             <li role="presentation"
                                 ng-class="{ active: $state.includes('config.smtp.list')}">
                                 <a ui-sref="config.smtp.list"
@@ -47,7 +48,8 @@
                             <span class="glyphicon glyphicon-off"></span>
                             <span translate>RADIUS servers</span>
                         </a>
-                        <ul ng-show="$state.includes('config.radius')" class="nav nav-pills nav-stacked">
+                        <ul ng-show="$state.includes('config.radius')"
+                            class="nav nav-pills nav-stacked pi-submenu">
                             <li role="presentation"
                                 ng-class="{ active: $state.includes('config.radius.list')}">
                                 <a ui-sref="config.radius.list"
@@ -73,7 +75,8 @@
                             <span class="glyphicon glyphicon-forward"></span>
                             <span translate>privacyIDEA servers</span>
                         </a>
-                        <ul ng-show="$state.includes('config.privacyideaserver')" class="nav nav-pills nav-stacked">
+                        <ul ng-show="$state.includes('config.privacyideaserver')"
+                            class="nav nav-pills nav-stacked pi-submenu">
                             <li role="presentation"
                                 ng-class="{ active: $state.includes('config.privacyideaserver.list')}">
                                 <a ui-sref="config.privacyideaserver.list"
@@ -95,7 +98,8 @@
                             <span class="glyphicon glyphicon-phone"></span>
                             <span translate>SMS Gateways</span>
                         </a>
-                        <ul ng-show="$state.includes('config.smsgateway')" class="nav nav-pills nav-stacked">
+                        <ul ng-show="$state.includes('config.smsgateway')"
+                            class="nav nav-pills nav-stacked pi-submenu">
                             <li role="presentation"
                                 ng-class="{ active: $state.includes('config.smsgateway.list')}">
                                 <a ui-sref="config.smsgateway.list" translate>
@@ -121,7 +125,8 @@
                             <span class="glyphicon glyphicon-phone"></span>
                             <span translate>Tokengroups</span>
                         </a>
-                        <ul ng-show="$state.includes('config.tokengroup')" class="nav nav-pills nav-stacked">
+                        <ul ng-show="$state.includes('config.tokengroup')"
+                            class="nav nav-pills nav-stacked pi-submenu">
                             <li role="presentation"
                                 ng-class="{ active: $state.includes('config.tokengroup.list')}">
                                 <a ui-sref="config.tokengroup.list"
@@ -146,7 +151,8 @@
                               aria-hidden="true"></span>
                             <span translate>CAs</span>
                         </a>
-                        <ul ng-show="$state.includes('config.caconnectors')" class="nav nav-pills nav-stacked">
+                        <ul ng-show="$state.includes('config.caconnectors')"
+                            class="nav nav-pills nav-stacked pi-submenu">
                             <li role="presentation"
                                 ng-class="{ active:
                                 $state.includes('config.caconnectors.list')}">
