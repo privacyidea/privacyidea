@@ -14,7 +14,8 @@
         Enable
     </button>
     <button class="btn btn-danger"
-        ng-click="delPeriodicTask(ptaskid)">
+        ng-click="confirmDelete(delPeriodicTask, ptaskid,
+        {{ 'Do you really want to delete this periodic task?' | translate }})">
         <span class="glyphicon glyphicon-trash"></span>
         <span translate>Delete</span>
     </button>

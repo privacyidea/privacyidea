@@ -1036,6 +1036,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             ACTION.LOGOUTTIME, 200))
         set_policy(name="webui4", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
             ACTION.AUDITPAGESIZE, 20))
+        set_policy(name="webui5", scope=SCOPE.WEBUI, action=ACTION.DELETION_CONFIRMATION)
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "selfservice@realm1",
@@ -1056,6 +1057,10 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertTrue(result2.get("status"), res.data)
             # Test logout time
             self.assertEqual(result2.get("value").get("logout_time"), 200)
+            # check if value is True if deletion_confirmation is set
+            self.assertEqual(result.get("value").get("deletion_confirmation"), True)
+
+        delete_policy("webui5")
 
     def test_42_auth_timelimit_maxfail(self):
         self.setUp_user_realm2()
