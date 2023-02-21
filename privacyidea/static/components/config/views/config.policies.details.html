@@ -13,7 +13,8 @@
         Enable
     </button>
     <button class="btn btn-danger"
-            ng-click="delPolicy(existingPolicyname)">
+            aria-label="{{ 'Do you really want to delete this policy?' | translate }}"
+            ng-click="confirmDelete(delPolicy, existingPolicyname)">
         <span class="glyphicon glyphicon-trash"></span>
         <span translate>Delete</span>
     </button>
@@ -327,8 +328,14 @@
                             <div uib-accordion-group
                                  class="panel-default"
                                  is-open="isOpen"
-                                 heading="{{ actionGroup || 'miscellaneous'}}"
                                  ng-repeat="actionGroup in actionGroups">
+                                <uib-accordion-heading ng-click="isOpen=!isOpen">
+                                    <div >{{ ( actionGroup || 'miscellaneous') }}
+                                        <span class="pull-right glyphicon" aria-hidden="true"
+                                          ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
+                                        </span>
+                                    </div>
+                                </uib-accordion-heading>
                                 <table class="table table-hover">
                                     <tr ng-repeat="action in actions"
                                         ng-show="checkOpenGroup(action, action_filter)"

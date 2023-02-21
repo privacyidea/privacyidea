@@ -2,7 +2,6 @@
 """ Test for the '/auth' API-endpoint """
 from .base import MyApiTestCase, OverrideConfigTestCase
 import mock
-import six
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, REMOTE_USER,
                                     delete_policy)
@@ -137,12 +136,8 @@ class AuthApiTestCase(MyApiTestCase):
                 self.assertEqual(401, res.status_code, res)
                 result = res.json.get("result")
                 self.assertFalse(result.get("status"), result)
-            if six.PY2:
-                expected = "The user User(login=u'cornelius@unknown', " \
-                           "realm=u'realm1', resolver='') exists in NO resolver."
-            else:
-                expected = "The user User(login='cornelius@unknown', " \
-                           "realm='realm1', resolver='') exists in NO resolver."
+            expected = "The user User(login='cornelius@unknown', " \
+                       "realm='realm1', resolver='') exists in NO resolver."
             mock_log.assert_called_once_with(expected)
 
         # test with wrong realm parameter and wrong realm added to user
@@ -189,12 +184,8 @@ class AuthApiTestCase(MyApiTestCase):
                 self.assertEqual('Authentication failure. Wrong credentials',
                                  result['error']['message'], result)
             # the realm will be split from the login name
-            if six.PY2:
-                expected = "The user User(login=u'selfservice', " \
-                           "realm=u'realm3', resolver='') exists in NO resolver."
-            else:
-                expected = "The user User(login='selfservice', " \
-                           "realm='realm3', resolver='') exists in NO resolver."
+            expected = "The user User(login='selfservice', " \
+                       "realm='realm3', resolver='') exists in NO resolver."
             mock_log.assert_called_once_with(expected)
 
     # And now we do all of the above without the splitAtSign setting
@@ -238,12 +229,8 @@ class AuthApiTestCase(MyApiTestCase):
                 self.assertEqual(4031, result['error']['code'], result)
                 self.assertEqual('Authentication failure. Wrong credentials',
                                  result['error']['message'], result)
-            if six.PY2:
-                expected = "The user User(login=u'cornelius@realm1', " \
-                           "realm=u'realm1', resolver='') exists in NO resolver."
-            else:
-                expected = "The user User(login='cornelius@realm1', " \
-                           "realm='realm1', resolver='') exists in NO resolver."
+            expected = "The user User(login='cornelius@realm1', " \
+                       "realm='realm1', resolver='') exists in NO resolver."
             mock_log.assert_called_once_with(expected)
 
         # test with realm added to user and unknown realm param
@@ -312,12 +299,8 @@ class AuthApiTestCase(MyApiTestCase):
                 self.assertEqual(401, res.status_code, res)
                 result = res.json.get("result")
                 self.assertFalse(result.get("status"), result)
-            if six.PY2:
-                expected = "The user User(login=u'cornelius@unknown', " \
-                           "realm=u'realm1', resolver='') exists in NO resolver."
-            else:
-                expected = "The user User(login='cornelius@unknown', " \
-                           "realm='realm1', resolver='') exists in NO resolver."
+            expected = "The user User(login='cornelius@unknown', " \
+                       "realm='realm1', resolver='') exists in NO resolver."
             mock_log.assert_called_once_with(expected)
 
         # test with wrong realm parameter and wrong realm added to user
@@ -348,12 +331,8 @@ class AuthApiTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 self.assertFalse(result.get("status"), result)
                 self.assertEqual(4031, result['error']['code'], result)
-            if six.PY2:
-                expected = "The user User(login=u'selfservice@realm3', " \
-                           "realm=u'realm1', resolver='') exists in NO resolver."
-            else:
-                expected = "The user User(login='selfservice@realm3', " \
-                           "realm='realm1', resolver='') exists in NO resolver."
+            expected = "The user User(login='selfservice@realm3', " \
+                       "realm='realm1', resolver='') exists in NO resolver."
             mock_log.assert_called_once_with(expected)
 
         # and the other way round
@@ -371,12 +350,8 @@ class AuthApiTestCase(MyApiTestCase):
                 self.assertEqual('Authentication failure. Wrong credentials',
                                  result['error']['message'], result)
             # the realm will be split from the login name
-            if six.PY2:
-                expected = "The user User(login=u'selfservice@realm1', " \
-                           "realm=u'realm3', resolver='') exists in NO resolver."
-            else:
-                expected = "The user User(login='selfservice@realm1', " \
-                           "realm='realm3', resolver='') exists in NO resolver."
+            expected = "The user User(login='selfservice@realm1', " \
+                       "realm='realm3', resolver='') exists in NO resolver."
             mock_log.assert_called_once_with(expected)
 
         set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
@@ -523,7 +498,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res)
             # The login page contains the info about force remote_user, which will hide the
             # "login with credentials" button.
-            self.assertIn(u'input type=hidden id=FORCE_REMOTE_USER value="True"', to_unicode(res.data))
+            self.assertIn('input type=hidden id=FORCE_REMOTE_USER value="True"', to_unicode(res.data))
 
         # bind the remote user policy to an unknown realm
         set_policy(name="remote", scope=SCOPE.WEBUI, realm='unknown',

@@ -762,8 +762,8 @@ class TokenTestCase(MyTestCase):
         set_policy("check_token_list_CR", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
             ACTION.CHALLENGERESPONSE))
 
-        hotp_tokenobject.add_tokeninfo("next_pin_change", u"{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
-        hotp_tokenobject.add_tokeninfo("next_password_change", u"{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
+        hotp_tokenobject.add_tokeninfo("next_pin_change", "{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
+        hotp_tokenobject.add_tokeninfo("next_password_change", "{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
 
         # Now the HOTP is a valid C/R token
         res, reply = check_token_list(tokenobject_list, "hotppin")
@@ -844,14 +844,14 @@ class TokenTestCase(MyTestCase):
         serial = "nonasciipin"
         token = init_token({"type": "hotp",
                             "otpkey": self.otpkey,
-                            "pin": u"ünicøde",
+                            "pin": "ünicøde",
                             "serial": serial}, user)
-        r = check_user_pass(user, u"µröng287082")
+        r = check_user_pass(user, "µröng287082")
         self.assertEqual(r[0], False)
         self.assertEqual(r[1]['message'], 'wrong otp pin')
-        r = check_user_pass(user, u"ünicøde287082")
+        r = check_user_pass(user, "ünicøde287082")
         self.assertEqual(r[0], True)
-        r = check_user_pass(user, u"ünicøde666666")
+        r = check_user_pass(user, "ünicøde666666")
         self.assertEqual(r[0], False)
         self.assertEqual(r[1]['message'], 'wrong otp value')
         remove_token(serial)
@@ -1466,7 +1466,7 @@ class TokenTestCase(MyTestCase):
                                      "resolver": self.resolvername1,
                                      "realm": self.realm1}})
         self.assertEqual(tok.get_user_id(), "1000")
-        self.assertEqual(tok.get_user_displayname(), (u'cornelius_realm1', u'Cornelius '))
+        self.assertEqual(tok.get_user_displayname(), ('cornelius_realm1', 'Cornelius '))
         remove_token("IMP002")
 
     def test_54_helper_functions(self):
@@ -2105,6 +2105,11 @@ class TokenGroupTestCase(MyTestCase):
         tok2 = get_one_token(serial="s2")
         self.assertEqual(len(tok2.token.tokengroup_list), 0)
 
+        # check that deleting a tokengroup with tokens still assigned results in an error
+        self.assertRaises(privacyIDEAError, delete_tokengroup, name='g2')
+
         # cleanup
         for s in serials:
             remove_token(s)
+        delete_tokengroup('g1')
+        delete_tokengroup('g2')

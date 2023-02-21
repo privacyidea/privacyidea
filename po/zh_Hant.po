@@ -52,14 +52,6 @@ msgstr ""
 "\">\n"
 "立即索取privacyIDEA企業版！</a>"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:187
-msgid ""
-"<a ui-sref=\"component.subscriptions\">\n"
-"                    <span class=\"glyphicon glyphicon-calendar\" aria-hidden="
-"\"true\"></span>\n"
-"                    <span translate>Subscriptions</span></a>"
-msgstr ""
-
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
 msgstr "<b>本軟體不提供任何擔保！ </b>"
@@ -315,7 +307,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.details.html:130
 #: privacyidea/static/components/config/views/config.policies.details.html:279
 #: privacyidea/static/components/config/views/config.policies.list.html:20
-#: privacyidea/static/components/dashboard/views/dashboard.html:87
+#: privacyidea/static/components/dashboard/views/dashboard.html:91
 msgid "Action"
 msgstr "行動"
 
@@ -328,11 +320,11 @@ msgstr "行動"
 msgid "Active"
 msgstr "活躍"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:156
+#: privacyidea/static/components/dashboard/views/dashboard.html:160
 msgid "Active Events"
 msgstr "活動事件"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:119
+#: privacyidea/static/components/dashboard/views/dashboard.html:123
 msgid "Active Policies"
 msgstr "活動策略"
 
@@ -369,11 +361,11 @@ msgstr "管理"
 msgid "Admin-Realm"
 msgstr "管理領域"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:80
+#: privacyidea/static/components/dashboard/views/dashboard.html:84
 msgid "Administration"
 msgstr "管理"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:86
+#: privacyidea/static/components/dashboard/views/dashboard.html:90
 msgid "Administrator"
 msgstr "管理員"
 
@@ -966,7 +958,7 @@ msgstr "數據庫"
 msgid "Database Encoding"
 msgstr "數據庫編碼"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:85
+#: privacyidea/static/components/dashboard/views/dashboard.html:89
 msgid "Date"
 msgstr "日期"
 
@@ -1058,7 +1050,7 @@ msgstr "描述"
 msgid "Detach"
 msgstr "分離"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:88
+#: privacyidea/static/components/dashboard/views/dashboard.html:92
 msgid "Detail"
 msgstr "細節"
 
@@ -1394,7 +1386,7 @@ msgstr "WebAuthn 回應中的錯誤。"
 #: privacyidea/static/components/config/views/config.events.details.html:44
 #: privacyidea/static/components/config/views/config.events.list.html:16
 #: privacyidea/static/components/config/views/config.html:32
-#: privacyidea/static/components/dashboard/views/dashboard.html:151
+#: privacyidea/static/components/dashboard/views/dashboard.html:155
 msgid "Events"
 msgstr "事件"
 
@@ -1835,11 +1827,11 @@ msgid ""
 "will take precedence."
 msgstr "在策略衝突的情況下，具有最低優先級編號的策略將優先。"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:168
+#: privacyidea/static/components/dashboard/views/dashboard.html:172
 msgid "Inactive Events"
 msgstr "非活動事件"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:131
+#: privacyidea/static/components/dashboard/views/dashboard.html:135
 msgid "Inactive Policies"
 msgstr "非活動策略"
 
@@ -1946,7 +1938,7 @@ msgstr "列出令牌"
 msgid "Loading Machines..."
 msgstr "載入機器..."
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:16
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:17
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:15
 msgid "Loading serials..."
 msgstr "載入連續出版物..."
@@ -2167,7 +2159,7 @@ msgstr "未找到電腦"
 msgid "No retrieval of schema information"
 msgstr "不檢索架構資訊"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:19
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:20
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:18
 msgid "No serial found"
 msgstr "未找到序列號"
@@ -2336,7 +2328,7 @@ msgstr "PAPER:OTP 數值 on apaper."
 msgid "PGP Key"
 msgstr "PGP 金鑰"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:27
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:29
 #: privacyidea/static/components/directives/views/directive.assignuser.html:36
 #: privacyidea/static/components/token/views/token.enroll.html:59
 msgid "PIN"
@@ -2471,7 +2463,7 @@ msgstr ""
 "                應該運行。"
 
 #: privacyidea/static/components/config/views/config.html:26
-#: privacyidea/static/components/dashboard/views/dashboard.html:113
+#: privacyidea/static/components/dashboard/views/dashboard.html:117
 msgid "Policies"
 msgstr "政策"
 
@@ -2590,15 +2582,9 @@ msgid "Quick Resolver Test"
 msgstr "快速解析器測試"
 
 #: privacyidea/static/components/machine/views/machine.html:15
+#: privacyidea/static/components/user/views/user.html:44
 msgid "Quick links"
 msgstr "快速連結"
-
-#: privacyidea/static/components/user/views/user.html:44
-msgid ""
-"Quick links\n"
-"                        <a ui-sref=\"config.realms.list\" translate>Edit "
-"realms</a>"
-msgstr ""
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
 msgid "RADIUS Config saved."
@@ -2733,7 +2719,7 @@ msgstr "遠端使用者"
 msgid "Repeat new PIN"
 msgstr "重複新的 PIN 碼"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:37
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:46
 #: privacyidea/static/components/recovery/views/recovery.reset.html:19
 #: privacyidea/static/components/token/views/token.enroll.html:67
@@ -3233,7 +3219,7 @@ msgid "Subscription issued to"
 msgstr "訂閱已頒發給"
 
 #: privacyidea/static/components/components/views/component.html:28
-#: privacyidea/static/components/dashboard/views/dashboard.html:191
+#: privacyidea/static/components/dashboard/views/dashboard.html:195
 msgid "Subscriptions"
 msgstr "訂閱"
 
@@ -3774,13 +3760,13 @@ msgstr ""
 msgid ""
 "The authentication request is forwarded to the YubiCloud. For accessing\n"
 "    the YubiCloud you need to enter an API Client ID and an API Key, which\n"
-"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" target="
-"\"_extern\">here</a>."
+"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" "
+"target=\"_extern\">here</a>."
 msgstr ""
 "身份驗證請求被轉發到 YubiCloud。用於訪問\n"
 "    YubiCloud 您需要輸入 API 用戶端 ID 和 API 金鑰，其中\n"
-"    你可以在這裡申請<a href=\"https://upgrade.yubico.com/getapikey/\" target="
-"\"_extern\"></a>。"
+"    你可以在這裡申請<a href=\"https://upgrade.yubico.com/getapikey/\" "
+"target=\"_extern\"></a>。"
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
 msgid "The certificate was enrolled successfully."
@@ -4268,15 +4254,15 @@ msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
 "        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
 "        For more details see the\n"
-"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
-"\">RFC\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" "
+"target=\"OCRA\">RFC\n"
 "            6287</a>."
 msgstr ""
 "這是 TiQR App 使用的 OCRA 套件。\n"
 "        默認的 OCRA 套件是 OCRA-1:HOTP-SHA1-6:QN10。\n"
 "        有關更多詳細信息，請參閱\n"
-"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
-"\">RFC\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" "
+"target=\"OCRA\">RFC\n"
 "            6287</a>。"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:115
@@ -4557,7 +4543,7 @@ msgstr "交易ID"
 msgid "Type"
 msgstr "類型"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:32
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:34
 #: privacyidea/static/components/directives/views/directive.assignuser.html:41
 #: privacyidea/static/components/recovery/views/recovery.reset.html:14
 #: privacyidea/static/components/token/views/token.enroll.html:63

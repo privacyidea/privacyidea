@@ -126,7 +126,7 @@ class OcraTokenClass(TokenClass):
         :type db_token: DB object
         """
         TokenClass.__init__(self, db_token)
-        self.set_type(u"ocra")
+        self.set_type("ocra")
         self.hKeyRequired = False
 
     def update(self, param):

@@ -82,6 +82,7 @@ from privacyidea.lib.utils import (parse_timedelta, is_true, generate_charlists_
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.auth import ROLE
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn
+from privacyidea.api.lib.policyhelper import get_init_tokenlabel_parameters, get_pushtoken_add_config
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
@@ -577,31 +578,8 @@ def init_tokenlabel(request=None, action=None):
     """
     params = request.all_data
     user_object = get_user_from_param(params)
-    token_type = getParam(request.all_data, "type", optional, "hotp").lower()
-    # get the serials from a policy definition
-    label_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.TOKENLABEL,
-                            user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
-    if len(label_pols) == 1:
-        # The policy was set, so we need to set the tokenlabel in the request.
-        request.all_data[ACTION.TOKENLABEL] = list(label_pols)[0]
-
-    issuer_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.TOKENISSUER,
-                             user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
-    if len(issuer_pols) == 1:
-        request.all_data[ACTION.TOKENISSUER] = list(issuer_pols)[0]
-
-    imageurl_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.APPIMAGEURL,
-                               user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
-    if len(imageurl_pols) == 1:
-        request.all_data[ACTION.APPIMAGEURL] = list(imageurl_pols)[0]
-
-    # check the force_app_pin policy
-    app_pin_pols = Match.user(g, scope=SCOPE.ENROLL,
-                              action='{0!s}_{1!s}'.format(token_type, ACTION.FORCE_APP_PIN),
-                              user_object=user_object).any()
-    if app_pin_pols:
-        request.all_data[ACTION.FORCE_APP_PIN] = True
-
+    token_type = getParam(params, "type", optional, "hotp").lower()
+    request.all_data = get_init_tokenlabel_parameters(g, params=params, token_type=token_type, user_object=user_object)
     return True
 
 
@@ -747,7 +725,7 @@ def twostep_enrollment_parameters(request=None, action=None):
     if is_true(getParam(request.all_data, "2stepinit", optional)):
         parameters = ("2step_serversize", "2step_clientsize", "2step_difficulty")
         for parameter in parameters:
-            action = u"{}_{}".format(token_type, parameter)
+            action = "{}_{}".format(token_type, parameter)
             # SCOPE.ENROLL does not have an admin realm
             action_values = Match.generic(g, action=action,
                                           scope=SCOPE.ENROLL,
@@ -1508,40 +1486,7 @@ def pushtoken_add_config(request, action):
     """
     ttype = request.all_data.get("type")
     if ttype and ttype.lower() == "push":
-        ttl = None
-        registration_url = None
-        # Get the firebase configuration from the policies
-        firebase_config = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.FIREBASE_CONFIG,
-                                     user_object=request.User if request.User else None)\
-            .action_values(unique=True, allow_white_space_in_action=True)
-        if len(firebase_config) == 1:
-            request.all_data[PUSH_ACTION.FIREBASE_CONFIG] = list(firebase_config)[0]
-        else:
-            raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.FIREBASE_CONFIG))
-
-        # Get the sslverify definition from the policies
-        ssl_verify = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.SSL_VERIFY,
-                                user_object=request.User if request.User else None).action_values(unique=True)
-        if len(ssl_verify) == 1:
-            request.all_data[PUSH_ACTION.SSL_VERIFY] = list(ssl_verify)[0]
-        else:
-            request.all_data[PUSH_ACTION.SSL_VERIFY] = "1"
-
-        # Get the TTL and the registration URL from the policies
-        registration_url = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.REGISTRATION_URL,
-                                      user_object=request.User if request.User else None) \
-            .action_values(unique=True, allow_white_space_in_action=True)
-        if len(registration_url) == 1:
-            request.all_data[PUSH_ACTION.REGISTRATION_URL] = list(registration_url)[0]
-        else:
-            raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.REGISTRATION_URL))
-        ttl = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.TTL,
-                         user_object=request.User if request.User else None) \
-            .action_values(unique=True, allow_white_space_in_action=True)
-        if len(ttl) == 1:
-            request.all_data[PUSH_ACTION.TTL] = list(ttl)[0]
-        else:
-            request.all_data[PUSH_ACTION.TTL] = "10"
+        request.all_data = get_pushtoken_add_config(g, request.all_data, request.User)
 
 
 def u2ftoken_verify_cert(request, action):

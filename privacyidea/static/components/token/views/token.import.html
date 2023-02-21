@@ -105,9 +105,13 @@
         <uib-accordion close-others="false">
         <div uib-accordion-group
              class="panel-default"
+             is-open="isOpen"
              ng-repeat="(keyid, key) in pgpkeys">
-            <uib-accordion-heading>
+            <uib-accordion-heading ng-click="isOpen=!isOpen">
                 <span translate>PGP Key</span> {{ keyid }}
+                <span class="pull-right glyphicon" aria-hidden="true"
+                   ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
+                </span>
             </uib-accordion-heading>
             <p class="help-block" translate>
                 Please pass the public key and the fingerprint to the token

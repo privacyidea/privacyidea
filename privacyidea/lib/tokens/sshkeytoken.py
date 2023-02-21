@@ -56,7 +56,7 @@ class SSHkeyTokenClass(TokenClass):
 
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
-        self.set_type(u"sshkey")
+        self.set_type("sshkey")
 
     @staticmethod
     def get_class_type():
@@ -163,7 +163,7 @@ class SSHkeyTokenClass(TokenClass):
         key_comment = ti.get("ssh_comment")
         # get the ssh key directly, otherwise it will not be decrypted
         sshkey = self.get_tokeninfo("ssh_key")
-        r = u"{0!s} {1!s}".format(key_type, sshkey)
+        r = "{0!s} {1!s}".format(key_type, sshkey)
         if key_comment:
             r += " " + key_comment
         return r

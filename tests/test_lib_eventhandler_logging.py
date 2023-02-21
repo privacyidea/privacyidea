@@ -153,9 +153,9 @@ class LoggingTestCase(MyTestCase):
             self.assertTrue(res)
             capture.check_present(
                 ('pi-eventlogger', 'INFO',
-                 u'admin=admin realm=super action=/auth serial=testserial '
-                 u'url=http://localhost/ user=Cornelius surname=Kölbel '
-                 u'givenname=None username=cornelius userrealm=sqliterealm '
-                 u'tokentype=spass time=05:06:08 date=2018-03-04 '
-                 u'client_ip=None ua_browser=browser ua_string=hello world')
+                 'admin=admin realm=super action=/auth serial=testserial '
+                 'url=http://localhost/ user=Cornelius surname=Kölbel '
+                 'givenname=None username=cornelius userrealm=sqliterealm '
+                 'tokentype=spass time=05:06:08 date=2018-03-04 '
+                 'client_ip=None ua_browser=browser ua_string=hello world')
             )

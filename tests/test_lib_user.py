@@ -4,7 +4,11 @@ This test file tests the lib.user
 
 The lib.user.py only depends on the database model
 """
+import logging
+
 import six
+from testfixtures import log_capture
+
 PWFILE = "tests/testdata/passwd"
 PWFILE2 = "tests/testdata/passwords"
 
@@ -18,6 +22,7 @@ from privacyidea.lib.user import (User, create_user,
                                   split_user,
                                   get_user_from_param,
                                   UserError)
+from privacyidea.lib.user import log as user_log
 from . import ldap3mock
 from .test_lib_resolver import LDAPDirectory_small
 
@@ -64,12 +69,7 @@ class UserTestCase(MyTestCase):
         
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
-        # check proper unicode() / str() handling
-        if six.PY2:
-            self.assertIsInstance(str(user), bytes)
-            self.assertIsInstance(unicode(user), unicode)
-        else:
-            self.assertIsInstance(six.text_type(user), six.text_type)
+        self.assertIsInstance(six.text_type(user), six.text_type)
         
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
@@ -182,7 +182,8 @@ class UserTestCase(MyTestCase):
         user = split_user("user@non_existing_realm.com")
         self.assertEqual(user, ("user@non_existing_realm.com", ""))
 
-    def test_09_get_user_from_param(self):
+    @log_capture(level=logging.DEBUG)
+    def test_09_get_user_from_param(self, capture):
         # enable splitAtSign
         set_privacyidea_config("splitAtSign", True)
         user = get_user_from_param({"user": "cornelius"})
@@ -242,6 +243,19 @@ class UserTestCase(MyTestCase):
         user = get_user_from_param(param)
         self.assertEqual(user.login, "cornelius//realm1", user)
         self.assertEqual(user.realm, "realm2", user)
+
+        # check debug log for passwords
+        user_log.setLevel(logging.DEBUG)
+        _user = get_user_from_param({
+            'user': 'cornelius',
+            'realm': self.realm2,
+            'pass': 'barracuda',
+            'password': 'swordfish'})
+        log_msg = str(capture)
+        self.assertNotIn('barracuda', log_msg, log_msg)
+        self.assertNotIn('swordfish', log_msg, log_msg)
+        self.assertIn('HIDDEN', log_msg, log_msg)
+        user_log.setLevel(logging.INFO)
 
         # reset splitAtSign setting
         set_privacyidea_config("splitAtSign", True)
@@ -396,8 +410,8 @@ class UserTestCase(MyTestCase):
         delete_realm("sort_realm")
 
     def test_17_check_nonascii_user(self):
-        realm = u"sqlrealm"
-        resolver = u"SQL1"
+        realm = "sqlrealm"
+        resolver = "SQL1"
         parameters = self.parameters
         parameters["resolver"] = resolver
         parameters["type"] = "sqlresolver"
@@ -410,30 +424,21 @@ class UserTestCase(MyTestCase):
         self.assertEqual(len(added), 1)
 
         # check non-ascii password of non-ascii user
-        self.assertFalse(User(login=u"nönäscii",
+        self.assertFalse(User(login="nönäscii",
                               realm=realm).check_password("wrong"))
-        self.assertTrue(User(login=u"nönäscii",
-                             realm=realm).check_password(u"sömepassword"))
+        self.assertTrue(User(login="nönäscii",
+                             realm=realm).check_password("sömepassword"))
 
         # check proper unicode() and str() handling
         user_object = User(login=u"nönäscii", realm=realm)
-        if six.PY2:
-            self.assertEqual(unicode(user_object), u'<nönäscii.SQL1@sqlrealm>')
-            self.assertEqual(str(user_object), '<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
-        else:
-            self.assertEqual(six.text_type(user_object), u'<nönäscii.SQL1@sqlrealm>')
-            self.assertEqual(six.text_type(user_object).encode('utf8'),
-                             b'<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
+        self.assertEqual(six.text_type(user_object), u'<nönäscii.SQL1@sqlrealm>')
+        self.assertEqual(six.text_type(user_object).encode('utf8'),
+                         b'<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
         # also check the User object representation
         user_repr = repr(user_object)
-        if six.PY2:
-            self.assertEqual("User(login=u'n\\xf6n\\xe4scii', "
-                             "realm=u'sqlrealm', resolver=u'SQL1')",
-                             user_repr, user_repr)
-        else:
-            self.assertEqual("User(login='nönäscii', "
-                             "realm='sqlrealm', resolver='SQL1')",
-                             user_repr, user_repr)
+        self.assertEqual("User(login='nönäscii', "
+                         "realm='sqlrealm', resolver='SQL1')",
+                         user_repr, user_repr)
 
     @ldap3mock.activate
     def test_18_user_with_several_phones(self):

@@ -65,8 +65,8 @@ class HttpSMSProvider(ISMSProvider):
                 if m:
                     phone = re.sub(m.group(1), m.group(2), phone)
             except re.error:
-                log.warning(u"Can not mangle phone number. "
-                            u"Please check your REGEXP: {0!s}".format(regexp))
+                log.warning("Can not mangle phone number. "
+                            "Please check your REGEXP: {0!s}".format(regexp))
 
         return phone
 

@@ -8,7 +8,7 @@ from privacyidea.lib.tokenclass import TokenClass
 class FancyTokenClass(TokenClass):
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
-        self.set_type(u"fancy")
+        self.set_type("fancy")
         self.mode = ['authenticate']
         self.hKeyRequired = False
 

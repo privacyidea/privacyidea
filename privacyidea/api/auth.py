@@ -107,7 +107,7 @@ def before_request():
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "action_detail": "",
-                        "thread_id": u"{0!s}".format(threading.current_thread().ident),
+                        "thread_id": "{0!s}".format(threading.current_thread().ident),
                         "info": ""})
 
     username = getParam(request.all_data, "username")
@@ -122,8 +122,8 @@ def before_request():
             request.User = User(loginname, realm)
         except Exception as e:
             request.User = None
-            log.warning(u"Problem resolving user {0!s} in realm {1!s}: {2!s}.".format(loginname, realm, e))
-            log.debug(u"{0!s}".format(traceback.format_exc()))
+            log.warning("Problem resolving user {0!s} in realm {1!s}: {2!s}.".format(loginname, realm, e))
+            log.debug("{0!s}".format(traceback.format_exc()))
 
 
 @jwtauth.route('', methods=['POST'])
@@ -327,14 +327,14 @@ def get_auth_token():
                                 "realm": user_obj.realm,
                                 "resolver": user_obj.resolver,
                                 "serial": serials,
-                                "info": u"{0!s}|loginmode={1!s}".format(log_used_user(user_obj),
+                                "info": "{0!s}|loginmode={1!s}".format(log_used_user(user_obj),
                                                                         details.get("loginmode"))})
         else:
             g.audit_object.log({"user": user_obj.login,
                                 "realm": user_obj.realm,
                                 "resolver": user_obj.resolver,
                                 "serial": serials,
-                                "info": u"{0!s}|loginmode={1!s}".format(log_used_user(user_obj),
+                                "info": "{0!s}|loginmode={1!s}".format(log_used_user(user_obj),
                                         details.get("loginmode"))})
 
     if not admin_auth and not user_auth:

@@ -165,7 +165,7 @@ class AuditTestCase(MyTestCase):
         self.Audit.log({"action": "/validate/check",
                         "success": False})
         self.Audit.finalize_log()
-        hidden_columns = [u"number", u"action_detail"]
+        hidden_columns = ["number", "action_detail"]
         res = search(self.app.config, {"hidden_columns": hidden_columns})
         self.assertTrue(res.get("count") == 1, res)
         # hidden columns are not returned in the auditdata
@@ -186,7 +186,7 @@ class AuditTestCase(MyTestCase):
         self.Audit.log({"serial": "oath"})
         self.Audit.finalize_log()
 
-        self.Audit.log({"serial": "oath", "user": u"nöäscii"})
+        self.Audit.log({"serial": "oath", "user": "nöäscii"})
         self.Audit.finalize_log()
 
         audit_log = self.Audit.csv_generator()
@@ -219,18 +219,18 @@ class AuditTestCase(MyTestCase):
         # check treatment of policy entries:
         self.Audit.log({"serial": long_serial,
                         "token_type": token_type,
-                        "policies": u"Berlin,Hamburg,München,Köln,Frankfurt am Main,"
-                                    u"Stuttgart,Düsseldorf,Dortmund,Essen,Leipzig,"
-                                    u"Bremen,Dresden,Hannover,Nürnberg,Duisburg,Bochum,"
-                                    u"Wuppertal,Bielefeld,Bonn,Münster,Karlsruhe,"
-                                    u"Mannheim,Augsburg,Wiesbaden,Gelsenkirchen,Mönchengladbach,"
-                                    u"Braunschweig,Kiel,Chemnitz,Aachen,Magdeburg"})
+                        "policies": "Berlin,Hamburg,München,Köln,Frankfurt am Main,"
+                                    "Stuttgart,Düsseldorf,Dortmund,Essen,Leipzig,"
+                                    "Bremen,Dresden,Hannover,Nürnberg,Duisburg,Bochum,"
+                                    "Wuppertal,Bielefeld,Bonn,Münster,Karlsruhe,"
+                                    "Mannheim,Augsburg,Wiesbaden,Gelsenkirchen,Mönchengladbach,"
+                                    "Braunschweig,Kiel,Chemnitz,Aachen,Magdeburg"})
         self.Audit._truncate_data()
         self.assertTrue(len(self.Audit.audit_data.get("policies")) <= 255)
         # Some cities like Stuttgart and Düsseldorf already get truncated :-)
-        self.assertEqual(u"Berlin,Hamburg,München,Köln,Frankfu+,Stuttga+,Düsseld+,Dortmund,Essen,Leipzig,Bremen,"
-                         u"Dresden,Hannover,Nürnberg,Duisburg,Bochum,Wuppert+,Bielefe+,Bonn,Münster,Karlsru+,"
-                         u"Mannheim,Augsburg,Wiesbaden,Gelsenki+,Möncheng+,Braunsch+,Kiel,Chemnitz,Aachen,Magdeburg",
+        self.assertEqual("Berlin,Hamburg,München,Köln,Frankfu+,Stuttga+,Düsseld+,Dortmund,Essen,Leipzig,Bremen,"
+                         "Dresden,Hannover,Nürnberg,Duisburg,Bochum,Wuppert+,Bielefe+,Bonn,Münster,Karlsru+,"
+                         "Mannheim,Augsburg,Wiesbaden,Gelsenki+,Möncheng+,Braunsch+,Kiel,Chemnitz,Aachen,Magdeburg",
                          self.Audit.audit_data.get("policies"))
 
     def test_07_sign_and_verify(self):
@@ -244,14 +244,14 @@ class AuditTestCase(MyTestCase):
         self.Audit.log({"serial": "1234",
                         "action": "token/assign",
                         "success": True,
-                        "user": u"kölbel"})
+                        "user": "kölbel"})
         self.Audit.finalize_log()
-        audit_log = self.Audit.search({"user": u"kölbel"})
+        audit_log = self.Audit.search({"user": "kölbel"})
         self.assertEqual(audit_log.total, 1)
-        self.assertEqual(audit_log.auditdata[0].get("user"), u"kölbel")
+        self.assertEqual(audit_log.auditdata[0].get("user"), "kölbel")
         self.assertEqual(audit_log.auditdata[0].get("sig_check"), "OK")
         # check the raw data from DB
-        db_entries = self.Audit.search_query({'user': u'kölbel'})
+        db_entries = self.Audit.search_query({'user': 'kölbel'})
         db_entry = next(db_entries)
         self.assertTrue(db_entry.signature.startswith('rsa_sha256_pss'), db_entry)
         # modify the table data
@@ -259,7 +259,7 @@ class AuditTestCase(MyTestCase):
         self.Audit.session.merge(db_entry)
         self.Audit.session.commit()
         # and check if we get a failed signature check
-        audit_log = self.Audit.search({"user": u"kölbel"})
+        audit_log = self.Audit.search({"user": "kölbel"})
         self.assertEqual(audit_log.total, 1)
         self.assertEqual(audit_log.auditdata[0].get("sig_check"), "FAIL")
 
@@ -456,7 +456,7 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
         r = a.search({"action": "*something*"})
         # The search should go to the sql audit
         self.assertEqual(r.total, 1)
-        self.assertEqual(r.auditdata[0].get("action"), u"something_test_30")
+        self.assertEqual(r.auditdata[0].get("action"), "something_test_30")
 
         # Non readable read module!
         a = ContainerAudit({"PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.loggeraudit"],
@@ -483,9 +483,9 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
         r = a.search({"action": "*something_test_35*"})
         # The search should go to the sql audit
         self.assertEqual(r.total, 1)
-        self.assertEqual(r.auditdata[0].get("action"), u"something_test_35")
-        self.assertEqual(r.auditdata[0].get("action_detail"), u"some detail")
-        self.assertEqual(r.auditdata[0].get("policies"), u"some policy")
+        self.assertEqual(r.auditdata[0].get("action"), "something_test_35")
+        self.assertEqual(r.auditdata[0].get("action_detail"), "some detail")
+        self.assertEqual(r.auditdata[0].get("policies"), "some policy")
         # now check the log file
         with open("audit.log") as file:
             c = file.readlines()

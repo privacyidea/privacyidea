@@ -459,7 +459,7 @@ class LocalCAConnector(BaseCAConnector):
             except EnvironmentError:
                 log.warning("Template file {0!s} for {1!s} not found or "
                             "not permitted.".format(self.template_file, self.name))
-                log.debug(u'{0!s}'.format(traceback.format_exc()))
+                log.debug('{0!s}'.format(traceback.format_exc()))
         return content
 
     def revoke_cert(self, certificate, request_id=None, reason=CRL_REASONS[0]):
@@ -628,17 +628,17 @@ class LocalCAConnector(BaseCAConnector):
 
         # return the configuration to the upper level, so that the CA
         # connector can be created in the database
-        caparms = {u"caconnector": name,
-                   u"type": u"local",
+        caparms = {"caconnector": name,
+                   "type": "local",
                    ATTR.WORKING_DIR: config.directory,
-                   ATTR.CACERT: u"{0!s}/cacert.pem".format(config.directory),
-                   ATTR.CAKEY: u"{0!s}/cakey.pem".format(config.directory),
+                   ATTR.CACERT: "{0!s}/cacert.pem".format(config.directory),
+                   ATTR.CAKEY: "{0!s}/cakey.pem".format(config.directory),
                    ATTR.CERT_DIR: config.directory,
-                   ATTR.CRL: u"{0!s}/crl.pem".format(config.directory),
+                   ATTR.CRL: "{0!s}/crl.pem".format(config.directory),
                    ATTR.CSR_DIR: config.directory,
                    ATTR.CRL_VALIDITY_PERIOD: config.crl_days,
                    ATTR.CRL_OVERLAP_PERIOD: config.crl_overlap,
-                   ATTR.OPENSSL_CNF: u"{0!s}/openssl.cnf".format(config.directory)
+                   ATTR.OPENSSL_CNF: "{0!s}/openssl.cnf".format(config.directory)
                    }
         return caparms
 

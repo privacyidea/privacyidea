@@ -1485,7 +1485,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 403, res)
             result = res.json.get("result")
             self.assertFalse(result.get("status"))
-            self.assertEqual(u"Admin actions are defined, but you are not allowed to upload token files.",
+            self.assertEqual("Admin actions are defined, but you are not allowed to upload token files.",
                              result.get("error").get("message"))
 
         delete_policy("tokupload")
@@ -2297,7 +2297,7 @@ class APITokenTestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
-            self.assertTrue(u'image=https%3A//example.com/img.png' in detail.get("googleurl").get("value"),
+            self.assertTrue('image=https%3A//example.com/img.png' in detail.get("googleurl").get("value"),
                             detail.get("googleurl"))
 
         remove_token("goog1")
@@ -2354,7 +2354,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertFalse(result.get("status"))
             self.assertEqual(result.get("error").get("message"),
-                             u"The requested token could not be found.")
+                             "The requested token could not be found.")
 
         # cleanup
         delete_policy("SETDESCPOL")
@@ -2380,7 +2380,7 @@ class APITokenTestCase(MyApiTestCase):
             detail = res.json["detail"]
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
-            self.assertTrue(u'pin=True' in detail.get("googleurl").get("value"),
+            self.assertTrue('pin=True' in detail.get("googleurl").get("value"),
                             detail.get("googleurl"))
 
         remove_token("goog2")
@@ -2684,6 +2684,55 @@ class APITokenTestCase(MyApiTestCase):
                                            data={"serial": serial,
                                                  "type": "sms",
                                                  "verify": self.valid_otp_values[1]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            tokenobj_list = get_tokens(serial=serial)
+            # Check the token rollout state, it is empty now.
+            self.assertEqual(ROLLOUTSTATE.ENROLLED, tokenobj_list[0].token.rollout_state)
+
+        delete_policy("verify_toks1")
+
+    def test_43_init_verify_index_token(self):
+        set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=indexedsecret".format(ACTION.VERIFY_ENROLLMENT))
+        # Enroll an indexed secret token
+        SECRET = "ABCDEFGHIJHK"
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"otpkey": SECRET,
+                                                 "type": "indexedsecret"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            detail = res.json.get("detail")
+            secret = detail.get("otpkey").get("value").split("/")[2]
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertEqual(SECRET, secret)
+            self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING)
+            message = detail.get("verify").get("message")
+            self.assertTrue(message.startswith("Please enter the positions"))
+            serial = detail.get("serial")
+            tokenobj_list = get_tokens(serial=serial)
+            # Check the token rollout state
+            self.assertEqual(tokenobj_list[0].token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
+            s_pos = message.strip("Please enter the positions ").strip(" from your secret.")
+            positions = [int(x) for x in s_pos.split(",")]
+
+        # Now run the second step: verify enrollment and test again
+        otp = ""
+        for x in positions:
+            otp += secret[x-1]
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "type": "indexedsecret",
+                                                 "verify": otp},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -3041,7 +3090,7 @@ class APIDetermine_User_from_Serial_for_Policies(MyApiTestCase):
             # One token disabled
             self.assertFalse(result.get("status"))
             self.assertEqual(303, result.get("error").get("code"))
-            self.assertEqual(u"Admin actions are defined, but the action disable is not allowed!",
+            self.assertEqual("Admin actions are defined, but the action disable is not allowed!",
                              result.get("error").get("message"))
 
         remove_token(serial)

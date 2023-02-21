@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-12-21 16:58+0100\n"
+"POT-Creation-Date: 2023-02-09 12:39+0100\n"
 "PO-Revision-Date: 2022-12-10 13:47+0000\n"
 "Last-Translator: Eric <hamburger1024@duck.com>\n"
 "Language: zh_Hans\n"
@@ -32,35 +32,35 @@ msgstr "验证失败,缺少用户名"
 msgid "Authentication failure. Wrong credentials"
 msgstr "验证失败，凭证错误"
 
-#: api/lib/utils.py:310
+#: api/lib/utils.py:344
 msgid "Authentication failure. Missing Authorization header."
 msgstr "验证失败。缺少授权标头。"
 
-#: api/lib/utils.py:338 api/lib/utils.py:348
+#: api/lib/utils.py:372 api/lib/utils.py:382
 msgid "Authentication failure. Your token has expired: {0!s}"
 msgstr "验证失败,因为您的令牌已过期: {0!s}"
 
-#: api/lib/utils.py:345
+#: api/lib/utils.py:379
 msgid "Authentication failure. Error during decoding your token: {0!s}"
 msgstr "验证失败。解码令牌时出错：{0！s}"
 
-#: api/lib/utils.py:352
+#: api/lib/utils.py:386
 msgid ""
 "Authentication failure. The username {0!s} is not allowed to impersonate "
 "via JWT."
 msgstr "验证失败。用户名{0！s}不允许通过JWT模拟。"
 
-#: api/lib/utils.py:356
+#: api/lib/utils.py:390
 msgid ""
 "Authentication failure. You do not have the necessary role ({0!s}) to "
 "access this resource!"
 msgstr "验证失败。您没有访问此资源所需的角色（{0！s}）！"
 
-#: api/lib/utils.py:374
+#: api/lib/utils.py:408
 msgid "'{0!s}' is an invalid policy name."
 msgstr "'{0！s}'是无效的策略名称。"
 
-#: api/lib/utils.py:377
+#: api/lib/utils.py:411
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
 msgstr "该策略的名称只能包含字符a-zA-Z0-9_。--"
 
@@ -92,7 +92,7 @@ msgstr "无效序列号。"
 msgid "Invalid user."
 msgstr "无效的用户。"
 
-#: lib/error.py:195
+#: lib/error.py:196
 msgid "You either need to provide user or serial"
 msgstr "您需要提供用户或序列号"
 
@@ -1165,7 +1165,8 @@ msgid "wrong otp pin"
 msgstr ""
 
 #: lib/token.py:2452
-msgid "Admin is allowed to initalize {0!s} tokens."
+#, fuzzy
+msgid "Admin is allowed to initialize {0!s} tokens."
 msgstr "允许管理员初始化{0！s}令牌。"
 
 #: lib/token.py:2460
@@ -1933,11 +1934,11 @@ msgstr "用户只能分配此最大数量的活动电子邮件令牌。"
 msgid "Enter the OTP from the Email:"
 msgstr "从电子邮件中输入OTP："
 
-#: lib/tokens/emailtoken.py:315
+#: lib/tokens/emailtoken.py:316
 msgid "The PIN was correct, but the EMail could not be sent!"
 msgstr ""
 
-#: lib/tokens/emailtoken.py:543
+#: lib/tokens/emailtoken.py:547
 msgid "Please enter your new email address!"
 msgstr "请输入你的新邮箱地址！"
 
@@ -1955,69 +1956,69 @@ msgid ""
 "assigned."
 msgstr "用户只能分配此最大数量的活动4eyes令牌。"
 
-#: lib/tokens/hotptoken.py:84
+#: lib/tokens/hotptoken.py:85
 msgid "Please enter a valid OTP value of the new token."
 msgstr ""
 
-#: lib/tokens/hotptoken.py:99
+#: lib/tokens/hotptoken.py:100
 msgid "Specify the hashing function to be used. Can be SHA1, SHA256 or SHA512."
 msgstr "指定要使用的 hashlib 函数。可以是 SHA1、SHA256 或 SHA512。"
 
-#: lib/tokens/hotptoken.py:101
+#: lib/tokens/hotptoken.py:102
 msgid "Specify the OTP length to be used. Can be 6 or 8 digits."
 msgstr "指定要使用的 OTP 长度。 可以是 6 位或 8 位数字。"
 
-#: lib/tokens/hotptoken.py:102
+#: lib/tokens/hotptoken.py:103
 msgid "Force the key to be generated on the server."
 msgstr "强制在服务器上生成密钥."
 
-#: lib/tokens/hotptoken.py:103
+#: lib/tokens/hotptoken.py:104
 msgid "Specify whether users are allowed or forced to use two-step enrollment."
 msgstr "指定是允许还是强制用户使用两步注册。"
 
-#: lib/tokens/hotptoken.py:105
+#: lib/tokens/hotptoken.py:106
 msgid "Specify whether admins are allowed or forced to use two-step enrollment."
 msgstr "指定是允许还是强制管理员使用两步注册。"
 
-#: lib/tokens/hotptoken.py:142
+#: lib/tokens/hotptoken.py:143
 msgid "HOTP: Event based One Time Passwords."
 msgstr "HOTP：基于事件的一次性密码。"
 
-#: lib/tokens/hotptoken.py:150
+#: lib/tokens/hotptoken.py:151
 msgid "The user may only have this maximum number of HOTP tokens assigned."
 msgstr "用户只能分配此最大数量的HOTP令牌。"
 
-#: lib/tokens/hotptoken.py:155
+#: lib/tokens/hotptoken.py:156
 msgid "The user may only have this maximum number of active HOTP tokens assigned."
 msgstr "用户只能分配此最大数量的活动HOTP令牌。"
 
-#: lib/tokens/hotptoken.py:160 lib/tokens/totptoken.py:151
+#: lib/tokens/hotptoken.py:161 lib/tokens/totptoken.py:151
 msgid "The size of the OTP seed part contributed by the client (in bytes)"
 msgstr "客户端贡献的OTP种子部分的大小（以字节为单位）"
 
-#: lib/tokens/hotptoken.py:165 lib/tokens/totptoken.py:154
+#: lib/tokens/hotptoken.py:166 lib/tokens/totptoken.py:154
 msgid "The size of the OTP seed part contributed by the server (in bytes)"
 msgstr "服务器贡献的OTP种子部分的大小（以字节为单位）"
 
-#: lib/tokens/hotptoken.py:170 lib/tokens/totptoken.py:157
+#: lib/tokens/hotptoken.py:171 lib/tokens/totptoken.py:157
 msgid ""
 "The difficulty factor used for the OTP seed generation (should be at "
 "least 10000)"
 msgstr "用于生成OTP种子的难度系数（至少应为10000）"
 
-#: lib/tokens/hotptoken.py:175 lib/tokens/totptoken.py:162
+#: lib/tokens/hotptoken.py:176 lib/tokens/totptoken.py:162
 msgid "Enforce setting an app pin for the privacyIDEA Authenticator App"
 msgstr "强制为privacyIDEA Authenticator App设置应用程序PIN"
 
-#: lib/tokens/hotptoken.py:281
+#: lib/tokens/hotptoken.py:282
 msgid "URL for google Authenticator"
 msgstr "谷歌身份验证器的URL"
 
-#: lib/tokens/hotptoken.py:294
+#: lib/tokens/hotptoken.py:295
 msgid "URL for OATH token"
 msgstr "OATH令牌的URL"
 
-#: lib/tokens/hotptoken.py:843 lib/tokens/pushtoken.py:1058
+#: lib/tokens/hotptoken.py:827 lib/tokens/pushtoken.py:1044
 msgid "Please scan the QR code!"
 msgstr "请扫描二维码！"
 
@@ -2117,83 +2118,83 @@ msgid ""
 "assigned."
 msgstr "用户只能分配此最大数量的活动密码令牌。"
 
-#: lib/tokens/pushtoken.py:70
+#: lib/tokens/pushtoken.py:71
 msgid "Please confirm the authentication on your mobile device!"
 msgstr "请在您的移动设备上确认身份验证！"
 
-#: lib/tokens/pushtoken.py:71
+#: lib/tokens/pushtoken.py:72
 msgid ""
 "Use the polling feature of your privacyIDEA Authenticator App to check "
 "for a new Login request."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:73
+#: lib/tokens/pushtoken.py:74
 msgid "Do you want to confirm the login?"
 msgstr "您要确认登录吗？"
 
-#: lib/tokens/pushtoken.py:299
+#: lib/tokens/pushtoken.py:300
 msgid "PUSH Token"
 msgstr "PUSH 令牌"
 
-#: lib/tokens/pushtoken.py:301
+#: lib/tokens/pushtoken.py:302
 msgid "PUSH: Send a push notification to a smartphone."
 msgstr "推送：向智能手机发送推送通知。"
 
-#: lib/tokens/pushtoken.py:309
+#: lib/tokens/pushtoken.py:310
 msgid "The configuration of your Firebase application."
 msgstr "Firebase应用程序的配置。"
 
-#: lib/tokens/pushtoken.py:317
+#: lib/tokens/pushtoken.py:318
 msgid ""
 "The URL the Push App should contact in the second enrollment step. "
 "Usually it is the endpoint /ttype/push of the privacyIDEA server."
 msgstr "Push App在第二个注册步骤中应联系的URL。通常，它是privacyIDEA服务器的端点/ ttype / push。"
 
-#: lib/tokens/pushtoken.py:323
+#: lib/tokens/pushtoken.py:324
 msgid ""
 "The second enrollment step must be completed within this time (in "
 "minutes)."
 msgstr "第二个注册步骤必须在此时间内（以分钟为单位）完成。"
 
-#: lib/tokens/pushtoken.py:327
+#: lib/tokens/pushtoken.py:328
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
 msgstr "智能手机需要在注册过程中验证SSL。（默认为1）"
 
-#: lib/tokens/pushtoken.py:333
+#: lib/tokens/pushtoken.py:334
 msgid "The user may only have this maximum number of Push tokens assigned."
 msgstr "用户只能分配此最大数量的Push令牌。"
 
-#: lib/tokens/pushtoken.py:338
+#: lib/tokens/pushtoken.py:339
 msgid "The user may only have this maximum number of active Push tokens assigned."
 msgstr "用户只能分配此最大数量的活动Push令牌。"
 
-#: lib/tokens/pushtoken.py:344
+#: lib/tokens/pushtoken.py:345
 msgid "Require to unlock the Smartphone before Push requests can be accepted"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:350
+#: lib/tokens/pushtoken.py:351
 msgid "The question the user sees on his mobile phone."
 msgstr "用户在手机上看到的问题。"
 
-#: lib/tokens/pushtoken.py:355
+#: lib/tokens/pushtoken.py:356
 msgid "The title of the notification, the user sees on his mobile phone."
 msgstr "用户在手机上看到的通知标题。"
 
-#: lib/tokens/pushtoken.py:360
+#: lib/tokens/pushtoken.py:361
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr "智能手机需要在身份验证期间验证SSL。（默认为1）"
 
-#: lib/tokens/pushtoken.py:366
+#: lib/tokens/pushtoken.py:367
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
 msgstr "等待秒数，以便用户在第一个请求中确认挑战。"
 
-#: lib/tokens/pushtoken.py:372
+#: lib/tokens/pushtoken.py:373
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr "配置是否允许推送令牌轮询挑战"
 
-#: lib/tokens/pushtoken.py:502
+#: lib/tokens/pushtoken.py:503
 msgid "URL for privacyIDEA Push Token"
 msgstr "privacyIDEA的推送令牌URL"
 
@@ -2318,7 +2319,7 @@ msgstr "从SMS输入OTP："
 msgid "The PIN was correct, but the SMS could not be sent!"
 msgstr ""
 
-#: lib/tokens/smstoken.py:603
+#: lib/tokens/smstoken.py:604
 msgid "Please enter your new phone number!"
 msgstr "请输入你的新电话号码！"
 

@@ -101,7 +101,7 @@ class RegistrationTokenClass(PasswordTokenClass):
         self.hKeyRequired = False
         self.otp_len = DEFAULT_LENGTH
         self.otp_contents = DEFAULT_CONTENTS
-        self.set_type(u"registration")
+        self.set_type("registration")
 
     @staticmethod
     def get_class_type():

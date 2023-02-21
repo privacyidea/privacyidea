@@ -51,6 +51,7 @@ myApp.controller("periodicTaskController", ["$scope", "$stateParams", "$state",
             $scope.getPeriodicTasks();
         });
     };
+
     $scope.orderChanged = function (ptask) {
         // we cannot directly pass ``ptask`` because we need to join the nodes list
         var params = {

@@ -1264,8 +1264,8 @@ class UserNotificationTestCase(MyTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"serial": "SomeSerial",
-                        "user": u"nönäscii"}
-        req.User = User(u"nönäscii", self.realm1)
+                        "user": "nönäscii"}
+        req.User = User("nönäscii", self.realm1)
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
         # If we send a plain email, we do not escape HTML

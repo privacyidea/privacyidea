@@ -155,9 +155,9 @@ class User(object):
                      "{0!s} != {1!s}.".format(self, other))
             return False
         if self.uid and other.uid:
-            log.debug(u"Comparing based on uid: {0!s} vs {1!s}".format(self.uid, other.uid))
+            log.debug("Comparing based on uid: {0!s} vs {1!s}".format(self.uid, other.uid))
             return self.uid == other.uid
-        log.debug(u"Comparing based on login: {0!s} vs {1!s}".format(self.login, other.login))
+        log.debug("Comparing based on login: {0!s} vs {1!s}".format(self.login, other.login))
         return self.login == other.login
 
     def __ne__(self, other):
@@ -173,17 +173,17 @@ class User(object):
         return hash((type(self), self.login, self.resolver, self.realm))
 
     def __str__(self):
-        ret = u"<empty user>"
+        ret = "<empty user>"
         if not self.is_empty():
             # Realm and resolver should always be ASCII
-            conf = u''
+            conf = ''
             if self.resolver:
-                conf = u'.{0!s}'.format(self.resolver)
-            ret = u'<{0!s}{1!s}@{2!s}>'.format(self.login, conf, self.realm)
+                conf = '.{0!s}'.format(self.resolver)
+            ret = '<{0!s}{1!s}@{2!s}>'.format(self.login, conf, self.realm)
         return ret
 
     def __repr__(self):
-        ret = (u"User(login={0!r}, realm={1!r}, resolver={2!r})".format(
+        ret = ("User(login={0!r}, realm={1!r}, resolver={2!r})".format(
             self.login, self.realm, self.resolver))
         return ret
 
@@ -438,7 +438,7 @@ class User(object):
                 y = get_resolver_object(self.resolver)
                 uid, _rtype, _rname = self.get_user_identifiers()
                 if y.checkPass(uid, password):
-                    success = u"{0!s}@{1!s}".format(self.login, self.realm)
+                    success = "{0!s}@{1!s}".format(self.login, self.realm)
                     log.debug("Successfully authenticated user {0!r}.".format(self))
                 else:
                     log.info("user {0!r} failed to authenticate.".format(self))
@@ -626,17 +626,19 @@ def split_user(username):
     return user, realm
 
 
-@log_with(log)
+@log_with(log, hide_args_keywords={0: ["pass", "password"]})
 def get_user_from_param(param, optionalOrRequired=optional):
     """
-    Find the parameters user, realm and resolver and
+    Find the parameter user, realm and resolver and
     create a user object from these parameters.
-    
+
     An exception is raised, if a user in a realm is found in more
-    than one resolvers.
-    
+    than one resolver.
+
     :param param: The dictionary of request parameters
     :type param: dict
+    :param optionalOrRequired: whether the user is required
+    :type optionalOrRequired: bool
     :return: User as found in the parameters
     :rtype: User object
     """
@@ -788,7 +790,7 @@ def log_used_user(user, other_text=""):
     :param other_text: Some additional text
     :return: str
     """
-    return u"logged in as {0}. {1}".format(user.used_login, other_text) if user.used_login != user.login else other_text
+    return "logged in as {0}. {1}".format(user.used_login, other_text) if user.used_login != user.login else other_text
 
 
 def get_attributes(uid, resolver, realm_id):

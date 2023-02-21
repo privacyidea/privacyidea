@@ -256,8 +256,8 @@ class UserNotificationEventHandler(BaseEventHandler):
             logged_in_user = {}
 
         tokenowner = self._get_tokenowner(request)
-        log.debug(u"Executing event for action {0!r}, user {1!r}, "
-                  u"logged_in_user {2!r}".format(action, tokenowner,
+        log.debug("Executing event for action {0!r}, user {1!r}, "
+                  "logged_in_user {2!r}".format(action, tokenowner,
                                                  logged_in_user))
 
         # Determine recipient
@@ -378,8 +378,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                     with open(filename, "r", encoding="utf-8") as f:
                         body = f.read()
                 except Exception as e:
-                    log.warning(u"Failed to read email template from file {0!r}: {1!r}".format(filename, e))
-                    log.debug(u"{0!s}".format(traceback.format_exc()))
+                    log.warning("Failed to read email template from file {0!r}: {1!r}".format(filename, e))
+                    log.debug("{0!s}".format(traceback.format_exc()))
 
             subject = handler_options.get("subject") or \
                       "An action was performed on your token."
@@ -458,13 +458,13 @@ class UserNotificationEventHandler(BaseEventHandler):
                 filename = filename.format(random=random, **tags).lstrip(os.path.sep)
                 outfile = os.path.normpath(os.path.join(spooldir, filename))
                 if not outfile.startswith(spooldir):
-                    log.error(u'Cannot write outside of spooldir {0!s}!'.format(spooldir))
+                    log.error('Cannot write outside of spooldir {0!s}!'.format(spooldir))
                 else:
                     try:
                         with open(outfile, "w") as f:
                             f.write(body)
                     except Exception as err:
-                        log.error(u"Failed to write notification file: {0!s}".format(err))
+                        log.error("Failed to write notification file: {0!s}".format(err))
 
             elif action.lower() == "sendsms":
                 smsconfig = handler_options.get("smsconfig")

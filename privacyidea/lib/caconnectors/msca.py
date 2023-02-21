@@ -392,8 +392,8 @@ class MSCAConnector(BaseCAConnector):
 
         # return the configuration to the upper level, so that the CA
         # connector can be created in the database
-        caparms = {u"caconnector": name,
-                   u"type": u"microsoft",
+        caparms = {"caconnector": name,
+                   "type": "microsoft",
                    ATTR.HOSTNAME: config.hostname,
                    ATTR.PORT: config.port,
                    ATTR.HTTP_PROXY: config.http_proxy,

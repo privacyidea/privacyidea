@@ -57,7 +57,7 @@ class SpassTokenClass(TokenClass):
     """
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
-        self.set_type(u"spass")
+        self.set_type("spass")
         self.mode = ['authenticate']
 
     @staticmethod

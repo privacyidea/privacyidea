@@ -70,7 +70,7 @@ class MachineApplication(MachineApplicationBase):
                     tokclass = toks[0]
                     # We just return the ssh public key, so that
                     # it can be included into authorized keys.
-                    log.info(u"Using SSH key {0!s} for SSH user {1!s}".format(tokclass.token.serial,
+                    log.info("Using SSH key {0!s} for SSH user {1!s}".format(tokclass.token.serial,
                                                                               options.get("user")))
                     ret["sshkey"] = tokclass.get_sshkey()
                     # We return the username if the token is assigned to a
@@ -82,11 +82,11 @@ class MachineApplication(MachineApplicationBase):
                         if "username" in uInfo:
                             ret["username"] = uInfo.get("username")
                 else:
-                    log.debug(u"The requested user {0!s} does not match the user "
+                    log.debug("The requested user {0!s} does not match the user "
                               "option ({0!s}) of the SSH application.".format(
                         user_filter, options.get("user")))
         else:
-            log.info(u"Token {0!r}, type {0!r} is not supported by "
+            log.info("Token {0!r}, type {0!r} is not supported by "
                      "SSH application module".format(serial, token_type))
 
         return ret
