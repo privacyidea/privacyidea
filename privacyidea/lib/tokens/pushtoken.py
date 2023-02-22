@@ -261,8 +261,6 @@ class PushTokenClass(TokenClass):
     """
     mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE, AUTHENTICATIONMODE.OUTOFBAND]
     client_mode = CLIENTMODE.POLL
-    # A disabled PUSH token has to be removed from the list of checked tokens.
-    check_if_disabled = False
     # If the token is enrollable via multichallenge
     is_multichallenge_enrollable = True
 
@@ -389,6 +387,11 @@ class PushTokenClass(TokenClass):
                 ret = res
 
         return ret
+
+    @log_with(log)
+    def use_for_authentication(self, options):
+        # A disabled PUSH token has to be removed from the list of checked tokens.
+        return self.is_active()
 
     @log_with(log)
     def update(self, param, reset_failcount=True):
