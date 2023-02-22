@@ -73,8 +73,7 @@ class ApplicationSpecificPasswordTokenClass(PasswordTokenClass):
         """
         res = {'type': 'applspec',
                'title': 'Application Specific Password Token',
-               'description': _('A token with a fixed password. Can be '
-                                'combined  with the OTP PIN. It is used as application specific password '
+               'description': _('Application Specific Password: A token with a fixed password. Can be used '
                                 'for certain applications or services.'),
                'init': {},
                'config': {},
@@ -116,7 +115,6 @@ class ApplicationSpecificPasswordTokenClass(PasswordTokenClass):
         :return: None
         """
         PasswordTokenClass.update(self, param)
-
         # In addition to the initialization from the parent class, we also need to set the service_id
         service_id = getParam(param, TOKENINFO_KEY, optional=False)
         self.add_tokeninfo(TOKENINFO_KEY, service_id)
