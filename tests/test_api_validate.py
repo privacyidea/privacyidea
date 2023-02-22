@@ -3279,6 +3279,88 @@ class RegistrationAndPasswordToken(MyApiTestCase):
         # delete token
         remove_token(serial)
 
+    def test_02_application_specific_password_token(self):
+        # The appl spec password token requires either an otpkey or genkey
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={'user': 'cornelius',
+                                                 'type': 'applspec'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code)
+            data = res.json
+            error = data.get("result").get("error")
+            self.assertEqual(905, error.get("code"))
+            self.assertEqual("ERR905: Missing parameter: 'otpkey'", error.get("message"), data)
+
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={'user': 'cornelius',
+                                                 'genkey': '1',
+                                                 'type': 'applspec'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code)
+            data = res.json
+            error = data.get("result").get("error")
+            self.assertEqual(905, error.get("code"))
+            self.assertEqual("ERR905: Missing parameter: 'service_id'", error.get("message"), data)
+
+        # Now pass all necessary parameters
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={'user': 'cornelius',
+                                                 'type': 'applspec',
+                                                 'genkey': '1',
+                                                 'service_id': 'thunderbird',
+                                                 'pin': 'test'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            data = res.json
+            detail = data.get("detail")
+            serial = detail.get("serial")
+            password = detail.get("password")
+
+        # Check, if the token has the service_id
+        tok = get_tokens(serial=serial)[0]
+        self.assertEqual("thunderbird", tok.service_id)
+
+        # now check the authentication. No service_id
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "test{0!s}".format(password)}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertEqual("REJECT", data.get("result").get("authentication"), data)
+
+        # now check the authentication. wrong service_id
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "service_id": "wrong",
+                                                 "pass": "test{0!s}".format(password)}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertEqual("REJECT", data.get("result").get("authentication"), data)
+
+        # now check the authentication. correct service_id
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "service_id": "thunderbird",
+                                                 "pass": "test{0!s}".format(password)}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertEqual("ACCEPT", data.get("result").get("authentication"), data)
+
+        # delete token
+        remove_token(serial)
+
 
 class WebAuthn(MyApiTestCase):
 

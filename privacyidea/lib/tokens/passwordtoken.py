@@ -48,6 +48,8 @@ class PasswordTokenClass(TokenClass):
     """
 
     password_detail_key = "password"
+    default_length = DEFAULT_LENGTH
+    default_contents = DEFAULT_CONTENTS
 
     class SecretPassword(object):
 
@@ -81,8 +83,8 @@ class PasswordTokenClass(TokenClass):
 
     def __init__(self, aToken):
         TokenClass.__init__(self, aToken)
-        self.otp_len = DEFAULT_LENGTH
-        self.otp_contents = DEFAULT_CONTENTS
+        self.otp_len = self.default_length
+        self.otp_contents = self.default_contents
         self.hKeyRequired = True
         self.set_type("pw")
 
