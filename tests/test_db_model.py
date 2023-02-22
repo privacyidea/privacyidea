@@ -138,7 +138,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(t2.first_owner.resolver, "resolver1")
         # check the realm list of the token
         realm_found = False
-        for realm_entry in t2.realm_list:
+        for realm_entry in t2.realms:
             if realm_entry.realm.name == "realm1":
                 realm_found = True
         self.assertTrue(realm_found)
@@ -370,14 +370,14 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(rr_id > 0, rr_id)
         # check how many resolvers are in the realm
         db_realm = Realm.query.filter_by(name=realmname).first()
-        self.assertTrue(len(db_realm.resolver_list) == 1,
-                        len(db_realm.resolver_list))
+        self.assertEqual(len(db_realm.resolver_list), 1,
+                         db_realm.resolver_list)
         # remove the resolver from the realm
         # we can do this by deleting rr_id
         rr.delete()
         # check how many resolvers are in the realm
-        self.assertTrue(len(db_realm.resolver_list) == 0,
-                        len(db_realm.resolver_list))
+        self.assertEqual(len(db_realm.resolver_list), 0,
+                         db_realm.resolver_list)
         # delete the realm
         db_realm.delete()
 
@@ -1072,10 +1072,10 @@ class TokengroupTestCase(MyTestCase):
         ttg = TokenTokengroup.query.filter_by(token_id=tok2.id).all()
         self.assertEqual(len(ttg), 1)
 
-        self.assertEqual(len(tok1.tokengroup_list), 2)
-        self.assertEqual(len(tok2.tokengroup_list), 1)
+        self.assertEqual(tok1.tokengroups.count(), 2)
+        self.assertEqual(tok2.tokengroups.count(), 1)
 
-        self.assertEqual(tok2.tokengroup_list[0].tokengroup.name, "gruppe2")
+        self.assertEqual(tok2.tokengroups[0].tokengroup.name, "gruppe2")
 
         # remove tokengroups and check that tokentokengroups assignments are removed
         tg1.delete()

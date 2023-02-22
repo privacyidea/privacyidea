@@ -231,7 +231,7 @@ class TokenClass(object):
     def add_user(self, user, report=None):
         """
         Set the user attributes (uid, resolvername, resolvertype) of a token.
-        
+
         :param user: a User() object, consisting of loginname and realm
         :param report: tbdf.
         :return: None

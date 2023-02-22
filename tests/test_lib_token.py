@@ -386,10 +386,10 @@ class TokenTestCase(MyTestCase):
         tokenobject = init_token({"serial": serial,
                                   "otpkey": "1234567890123456"})
         realms = get_realms_of_token(serial)
-        self.assertTrue(realms == [], "{0!s}".format(realms))
+        self.assertEqual(realms, [], "{0!s}".format(realms))
         set_realms(serial, [self.realm1])
         realms = get_realms_of_token(serial)
-        self.assertTrue(realms == [self.realm1], "{0!s}".format(realms))
+        self.assertEqual(realms, [self.realm1], "{0!s}".format(realms))
         remove_token(serial=serial)
         realms = get_realms_of_token(serial)
         self.assertTrue(realms == [], "{0!s}".format(realms))
@@ -1298,7 +1298,7 @@ class TokenTestCase(MyTestCase):
                                  "otpkeyformat": "foobar"},
                                 user=User(login="cornelius",
                                           realm=self.realm1))
-        remove_token("NEW001")
+
         # successful base32check encoding
         base32check_encoding = b32encode_and_unicode(checksum + otpkey).strip("=")
         tokenobject = init_token({"serial": "NEW002", "type": "hotp",
@@ -1348,7 +1348,7 @@ class TokenTestCase(MyTestCase):
                                  "otpkey": base32check_encoding,
                                  "otpkeyformat": "base32check"},
                                 user=User(login="cornelius", realm=self.realm1))
-        remove_token("NEW004") # TODO: Token is created anyway?
+
         # invalid base32check encoding (missing four characters => incorrect checksum)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = base32check_encoding[:-4]
@@ -1359,7 +1359,7 @@ class TokenTestCase(MyTestCase):
                                  "otpkey": base32check_encoding,
                                  "otpkeyformat": "base32check"},
                                 user=User(login="cornelius", realm=self.realm1))
-        remove_token("NEW005") # TODO: Token is created anyway?
+
         # invalid base32check encoding (too many =)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = base32check_encoding + "==="
@@ -1370,7 +1370,7 @@ class TokenTestCase(MyTestCase):
                                  "otpkey": base32check_encoding,
                                  "otpkeyformat": "base32check"},
                                 user=User(login="cornelius", realm=self.realm1))
-        remove_token("NEW006") # TODO: Token is created anyway?
+
         # invalid base32check encoding (wrong characters)
         base32check_encoding = b32encode_and_unicode(checksum + otpkey)
         base32check_encoding = "1" + base32check_encoding[1:]
@@ -1381,7 +1381,7 @@ class TokenTestCase(MyTestCase):
                                  "otpkey": base32check_encoding,
                                  "otpkeyformat": "base32check"},
                                 user=User(login="cornelius", realm=self.realm1))
-        remove_token("NEW006") # TODO: Token is created anyway?
+
         # invalid key (too short)
         base32check_encoding = b32encode_and_unicode(b'Yo')
         self.assertRaisesRegexp(ParameterError,
@@ -1391,7 +1391,6 @@ class TokenTestCase(MyTestCase):
                                  "otpkey": base32check_encoding,
                                  "otpkeyformat": "base32check"},
                                 user=User(login="cornelius", realm=self.realm1))
-        remove_token("NEW006")
 
     def test_51_tokenkind(self):
         # A normal token will be of kind "software"
@@ -1554,7 +1553,7 @@ class TokenTestCase(MyTestCase):
         # Check that we did not miss any tokens
         self.assertEqual(set(t.token.serial for t in list1 + list2), all_serials)
 
-    def test_0057_check_invalid_serial(self):
+    def test_57a_check_invalid_serial(self):
         # This is an invalid serial, which will trigger an exception
         self.assertRaises(Exception, reset_token, "hans wurst")
 
@@ -1562,7 +1561,7 @@ class TokenTestCase(MyTestCase):
                           {"serial": "invalid/chars",
                            "genkey": 1})
 
-    def test_57_registration_token_no_auth_counter(self):
+    def test_57b_registration_token_no_auth_counter(self):
         # Test, that a registration token is deleted even if no_auth_counter is used.
         from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
         set_privacyidea_config("no_auth_counter", 1)
@@ -2075,12 +2074,12 @@ class TokenGroupTestCase(MyTestCase):
 
         # Check the tokengroups of the first token
         tok1 = get_one_token(serial="s1")
-        self.assertEqual(tok1.token.tokengroup_list[0].tokengroup.name, "g1")
-        self.assertEqual(tok1.token.tokengroup_list[1].tokengroup.name, "g2")
+        self.assertEqual(tok1.token.tokengroups[0].tokengroup.name, "g1")
+        self.assertEqual(tok1.token.tokengroups[1].tokengroup.name, "g2")
 
         # check the tokengroups of the 2nd token
         tok2 = get_one_token(serial="s2")
-        self.assertEqual(tok2.token.tokengroup_list[0].tokengroup.name, "g2")
+        self.assertEqual(tok2.token.tokengroups[0].tokengroup.name, "g2")
 
         # Test a missing group information
         self.assertRaises(ResourceNotFoundError, assign_tokengroup, "s1")
@@ -2099,11 +2098,11 @@ class TokenGroupTestCase(MyTestCase):
         # unassign tokengroups
         r = tok1.del_tokengroup("g1")
         # only the 2nd group remains
-        self.assertEqual(tok1.token.tokengroup_list[0].tokengroup.name, "g2")
+        self.assertEqual(tok1.token.tokengroups[0].tokengroup.name, "g2")
         # remove it
         unassign_tokengroup("s2", "g2")
         tok2 = get_one_token(serial="s2")
-        self.assertEqual(len(tok2.token.tokengroup_list), 0)
+        self.assertEqual(tok2.token.tokengroups.count(), 0)
 
         # check that deleting a tokengroup with tokens still assigned results in an error
         self.assertRaises(privacyIDEAError, delete_tokengroup, name='g2')

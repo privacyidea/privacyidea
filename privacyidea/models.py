@@ -73,7 +73,7 @@ implicit_returning = True
 PRIVACYIDEA_TIMESTAMP = "__timestamp__"
 SAFE_STORE = "PI_DB_SAFE_STORE"
 
-db = SQLAlchemy()
+db = SQLAlchemy(session_options={'expire_on_commit': False})
 
 
 # Add fractions to the MySQL DataTime column type
@@ -208,9 +208,11 @@ class Token(MethodsMixin, db.Model):
                             default=1000)
     rollout_state = db.Column(db.Unicode(10),
                               default='')
-    info_list = db.relationship('TokenInfo', lazy='select', backref='token')
+    info_list = db.relationship('TokenInfo', lazy='dynamic', backref='token')
     # This creates an attribute "token" in the TokenOwner object
     owners = db.relationship('TokenOwner', lazy='dynamic', backref='token')
+    realms = db.relationship('TokenRealm', lazy='dynamic', backref='token')
+    tokengroups = db.relationship('TokenTokengroup', lazy='dynamic', backref='token')
 
     def __init__(self, serial, tokentype="",
                  isactive=True, otplen=6,
@@ -251,7 +253,7 @@ class Token(MethodsMixin, db.Model):
     @property
     def first_owner(self):
         return self.owners.first()
-            
+
     @log_with(log)
     def delete(self):
         # some DBs (e.g. DB2) run in deadlock, if the TokenRealm entry
@@ -373,7 +375,7 @@ class Token(MethodsMixin, db.Model):
                     Tr = TokenRealm(token_id=self.id, realm_id=r.id)
                     db.session.add(Tr)
         db.session.commit()
-        
+
     def get_realms(self):
         """
         return a list of the assigned realms
@@ -381,7 +383,7 @@ class Token(MethodsMixin, db.Model):
         :rtype: list
         """
         realms = []
-        for tokenrealm in self.realm_list:
+        for tokenrealm in self.realms:
             realms.append(tokenrealm.realm.name)
         return realms
 
@@ -489,23 +491,6 @@ class Token(MethodsMixin, db.Model):
                     res = True
         return res
 
-#    def split_pin_pass(self, passwd, prepend=True):
-#        """
-#        The password is split into the PIN and the OTP component.
-#        THe token knows its length, so it can split accordingly.##
-#
-#        :param passwd: The password that is to be split
-#        :param prepend: The PIN is put in front of the OTP value
-#        :return: tuple of (res, pin, otpval)
-#        """
-#        if prepend:
-#            pin = passwd[:-self.otplen]
-#            otp = passwd[-self.otplen:]
-#        else:
-#            otp = passwd[:self.otplen]
-#            pin = passwd[self.otplen:]
-#        return True, pin, otp
-
     def is_pin_encrypted(self, pin=None):
         ret = False
         if pin is None:
@@ -524,7 +509,7 @@ class Token(MethodsMixin, db.Model):
     def set_so_pin(self, soPin):
         """
         For smartcards this sets the security officer pin of the token
-        
+
         :rtype : None
         """
         iv = geturandom(16)
@@ -582,12 +567,12 @@ class Token(MethodsMixin, db.Model):
         ret['rollout_state'] = self.rollout_state
         # list of Realm names
         realm_list = []
-        for realm_entry in self.realm_list:
+        for realm_entry in self.realms:
             realm_list.append(realm_entry.realm.name)
         ret['realms'] = realm_list
         # list of tokengroups
         tokengroup_list = []
-        for tg_entry in self.tokengroup_list:
+        for tg_entry in self.tokengroups:
             tokengroup_list.append(tg_entry.tokengroup.name)
         ret['tokengroup'] = tokengroup_list
         return ret
@@ -1278,10 +1263,6 @@ class TokenRealm(MethodsMixin, db.Model):
                          db.ForeignKey('token.id'))
     realm_id = db.Column(db.Integer(),
                          db.ForeignKey('realm.id'))
-    # This creates an attribute "realm_list" in the Token object
-    token = db.relationship('Token',
-                            lazy='joined',
-                            backref='realm_list')
     # This creates an attribute "token_list" in the Realm object
     realm = db.relationship('Realm',
                             lazy='joined',
@@ -2848,7 +2829,7 @@ class UserCache(MethodsMixin, db.Model):
         self.username = username
         self.used_login = used_login
         self.resolver = resolver
-        self.user_id = user_id
+        self.user_id = str(user_id)
         self.timestamp = timestamp
 
 
@@ -3211,10 +3192,6 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
                          db.ForeignKey('token.id'))
     tokengroup_id = db.Column(db.Integer(),
                               db.ForeignKey('tokengroup.id'))
-    # This creates an attribute "tokengroup_list" in the Token object
-    token = db.relationship('Token',
-                            lazy='joined',
-                            backref='tokengroup_list')
     # This creates an attribute "token_list" in the Tokengroup object
     tokengroup = db.relationship('Tokengroup',
                                  lazy='joined',

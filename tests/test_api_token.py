@@ -1340,7 +1340,7 @@ class APITokenTestCase(MyApiTestCase):
         tokenobject_list = get_tokens(serial="UBOM508327_X")
         self.assertEqual(len(tokenobject_list), 1)
         token = tokenobject_list[0]
-        self.assertEqual(token.token.realm_list[0].realm.name, self.realm1)
+        self.assertEqual(token.token.realms[0].realm.name, self.realm1)
 
         # Try to load empty file
         with self.app.test_request_context('/token/load/empty.oath',
