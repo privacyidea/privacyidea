@@ -138,8 +138,10 @@ class ApplicationSpecificPasswordTokenClass(PasswordTokenClass):
         """
         service_id = options.get(TOKENINFO_KEY)
         if not service_id:
+            log.debug("The request has no {0!s}.".format(TOKENINFO_KEY))
             return False
         if not self.service_id:
             # A token could be missing the service_id
+            log.debug("The token has no {0!s}.".format(TOKENINFO_KEY))
             return False
         return self.service_id.lower() == service_id.lower()
