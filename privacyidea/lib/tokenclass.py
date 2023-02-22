@@ -168,8 +168,6 @@ class TokenClass(object):
     hKeyRequired = False
     mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE]
     client_mode = CLIENTMODE.INTERACTIVE
-    # Usually a token will be checked in the lib:check_token_list, even if it is disabled
-    check_if_disabled = True
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
     # If the token is enrollable via multichallenge
@@ -707,6 +705,20 @@ class TokenClass(object):
 
     def is_active(self):
         return self.token.active
+
+    def use_for_authentication(self, options):
+        """
+        This method checks, if this token should be used for authentication.
+        Certain token classes could be excluded from the authentication request in
+        certain situations.
+
+        Returns True, if the token should be used for authentication.
+        Returns False, if the token should be completely ignored for authentication.
+
+        :param options: This is the option list, that basically contains the Request parameters.
+        :return:
+        """
+        return True
 
     @property
     def rollout_state(self):

@@ -28,7 +28,8 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 from privacyidea.api.lib.prepolicy import _generate_pin_from_policy
-
+from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.utils import is_true
 
 optional = True
 required = False
@@ -48,6 +49,8 @@ class PasswordTokenClass(TokenClass):
     """
 
     password_detail_key = "password"
+    default_length = DEFAULT_LENGTH
+    default_contents = DEFAULT_CONTENTS
 
     class SecretPassword(object):
 
@@ -81,8 +84,8 @@ class PasswordTokenClass(TokenClass):
 
     def __init__(self, aToken):
         TokenClass.__init__(self, aToken)
-        self.otp_len = DEFAULT_LENGTH
-        self.otp_contents = DEFAULT_CONTENTS
+        self.otp_len = self.default_length
+        self.otp_contents = self.default_contents
         self.hKeyRequired = True
         self.set_type("pw")
 
@@ -149,7 +152,8 @@ class PasswordTokenClass(TokenClass):
         :type param: dict
         :return: None
         """
-        if "genkey" in param:
+        genkey = is_true(getParam(param, "genkey", optional=True))
+        if genkey:
             # Otherwise genkey and otpkey will raise an exception in
             # PasswordTokenClass
             del param["genkey"]
