@@ -2124,7 +2124,7 @@ def get_static_policy_definitions(scope=None):
                           'description required for all selected token-types.'),
                 'group': GROUP.ENROLLMENT,
                 'multiple': True,
-                'value': list(get_token_types())},
+                'value': get_token_types()},
 
             ACTION.MAXTOKENUSER: {
                 'type': 'int',
