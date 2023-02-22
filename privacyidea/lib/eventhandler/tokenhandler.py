@@ -39,6 +39,7 @@ You can attach token actions like enable, disable, delete, unassign,... of the
  * ...
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
+from privacyidea.lib.machine import attach_token
 from privacyidea.lib.token import (get_token_types, set_validity_period_end,
                                    set_validity_period_start, set_pin)
 from privacyidea.lib.crypto import generate_password
@@ -86,6 +87,12 @@ class ACTION_TYPE(object):
     SET_RANDOM_PIN = "set random pin"
     ADD_TOKENGROUP = "add tokengroup"
     REMOVE_TOKENGROUP = "remove tokengroup"
+    ATTACH_APPLICATION = "attach application"
+
+class TOKEN_APPLICATIONS(object):
+    SSH = "ssh"
+    OFFLINE = "offline"
+    LUKS = "luks"
 
 
 class VALIDITY(object):
@@ -312,7 +319,61 @@ class TokenEventHandler(BaseEventHandler):
                                 "description": _("Remove a tokengroup from the token."),
                                 "value": [tg.name for tg in get_tokengroups()]
                             }
-                        }
+                        },
+                   ACTION_TYPE.ATTACH_APPLICATION:
+                       {"machine ID":
+                            {
+                                "type": "string",
+                                "required": False,
+                                "description": _("The ID of the machine you want to attach the token to")
+
+                            },
+                        "application":
+                            {
+                                "type": "string",
+                                "required": True,
+                                "description": _("Set a token application like 'offline' or 'SSH'. Note: Not all tokens"
+                                                 " work well with all applications!"),
+                                "value": [TOKEN_APPLICATIONS.SSH, TOKEN_APPLICATIONS.OFFLINE, TOKEN_APPLICATIONS.LUKS]
+                            },
+                        "count":
+                            {
+                                "type": "string",
+                                "visibleIf": "application",
+                                "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
+                                "description": _("The number of offline OTP values available"),
+                                "required": False
+                            },
+                        "rounds":
+                            {
+                                "type": "string",
+                                "visibleIf": "application",
+                                "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
+                                "description": _("The number of rounds for password hashing"),
+                                "required": False
+                            },
+                        "user":
+                            {
+                                "type": "string",
+                                "visibleIf": "application",
+                                "visibleValue": TOKEN_APPLICATIONS.SSH,
+                                "required": False
+                            },
+                        "slot":
+                            {
+                                "type": "string",
+                                "visibleIf": "application",
+                                "visibleValue": TOKEN_APPLICATIONS.LUKS,
+                                "required": False
+                            },
+                        "partition":
+                            {
+                                "type": "string",
+                                "visibleIf": "application",
+                                "visibleValue": TOKEN_APPLICATIONS.LUKS,
+                                "required": False
+                            },
+                       }
                    }
         return actions
 
@@ -351,7 +412,8 @@ class TokenEventHandler(BaseEventHandler):
                               ACTION_TYPE.SET_RANDOM_PIN,
                               ACTION_TYPE.DELETE_TOKENINFO,
                               ACTION_TYPE.ADD_TOKENGROUP,
-                              ACTION_TYPE.REMOVE_TOKENGROUP]:
+                              ACTION_TYPE.REMOVE_TOKENGROUP,
+                              ACTION_TYPE.ATTACH_APPLICATION]:
             if serial:
                 if ',' in serial:
                     serials = [t.strip() for t in serial.split(',')]
@@ -464,6 +526,31 @@ class TokenEventHandler(BaseEventHandler):
                         except Exception as exx:
                             log.warning("Misconfiguration: Failed to remove tokengroup "
                                         "from token {0!s}!".format(serial))
+                    elif action.lower() == ACTION_TYPE.ATTACH_APPLICATION:
+                        try:
+                            machine = handler_options.get("machine ID")
+                            application = handler_options.get("application")
+                            application_options = {}
+                            count = handler_options.get("count", None)
+                            if not (count is None):
+                                application_options.update({"count": count})
+                            rounds = handler_options.get("rounds", None)
+                            if not (rounds is None):
+                                application_options.update({"rounds": rounds})
+                            slot = handler_options.get("slot", None)
+                            if not (slot is None):
+                                application_options.update({"slot": slot})
+                            partition = handler_options.get("partition", None)
+                            if not (partition is None):
+                                application_options.update({"partition": partition})
+                            user = handler_options.get("user", None)
+                            if not (user is None):
+                                application_options.update({"user": user})
+                            mt = attach_token(serial, application, machine_id=machine, options=application_options)
+                        except Exception as exx:
+                            log.warning("Misconfiguration: Failed to attach token to machine."
+                                        " Token serial: {!0s}".format(serial))
+
 
                 else:
                     log.info("Action {0!s} requires serial number. But no serial "
