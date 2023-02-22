@@ -2426,6 +2426,54 @@ class TokenEventTestCase(MyTestCase):
         remove_token("SPASS01")
 
 
+    def test_14_attach_token(self):
+        # create token
+        init_token({"serial": "offHOTP", "genkey": 1})
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "offHOTP", "type": "hotp"}
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # The count window of the token will be set to 123
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def":{
+                       "options": {"machine ID": 0,
+                                   "application": "offline",
+                                   "count": "12"}}
+                   }
+
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do("attach application", options=options)
+        self.assertTrue(res)
+
+        # check if the options were set.
+        token_obj = get_tokens(serial="offHOTP")[0]
+        self.assertEqual(token_obj.token.machine_list[0].application, "offline")
+        self.assertEqual(token_obj.token.machine_list[0].option_list[0].mt_key,
+                         "count")
+
+
 class CustomUserAttributesTestCase(MyTestCase):
 
     def test_01_event_set_attributes_logged_in_user(self):
