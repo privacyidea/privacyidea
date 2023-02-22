@@ -380,8 +380,8 @@ of this token type. This way, we avoid loops in this authentication process.
 This means, a user could authenticate via passthru or using a registration code and right during
 this authentication session be asked to enroll a new token.
 
-.. note:: During this kind of enrollment the policies for *max_token* are not checked. Also, currently no
-   token PIN is set.
+.. note:: During this kind of enrollment the policies for *max_token* and *require_description* are not checked.
+   Also, currently no token PIN is set.
 
 The different ways of enrollment are defined in detail by the token types:
 
