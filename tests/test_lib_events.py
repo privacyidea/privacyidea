@@ -16,6 +16,7 @@ from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUser
 from privacyidea.lib.eventhandler.customuserattributeshandler import USER_TYPE
 from privacyidea.lib.eventhandler.webhookeventhandler import ACTION_TYPE, WebHookHandler, CONTENT_TYPE
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
+from privacyidea.lib.machine import list_token_machines
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.config import get_config_object
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
@@ -2457,7 +2458,7 @@ class TokenEventTestCase(MyTestCase):
                    "request": req,
                    "response": resp,
                    "handler_def":{
-                       "options": {"machine ID": 0,
+                       "options": {
                                    "application": "offline",
                                    "count": "12"}}
                    }
@@ -2468,10 +2469,11 @@ class TokenEventTestCase(MyTestCase):
         self.assertTrue(res)
 
         # check if the options were set.
-        token_obj = get_tokens(serial="offHOTP")[0]
-        self.assertEqual(token_obj.token.machine_list[0].application, "offline")
-        self.assertEqual(token_obj.token.machine_list[0].option_list[0].mt_key,
-                         "count")
+        token_obj = list_token_machines(serial="offHOTP")[0]
+        self.assertEqual(token_obj.get("application"), "offline")
+        self.assertEqual(token_obj.get("hostname"), "any host")
+        self.assertEqual(token_obj.get("machine_id"), "any machine")
+
 
 
 class CustomUserAttributesTestCase(MyTestCase):

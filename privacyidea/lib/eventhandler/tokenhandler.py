@@ -324,7 +324,7 @@ class TokenEventHandler(BaseEventHandler):
                        {"machine ID":
                             {
                                 "type": "string",
-                                "required": True,
+                                "required": False,
                                 "description": _("The ID of the machine you want to attach the token to")
 
                             },
@@ -341,6 +341,7 @@ class TokenEventHandler(BaseEventHandler):
                                 "type": "string",
                                 "visibleIf": "application",
                                 "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
+                                "description": _("The number of offline OTP values available"),
                                 "required": False
                             },
                         "rounds":
@@ -348,13 +349,7 @@ class TokenEventHandler(BaseEventHandler):
                                 "type": "string",
                                 "visibleIf": "application",
                                 "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
-                                "required": False
-                            },
-                        "user":
-                            {
-                                "type": "string",
-                                "visibleIf": "application",
-                                "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
+                                "description": _("The number of rounds for password hashing"),
                                 "required": False
                             },
                         "user":
@@ -533,7 +528,7 @@ class TokenEventHandler(BaseEventHandler):
                                         "from token {0!s}!".format(serial))
                     elif action.lower() == ACTION_TYPE.ATTACH_APPLICATION:
                         try:
-                            machine = handler_options.get("machine ID", "")
+                            machine = handler_options.get("machine ID")
                             application = handler_options.get("application")
                             application_options = {}
                             count = handler_options.get("count", None)
