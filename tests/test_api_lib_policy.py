@@ -3344,25 +3344,25 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("increase_failcounter_on_challenge")
 
     def test_61_required_description_for_specified_token_types(self):
+        g.logged_in_user = {"username": "cornelius",
+                            "role": "user"}
         builder = EnvironBuilder(method='POST',
-                                 data={'user': "hans", "pass": "123456"},
                                  headers={})
         env = builder.get_environ()
-        req = Request(env)
-        req.User = User()
-
-        # Check that parameter is not set
-        req.all_data = {"type": "test_type"}
-        self.assertNotIn("require_description", req.all_data)
 
         # Set policy
         set_policy(name="require_description",
                    scope=SCOPE.ENROLL,
                    action=["{0!s}=hotp".format(ACTION.REQUIRE_DESCRIPTION)])
 
-        # Check that value is set with set policy
-        require_description(req)
-        self.assertEqual(['hotp'], req.all_data.get("require_description"))
+        req = Request(env)
+        # No description is set
+        req.all_data = {"type": "hotp"}
+        req.User = User("cornelius")
+
+        self.assertRaisesRegexp(PolicyError,
+                                "ERR303: Description required for hotp token.",
+                                require_description, req)
 
         # delete policy
         delete_policy("require_description")

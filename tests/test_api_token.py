@@ -2715,6 +2715,17 @@ class APITokenTestCase(MyApiTestCase):
             self.assertEqual(result.get("error").get("message"),
                              "Description required for hotp token.")
 
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "otpkey": self.otpkey,
+                                               "type": "hotp",
+                                               "description": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            # description is set, token should be rolled out
+            self.assertTrue(res.status_code == 200, res)
+
         # try to enroll a totp token
         with self.app.test_request_context('/token/init',
                                            method='POST',
