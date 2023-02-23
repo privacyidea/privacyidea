@@ -2697,7 +2697,7 @@ class APITokenTestCase(MyApiTestCase):
 
         delete_policy("verify_toks1")
 
-    def test_43_init_token_with_required_description(self):
+    def test_44_init_token_with_required_description(self):
         # set require_description policy with value = 'hotp'
         set_policy(name="require_description",
                    scope=SCOPE.ENROLL,
