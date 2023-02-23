@@ -104,6 +104,7 @@ class EmailTokenClass(HotpTokenClass):
     # The HOTP token provides means to verify the enrollment
     can_verify_enrollment = True
     mode = [AUTHENTICATIONMODE.CHALLENGE]
+
     def __init__(self, aToken):
         HotpTokenClass.__init__(self, aToken)
         self.set_type("email")
