@@ -287,6 +287,7 @@ class APIMachinesTestCase(MyApiTestCase):
         # Attach the token to the machine "gandalf" with the application SSH
         r = attach_token(hostname="gandalf", serial=self.serial2,
                          application="ssh", options={"user": "testuser"})
+        mtid = r.id
 
         self.assertEqual(r.machine_id, "192.168.0.1")
 
@@ -356,7 +357,13 @@ class APIMachinesTestCase(MyApiTestCase):
             sshkey = result["value"].get("ssh")[0].get("sshkey")
             self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
 
-        detach_token(self.serial2, application="ssh", hostname="gandalf")
+        # Detach the machinetoken via ID - this is used in the UI
+        with self.app.test_request_context("/machine/token/{0!s}/ssh/{1!s}".format(self.serial2, mtid),
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
         remove_token(self.serial2)
 
     def test_10_auth_items_ssh_rsa_with_service_id(self):

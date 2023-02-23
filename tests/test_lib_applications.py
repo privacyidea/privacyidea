@@ -44,7 +44,7 @@ class SSHApplicationTestCase(MyTestCase):
         # Can run as class
         options = SSHApplication.get_options()
         self.assertEqual(options["required"], [])
-        self.assertEqual(options["optional"], ["user"])
+        self.assertEqual(options["optional"], ["service_id", "user"])
 
     def test_02_get_auth_item(self):
         serial = "ssh1"
@@ -179,12 +179,11 @@ class BaseApplicationTestCase(MyTestCase):
             "privacyidea.lib.applications.base")
         self.assertFalse(bulk)
 
-
     def test_04_get_application_types(self):
         apps = get_application_types()
         self.assertTrue("luks" in apps)
         self.assertTrue("ssh" in apps)
-        self.assertEqual(apps["ssh"]["options"]["optional"], ["user"])
+        self.assertEqual(apps["ssh"]["options"]["optional"], ["service_id", "user"])
         self.assertEqual(apps["luks"]["options"]["optional"], ["slot",
                                                                "partition"])
 

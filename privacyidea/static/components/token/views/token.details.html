@@ -635,16 +635,13 @@
                             translate>Edit Options
                     </button>
                     <button class="btn btn-danger"
-                            ng-click="detachMachineToken(machine.machine_id,
-                            machine.resolver, machine.application)"
+                            ng-click="detachMachineToken(machine.application, machine.id)"
                             translate>Detach
                     </button>
                 </td>
                 <td ng-show="machine.optionsEdit">
                     <button class="btn btn-primary"
-                            ng-click="saveOptions(machine.machine_id,
-                            machine.resolver, machine.application,
-                            machine.options);
+                            ng-click="saveOptions(machine.id, machine.options);
                             machine.optionsEdit=false"
                             translate>Save Options
                     </button>

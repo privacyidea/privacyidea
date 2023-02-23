@@ -97,13 +97,12 @@
                     </button>
                     <button class="btn btn-danger"
                             ng-click="detachMachineToken(token.serial,
-                            token.application)" translate>Detach
+                            token.application, token.id)" translate>Detach
                     </button>
                 </td>
                 <td ng-show="token.optionsEdit">
                     <button class="btn btn-primary"
-                            ng-click="saveOptions(token.serial,
-                            token.application, token.options);
+                            ng-click="saveOptions(token.id, token.options);
                             token.optionsEdit=false"
                             translate>Save Options
                     </button>

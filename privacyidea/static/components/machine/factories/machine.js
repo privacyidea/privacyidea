@@ -46,10 +46,9 @@ myApp.factory("MachineFactory", ['AuthFactory', '$http', '$state', '$rootScope',
                     function(error) { AuthFactory.authError(error.data) });
             },
             detachTokenMachine: function(params, callback) {
-                // /token/<serial>/<machineid>/<resolver>/<application>
+                // /token/<serial>/<application>/<ID>
                 $http.delete(machineUrl + "/token/" + params.serial + "/" +
-                    params.machineid + "/" + params.resolver + "/" +
-                    params.application,
+                    params.application + "/" + params.mtid,
                     { headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function(response) { callback(response.data) },
                     function(error) { AuthFactory.authError(error.data) });
