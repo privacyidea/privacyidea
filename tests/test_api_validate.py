@@ -2264,7 +2264,7 @@ class ValidateAPITestCase(MyApiTestCase):
                               "type": "hotp",
                               "otpkey": self.otpkey,
                               "pin": pin}, user)
-        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
             ACTION.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
 
@@ -2342,7 +2342,7 @@ class ValidateAPITestCase(MyApiTestCase):
                               "type": "hotp",
                               "otpkey": self.otpkey,
                               "pin": pinB}, user)
-        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
             ACTION.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
 
@@ -2444,7 +2444,7 @@ class ValidateAPITestCase(MyApiTestCase):
                               "type": "hotp",
                               "otpkey": self.otpkey,
                               "pin": pin}, user)
-        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
             ACTION.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
 
@@ -3950,7 +3950,7 @@ class MultiChallege(MyApiTestCase):
                              "type": "hotp",
                              "otpkey": "31323334353637383930313233343536373839AA",
                              "pin": "otppin"}, user=User("selfservice", self.realm1))
-        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
             ACTION.CHALLENGERESPONSE))
 
         set_policy("test", scope=SCOPE.AUTH, action="{0!s}=poll, webauthn, interactive, u2f".format(
@@ -3984,7 +3984,7 @@ class MultiChallege(MyApiTestCase):
                               "type": "hotp",
                               "otpkey": self.otpkey,
                               "pin": pin}, user)
-        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
             ACTION.CHALLENGERESPONSE))
 
         with self.app.test_request_context('/validate/check',
@@ -4014,7 +4014,7 @@ class MultiChallege(MyApiTestCase):
                               "type": "hotp",
                               "otpkey": self.otpkey,
                               "pin": pin}, user)
-        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
+        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
             ACTION.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
         set_policy("test", scope=SCOPE.AUTH, action="{0!s}=wrong, falsch, Chigau, sbagliato".format(

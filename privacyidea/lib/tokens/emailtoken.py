@@ -70,7 +70,7 @@ import traceback
 import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
-from privacyidea.lib.tokenclass import CHALLENGE_SESSION
+from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
@@ -103,11 +103,11 @@ class EmailTokenClass(HotpTokenClass):
     EMAIL_ADDRESS_KEY = "email"
     # The HOTP token provides means to verify the enrollment
     can_verify_enrollment = True
+    mode = [AUTHENTICATIONMODE.CHALLENGE]
 
     def __init__(self, aToken):
         HotpTokenClass.__init__(self, aToken)
         self.set_type("email")
-        self.mode = ['challenge']
         # we support various hashlib methods, but only on create
         # which is effectively set in the update
         self.hashlibStr = get_from_config("hotp.hashlib", "sha1")

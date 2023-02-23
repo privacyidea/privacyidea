@@ -2238,7 +2238,9 @@ def get_static_policy_definitions(scope=None):
             ACTION.CHALLENGERESPONSE: {
                 'type': 'str',
                 'desc': _('This is a whitespace separated list of tokentypes, '
-                          'that can be used with challenge response.')
+                          'that can be used with challenge response.'),
+                'multiple': True,
+                'value': [token_obj.get_class_type() for token_obj in get_token_classes() if "challenge" in token_obj.mode and len(token_obj.mode) > 1]
             },
             ACTION.CHALLENGETEXT: {
                 'type': 'str',

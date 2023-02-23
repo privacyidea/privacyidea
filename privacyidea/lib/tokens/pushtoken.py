@@ -267,7 +267,6 @@ class PushTokenClass(TokenClass):
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
         self.set_type("push")
-        self.mode = ['challenge', 'authenticate']
         self.hKeyRequired = False
 
     @staticmethod
