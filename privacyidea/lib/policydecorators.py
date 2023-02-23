@@ -642,15 +642,17 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
 
     r = wrapped_function(*args, **kwds)
 
+    toks_avail = [tok for tok in tokenobject_list if tok.get_class_type() not in ['registration']]
+
     # A successful authentication was done
-    if r[0] and g and allow_reset:
-        token_owner = tokenobject_list[0].user
+    if r[0] and g and allow_reset and toks_avail:
+        token_owner = kwds.get('user') or toks_avail[0].user
         reset_all = Match.user(g, scope=SCOPE.AUTH, action=ACTION.RESETALLTOKENS,
                                user_object=token_owner if token_owner else None).policies()
         if reset_all:
             log.debug("Reset failcounter of all tokens of {0!s}".format(
                 token_owner))
-            for tok_obj_reset in tokenobject_list:
+            for tok_obj_reset in toks_avail:
                 try:
                     tok_obj_reset.reset()
                 except Exception:

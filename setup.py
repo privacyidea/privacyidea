@@ -60,8 +60,7 @@ install_requires = ["beautifulsoup4[lxml]>=4.3.2",
                     "requests>=2.7.0",
                     "segno>=1.5",
                     "smpplib>=2.0",
-                    "SQLAlchemy>=1.3.0,<1.4.0",
-                    "sqlsoup>=0.9.0"]
+                    "SQLAlchemy>=1.4.0"]
 
 
 def get_man_pages(dir):
