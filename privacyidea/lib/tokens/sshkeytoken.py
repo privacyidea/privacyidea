@@ -30,7 +30,7 @@ from privacyidea.lib import _
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE
+from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, AUTHENTICATIONMODE
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 log = logging.getLogger(__name__)
@@ -51,12 +51,12 @@ class SSHkeyTokenClass(TokenClass):
     SSH key. This can be used to manage SSH keys and retrieve the public ssh key
     to import it to authorized keys files.
     """
-    mode = ['authenticate']
+    mode = [AUTHENTICATIONMODE.AUTHENTICATE]
     using_pin = False
 
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
-        self.set_type(u"sshkey")
+        self.set_type("sshkey")
 
     @staticmethod
     def get_class_type():
@@ -163,7 +163,7 @@ class SSHkeyTokenClass(TokenClass):
         key_comment = ti.get("ssh_comment")
         # get the ssh key directly, otherwise it will not be decrypted
         sshkey = self.get_tokeninfo("ssh_key")
-        r = u"{0!s} {1!s}".format(key_type, sshkey)
+        r = "{0!s} {1!s}".format(key_type, sshkey)
         if key_comment:
             r += " " + key_comment
         return r

@@ -479,10 +479,10 @@ class SQLResolverTestCase(MyTestCase):
         # Add a new user
         uid = y.add_user({"username": "hans",
                           "email": "hans@world.net",
-                          "password": u"foo",
+                          "password": "foo",
                           "mobile": "12345"})
-        self.assertTrue(y.checkPass(uid, u"foo"))
-        self.assertFalse(y.checkPass(uid, u"bar"))
+        self.assertTrue(y.checkPass(uid, "foo"))
+        self.assertFalse(y.checkPass(uid, "bar"))
         # check that we actually store SSHA265 now since it is the default
         stored_password = y.TABLE.filter_by(username="hans").first().password
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
@@ -527,7 +527,7 @@ class SQLResolverTestCase(MyTestCase):
         y.map["userid"] = "username"
         user = "cornelius"
         user_info = y.getUserInfo(user)
-        self.assertEqual(user_info.get("id"), "cornelius")      
+        self.assertEqual(user_info.get("userid"), "cornelius")
 
     def test_99_testconnection_fail(self):
         y = SQLResolver()
@@ -838,7 +838,7 @@ class LDAPResolverTestCase(MyTestCase):
         username = y.getUsername(user_id)
         self.assertTrue(username == "bob", username)
 
-        pw = u"bobpwééé"
+        pw = "bobpwééé"
         res = y.checkPass(user_id, pw)
         self.assertTrue(res)
         self.assertTrue(y.checkPass(user_id, pw.encode('utf8')))
@@ -1710,9 +1710,9 @@ class LDAPResolverTestCase(MyTestCase):
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
-        user = u"kölbel".encode('utf8')
+        user = "kölbel".encode('utf8')
         user_id = y.getUserId(user)
-        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
         rid = y.getResolverId()
         self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
@@ -1764,9 +1764,9 @@ class LDAPResolverTestCase(MyTestCase):
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
-        user = u"kölbel"
+        user = "kölbel"
         user_id = y.getUserId(user)
-        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
         rid = y.getResolverId()
         self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
@@ -1817,13 +1817,13 @@ class LDAPResolverTestCase(MyTestCase):
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
-        user = u"kölbel"
+        user = "kölbel"
         user_id = y.getUserId(user)
-        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
         username = "cko@o"
         user_id = y.getUserId(username)
-        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
     @ldap3mock.activate
     def test_28_LDAP_multivalues(self):
@@ -1849,9 +1849,9 @@ class LDAPResolverTestCase(MyTestCase):
         result = y.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
-        user = u"kölbel"
+        user = "kölbel"
         user_id = y.getUserId(user)
-        self.assertEqual(user_id, u"cn=kölbel,ou=example,o=test")
+        self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
         info = y.getUserInfo(user_id)
         self.assertTrue("value1" in info.get("piAttr"))
         self.assertTrue("value2" in info.get("piAttr"))
@@ -1937,8 +1937,8 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertTrue(mock_search.called)
             # We do not get any duplicate entries, due to the workaround in ``ignore_sizelimit_exception``!
             self.assertTrue(ret[0])
-            self.assertTrue(ret[1] in [u'Your LDAP config seems to be OK, 1 user objects found.',
-                                       u'Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden 1 Benutzer-Objekte gefunden.'],
+            self.assertTrue(ret[1] in ['Your LDAP config seems to be OK, 1 user objects found.',
+                                       'Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden 1 Benutzer-Objekte gefunden.'],
                             ret[1])
 
 
@@ -2407,17 +2407,17 @@ class ResolverTestCase(MyTestCase):
         self.assertFalse(y.checkPass("1002", "no pw at all"))
         self.assertTrue(y.getUsername("1000") == "cornelius",
                         y.getUsername("1000"))
-        self.assertTrue(y.getUserId(u"cornelius") == "1000",
+        self.assertTrue(y.getUserId("cornelius") == "1000",
                         y.getUserId("cornelius"))
         self.assertTrue(y.getUserId("user does not exist") == "")
         # Check that non-ASCII user was read successfully
-        self.assertEqual(y.getUsername("1116"), u"nönäscii")
-        self.assertEqual(y.getUserId(u"nönäscii"), "1116")
+        self.assertEqual(y.getUsername("1116"), "nönäscii")
+        self.assertEqual(y.getUserId("nönäscii"), "1116")
         self.assertEqual(y.getUserInfo("1116").get('givenname'),
-                         u"Nön")
+                         "Nön")
         self.assertFalse(y.checkPass("1116", "wrong"))
-        self.assertTrue(y.checkPass("1116", u"pässwörd"))
-        r = y.getUserList({"username": u"*ö*"})
+        self.assertTrue(y.checkPass("1116", "pässwörd"))
+        r = y.getUserList({"username": "*ö*"})
         self.assertEqual(len(r), 1)
 
         sF = y.getSearchFields({"username": "*"})
@@ -2454,8 +2454,8 @@ class ResolverTestCase(MyTestCase):
         self.assertTrue("config" in rdesc.get("passwdresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("passwdresolver"), rdesc)
         # internal stringMatch function
-        self.assertTrue(y._stringMatch(u"Hallo", "*lo"))
-        self.assertTrue(y._stringMatch("Hallo", u"Hal*"))
+        self.assertTrue(y._stringMatch("Hallo", "*lo"))
+        self.assertTrue(y._stringMatch("Hallo", "Hal*"))
         self.assertFalse(y._stringMatch("Duda", "Hal*"))
         self.assertTrue(y._stringMatch("HalloDuda", "*Du*"))
         self.assertTrue(y._stringMatch("Duda", "Duda"))
@@ -2517,9 +2517,9 @@ class ResolverTestCase(MyTestCase):
 
     def test_14_censor_resolver(self):
         reso_list = get_resolver_list()
-        self.assertEqual(reso_list.get("myLDAPres").get("data").get(u"BINDPW"), "ldaptest")
+        self.assertEqual(reso_list.get("myLDAPres").get("data").get("BINDPW"), "ldaptest")
         reso_list = get_resolver_list(censor=True)
-        self.assertEqual(reso_list.get("myLDAPres").get("data").get(u"BINDPW"), "__CENSORED__")
+        self.assertEqual(reso_list.get("myLDAPres").get("data").get("BINDPW"), "__CENSORED__")
 
     def test_15_try_to_delete_used_resolver(self):
         rid = save_resolver({"resolver": self.resolvername1,

@@ -3,7 +3,14 @@
         <uib-accordion close-others="oneAtATime">
             <div uib-accordion-group
                  class="panel-default"
-                 heading="{{ 'The OTP values'|translate }}">
+                 is-open="isOpen">
+                <uib-accordion-heading ng-click="isOpen=!isOpen">
+                    <div >{{ 'The OTP values'|translate }}
+                        <span class="pull-right glyphicon" aria-hidden="true"
+                           ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
+                        </span>
+                    </div>
+                </uib-accordion-heading>
                 <div id="paperOtpTable">
                     <div ng-include="instanceUrl+'/'+piCustomization+
                     '/views/includes/token.enrolled.tan.top.html'"></div>

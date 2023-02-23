@@ -543,7 +543,7 @@ class APIEventsTestCase(MyApiTestCase):
             # This is a challenge response!
             self.assertTrue("transaction_id" in detail, detail)
             self.assertTrue("multi_challenge" in detail, detail)
-            self.assertEqual(detail.get("message"), u"Enter the OTP from the Email:")
+            self.assertEqual(detail.get("message"), "Enter the OTP from the Email:")
 
         # check user has a token
         with self.app.test_request_context('/token/',
@@ -556,7 +556,7 @@ class APIEventsTestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertEqual(result.get("value").get("count"), 1)
-            self.assertEqual(result.get("value").get("tokens")[0].get("tokentype"), u"email")
+            self.assertEqual(result.get("value").get("tokens")[0].get("tokentype"), "email")
 
 
 class CustomUserAttributeHandlerTestCase(MyApiTestCase):

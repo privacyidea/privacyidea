@@ -1485,7 +1485,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 403, res)
             result = res.json.get("result")
             self.assertFalse(result.get("status"))
-            self.assertEqual(u"Admin actions are defined, but you are not allowed to upload token files.",
+            self.assertEqual("Admin actions are defined, but you are not allowed to upload token files.",
                              result.get("error").get("message"))
 
         delete_policy("tokupload")
@@ -2297,7 +2297,7 @@ class APITokenTestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
-            self.assertTrue(u'image=https%3A//example.com/img.png' in detail.get("googleurl").get("value"),
+            self.assertTrue('image=https%3A//example.com/img.png' in detail.get("googleurl").get("value"),
                             detail.get("googleurl"))
 
         remove_token("goog1")
@@ -2354,7 +2354,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertFalse(result.get("status"))
             self.assertEqual(result.get("error").get("message"),
-                             u"The requested token could not be found.")
+                             "The requested token could not be found.")
 
         # cleanup
         delete_policy("SETDESCPOL")
@@ -2380,7 +2380,7 @@ class APITokenTestCase(MyApiTestCase):
             detail = res.json["detail"]
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
-            self.assertTrue(u'pin=True' in detail.get("googleurl").get("value"),
+            self.assertTrue('pin=True' in detail.get("googleurl").get("value"),
                             detail.get("googleurl"))
 
         remove_token("goog2")
@@ -3140,7 +3140,7 @@ class APIDetermine_User_from_Serial_for_Policies(MyApiTestCase):
             # One token disabled
             self.assertFalse(result.get("status"))
             self.assertEqual(303, result.get("error").get("code"))
-            self.assertEqual(u"Admin actions are defined, but the action disable is not allowed!",
+            self.assertEqual("Admin actions are defined, but the action disable is not allowed!",
                              result.get("error").get("message"))
 
         remove_token(serial)

@@ -37,6 +37,7 @@ import jwt
 import threading
 import six
 import re
+from copy import copy
 from six.moves.urllib.parse import unquote
 from flask import (jsonify,
                    current_app)
@@ -46,6 +47,13 @@ ENCODING = "utf-8"
 TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
                      "RS256", "RS384", "RS512",
                      "PS256", "PS384", "PS512"]
+
+# The following user-agents (with versions) do not need extra unquoting
+# TODO: we should probably switch this when we do not do the extra unquote anymore
+NO_UNQUOTE_USER_AGENTS = {
+    'privacyIDEA-LDAP-Proxy': None,
+    'simpleSAMLphp': None
+}
 
 SESSION_KEY_LENGTH = 32
 
@@ -205,7 +213,7 @@ def send_csv_result(obj, data_key="tokens",
     :rtype: Response object
     """
     delim = "'"
-    output = u""
+    output = ""
     # check if there is any data
     if data_key in obj and len(obj[data_key]) > 0:
         # Do the header
@@ -216,7 +224,7 @@ def send_csv_result(obj, data_key="tokens",
         # Do the data
         for row in obj.get(data_key):
             for val in row.values():
-                if isinstance(val, six.string_types):
+                if isinstance(val, str):
                     value = val.replace("\n", " ")
                 else:
                     value = val
@@ -238,6 +246,32 @@ def getLowerParams(param):
     return ret
 
 
+def check_unquote(request, data):
+    """
+    Check if we need to unquote the given data.
+    Based on the user-agent header of the request we unquote the given values
+    in `data`. The user-agent string parsing is based on
+    https://httpwg.org/specs/rfc9110.html#field.user-agent
+
+    :param request: The Flask request context
+    :type request: flask.Request
+    :param data: The dictionary containing the requested data
+    :type data: dict
+    :return: New dictionary with the possibly unquoted values
+    :rtype: dict
+    """
+    # if no user agent is available, we assume that we must unquote the data
+    if not request.user_agent.string:
+        return {key: unquote(value) for (key, value) in data.items()}
+
+    ua_match = re.match(r'^(?P<agent>[a-zA-Z0-9_-]+)(/(?P<version>\d+[\d.]*)(\s.*)?)?',
+                        request.user_agent.string)
+    if ua_match and not ua_match.group('agent') in NO_UNQUOTE_USER_AGENTS:
+        return {key: unquote(value) for (key, value) in data.items()}
+    else:
+        return copy(data)
+
+
 def get_all_params(request):
     """
     Retrieve all parameters from a request, no matter if these are GET or POST requests
@@ -249,13 +283,13 @@ def get_all_params(request):
     body = request.data
     return_param = {}
     if param:
-        log.debug(u"Update params in request {0!s} {1!s} with values.".format(request.method,
+        log.debug("Update params in request {0!s} {1!s} with values.".format(request.method,
                                                                               request.base_url))
         # Add the unquoted HTML and form parameters
-        return_param = {key: unquote(value) for (key, value) in param.items()}
+        return_param = check_unquote(request, request.values)
 
     if request.is_json:
-        log.debug(u"Update params in request {0!s} {1!s} with JSON data.".format(request.method,
+        log.debug("Update params in request {0!s} {1!s} with JSON data.".format(request.method,
                                                                                  request.base_url))
         # Add the original JSON data
         return_param.update(request.json)
@@ -269,10 +303,10 @@ def get_all_params(request):
             log.debug("Can not get param: {0!s}".format(exx))
 
     if request.view_args:
-        log.debug(u"Update params in request {0!s} {1!s} with view_args.".format(request.method,
+        log.debug("Update params in request {0!s} {1!s} with view_args.".format(request.method,
                                                                                  request.base_url))
         # We add the unquoted view_args
-        return_param.update({key: unquote(value) for (key, value) in request.view_args.items()})
+        return_param.update(check_unquote(request, request.view_args))
 
     return return_param
 
@@ -330,9 +364,9 @@ def verify_auth_token(auth_token, required_role=None):
                         else:
                             r = wrong_username = j.get("username")
                 else:
-                    log.warning(u"Unsupported JWT algorithm in PI_TRUSTED_JWT.")
+                    log.warning("Unsupported JWT algorithm in PI_TRUSTED_JWT.")
             except jwt.DecodeError as err:
-                log.info(u"A given JWT definition does not match.")
+                log.info("A given JWT definition does not match.")
             except jwt.ExpiredSignatureError as err:
                 # We have the correct token. It expired, so we raise an error
                 raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
@@ -371,7 +405,7 @@ def check_policy_name(name):
                            ("^pi-update-policy-", re.IGNORECASE)]
     for disallowed_pattern in disallowed_patterns:
         if re.search(disallowed_pattern[0], name, flags=disallowed_pattern[1]):
-            raise ParameterError(_(u"'{0!s}' is an invalid policy name.").format(name))
+            raise ParameterError(_("'{0!s}' is an invalid policy name.").format(name))
 
     if not re.match(r'^[a-zA-Z0-9_.\- ]*$', name):
         raise ParameterError(_("The name of the policy may only contain "

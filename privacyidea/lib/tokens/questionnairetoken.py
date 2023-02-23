@@ -225,7 +225,7 @@ class QuestionnaireTokenClass(TokenClass):
                 questions[tinfo.id] = tinfo.Key
         # if all questions are used up, make a new round
         if len(questions) == len(used_questions):
-            log.info(u"User has only {0!s} questions in his token. Reusing questions now.".format(len(questions)))
+            log.info("User has only {0!s} questions in his token. Reusing questions now.".format(len(questions)))
             used_questions = []
         # Reduce the allowed questions
         remaining_questions = {k: v for (k, v) in questions.items() if k not in used_questions}
@@ -340,7 +340,7 @@ class QuestionnaireTokenClass(TokenClass):
                                                              options) or 1)
         if len(challengeobject_list) == 1:
             session = int(challengeobject_list[0].session or "0") + 1
-            options["session"] = u"{0!s}".format(session)
+            options["session"] = "{0!s}".format(session)
             # write the used questions to the data field
             options["data"] = challengeobject_list[0].data or ""
             if session < question_number:

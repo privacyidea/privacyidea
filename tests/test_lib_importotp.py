@@ -704,7 +704,7 @@ class ImportOTPTestCase(MyTestCase):
     def test_06_export_pskc(self):
         # create three tokens
         t1 = init_token({"serial": "t1", "type": "hotp", "otpkey": "123456",
-                         "description": u"söme ünicøde"})
+                         "description": "söme ünicøde"})
         t2 = init_token({"serial": "t2", "type": "totp", "otpkey": "123456",
                          "description": "something <with> xml!"})
         t3 = init_token({"serial": "t3", "type": "spass", "otpkey": "123456"})
@@ -733,7 +733,7 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens.get("t2").get("timeStep"), "30")
         self.assertEqual(tokens.get("t2").get("description"), "something <with> xml!")
         # password token
-        self.assertEqual(tokens.get("t4").get("otpkey"), u"lässig")
+        self.assertEqual(tokens.get("t4").get("otpkey"), "lässig")
 
 
 class GPGTestCase(MyTestCase):

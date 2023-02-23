@@ -72,7 +72,15 @@
                         loggedInUser.role=='user'">
             <div uib-accordion-group
                  class="panel-default"
-                 heading="{{ 'Extended Attributes'|translate }}">
+                 is-open="isOpen">
+                <uib-accordion-heading ng-click="isOpen=!isOpen">
+                    <div >{{ 'Extended Atttributes'|translate }}
+                        <span class="pull-right glyphicon" aria-hidden="true"
+                           ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
+                        </span>
+                    </div>
+                </uib-accordion-heading>
+
                 <div class="form-group col-sm-6">
                     <label for="validity_start"
                            translate>Validity Start
@@ -89,7 +97,7 @@
                           <span class="input-group-btn">
                             <button type="button" class="btn btn-default"
                                     ng-click="startOpened = openDate($event)">
-                                <i class="glyphicon glyphicon-calendar"></i>
+                                <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
                             </button>
                           </span>
                     </p>

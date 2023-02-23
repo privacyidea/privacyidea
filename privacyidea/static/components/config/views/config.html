@@ -13,7 +13,11 @@
 
         <div class="navbar-collapse collapse myConfigNavbar">
             <ul class="nav navbar-nav">
-                <li ng-class="{active: $state.includes('config.system')}">
+                <li ng-class="{active: $state.includes('config.system')
+                || $state.includes('config.smtp') || $state.includes('config.radius')
+                || $state.includes('config.privacyideaserver') || $state.includes('config.smsgateway')
+                || $state.includes('config.tokengroup') || $state.includes('config.caconnectors')
+                }">
                     <a ui-sref="config.system">
                     <span class="glyphicon glyphicon-briefcase"
                           aria-hidden="true"></span>
@@ -66,13 +70,6 @@
                         <span translate>Realms</span>
                     </a>
                 </li>
-                <li ng-class="{active: $state.includes('config.caconnectors')}">
-                    <a ui-sref="config.caconnectors.list">
-                        <span class="glyphicon glyphicon-bookmark"
-                          aria-hidden="true"></span>
-                        <span translate>CAs</span>
-                    </a>
-                </li>
             </ul>
 
         </div>
@@ -83,3 +80,7 @@
     <div ui-view class="slide"></div>
 
 </div>
+
+
+<ng-include src="instanceUrl + '/static/components/config/views/dialog.confirm_delete.html'">
+</ng-include>

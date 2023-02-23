@@ -16,6 +16,7 @@ from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUser
 from privacyidea.lib.eventhandler.customuserattributeshandler import USER_TYPE
 from privacyidea.lib.eventhandler.webhookeventhandler import ACTION_TYPE, WebHookHandler, CONTENT_TYPE
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
+from privacyidea.lib.machine import list_token_machines
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.config import get_config_object
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
@@ -2424,6 +2425,55 @@ class TokenEventTestCase(MyTestCase):
         self.assertEqual(0, len(tok.token.tokengroup_list))
 
         remove_token("SPASS01")
+
+
+    def test_14_attach_token(self):
+        # create token
+        init_token({"serial": "offHOTP", "genkey": 1})
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "offHOTP", "type": "hotp"}
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # The count window of the token will be set to 123
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def":{
+                       "options": {
+                                   "application": "offline",
+                                   "count": "12"}}
+                   }
+
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do("attach application", options=options)
+        self.assertTrue(res)
+
+        # check if the options were set.
+        token_obj = list_token_machines(serial="offHOTP")[0]
+        self.assertEqual(token_obj.get("application"), "offline")
+        self.assertEqual(token_obj.get("hostname"), "any host")
+        self.assertEqual(token_obj.get("machine_id"), "any machine")
+
 
 
 class CustomUserAttributesTestCase(MyTestCase):

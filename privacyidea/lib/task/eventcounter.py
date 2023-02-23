@@ -67,8 +67,8 @@ class EventCounterTask(BaseTask):
 
         # now write the current value of the counter
         if counter_value is None:
-            log.warning(u"Trying to create statistics of a counter_value '{0}', "
-                        u"that does not exist.".format(event_counter))
+            log.warning("Trying to create statistics of a counter_value '{0}', "
+                        "that does not exist.".format(event_counter))
         else:
             write_stats(stats_key, counter_value)
 

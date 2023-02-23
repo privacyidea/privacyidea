@@ -218,7 +218,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             "u2f": gettextCatalog.getString("U2F: Universal 2nd Factor hardware token."),
             "indexedsecret": gettextCatalog.getString("IndexedSecret: Challenge token based on a shared secret."),
             "webAuthn": gettextCatalog.getString("WebAuthn: Web Authentication hardware token."),
-            "paper": gettextCatalog.getString("PAPER: OTP values on a sheet of paper.")},
+            "paper": gettextCatalog.getString("PAPER: OTP values on a sheet of paper."),
+            "applspec": gettextCatalog.getString("ApplSpec: Application Specific Password Token")},
         timesteps: [30, 60],
         otplens: [6, 8],
         hashlibs: ["sha1", "sha256", "sha512"]
@@ -400,7 +401,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         $scope.newUser.realm = AuthFactory.getUser().realm;
     }
 
-    // Read the the tokentypes from the server
+    // Read the tokentypes from the server
     TokenFactory.getEnrollTokens(function(data){
         //debug: console.log("getEnrollTokens");
         //debug: console.log(data);

@@ -1036,6 +1036,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             ACTION.LOGOUTTIME, 200))
         set_policy(name="webui4", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
             ACTION.AUDITPAGESIZE, 20))
+        set_policy(name="webui5", scope=SCOPE.WEBUI, action=ACTION.DELETION_CONFIRMATION)
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "selfservice@realm1",
@@ -1056,6 +1057,10 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertTrue(result2.get("status"), res.data)
             # Test logout time
             self.assertEqual(result2.get("value").get("logout_time"), 200)
+            # check if value is True if deletion_confirmation is set
+            self.assertEqual(result.get("value").get("deletion_confirmation"), True)
+
+        delete_policy("webui5")
 
     def test_42_auth_timelimit_maxfail(self):
         self.setUp_user_realm2()
@@ -1205,7 +1210,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         # disabled policy: by default, login is disabled
         with self.app.test_request_context('/policy/disabled',
-                                           json={'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.DISABLE),
+                                           json={'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.DISABLE),
                                                  'scope': SCOPE.WEBUI,
                                                  'realm': '',
                                                  'priority': 2,
@@ -1217,7 +1222,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         # userstore policy: for admins, require the userstore password
         with self.app.test_request_context('/policy/userstore',
-                                           json={'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.USERSTORE),
+                                           json={'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.USERSTORE),
                                                  'scope': SCOPE.WEBUI,
                                                  'realm': '',
                                                  'priority': 1,
@@ -1232,7 +1237,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         # privacyidea policy: for helpdesk users, require the token PIN
         with self.app.test_request_context('/policy/privacyidea',
-                                           json={'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA),
+                                           json={'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA),
                                                  'scope': SCOPE.WEBUI,
                                                  'realm': '',
                                                  'priority': 1,
@@ -1306,7 +1311,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
         # if we now disable the condition on userstore and privacyidea, we get a conflicting policy error
         with self.app.test_request_context('/policy/privacyidea',
                                            json={'scope': SCOPE.WEBUI,
-                                                 'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA),
+                                                 'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.PRIVACYIDEA),
                                                  'realm': '',
                                                  'active': True,
                                                  'conditions': [
@@ -1319,7 +1324,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/policy/userstore',
                                            json={'scope': SCOPE.WEBUI,
-                                                 'action': u"{}={}".format(ACTION.LOGINMODE, LOGINMODE.USERSTORE),
+                                                 'action': "{}={}".format(ACTION.LOGINMODE, LOGINMODE.USERSTORE),
                                                  'realm': '',
                                                  'active': True,
                                                  'conditions': [
@@ -1384,7 +1389,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "bob",
-                                                 "password": u"bobpwééé"}):
+                                                 "password": "bobpwééé"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")

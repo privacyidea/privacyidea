@@ -70,7 +70,7 @@ import traceback
 import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
-from privacyidea.lib.tokenclass import CHALLENGE_SESSION
+from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
 from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
@@ -103,11 +103,11 @@ class EmailTokenClass(HotpTokenClass):
     EMAIL_ADDRESS_KEY = "email"
     # The HOTP token provides means to verify the enrollment
     can_verify_enrollment = True
+    mode = [AUTHENTICATIONMODE.CHALLENGE]
 
     def __init__(self, aToken):
         HotpTokenClass.__init__(self, aToken)
-        self.set_type(u"email")
-        self.mode = ['challenge']
+        self.set_type("email")
         # we support various hashlib methods, but only on create
         # which is effectively set in the update
         self.hashlibStr = get_from_config("hotp.hashlib", "sha1")
@@ -295,6 +295,7 @@ class EmailTokenClass(HotpTokenClass):
                                                                        EMAILACTION.EMAILSUBJECT,
                                                                        "Your OTP")
                     success, sent_message = self._compose_email(
+                        options=options,
                         message=message_template,
                         subject=subject_template,
                         mimetype=mimetype)
@@ -315,7 +316,7 @@ class EmailTokenClass(HotpTokenClass):
                 info = _("The PIN was correct, but the "
                          "EMail could not be sent!")
                 log.warning(info + " ({0!r})".format(e))
-                log.debug(u"{0!s}".format(traceback.format_exc()))
+                log.debug("{0!s}".format(traceback.format_exc()))
                 return_message = info
                 if is_true(options.get("exception")):
                     raise Exception(info)
@@ -351,7 +352,8 @@ class EmailTokenClass(HotpTokenClass):
                                                       action=EMAILACTION.EMAILSUBJECT,
                                                       default="Your OTP")
             self.inc_otp_counter(ret, reset=False)
-            success, message = self._compose_email(message=message,
+            success, message = self._compose_email(options=options,
+                                                   message=message,
                                                    subject=subject,
                                                    mimetype=mimetype)
             log.debug("AutoEmail: send new SMS: {0!s}".format(success))
@@ -383,7 +385,6 @@ class EmailTokenClass(HotpTokenClass):
             if len(messages) == 1:
                 message = list(messages)[0]
 
-        message = message.format(challenge=options.get("challenge"))
         if message.startswith("file:"):
             # We read the template from the file.
             try:
@@ -392,8 +393,8 @@ class EmailTokenClass(HotpTokenClass):
                     mimetype = "html"
             except Exception as e:  # pragma: no cover
                 message = default
-                log.warning(u"Failed to read email template: {0!r}".format(e))
-                log.debug(u"{0!s}".format(traceback.format_exc()))
+                log.warning("Failed to read email template: {0!r}".format(e))
+                log.debug("{0!s}".format(traceback.format_exc()))
 
         return message, mimetype
 
@@ -417,7 +418,7 @@ class EmailTokenClass(HotpTokenClass):
         return autosms
 
     @log_with(log)
-    def _compose_email(self, message="<otp>", subject="Your OTP", mimetype="plain"):
+    def _compose_email(self, message="<otp>", subject="Your OTP", mimetype="plain", options=None):
         """
         send email
 
@@ -435,6 +436,8 @@ class EmailTokenClass(HotpTokenClass):
         recipient = self._email_address
         otp = self.get_otp()[2]
         serial = self.get_serial()
+        options = options or {}
+        challenge = options.get("challenge")
 
         message = message.replace("<otp>", otp)
         message = message.replace("<serial>", serial)
@@ -444,7 +447,8 @@ class EmailTokenClass(HotpTokenClass):
                                tokentype=self.get_tokentype(),
                                recipient={"givenname": self.user.info.get("givenname") if self.user else "",
                                           "surname": self.user.info.get("surname") if self.user else ""},
-                               escape_html=mimetype.lower() == "html")
+                               escape_html=mimetype.lower() == "html",
+                               challenge=challenge)
 
         message = message.format(otp=otp, **tags)
 

@@ -82,7 +82,7 @@ class PushAPITestCase(MyApiTestCase):
                        PUSH_ACTION.TTL, TTL))
         # Create push config
         r = set_smsgateway(self.firebase_config_name,
-                           u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                            "myFB", FB_CONFIG_VALS)
         self.assertTrue(r > 0)
 
@@ -134,11 +134,11 @@ class PushAPITestCase(MyApiTestCase):
             toks = get_tokens(serial=serial)
             self.assertEqual(len(toks), 1)
             token_obj = toks[0]
-            self.assertEqual(token_obj.token.rollout_state, u"enrolled")
+            self.assertEqual(token_obj.token.rollout_state, "enrolled")
             self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
             self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
-            self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
+            self.assertEqual(tokeninfo.get("firebase_token"), "firebaseT")
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(),
                              pubkey)
             # The token should also contain the firebase config
@@ -190,7 +190,7 @@ class PushAPITestCase(MyApiTestCase):
         set_policy("chalresp", action="{0!s}=hotp".format(ACTION.CHALLENGERESPONSE), scope=SCOPE.AUTH)
         # Create push config
         r = set_smsgateway(self.firebase_config_name,
-                           u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                            "myFB", FB_CONFIG_VALS)
         self.assertTrue(r > 0)
 
@@ -242,11 +242,11 @@ class PushAPITestCase(MyApiTestCase):
             toks = get_tokens(serial=serial)
             self.assertEqual(len(toks), 1)
             token_obj = toks[0]
-            self.assertEqual(token_obj.token.rollout_state, u"enrolled")
+            self.assertEqual(token_obj.token.rollout_state, "enrolled")
             self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
             self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
-            self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
+            self.assertEqual(tokeninfo.get("firebase_token"), "firebaseT")
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(),
                              pubkey)
             # The token should also contain the firebase config
@@ -302,7 +302,7 @@ class PushAPITestCase(MyApiTestCase):
                        PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL))
         # Create push config
         r = set_smsgateway(self.firebase_config_name,
-                           u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                            "myFB", FB_CONFIG_VALS)
         self.assertTrue(r > 0)
 
@@ -396,17 +396,6 @@ class PushAPITestCase(MyApiTestCase):
         # Set Policy scope:auth, action:enroll_via_multichallenge=push
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
                    action="{0!s}=push".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
-        # We still do a passthru, since we do not have a firebase config, yet.
-        with self.app.test_request_context('/validate/check',
-                                           method='POST',
-                                           data={"user": "alice",
-                                                 "pass": "alicepw"}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(200, res.status_code)
-            result = res.json.get("result")
-            self.assertTrue(result.get("status"))
-            self.assertTrue(result.get("value"))
-
         # Set Policy scope:enrollment, action:push_config
         set_policy("pol_push2", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s},{6!s}={7!s}".format(
@@ -416,7 +405,7 @@ class PushAPITestCase(MyApiTestCase):
                        PUSH_ACTION.TTL, TTL))
         # Create push config
         r = set_smsgateway(self.firebase_config_name,
-                           u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                            "myFB", FB_CONFIG_VALS)
         self.assertTrue(r > 0)
         # Now we should get an authentication Challenge
@@ -479,11 +468,11 @@ class PushAPITestCase(MyApiTestCase):
             toks = get_tokens(serial=serial)
             self.assertEqual(len(toks), 1)
             token_obj = toks[0]
-            self.assertEqual(token_obj.token.rollout_state, u"enrolled")
+            self.assertEqual(token_obj.token.rollout_state, "enrolled")
             self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
             self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
-            self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
+            self.assertEqual(tokeninfo.get("firebase_token"), "firebaseT")
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(),
                              pubkey)
             # The token should also contain the firebase config

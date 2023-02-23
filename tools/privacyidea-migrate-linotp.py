@@ -181,20 +181,20 @@ def migrate(config_obj):
     token_table = Table("token", metadata,
                         Column("id", Integer, Sequence('token_seq'),
                                primary_key=True, nullable=False),
-                        Column("description", Unicode(80), default=u''),
-                        Column("serial", Unicode(40), default=u'', unique=True,
+                        Column("description", Unicode(80), default=''),
+                        Column("serial", Unicode(40), default='', unique=True,
                                nullable=False, index=True),
-                        Column("tokentype", Unicode(30), default=u'HOTP',
+                        Column("tokentype", Unicode(30), default='HOTP',
                                index=True),
-                        Column("user_pin", Unicode(512), default=u''),
-                        Column("user_pin_iv", Unicode(32), default=u''),
-                        Column("so_pin", Unicode(512), default=u''),
-                        Column("so_pin_iv", Unicode(32), default=u''),
-                        Column("pin_seed", Unicode(32), default=u''),
+                        Column("user_pin", Unicode(512), default=''),
+                        Column("user_pin_iv", Unicode(32), default=''),
+                        Column("so_pin", Unicode(512), default=''),
+                        Column("so_pin_iv", Unicode(32), default=''),
+                        Column("pin_seed", Unicode(32), default=''),
                         Column("otplen", Integer(), default=6),
-                        Column("pin_hash", Unicode(512), default=u''),
-                        Column("key_enc", Unicode(1024), default=u''),
-                        Column("key_iv", Unicode(32), default=u''),
+                        Column("pin_hash", Unicode(512), default=''),
+                        Column("key_enc", Unicode(1024), default=''),
+                        Column("key_iv", Unicode(32), default=''),
                         Column("maxfail", Integer(), default=10),
                         Column("active", Boolean(), nullable=False, default=True),
                         Column("revoked", Boolean(), default=False),
@@ -203,14 +203,14 @@ def migrate(config_obj):
                         Column("count", Integer(), default=0),
                         Column("count_window", Integer(), default=10),
                         Column("sync_window", Integer(), default=1000),
-                        Column("rollout_state", Unicode(10), default=u''))
+                        Column("rollout_state", Unicode(10), default=''))
 
     tokenowner_table = Table("tokenowner", metadata,
                              Column("id", Integer, Sequence('tokenowner_seq'),
                                     primary_key=True, nullable=False),
                              Column("token_id", Integer, ForeignKey("token.id"), nullable=False),
-                             Column("resolver", Unicode(120), default=u"", index=True),
-                             Column("user_id", Unicode(320), default=u"", index=True),
+                             Column("resolver", Unicode(120), default="", index=True),
+                             Column("user_id", Unicode(320), default="", index=True),
                              Column("realm_id", Integer, ForeignKey("realm.id"), nullable=False)
                              )
 
@@ -218,9 +218,9 @@ def migrate(config_obj):
                             Column("id", Integer, Sequence('tokeninfo_seq'),
                                    primary_key=True),
                             Column("Key", Unicode(255), nullable=False),
-                            Column("Value", UnicodeText(), default=u''),
-                            Column("Type", Unicode(100), default=u''),
-                            Column("Description", Unicode(2000), default=u''),
+                            Column("Value", UnicodeText(), default=''),
+                            Column("Type", Unicode(100), default=''),
+                            Column("Description", Unicode(2000), default=''),
                             Column("token_id", Integer()))
 
     tokenrealm_table = Table("tokenrealm", metadata,
@@ -233,25 +233,25 @@ def migrate(config_obj):
     realm_table = Table("realm", metadata,
                         Column("id", Integer, Sequence('realm_seq'),
                                primary_key=True),
-                        Column("name", Unicode(255), default=u''),
+                        Column("name", Unicode(255), default=''),
                         Column("default",  Boolean(), default=False),
-                        Column("option", Unicode(40), default=u''))
+                        Column("option", Unicode(40), default=''))
 
     resolver_table = Table("resolver", metadata,
                            Column("id", Integer, Sequence('resolver_seq'),
                                   primary_key=True),
-                           Column("name", Unicode(255), default=u""),
-                           Column("rtype", Unicode(255), default=u""))
+                           Column("name", Unicode(255), default=""),
+                           Column("rtype", Unicode(255), default=""))
 
     resolver_config_table = Table("resolverconfig", metadata,
                                   Column("id", Integer,
                                          Sequence('resolverconf_seq'),
                                          primary_key=True),
                                   Column("resolver_id", Integer),
-                                  Column("Key", Unicode(255), default=u""),
-                                  Column("Value", Unicode(2000), default=u""),
-                                  Column("Type", Unicode(2000), default=u""),
-                                  Column("Description", Unicode(2000), default=u""),
+                                  Column("Key", Unicode(255), default=""),
+                                  Column("Value", Unicode(2000), default=""),
+                                  Column("Type", Unicode(2000), default=""),
+                                  Column("Description", Unicode(2000), default=""),
                                   )
 
     resolverrealm_table = Table("resolverrealm", metadata,
@@ -270,42 +270,42 @@ def migrate(config_obj):
                                Column('LinOtpTokenId', Integer(),
                                       primary_key=True, nullable=False),
                                Column(
-                                   'LinOtpTokenDesc', Unicode(80), default=u''),
+                                   'LinOtpTokenDesc', Unicode(80), default=''),
                                Column('LinOtpTokenSerialnumber', Unicode(
-                                   40), default=u'', unique=True, nullable=False,
+                                   40), default='', unique=True, nullable=False,
                                       index=True),
                                Column(
-                                   'LinOtpTokenType', Unicode(30), default=u'HMAC',
+                                   'LinOtpTokenType', Unicode(30), default='HMAC',
                                    index=True),
                                Column(
-                                   'LinOtpTokenInfo', Unicode(2000), default=u''),
+                                   'LinOtpTokenInfo', Unicode(2000), default=''),
                                Column(
-                                   'LinOtpTokenPinUser', Unicode(512), default=u''),
+                                   'LinOtpTokenPinUser', Unicode(512), default=''),
                                Column(
                                    'LinOtpTokenPinUserIV', Unicode(32),
-                                   default=u''),
+                                   default=''),
                                Column(
-                                   'LinOtpTokenPinSO', Unicode(512), default=u''),
+                                   'LinOtpTokenPinSO', Unicode(512), default=''),
                                Column(
-                                   'LinOtpTokenPinSOIV', Unicode(32), default=u''),
+                                   'LinOtpTokenPinSOIV', Unicode(32), default=''),
                                Column(
-                                   'LinOtpIdResolver', Unicode(120), default=u'',
+                                   'LinOtpIdResolver', Unicode(120), default='',
                                    index=True),
                                Column(
-                                   'LinOtpIdResClass', Unicode(120), default=u''),
+                                   'LinOtpIdResClass', Unicode(120), default=''),
                                Column(
-                                   'LinOtpUserid', Unicode(320), default=u'',
+                                   'LinOtpUserid', Unicode(320), default='',
                                    index=True),
                                Column(
-                                   'LinOtpSeed', Unicode(32), default=u''),
+                                   'LinOtpSeed', Unicode(32), default=''),
                                Column(
                                    'LinOtpOtpLen', Integer(), default=6),
                                Column(
-                                   'LinOtpPinHash', Unicode(512), default=u''),
+                                   'LinOtpPinHash', Unicode(512), default=''),
                                Column(
-                                   'LinOtpKeyEnc', Unicode(1024), default=u''),
+                                   'LinOtpKeyEnc', Unicode(1024), default=''),
                                Column(
-                                   'LinOtpKeyIV', Unicode(32), default=u''),
+                                   'LinOtpKeyIV', Unicode(32), default=''),
                                Column(
                                    'LinOtpMaxFail', Integer(), default=10),
                                Column(
@@ -400,8 +400,8 @@ def migrate(config_obj):
                 # Map the LinOTP-Resolver to the PI-Resolver
                 resolver = config_obj.ASSIGNMENTS.get("resolver").get(linotp_resolver)
                 if not resolver and linotp_resolver:
-                    warnings.append(u"No mapping defined for the LinOTP "
-                                    u"resolver: {0!s}".format(linotp_resolver))
+                    warnings.append("No mapping defined for the LinOTP "
+                                    "resolver: {0!s}".format(linotp_resolver))
                 resolver_type = resolver_type
                 user_id = r['LinOtpUserid']
                 if config_obj.ASSIGNMENTS.get("convert_endian"):
@@ -573,7 +573,7 @@ def main():
         elif o in ("-c", "--config"):
             config_file = a
         else:
-            print(u"Unknown parameter: {0!s}".format(o))
+            print("Unknown parameter: {0!s}".format(o))
             sys.exit(3)
 
     if config_file:

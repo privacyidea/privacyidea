@@ -65,7 +65,7 @@ class TtypeAPITestCase(MyApiTestCase):
                                            method='GET'):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            self.assertEqual(res.mimetype, u'application/fido.trusted-apps+json')
+            self.assertEqual(res.mimetype, 'application/fido.trusted-apps+json')
             data = res.json
             self.assertTrue("trustedFacets" in data)
 
@@ -157,7 +157,7 @@ class TtypePushAPITestCase(MyApiTestCase):
             self.assertEqual(error.get("code"), 303)
 
         r = set_smsgateway(self.firebase_config_name,
-                           u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                            "myFB", FB_CONFIG_VALS)
         self.assertTrue(r > 0)
         set_policy("push1", scope=SCOPE.ENROLL,
@@ -238,11 +238,11 @@ class TtypePushAPITestCase(MyApiTestCase):
             toks = get_tokens(serial=serial)
             self.assertEqual(len(toks), 1)
             token_obj = toks[0]
-            self.assertEqual(token_obj.token.rollout_state, u"enrolled")
+            self.assertEqual(token_obj.token.rollout_state, "enrolled")
             self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
             self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
-            self.assertEqual(tokeninfo.get("firebase_token"), u"firebaseT")
+            self.assertEqual(tokeninfo.get("firebase_token"), "firebaseT")
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(),
                              pubkey)
             # The token should also contain the firebase config
@@ -252,7 +252,7 @@ class TtypePushAPITestCase(MyApiTestCase):
 
     def test_02_api_push_poll(self):
         r = set_smsgateway(self.firebase_config_name,
-                           u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                            "myFB", FB_CONFIG_VALS)
         self.assertGreater(r, 0)
 
@@ -295,7 +295,7 @@ class TtypePushAPITestCase(MyApiTestCase):
 
         # first create a signature
         ts = datetime.utcnow().isoformat()
-        sign_string = u"{serial}|{timestamp}".format(serial=serial, timestamp=ts)
+        sign_string = "{serial}|{timestamp}".format(serial=serial, timestamp=ts)
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),
                                                hashes.SHA256())
@@ -393,11 +393,11 @@ class TtypePushAPITestCase(MyApiTestCase):
             toks = get_tokens(serial=serial)
             self.assertEqual(len(toks), 1)
             token_obj = toks[0]
-            self.assertEqual(token_obj.token.rollout_state, u"enrolled")
+            self.assertEqual(token_obj.token.rollout_state, "enrolled")
             self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
             self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
-            self.assertEqual(tokeninfo.get("firebase_token"), u"")
+            self.assertEqual(tokeninfo.get("firebase_token"), "")
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(),
                              pubkey)
             # The token should also contain the firebase config

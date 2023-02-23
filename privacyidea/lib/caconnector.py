@@ -74,7 +74,7 @@ def save_caconnector(params):
     sanity_name_check(connector_name)
     # check the type
     if connector_type not in get_caconnector_types():
-        raise Exception(u"connector type : {0!s} not in {1!s}".format(connector_type, get_caconnector_types()))
+        raise Exception("connector type : {0!s} not in {1!s}".format(connector_type, get_caconnector_types()))
 
     # check the name
     connectors = get_caconnector_list(filter_caconnector_name=connector_name)
@@ -291,6 +291,9 @@ def get_caconnector_object(connector_name):
                         value = decryptPassword(value)
                     connector_config[conf.Key] = value
                 c_obj.set_config(connector_config)
+
+    if not c_obj:
+        log.warning("A CA connector with the name {0!s} could not be found!".format(connector_name))
 
     return c_obj
 

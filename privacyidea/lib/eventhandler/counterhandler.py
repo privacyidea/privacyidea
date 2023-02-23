@@ -101,13 +101,13 @@ class CounterEventHandler(BaseEventHandler):
 
         if action == "increase_counter":
             increase(counter_name)
-            log.debug(u"Increased the counter {0!s}.".format(counter_name))
+            log.debug("Increased the counter {0!s}.".format(counter_name))
         elif action == "decrease_counter":
             allow_negative = is_true(handler_options.get("allow_negative_values", False))
             decrease(counter_name, allow_negative)
-            log.debug(u"Decreased the counter {0!s}.".format(counter_name))
+            log.debug("Decreased the counter {0!s}.".format(counter_name))
         elif action == "reset_counter":
             reset(counter_name)
-            log.debug(u"Reset the counter {0!s} to 0.".format(counter_name))
+            log.debug("Reset the counter {0!s} to 0.".format(counter_name))
 
         return ret

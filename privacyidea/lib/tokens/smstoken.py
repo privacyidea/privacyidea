@@ -67,7 +67,7 @@ from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE, HotpToke
 from json import loads
 from privacyidea.lib import _
 
-from privacyidea.lib.tokenclass import CHALLENGE_SESSION
+from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
 from privacyidea.models import Challenge
 from privacyidea.lib.decorators import check_token_locked
 import logging
@@ -164,10 +164,11 @@ class SmsTokenClass(HotpTokenClass):
 
 
     """
+    mode = [AUTHENTICATIONMODE.CHALLENGE]
+
     def __init__(self, db_token):
         HotpTokenClass.__init__(self, db_token)
-        self.set_type(u"sms")
-        self.mode = ['challenge']
+        self.set_type("sms")
         self.hKeyRequired = True
 
     @staticmethod
@@ -224,7 +225,7 @@ class SmsTokenClass(HotpTokenClass):
                    SCOPE.ADMIN: {
                        SMSACTION.GATEWAYS: {
                            'type': 'str',
-                           'desc': u"{0!s} ({1!s})".format(
+                           'desc': "{0!s} ({1!s})".format(
                                _('Choose the gateways the administrator is allowed to set.'),
                                " ".join(sms_gateways))
                        }
@@ -232,7 +233,7 @@ class SmsTokenClass(HotpTokenClass):
                    SCOPE.USER: {
                        SMSACTION.GATEWAYS: {
                            'type': 'str',
-                           'desc': u"{0!s} ({1!s})".format(
+                           'desc': "{0!s} ({1!s})".format(
                                _('Choose the gateways the user is allowed to set.'),
                                " ".join(sms_gateways))
                        }
@@ -429,8 +430,9 @@ class SmsTokenClass(HotpTokenClass):
                                tokenowner=User,
                                tokentype="sms",
                                recipient={"givenname": User.info.get("givenname") if User else "",
-                                          "surname": User.info.get("surname") if User else ""})
-        message = message.format(otp=otp, challenge=options.get("challenge"), **tags)
+                                          "surname": User.info.get("surname") if User else ""},
+                               challenge=options.get("challenge"))
+        message = message.format(otp=otp, **tags)
 
         # First we try to get the new SMS gateway config style
         # The token specific identifier has priority over the system wide identifier

@@ -154,7 +154,7 @@ class DaplugTokenClass(HotpTokenClass):
         :type aToken:  orm object
         """
         HotpTokenClass.__init__(self, a_token)
-        self.set_type(u"daplug")
+        self.set_type("daplug")
         self.hKeyRequired = True
         return
 

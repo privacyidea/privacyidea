@@ -81,20 +81,20 @@ def run_task_on_node(ptask, node):
     :param node: Node name
     """
     try:
-        print_stdout(u"Running {!r} ...".format(ptask["name"]), end="")
+        print_stdout("Running {!r} ...".format(ptask["name"]), end="")
         result = execute_task(ptask["taskmodule"], ptask["options"])
     except Exception as e:
-        print_stderr(u'Caught exception when running {!r}: {!r}'.format(ptask["name"], e))
+        print_stderr('Caught exception when running {!r}: {!r}'.format(ptask["name"], e))
         result = False
     if result:
         current_time = datetime.now(dateutil.tz.tzlocal())
-        print_stdout(u'Task {!r} on node {!r} exited successfully. Noting this '
-                     u'in the database ...'.format(ptask["name"], node))
+        print_stdout('Task {!r} on node {!r} exited successfully. Noting this '
+                     'in the database ...'.format(ptask["name"], node))
         set_periodic_task_last_run(ptask["id"], node, current_time)
     else:
-        print_stderr(u'Task {!r} on node {!r} did not run '
-                     u'successfully.'.format(ptask["name"], node))
-        print_stderr(u'This unsuccessful run is not recorded in the database.')
+        print_stderr('Task {!r} on node {!r} did not run '
+                     'successfully.'.format(ptask["name"], node))
+        print_stderr('This unsuccessful run is not recorded in the database.')
         if not ptask.get("retry_if_failed"):
             current_time = datetime.now(dateutil.tz.tzlocal())
             set_periodic_task_last_run(ptask["id"], node, current_time)
@@ -123,21 +123,21 @@ def list_tasks():
     """
     Show a list of available tasks that could be run.
     """
-    line_format = (u'{active!s:7.7} {id:3} {name:16.16}\t{interval:16.16}\t{taskmodule:16}'
-                   u'\t{node_list:20}\t{options_json}')
+    line_format = ('{active!s:7.7} {id:3} {name:16.16}\t{interval:16.16}\t{taskmodule:16}'
+                   '\t{node_list:20}\t{options_json}')
     heading = line_format.format(
-        active=u"Active",
-        id=u"ID",
-        name=u"Name",
-        interval=u"Interval",
-        taskmodule=u"Task Module",
-        node_list=u"Nodes",
-        options_json=u"Options",
+        active="Active",
+        id="ID",
+        name="Name",
+        interval="Interval",
+        taskmodule="Task Module",
+        node_list="Nodes",
+        options_json="Options",
     )
     print_stdout(heading)
-    print_stdout(u"=" * 120)
+    print_stdout("=" * 120)
     for ptask in get_periodic_tasks():
-        print_stdout(line_format.format(node_list=u', '.join(ptask["nodes"]),
+        print_stdout(line_format.format(node_list=', '.join(ptask["nodes"]),
                                         options_json=json.dumps(ptask["options"]),
                                         **ptask))
 
@@ -165,10 +165,10 @@ def run_scheduled(node_string=None, dryrun=False, cron_mode=False):
     current_time = datetime.now(dateutil.tz.tzlocal())
     scheduled_tasks = get_scheduled_periodic_tasks(node, current_time)
     if scheduled_tasks:
-        print_stdout(u"The following tasks are scheduled to run on node {!s}:".format(node))
+        print_stdout("The following tasks are scheduled to run on node {!s}:".format(node))
         print_stdout()
         for ptask in scheduled_tasks:
-            print_stdout(u"  {name} ({interval!r}, {taskmodule})".format(**ptask))
+            print_stdout("  {name} ({interval!r}, {taskmodule})".format(**ptask))
 
         print_stdout()
         if not dryrun:
@@ -177,14 +177,14 @@ def run_scheduled(node_string=None, dryrun=False, cron_mode=False):
                 result = run_task_on_node(ptask, node)
                 results.append(result)
             if all(results):
-                print_stdout(u"All scheduled tasks executed successfully.")
+                print_stdout("All scheduled tasks executed successfully.")
             else:
-                print_stderr(u"Some tasks exited with errors.")
+                print_stderr("Some tasks exited with errors.")
                 sys.exit(1)
         else:
-            print_stdout(u"Not running any tasks because --dryrun was passed.")
+            print_stdout("Not running any tasks because --dryrun was passed.")
     else:
-        print_stdout(u"There are no tasks scheduled on node {!s}.".format(node))
+        print_stdout("There are no tasks scheduled on node {!s}.".format(node))
 
 
 if __name__ == '__main__':

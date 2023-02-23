@@ -45,7 +45,7 @@ from privacyidea.lib.error import ValidateError, PolicyError, ParameterError
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION, get_action_values_from_options
 from privacyidea.lib.policy import Match
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.utils import is_true, hexlify_and_unicode, to_unicode
+from privacyidea.lib.utils import is_true, hexlify_and_unicode, to_unicode, convert_imagefile_to_dataimage
 import binascii
 import json
 
@@ -188,10 +188,11 @@ the signatureData and clientData returned by the U2F device in the *u2fResult*:
 #
 # The solokeys image is copyright (C) 2020 Solokeys. License: CC-BY-SA 4.0
 #
-IMAGES = {"yubico": "static/img/FIDO-U2F-Security-Key-444x444.png",
-          "plug-up": "static/img/plugup.jpg",
-          "u2fzero.com": "static/img/u2fzero.png",
-          "solokeys": "static/img/solokeys.png"}
+# The image is a relative file system path.
+IMAGES = {"yubico": "privacyidea/static/img/FIDO-U2F-Security-Key-444x444.png",
+          "plug-up": "privacyidea/static/img/plugup.jpg",
+          "u2fzero.com": "privacyidea/static/img/u2fzero.png",
+          "solokeys": "privacyidea/static/img/solokeys.png"}
 
 U2F_Version = "U2F_V2"
 
@@ -314,7 +315,7 @@ class U2fTokenClass(TokenClass):
         :type db_token: DB object
         """
         TokenClass.__init__(self, db_token)
-        self.set_type(u"u2f")
+        self.set_type("u2f")
         self.hKeyRequired = False
 
     def update(self, param, reset_failcount=True):
@@ -440,7 +441,7 @@ class U2fTokenClass(TokenClass):
         message = get_action_values_from_options(SCOPE.AUTH,
                                                  "{0!s}_{1!s}".format(self.get_class_type(),
                                                                       ACTION.CHALLENGETEXT),
-                                                 options)or _(u'Please confirm with your U2F token ({0!s})').format(
+                                                 options)or _('Please confirm with your U2F token ({0!s})').format(
             self.token.description)
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
@@ -483,10 +484,11 @@ class U2fTokenClass(TokenClass):
                             "keyHandle": key_handle_url}
 
         image_url = IMAGES.get(self.token.description.lower().split()[0], "")
+        dataimage = convert_imagefile_to_dataimage(image_url) if image_url else ""
         reply_dict = {"attributes": {"u2fSignRequest": u2f_sign_request,
                                      "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
-                                     "img": image_url},
-                      "image": image_url}
+                                     "img": dataimage},
+                      "image": dataimage}
 
         return True, message, db_challenge.transaction_id, reply_dict
 

@@ -1,6 +1,6 @@
 <h3 name="Token Details"><translate>Token details for {{ tokenSerial }}
         </translate>
-    <a class="btn btn-default" ui-sref="audit.log({serial: tokenSerial})"
+    <a class="btn btn-default" ng-show="checkRight('auditlog')" ui-sref="audit.log({serial: tokenSerial})"
        translate>
         View token in Audit log</a>
 </h3>
@@ -274,7 +274,7 @@
                     <button class="btn btn-primary"
                             id="tiEditButton"
                             ng-hide="editTokenInfo || (!checkRight('set') && hide_buttons)"
-                            ng-disable="!checkRight('set')"
+                            ng-disabled="!checkRight('set')"
                             ng-click="startEditTokenInfo()"
                             translate>Edit
                     </button>
@@ -317,7 +317,7 @@
                     <button class="btn btn-primary"
                             id="trEditButton"
                             ng-hide="editTokenRealm || (!checkRight('tokenrealms') && hide_buttons)"
-                            ng-disable="!checkRight('tokenrealms')"
+                            ng-disabled="!checkRight('tokenrealms')"
                             ng-click="startEditRealm()"
                             translate>Edit
                     </button>
@@ -337,7 +337,7 @@
             </td>
         </tr>
 
-        <tr>
+        <tr ng-show="checkRight('tokengroup_list')">
             <td>Token groups</td>
             <td>
                 <span ng-hide="editTokenGroups">
@@ -362,13 +362,13 @@
                     <button class="btn btn-primary"
                             id="tgEditButton"
                             ng-hide="editTokenGroups || (!checkRight('tokengroups') && hide_buttons)"
-                            ng-disable="!checkRight('tokengroups')"
+                            ng-disabled="!checkRight('tokengroups')"
                             ng-click="startEditTokenGroups()"
                             translate>Edit
                     </button>
                     <button class="btn btn-primary"
                             id="tgSaveButton"
-                            ng-show="editTokenGroups"
+                            ng-show="editTokenGroups && checkRight('tokengroups')"
                             ng-click="saveTokenGroups()"
                             translate>Save Token Groups
                     </button>

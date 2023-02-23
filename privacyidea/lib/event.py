@@ -63,8 +63,8 @@ class event(object):
             # do Pre-Event Handling
             e_handles = self.g.event_config.get_handled_events(self.eventname, position="pre")
             for e_handler_def in e_handles:
-                log.debug(u"Pre-Handling event {eventname} with "
-                          u"{eventDef}".format(eventname=self.eventname,
+                log.debug("Pre-Handling event {eventname} with "
+                          "{eventDef}".format(eventname=self.eventname,
                                               eventDef=e_handler_def))
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
@@ -74,8 +74,8 @@ class event(object):
                            "g": self.g,
                            "handler_def": e_handler_def}
                 if event_handler.check_condition(options=options):
-                    log.debug(u"Pre-Handling event {eventname} with options"
-                              u"{options}".format(eventname=self.eventname,
+                    log.debug("Pre-Handling event {eventname} with options"
+                              "{options}".format(eventname=self.eventname,
                                                   options=options))
                     # create a new audit object for this action
                     event_audit = getAudit(self.g.audit_object.config)
@@ -102,8 +102,8 @@ class event(object):
             # Post-Event Handling
             e_handles = self.g.event_config.get_handled_events(self.eventname)
             for e_handler_def in e_handles:
-                log.debug(u"Post-Handling event {eventname} with "
-                          u"{eventDef}".format(eventname=self.eventname,
+                log.debug("Post-Handling event {eventname} with "
+                          "{eventDef}".format(eventname=self.eventname,
                                               eventDef=e_handler_def))
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
@@ -114,8 +114,8 @@ class event(object):
                            "response": f_result,
                            "handler_def": e_handler_def}
                 if event_handler.check_condition(options=options):
-                    log.debug(u"Post-Handling event {eventname} with options"
-                              u"{options}".format(eventname=self.eventname,
+                    log.debug("Post-Handling event {eventname} with options"
+                              "{options}".format(eventname=self.eventname,
                                                  options=options))
                     # create a new audit object
                     event_audit = getAudit(self.g.audit_object.config)
@@ -164,6 +164,7 @@ def get_handler_object(handlername):
     from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
     from privacyidea.lib.eventhandler.logginghandler import LoggingEventHandler
     from privacyidea.lib.eventhandler.customuserattributeshandler import CustomUserAttributesHandler
+    from privacyidea.lib.eventhandler.webhookeventhandler import WebHookHandler
     h_obj = None
     if handlername == "UserNotification":
         h_obj = UserNotificationEventHandler()
@@ -183,6 +184,8 @@ def get_handler_object(handlername):
         h_obj = LoggingEventHandler()
     elif handlername == "CustomUserAttributes":
         h_obj = CustomUserAttributesHandler()
+    elif handlername == "WebHook":
+        h_obj = WebHookHandler()
     return h_obj
 
 

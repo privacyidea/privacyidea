@@ -45,7 +45,7 @@ import logging
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import hexlify_and_unicode, is_true
+from privacyidea.lib.utils import hexlify_and_unicode, is_true, convert_imagefile_to_dataimage
 
 __doc__ = """
 WebAuthn  is the Web Authentication API specified by the FIDO Alliance.
@@ -457,7 +457,7 @@ from privacyidea.models import Challenge
 
 IMAGES = IMAGES
 
-DEFAULT_DESCRIPTION = _(u'Generic WebAuthn Token')
+DEFAULT_DESCRIPTION = _('Generic WebAuthn Token')
 
 # Policy defaults
 DEFAULT_ALLOWED_TRANSPORTS = "usb ble nfc internal"
@@ -467,8 +467,8 @@ DEFAULT_AUTHENTICATOR_ATTACHMENT = 'either'
 DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = ['ecdsa', 'rsassa-pss']
 DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL = 'untrusted'
 DEFAULT_AUTHENTICATOR_ATTESTATION_FORM = 'direct'
-DEFAULT_CHALLENGE_TEXT_AUTH = _(u'Please confirm with your WebAuthn token ({0!s})')
-DEFAULT_CHALLENGE_TEXT_ENROLL = _(u'Please confirm with your WebAuthn token')
+DEFAULT_CHALLENGE_TEXT_AUTH = _('Please confirm with your WebAuthn token ({0!s})')
+DEFAULT_CHALLENGE_TEXT_ENROLL = _('Please confirm with your WebAuthn token')
 
 PUBLIC_KEY_CREDENTIAL_ALGORITHMS = {
     'ecdsa': COSE_ALGORITHM.ES256,
@@ -1176,10 +1176,11 @@ class WebAuthnTokenClass(TokenClass):
                              required)
         ).assertion_dict
 
+        dataimage = convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
         reply_dict = {"attributes": {"webAuthnSignRequest": public_key_credential_request_options,
                                      "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
-                                     "img": user.icon_url},
-                      "image": user.icon_url}
+                                     "img": dataimage},
+                      "image": dataimage}
 
         return True, message, db_challenge.transaction_id, reply_dict
 

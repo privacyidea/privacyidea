@@ -40,7 +40,7 @@ def read_counter_file(import_file):
     for line in import_file.readlines():
         try:
             serial, counter = [v.strip() for v in line.split(",")]
-            update_list.append((u"{0!s}".format(serial), int(counter)))
+            update_list.append(("{0!s}".format(serial), int(counter)))
         except ValueError as ve:
             # If there is a line, that does not comply
             sys.stderr.write("Failed to parse line: {0!s}\n".format(line))

@@ -50,18 +50,6 @@ msgstr ""
 "                        Richiedi privacyIDEA Enterprise Edition oggi stesso!"
 "</a>"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:187
-msgid ""
-"<a ui-sref=\"component.subscriptions\">\n"
-"                    <span class=\"glyphicon glyphicon-calendar\" aria-hidden="
-"\"true\"></span>\n"
-"                    <span translate>Subscriptions</span></a>"
-msgstr ""
-"<a ui-sref=\"component.subscriptions\">\n"
-"                    <span class=\"glyphicon glyphicon-calendar\" aria-hidden="
-"\"true\"></span>\n"
-"                    <span translate>Sottoscrizioni</span></a>"
-
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
 msgstr "<b>QUESTO SOFTWARE VIENE DISTRIBUITO SENZA GARANZIA!</b>"
@@ -329,7 +317,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.details.html:130
 #: privacyidea/static/components/config/views/config.policies.details.html:279
 #: privacyidea/static/components/config/views/config.policies.list.html:20
-#: privacyidea/static/components/dashboard/views/dashboard.html:87
+#: privacyidea/static/components/dashboard/views/dashboard.html:91
 msgid "Action"
 msgstr "Azione"
 
@@ -342,11 +330,11 @@ msgstr "Azione"
 msgid "Active"
 msgstr "Attivo"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:156
+#: privacyidea/static/components/dashboard/views/dashboard.html:160
 msgid "Active Events"
 msgstr "Eventi Attivi"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:119
+#: privacyidea/static/components/dashboard/views/dashboard.html:123
 msgid "Active Policies"
 msgstr "Politiche Attive"
 
@@ -382,11 +370,11 @@ msgstr "Amministratore"
 msgid "Admin-Realm"
 msgstr "Amministratore-Realm"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:80
+#: privacyidea/static/components/dashboard/views/dashboard.html:84
 msgid "Administration"
 msgstr "Amministrazione"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:86
+#: privacyidea/static/components/dashboard/views/dashboard.html:90
 msgid "Administrator"
 msgstr "Amministratore"
 
@@ -984,7 +972,7 @@ msgstr "Database"
 msgid "Database Encoding"
 msgstr "Codifica del database"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:85
+#: privacyidea/static/components/dashboard/views/dashboard.html:89
 msgid "Date"
 msgstr "Data"
 
@@ -1076,7 +1064,7 @@ msgstr "Descrizione"
 msgid "Detach"
 msgstr "Stacca"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:88
+#: privacyidea/static/components/dashboard/views/dashboard.html:92
 msgid "Detail"
 msgstr "Dettaglio"
 
@@ -1125,8 +1113,8 @@ msgid ""
 "Do you really want to delete the Token {{ tokenSerial }} from user {{ token."
 "username }}?"
 msgstr ""
-"Vuoi davvero eliminare il token {{ tokenSerial }} dall'utente {{ "
-"token.username }}?"
+"Vuoi davvero eliminare il token {{ tokenSerial }} dall'utente {{ token."
+"username }}?"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:19
 msgid "Do you really want to delete the Token {{ tokenSerial }}?"
@@ -1412,7 +1400,7 @@ msgstr "Errore nella risposta WebAuthn."
 #: privacyidea/static/components/config/views/config.events.details.html:44
 #: privacyidea/static/components/config/views/config.events.list.html:16
 #: privacyidea/static/components/config/views/config.html:32
-#: privacyidea/static/components/dashboard/views/dashboard.html:151
+#: privacyidea/static/components/dashboard/views/dashboard.html:155
 msgid "Events"
 msgstr "Eventi"
 
@@ -1514,8 +1502,8 @@ msgid ""
 msgstr ""
 "Affinché i token Yubico funzionino correttamente è necessario impostare il "
 "parametro\n"
-"   <a ui-sref=\"config.tokens({tokentype:'yubico'})\">Yubico Token "
-"Config</a>!"
+"   <a ui-sref=\"config.tokens({tokentype:'yubico'})\">Yubico Token Config</"
+"a>!"
 
 #: privacyidea/static/components/token/views/token.enroll.push.html:6
 msgid ""
@@ -1722,8 +1710,8 @@ msgid ""
 "Here you can upload a csv file for your Yubikey token.\n"
 "            The file is supposed to contain one token per line."
 msgstr ""
-"Qui è possibile caricare un file in formato csv per il proprio token Yubikey."
-"\n"
+"Qui è possibile caricare un file in formato csv per il proprio token "
+"Yubikey.\n"
 "            Il file deve contenere un token per riga."
 
 #: privacyidea/static/components/token/views/token.import.html:13
@@ -1800,8 +1788,8 @@ msgid ""
 "the\n"
 "    same."
 msgstr ""
-"In caso di smarrimento del token, è possibile registrare un token temporaneo "
-"\n"
+"In caso di smarrimento del token, è possibile registrare un token "
+"temporaneo \n"
 "basato su password e fornire la password all'utente. \n"
 "Il PIN OTP del vecchio token non sarà modificato."
 
@@ -1863,11 +1851,11 @@ msgstr ""
 "In caso di conflitto, la policy con il numero di priorità più basso avrà la "
 "precedenza."
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:168
+#: privacyidea/static/components/dashboard/views/dashboard.html:172
 msgid "Inactive Events"
 msgstr "Eventi inattivi"
 
-#: privacyidea/static/components/dashboard/views/dashboard.html:131
+#: privacyidea/static/components/dashboard/views/dashboard.html:135
 msgid "Inactive Policies"
 msgstr "Policy inattive"
 
@@ -1975,7 +1963,7 @@ msgstr "Elenco dei token"
 msgid "Loading Machines..."
 msgstr "Caricamento delle macchine..."
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:16
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:17
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:15
 msgid "Loading serials..."
 msgstr "Caricamento dei seriali..."
@@ -2174,8 +2162,8 @@ msgstr "No"
 #: privacyidea/static/components/token/views/token.getserial.html:105
 msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr ""
-"Non è stato possibile trovare alcun numero di serie per il valore OTP {{ otp "
-"}}."
+"Non è stato possibile trovare alcun numero di serie per il valore OTP "
+"{{ otp }}."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:152
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:328
@@ -2190,7 +2178,7 @@ msgstr "Nessuna macchina trovata"
 msgid "No retrieval of schema information"
 msgstr "Nessun recupero di informazioni sullo schema"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:19
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:20
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:18
 msgid "No serial found"
 msgstr "Nessun seriale trovato"
@@ -2357,7 +2345,7 @@ msgstr "PAPER: valori OTP stampati su foglio."
 msgid "PGP Key"
 msgstr "Chiave PGP"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:27
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:29
 #: privacyidea/static/components/directives/views/directive.assignuser.html:36
 #: privacyidea/static/components/token/views/token.enroll.html:59
 msgid "PIN"
@@ -2468,8 +2456,8 @@ msgid ""
 msgstr ""
 "Eseguire la scansione del codice QR con l'applicazione privacyIDEA "
 "Authenticator\n"
-"            o fare clic su <a href=\"{{ enrolledToken.pushurl.value }}\""
-">questo link</a> sul vostro\n"
+"            o fare clic su <a href=\"{{ enrolledToken.pushurl."
+"value }}\">questo link</a> sul vostro\n"
 "            smartphone."
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:39
@@ -2496,7 +2484,7 @@ msgstr ""
 "                deve essere eseguito."
 
 #: privacyidea/static/components/config/views/config.html:26
-#: privacyidea/static/components/dashboard/views/dashboard.html:113
+#: privacyidea/static/components/dashboard/views/dashboard.html:117
 msgid "Policies"
 msgstr "Policy"
 
@@ -2613,17 +2601,9 @@ msgid "Quick Resolver Test"
 msgstr "Test rapido del resolver"
 
 #: privacyidea/static/components/machine/views/machine.html:15
+#: privacyidea/static/components/user/views/user.html:44
 msgid "Quick links"
 msgstr "Collegamenti rapidi"
-
-#: privacyidea/static/components/user/views/user.html:44
-msgid ""
-"Quick links\n"
-"                        <a ui-sref=\"config.realms.list\" translate>Edit "
-"realms</a>"
-msgstr ""
-"Collegamenti rapidi\n"
-"<a ui-sref=\"config.realms.list\" translate> Modifica dei realm"
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
 msgid "RADIUS Config saved."
@@ -2758,7 +2738,7 @@ msgstr "Utente remoto"
 msgid "Repeat new PIN"
 msgstr "Ripeti il nuovo PIN"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:37
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:46
 #: privacyidea/static/components/recovery/views/recovery.reset.html:19
 #: privacyidea/static/components/token/views/token.enroll.html:67
@@ -3244,7 +3224,7 @@ msgid "Subscription issued to"
 msgstr "Abbonamento rilasciato a"
 
 #: privacyidea/static/components/components/views/component.html:28
-#: privacyidea/static/components/dashboard/views/dashboard.html:191
+#: privacyidea/static/components/dashboard/views/dashboard.html:195
 msgid "Subscriptions"
 msgstr "Abbonamenti"
 
@@ -3489,8 +3469,8 @@ msgstr ""
 "Il codice QR contiene la chiave segreta del token. È necessario\n"
 "            proteggerlo. <b>Se avete il dubbio che qualcun altro l'abbia "
 "visto,\n"
-"            rigenerare il codice QR quando nessun altro lo sta "
-"osservando.</b>"
+"            rigenerare il codice QR quando nessun altro lo sta osservando.</"
+"b>"
 
 #: privacyidea/static/components/token/views/token.enroll.question.html:1
 msgid ""
@@ -3762,8 +3742,8 @@ msgstr ""
 "    Per i token compatibili con il servizio cloud Yubico, la lunghezza OTP "
 "deve essere di\n"
 "    44 (12 caratteri UID e 32 caratteri OTP).\n"
-"    Quando si programma il token per il servizio cloud Yubico, la lunghezza "
-"\n"
+"    Quando si programma il token per il servizio cloud Yubico, la "
+"lunghezza \n"
 "    dell'identità pubblica deve essere di 6 byte e quindi la UID sarà di 12 "
 "caratteri.\n"
 "\n"
@@ -3804,16 +3784,16 @@ msgstr ""
 "validate.html\" target=\"_blank\">\n"
 "        API di convalida</a> ma può anche essere gestito da\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass"
-".api_endpoint\" target=\"_blank\">\n"
+"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
+"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
 "        Protocollo di convalida Yubico</a>."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
 msgid ""
 "The authentication request is forwarded to the YubiCloud. For accessing\n"
 "    the YubiCloud you need to enter an API Client ID and an API Key, which\n"
-"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" target="
-"\"_extern\">here</a>."
+"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" "
+"target=\"_extern\">here</a>."
 msgstr ""
 "La richiesta di autenticazione viene inoltrata a YubiCloud. Per accedere a\n"
 "    YubiCloud è necessario inserire un API Client ID e una API Key, che\n"
@@ -4135,12 +4115,12 @@ msgid ""
 "            {{ newUser.realm }}."
 msgstr ""
 "Il token è stato registrato con successo con il numero di serie\n"
-"           <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
-"\n"
+"           <a ui-sref=\"token.details({tokenSerial:enrolledToken."
+"serial})\">\n"
 "                {{ enrolledToken.serial }}</a>\n"
 "            per l'utente\n"
-"           <a ui-sref=\"user.details({username:newUser.user, "
-"realmname:newUser.realm})\">{{ newUser.user }}</a> nel realm\n"
+"           <a ui-sref=\"user.details({username:newUser.user, realmname:"
+"newUser.realm})\">{{ newUser.user }}</a> nel realm\n"
 "            {{ newUser.realm }}."
 
 #: privacyidea/static/components/token/views/token.enroll.html:160
@@ -4151,8 +4131,8 @@ msgid ""
 "                {{ enrolledToken.serial }}</a>."
 msgstr ""
 "Il token è stato registrato con successo con il numero di serie\n"
-"           <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
-"\n"
+"           <a ui-sref=\"token.details({tokenSerial:enrolledToken."
+"serial})\">\n"
 "                {{ enrolledToken.serial }}</a>."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
@@ -4319,15 +4299,15 @@ msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
 "        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
 "        For more details see the\n"
-"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
-"\">RFC\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" "
+"target=\"OCRA\">RFC\n"
 "            6287</a>."
 msgstr ""
 "Questa è la suite OCRA utilizzata dall'applicazione TiQR.\n"
 "        La suite OCRA predefinita è OCRA-1:HOTP-SHA1-6:QN10.\n"
 "        Per maggiori dettagli, consultare la\n"
-"       <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA\">"
-"RFC\n"
+"       <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" "
+"target=\"OCRA\">RFC\n"
 "            6287</a>."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:115
@@ -4614,7 +4594,7 @@ msgstr "ID transazione"
 msgid "Type"
 msgstr "Tipo"
 
-#: privacyidea/static/components/directives/views/directive.assigntoken.html:32
+#: privacyidea/static/components/directives/views/directive.assigntoken.html:34
 #: privacyidea/static/components/directives/views/directive.assignuser.html:41
 #: privacyidea/static/components/recovery/views/recovery.reset.html:14
 #: privacyidea/static/components/token/views/token.enroll.html:63
@@ -5066,10 +5046,10 @@ msgid ""
 "        subscription expired. Please check, if you need to renew your <a ui-"
 "sref=\"component.subscriptions\">subscription</a>."
 msgstr ""
-"L'abbonamento non è più valido. O si è superato il numero di token o l'"
-"abbonamento\n"
-"        è scaduto. Verificare se è necessario rinnovare  <a ui-sref="
-"\"component.subscriptions\">l'abbonamento</a> ."
+"L'abbonamento non è più valido. O si è superato il numero di token o "
+"l'abbonamento\n"
+"        è scaduto. Verificare se è necessario rinnovare  <a ui-"
+"sref=\"component.subscriptions\">l'abbonamento</a> ."
 
 #: privacyidea/static/components/login/views/pinchange.html:5
 msgid ""
@@ -5476,3 +5456,4 @@ msgstr "{{ auditdata.count }} voci trovate."
 #: privacyidea/static/components/token/views/token.enroll.html:181
 msgid "{{ enrolledToken.verify.message }}"
 msgstr "{{ enrolledToken.verify.message }}"
+

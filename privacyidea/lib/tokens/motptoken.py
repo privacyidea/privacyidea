@@ -131,7 +131,7 @@ class MotpTokenClass(TokenClass):
         :type a_token:  orm object
         """
         TokenClass.__init__(self, db_token)
-        self.set_type(u"motp")
+        self.set_type("motp")
         self.hKeyRequired = True
         return
     

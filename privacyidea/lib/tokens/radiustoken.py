@@ -51,7 +51,7 @@ import traceback
 import binascii
 from privacyidea.lib.utils import is_true, to_bytes, hexlify_and_unicode, to_unicode
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
-from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
+from privacyidea.lib.tokenclass import TokenClass, TOKENKIND, AUTHENTICATIONMODE
 from privacyidea.api.lib.utils import getParam, ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_from_config
@@ -76,11 +76,11 @@ log = logging.getLogger(__name__)
 
 ###############################################
 class RadiusTokenClass(RemoteTokenClass):
+    mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE]
 
     def __init__(self, db_token):
         RemoteTokenClass.__init__(self, db_token)
-        self.set_type(u"radius")
-        self.mode = ['authenticate', 'challenge']
+        self.set_type("radius")
 
     @staticmethod
     def get_class_type():
@@ -469,7 +469,7 @@ class RadiusTokenClass(RemoteTokenClass):
             radius_server_object = get_radius(radius_identifier)
             radius_server = radius_server_object.config.server
             radius_port = radius_server_object.config.port
-            radius_server = u"{0!s}:{1!s}".format(radius_server, radius_port)
+            radius_server = "{0!s}:{1!s}".format(radius_server, radius_port)
             radius_secret = radius_server_object.get_secret()
             radius_dictionary = radius_server_object.config.dictionary
             radius_timeout = int(radius_server_object.config.timeout or 10)
@@ -486,8 +486,8 @@ class RadiusTokenClass(RemoteTokenClass):
             radius_secret = binascii.unhexlify(secret.getKey())
 
         # here we also need to check for radius.user
-        log.debug(u"checking OTP len:{0!s} on radius server: "
-                  u"{1!s}, user: {2!r}".format(len(otpval), radius_server,
+        log.debug("checking OTP len:{0!s} on radius server: "
+                  "{1!s}, user: {2!r}".format(len(otpval), radius_server,
                                                radius_user))
 
         try:
@@ -506,10 +506,10 @@ class RadiusTokenClass(RemoteTokenClass):
             if not radius_dictionary:
                 radius_dictionary = get_from_config("radius.dictfile",
                                                     "/etc/privacyidea/dictionary")
-            log.debug(u"NAS Identifier: %r, "
-                      u"Dictionary: %r" % (nas_identifier, radius_dictionary))
-            log.debug(u"constructing client object "
-                      u"with server: %r, port: %r, secret: %r" %
+            log.debug("NAS Identifier: %r, "
+                      "Dictionary: %r" % (nas_identifier, radius_dictionary))
+            log.debug("constructing client object "
+                      "with server: %r, port: %r, secret: %r" %
                       (r_server, r_authport, to_unicode(radius_secret)))
 
             srv = Client(server=r_server,
@@ -529,12 +529,12 @@ class RadiusTokenClass(RemoteTokenClass):
 
             if radius_state:
                 req["State"] = radius_state
-                log.info(u"Sending saved challenge to radius server: {0!r} ".format(radius_state))
+                log.info("Sending saved challenge to radius server: {0!r} ".format(radius_state))
 
             try:
                 response = srv.SendPacket(req)
             except Timeout:
-                log.warning(u"The remote RADIUS server {0!s} timeout out for user {1!s}.".format(
+                log.warning("The remote RADIUS server {0!s} timeout out for user {1!s}.".format(
                     r_server, radius_user))
                 return AccessReject
 
@@ -550,15 +550,15 @@ class RadiusTokenClass(RemoteTokenClass):
             elif response.code == pyrad.packet.AccessAccept:
                 radius_state = '<SUCCESS>'
                 radius_message = 'RADIUS authentication succeeded'
-                log.info(u"RADIUS server {0!s} granted "
-                         u"access to user {1!s}.".format(r_server, radius_user))
+                log.info("RADIUS server {0!s} granted "
+                         "access to user {1!s}.".format(r_server, radius_user))
                 result = AccessAccept
             else:
                 radius_state = '<REJECTED>'
                 radius_message = 'RADIUS authentication failed'
-                log.debug(u'radius response code {0!s}'.format(response.code))
-                log.info(u"Radiusserver {0!s} "
-                         u"rejected access to user {1!s}.".format(r_server, radius_user))
+                log.debug('radius response code {0!s}'.format(response.code))
+                log.info("Radiusserver {0!s} "
+                         "rejected access to user {1!s}.".format(r_server, radius_user))
                 result = AccessReject
 
         except Exception as ex:  # pragma: no cover

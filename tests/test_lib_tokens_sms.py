@@ -16,7 +16,6 @@ from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 from privacyidea.lib import _
 import datetime
 import mock
-import six
 import responses
 from testfixtures import log_capture
 
@@ -488,12 +487,8 @@ class SMSTokenTestCase(MyTestCase):
             c = token.create_challenge(transactionid)
             self.assertFalse(c[0], c)
             self.assertTrue(c[1].startswith("The PIN was correct, but"), c[1])
-            if six.PY2:
-                expected = "Failed to load SMSProvider: ImportError" \
-                           "(u'privacyidea.lib.smsprovider.HttpSMSProvider has no attribute HttpSMSProviderWRONG',)"
-            else:
-                expected = "Failed to load SMSProvider: ImportError" \
-                           "('privacyidea.lib.smsprovider.HttpSMSProvider has no attribute HttpSMSProviderWRONG'"
+            expected = "Failed to load SMSProvider: ImportError" \
+                       "('privacyidea.lib.smsprovider.HttpSMSProvider has no attribute HttpSMSProviderWRONG'"
             mock_log.mock_called()
             mocked_str = mock_log
             self.assertTrue(mocked_str.startswith(expected), mocked_str)
@@ -506,11 +501,8 @@ class SMSTokenTestCase(MyTestCase):
             c = token.create_challenge(transactionid)
             self.assertFalse(c[0], c)
             self.assertTrue(c[1].startswith("The PIN was correct, but"), c[1])
-            if six.PY2:
-                expected = "Failed to load sms.providerConfig: ValueError('No JSON object could be decoded',)"
-            else:
-                expected = "Failed to load sms.providerConfig: " \
-                           "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
+            expected = "Failed to load sms.providerConfig: " \
+                       "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
             mock_log.mock_called()
             mocked_str = mock_log
             self.assertTrue(mocked_str.startswith(expected), mocked_str)

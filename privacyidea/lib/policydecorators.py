@@ -121,13 +121,10 @@ def challenge_response_allowed(func):
                                                  action=ACTION.CHALLENGERESPONSE, user_object=user_object)\
                 .action_values(unique=False, write_to_audit_log=False)
             log.debug("Found these allowed tokentypes: {0!s}".format(list(allowed_tokentypes_dict)))
-
-            # allowed_tokentypes_dict.keys() is a list of actions from several policies. I
-            # could look like this:
-            # ["tiqr hotp totp", "tiqr motp"]
+            # allowed_tokentypes_dict.keys() is a list of actions from several policies.
             chal_resp_found = False
             for toks in allowed_tokentypes_dict:
-                if token.get_tokentype().upper() in [x.upper() for x in toks.split(" ")]:
+                if token.get_tokentype() in allowed_tokentypes_dict:
                     # This token is allowed to to chal resp
                     chal_resp_found = True
                     g.audit_object.add_policy(allowed_tokentypes_dict.get(toks))
@@ -222,7 +219,7 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
             tokencount = get_tokens(user=user_object, count=True)
             if tokencount == 0:
                 g.audit_object.add_policy([p.get("name") for p in pass_no_token])
-                return True, {"message": u"user has no token, accepted due to '{!s}'".format(
+                return True, {"message": "user has no token, accepted due to '{!s}'".format(
                     pass_no_token[0].get("name"))}
 
     # If nothing else returned, we return the wrapped function
@@ -253,7 +250,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw,
             # Check if user object exists
             if not user_object.exist():
                 g.audit_object.add_policy([p.get("name") for p in pass_no_user])
-                return True, {"message": u"user does not exist, accepted due to '{!s}'".format(
+                return True, {"message": "user does not exist, accepted due to '{!s}'".format(
                     pass_no_user[0].get("name"))}
 
     # If nothing else returned, we return the wrapped function
@@ -293,7 +290,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
             if pass_thru_action in ["userstore", True]:
                 # Now we need to check the userstore password
                 if user_object.check_password(passw):
-                    return True, {"message": u"against userstore due to '{!s}'".format(
+                    return True, {"message": "against userstore due to '{!s}'".format(
                                       policy_name)}
             else:
                 # We are doing RADIUS passthru
@@ -325,12 +322,12 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                                     # and the unassigned token already was contained in the user's realm
                                     assign_token(serial=token_obj.token.serial,
                                                  user=user_object, pin=pin)
-                                    messages.append(u"autoassigned {0!s}".format(token_obj.token.serial))
+                                    messages.append("autoassigned {0!s}".format(token_obj.token.serial))
                                     break
 
                         else:
                             log.warning("Wrong value in passthru_assign policy: {0!s}".format(passthru_assign))
-                    messages.append(u"against RADIUS server {!s} due to '{!s}'".format(pass_thru_action, policy_name))
+                    messages.append("against RADIUS server {!s} due to '{!s}'".format(pass_thru_action, policy_name))
                     return True, {'message': ",".join(messages)}
 
     # If nothing else returned, we return the wrapped function

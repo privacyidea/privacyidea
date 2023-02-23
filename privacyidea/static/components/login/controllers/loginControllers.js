@@ -97,6 +97,22 @@ angular.module("privacyideaApp")
     $scope.piCustomBaselineFile = angular.element(document.querySelector('#CUSTOM_BASELINE')).val();
     // TODO: We can change this after login, if there is a user dependent customization!
 
+    $scope.confirmDelete = function(delete_function, identifier) {
+        $scope.confirmDeleteObj = {
+            question: document.activeElement.getAttribute('aria-label'),
+            identifier: identifier,
+            delete_function: delete_function
+        };
+        if (!$scope.confirmDeleteObj.question) {
+            $scope.confirmDeleteObj.question = gettextCatalog.getString('Do you really want to delete this object?');
+        }
+        if ($scope.deletion_confirmation) {
+            $('#dialogConfirmDelete').modal();
+        } else {
+            $scope.confirmDeleteObj.delete_function($scope.confirmDeleteObj.identifier);
+        }
+    };
+
     hotkeys.add({
         combo: 'alt+e',
         description: gettextCatalog.getString('Enroll a new token'),
@@ -272,11 +288,8 @@ angular.module("privacyideaApp")
                             $scope.webAuthnSignRequests.push(attributes.webAuthnSignRequest);
                         }
                         if (challenge.image) {
+                            // This should always be a base64 encoded image
                             $scope.image = challenge.image;
-                            if ($scope.image.indexOf("data:image") === -1) {
-                                // In case of an Image link, we prepend the instanceUrl
-                                $scope.image = $scope.instanceUrl + "/" + $scope.image;
-                            }
                         }
                         if (challenge.client_mode && challenge.client_mode === 'poll') {
                             $scope.polling = true;
@@ -448,6 +461,7 @@ angular.module("privacyideaApp")
             $scope.logout_redirect_url = data.result.value.logout_redirect_url;
             $scope.hide_welcome = data.result.value.hide_welcome;
             $scope.hide_buttons = data.result.value.hide_buttons;
+            $scope.deletion_confirmation = data.result.value.deletion_confirmation;
             $scope.show_seed = data.result.value.show_seed;
             $scope.show_node = data.result.value.show_node;
             $scope.token_rollover = data.result.value.token_rollover;
