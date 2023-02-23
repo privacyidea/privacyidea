@@ -50,7 +50,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            webauthntoken_allowed, check_application_tokentype,
                                            required_piv_attestation, check_custom_user_attributes,
                                            hide_tokeninfo, init_ca_template, init_ca_connector,
-                                           init_subject_components, increase_failcounter_on_challenge)
+                                           init_subject_components, increase_failcounter_on_challenge,
+                                           require_description)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -3341,6 +3342,41 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # delete policy
         delete_policy("increase_failcounter_on_challenge")
+
+    def test_61_required_description_for_specified_token_types(self):
+        g.logged_in_user = {"username": "cornelius",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Set policy
+        set_policy(name="require_description",
+                   scope=SCOPE.ENROLL,
+                   action=["{0!s}=hotp".format(ACTION.REQUIRE_DESCRIPTION)])
+        req = Request(env)
+        req.User = User("cornelius")
+
+        # Only a description is set, no type
+        # This should work without a defined type because hotp is default
+        req.all_data = {"description": "test"}
+        self.assertIsNone(require_description(req))
+
+        # Totp token is not defined in pol and should be rolled oud without desc
+        req.all_data = {"type": "totp"}
+        self.assertIsNone(require_description(req))
+
+        # Type and description is set, token should be rolled out
+        req.all_data = {"type": "hotp",
+                        "description": "test"}
+        self.assertIsNone(require_description(req))
+
+        # This should not work, a description is required for hotp
+        req.all_data = {"type": "hotp"}
+        self.assertRaisesRegexp(PolicyError,
+                                "ERR303: Description required for hotp token.",
+                                require_description, req)
+
+        delete_policy("require_description")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):

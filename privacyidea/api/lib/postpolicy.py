@@ -591,6 +591,8 @@ def get_webui_settings(request, response):
                                                     user=loginname, realm=realm).action_values(unique=True)
         logout_redirect_url_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.LOGOUT_REDIRECT,
                                                 user=loginname, realm=realm).action_values(unique=True)
+        require_description = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.REQUIRE_DESCRIPTION,
+                                            user=loginname, realm=realm).action_values(unique=False)
 
         qr_image_android = create_img(DEFAULT_ANDROID_APP_URL) if qr_android_authenticator else None
         qr_image_ios = create_img(DEFAULT_IOS_APP_URL) if qr_ios_authenticator else None
@@ -598,6 +600,7 @@ def get_webui_settings(request, response):
         audit_page_size = DEFAULT_AUDIT_PAGE_SIZE
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
+        require_description = list(require_description.keys())
         default_tokentype = DEFAULT_TOKENTYPE
         logout_redirect_url = ""
         if len(audit_page_size_pol) == 1:
@@ -661,6 +664,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["qr_image_ios"] = qr_image_ios
         content["result"]["value"]["qr_image_custom"] = qr_image_custom
         content["result"]["value"]["logout_redirect_url"] = logout_redirect_url
+        content["result"]["value"]["require_description"] = require_description
         response.set_data(json.dumps(content))
     return response
 

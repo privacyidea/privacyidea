@@ -102,7 +102,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action,
                                            check_admin_tokenlist, webauthntoken_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
-                                           init_subject_components)
+                                           init_subject_components, require_description)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.lib.event import event
@@ -127,6 +127,7 @@ To see how to authenticate read :ref:`rest_auth`.
 
 @token_blueprint.route('/init', methods=['POST'])
 @prepolicy(check_max_token_realm, request)
+@prepolicy(require_description, request)
 @prepolicy(check_max_token_user, request)
 @prepolicy(check_token_init, request)
 @prepolicy(init_tokenlabel, request)

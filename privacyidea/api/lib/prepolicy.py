@@ -68,7 +68,7 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 import logging
 
 from OpenSSL import crypto
-
+from privacyidea.lib import _
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
@@ -2198,3 +2198,37 @@ def increase_failcounter_on_challenge(request=None, action=None):
     inc_fail_counter = Match.user(g, scope=SCOPE.AUTH, action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE,
                                   user_object=request.User if hasattr(request, 'User') else None).any()
     request.all_data["increase_failcounter_on_challenge"] = inc_fail_counter
+
+
+def require_description(request=None, action=None):
+    """
+    Pre Policy
+    This checks if a description is required to roll out a specific token.
+    scope=SCOPE.ENROLL, action=REQUIRE_DESCRIPTION
+
+    An exception is raised, if the tokentypes specified in the
+    REQUIRE_DESCRIPTION policy match the token to be rolled out,
+    but no description is given.
+
+    :param request:
+    :param action:
+    :return:
+    """
+    params = request.all_data
+    user_object = request.User
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+
+    action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION,
+                             scope=SCOPE.ENROLL,
+                             adminrealm=adminrealm,
+                             adminuser=adminuser,
+                             user=username,
+                             realm=realm,
+                             user_object=user_object).action_values(unique=False)
+
+    token_types = list(action_values.keys())
+    type_value = request.all_data.get("type") or 'hotp'
+    if type_value in token_types:
+        if not request.all_data.get("description"):
+            log.warning(_("Missing description for {} token.".format(type_value)))
+            raise PolicyError(_("Description required for {} token.".format(type_value)))

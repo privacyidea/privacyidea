@@ -2746,6 +2746,56 @@ class APITokenTestCase(MyApiTestCase):
 
         delete_policy("verify_toks1")
 
+    def test_44_init_token_with_required_description(self):
+        # set require_description policy with value = 'hotp'
+        set_policy(name="require_description",
+                   scope=SCOPE.ENROLL,
+                   action=["{0!s}=hotp".format(ACTION.REQUIRE_DESCRIPTION)])
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "otpkey": self.otpkey,
+                                               "type": "hotp"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            result = res.json.get("result")
+            # a policyerror should be raised because hotp needs a description
+            self.assertEqual(result.get("error").get("message"),
+                             "Description required for hotp token.")
+
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "otpkey": self.otpkey,
+                                               "type": "hotp",
+                                               "description": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            # description is set, token should be rolled out
+            self.assertTrue(res.status_code == 200, res)
+
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "otpkey": self.otpkey,
+                                               "type": "totp"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            # check if rollout work as expected, if the token-type is not specified in require_description_pol
+            self.assertTrue(res.status_code == 200, res)
+
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "otpkey": self.otpkey,
+                                               "description": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            # check if rollout work as expected with no type set.
+            self.assertTrue(res.status_code == 200, res)
+
+        delete_policy("require_description")
+
 
 class API00TokenPerformance(MyApiTestCase):
 
