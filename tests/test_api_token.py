@@ -2702,7 +2702,6 @@ class APITokenTestCase(MyApiTestCase):
         set_policy(name="require_description",
                    scope=SCOPE.ENROLL,
                    action=["{0!s}=hotp".format(ACTION.REQUIRE_DESCRIPTION)])
-        # try to enroll a hotp token
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={
@@ -2726,7 +2725,6 @@ class APITokenTestCase(MyApiTestCase):
             # description is set, token should be rolled out
             self.assertTrue(res.status_code == 200, res)
 
-        # try to enroll a totp token
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={
@@ -2735,6 +2733,16 @@ class APITokenTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             # check if rollout work as expected, if the token-type is not specified in require_description_pol
+            self.assertTrue(res.status_code == 200, res)
+
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "otpkey": self.otpkey,
+                                               "description": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            # check if rollout work as expected with no type set.
             self.assertTrue(res.status_code == 200, res)
 
         delete_policy("require_description")

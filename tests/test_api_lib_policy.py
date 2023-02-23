@@ -3349,22 +3349,33 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         builder = EnvironBuilder(method='POST',
                                  headers={})
         env = builder.get_environ()
-
         # Set policy
         set_policy(name="require_description",
                    scope=SCOPE.ENROLL,
                    action=["{0!s}=hotp".format(ACTION.REQUIRE_DESCRIPTION)])
-
         req = Request(env)
-        # No description is set
-        req.all_data = {"type": "hotp"}
         req.User = User("cornelius")
 
+        # Only a description is set, no type
+        # This should work without a defined type because hotp is default
+        req.all_data = {"description": "test"}
+        self.assertIsNone(require_description(req))
+
+        # Totp token is not defined in pol and should be rolled oud without desc
+        req.all_data = {"type": "totp"}
+        self.assertIsNone(require_description(req))
+
+        # Type and description is set, token should be rolled out
+        req.all_data = {"type": "hotp",
+                        "description": "test"}
+        self.assertIsNone(require_description(req))
+
+        # This should not work, a description is required for hotp
+        req.all_data = {"type": "hotp"}
         self.assertRaisesRegexp(PolicyError,
                                 "ERR303: Description required for hotp token.",
                                 require_description, req)
 
-        # delete policy
         delete_policy("require_description")
 
 

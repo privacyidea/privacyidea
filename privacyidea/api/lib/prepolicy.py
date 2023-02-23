@@ -2261,8 +2261,9 @@ def require_description(request=None, action=None):
     This checks if a description is required to roll out a specific token.
     scope=SCOPE.ENROLL, action=REQUIRE_DESCRIPTION
 
-    An exception is raised, if the token-types specified in the
-    REQUIRE_DESCRIPTION policy match the token to be rolled out.
+    An exception is raised, if the tokentypes specified in the
+    REQUIRE_DESCRIPTION policy match the token to be rolled out,
+    but no description is given.
 
     :param request:
     :param action:
@@ -2281,7 +2282,8 @@ def require_description(request=None, action=None):
                              user_object=user_object).action_values(unique=False)
 
     token_types = list(action_values.keys())
-    if request.all_data.get("type") and request.all_data["type"] in token_types:
+    type_value = request.all_data.get("type") or 'hotp'
+    if type_value in token_types:
         if not request.all_data.get("description"):
-            log.warning(_("Missing description for {} token.".format(request.all_data["type"])))
-            raise PolicyError(_("Description required for {} token.".format(request.all_data["type"])))
+            log.warning(_("Missing description for {} token.".format(type_value)))
+            raise PolicyError(_("Description required for {} token.".format(type_value)))

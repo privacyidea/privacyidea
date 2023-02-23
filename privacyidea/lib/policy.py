@@ -2121,7 +2121,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.REQUIRE_DESCRIPTION: {
                 'type': 'str',
                 'desc': _('During the rollout process, this policy makes the '
-                          'description required for all selected token-types.'),
+                          'description required for all selected tokentypes.'),
                 'group': GROUP.ENROLLMENT,
                 'multiple': True,
                 'value': get_token_types()},
