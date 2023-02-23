@@ -1,9 +1,11 @@
 .. _machines:
 
-Machines
-========
+Applications and Machines or Services
+=====================================
 
-.. index:: machines, client machines
+.. index:: machines, services, client machines
+
+privacyIDEA supports authentication schemes, that happen on other machines or services with special applications.
 
 privacyIDEA lets you define Machine Resolvers to connect to existing machine
 stores. The idea is for users to be able to authenticate
@@ -12,7 +14,7 @@ Not in all cases an online authentication request is possible,
 so that authentication items
 can be passed to those client machines.
 
-In addition you need to define, which application on the client machine
+In addition you need to define, which application or service on the client machine
 the user should authenticate
 to. Different application require different authentication items.
 
@@ -22,10 +24,10 @@ At the moment privacyIDEA knows the application
 which is defined in
 :ref:`code_application_class`.
 
-You need to assign an application and a token to a client machine. Each application type 
+You need to attach a token via an application to a client machine or service. Each application type
 can work with certain token types and each application type can use additional parameters.
 
-.. note:: Not all tokens work well with all applications!
+.. note:: Not all tokentypes work well with all applications!
 
 .. _application_ssh:
 
@@ -38,12 +40,20 @@ Parameters:
 
 ``user`` (optional, default=root)
 
+``service_id`` (required)
+
 When the SSH token type is assigned to a client, the user specified in the
 user parameter
 can login with the private key of the SSH token.
 
-In the ``sshd_config`` file you need to configure the ``AuthorizedKeysCommand``.
-Set it to::
+The ``service_id`` identifies the SSH servers or group of SSH servers, where the login is allowed to occur.
+
+To facilitate this, the SSH server fetches the manages SSH keys from the privacyIDEA server on demand.
+There are two scripts, that can be used `privacyidea-authorizedkeys` (a Python script) and `privacyidea-fetchssh`
+(a shell script).
+
+In the ``sshd_config`` file you need to configure the ``AuthorizedKeysCommand`` accordingly.
+Set it to e.g.::
 
    privacyidea-authorizedkeys
 
@@ -57,9 +67,13 @@ The command expects a configuration file
    admin=admin
    password=test
    nosslcheck=False
+   service_id=webservers
+
+In this example the SSH keys that are attached to the service_id "webservers" are fetched from the
+privacyIDEA server.
 
 .. note:: To disable a SSH key for all servers, you simple can disable the
-    SSH token in privacyIDEA.
+    distinct SSH token in privacyIDEA.
 
 .. warning:: In a productive environment you should not set **nosslcheck** to
     true, otherwise you are vulnerable to man in the middle attacks.

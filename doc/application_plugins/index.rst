@@ -21,7 +21,8 @@ various :ref:`authentication_modes`.
 Pluggable Authentication Module
 -------------------------------
 
-.. todo:: Note: privacyidea-pam is not in the ubuntu 18.04 repository.
+.. todo:: Note: The underlying pam_python module is outdated. So privacyidea-pam should not be used anymore.
+   Use :ref:`pam_radius` instead until we provide a new explicit privacyIDEA PAM component.
 
 .. index:: offline, PAM
 
