@@ -305,7 +305,7 @@ def list_machine_tokens(hostname=None,
                         resolver_name=None,
                         serial=None,
                         application=None,
-                        params=None):
+                        filter_params=None):
     """
     Returns a list of tokens assigned to the given machine.
 
@@ -313,7 +313,10 @@ def list_machine_tokens(hostname=None,
              application.
     """
     res = []
-    if hostname or machine_id or resolver_name:
+    filter_params = filter_params or {}
+    service_id = filter_params.get("service_id")
+    # The service_id overrules the hostname
+    if not service_id and (hostname or machine_id or resolver_name):
         machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
                                                          resolver_name)
         machineresolver_id = get_machineresolver_id(resolver_name)
@@ -335,12 +338,18 @@ def list_machine_tokens(hostname=None,
         options = {}
         for option in option_list:
             options[option.mt_key] = option.mt_value
-        res.append({"serial": row.token.serial,
-                    "machine_id": machine_id,
-                    "resolver": resolver_name,
-                    "type": row.token.tokentype,
-                    "application": row.application,
-                    "options": options})
+        include_mt = True
+        for key, value in filter_params.items():
+            # Check if the machinetoken contains the correct filter values
+            if options.get(key) != value:
+                include_mt = False
+        if include_mt:
+            res.append({"serial": row.token.serial,
+                        "machine_id": machine_id,
+                        "resolver": resolver_name,
+                        "type": row.token.tokentype,
+                        "application": row.application,
+                        "options": options})
 
     return res
 
@@ -417,7 +426,7 @@ def get_auth_items(hostname=None, ip=None, application=None,
     :param hostname:
     :param ip:
     :param application:
-    :param challenge: A challenge for the authitme
+    :param challenge: A challenge for the authitem
     :type challenge: basestring
     :param filter_param: Additional application specific parameter to filter
         the return value
@@ -439,13 +448,11 @@ def get_auth_items(hostname=None, ip=None, application=None,
                     "sshkey": "...." }
                  ] }
     """
-    #
-    # TODO: We should check, if the IP Address matches the hostname
-    #
     auth_items = {}
     machinetokens = list_machine_tokens(hostname=hostname,
                                         serial=serial,
-                                        application=application)
+                                        application=application,
+                                        filter_params=filter_param)
 
     for mtoken in machinetokens:
         auth_item = get_auth_item(mtoken.get("application"),

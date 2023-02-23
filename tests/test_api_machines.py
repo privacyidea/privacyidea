@@ -359,6 +359,89 @@ class APIMachinesTestCase(MyApiTestCase):
         detach_token(self.serial2, application="ssh", hostname="gandalf")
         remove_token(self.serial2)
 
+    def test_10_auth_items_ssh_rsa_with_service_id(self):
+        # Attach with service_id and without IP, but still also support IP
+        # create an SSH token
+        token_obj = init_token({"serial": self.serial2, "type": "sshkey",
+                                "sshkey": SSHKEY})
+        self.assertEqual(token_obj.type, "sshkey")
+
+        # Attach the token to the machine "gandalf" with the application SSH
+        r = attach_token(serial=self.serial2,
+                         application="ssh", options={"user": "testuser", "service_id": "webserver"})
+
+        self.assertEqual(None, r.machine_id)
+        self.assertEqual("ssh", r.application)
+
+        # fetch the auth_items for application SSH on machine gandalf
+        with self.app.test_request_context(
+                '/machine/authitem/ssh?hostname=gandalf&service_id=webserver',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            sshkey = result["value"].get("ssh")[0].get("sshkey")
+            self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
+
+        # fetch the auth_items for user testuser
+        with self.app.test_request_context(
+                '/machine/authitem/ssh?hostname=gandalf&service_id=webserver&user=testuser',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            sshkey = result["value"].get("ssh")[0].get("sshkey")
+            self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
+
+        # fetch the auth_items for a user, who has no ssh keys
+        with self.app.test_request_context(
+                '/machine/authitem/ssh?hostname=gandalf&service_id=webserver&user=root',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            self.assertEqual({}, result.get("value"))
+
+        # fetch auth_items for testuser, but with mangle policy
+        # Remove everything that sounds like "SOMETHING\" in front of
+        # the username
+        set_policy(name="mangle1", scope=SCOPE.AUTH,
+                   action="{0!s}=user/.*\\\\(.*)/\\1/".format(ACTION.MANGLE))
+        with self.app.test_request_context(
+                '/machine/authitem/ssh?hostname=gandalf&service_id=webserver&user=DOMAIN\\testuser',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            sshkey = result["value"].get("ssh")[0].get("sshkey")
+            self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
+        delete_policy("mangle1")
+
+        # Now that the policy is deleted, we will not get the auth_items
+        # anymore, since the username is not mangled.
+        with self.app.test_request_context(
+                '/machine/authitem/ssh?service_id=webserver&hostname=gandalft&user=DOMAIN\\testuser',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            sshkeys = result["value"].get("ssh")
+            # No user DOMAIN\\testuser and no SSH keys
+            self.assertFalse(sshkeys)
+
+        detach_token(self.serial2, application="ssh")
+        remove_token(self.serial2)
+
     def test_10_auth_items_ssh_ecdsa(self):
         # create an SSH token
         token_obj = init_token({"serial": self.serial2, "type": "sshkey",

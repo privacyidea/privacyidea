@@ -363,7 +363,7 @@ def get_auth_items_api(application=None):
     hostname = getParam(request.all_data, "hostname", optional=False)
     # Get optional additional filter parameters
     filter_param = request.all_data
-    for key in ["challenge", "hostname"]:
+    for key in ["challenge", "hostname", "application"]:
         if key in filter_param:
             del(filter_param[key])
 
