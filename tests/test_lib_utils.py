@@ -541,7 +541,7 @@ class UtilsTestCase(MyTestCase):
                          "psql+odbc://pi@localhost/pi")
         self.assertEqual(censor_connect_string("psql+odbc://pi:MySecretPassword123466$@localhost/pi"),
                          "psql+odbc://pi:***@localhost/pi")
-        self.assertEqual(censor_connect_string("mysql://pi:kW44s@@qqWtGYX@localhost/pi"),
+        self.assertEqual(censor_connect_string("mysql://pi:kW44s%40%40qqWtGYX@localhost/pi"),
                          "mysql://pi:***@localhost/pi")
         self.assertEqual(censor_connect_string("mysql://knöbel:föö@localhost/pi"),
                          "mysql://knöbel:***@localhost/pi")
