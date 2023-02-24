@@ -1095,7 +1095,7 @@ def init_token(param, user=None, tokenrealms=None,
 
         tokenobject.update(param)
 
-    except Exception as e:  # pragma: no cover
+    except Exception as e:
         log.error('token create failed: {0!s}'.format(e))
         log.debug("{0!s}".format(traceback.format_exc()))
         # delete the newly created token from the db

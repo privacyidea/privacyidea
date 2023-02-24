@@ -1528,6 +1528,10 @@ class UserNotificationTestCase(MyTestCase):
             un_handler.do("savefile", options=options)
             mock_log.assert_called_once_with("Cannot write outside of spooldir tests/testdata/!")
 
+        # This part only works for a non-root user
+        if os.getuid() == 0:
+            return
+
         # Check what happens if the file can not be written
         options = {"g": g,
                    "request": req,

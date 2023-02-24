@@ -38,7 +38,7 @@ import re
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
 from sqlalchemy import (Integer, cast, String, MetaData, Table, and_,
-                        create_engine, select, insert)
+                        create_engine, select, insert, delete)
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
@@ -657,7 +657,7 @@ class IdResolver (UserIdResolver):
             conditions = self._append_where_filter(conditions, self.TABLE,
                                                    self.where)
             filter_condition = and_(*conditions)
-            self.session.execute(self.TABLE.delete().filter(filter_condition))
+            self.session.execute(delete(self.TABLE).where(filter_condition))
             self.session.commit()
             log.info('Deleted user with uid: {0!s}'.format(uid))
         except Exception as exx:

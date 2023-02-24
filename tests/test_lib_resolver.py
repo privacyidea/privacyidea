@@ -360,13 +360,31 @@ class SQLResolverTestCase(MyTestCase):
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 0, userlist)
 
+    def test_06b_where_filter_and_delete_user(self):
+        y = SQLResolver()
+        d = self.parameters.copy()
+        d.update({"Where": "id > 10"})
+        y.loadConfig(d)
+        userlist = y.getUserList()
+        self.assertGreaterEqual(len(userlist), 3, userlist)
+        uid = y.add_user({"username": "testuser",
+                          "email": "user@test.net",
+                          "password": "passw0rd",
+                          "mobile": "1234567"})
+        self.assertTrue(uid > self.num_users)
+        userlist = y.getUserList()
+        self.assertGreaterEqual(len(userlist), 4, userlist)
+        y.delete_user(uid)
+        uid = y.getUserId("testuser")
+        self.assertFalse(uid)
+
     def test_07_add_user_update_delete_hashes(self):
         y = SQLResolver()
         parameters = self.parameters.copy()
         # sha256 at first
         parameters["Password_Hash_Type"] = "SSHA256"
         y.loadConfig(parameters)
-        uid = y.add_user({"username":"achmed",
+        uid = y.add_user({"username": "achmed",
                           "email": "achmed@world.net",
                           "password": "passw0rd",
                           "mobile": "12345"})
