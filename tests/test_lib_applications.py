@@ -19,6 +19,7 @@ from privacyidea.lib.applications import (get_auth_item,
 from privacyidea.lib.token import init_token, get_tokens
 from privacyidea.lib.user import User
 import passlib.hash
+import mock
 
 
 SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx377" \
@@ -58,6 +59,13 @@ class SSHApplicationTestCase(MyTestCase):
         auth_item = SSHApplication.get_authentication_item("sshkey", serial)
         self.assertEqual(auth_item.get("sshkey"), SSHKEY)
         self.assertEqual(auth_item.get("username"), "cornelius")
+
+        # Get with no matching user
+        with mock.patch("logging.Logger.debug") as mock_log:
+            auth_item = SSHApplication.get_authentication_item("sshkey", serial, filter_param={"user": "Idefix"})
+            self.assertFalse(auth_item)
+            mock_log.assert_called_with('The requested user Idefix does '
+                                        'not match the user option (Idefix) of the SSH application.')
 
     def test_03_get_auth_item_unsupported(self):
         # unsupported token type
