@@ -236,6 +236,61 @@ class APIMachinesTestCase(MyApiTestCase):
         self.assertEqual(token_obj.token.machine_list[0].option_list[
                              0].mt_value, "/dev/sda1")
 
+    def test_04_set_options_by_mtid(self):
+        serial = "S1"
+        mtid = 0
+        # current number of attached applications.
+        token_obj = get_tokens(serial=serial)[0]
+        num_applications = len(token_obj.token.machine_list)
+        # create an ssh application
+        with self.app.test_request_context('/machine/token',
+                                           method='POST',
+                                           data={"hostname": "gandalf",
+                                                 "serial": serial,
+                                                 "application": "ssh",
+                                                 "user": "root",
+                                                 "service_id": "webserver"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            self.assertTrue(result["value"] >= 1)
+            mtid = result.get("value")
+
+        with self.app.test_request_context('/machine/tokenoption',
+                                           method='POST',
+                                           data={"mtid": mtid,
+                                                 "application": "ssh",
+                                                 "service_id": "mailserver",
+                                                 "user": ""},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True, result)
+            self.assertEqual(1, result["value"]["added"], result)
+            self.assertEqual(1, result['value']['deleted'], result)
+
+        # check if the options were set.
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(token_obj.token.machine_list[1].application, "ssh")
+        self.assertEqual(token_obj.token.machine_list[1].option_list[
+                             0].mt_value, "mailserver")
+        # Delete machinetoken
+        with self.app.test_request_context(
+                '/machine/token/S1/ssh/{}'.format(mtid),
+                method='DELETE',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            self.assertTrue(result["value"] >= 1)
+
+        # check if the the application is detached again
+        token_obj = get_tokens(serial=serial)[0]
+        self.assertEqual(num_applications, len(token_obj.token.machine_list))
 
     def test_05_list_machinetokens(self):
         with self.app.test_request_context('/machine/token?serial=S1',

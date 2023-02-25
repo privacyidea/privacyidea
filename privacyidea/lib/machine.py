@@ -287,7 +287,9 @@ def delete_option(machinetoken_id=None, machine_id=None, resolver_name=None,
     :param serial: the serial number of the token
     :param application: the application
     """
-    if not machinetoken_id:
+    if machinetoken_id:
+        machinetoken_ids = [ int(machinetoken_id) ]
+    else:
         machine_id, resolver_name = _get_host_identifier(hostname, machine_id,
                                                          resolver_name)
         machinetoken_ids = get_machinetoken_ids(machine_id,
