@@ -194,6 +194,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     $scope.formInit = {
         tokenTypes: {"hotp": gettextCatalog.getString("HOTP: event based One Time Passwords"),
             "totp": gettextCatalog.getString("TOTP: time based One Time Passwords"),
+            "tbp": gettextCatalog.getString("tbp: Time Based Password"),
             "spass": gettextCatalog.getString("SPass: Simple Pass token. Static passwords"),
             "motp": gettextCatalog.getString("mOTP: classical mobile One Time Passwords"),
             "sshkey": gettextCatalog.getString("SSH Public Key: The public SSH key"),

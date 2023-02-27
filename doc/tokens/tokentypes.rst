@@ -14,6 +14,7 @@ Some token require prior configuration as described in :ref:`tokentypes_details`
   `Two Man Rule <https://en.wikipedia.org/wiki/Two-man_rule>`_.
 * :ref:`certificate_token` - A token that represents a client
   certificate.
+* :ref:`tbp_token` - Time based password based on `RFC4226 <https://tools.ietf.org/html/rfc4226>`_.
 * :ref:`email_token` - A token that sends the OTP value to the EMail address of
   the user.
 * :ref:`hotp_token` - event based One Time Password tokens based on

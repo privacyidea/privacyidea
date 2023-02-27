@@ -722,6 +722,7 @@ def get_token_list():
     module_list.add("privacyidea.lib.tokens.motptoken")
     module_list.add("privacyidea.lib.tokens.passwordtoken")
     module_list.add("privacyidea.lib.tokens.remotetoken")
+    module_list.add("privacyidea.lib.tokens.tbptoken")
     module_list.add("privacyidea.lib.tokens.spasstoken")
     module_list.add("privacyidea.lib.tokens.sshkeytoken")
     module_list.add("privacyidea.lib.tokens.totptoken")
