@@ -48,7 +48,7 @@ Define, if you need to add a DB migration script.
 
 ## Library and API
 
-Describe what needs to be implemented, preferrably also in which files.
+Describe what needs to be implemented, preferably also in which files.
 
 Use example code of what you plan to implement:
 
@@ -60,7 +60,7 @@ new_feature = [ x.name for x in some_return_values if x.id > 0 ]
 
 *In the TODO section you can add all steps that need to be implemented*
 
-**USE CHECKLISTS, THESE WILL BE VISIABLE AS TASKS!**
+**USE CHECKLISTS, THESE WILL BE VISIBLE AS TASKS!**
 
 * [ ] add DB table `name` in `models.py`
 * [ ] create above mentioned migration script.
