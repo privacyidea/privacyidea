@@ -17,9 +17,7 @@ from privacyidea.lib import _
 import re
 import binascii
 import hashlib
-from six.moves.urllib.parse import urlparse
-from six.moves.urllib.parse import urlencode
-import json
+from urllib.parse import urlparse, urlencode
 from flask import Request, g
 from werkzeug.test import EnvironBuilder
 

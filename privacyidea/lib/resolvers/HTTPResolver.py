@@ -31,9 +31,8 @@ from .UserIdResolver import UserIdResolver
 import requests
 import logging
 import json
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 from pydash import get
-from privacyidea.api.lib.utils import getParam
 
 ENCODING = "utf-8"
 

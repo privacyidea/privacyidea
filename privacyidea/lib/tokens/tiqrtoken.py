@@ -80,7 +80,7 @@ the token in challenge response.
 This code is tested in tests/test_lib_tokens_tiqr.
 """
 
-from six.moves.urllib.parse import quote, quote_plus
+from urllib.parse import quote, quote_plus
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
@@ -92,8 +92,7 @@ import logging
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.error import ParameterError
 from privacyidea.models import Challenge
-from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
+from privacyidea.lib.tokens.ocra import OCRASuite
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.models import cleanup_challenges
 from privacyidea.lib import _

@@ -35,10 +35,9 @@ import logging
 import json
 import jwt
 import threading
-import six
 import re
 from copy import copy
-from six.moves.urllib.parse import unquote
+from urllib.parse import unquote
 from flask import (jsonify,
                    current_app)
 

@@ -6,7 +6,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from privacyidea.lib.utils import to_unicode
-from six.moves.urllib.parse import urlencode, quote
+from urllib.parse import urlencode, quote
 import json
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION, strip_key
 from privacyidea.lib.utils import hexlify_and_unicode

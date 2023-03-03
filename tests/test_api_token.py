@@ -17,7 +17,7 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
 from privacyidea.lib.event import set_event, delete_event, EventConfiguration
 from privacyidea.lib.caconnector import save_caconnector
-from six.moves.urllib.parse import urlencode, quote
+from urllib.parse import urlencode, quote
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE

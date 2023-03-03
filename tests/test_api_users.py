@@ -6,7 +6,7 @@ from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import User
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 
 PWFILE = "tests/testdata/passwd"
 
