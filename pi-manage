@@ -50,7 +50,6 @@
 # ./manage.py db migrate
 # ./manage.py create_tables
 #
-from __future__ import print_function
 import os
 import sys
 import datetime

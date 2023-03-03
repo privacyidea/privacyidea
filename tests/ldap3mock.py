@@ -38,10 +38,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from __future__ import (
-    absolute_import, division, unicode_literals
-)
-
 from passlib.hash import ldap_salted_sha1
 from ast import literal_eval
 import uuid

@@ -44,7 +44,6 @@ calling function handle the data.
 
 This lib.crypto is tested in tests/test_lib_crypto.py
 """
-from __future__ import division
 import hmac
 import logging
 from hashlib import sha256
