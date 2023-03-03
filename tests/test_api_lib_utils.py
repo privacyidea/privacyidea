@@ -82,7 +82,7 @@ class UtilsTestCase(MyApiTestCase):
                                 algorithm="RS256")
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', category=DeprecationWarning)
-            self.assertRaisesRegexp(
+            self.assertRaisesRegex(
                 AuthError,
                 "The username hanswurst is not allowed to impersonate via JWT.",
                 verify_auth_token, auth_token=auth_token, required_role="user")
@@ -97,7 +97,7 @@ class UtilsTestCase(MyApiTestCase):
                                 algorithm="RS256")
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', category=DeprecationWarning)
-            self.assertRaisesRegexp(
+            self.assertRaisesRegex(
                 AuthError,
                 "The username kleinerhans is not allowed to impersonate via JWT.",
                 verify_auth_token, auth_token=auth_token, required_role="user")

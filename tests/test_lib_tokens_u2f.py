@@ -216,8 +216,8 @@ class U2FTokenTestCase(MyTestCase):
 
         # modify signature
         broken_sig = 'ff' + signature[2:]
-        with self.assertRaisesRegexp(Exception,
-                                     'Error checking the signature of the registration data.'):
+        with self.assertRaisesRegex(Exception,
+                                    'Error checking the signature of the registration data.'):
             check_registration_data(cert, "https://demo.yubico.com", client_data_str,
                                     user_pub_key, key_handle, broken_sig)
 
@@ -248,8 +248,8 @@ class U2FTokenTestCase(MyTestCase):
                    'm_6eVnZMQjDmwFdymwEN4OxfnM5MkcKCYhjqgIGruWkVHsFnJa8qjZXneV' \
                    'vKoiepuUQyDEJ2GcqvhU2YKY1zBFAiEAqqVKbLnZuWYyzjcsb1YnHEyuk-' \
                    'dmM77Q66iExrj8h2cCIHAvpisjLj-D2KvnZZcIQ_fFjFj9OX5jkfmJ65QVQ9bE'
-        with self.assertRaisesRegexp(Exception,
-                                     'The registration data is in a wrong format.'):
+        with self.assertRaisesRegex(Exception,
+                                    'The registration data is in a wrong format.'):
             parse_registration_data(reg_data)
 
 

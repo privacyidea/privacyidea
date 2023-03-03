@@ -125,12 +125,14 @@ class SubscriptionApplicationTestCase(MyTestCase):
 
         sub1 = SUBSCRIPTION1.copy()
         sub1['by_name'] = 'unknown vendor'
-        with self.assertRaisesRegexp(SubscriptionError, 'Verifying the signature '
-                                                        'of your subscription'):
+        with self.assertRaisesRegex(
+                SubscriptionError,
+                'Verifying the signature of your subscription'):
             save_subscription(sub1)
 
         sub1 = SUBSCRIPTION1.copy()
         sub1['signature'] = str(int(sub1['signature']) + 1)
-        with self.assertRaisesRegexp(SubscriptionError, 'Signature of your '
-                                                        'subscription does not'):
+        with self.assertRaisesRegex(
+                SubscriptionError,
+                'Signature of your subscription does not'):
             save_subscription(sub1)

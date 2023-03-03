@@ -471,12 +471,13 @@ class WebAuthnTokenTestCase(MyTestCase):
             "HTTP_ORIGIN": ORIGIN,
             WEBAUTHNACTION.REQ: ['subject/.*Feitian.*/']
         }
-        self.assertRaisesRegexp(PolicyError,
-                                "The WebAuthn token is not allowed to authenticate "
-                                "due to a policy restriction.",
-                                self.token.check_otp,
-                                **{'otpval': None,
-                                   'options': options})
+        self.assertRaisesRegex(
+            PolicyError,
+            r"The WebAuthn token is not allowed to authenticate due to a policy "
+            r"restriction.",
+            self.token.check_otp,
+            **{'otpval': None,
+               'options': options})
 
     def test_10a_aaguid_allowed(self):
         self._setup_token()
@@ -496,21 +497,22 @@ class WebAuthnTokenTestCase(MyTestCase):
     def test_10b_aaguid_not_allowed(self):
         self._setup_token()
         # check token with an invalid aaguid
-        self.assertRaisesRegexp(PolicyError,
-                                "The WebAuthn token is not allowed to authenticate "
-                                "due to a policy restriction.",
-                                self.token.check_otp,
-                                **{'otpval': None,
-                                   'options': {
-                                       "credentialid": CRED_ID,
-                                       "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
-                                       "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
-                                       "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
-                                       "user": self.user,
-                                       "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE)),
-                                       "HTTP_ORIGIN": ORIGIN,
-                                       WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST: ['ffff0000000000000000000000000000']
-                                   }})
+        self.assertRaisesRegex(
+            PolicyError,
+            r"The WebAuthn token is not allowed to authenticate due to a "
+            r"policy restriction.",
+            self.token.check_otp,
+            **{'otpval': None,
+               'options': {
+                   "credentialid": CRED_ID,
+                   "authenticatordata": ASSERTION_RESPONSE_TMPL['authData'],
+                   "clientdata": ASSERTION_RESPONSE_TMPL['clientData'],
+                   "signaturedata": ASSERTION_RESPONSE_TMPL['signature'],
+                   "user": self.user,
+                   "challenge": hexlify_and_unicode(webauthn_b64_decode(ASSERTION_CHALLENGE)),
+                   "HTTP_ORIGIN": ORIGIN,
+                   WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST: ['ffff0000000000000000000000000000']
+               }})
 
 
 class WebAuthnTestCase(unittest.TestCase):
@@ -611,8 +613,8 @@ class WebAuthnTestCase(unittest.TestCase):
             expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
         )
 
-        with self.assertRaisesRegexp(RegistrationRejectedException,
-                                     'Malformed request received.'):
+        with self.assertRaisesRegex(RegistrationRejectedException,
+                                    'Malformed request received.'):
             registration_response.verify()
 
     def test_03_validate_assertion(self):
@@ -657,8 +659,8 @@ class WebAuthnTestCase(unittest.TestCase):
         webauthn_assertion_response = self.getAssertionResponse()
         webauthn_assertion_response.webauthn_user.sign_count = ASSERTION_RESPONSE_SIGN_COUNT
 
-        with self.assertRaisesRegexp(AuthenticationRejectedException,
-                                     'Duplicate authentication detected.'):
+        with self.assertRaisesRegex(AuthenticationRejectedException,
+                                    'Duplicate authentication detected.'):
             webauthn_assertion_response.verify()
         # TODO: we should add a test for a missing sign_count (or 0) but we need
         #  to change the auth data for that.
@@ -667,8 +669,8 @@ class WebAuthnTestCase(unittest.TestCase):
         self.assertEqual(webauthn_b64_decode(URL_DECODE_TEST_STRING), URL_DECODE_EXPECTED_RESULT)
 
     def test_08_registration_invalid_requirement_level(self):
-        with self.assertRaisesRegexp(ValueError,
-                                     'Illegal attestation_requirement_level.'):
+        with self.assertRaisesRegex(ValueError,
+                                    'Illegal attestation_requirement_level.'):
             WebAuthnRegistrationResponse(
                 rp_id=RP_ID,
                 origin=ORIGIN,
@@ -709,7 +711,7 @@ class WebAuthnTestCase(unittest.TestCase):
             ).verify)
 
     def test_09c_registration_self_Attestation_alg_mismatch(self):
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             RegistrationRejectedException,
             'does not match algorithm from attestation statement',
             WebAuthnRegistrationResponse(
@@ -723,7 +725,7 @@ class WebAuthnTestCase(unittest.TestCase):
             ).verify)
 
     def test_09d_registration_self_Attestation_broken_signature(self):
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             RegistrationRejectedException,
             'Invalid signature received.',
             WebAuthnRegistrationResponse(

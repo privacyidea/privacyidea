@@ -2858,7 +2858,7 @@ class HTTPResolverTestCase(MyTestCase):
         self.assertEqual(response.get('a_static_key'), 'a static value')
 
         # Test with invalid response
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             Exception,
             'Received an error while searching for user: PepePerez',
             instance.getUserInfo, 'PepePerez'
