@@ -121,13 +121,13 @@ def challenge_response_allowed(func):
                                                  action=ACTION.CHALLENGERESPONSE, user_object=user_object)\
                 .action_values(unique=False, write_to_audit_log=False)
             log.debug("Found these allowed tokentypes: {0!s}".format(list(allowed_tokentypes_dict)))
-            # allowed_tokentypes_dict.keys() is a list of actions from several policies.
+            allowed_tokentypes_dict = {k.lower(): v for k, v in allowed_tokentypes_dict.items()}
+            token = token.get_tokentype().lower()
             chal_resp_found = False
-            for toks in allowed_tokentypes_dict:
-                if token.get_tokentype() in allowed_tokentypes_dict:
-                    # This token is allowed to to chal resp
-                    chal_resp_found = True
-                    g.audit_object.add_policy(allowed_tokentypes_dict.get(toks))
+            if token in allowed_tokentypes_dict:
+                # This token is allowed to to chal resp
+                chal_resp_found = True
+                g.audit_object.add_policy(allowed_tokentypes_dict.get(token))
 
             if not chal_resp_found:
                 # No policy to allow this token to do challenge response
