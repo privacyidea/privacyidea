@@ -26,8 +26,8 @@ user=$1
 # some checks for dependencies
 command -v jq >/dev/null 2>&1 || { echo >&2 "script requires jq but it is not installed.  Aborting."; exit 2; }
 command -v sed >/dev/null 2>&1 || { echo >&2 "script requires sed but it is not installed.  Aborting."; exit 2; }
-command -v sed >/dev/null 2>&1 || { echo >&2 "script requires curl but it is not installed.  Aborting."; exit 2; }
-command -v sed >/dev/null 2>&1 || { echo >&2 "script requires tr but it is not installed.  Aborting."; exit 2; }
+command -v curl >/dev/null 2>&1 || { echo >&2 "script requires curl but it is not installed.  Aborting."; exit 2; }
+command -v tr >/dev/null 2>&1 || { echo >&2 "script requires tr but it is not installed.  Aborting."; exit 2; }
 
 # other variables
 baseurl="https://$server"
