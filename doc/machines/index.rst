@@ -48,18 +48,25 @@ can login with the private key of the SSH token.
 
 The ``service_id`` identifies the SSH servers or group of SSH servers, where the login is allowed to occur.
 
-To facilitate this, the SSH server fetches the manages SSH keys from the privacyIDEA server on demand.
-There are two scripts, that can be used `privacyidea-authorizedkeys` (a Python script) and `privacyidea-fetchssh`
-(a shell script).
+To facilitate this, the SSH server fetches the managed SSH keys from the privacyIDEA server on demand.
+The SSH server uses the ``AuthorizedKeysCommand`` in the ``sshd_config`` to do this.
+
+There is an Python script `privacyidea-authorizedkey` in the privacyideaadm repository. Note, that this
+script currently does not support the ``service_id``.
+The `tools/` directory of the privacyIDEA Server ships a shell script `privacyidea-authorizedkeys` that
+supports the ``service_id``.
 
 In the ``sshd_config`` file you need to configure the ``AuthorizedKeysCommand`` accordingly.
 Set it to e.g.::
 
    privacyidea-authorizedkeys
 
-This will fetch the SSH public keys for the requesting machine.
+This will fetch the SSH public keys for the requesting machine and the given user.
 
-The command expects a configuration file
+If you are using the shell script you need to configure the privacyIDEA Server and
+the service account at the top of the script.
+
+The Python script however expects a configuration file
 */etc/privacyidea/authorizedkeyscommand* which looks like this::
 
    [Default]
@@ -72,7 +79,7 @@ The command expects a configuration file
 In this example the SSH keys that are attached to the service_id "webservers" are fetched from the
 privacyIDEA server.
 
-.. note:: To disable a SSH key for all servers, you simple can disable the
+.. note:: To disable a SSH key for all servers, you simply can disable the
     distinct SSH token in privacyIDEA.
 
 .. warning:: In a productive environment you should not set **nosslcheck** to
