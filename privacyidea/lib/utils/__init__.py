@@ -28,7 +28,6 @@ This module is tested in tests/test_lib_utils.py
 """
 import os
 
-import six
 import logging
 from importlib import import_module
 import binascii
@@ -164,7 +163,7 @@ def to_unicode(s, encoding="utf-8"):
     :return: unicode string
     :rtype: str
     """
-    if isinstance(s, six.text_type):
+    if isinstance(s, str):
         return s
     elif isinstance(s, bytes):
         return s.decode(encoding)
@@ -183,7 +182,7 @@ def to_bytes(s):
     """
     if isinstance(s, bytes):
         return s
-    elif isinstance(s, six.text_type):
+    elif isinstance(s, str):
         return s.encode('utf8')
     # TODO: warning? Exception?
     return s
@@ -314,7 +313,7 @@ def checksum(msg):
     :rtype: int
     """
     crc = 0xffff
-    for b in six.iterbytes(msg):
+    for b in msg:
         crc = crc ^ (b & 0xff)
         for _j in range(0, 8):
             n = crc & 1
@@ -1025,12 +1024,12 @@ def convert_column_to_unicode(value):
     :type value: str
     :return: a unicode object or None
     """
-    if value is None or isinstance(value, six.text_type):
+    if value is None or isinstance(value, str):
         return value
     elif isinstance(value, bytes):
         return value.decode('utf8')
     else:
-        return six.text_type(value)
+        return str(value)
 
 
 def convert_timestamp_to_utc(timestamp):

@@ -25,7 +25,6 @@ machine ID.
 This file is tested in tests/test_lib_machines.py
 """
 import netaddr
-from six import string_types
 
 
 class Machine(object):
@@ -40,7 +39,7 @@ class Machine(object):
         self.id = machine_id
         self.resolver_name = resolver_name
         self.hostname = hostname
-        if isinstance(ip, string_types):
+        if isinstance(ip, str):
             self.ip = netaddr.IPAddress(ip)
         else:
             self.ip = ip
@@ -56,7 +55,7 @@ class Machine(object):
         """
         if type(self.hostname) == list:
             return hostname in self.hostname
-        elif isinstance(self.hostname, string_types):
+        elif isinstance(self.hostname, str):
             return hostname.lower() == self.hostname.lower()
 
     def has_ip(self, ip):
@@ -69,7 +68,7 @@ class Machine(object):
         :return: True or false
         """
         # convert to IPAddress
-        if isinstance(ip, string_types):
+        if isinstance(ip, str):
             ip = netaddr.IPAddress(ip)
 
         if type(self.ip) == list:

@@ -6,11 +6,7 @@ The lib.user.py only depends on the database model
 """
 import logging
 
-import six
 from testfixtures import log_capture
-
-PWFILE = "tests/testdata/passwd"
-PWFILE2 = "tests/testdata/passwords"
 
 from .base import MyTestCase
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
@@ -25,6 +21,9 @@ from privacyidea.lib.user import (User, create_user,
 from privacyidea.lib.user import log as user_log
 from . import ldap3mock
 from .test_lib_resolver import LDAPDirectory_small
+
+PWFILE = "tests/testdata/passwd"
+PWFILE2 = "tests/testdata/passwords"
 
 
 class UserTestCase(MyTestCase):
@@ -69,7 +68,7 @@ class UserTestCase(MyTestCase):
         
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
-        self.assertIsInstance(six.text_type(user), six.text_type)
+        self.assertIsInstance(str(user), str)
         
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
@@ -431,8 +430,8 @@ class UserTestCase(MyTestCase):
 
         # check proper unicode() and str() handling
         user_object = User(login=u"nönäscii", realm=realm)
-        self.assertEqual(six.text_type(user_object), u'<nönäscii.SQL1@sqlrealm>')
-        self.assertEqual(six.text_type(user_object).encode('utf8'),
+        self.assertEqual(str(user_object), '<nönäscii.SQL1@sqlrealm>')
+        self.assertEqual(str(user_object).encode('utf8'),
                          b'<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
         # also check the User object representation
         user_repr = repr(user_object)

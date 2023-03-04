@@ -61,7 +61,6 @@ import logging
 import yaml
 import threading
 import functools
-import six
 
 from .UserIdResolver import UserIdResolver
 

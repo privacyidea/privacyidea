@@ -171,7 +171,6 @@ from .log import log_with
 from configobj import ConfigObj
 
 from operator import itemgetter
-import six
 import logging
 from ..models import (Policy, db, save_config_timestamp, Token)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
@@ -195,7 +194,6 @@ import datetime
 import re
 import ast
 import traceback
-from six import string_types
 
 log = logging.getLogger(__name__)
 
@@ -1199,7 +1197,7 @@ class PolicyClass(object):
                 if action_value:
                     rights.add(action)
                     # if the action has an actual non-boolean value, return it
-                    if isinstance(action_value, string_types):
+                    if isinstance(action_value, str):
                         rights.add("{}={}".format(action, action_value))
         # check if we have policies at all:
         pols = self.list_policies(scope=scope, active=True)

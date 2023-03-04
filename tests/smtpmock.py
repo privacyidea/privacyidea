@@ -27,7 +27,6 @@ from __future__ import (
     absolute_import, print_function, division, unicode_literals
 )
 
-import six
 import smtplib
 
 try:
@@ -67,7 +66,7 @@ def get_wrapped(func, wrapper_template, evaldict):
     callargs = formatargspec(*args, formatvalue=lambda v: '=' + v)
 
     ctx = {'signature': signature, 'funcargs': callargs}
-    six.exec_(wrapper_template % ctx, evaldict)
+    exec(wrapper_template % ctx, evaldict, evaldict)
 
     wrapper = evaldict['wrapper']
 

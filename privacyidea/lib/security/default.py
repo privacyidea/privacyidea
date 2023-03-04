@@ -51,7 +51,6 @@ from privacyidea.lib.utils import (is_true, to_unicode, to_bytes,
                                    hexlify_and_unicode)
 
 from .password import PASSWORD
-from ..framework import get_app_config_value
 from cryptography.hazmat.primitives.ciphers import algorithms
 from cryptography.hazmat.primitives import padding
 
@@ -70,6 +69,10 @@ def create_key_from_password(password):
     """
     key = sha256(to_bytes(password)).digest()[0:32]
     return key
+
+
+def int_list_to_bytestring(int_list):  # pragma: no cover
+    return b"".join([bytes((i, )) for i in int_list])
 
 
 class SecurityModule(object):

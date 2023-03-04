@@ -27,7 +27,6 @@ Flask endpoints.
 It also contains the error handlers.
 """
 
-import six
 from .lib.utils import (send_error, get_all_params)
 from ..lib.user import get_user_from_param
 import logging
@@ -379,8 +378,8 @@ def privacyidea_error(error):
     These are not that critical exceptions.
     """
     if "audit_object" in g:
-        g.audit_object.log({"info": six.text_type(error)})
-    return send_error(six.text_type(error), error_code=error.id), 400
+        g.audit_object.log({"info": str(error)})
+    return send_error(str(error), error_code=error.id), 400
 
 
 # other errors
@@ -408,5 +407,5 @@ def internal_error(error):
     occurs.
     """
     if "audit_object" in g:
-        g.audit_object.log({"info": six.text_type(error)})
-    return send_error(six.text_type(error), error_code=-500), 500
+        g.audit_object.log({"info": str(error)})
+    return send_error(str(error), error_code=-500), 500

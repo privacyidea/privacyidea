@@ -36,7 +36,6 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import binascii
-import six
 import logging
 import traceback
 from datetime import datetime, timedelta
@@ -885,7 +884,6 @@ class Admin(db.Model):
         db.session.commit()
 
 
-@six.python_2_unicode_compatible
 class Config(TimestampMethodsMixin, db.Model):
     """
     The config table holds all the system configuration in key value pairs.
@@ -1370,7 +1368,6 @@ class PasswordReset(MethodsMixin, db.Model):
                                         timedelta(seconds=expiration_seconds)
 
 
-@six.python_2_unicode_compatible
 class Challenge(MethodsMixin, db.Model):
     """
     Table for handling of the generic challenges.

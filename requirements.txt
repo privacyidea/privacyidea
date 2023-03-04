@@ -58,7 +58,6 @@ redis==4.2.2
 requests==2.27.1
 rsa==4.8
 segno==1.5.2
-six==1.16.0
 smpplib==2.2.1
 soupsieve==2.3.2.post1
 SQLAlchemy==1.4.46

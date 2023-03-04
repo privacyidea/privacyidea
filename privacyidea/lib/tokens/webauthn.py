@@ -60,7 +60,6 @@ import struct
 
 import cbor2
 import cryptography.x509
-import six
 from OpenSSL import crypto
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
@@ -2014,7 +2013,7 @@ def _verify_attestation_statement_format(fmt):
 
 
 def _get_auth_data_rp_id_hash(auth_data):
-    if not isinstance(auth_data, six.binary_type):
+    if not isinstance(auth_data, bytes):
         return False
 
     return auth_data[:32]
@@ -2029,7 +2028,7 @@ def _get_client_data_hash(decoded_client_data):
     :return: The hash of the client data.
     :rtype: bytes
     """
-    if not isinstance(decoded_client_data, six.binary_type):
+    if not isinstance(decoded_client_data, bytes):
         return ''
 
     return hashlib.sha256(decoded_client_data).digest()

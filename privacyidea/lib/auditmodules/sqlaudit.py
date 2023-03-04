@@ -53,7 +53,6 @@ from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
 import datetime
 import traceback
-from six import string_types
 from privacyidea.models import audit_column_length as column_length
 from privacyidea.models import Audit as LogEntry
 from sqlalchemy import create_engine
@@ -196,7 +195,7 @@ class Audit(AuditBase):
         for column, l in self.custom_column_length.items():
             if column in self.audit_data:
                 data = self.audit_data[column]
-                if isinstance(data, string_types):
+                if isinstance(data, str):
                     if column == "policies":
                         # The policies column is shortened per comma entry
                         data = truncate_comma_list(data, l)

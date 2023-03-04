@@ -6,14 +6,13 @@ import functools
 from binascii import hexlify
 
 import mock
-import six
-from flask import current_app
 
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import check_serial_pass
 from privacyidea.lib.tokens.vascotoken import VascoTokenClass
 from privacyidea.models import Token
 from tests.base import MyTestCase
+
 
 def mock_verification(replacement):
     def decorator(f):
@@ -30,7 +29,7 @@ def _set_next_blob(data):
     update ``data._obj.Blob``: Increment the contents by 1.
     i.e. "XXX...X" is replaced with "YYY...Y".
     """
-    data._obj.Blob = b"".join(six.int2byte(x + 1) for x in six.iterbytes(data._obj.Blob))
+    data._obj.Blob = b"".join(bytes((x + 1,)) for x in data._obj.Blob)
 
 def mock_success(data, params, password, challenge):
     # fake a new blob
