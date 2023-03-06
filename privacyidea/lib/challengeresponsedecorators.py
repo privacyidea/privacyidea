@@ -59,9 +59,14 @@ def _create_challenge(token_obj, challenge_type, message, challenge_data=None):
     db_challenge.save()
     token_obj.challenge_janitor()
     reply_dict = {}
+    if ((challenge_type == CHALLENGE_TYPE.PIN_RESET) or (challenge_type == CHALLENGE_TYPE.RESYNC)):
+        challenge = challenge_type
+    else:
+        challenge = None
     reply_dict["multi_challenge"] = [{"transaction_id": db_challenge.transaction_id,
                                       "message": message,
                                       "attributes": None,
+                                      "challenge_type": challenge,
                                       "serial": token_obj.token.serial,
                                       "type": token_obj.token.tokentype}]
     reply_dict["message"] = message
