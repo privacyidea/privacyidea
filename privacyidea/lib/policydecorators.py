@@ -125,12 +125,12 @@ def challenge_response_allowed(func):
             token = token.get_tokentype().lower()
             chal_resp_found = False
             if token in allowed_tokentypes_dict:
-                # This token is allowed to to chal resp
+                # This token is allowed to do challenge-response
                 chal_resp_found = True
                 g.audit_object.add_policy(allowed_tokentypes_dict.get(token))
 
             if not chal_resp_found:
-                # No policy to allow this token to do challenge response
+                # No policy to allow this token to do challenge-response
                 return False
 
         f_result = func(*args, **kwds)
