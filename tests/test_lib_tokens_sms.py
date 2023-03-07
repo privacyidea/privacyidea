@@ -457,7 +457,7 @@ class SMSTokenTestCase(MyTestCase):
             smstext = token._get_sms_text(options)
             self.assertEqual(pol_text.strip("'"), smstext)
             r, message = token._send_sms(smstext, options)
-            self.assertRegexpMatches(message, result_text)
+            self.assertRegex(message, result_text)
 
         # Test AUTOSMS
         p = set_policy(name="autosms",

@@ -748,10 +748,10 @@ class UtilsTestCase(MyTestCase):
 
     def test_24_sanity_name_check(self):
         self.assertTrue(sanity_name_check('Hello_World'))
-        with self.assertRaisesRegexp(Exception, "non conformant characters in the name"):
+        with self.assertRaisesRegex(Exception, "non conformant characters in the name"):
             sanity_name_check('Hello World!')
         self.assertTrue(sanity_name_check('Hello World', name_exp='^[A-Za-z\\ ]+$'))
-        with self.assertRaisesRegexp(Exception, "non conformant characters in the name"):
+        with self.assertRaisesRegex(Exception, "non conformant characters in the name"):
             sanity_name_check('Hello_World', name_exp='^[A-Za-z]+$')
 
     def test_25_encodings(self):

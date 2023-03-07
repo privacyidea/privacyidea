@@ -470,10 +470,10 @@ class MSCATestCase(MyTestCase):
             self.assertEqual(description[key], "string")
 
         # Check, if an error is raised if a required attribute is missing:
-        self.assertRaisesRegexp(CAError, "required argument 'port' is missing.",
-                                MSCAConnector, "billsCA", {MS_ATTR.HOSTNAME: "hans"})
-        self.assertRaisesRegexp(CAError, "required argument 'hostname' is missing.",
-                                MSCAConnector, "billsCA", {MS_ATTR.PORT: "shanghai"})
+        self.assertRaisesRegex(CAError, "required argument 'port' is missing.",
+                               MSCAConnector, "billsCA", {MS_ATTR.HOSTNAME: "hans"})
+        self.assertRaisesRegex(CAError, "required argument 'hostname' is missing.",
+                               MSCAConnector, "billsCA", {MS_ATTR.PORT: "shanghai"})
 
     def test_02_test_get_templates(self):
         # Mock the connection to the worker
@@ -504,16 +504,16 @@ class MSCATestCase(MyTestCase):
                                                                "ca_templates": MOCK_CA_TEMPLATES,
                                                                "csr_disposition": 5})
             cacon = MSCAConnector("billsCA", CONF)
-            self.assertRaisesRegexp(CSRPending, "ERR505: CSR pending",
-                                    cacon.sign_request, REQUEST, {"template": "ApprovalRequired"})
+            self.assertRaisesRegex(CSRPending, "ERR505: CSR pending",
+                                   cacon.sign_request, REQUEST, {"template": "ApprovalRequired"})
             # Mock the CA to simulate a failed Request - dispoisition -1
             mock_conncect_worker.return_value = CAServiceMock(CONF,
                                                               {"available_cas": MOCK_AVAILABLE_CAS,
                                                                "ca_templates": MOCK_CA_TEMPLATES,
                                                                "csr_disposition": -1})
             cacon = MSCAConnector("billsCA", CONF)
-            self.assertRaisesRegexp(CSRError, "ERR504: CSR invalid",
-                                    cacon.sign_request, REQUEST, {"template": "NonExisting"})
+            self.assertRaisesRegex(CSRError, "ERR504: CSR invalid",
+                                   cacon.sign_request, REQUEST, {"template": "NonExisting"})
             # Mock the CA to simulate a signed request - disposition 3
             mock_conncect_worker.return_value = CAServiceMock(CONF,
                                                               {"available_cas": MOCK_AVAILABLE_CAS,
