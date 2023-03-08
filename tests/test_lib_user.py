@@ -430,8 +430,8 @@ class UserTestCase(MyTestCase):
                              realm=realm).check_password("sömepassword"))
 
         # check proper unicode() and str() handling
-        user_object = User(login=u"nönäscii", realm=realm)
-        self.assertEqual(six.text_type(user_object), u'<nönäscii.SQL1@sqlrealm>')
+        user_object = User(login="nönäscii", realm=realm)
+        self.assertEqual(six.text_type(user_object), '<nönäscii.SQL1@sqlrealm>')
         self.assertEqual(six.text_type(user_object).encode('utf8'),
                          b'<n\xc3\xb6n\xc3\xa4scii.SQL1@sqlrealm>')
         # also check the User object representation

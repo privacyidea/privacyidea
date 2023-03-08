@@ -34,7 +34,6 @@ This file contains the definition of the TOTP token class
 It depends on the DB model, and the lib.tokenclass.
 TOTP is defined in https://tools.ietf.org/html/rfc6238
 """
-from __future__ import division
 import logging
 import time
 import datetime

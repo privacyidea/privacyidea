@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
 from setuptools import setup, find_packages
 import os
 import stat

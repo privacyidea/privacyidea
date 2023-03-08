@@ -4,7 +4,6 @@ This test file tests the api.lib.policy.py
 
 The api.lib.policy.py depends on lib.policy and on flask!
 """
-from __future__ import print_function
 import json
 
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,

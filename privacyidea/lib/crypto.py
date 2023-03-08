@@ -44,7 +44,6 @@ calling function handle the data.
 
 This lib.crypto is tested in tests/test_lib_crypto.py
 """
-from __future__ import division
 import hmac
 import logging
 from hashlib import sha256
@@ -304,7 +303,7 @@ def encryptPassword(password):
 
     This function returns a unicode string with a
     hexlified contents of the IV and the encrypted data separated by a
-    colon like u"4956:44415441"
+    colon like "4956:44415441"
 
     :param password: the password
     :type password: bytes or str
