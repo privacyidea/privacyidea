@@ -195,7 +195,7 @@ def detach_token_api(serial, machineid=None, resolver=None, application=None, mt
     :param resolver: identify the machine by the machine ID and the resolver name
     :param serial: identify the token by the serial number
     :param application: the name of the application like "luks" or "ssh".
-    :param mtid: the database id of the machinetoken definition
+    :param mtid: the ID of the machinetoken definition
 
     :return: json result with "result": true and the machine list in "value".
 
@@ -274,7 +274,7 @@ def set_option_api():
     :param resolver: identify the machine by the machine ID and the resolver name
     :param serial: identify the token by the serial number
     :param application: the name of the application like "luks" or "ssh".
-    :param mtid: the database ID of the machinetoken definition
+    :param mtid: the ID of the machinetoken definition
 
     Parameters not listed will be treated as additional options.
 

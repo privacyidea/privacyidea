@@ -329,7 +329,7 @@ class TokenEventHandler(BaseEventHandler):
 
                             },
                         "service_id": {
-                            "type": "string",
+                            "type": "str",
                             "required": False,
                             "description": _("Set the service_id for an SSH application."),
                             "visibleIf": "application",
