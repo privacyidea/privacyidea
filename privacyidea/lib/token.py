@@ -1101,7 +1101,6 @@ def init_token(param, user=None, tokenrealms=None,
         if token_count == 0:
             db_token.delete()
         raise
-#        raise TokenAdminError(_("token create failed {0!r}").format(e), id=1112)
 
     # We only set the tokenkind here, if it was explicitly set in the
     # init_token call.

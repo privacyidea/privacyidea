@@ -48,7 +48,6 @@ from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import (is_true, censor_connect_string,
                                    convert_column_to_unicode)
 from passlib.context import CryptContext
-from base64 import b64decode, b64encode
 from passlib.utils import h64
 from passlib.utils.compat import uascii_to_str
 from passlib.utils.compat import unicode as pl_unicode

@@ -376,7 +376,8 @@ class Token(MethodsMixin, db.Model):
     def get_realms(self):
         """
         return a list of the assigned realms
-        :return: realms
+
+        :return: the realms of the token
         :rtype: list
         """
         realms = []
@@ -940,8 +941,8 @@ class Realm(TimestampMethodsMixin, db.Model):
     option = db.Column(db.Unicode(40), default='')
     resolver_list = db.relationship('ResolverRealm',
                                     lazy='select',
-                                    foreign_keys='ResolverRealm.realm_id')
-    
+                                    back_populates='realm')
+
     @log_with(log)
     def __init__(self, realm):
         self.name = realm
@@ -1075,11 +1076,10 @@ class Resolver(TimestampMethodsMixin, db.Model):
                       nullable=False)
     # This creates an attribute "resolver" in the ResolverConfig object
     config_list = db.relationship('ResolverConfig',
-                                  lazy='select',
-                                  backref='resolver')
+                                  lazy='select')
     realm_list = db.relationship('ResolverRealm',
                                  lazy='select',
-                                 foreign_keys='ResolverRealm.resolver_id')
+                                 back_populates='resolver')
     
     def __init__(self, name, rtype):
         self.name = name
@@ -1173,10 +1173,10 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
     priority = db.Column(db.Integer)
     resolver = db.relationship(Resolver,
                                lazy="joined",
-                               foreign_keys="ResolverRealm.resolver_id")
+                               back_populates="realm_list")
     realm = db.relationship(Realm,
                             lazy="joined",
-                            foreign_keys="ResolverRealm.realm_id")
+                            back_populates="resolver_list")
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'realm_id',
                                           name='rrix_2'),
