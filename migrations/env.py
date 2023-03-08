@@ -27,9 +27,9 @@ def set_database_url(config):
         # because this is what Flask-SQLAlchemy does
         if url.startswith("mysql"):
             parsed_url = make_url(url)
-            parsed_url.query.setdefault("charset", "utf8")
+            parsed_url.update_query_dict({"charset": "utf8"})
             # We need to quote the password in case it contains special chars
-            parsed_url.password = quote(parsed_url.password)
+            parsed_url = parsed_url.set(password=quote(parsed_url.password))
             url = str(parsed_url)
     except Exception as exx:
         print(u"Attempted to set charset=utf8 on connection, but failed: {}".format(exx))
