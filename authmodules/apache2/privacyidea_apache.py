@@ -40,7 +40,7 @@ import requests
 import syslog
 import traceback
 import passlib.hash
-from six.moves import configparser
+import configparser
 
 OK = True
 UNAUTHORIZED = False

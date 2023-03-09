@@ -65,7 +65,6 @@ import string
 import datetime
 import os
 import logging
-from six import string_types
 
 from sqlalchemy import (and_, func)
 from sqlalchemy.ext.compiler import compiles
@@ -493,7 +492,7 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                                 description=description, userid=userid,
                                 allowed_realms=allowed_realms)
 
-    if isinstance(sortby, string_types):
+    if isinstance(sortby, str):
         # check that the sort column exists and convert it to a Token column
         cols = Token.__table__.columns
         if sortby in cols:
@@ -1332,7 +1331,7 @@ def set_pin(serial, pin, user=None, encrypt_pin=False):
     :return: The number of PINs set (usually 1)
     :rtype: int
     """
-    if isinstance(user, string_types):
+    if isinstance(user, str):
         # check if by accident the wrong parameter (like PIN)
         # is put into the user attribute
         log.warning("Parameter user must not be a string: {0!r}".format(user))

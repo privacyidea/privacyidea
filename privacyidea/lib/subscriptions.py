@@ -38,11 +38,7 @@ from privacyidea.lib.framework import get_app_config_value
 import os
 import traceback
 from sqlalchemy import func
-from six import PY2, string_types
 
-
-if not PY2:
-    long = int
 
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
 SIGN_FORMAT = """{application}
@@ -132,10 +128,10 @@ def save_subscription(subscription):
     :type subscription: dict
     :return: True in case of success
     """
-    if isinstance(subscription.get("date_from"), string_types):
+    if isinstance(subscription.get("date_from"), str):
         subscription["date_from"] = datetime.datetime.strptime(
             subscription.get("date_from"), SUBSCRIPTION_DATE_FORMAT)
-    if isinstance(subscription.get("date_till"), string_types):
+    if isinstance(subscription.get("date_till"), str):
         subscription["date_till"] = datetime.datetime.strptime(
             subscription.get("date_till"), SUBSCRIPTION_DATE_FORMAT)
 

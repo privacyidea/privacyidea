@@ -6,11 +6,9 @@ import unittest
 
 import OpenSSL.crypto
 
-import privacyidea.lib.caconnectors.msca
 from .base import MyTestCase
 import os
 import glob
-import six
 import shutil
 import mock
 from io import StringIO
@@ -29,8 +27,7 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_types,
                                          save_caconnector, delete_caconnector)
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
-from .mscamock import (MyTemplateReply, MyCAReply, MyCSRReply,
-                       MyCertReply, MyCertificateReply, MyCSRStatusReply, CAServiceMock)
+from .mscamock import CAServiceMock
 
 
 
@@ -612,7 +609,7 @@ class CreateLocalCATestCase(MyTestCase):
         workdir = os.path.join(cwd, WORKINGDIR + '2')
         if os.path.exists(workdir):
             shutil.rmtree(workdir)
-        inputstr = six.text_type(workdir + '\n\n\n\n\n\ny\n')
+        inputstr = str(workdir + '\n\n\n\n\n\ny\n')
         with patch('sys.stdin', StringIO(inputstr)):
             caconfig = LocalCAConnector.create_ca('localCA2')
             self.assertEqual(caconfig.get("WorkingDir"), workdir)

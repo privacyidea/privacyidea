@@ -28,7 +28,6 @@
 contains Errors and Exceptions
 """
 
-import six
 from privacyidea.lib import _
 import logging
 log = logging.getLogger(__name__)
@@ -61,7 +60,6 @@ class ERROR:
     PARAMETER = 905
 
 
-@six.python_2_unicode_compatible
 class privacyIDEAError(Exception):
 
     def __init__(self, description="privacyIDEAError!", id=10):

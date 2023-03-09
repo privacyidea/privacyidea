@@ -38,8 +38,6 @@ import shlex
 import re
 import logging
 import os
-from six import string_types
-from six.moves import input
 import traceback
 
 log = logging.getLogger(__name__)
@@ -475,7 +473,7 @@ class LocalCAConnector(BaseCAConnector):
         :return: Returns the serial number of the revoked certificate. Otherwise
             an error is raised.
         """
-        if isinstance(certificate, string_types):
+        if isinstance(certificate, str):
             cert_obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
         elif type(certificate) == crypto.X509:
             cert_obj = certificate

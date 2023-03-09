@@ -52,7 +52,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.yubikeytoken import (yubico_check_api_signature,
                                                  yubico_api_signature)
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 

@@ -47,7 +47,6 @@ This code is tested in tests/test_lib_user.py
 
 import logging
 import traceback
-import six
 
 from .error import UserError
 from ..api.lib.utils import (getParam,
@@ -66,7 +65,6 @@ from privacyidea.models import CustomUserAttribute, db
 log = logging.getLogger(__name__)
 
 
-@six.python_2_unicode_compatible
 class User(object):
     """
     The user has the attributes

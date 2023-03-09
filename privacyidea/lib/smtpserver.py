@@ -17,13 +17,12 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-from six.moves.urllib.parse import urlparse
-from privacyidea.lib.framework import get_app_config_value
+from urllib.parse import urlparse
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.models import SMTPServer as SMTPServerDB
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
-from privacyidea.lib.utils import fetch_one_resource, to_bytes, to_unicode
+from privacyidea.lib.utils import fetch_one_resource, to_unicode
 from privacyidea.lib.utils.export import (register_import, register_export)
 import logging
 from privacyidea.lib.log import log_with

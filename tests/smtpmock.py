@@ -23,7 +23,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import six
 import smtplib
 
 try:
@@ -63,7 +62,7 @@ def get_wrapped(func, wrapper_template, evaldict):
     callargs = formatargspec(*args, formatvalue=lambda v: '=' + v)
 
     ctx = {'signature': signature, 'funcargs': callargs}
-    six.exec_(wrapper_template % ctx, evaldict)
+    exec(wrapper_template % ctx, evaldict, evaldict)
 
     wrapper = evaldict['wrapper']
 

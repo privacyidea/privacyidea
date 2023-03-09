@@ -50,12 +50,10 @@ from hashlib import sha256
 import random
 import string
 import binascii
-import six
 import ctypes
 
 import base64
 import traceback
-from six import PY2
 from passlib.context import CryptContext
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException
@@ -72,22 +70,10 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
-import passlib.hash
-from passlib.hash import argon2
-try:
-    # For Python 3.6 and above
-    from secrets import compare_digest
-except ImportError:
-    # For Python 2.7 and above
-    from hmac import compare_digest
-
 
 def safe_compare(a, b):
-    return compare_digest(to_bytes(a), to_bytes(b))
+    return hmac.compare_digest(to_bytes(a), to_bytes(b))
 
-
-if not PY2:
-    long = int
 
 ROUNDS = 9
 
@@ -686,8 +672,8 @@ def zerome(bufferObject):
 
 
 def _slow_rsa_verify_raw(key, sig, msg):
-    assert isinstance(sig, six.integer_types)
-    assert isinstance(msg, six.integer_types)
+    assert isinstance(sig, int)
+    assert isinstance(msg, int)
     if hasattr(key, 'public_numbers'):
         pn = key.public_numbers()
     elif hasattr(key, 'private_numbers'):  # pragma: no cover
@@ -779,7 +765,7 @@ class Sign(object):
 
         sver = ''
         try:
-            sver, signature = six.text_type(signature).split(':')
+            sver, signature = str(signature).split(':')
         except ValueError:
             # if the signature does not contain a colon we assume an old style signature.
             pass

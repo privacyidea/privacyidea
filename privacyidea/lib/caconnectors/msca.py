@@ -27,7 +27,6 @@ from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConn
 from OpenSSL import crypto
 import logging
 import traceback
-from six.moves import input
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.error import CSRError, CSRPending
 from privacyidea.lib.utils import to_bytes

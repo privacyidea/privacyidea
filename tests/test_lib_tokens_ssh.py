@@ -8,7 +8,6 @@ from .base import MyTestCase
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.sshkeytoken import SSHkeyTokenClass
 from privacyidea.models import Token
-import six
 
 
 class SSHTokenTestCase(MyTestCase):
@@ -113,22 +112,22 @@ class SSHTokenTestCase(MyTestCase):
         token = SSHkeyTokenClass(db_token)
         sshkey = token.get_sshkey()
         self.assertTrue(sshkey == self.sshkey, sshkey)
-        self.assertIsInstance(sshkey, six.text_type)
+        self.assertIsInstance(sshkey, str)
 
         db_token = Token.query.filter(Token.serial == self.serial2).first()
         token = SSHkeyTokenClass(db_token)
         sshkey = token.get_sshkey()
         self.assertTrue(sshkey == self.sshkey_ecdsa, sshkey)
-        self.assertIsInstance(sshkey, six.text_type)
+        self.assertIsInstance(sshkey, str)
 
         db_token = Token.query.filter(Token.serial == self.serial3).first()
         token = SSHkeyTokenClass(db_token)
         sshkey = token.get_sshkey()
         self.assertTrue(sshkey == self.sshkey_ed25519, sshkey)
-        self.assertIsInstance(sshkey, six.text_type)
+        self.assertIsInstance(sshkey, str)
 
         db_token = Token.query.filter(Token.serial == self.serial4).first()
         token = SSHkeyTokenClass(db_token)
         sshkey = token.get_sshkey()
         self.assertEqual(self.ecdsa_sk, sshkey)
-        self.assertIsInstance(sshkey, six.text_type)
+        self.assertIsInstance(sshkey, str)

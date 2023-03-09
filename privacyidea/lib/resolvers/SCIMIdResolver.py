@@ -44,7 +44,7 @@ from .UserIdResolver import UserIdResolver
 import yaml
 import requests
 import base64
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 from privacyidea.lib.utils import to_bytes, to_unicode, convert_column_to_unicode
 
 log = logging.getLogger(__name__)

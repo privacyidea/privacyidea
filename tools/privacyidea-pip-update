@@ -5,7 +5,6 @@ from subprocess import call, check_output
 import getopt
 import sys
 import os
-from six.moves import input
 
 # We follow the hint at https://pip.pypa.io/en/latest/user_guide/#using-pip-from-your-program to invoke pip.
 PIP_EXECUTABLE = [sys.executable, '-m', 'pip']

@@ -25,7 +25,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""The config module takes care about storing server configuration in
+__doc__ = """The config module takes care about storing server configuration in
 the Config database table.
 
 It provides functions to retrieve (get) and and set configuration.
@@ -51,12 +51,11 @@ from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
 from .machines.base import BaseMachineResolver
 from .caconnectors.baseca import BaseCAConnector
-# We need these imports to return the list of CA connector types. Bummer: New import for each new Class anyways.
+# We need these imports to return the list of CA connector types. Bummer: New import for each new Class anyway.
 from .caconnectors import localca, msca
 from .utils import reload_db, is_true
 import importlib
 import datetime
-from six import with_metaclass, string_types
 
 log = logging.getLogger(__name__)
 
@@ -270,7 +269,7 @@ class LocalConfigClass(object):
                 pass
             if isinstance(r_config, int):
                 r_config = r_config > 0
-            if isinstance(r_config, string_types):
+            if isinstance(r_config, str):
                 r_config = is_true(r_config.lower())
 
         return r_config

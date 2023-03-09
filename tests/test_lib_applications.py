@@ -2,7 +2,6 @@
 This test file tests the applications definitions standalone
 lib/applications/*
 """
-import six
 from privacyidea.lib.error import ParameterError
 from .base import MyTestCase
 from privacyidea.lib.applications import MachineApplicationBase
@@ -92,7 +91,7 @@ class LUKSApplicationTestCase(MyTestCase):
 
         auth_item = LUKSApplication.get_authentication_item("totp", serial)
         self.assertEqual(len(auth_item.get("challenge")), 64, auth_item)
-        self.assertIsInstance(auth_item.get('challenge'), six.text_type, auth_item)
+        self.assertIsInstance(auth_item.get('challenge'), str, auth_item)
         self.assertEqual(len(auth_item.get("response")), 40, auth_item)
 
         auth_item = LUKSApplication.get_authentication_item("totp", serial,

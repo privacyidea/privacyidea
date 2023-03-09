@@ -47,10 +47,10 @@ The code is tested in tests/test_lib_smsprovider
 from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
 from privacyidea.lib import _
 import requests
-from six.moves.urllib.parse import urlparse
+from urllib.parse import urlparse
 import re
 import logging
-import json
+
 log = logging.getLogger(__name__)
 
 

@@ -15,7 +15,7 @@ import jwt
 import mock
 import datetime
 import warnings
-from six.moves.urllib.parse import quote
+from urllib.parse import quote
 from privacyidea.lib.error import AuthError
 from privacyidea.lib.token import init_token, remove_token
 
