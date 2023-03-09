@@ -16,10 +16,10 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOPE)
 from privacyidea.models import (Token, Config, Challenge)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
-from privacyidea.lib.tokens.tbptoken import TbpTokenClass
+from privacyidea.lib.tokens.daypasswordtoken import DayPasswordTokenClass
 
 
-class TBPTokenTestCase(MyTestCase):
+class DayPasswordTokenTestCase(MyTestCase):
     """
     Test the token on the database level
     """
@@ -69,22 +69,22 @@ class TBPTokenTestCase(MyTestCase):
         self.assertTrue(user_repr == expected, user_repr)
 
     def test_01_create_token(self):
-        db_token = Token(self.serial1, tokentype="tbp")
+        db_token = Token(self.serial1, tokentype="daypassword")
         db_token.save()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         self.assertTrue(token.token.serial == self.serial1, token)
-        self.assertTrue(token.token.tokentype == "tbp", token.token.tokentype)
-        self.assertTrue(token.type == "tbp", token)
+        self.assertTrue(token.token.tokentype == "daypassword", token.token.tokentype)
+        self.assertTrue(token.type == "daypassword", token)
         class_prefix = token.get_class_prefix()
-        self.assertTrue(class_prefix == "TBP", class_prefix)
-        self.assertTrue(token.get_class_type() == "tbp", token)
+        self.assertTrue(class_prefix == "DayPassword", class_prefix)
+        self.assertTrue(token.get_class_type() == "daypassword", token)
 
     def test_02_set_user(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
-        self.assertTrue(token.token.tokentype == "tbp",
+        token = DayPasswordTokenClass(db_token)
+        self.assertTrue(token.token.tokentype == "daypassword",
                         token.token.tokentype)
-        self.assertTrue(token.type == "tbp", token.type)
+        self.assertTrue(token.type == "daypassword", token.type)
 
         token.add_user(User(login="cornelius",
                             realm=self.realm1))
@@ -99,7 +99,7 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_03_reset_failcounter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.token.failcount = 10
         token.reset()
         self.assertTrue(token.token.failcount == 0,
@@ -107,7 +107,7 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_04_base_methods(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         self.assertTrue(token.check_otp("123456", 1, 10) == -1)
 
         c = token.create_challenge("transactionid")
@@ -146,7 +146,7 @@ class TBPTokenTestCase(MyTestCase):
         self.assertEqual(token.get_user_id(), token.token.first_owner.user_id)
 
         self.assertTrue(token.get_serial() == "SE123456", token.token.serial)
-        self.assertTrue(token.get_tokentype() == "tbp",
+        self.assertTrue(token.get_tokentype() == "daypassword",
                         token.token.tokentype)
 
         token.set_so_pin("sopin")
@@ -174,7 +174,7 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_06_set_pin(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.set_pin("hallo")
         (ph1, pseed) = token.get_pin_hash_seed()
         # check the database
@@ -185,7 +185,7 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_07_enable(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.enable(False)
         self.assertTrue(token.token.active is False)
         token.enable()
@@ -194,7 +194,7 @@ class TBPTokenTestCase(MyTestCase):
     def test_05_get_set_realms(self):
         set_realm(self.realm2)
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         realms = token.get_realms()
         self.assertTrue(len(realms) == 1, realms)
         token.set_realms([self.realm1, self.realm2])
@@ -203,7 +203,7 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_99_delete_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.delete_token()
 
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -211,14 +211,14 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_08_info(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.set_hashlib("sha1")
         ti = token.get_tokeninfo()
         self.assertTrue("hashlib" in ti, ti)
 
     def test_09_failcount(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         start = token.token.failcount
         end = token.inc_failcount()
         self.assertTrue(end == start + 1, (end, start))
@@ -227,13 +227,13 @@ class TBPTokenTestCase(MyTestCase):
         # check if functions are returned
         for hl in ["sha1", "md5", "sha256", "sha512",
                    "sha224", "sha384", "", None]:
-            self.assertTrue(hasattr(TbpTokenClass.get_hashlib(hl),
+            self.assertTrue(hasattr(DayPasswordTokenClass.get_hashlib(hl),
                                     '__call__'),
-                            TbpTokenClass.get_hashlib(hl))
+                            DayPasswordTokenClass.get_hashlib(hl))
 
     def test_11_tokeninfo(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.add_tokeninfo("key1", "value2")
         info1 = token.get_tokeninfo()
         self.assertTrue("key1" in info1, info1)
@@ -267,7 +267,7 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_12_inc_otp_counter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
 
         token.set_otp_count(10)
         self.assertTrue(token.token.count == 10, token.token.count)
@@ -281,7 +281,7 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_13_check_otp(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.update({"otpkey": self.otpkey,
                       "pin": "test",
                       "otplen": 6})
@@ -296,7 +296,7 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
 
         token.token.otplen = 6
         # postpend pin
@@ -312,14 +312,14 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_15_check_pin(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.set_pin("test")
         self.assertTrue(token.check_pin("test"))
         self.assertFalse(token.check_pin("wrong pin"))
 
     def test_16_init_detail(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.add_init_details("otpkey", "11223344556677889900")
         detail = token.get_init_detail()
         self.assertTrue("otpkey" in detail, detail)
@@ -344,7 +344,7 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_17_update_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         # Failed update: genkey wrong
         self.assertRaises(Exception,
                           token.update,
@@ -378,7 +378,7 @@ class TBPTokenTestCase(MyTestCase):
 
         # update time settings
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.update({"otpkey": self.otpkey,
                       "otplen": 6,
                       "timeShift": 10,
@@ -388,7 +388,7 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_18_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         resp = token.is_challenge_response(User(login="cornelius",
                                                 realm=self.realm1),
                                            "test123456")
@@ -409,7 +409,7 @@ class TBPTokenTestCase(MyTestCase):
     def test_19_pin_otp_functions(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         db_token.set_pin("test")
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         # check OTP according to RFC 4226
         token.update({"otpkey": self.otpkey})
         self.assertTrue(db_token.otplen == 6, 6)
@@ -503,7 +503,7 @@ class TBPTokenTestCase(MyTestCase):
     def test_20_check_challenge_response(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         db_token.set_pin("test")
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         r = token.check_challenge_response(user=None,
                                            passw="123454")
         # check empty challenges
@@ -546,16 +546,16 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_21_get_class_info(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         ti = token.get_class_info()
-        self.assertTrue(ti.get("type") == "tbp", ti)
+        self.assertTrue(ti.get("type") == "daypassword", ti)
         self.assertTrue("policy" in ti, ti)
         self.assertTrue("title" in ti, ti)
         self.assertTrue("user" in ti, ti)
 
     def test_22_autosync(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         set_privacyidea_config("AutoResync", True)
         token.update({"otpkey": self.otpkey,
                       "otplen": 6})
@@ -600,7 +600,7 @@ class TBPTokenTestCase(MyTestCase):
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
 
-        # TBP has no dueDate / AutoResyncTimeout
+        # DayPasswordToken has no dueDate / AutoResyncTimeout
 
         # No _autosync
         set_privacyidea_config("AutoResync", False)
@@ -617,7 +617,7 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_23_resync(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.update({"otpkey": self.otpkey,
                       "otplen": 6})
         token.set_sync_window(1000)
@@ -650,7 +650,7 @@ class TBPTokenTestCase(MyTestCase):
 
     def test_24_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.update({"otpkey": self.otpkey,
                       "otplen": 6})
         token.set_pin("test")
@@ -663,9 +663,9 @@ class TBPTokenTestCase(MyTestCase):
         # taken from https://tools.ietf.org/html/rfc6238#appendix-B
         # sha256 with a 20 byte seed
         serial = "sha25T"
-        db_token = Token(serial, tokentype="tbp")
+        db_token = Token(serial, tokentype="daypassword")
         db_token.save()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.set_otpkey(binascii.hexlify(b"12345678901234567890"))
         token.set_hashlib("sha256")
         token.set_otplen(8)
@@ -673,65 +673,65 @@ class TBPTokenTestCase(MyTestCase):
         # get it from the database again
         # |  1111111111 |  2005-03-18  | 00000000023523ED | 67062674 | SHA256 |
         db_token = Token.query.filter_by(serial=serial).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         r = token.check_otp("67062674", options={"initTime": 1111111111})
         self.assertTrue(r)
 
         # sha256 with a 32 byte seed
         serial = "sha256"
-        db_token = Token(serial, tokentype="tbp")
+        db_token = Token(serial, tokentype="daypassword")
         db_token.save()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.set_otpkey(binascii.hexlify(b"12345678901234567890123456789012"))
         token.set_hashlib("sha256")
         token.set_otplen(8)
         token.save()
         db_token = Token.query.filter_by(serial=serial).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         r = token.check_otp("67062674", options={"initTime": 1111111111})
         self.assertTrue(r)
 
         # sha512 with a 20 byte seed
         serial = "sha512"
-        db_token = Token(serial, tokentype="tbp")
+        db_token = Token(serial, tokentype="daypassword")
         db_token.save()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.set_otpkey(binascii.hexlify(b"12345678901234567890"))
         token.set_hashlib("sha512")
         token.set_otplen(8)
         token.save()
         db_token = Token.query.filter_by(serial=serial).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         r = token.check_otp("99943326", options={"initTime": 1111111111})
         self.assertTrue(r)
 
         # sha512 with a 64byte seed
         serial = "sha512b"
-        db_token = Token(serial, tokentype="tbp")
+        db_token = Token(serial, tokentype="daypassword")
         db_token.save()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.set_otpkey(binascii.hexlify(
             b"1234567890123456789012345678901234567890123456789012345678901234"))
         token.set_hashlib("sha512")
         token.set_otplen(8)
         token.save()
         db_token = Token.query.filter_by(serial=serial).first()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         r = token.check_otp("93441116", options={"initTime": 1234567890})
         self.assertTrue(r)
 
     def test_26_get_setting_type(self):
-        r = TbpTokenClass.get_setting_type("tbp.hashlib")
+        r = DayPasswordTokenClass.get_setting_type("daypassword.hashlib")
         self.assertEqual(r, "public")
-        r = TbpTokenClass.get_setting_type("tbp.blabla")
+        r = DayPasswordTokenClass.get_setting_type("daypassword.blabla")
         self.assertEqual(r, "")
 
     def test_26_is_previous_otp(self):
         # check if the OTP was used previously
         serial = "previous"
-        db_token = Token(serial, tokentype="tbp")
+        db_token = Token(serial, tokentype="daypassword")
         db_token.save()
-        token = TbpTokenClass(db_token)
+        token = DayPasswordTokenClass(db_token)
         token.set_otpkey(self.otpkey)
         token.set_hashlib("sha1")
         token.set_otplen(6)
@@ -766,11 +766,11 @@ class TBPTokenTestCase(MyTestCase):
         g.logged_in_user = {"user": "hans",
                             "realm": "default",
                             "role": "user"}
-        set_policy("pol1", scope=SCOPE.USER, action="tbp_hashlib=sha256,"
-                                                    "tbp_timestep=60,"
-                                                    "tbp_otplen=8")
+        set_policy("pol1", scope=SCOPE.USER, action="daypassword_hashlib=sha256,"
+                                                    "daypassword_timestep=60,"
+                                                    "daypassword_otplen=8")
         g.policy_object = PolicyClass()
-        p = TbpTokenClass.get_default_settings(g, params)
+        p = DayPasswordTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")
         self.assertEqual(p.get("hashlib"), "sha256")
         self.assertEqual(p.get("timeStep"), "60")
@@ -780,16 +780,16 @@ class TBPTokenTestCase(MyTestCase):
         g.logged_in_user = {"user": "admin",
                             "realm": "super",
                             "role": "admin"}
-        set_policy("pol1", scope=SCOPE.ADMIN, action="tbp_hashlib=sha512,"
-                                                     "tbp_timestep=60,"
-                                                     "tbp_otplen=8")
+        set_policy("pol1", scope=SCOPE.ADMIN, action="daypassword_hashlib=sha512,"
+                                                     "daypassword_timestep=60,"
+                                                     "daypassword_otplen=8")
         g.policy_object = PolicyClass()
-        p = TbpTokenClass.get_default_settings(g, params)
+        p = DayPasswordTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")
         self.assertEqual(p.get("hashlib"), "sha512")
         self.assertEqual(p.get("timeStep"), "60")
         # test check if there is no logged in user
         g.logged_in_user = None
-        p = TbpTokenClass.get_default_settings(g, params)
+        p = DayPasswordTokenClass.get_default_settings(g, params)
         self.assertEqual(p, {})
         delete_policy("pol1")

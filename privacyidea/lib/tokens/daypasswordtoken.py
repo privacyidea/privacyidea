@@ -18,22 +18,22 @@ required = False
 
 log = logging.getLogger(__name__)
 
-class TbpTokenClass(TotpTokenClass):
+class DayPasswordTokenClass(TotpTokenClass):
 
     previous_otp_offset = 0
 
-    desc_timestep = _('Specify the time step of the time-based OTP token.')
+    desc_timestep = _('Specify the time step of the day password token.')
 
     @log_with(log)
     def __init__(self, db_token):
         """
-        Create a new TBP token object from a DB Token object
+        Create a new day password token object from a DB Token object
 
         :param db_token: instance of the orm db object
         :type db_token:  orm object
         """
         TokenClass.__init__(self, db_token)
-        self.set_type("tbp")
+        self.set_type("daypassword")
         self.hKeyRequired = True
 
     @staticmethod
@@ -41,18 +41,18 @@ class TbpTokenClass(TotpTokenClass):
         """
         return the token type shortname
 
-        :return: 'tbp'
+        :return: 'daypassword'
         :rtype: string
         """
-        return "tbp"
+        return "daypassword"
 
     @staticmethod
     def get_class_prefix():
         """
         Return the prefix, that is used as a prefix for the serial numbers.
-        :return: TBP
+        :return: DayPasswordToken
         """
-        return "TBP"
+        return "DayPassword"
 
     @staticmethod
     @log_with(log)
@@ -67,46 +67,47 @@ class TbpTokenClass(TotpTokenClass):
         :return: subsection if key exists or user defined
         :rtype: dict or scalar
         """
-        res = {'type': 'tbp',
+        res = {'type': 'daypassword',
                'title': 'Time based Password',
-               'description': _('TbP: Time based Passwords.'),
+               'description': _('daypassword: A totp token with a variable timestep and the possibility'
+                                ' to use the otp more than ones.'),
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.USER: {
-                       'tbp_timestep': {'type': 'int',
-                                         'desc': TbpTokenClass.desc_timestep},
-                       'tbp_hashlib': {'type': 'str',
+                       'daypassword_timestep': {'type': 'int',
+                                         'desc': DayPasswordTokenClass.desc_timestep},
+                       'daypassword_hashlib': {'type': 'str',
                                         'value': ["sha1",
                                                   "sha256",
                                                   "sha512"],
-                                        'desc': TbpTokenClass.desc_hash_func},
-                       'tbp_otplen': {'type': 'int',
+                                        'desc': DayPasswordTokenClass.desc_hash_func},
+                       'daypassword_otplen': {'type': 'int',
                                        'value': [6, 8],
-                                       'desc': TbpTokenClass.desc_otp_len},
-                       'tbp_force_server_generate': {'type': 'bool',
-                                                      'desc': TbpTokenClass.desc_key_gen},
+                                       'desc': DayPasswordTokenClass.desc_otp_len},
+                       'daypassword_force_server_generate': {'type': 'bool',
+                                                      'desc': DayPasswordTokenClass.desc_key_gen},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
-                                 'desc': TbpTokenClass.desc_two_step_user}
+                                 'desc': DayPasswordTokenClass.desc_two_step_user}
                    },
                    SCOPE.ADMIN: {
-                       'tbp_timestep': {'type': 'int',
-                                         'desc': TbpTokenClass.desc_timestep},
-                       'tbp_hashlib': {'type': 'str',
+                       'daypassword_timestep': {'type': 'int',
+                                         'desc': DayPasswordTokenClass.desc_timestep},
+                       'daypassword_hashlib': {'type': 'str',
                                         'value': ["sha1",
                                                   "sha256",
                                                   "sha512"],
-                                        'desc': TbpTokenClass.desc_hash_func},
-                       'tbp_otplen': {'type': 'int',
+                                        'desc': DayPasswordTokenClass.desc_hash_func},
+                       'daypassword_otplen': {'type': 'int',
                                        'value': [6, 8],
-                                       'desc': TbpTokenClass.desc_otp_len},
-                       'tbp_force_server_generate': {'type': 'bool',
-                                                      'desc': TbpTokenClass.desc_key_gen},
+                                       'desc': DayPasswordTokenClass.desc_otp_len},
+                       'daypassword_force_server_generate': {'type': 'bool',
+                                                      'desc': DayPasswordTokenClass.desc_key_gen},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
-                                 'desc': TbpTokenClass.desc_two_step_admin}
+                                 'desc': DayPasswordTokenClass.desc_two_step_admin}
                    },
                    SCOPE.ENROLL: {
                        '2step_clientsize': {'type': 'int',
@@ -119,7 +120,7 @@ class TbpTokenClass(TotpTokenClass):
                                             'desc': _("The difficulty factor used for the "
                                                       "OTP seed generation ""(should be at least "
                                                       "10000)")},
-                       'tbp_' + ACTION.FORCE_APP_PIN: {
+                       'daypassword_' + ACTION.FORCE_APP_PIN: {
                            'type': 'bool',
                            'desc': _('Enforce setting an app pin for the privacyIDEA '
                                      'Authenticator App')
@@ -175,19 +176,19 @@ class TbpTokenClass(TotpTokenClass):
     @property
     def timestep(self):
         timeStepping = int(self.get_tokeninfo("timeStep") or
-                           get_from_config("tbp.timeStep") or 30)
+                           get_from_config("daypassword.timeStep") or 30)
         return timeStepping
 
     @property
     def hashlib(self):
         hashlibStr = self.get_tokeninfo("hashlib") or \
-                     get_from_config("tbp.hashlib", 'sha1')
+                     get_from_config("daypassword.hashlib", 'sha1')
         return hashlibStr
 
     @property
     def timewindow(self):
         window = int(self.get_tokeninfo("timeWindow") or
-                     get_from_config("tbp.timeWindow") or 180)
+                     get_from_config("daypassword.timeWindow") or 180)
         return window
 
     @log_with(log)
@@ -208,7 +209,7 @@ class TbpTokenClass(TotpTokenClass):
         """
         options = options or {}
         timeStepping = int(self.get_tokeninfo("timeStep") or
-                           get_from_config("tbp.timeStep") or 30)
+                           get_from_config("daypassword.timeStep") or 30)
         window = (window or self.get_sync_window()) * timeStepping
         res = self.check_otp(otp, window=window, options=options)
 
@@ -225,7 +226,7 @@ class TbpTokenClass(TotpTokenClass):
 
         :param anOtpVal: the to be verified passwordvalue
         :type anOtpVal:  string
-        :param counter: the counter state, that should be verified. For TBP
+        :param counter: the counter state, that should be verified. For DayPasswordToken
         this is the unix system time (seconds) divided by 30/60
         :type counter: int
         :param window: the counter +window (sec), which should be checked
@@ -417,7 +418,7 @@ class TbpTokenClass(TotpTokenClass):
         :return: tuple of status: boolean, error: text and the OTP dictionary
 
         """
-        otp_dict = {"type": "TBP", "otp": {}}
+        otp_dict = {"type": "DayPasswordToken", "otp": {}}
         ret = False
         error = "No count specified"
 
@@ -460,9 +461,9 @@ class TbpTokenClass(TotpTokenClass):
 
     @staticmethod
     def get_setting_type(key):
-        settings = {"tbp.hashlib": "public",
-                    "tbp.timeStep": "public",
-                    "tbp.timeWindow": "public"}
+        settings = {"daypassword.hashlib": "public",
+                    "daypassword.timeStep": "public",
+                    "daypassword.timeWindow": "public"}
         return settings.get(key, "")
 
     @classmethod
@@ -471,7 +472,7 @@ class TbpTokenClass(TotpTokenClass):
         This method returns a dictionary with default settings for token
         enrollment.
         These default settings are defined in SCOPE.USER or SCOPE.ADMIN and are
-        tbp_hashlib, tbp_timestep and tbp_otplen.
+        daypassword_hashlib, daypassword_timestep and daypassword_otplen.
         If these are set, the user or admin will only be able to enroll tokens
         with these values.
 
@@ -487,7 +488,7 @@ class TbpTokenClass(TotpTokenClass):
         (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
                                                                                             params)
         hashlib_pol = Match.generic(g, scope=role,
-                                    action="tbp_hashlib",
+                                    action="daypassword_hashlib",
                                     user=username,
                                     realm=userrealm,
                                     adminuser=adminuser,
@@ -496,7 +497,7 @@ class TbpTokenClass(TotpTokenClass):
             ret["hashlib"] = list(hashlib_pol)[0]
 
         timestep_pol = Match.generic(g, scope=role,
-                                     action="tbp_timestep",
+                                     action="daypassword_timestep",
                                      user=username,
                                      realm=userrealm,
                                      adminuser=adminuser,
@@ -505,7 +506,7 @@ class TbpTokenClass(TotpTokenClass):
             ret["timeStep"] = list(timestep_pol)[0]
 
         otplen_pol = Match.generic(g, scope=role,
-                                   action="tbp_otplen",
+                                   action="daypassword_otplen",
                                    user=username,
                                    realm=userrealm,
                                    adminuser=adminuser,
