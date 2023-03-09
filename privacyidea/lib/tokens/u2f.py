@@ -81,7 +81,7 @@ def parse_response_data(resp_data):
     :param resp_data: response data from the FIDO U2F client
     :type resp_data: hex string
     :return: tuple of user_presence_byte(byte), counter(int),
-        signature(hexstring)
+        signature(bytearray)
     """
     resp_data_bin = binascii.unhexlify(resp_data)
     user_presence = bytes((resp_data_bin[0], ))
@@ -110,8 +110,8 @@ def parse_registration_data(reg_data, verify_cert=True):
     :return: tuple
     """
     reg_data_bin = url_decode(reg_data)
-    reserved_byte = reg_data_bin[0]  # must be '\x05'
-    if reserved_byte != 5:
+    reserved_byte_value = reg_data_bin[0]  # must be 5
+    if reserved_byte_value != 5:
         raise Exception("The registration data is in a wrong format. It must "
                         "start with 0x05")
     user_pub_key = reg_data_bin[1:66]
@@ -218,7 +218,7 @@ def check_response(user_pub_key, app_id, client_data, signature,
     :param counter: A counter
     :type counter: int
     :param user_presence_byte: User presence byte
-    :type user_presence_byte: byte
+    :type user_presence_byte: bytes
     :param signature: The signature of the authentication request
     :type signature: hex string
     :return:
