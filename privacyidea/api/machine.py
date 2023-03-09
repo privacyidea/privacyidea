@@ -184,8 +184,9 @@ def attach_token_api():
 
 @machine_blueprint.route('/token/<serial>/<machineid>/<resolver>/<application>',
                          methods=['DELETE'])
+@machine_blueprint.route('/token/<serial>/<application>/<mtid>', methods=['DELETE'])
 @prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
-def detach_token_api(serial, machineid, resolver, application):
+def detach_token_api(serial, machineid=None, resolver=None, application=None, mtid=None):
     """
     Detach a token from a machine with a certain application.
 
@@ -194,6 +195,7 @@ def detach_token_api(serial, machineid, resolver, application):
     :param resolver: identify the machine by the machine ID and the resolver name
     :param serial: identify the token by the serial number
     :param application: the name of the application like "luks" or "ssh".
+    :param mtid: the ID of the machinetoken definition
 
     :return: json result with "result": true and the machine list in "value".
 
@@ -211,7 +213,7 @@ def detach_token_api(serial, machineid, resolver, application):
 
     """
     r = detach_token(serial, application,
-                     machine_id=machineid, resolver_name=resolver)
+                     machine_id=machineid, resolver_name=resolver, mtid=mtid)
 
     g.audit_object.log({'success': True,
                         'info': "serial: {0!s}, application: {1!s}".format(serial,
@@ -272,6 +274,7 @@ def set_option_api():
     :param resolver: identify the machine by the machine ID and the resolver name
     :param serial: identify the token by the serial number
     :param application: the name of the application like "luks" or "ssh".
+    :param mtid: the ID of the machinetoken definition
 
     Parameters not listed will be treated as additional options.
 
@@ -280,15 +283,16 @@ def set_option_api():
     hostname = getParam(request.all_data, "hostname")
     machineid = getParam(request.all_data, "machineid")
     resolver = getParam(request.all_data, "resolver")
-    serial = getParam(request.all_data, "serial", optional=False)
-    application = getParam(request.all_data, "application", optional=False)
+    serial = getParam(request.all_data, "serial")
+    application = getParam(request.all_data, "application")
+    mtid = getParam(request.all_data, "mtid")
 
     # get additional options:
     options_add = {}
     options_del = []
     for key in request.all_data.keys():
         if key not in ["hostname", "machineid", "resolver", "serial",
-                       "application"]:
+                       "application", "mtid"]:
             # We use the key as additional option
             value = request.all_data.get(key)
             if value:
@@ -296,16 +300,22 @@ def set_option_api():
             else:
                 options_del.append(key)
 
-    o_add = add_option(serial=serial, application=application,
-                       hostname=hostname,
-                       machine_id=machineid, resolver_name=resolver,
-                       options=options_add)
+    if mtid:
+        o_add = add_option(machinetoken_id=mtid, options=options_add)
+    else:
+        o_add = add_option(serial=serial, application=application,
+                           hostname=hostname,
+                           machine_id=machineid, resolver_name=resolver,
+                           options=options_add)
     o_del = len(options_del)
     for k in options_del:
-        delete_option(serial=serial, application=application,
-                      hostname=hostname,
-                      machine_id=machineid, resolver_name=resolver,
-                      key=k)
+        if mtid:
+            delete_option(machinetoken_id=mtid, key=k)
+        else:
+            delete_option(serial=serial, application=application,
+                          hostname=hostname,
+                          machine_id=machineid, resolver_name=resolver,
+                          key=k)
 
     g.audit_object.log({'success': True,
                         'info': "serial: {0!s}, application: {1!s}".format(serial,
@@ -363,7 +373,7 @@ def get_auth_items_api(application=None):
     hostname = getParam(request.all_data, "hostname", optional=False)
     # Get optional additional filter parameters
     filter_param = request.all_data
-    for key in ["challenge", "hostname"]:
+    for key in ["challenge", "hostname", "application"]:
         if key in filter_param:
             del(filter_param[key])
 

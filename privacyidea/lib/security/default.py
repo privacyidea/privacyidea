@@ -151,11 +151,10 @@ class SecurityModule(object):
 
         This function returns a unicode string with a
         hexlified contents of the IV and the encrypted data separated by a
-        colon like u"4956:44415441"
+        colon like "4956:44415441"
 
         :param password: The password that is to be encrypted
         :type password: str
-
         :return: encrypted data - leading iv, separated by the ':'
         :rtype: str
         """
@@ -167,11 +166,10 @@ class SecurityModule(object):
 
         This function returns a unicode string with a
         hexlified contents of the IV and the encrypted data separated by a
-        colon like u"4956:44415441"
+        colon like "4956:44415441"
 
         :param pin: the pin that should be encrypted
         :type pin: str
-
         :return: encrypted data - leading iv, separated by the ':'
         :rtype: str
         """

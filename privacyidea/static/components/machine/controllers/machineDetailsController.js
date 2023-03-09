@@ -88,25 +88,20 @@ angular.module("privacyideaApp")
             });
         };
 
-        $scope.detachMachineToken = function(serial, application) {
+        $scope.detachMachineToken = function(serial, application, mtid) {
             MachineFactory.detachTokenMachine({serial: serial,
                 application: application,
-                machineid: $scope.machineid,
-                resolver: $scope.machineresolver
+                mtid: mtid
             }, function (data) {
                 $scope.getMachineTokens();
             });
         };
 
-        $scope.saveOptions = function(serial, application, options) {
+        $scope.saveOptions = function(mtid, options) {
             var params = options;
-            params["machineid"] = $scope.machineid;
-            params["resolver"] = $scope.machineresolver;
-            params["serial"] = serial;
-            params["application"] = application;
+            params["mtid"] = mtid;
             MachineFactory.saveOptions(params, function (data) {
                 $scope.getMachineTokens();
-                //debug: console.log(data);
             });
         };
     }]);

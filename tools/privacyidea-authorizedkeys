@@ -1,0 +1,63 @@
+#!/bin/bash
+# privacyidea-authorizedkeys
+#
+# This script is based on privacyidea-fetchssh and can now be used togeather with
+# the new service_id to in the authorizedkeys-command.
+#
+#
+# History
+# v0.1	03/31/2015	Peter Murr	mailinglists [at] pcfreak [dot] de
+# v0.2  2023-02-23  cornelius.koelbel@netknights.it --- use to run in SSH config
+
+
+#input parameters
+#------ Change this to your needs -----
+server='localhost:5000'
+serviceaccount='admin'
+password='test'
+service_id='webservers'
+#--------------------------------------
+hostname=`hostname`
+insecure=""
+#insecure="-k"
+
+user=$1
+
+# some checks for dependencies
+command -v jq >/dev/null 2>&1 || { echo >&2 "script requires jq but it is not installed.  Aborting."; exit 2; }
+command -v sed >/dev/null 2>&1 || { echo >&2 "script requires sed but it is not installed.  Aborting."; exit 2; }
+command -v curl >/dev/null 2>&1 || { echo >&2 "script requires curl but it is not installed.  Aborting."; exit 2; }
+command -v tr >/dev/null 2>&1 || { echo >&2 "script requires tr but it is not installed.  Aborting."; exit 2; }
+
+# other variables
+baseurl="https://$server"
+application='ssh'
+headersalways1='Content-type: application/json'
+headersalways2='Accept: application/json'
+cpar="-s $insecure"  # add -v to get verbose output if you search for bugs!
+
+# retrieve authentication token (we need this for all further requests
+# see http://privacyidea.readthedocs.org/en/latest/modules/api/auth.html
+# this is a POST request with data
+json=$(curl $cpar -H "$headersalways1" -H "$headersalways2" -d '{ "username":"'$serviceaccount'", "password":"'$password'" }' $baseurl/auth)
+jstatus=$(echo "$json"|jq .result.status)
+if [[ "$jstatus" != "true" ]]; then # if request failed .result.status=false
+  # TODO: If the SSL cert fails, we also run into this tree
+  echo "Could not get a valid token with the provided credentials"
+  exit 1
+else
+  token=$(echo "$json"|jq .result.value.token|sed 's/"//g') # get token from json and remove double quotes
+fi
+
+# Fetch the authentication items for a given application 'ssh' and the given service_id.
+# this is a simple GET request with the hostname, user and service_id as parameter
+# The hostname is not important.
+json=$(curl $cpar -G -H "Authorization: $token" -d "service_id=$service_id" -d "user=$user" -d "hostname=$hostname" $baseurl/machine/authitem/$application)
+jstatus=$(echo "$json"|jq .result.status)
+
+if [[ "$jstatus" == "true" ]]; then
+   sshs=$(echo "$json"|jq .result.value.ssh)
+   echo "${sshs}" | jq  '.[] | .sshkey' | sed 's/"//g'
+else
+ echo "no successful query!"
+fi

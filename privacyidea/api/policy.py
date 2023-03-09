@@ -120,6 +120,7 @@ def set_policy_api(name=None):
     :jsonparam user: The policy is valid for these users.
         string with wild cards or list of strings
     :jsonparam time: on which time does this policy hold
+    :jsonparam pinode: The privacyIDEA node (or list of nodes) for which this policy is valid
     :jsonparam client: for which requesting client this should be
     :jsontype client: IP address with subnet
     :jsonparam active: bool, whether this policy is active or not

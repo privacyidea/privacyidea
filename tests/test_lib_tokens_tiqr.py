@@ -536,7 +536,7 @@ class TiQRTokenTestCase(MyApiTestCase):
         self.assertEqual(r[0], "plain")
         # check the failed response count
         fcnt1 = token.get_max_failcount() - token.get_failcount()
-        self.assertRegexpMatches(r[1], r"INVALID_RESPONSE:{0!s}".format(fcnt1))
+        self.assertRegex(r[1], r"INVALID_RESPONSE:{0!s}".format(fcnt1))
 
         # Try another wrong response
         req.all_data = {"response": "67890",
@@ -547,7 +547,7 @@ class TiQRTokenTestCase(MyApiTestCase):
         self.assertEqual(r[0], "plain")
         # check the failed response count
         fcnt2 = token.get_max_failcount() - token.get_failcount()
-        self.assertRegexpMatches(r[1], r"INVALID_RESPONSE:{0!s}".format(fcnt2))
+        self.assertRegex(r[1], r"INVALID_RESPONSE:{0!s}".format(fcnt2))
         # has the failcounter decreased?
         self.assertEqual(fcnt1 - 1, fcnt2)
 
@@ -704,7 +704,7 @@ class TiQRTokenTestCase(MyApiTestCase):
                         "operation": "login"}
         r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "plain")
-        self.assertRegexpMatches(r[1], r"INVALID_RESPONSE:[0-9]+")
+        self.assertRegex(r[1], r"INVALID_RESPONSE:[0-9]+")
 
         # Check that the OTP status is still incorrect
         r = token.check_challenge_response(options={"transaction_id":

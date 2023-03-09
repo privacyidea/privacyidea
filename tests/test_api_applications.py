@@ -20,4 +20,4 @@ class APIApplicationsResolverTestCase(MyApiTestCase):
             value = result.get("value")
             self.assertTrue("ssh" in value)
             self.assertTrue("luks" in value)
-            self.assertTrue(value["ssh"]["options"]["optional"] == ["user"])
+            self.assertTrue(value["ssh"]["options"]["optional"] == ["service_id", "user"])

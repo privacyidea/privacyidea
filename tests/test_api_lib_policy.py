@@ -4,7 +4,6 @@ This test file tests the api.lib.policy.py
 
 The api.lib.policy.py depends on lib.policy and on flask!
 """
-from __future__ import print_function
 import json
 
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,
@@ -2949,10 +2948,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.REQ + "=" + allowed_certs
         )
-        self.assertRaisesRegexp(PolicyError,
-                                'The WebAuthn token is not allowed to be registered '
-                                'due to a policy restriction.',
-                                webauthntoken_allowed, request, None)
+        self.assertRaisesRegex(PolicyError,
+                               'The WebAuthn token is not allowed to be registered '
+                               'due to a policy restriction.',
+                               webauthntoken_allowed, request, None)
 
         set_policy(
             name="WebAuthn",
@@ -3173,7 +3172,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # first test without any policy to delete the department. This is not allowed
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "department"}
-        self.assertRaisesRegexp(PolicyError,
+        self.assertRaisesRegex(PolicyError,
                                 "ERR303: You are not allowed to delete the custom user attribute department!",
                                 check_custom_user_attributes, req, "delete")
 
@@ -3218,9 +3217,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # You are not allowed to set a different department
         req.all_data = {"user": "cornelius", "realm": self.realm1,
                         "key": "department", "value": "different"}
-        self.assertRaisesRegexp(PolicyError,
-                                "ERR303: You are not allowed to set the custom user attribute department!",
-                                check_custom_user_attributes, req, "set")
+        self.assertRaisesRegex(PolicyError,
+                               "ERR303: You are not allowed to set the custom user attribute department!",
+                               check_custom_user_attributes, req, "set")
 
         # You are allowed to set color to any value
         req.all_data = {"user": "cornelius", "realm": self.realm1,
@@ -3372,9 +3371,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # This should not work, a description is required for hotp
         req.all_data = {"type": "hotp"}
-        self.assertRaisesRegexp(PolicyError,
-                                "ERR303: Description required for hotp token.",
-                                require_description, req)
+        self.assertRaisesRegex(PolicyError,
+                               "ERR303: Description required for hotp token.",
+                               require_description, req)
 
         delete_policy("require_description")
 

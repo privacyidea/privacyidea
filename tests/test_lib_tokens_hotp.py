@@ -807,7 +807,7 @@ class HOTPTokenTestCase(MyTestCase):
         # wrong checksum
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', category=DeprecationWarning)
-            self.assertRaisesRegexp(
+            self.assertRaisesRegex(
                 ParameterError,
                 "Incorrect checksum",
                 token.update,

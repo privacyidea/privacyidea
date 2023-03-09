@@ -17,8 +17,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from __future__ import print_function
-
 __doc__ = """
 This script is meant to be invoked periodically by the system cron daemon.
 It runs periodic tasks that are specified in the database.

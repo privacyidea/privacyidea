@@ -10,7 +10,6 @@
 #             Add flexible resolver mapping
 #  2016-09-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #
-from __future__ import print_function
 __doc__ = """You can use this script to migrate a LinOTP database to privacyIDEA.
 All tokens and token assignments are transferred to privacyIDEA.
 

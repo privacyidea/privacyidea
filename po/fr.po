@@ -2,16 +2,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-12-22 15:06+0100\n"
-"Last-Translator: nicolas hahang <nicolas.hahang@gmail.com>\n"
+"PO-Revision-Date: 2023-03-09 09:41+0000\n"
+"Last-Translator: Thierry Gaulupeau <thierry.gaulupeau@chu-nimes.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/fr/>\n"
+"privacyidea-webui/fr/>\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Poedit 3.2.2\n"
+"X-Generator: Weblate 4.16.2-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -1597,23 +1597,23 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:90
 msgid "Help about Token"
-msgstr ""
+msgstr "A propos des types de jetons"
 
 #: privacyidea/static/components/token/views/token.html:108
 msgid "Help about Token Details"
-msgstr ""
+msgstr "A propos des informations de jetons"
 
 #: privacyidea/static/components/token/views/token.html:102
 msgid "Help about Token Import"
-msgstr ""
+msgstr "A propos de l'importation des jetons"
 
 #: privacyidea/static/components/config/views/config.tokens.html:64
 msgid "Help about Token Settings"
-msgstr ""
+msgstr "A propos des paramètres des jetons"
 
 #: privacyidea/static/components/token/views/token.html:96
 msgid "Help about Tokentypes"
-msgstr ""
+msgstr "A propos des types de jetons"
 
 #: privacyidea/static/components/user/views/user.html:68
 msgid "Help about User Details"
@@ -3447,6 +3447,10 @@ msgid ""
 "    smartphone app like the Google Authenticator or FreeOTP turning your\n"
 "    smartphone into an authentication device."
 msgstr ""
+"Le jeton TOTP est une clé basée sur le temps. Vous pouvez coller cette clé "
+"secrète ou demander au serveur de générer le secret et de scanner le code QR "
+"à l'aide d'une application pour smartphone telle que Google Authenticator ou "
+"FreeOTP, qui transforme votre smartphone en dispositif d'authentification."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:2
 msgid ""
@@ -3758,6 +3762,8 @@ msgid ""
 "            will be\n"
 "            displayed to you to be scanned."
 msgstr ""
+"Le serveur va créer une clé OTP et affichera un code QR que vous devrez "
+"scanner"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
 msgid ""
@@ -4125,7 +4131,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:6
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:16
 msgid "Token data"
-msgstr ""
+msgstr "Informations du jeton"
 
 #: privacyidea/static/components/token/views/token.details.html:1
 msgid "Token details for {{ tokenSerial }}"
@@ -4171,7 +4177,7 @@ msgstr ""
 #: privacyidea/static/components/dashboard/views/dashboard.html:10
 #: privacyidea/static/templates/menu.html:46
 msgid "Tokens"
-msgstr ""
+msgstr "Jetons"
 
 #: privacyidea/static/components/machine/views/machine.details.html:34
 msgid "Tokens and Applications for machine {{ machineid }}"

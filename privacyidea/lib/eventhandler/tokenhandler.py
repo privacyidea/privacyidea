@@ -328,6 +328,13 @@ class TokenEventHandler(BaseEventHandler):
                                 "description": _("The ID of the machine you want to attach the token to")
 
                             },
+                        "service_id": {
+                            "type": "str",
+                            "required": False,
+                            "description": _("Set the service_id for an SSH application."),
+                            "visibleIf": "application",
+                            "visibleValue": TOKEN_APPLICATIONS.SSH
+                        },
                         "application":
                             {
                                 "type": "string",

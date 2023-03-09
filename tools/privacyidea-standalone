@@ -33,8 +33,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-from __future__ import print_function
-
 __doc__ = """
 This script can be used to create a self-contained local privacyIDEA
 instance that does not require a web server to run. Instead,

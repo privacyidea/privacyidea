@@ -3112,9 +3112,9 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             regcode = detail.get("registrationcode")
             self.assertEqual(DEFAULT_LENGTH_REG, len(regcode))
             # Check if a number is contained
-            self.assertRegexpMatches(regcode, "[0-9]+")
+            self.assertRegex(regcode, "[0-9]+")
             # Check if a character is contained
-            self.assertRegexpMatches(regcode, "[a-zA-Z]+")
+            self.assertRegex(regcode, "[a-zA-Z]+")
 
         # now check if authentication
         with self.app.test_request_context('/validate/check',
@@ -3240,9 +3240,9 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             password = detail.get("password")
             self.assertEqual(DEFAULT_LENGTH_PW, len(password))
             # Check if a number is contained
-            self.assertRegexpMatches(password, "[0-9]+")
+            self.assertRegex(password, "[0-9]+")
             # Check if a character is contained
-            self.assertRegexpMatches(password, "[a-zA-Z]+")
+            self.assertRegex(password, "[a-zA-Z]+")
 
         # now check the authentication
         with self.app.test_request_context('/validate/check',
