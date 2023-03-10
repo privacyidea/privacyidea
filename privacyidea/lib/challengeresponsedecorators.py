@@ -62,7 +62,7 @@ def _create_challenge(token_obj, challenge_type, message, challenge_data=None):
     if ((challenge_type == CHALLENGE_TYPE.PIN_RESET) or (challenge_type == CHALLENGE_TYPE.RESYNC)):
         challenge = challenge_type
     else:
-        challenge = None
+        challenge = "standard"
     reply_dict["multi_challenge"] = [{"transaction_id": db_challenge.transaction_id,
                                       "message": message,
                                       "attributes": None,
