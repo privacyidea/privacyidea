@@ -68,7 +68,7 @@ import logging
 
 from sqlalchemy import (and_, func)
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql import expression
+from sqlalchemy.sql.expression import FunctionElement
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
@@ -114,8 +114,9 @@ ENCODING = "utf-8"
 # compare operation.
 # By using <https://docs.sqlalchemy.org/en/13/core/compiler.html> we can
 # differentiate between different dialects.
-class clob_to_varchar(expression.FunctionElement):
+class clob_to_varchar(FunctionElement):
     name = 'clob_to_varchar'
+    inherit_cache = True
 
 
 @compiles(clob_to_varchar)

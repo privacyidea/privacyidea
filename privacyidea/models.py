@@ -86,12 +86,12 @@ class MethodsMixin(object):
     This class mixes in some common Class table functions like
     delete and save
     """
-    
+
     def save(self):
         db.session.add(self)
         db.session.commit()
         return self.id
-    
+
     def delete(self):
         ret = self.id
         db.session.delete(self)
