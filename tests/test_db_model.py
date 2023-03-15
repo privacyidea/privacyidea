@@ -20,7 +20,7 @@ from privacyidea.models import (Token,
                                 ClientApplication, Subscription, UserCache,
                                 EventCounter, PeriodicTask, PeriodicTaskLastRun,
                                 PeriodicTaskOption, MonitoringStats, PolicyCondition, db,
-                                Tokengroup, TokenTokengroup)
+                                Tokengroup, TokenTokengroup, Serviceid)
 from .base import MyTestCase
 from dateutil.tz import tzutc
 from datetime import datetime
@@ -1090,3 +1090,35 @@ class TokengroupTestCase(MyTestCase):
         tok1.delete()
         tok2.delete()
 
+
+class ServiceidTestCase(MyTestCase):
+
+    def test_01_create_update_delete_servicid(self):
+        si = Serviceid("webserver", "The group of all our webservers")
+        self.assertIsInstance(si, Serviceid)
+        rid = si.save()
+        self.assertGreaterEqual(rid, 1)
+
+        # Test, if it does exist
+        r = Serviceid.query.filter_by(name="webserver").all()
+        self.assertEqual(len(r), 1)
+        self.assertIsInstance(r[0], Serviceid)
+        self.assertEqual("The group of all our webservers", r[0].Description)
+
+        # update the description
+        r[0].Description = "New description"
+        r[0].save()
+
+        # Check it:
+        r = Serviceid.query.filter_by(name="webserver").all()
+        self.assertEqual(len(r), 1)
+        self.assertIsInstance(r[0], Serviceid)
+        self.assertEqual("New description", r[0].Description)
+
+        # delete
+        r = si.delete()
+        self.assertEqual(r, rid)
+
+        # Test, if it is gone
+        r = Serviceid.query.filter_by(name="webserver").all()
+        self.assertEqual(len(r), 0)
