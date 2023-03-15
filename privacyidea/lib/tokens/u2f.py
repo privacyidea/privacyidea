@@ -214,7 +214,7 @@ def check_response(user_pub_key, app_id, client_data, signature,
     :param app_id: The AppID for this challenge response
     :type app_id: str
     :param client_data: The ClientData
-    :type client_data: bytes
+    :type client_data: str
     :param counter: A counter
     :type counter: int
     :param user_presence_byte: User presence byte

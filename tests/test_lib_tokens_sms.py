@@ -202,6 +202,16 @@ class SMSTokenTestCase(MyTestCase):
         token.set_sync_window(53)
         self.assertTrue(token.get_sync_window() == 53)
 
+    def test_05_get_set_realms(self):
+        set_realm(self.realm2)
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = SmsTokenClass(db_token)
+        realms = token.get_realms()
+        self.assertTrue(len(realms) == 1, realms)
+        token.set_realms([self.realm1, self.realm2])
+        realms = token.get_realms()
+        self.assertTrue(len(realms) == 2, realms)
+
     def test_06_set_pin(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = SmsTokenClass(db_token)
@@ -217,27 +227,11 @@ class SMSTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = SmsTokenClass(db_token)
         token.enable(False)
-        self.assertTrue(token.token.active is False)
+        self.assertFalse(token.token.active)
         token.enable()
         self.assertTrue(token.token.active)
-
-    def test_05_get_set_realms(self):
-        set_realm(self.realm2)
-        db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = SmsTokenClass(db_token)
-        realms = token.get_realms()
-        self.assertTrue(len(realms) == 1, realms)
-        token.set_realms([self.realm1, self.realm2])
-        realms = token.get_realms()
-        self.assertTrue(len(realms) == 2, realms)
-
-    def test_99_delete_token(self):
-        db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = SmsTokenClass(db_token)
-        token.delete_token()
-
-        db_token = Token.query.filter_by(serial=self.serial1).first()
-        self.assertTrue(db_token is None, db_token)
+        # we need to safe the token explicitly here to persist it to the db
+        token.save()
 
     def test_08_info(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -376,8 +370,7 @@ class SMSTokenTestCase(MyTestCase):
 
         # check for the challenges response
         r = token.check_challenge_response(passw=otp,
-                                           options={"transaction_id":
-                                                        transactionid})
+                                           options={"transaction_id": transactionid})
         self.assertTrue(r, r)
 
     @responses.activate
@@ -398,8 +391,7 @@ class SMSTokenTestCase(MyTestCase):
 
         # check for the challenges response
         r = token.check_challenge_response(passw=otp,
-                                           options={"transaction_id":
-                                                        transactionid})
+                                           options={"transaction_id": transactionid})
         self.assertTrue(r, r)
 
     @responses.activate
@@ -508,7 +500,15 @@ class SMSTokenTestCase(MyTestCase):
             self.assertTrue(mocked_str.startswith(expected), mocked_str)
         capture.clear()
 
-        #test with the parameter exception=1
+        # test with the parameter exception=1
         self.assertRaises(Exception, token.create_challenge, transactionid, {"exception": "1"})
 
         remove_token(token.get_serial())
+
+    def test_99_delete_token(self):
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = SmsTokenClass(db_token)
+        token.delete_token()
+
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        self.assertTrue(db_token is None, db_token)

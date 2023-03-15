@@ -308,6 +308,7 @@ class Token(MethodsMixin, db.Model):
         self.count = 0
         if reset_failcount is True:
             self.failcount = 0
+        db.session.commit()
 
     def set_tokengroups(self, tokengroups, add=False):
         """
@@ -372,7 +373,7 @@ class Token(MethodsMixin, db.Model):
                     Tr = TokenRealm(token_id=self.id, realm_id=r.id)
                     db.session.add(Tr)
         db.session.commit()
-        
+
     def get_realms(self):
         """
         return a list of the assigned realms
@@ -390,6 +391,7 @@ class Token(MethodsMixin, db.Model):
         iv = geturandom(16)
         self.user_pin = encrypt(userPin, iv)
         self.user_pin_iv = hexlify_and_unicode(iv)
+        db.session.commit()
 
     @log_with(log)
     def get_otpkey(self):
@@ -421,6 +423,7 @@ class Token(MethodsMixin, db.Model):
         :rtype: str
         """
         self.pin_hash = pass_hash(pin)
+        db.session.commit()
         return self.pin_hash
 
     def get_hashed_pin(self, pin):
@@ -447,6 +450,7 @@ class Token(MethodsMixin, db.Model):
         if desc is None:
             desc = ""
         self.description = convert_column_to_unicode(desc)
+        db.session.commit()
         return self.description
 
     def set_pin(self, pin, hashed=True):
@@ -462,6 +466,7 @@ class Token(MethodsMixin, db.Model):
         else:
             self.pin_hash = "@@" + encryptPin(upin)
             log.debug("setPin(ENCR:{0!r})".format(self.pin_hash))
+        db.session.commit()
         return self.pin_hash
 
     def check_pin(self, pin):
@@ -489,23 +494,6 @@ class Token(MethodsMixin, db.Model):
                     res = True
         return res
 
-#    def split_pin_pass(self, passwd, prepend=True):
-#        """
-#        The password is split into the PIN and the OTP component.
-#        THe token knows its length, so it can split accordingly.##
-#
-#        :param passwd: The password that is to be split
-#        :param prepend: The PIN is put in front of the OTP value
-#        :return: tuple of (res, pin, otpval)
-#        """
-#        if prepend:
-#            pin = passwd[:-self.otplen]
-#            otp = passwd[-self.otplen:]
-#        else:
-#            otp = passwd[:self.otplen]
-#            pin = passwd[self.otplen:]
-#        return True, pin, otp
-
     def is_pin_encrypted(self, pin=None):
         ret = False
         if pin is None:
@@ -524,12 +512,13 @@ class Token(MethodsMixin, db.Model):
     def set_so_pin(self, soPin):
         """
         For smartcards this sets the security officer pin of the token
-        
+
         :rtype : None
         """
         iv = geturandom(16)
         self.so_pin = encrypt(soPin, iv)
         self.so_pin_iv = hexlify_and_unicode(iv)
+        db.session.commit()
         return self.so_pin, self.so_pin_iv
 
     def __unicode__(self):
@@ -595,12 +584,12 @@ class Token(MethodsMixin, db.Model):
     __str__ = __unicode__
 
     def __repr__(self):
-        '''
+        """
         return the token state as text
 
         :return: token state as string representation
-        :rtype:  string
-        '''
+        :rtype:  str
+        """
         ldict = {}
         for attr in self.__dict__:
             key = "{0!r}".format(attr)

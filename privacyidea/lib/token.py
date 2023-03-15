@@ -1117,6 +1117,8 @@ def init_token(param, user=None, tokenrealms=None,
     if validity_period_start:
         tokenobject.set_validity_period_start(validity_period_start)
 
+    # Safe the token object to make sure all changes are persisted in the db
+    tokenobject.save()
     return tokenobject
 
 

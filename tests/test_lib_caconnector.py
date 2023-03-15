@@ -211,7 +211,7 @@ class LocalCATestCase(MyTestCase):
     @classmethod
     def setUpClass(cls):
         # call parent
-        super(MyTestCase, cls).setUpClass()
+        super().setUpClass()
 
         # Backup the original index and serial
         shutil.copyfile("{0!s}/serial".format(WORKINGDIR),
@@ -249,7 +249,7 @@ class LocalCATestCase(MyTestCase):
         os.remove("{0!s}/serial.orig".format(WORKINGDIR))
         os.remove("{0!s}/index.txt.orig".format(WORKINGDIR))
         # call parent
-        super(MyTestCase, cls).tearDownClass()
+        super().tearDownClass()
 
     def test_01_create_ca_connector(self):
         # cakey missing
@@ -604,6 +604,18 @@ class CreateLocalCATestCase(MyTestCase):
     """
     test creating a new CA using the local caconnector
     """
+
+    @classmethod
+    def tearDownClass(cls):
+        filelist = glob.glob("{0!s}2/*".format(WORKINGDIR))
+        for f in filelist:
+            try:
+                os.remove(f)
+            except OSError:
+                print("Error deleting file {0!s}.".format(f))
+        os.rmdir("{0!s}2".format(WORKINGDIR))
+        super().tearDownClass()
+
     def test_01_create_ca(self):
         cwd = os.getcwd()
         workdir = os.path.join(cwd, WORKINGDIR + '2')
@@ -618,12 +630,3 @@ class CreateLocalCATestCase(MyTestCase):
             self.assertEqual(cacon.workingdir, workdir)
             # check if the generated files exist
             self.assertTrue(os.path.exists(os.path.join(workdir, 'cacert.pem')))
-
-    def test_02_cleanup(self):
-        filelist = glob.glob("{0!s}2/*".format(WORKINGDIR))
-        for f in filelist:
-            try:
-                os.remove(f)
-            except OSError:
-                print("Error deleting file {0!s}.".format(f))
-        os.rmdir("{0!s}2".format(WORKINGDIR))
