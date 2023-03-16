@@ -870,6 +870,8 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(type(reply) == dict, reply)
         transaction_id = reply.get("transaction_id","")
         self.assertTrue(len(transaction_id) > 10, reply)
+        challenge_type = reply.get("challenge_type")
+        self.assertEqual(challenge_type, "generic_challenge", challenge_type)
 
         # Challenge Response, with the transaction id
         r, reply = check_serial_pass("hotptoken", "436521",

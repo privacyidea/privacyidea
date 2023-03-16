@@ -2092,6 +2092,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
             message_list.append(message)
             if r_chal:
                 challenge_info = challenge_info or {}
+                challenge_info["challenge_type"] = "generic_challenge"
                 challenge_info["transaction_id"] = transaction_id
                 challenge_info["serial"] = token_obj.token.serial
                 challenge_info["type"] = token_obj.get_tokentype()
