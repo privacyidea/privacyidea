@@ -964,7 +964,40 @@ def parse_timedelta(s):
     td = timedelta(seconds=seconds, minutes=minutes, hours=hours, days=days)
     return td
 
+def parse_time_sec_int(s):
+    """
+    parses a string like 5d:7h:6m into an int with gives the time in sec for this example 457560.
 
+    :param s: time str like 5d:7h:6m or 24h
+    :return: time in sec as int
+    """
+    try:
+        ret = int(s)
+        return ret
+    except:
+        seconds = 0
+        minutes = 0
+        hours = 0
+        days = 0
+        a=0
+        s = s.split(":")
+        for i in s:
+            m = re.match(r"\s*([+-]?)\s*(\d+)\s*([smhdy])\s*$", s[a])
+            if not m:
+                log.warning("Unsupported time: {0!r}".format(s))
+                raise Exception("Unsupported time")
+            count = int(m.group(2))
+            if m.group(3) == "s":
+                seconds = count
+            elif m.group(3) == "m":
+                minutes = count
+            elif m.group(3) == "h":
+                hours = count
+            elif m.group(3) == "d":
+                days = count
+            a=a+1
+        ret = 86400*days+3600*hours+60*minutes+seconds
+        return ret
 def parse_time_offset_from_now(s):
     """
     Parses a string as used in the token event handler

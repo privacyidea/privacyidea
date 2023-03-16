@@ -284,7 +284,8 @@ class DayPasswordTokenTestCase(MyTestCase):
         token = DayPasswordTokenClass(db_token)
         token.update({"otpkey": self.otpkey,
                       "pin": "test",
-                      "otplen": 6})
+                      "otplen": 6,
+                      "timeStep": "30s"})
         token.set_otp_count(47251644)
         # OTP does not exist
         self.assertTrue(token.check_otp_exist("222333") == -1)
@@ -383,7 +384,7 @@ class DayPasswordTokenTestCase(MyTestCase):
                       "otplen": 6,
                       "timeShift": 10,
                       "timeWindow": 180,
-                      "timeStep": 30
+                      "timeStep": '30s'
                       })
 
     def test_18_challenges(self):

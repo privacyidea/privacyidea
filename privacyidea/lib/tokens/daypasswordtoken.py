@@ -10,7 +10,7 @@ from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
-from privacyidea.lib.utils import determine_logged_in_userparams
+from privacyidea.lib.utils import determine_logged_in_userparams, parse_time_sec_int
 from privacyidea.lib import _
 
 optional = True
@@ -22,7 +22,8 @@ class DayPasswordTokenClass(TotpTokenClass):
 
     previous_otp_offset = 0
 
-    desc_timestep = _('Specify the time step of the day password token.')
+    desc_timestep = _('Specify the time step of the day password token. You can read the time like this '
+                      '"12d:10h:30m:03s" or "30h"')
 
     @log_with(log)
     def __init__(self, db_token):
@@ -76,7 +77,7 @@ class DayPasswordTokenClass(TotpTokenClass):
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.USER: {
-                       'daypassword_timestep': {'type': 'int',
+                       'daypassword_timestep': {'type': 'str',
                                          'desc': DayPasswordTokenClass.desc_timestep},
                        'daypassword_hashlib': {'type': 'str',
                                         'value': ["sha1",
@@ -93,7 +94,7 @@ class DayPasswordTokenClass(TotpTokenClass):
                                  'desc': DayPasswordTokenClass.desc_two_step_user}
                    },
                    SCOPE.ADMIN: {
-                       'daypassword_timestep': {'type': 'int',
+                       'daypassword_timestep': {'type': 'str',
                                          'desc': DayPasswordTokenClass.desc_timestep},
                        'daypassword_hashlib': {'type': 'str',
                                         'value': ["sha1",
@@ -175,8 +176,9 @@ class DayPasswordTokenClass(TotpTokenClass):
 
     @property
     def timestep(self):
-        timeStepping = int(self.get_tokeninfo("timeStep") or
-                           get_from_config("daypassword.timeStep") or 30)
+        timeStepping = parse_time_sec_int(self.get_tokeninfo("timeStep") or
+                                          get_from_config("daypassword.timeStep") or 30)
+
         return timeStepping
 
     @property
@@ -208,8 +210,8 @@ class DayPasswordTokenClass(TotpTokenClass):
         :rtype:  int
         """
         options = options or {}
-        timeStepping = int(self.get_tokeninfo("timeStep") or
-                           get_from_config("daypassword.timeStep") or 30)
+        timeStepping = parse_time_sec_int(self.get_tokeninfo("timeStep") or
+                                          get_from_config("daypassword.timeStep") or 30)
         window = (window or self.get_sync_window()) * timeStepping
         res = self.check_otp(otp, window=window, options=options)
 
@@ -220,7 +222,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         return res
 
     @check_token_locked
-    def check_otp(self, anOtpVal, counter=None, window=None, options=None):
+    def     check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         validate the token passwort against a given passwordvalue
 
