@@ -297,6 +297,10 @@ the fixed string "user".
 This way you can add, remove or modify the contents of the three parameters.
 For more information on the regular expressions see [#pythonre]_.
 
+The mangling happens *after* the user resolving as described in :ref:`relate_realm`.
+
+.. note:: This means that you can not mangle a non-existing user or a non-existing realm.
+
 .. note:: You must escape the backslash as **\\\\** to refer to the found
    substrings.
 
