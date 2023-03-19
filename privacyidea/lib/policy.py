@@ -387,6 +387,9 @@ class ACTION(object):
     TOKENGROUP_LIST = "tokengroup_list"
     TOKENGROUP_ADD = "tokengroup_add"
     TOKENGROUP_DELETE = "tokengroup_delete"
+    SERVICEID_LIST = "serviceid_list"
+    SERVICEID_ADD = "serviceid_add"
+    SERVICEID_DELETE = "serviceid_delete"
     PREFERREDCLIENTMODE = "preferred_client_mode"
     REQUIRE_DESCRIPTION = "require_description"
 
@@ -416,7 +419,8 @@ class GROUP(object):
     MODIFYING_RESPONSE = "modifying response"
     CONDITIONS = "conditions"
     SETTING_ACTIONS = "setting actions"
-    TOKENGROUP= "tokengroup"
+    TOKENGROUP = "tokengroup"
+    SERVICEID = "service ID"
 
 
 class MAIN_MENU(object):
@@ -1971,6 +1975,21 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("The Admin is allowed delete a tokengroup."),
                 'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.TOKENGROUP},
+            ACTION.SERVICEID_LIST: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed list the available service ID definitions."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.SERVICEID},
+            ACTION.SERVICEID_ADD: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to add a new service ID definition."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.SERVICEID},
+            ACTION.SERVICEID_DELETE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed delete a service ID definition."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.SERVICEID},
             ACTION.TOKENGROUPS: {
                 'type': 'bool',
                 'desc': _("The Admin is allowed to manage the tokengroups of a token."),

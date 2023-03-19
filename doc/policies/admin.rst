@@ -411,6 +411,33 @@ type: bool
 If the policy ``tokengroup_delete`` is defined, the administrator is allowed to
 delete existing tokengroup definitions.
 
+.. _policy_serviceids:
+
+serviceid_add
+~~~~~~~~~~~~~
+
+type: bool
+
+.. index:: service ID
+
+This policy allows the administrator to add a new service ID to the list of
+defined services. These service ID can then be used in attaching SSH keys.
+See :ref:`application_ssh`.
+
+serviceid_delete
+~~~~~~~~~~~~~~~~
+
+type: bool
+
+This policy allows the administrator to delete a service ID definition.
+
+servivceid_list
+~~~~~~~~~~~~~~~
+
+type: bool
+
+This policy allows the administrator to list all defined service IDs.
+
 getserial
 ~~~~~~~~~
 
