@@ -53,7 +53,7 @@ try:
         log.info("Loading VASCO library from {!s} ...".format(vasco_library_path))
         vasco_dll = CDLL(vasco_library_path)
     else:
-        log.info("PI_VASCO_LIBRARY option is not set, functionality disabled")
+        log.debug("PI_VASCO_LIBRARY option is not set, functionality disabled")
 except Exception as exx:
     log.warning("Could not load VASCO library: {!r}".format(exx))
 
