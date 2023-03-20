@@ -145,6 +145,32 @@
                         </ul>
                     </li>
                     <li role="presentation"
+                        ng-class="{ active: $state.includes('config.serviceid')}"
+                        ng-show="checkRight('serviceid_list')">
+                        <a ui-sref="config.serviceid">
+                            <span class="glyphicon glyphicon-phone"></span>
+                            <span translate>Service IDs</span>
+                        </a>
+                        <ul ng-show="$state.includes('config.serviceid')"
+                            class="nav nav-pills nav-stacked pi-submenu">
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.serviceid.list')}">
+                                <a ui-sref="config.serviceid.list"
+                                        translate>List Service ID definitions</a></li>
+                            <li role="presentation"
+                                ng-class="{ active: $state.includes('config.serviceid.add')}"
+                                ng-show="checkRight('serviceid_add')">
+                                <a ui-sref="config.serviceid.add" translate>
+                                    New Service ID definition</a></li>
+                            <hr>
+                            <li role="presentation">
+                                <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+
+                                   privacyideaVersionNumber+'/configuration/serviceids.html'}}">
+                                    <span class="glyphicon glyphicon-info-sign"></span>
+                                    <span translate>Help on Service IDs</span></a></li>
+                        </ul>
+                    </li>
+                    <li role="presentation"
                         ng-class="{active: $state.includes('config.caconnectors')}">
                         <a ui-sref="config.caconnectors.list">
                             <span class="glyphicon glyphicon-bookmark"

@@ -274,6 +274,26 @@ angular.module('privacyideaApp.configStates', ['ui.router', 'privacyideaApp.vers
                     templateUrl: configpath + "config.tokengroup.edit.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "tokengroupController"
                 })
+                .state('config.serviceid', {
+                    url: "/serviceid",
+                    templateUrl: configpath + "config.system.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "serviceidController"
+                })
+                .state('config.serviceid.list', {
+                    url: "/list",
+                    templateUrl: configpath + "config.serviceid.list.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "serviceidController"
+                })
+                .state('config.serviceid.edit', {
+                    url: "/edit/:servicename",
+                    templateUrl: configpath + "config.serviceid.edit.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "serviceidController"
+                })
+                .state('config.serviceid.add', {
+                    url: "/edit/",
+                    templateUrl: configpath + "config.serviceid.edit.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "serviceidController"
+                })
                 .state('config.privacyideaserver', {
                     url: "/privacyideaserver",
                     templateUrl: configpath + "config.system.html" + versioningSuffixProviderProvider.$get().$get(),
