@@ -424,12 +424,12 @@ class AuthApiTestCase(MyApiTestCase):
                                            data={"username": "cornelius"},
                                            environ_base={"REMOTE_USER": "cornelius"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 401, res)
+            self.assertEqual(res.status_code, 400, res)
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
-            self.assertEqual(result.get("error").get('code'), 4031, result)
+            self.assertEqual(result.get("error").get('code'), 905, result)
             self.assertEqual(result.get("error").get('message'),
-                             'Authentication failure. Wrong credentials', result)
+                             "ERR905: Missing parameter: 'password'", result)
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
@@ -442,12 +442,12 @@ class AuthApiTestCase(MyApiTestCase):
                                            data={"username": "cornelius"},
                                            environ_base={"REMOTE_USER": "cornelius"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 401, res)
+            self.assertEqual(res.status_code, 400, res)
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
-            self.assertEqual(result.get("error").get('code'), 4031, result)
+            self.assertEqual(result.get("error").get('code'), 905, result)
             self.assertEqual(result.get("error").get('message'),
-                             'Authentication failure. Wrong credentials', result)
+                             "ERR905: Missing parameter: 'password'", result)
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
@@ -508,7 +508,7 @@ class AuthApiTestCase(MyApiTestCase):
                                            data={"username": "cornelius@realm1"},
                                            environ_base={"REMOTE_USER": "cornelius@realm1"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 401, res)
+            self.assertEqual(res.status_code, 400, res)
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
         aentry = self.find_most_recent_audit_entry(action='POST /auth')

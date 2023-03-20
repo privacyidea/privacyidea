@@ -306,6 +306,7 @@ def get_auth_token():
         for key, value in request.all_data.items():
             if value and key not in ["g", "clientip"]:
                 options[key] = value
+        password = getParam(request.all_data, "password", optional=False)
         user_auth, role, details = check_webui_user(user_obj,
                                                     password,
                                                     options=options,
