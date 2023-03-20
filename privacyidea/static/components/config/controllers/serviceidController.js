@@ -45,7 +45,7 @@ myApp.controller("serviceidController", ["$scope", "$stateParams", "inform",
         });
     }
 
-    if ($location.path() === "/config/serviceids/list") {
+    if ($location.path() === "/config/serviceid/list") {
         // In the case of list, we fetch all radius servers
         $scope.getServiceids();
     }
