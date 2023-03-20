@@ -60,6 +60,7 @@ def _create_challenge(token_obj, challenge_type, message, challenge_data=None):
     token_obj.challenge_janitor()
     reply_dict = {}
     reply_dict["multi_challenge"] = [{"transaction_id": db_challenge.transaction_id,
+                                      "client_mode": "interactive",
                                       "message": message,
                                       "attributes": None,
                                       "serial": token_obj.token.serial,
