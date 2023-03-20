@@ -35,6 +35,7 @@ from privacyidea.lib.crypto import pass_hash, verify_pass_hash, get_rand_digit_s
 from privacyidea.models import Challenge
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
+from privacyidea.lib.tokenclass import CLIENTMODE
 
 
 log = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ def _create_challenge(token_obj, challenge_type, message, challenge_data=None):
     token_obj.challenge_janitor()
     reply_dict = {}
     reply_dict["multi_challenge"] = [{"transaction_id": db_challenge.transaction_id,
-                                      "client_mode": "interactive",
+                                      "client_mode": CLIENTMODE.INTERACTIVE,
                                       "message": message,
                                       "attributes": None,
                                       "serial": token_obj.token.serial,
