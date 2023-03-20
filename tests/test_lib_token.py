@@ -1935,6 +1935,7 @@ class PINChangeTestCase(MyTestCase):
         self.assertFalse(r)
         self.assertEqual("Please enter a new PIN", reply_dict.get("message"))
         transaction_id = reply_dict.get("transaction_id")
+        self.assertEqual("interactive", reply_dict.get('multi_challenge')[0].get('client_mode'))
 
         # Now send a new PIN
         newpin = "test2"
