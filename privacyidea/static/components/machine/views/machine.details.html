@@ -133,6 +133,7 @@
         </select>
         </div>
         <!-- Options for a new MachineToken -->
+        {{ Applications }}
         <div class="form-group"
              ng-repeat="option in Applications[form.application].options.required">
             <label for="option_{{ option }}">{{ option | capitalize }}</label>

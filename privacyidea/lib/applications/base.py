@@ -23,6 +23,7 @@ import sys
 import os
 from privacyidea.lib.log import log_with
 import privacyidea.lib.applications
+from privacyidea.lib.policy import TYPE
 from importlib import import_module
 log = logging.getLogger(__name__)
 
@@ -107,8 +108,10 @@ class MachineApplication(object):
         """
         returns a dictionary with a list of required and optional options
         """
-        return {'required': [],
-                'optional': []}
+        return {'optionA': {'type': TYPE.BOOL,
+                            'required': True},
+                'optionB': {'type': TYPE.STRING,
+                            'value': ["val1", "val2"]}}
 
 
 @log_with(log)
@@ -141,10 +144,9 @@ def get_application_types():
     This function returns a dictionary of application types with the
     corresponding available attributes.
 
-    {"luks": {"options": {"required": [],
-                          "optional": ["slot", "partition"]}}
-     "ssh": {"options": {"required": [],
-                         "optional": ["user"]}}
+    {"luks": {"options": {"slot": {"type": "int"},
+                          "partition": {"type": "str"}},
+     "ssh": {"options": {"user": {"type": "str"}}
     }
 
     :return: dictionary describing the applications

@@ -174,8 +174,8 @@ class BaseApplicationTestCase(MyTestCase):
         self.assertEqual(base_app.get_authentication_item("hotp", "serial"),
                          "nothing")
         options = base_app.get_options()
-        self.assertEqual(options["required"], [])
-        self.assertEqual(options["optional"], [])
+        self.assertEqual(options["optionA"].get("type"), "bool")
+        self.assertTrue(options["optionA"].get("required"))
 
     def test_02_get_auth_item(self):
         auth_item = get_auth_item("base", "hotp", "serial")
@@ -190,8 +190,9 @@ class BaseApplicationTestCase(MyTestCase):
         apps = get_application_types()
         self.assertTrue("luks" in apps)
         self.assertTrue("ssh" in apps)
-        self.assertEqual(apps["ssh"]["options"]["optional"], ["service_id", "user"])
-        self.assertEqual(apps["luks"]["options"]["optional"], ["slot",
-                                                               "partition"])
+        self.assertIn("service_id", apps["ssh"]["options"])
+        self.assertIn("user", apps["ssh"]["options"])
+        self.assertIn("slot", apps["luks"]["options"])
+        self.assertIn("partition", apps["luks"]["options"])
 
 

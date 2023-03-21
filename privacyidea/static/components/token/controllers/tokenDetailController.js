@@ -361,6 +361,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         $scope.attachMachine = function () {
             // newToken.serial, application
             var params = $scope.form.options;
+            console.log($scope.form);
             // First we set all the application specific option than add the
             // needed standard values
             var machineObject = fixMachine($scope.newMachine);
