@@ -361,7 +361,6 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         $scope.attachMachine = function () {
             // newToken.serial, application
             var params = $scope.form.options;
-            console.log($scope.form);
             // First we set all the application specific option than add the
             // needed standard values
             var machineObject = fixMachine($scope.newMachine);
@@ -375,6 +374,8 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                 params["machineid"] = machineObject.id;
                 params["resolver"] = machineObject.resolver;
             }
+            console.log("Attach machine");
+            console.log(params);
             MachineFactory.attachTokenMachine(params, function (data) {
                 // clear form
                 $scope.form.application = null;
@@ -385,7 +386,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         };
 
         $scope.detachMachineToken = function (application, mtid) {
-            MachineFactory.detachTokenMachineById({serial: $scope.tokenSerial,
+            MachineFactory.detachTokenMachine({serial: $scope.tokenSerial,
                     application: application,
                     mtid: mtid
             }, function (data) {
