@@ -40,8 +40,8 @@ myApp.controller("serviceidController", ["$scope", "$stateParams", "inform",
         ConfigFactory.getServiceid(sname, function(data){
             var serviceids = data.result.value
             $scope.params.servicename = sname;
-            $scope.params.description = serviceids[name].description;
-            $scope.params.id = serviceids[name].id;
+            $scope.params.description = serviceids[sname].description;
+            $scope.params.id = serviceids[sname].id;
         });
     }
 
