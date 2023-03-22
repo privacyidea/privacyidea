@@ -16,7 +16,7 @@ class APIServiceIDTestCase(MyApiTestCase):
             value = res.json['result']['value']
             self.assertGreaterEqual(value, 1)
 
-        # get servies
+        # get services
         with self.app.test_request_context('/serviceid/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
