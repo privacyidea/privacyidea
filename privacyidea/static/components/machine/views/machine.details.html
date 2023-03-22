@@ -60,34 +60,36 @@
                        ng-click="$rootScope.returnTo=machine.list;">
                     {{ token.serial }}</a> ({{ token.type  }})</td>
                 <td>{{ token.application }}</td>
+                <!-- Options -->
                 <td ng-hide="token.optionsEdit">
-                    <span ng-repeat="option
-                    in Applications[token.application].options.required">
-                        <b>{{ option | capitalize }}:</b>
-                        {{ token.options[option] }}<br>
+                    <span ng-repeat="(optionname, option) in Applications[token.application].options">
+                        <b>{{ optionname | capitalize }}:</b>
+                        {{ token.options[optionname] }}<br>
                     </span>
-                    <span ng-repeat="option
-                    in Applications[token.application].options.optional">
-                        <b>{{ option | capitalize }}:</b>
-                        {{ token.options[option] }}<br>
-                    </span>
-
                 </td>
+                <!-- Edit options -->
                 <td ng-show="token.optionsEdit">
                     <div class="form-group"
-                         ng-repeat="option in Applications[token.application].options.required">
-                        <label for="option_{{ option }}">{{ option | capitalize }}</label>
-                        <input name="option_{{ option }}"
-                               ng-model="token.options[option]"
-                               class="form-control" ng-required="1"
-                               placeholder="required">
-                    </div>
-                    <div class="form-group"
-                         ng-repeat="option in Applications[token.application].options.optional">
-                        <label for="option_{{ option }}">{{ option | capitalize }}</label>
-                        <input name="option_{{ option }}"
-                               ng-model="token.options[option]"
-                               class="form-control" placeholder="optional">
+                         ng-repeat="(optionname, option)
+                         in Applications[token.application].options">
+                        <label for="option_{{ optionnamme }}">{{ optionname | capitalize }}</label>
+                        <input class="form-control"
+                               ng-required="option.required && !option.value"
+                               ng-model="token.options[optionname]"
+                               ng-show="option.type==='str' && !option.value">
+                        <select class="form-control"
+                                ng-show="option.value"
+                                ng-required="option.required && option.value"
+                                ng-model="token.options[optionname]"
+                                ng-options="value for value in option.value"></select>
+                        <input type="checkbox"
+                               ng-model="token.options[optionname]"
+                               ng-show="option.type==='bool'">
+                        </select>
+                        <p class="help help-block">
+                              {{ option.description }}
+                              {{ option.desc }}
+                        </p>
                     </div>
                 </td>
                 <td ng-hide="token.optionsEdit">
@@ -133,21 +135,26 @@
         </select>
         </div>
         <!-- Options for a new MachineToken -->
-        {{ Applications }}
         <div class="form-group"
-             ng-repeat="option in Applications[form.application].options.required">
-            <label for="option_{{ option }}">{{ option | capitalize }}</label>
-            <input name="option_{{ option }}"
-                   ng-model="form.options[option]"
-                   class="form-control" ng-required="1"
-                    placeholder="required">
-        </div>
-        <div class="form-group"
-             ng-repeat="option in Applications[form.application].options.optional">
-            <label for="option_{{ option }}">{{ option | capitalize }}</label>
-            <input name="option_{{ option }}"
-                   ng-model="form.options[option]"
-                   class="form-control" placeholder="optional">
+             ng-repeat="(optionname, option) in Applications[form.application].options">
+            <label for="option_{{ optionnamme }}">{{ optionname | capitalize }}</label>
+            <input class="form-control"
+                   ng-required="option.required && !option.value"
+                   ng-model="form.options[optionname]"
+                   ng-show="option.type==='str' && !option.value">
+            <select class="form-control"
+                    ng-show="option.value"
+                    ng-required="option.required && option.value"
+                    ng-model="form.options[optionname]"
+                    ng-options="value for value in option.value"></select>
+            <input type="checkbox"
+                   ng-model="form.options[optionname]"
+                   ng-show="option.type==='bool'">
+            </select>
+            <p class="help help-block">
+                  {{ option.description }}
+                  {{ option.desc }}
+            </p>
         </div>
 
         <div class="text-center">
