@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2023-03-09 09:41+0000\n"
+"PO-Revision-Date: 2023-03-25 14:38+0000\n"
 "Last-Translator: Thierry Gaulupeau <thierry.gaulupeau@chu-nimes.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.16.2-dev\n"
+"X-Generator: Weblate 4.17-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -1513,7 +1513,7 @@ msgstr "Obtenir le numéro de série"
 
 #: privacyidea/static/components/token/views/token.getserial.html:1
 msgid "Get Serial number by OTP value"
-msgstr ""
+msgstr "Obtenir le numéro de série de l'OTP"
 
 #: privacyidea/static/components/config/views/config.system.html:17
 msgid "Get System Documentation"
@@ -2100,7 +2100,7 @@ msgstr "Non"
 
 #: privacyidea/static/components/token/views/token.getserial.html:105
 msgid "No Serial number could be found for OTP value {{ otp }}."
-msgstr ""
+msgstr "Aucun numéro de série n'a été trouvé pour le token {{ otp }}."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:152
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:328
@@ -2773,8 +2773,9 @@ msgid "Rollover Token"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:5
+#, fuzzy
 msgid "Rollover token {{ form.serial }}"
-msgstr ""
+msgstr "Renouvellement du token {{ form.serial }}"
 
 #: privacyidea/static/components/token/views/token.getserial.html:79
 msgid "Run search"
@@ -3414,10 +3415,13 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:95
+#, fuzzy
 msgid ""
 "The Serial number for the OTP value {{ otp }} is\n"
 "    <a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
 msgstr ""
+"Le numéro de série pour cette valeur OTP {{ otp }} est\n"
+"    <a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.spass.html:1
 msgid ""
@@ -3650,6 +3654,11 @@ msgid ""
 "    </a>\n"
 "    will be disabled and can be deleted or enabled later."
 msgstr ""
+"L'ancien token\n"
+"    <a ui-sref=\"token.details({tokenSerial:selectedToken.serial})\">\n"
+"        {{ selectedToken.serial }}\n"
+"    </a>\n"
+"    sera désactivé et pourra être supprimé ou réactivé ultérieurement."
 
 #: privacyidea/static/components/token/views/token.lost.html:48
 msgid "The password can not be shown again, later!"
@@ -3745,7 +3754,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:28
 msgid "The serial number on the remote server"
-msgstr ""
+msgstr "Le numéro de série sur le serveur distant"
 
 #: privacyidea/static/components/token/views/token.lost.html:38
 msgid ""
@@ -3753,6 +3762,9 @@ msgid ""
 "        <a ui-sref=\"token.details({tokenSerial:lostResult.serial})\">\n"
 "        {{ lostResult.serial }}</a>."
 msgstr ""
+"Le numéro de série du nouveau jeton est\n"
+"        <a ui-sref=\"token.details({tokenSerial:lostResult.serial})\">\n"
+"        {{ lostResult.serial }}</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:22
 #: privacyidea/static/components/token/views/token.enroll.totp.html:22
@@ -3823,6 +3835,14 @@ msgid ""
 "newUser.realm})\">{{ newUser.user }}</a> in realm\n"
 "            {{ newUser.realm }}."
 msgstr ""
+"Le jeton a été enrôlé avec le numéro de série suivant\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
+"\n"
+"                {{ enrolledToken.serial }}</a>\n"
+"            pour l'utilisateur\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> dans le royaume\n"
+"            {{ newUser.realm }}."
 
 #: privacyidea/static/components/token/views/token.enroll.html:160
 msgid ""
@@ -3831,6 +3851,10 @@ msgid ""
 "serial})\">\n"
 "                {{ enrolledToken.serial }}</a>."
 msgstr ""
+"Le jeton a été enrôlé avec le numéro de série\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
+"\n"
+"                {{ enrolledToken.serial }}</a>."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
 msgid "The trust_anchor_dir must be an absolute path."
@@ -4135,7 +4159,7 @@ msgstr "Informations du jeton"
 
 #: privacyidea/static/components/token/views/token.details.html:1
 msgid "Token details for {{ tokenSerial }}"
-msgstr ""
+msgstr "Détails pour le jeton {{ tokenSerial }}"
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:4
 #: privacyidea/static/components/token/views/token.enrolled.webauthn.html:4
@@ -4162,7 +4186,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.lost.html:2
 msgid "Token {{ selectedToken.serial }} is lost?"
-msgstr ""
+msgstr "Le jeton {{ selectedToken.serial }} est perdu ?"
 
 #: privacyidea/static/components/config/controllers/tokengroupController.js:71
 msgid "Tokengroup saved."
@@ -4607,12 +4631,16 @@ msgid ""
 "Your token PIN has expired. You need to set a new PIN\n"
 "                for token {{ pin_change_serial }}."
 msgstr ""
+"Le code PIN de votre jeton a expiré, vous devez en définir un nouveau\n"
+"                pour le jeton {{ pin_change_serial }}."
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:36
 #: privacyidea/static/components/token/views/token.enrolled.push.html:19
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:36
 msgid "Your token {{ enrolledToken.serial }} is not completely enrolled, yet."
 msgstr ""
+"L'enrôlement de votre jeton {{ enrolledToken.serial }} n'est pas totalement "
+"validé."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:1
 msgid "Yubico Token settings"
@@ -4868,7 +4896,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.list.html:19
 #: privacyidea/static/components/user/views/user.details.html:148
 msgid "serial"
-msgstr ""
+msgstr "nr de série"
 
 #: privacyidea/static/components/token/views/token.import.html:38
 msgid "serial number, seed, type, ocrasuite"
@@ -4896,11 +4924,11 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
 msgid "start typing a serial number of a token that is notassigned, yet."
-msgstr ""
+msgstr "Saisir un numéro de série qui n'a pas encore été assigné."
 
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:8
 msgid "start typing a serial number of a token."
-msgstr ""
+msgstr "Saisir le numéro de série d'un jeton."
 
 #: privacyidea/static/components/directives/views/directive.assignuser.html:17
 msgid "start typing a username"
@@ -4966,7 +4994,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.vasco.html:23
 msgid "use VASCO Serial"
-msgstr ""
+msgstr "Utiliser un numéro de série VASCO"
 
 #: privacyidea/static/components/audit/views/audit.log.html:81
 #: privacyidea/static/components/token/views/token.list.html:74
