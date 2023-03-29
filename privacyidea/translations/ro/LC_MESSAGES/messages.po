@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2023-02-09 12:39+0100\n"
-"PO-Revision-Date: 2023-03-25 10:41+0000\n"
+"PO-Revision-Date: 2023-03-29 12:41+0000\n"
 "Last-Translator: Dan Marina <dan.marina@yahoo.com>\n"
 "Language-Team: Romanian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/ro/>\n"
@@ -223,41 +223,52 @@ msgstr ""
 
 #: lib/policy.py:1659
 msgid "Admin is allowed to manage the realms of a token."
-msgstr ""
+msgstr "Administratorul are permisiunea de a gestiona domeniile unui token."
 
 #: lib/policy.py:1664
 msgid "Admin is allowed to list tokens."
-msgstr ""
+msgstr "Administratorul are permisiunea de a lista jetoane."
 
 #: lib/policy.py:1668
 msgid "Admin is allowed to retrieve a serial for a given OTP value."
 msgstr ""
+"Administratorului i se permite să preia un serial pentru o anumită valoare "
+"OTP."
 
 #: lib/policy.py:1673
 msgid "Admin is allowed to retrieve random keys from privacyIDEA."
 msgstr ""
+"Administratorul are permisiunea de a prelua chei aleatorii de la privacyIDEA."
 
 #: lib/policy.py:1677
 msgid "Admin is allowed to copy the PIN of one token to another token."
 msgstr ""
+"Administratorul are permisiunea de a copia PIN-ul unui token pe alt token."
 
 #: lib/policy.py:1682
 msgid ""
 "Admin is allowed to copy the assigned user to another token, i.e. assign "
 "a user to another token."
 msgstr ""
+"Administratorul are voie să copieze utilizatorul alocat într-un alt simbol, "
+"adică să atribuie un utilizator unui alt simbol."
 
 #: lib/policy.py:1688
 msgid "Admin is allowed to trigger the lost token workflow."
 msgstr ""
+"Administratorului i se permite să declanșeze fluxul de lucru cu simbolul "
+"pierdut."
 
 #: lib/policy.py:1694
 msgid "Admin is allowed to write and modify the system configuration."
 msgstr ""
+"Administratorul are voie să scrie și să modifice configurația sistemului."
 
 #: lib/policy.py:1699
 msgid "Admin is allowed to delete keys in the system configuration."
 msgstr ""
+"Administratorul are permisiunea de a șterge cheile din configurația "
+"sistemului."
 
 #: lib/policy.py:1705
 msgid "Admin is allowed to read basic system configuration."
@@ -424,10 +435,12 @@ msgstr ""
 #: lib/policy.py:1910
 msgid "Admin is allowed to write and modify SMS gateway definitions."
 msgstr ""
+"Administratorul are voie să scrie și să modifice definițiile gateway-ului "
+"SMS."
 
 #: lib/policy.py:1916
 msgid "Admin is allowed to read SMS gateway definitions."
-msgstr ""
+msgstr "Administratorul are voie să citească definițiile gateway-ului SMS."
 
 #: lib/policy.py:1921
 msgid "Admin is allowed to get the list of authenticated clients and their types."
@@ -440,6 +453,8 @@ msgstr ""
 #: lib/policy.py:1934
 msgid "The Admin is allowed to trigger a challenge for e.g. SMS OTP token."
 msgstr ""
+"Administratorului i se permite să declanșeze o provocare pentru, de ex. "
+"Token SMS OTP."
 
 #: lib/policy.py:1940
 msgid ""
@@ -1180,7 +1195,6 @@ msgid "wrong otp pin"
 msgstr ""
 
 #: lib/token.py:2452
-#, fuzzy
 msgid "Admin is allowed to initialize {0!s} tokens."
 msgstr "Administratorul are permisiunea să resincronizeze token-uri."
 
@@ -1537,7 +1551,7 @@ msgstr ""
 
 #: lib/eventhandler/tokenhandler.py:196
 msgid "Use a specific SMS gateway configuration for this token."
-msgstr ""
+msgstr "Utilizați o configurație specifică de gateway SMS pentru acest token."
 
 #: lib/eventhandler/tokenhandler.py:201
 msgid "A dictionary of additional init parameters."
@@ -1639,11 +1653,11 @@ msgstr ""
 
 #: lib/eventhandler/usernotification.py:206
 msgid "Send the user notification via a predefined SMS gateway."
-msgstr ""
+msgstr "Trimiteți notificarea utilizatorului printr-un gateway SMS predefinit."
 
 #: lib/eventhandler/usernotification.py:211
 msgid "The text of the SMS."
-msgstr ""
+msgstr "Textul SMS-ului."
 
 #: lib/eventhandler/usernotification.py:221
 msgid ""
@@ -1677,7 +1691,7 @@ msgstr ""
 #: lib/machines/ldap.py:338
 #, python-format
 msgid "Your LDAP config seems to be OK, %i machine objects found."
-msgstr ""
+msgstr "Configurația LDAP pare să fie în regulă, %i obiecte de mașină găsite."
 
 #: lib/resolvers/LDAPIdResolver.py:1118
 msgid ""
@@ -1688,6 +1702,8 @@ msgstr ""
 #: lib/resolvers/LDAPIdResolver.py:1121
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr ""
+"Configurația dvs. LDAP pare să fie OK, au fost găsite {0!s} obiecte "
+"utilizator."
 
 #: lib/smsprovider/FirebaseProvider.py:201
 msgid ""
@@ -1712,10 +1728,12 @@ msgid ""
 "Specify a substring, that indicates, that the SMS was delivered "
 "successfully."
 msgstr ""
+"Specificați un subșir, care indică faptul că SMS-ul a fost livrat cu succes."
 
 #: lib/smsprovider/HttpSMSProvider.py:270
 msgid "Specify a substring, that indicates, that the SMS failed to be delivered."
 msgstr ""
+"Specificați un subșir, care indică faptul că SMS-ul nu a putut fi livrat."
 
 #: lib/smsprovider/HttpSMSProvider.py:274
 msgid "Username in case of basic authentication."
@@ -1763,22 +1781,24 @@ msgid ""
 "The script in script directory PI_SCRIPT_SMSPROVIDER_DIRECTORY to call. "
 "Expects phone as the parameter and the message from stdin."
 msgstr ""
+"Scriptul din directorul de script PI_SCRIPT_SMSPROVIDER_DIRECTORY de apelat. "
+"Se așteaptă telefonul ca parametru și mesajul de la stdin."
 
 #: lib/smsprovider/SmppSMSProvider.py:125
 msgid "SMSC Host IP"
-msgstr ""
+msgstr "IP gazdă SMSC"
 
 #: lib/smsprovider/SmppSMSProvider.py:128
 msgid "SMSC Port"
-msgstr ""
+msgstr "Portul SMSC"
 
 #: lib/smsprovider/SmppSMSProvider.py:130
 msgid "SMSC Service ID"
-msgstr ""
+msgstr "ID-ul serviciului SMSC"
 
 #: lib/smsprovider/SmppSMSProvider.py:132
 msgid "Password for authentication on SMSC"
-msgstr ""
+msgstr "Parola pentru autentificare pe SMSC"
 
 #: lib/smsprovider/SmppSMSProvider.py:134
 msgid "SOURCE_ADDR_TON Special Flag"
@@ -1790,7 +1810,7 @@ msgstr ""
 
 #: lib/smsprovider/SmppSMSProvider.py:138
 msgid "Source address (SMS sender)"
-msgstr ""
+msgstr "Adresă sursă (expeditor SMS)"
 
 #: lib/smsprovider/SmppSMSProvider.py:139
 msgid "DESTINATION_ADDR_TON Special Flag"
@@ -2274,29 +2294,35 @@ msgstr ""
 
 #: lib/tokens/smstoken.py:199
 msgid "SMS Token"
-msgstr ""
+msgstr "Token SMS"
 
 #: lib/tokens/smstoken.py:201
 msgid "SMS: Send a One Time Password to the users mobile phone."
-msgstr ""
+msgstr "SMS: Trimiteți o parolă OTP pe telefonul mobil al utilizatorului."
 
 #: lib/tokens/smstoken.py:210
 msgid ""
 "The text that will be send via SMS for an SMS token. Use tags like {otp} "
 "and {serial} as parameters."
 msgstr ""
+"Textul care va fi trimis prin SMS pentru un token SMS. Utilizați etichete "
+"precum {otp} și {serial} ca parametri."
 
 #: lib/tokens/smstoken.py:215
 msgid ""
 "If set, a new SMS OTP will be sent after successful authentication with "
 "one SMS OTP."
 msgstr ""
+"Dacă este setat, un nou SMS OTP va fi trimis după autentificarea cu succes "
+"cu un singur SMS OTP."
 
 #: lib/tokens/smstoken.py:220
 msgid ""
 "Use an alternate challenge text for telling the user to enter the code "
 "from the SMS."
 msgstr ""
+"Utilizați un text de provocare alternativ pentru a spune utilizatorului să "
+"introducă codul din SMS."
 
 #: lib/tokens/smstoken.py:228
 msgid "Choose the gateways the administrator is allowed to set."
@@ -2308,19 +2334,21 @@ msgstr ""
 
 #: lib/tokens/smstoken.py:243
 msgid "The user may only have this maximum number of SMS tokens assigned."
-msgstr ""
+msgstr "Utilizatorul poate avea atribuit doar acest număr maxim de jetoane SMS."
 
 #: lib/tokens/smstoken.py:248
 msgid "The user may only have this maximum number of active SMS tokens assigned."
 msgstr ""
+"Utilizatorul poate avea atribuit doar acest număr maxim de jetoane SMS "
+"active."
 
 #: lib/tokens/smstoken.py:325
 msgid "Enter the OTP from the SMS:"
-msgstr ""
+msgstr "Introduceți OTP-ul din SMS:"
 
 #: lib/tokens/smstoken.py:356
 msgid "The PIN was correct, but the SMS could not be sent!"
-msgstr ""
+msgstr "PIN-ul a fost corect, dar SMS-ul nu a putut fi trimis!"
 
 #: lib/tokens/smstoken.py:604
 msgid "Please enter your new phone number!"
