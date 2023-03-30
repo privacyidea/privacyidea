@@ -38,7 +38,7 @@ importlib-metadata==6.1.0; python_version > '3.6'
 importlib-resources==5.4.0; python_version == '3.6'
 itsdangerous==1.1.0
 Jinja2==2.11.3
-ldap3==2.9.1
+ldap3==2.8.1
 lxml==4.9.2
 Mako==1.1.6; python_version == '3.6'
 Mako==1.2.4; python_version > '3.6'
