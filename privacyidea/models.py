@@ -308,7 +308,6 @@ class Token(MethodsMixin, db.Model):
         self.count = 0
         if reset_failcount is True:
             self.failcount = 0
-        db.session.commit()
 
     def set_tokengroups(self, tokengroups, add=False):
         """
@@ -391,7 +390,6 @@ class Token(MethodsMixin, db.Model):
         iv = geturandom(16)
         self.user_pin = encrypt(userPin, iv)
         self.user_pin_iv = hexlify_and_unicode(iv)
-        db.session.commit()
 
     @log_with(log)
     def get_otpkey(self):
@@ -423,7 +421,6 @@ class Token(MethodsMixin, db.Model):
         :rtype: str
         """
         self.pin_hash = pass_hash(pin)
-        db.session.commit()
         return self.pin_hash
 
     def get_hashed_pin(self, pin):
@@ -450,7 +447,6 @@ class Token(MethodsMixin, db.Model):
         if desc is None:
             desc = ""
         self.description = convert_column_to_unicode(desc)
-        db.session.commit()
         return self.description
 
     def set_pin(self, pin, hashed=True):
@@ -466,7 +462,6 @@ class Token(MethodsMixin, db.Model):
         else:
             self.pin_hash = "@@" + encryptPin(upin)
             log.debug("setPin(ENCR:{0!r})".format(self.pin_hash))
-        db.session.commit()
         return self.pin_hash
 
     def check_pin(self, pin):
@@ -518,7 +513,6 @@ class Token(MethodsMixin, db.Model):
         iv = geturandom(16)
         self.so_pin = encrypt(soPin, iv)
         self.so_pin_iv = hexlify_and_unicode(iv)
-        db.session.commit()
         return self.so_pin, self.so_pin_iv
 
     def __unicode__(self):
