@@ -69,9 +69,9 @@ class AppTestCase(unittest.TestCase):
                                                  "[%(thread)d][%(levelname)s]"
                                                  "[%(name)s:%(lineno)d] "
                                                  "%(message)s",
-                                            strict=False),
+                                            partial=True),
                        level=logging.DEBUG,
-                       strict=False)
+                       partial=True)
         ], logger.handlers)
 
     def test_02_create_production_app(self):
@@ -97,9 +97,9 @@ class AppTestCase(unittest.TestCase):
                                                      "[%(thread)d][%(levelname)s]"
                                                      "[%(name)s:%(lineno)d] "
                                                      "%(message)s",
-                                                strict=False),
+                                                partial=True),
                            level=logging.DEBUG,
-                           strict=False)
+                           partial=True)
             ], logger.handlers)
             logger = logging.getLogger('privacyidea.lib.auditmodules.loggeraudit')
             self.assertEqual(logger.level, logging.INFO, logger)
@@ -111,9 +111,9 @@ class AppTestCase(unittest.TestCase):
                                                      "[%(thread)d][%(levelname)s]"
                                                      "[%(name)s:%(lineno)d] "
                                                      "%(message)s",
-                                                strict=False),
+                                                partial=True),
                            level=logging.INFO,
-                           strict=False)
+                           partial=True)
             ], logger.handlers)
 
     def test_04_logging_config_yaml(self):
@@ -132,10 +132,10 @@ class AppTestCase(unittest.TestCase):
                                                      "[%(thread)d][%(levelname)s]"
                                                      "[%(name)s:%(lineno)d] "
                                                      "%(message)s",
-                                                strict=False),
+                                                partial=True),
                            backupCount=5,
                            level=logging.DEBUG,
-                           strict=False)
+                           partial=True)
             ], logger.handlers)
             logger = logging.getLogger('audit')
             self.assertEqual(logger.level, logging.INFO, logger)
@@ -145,7 +145,7 @@ class AppTestCase(unittest.TestCase):
                            baseFilename=os.path.join(dirname, 'audit.log'),
                            level=logging.INFO,
                            formatter=None,
-                           strict=False)
+                           partial=True)
             ], logger.handlers)
 
     def test_05_logging_config_broken_yaml(self):
@@ -165,7 +165,7 @@ class AppTestCase(unittest.TestCase):
                                                      "[%(thread)d][%(levelname)s]"
                                                      "[%(name)s:%(lineno)d] "
                                                      "%(message)s",
-                                                strict=False),
+                                                partial=True),
                            level=logging.INFO,
-                           strict=False)
+                           partial=True)
             ], logger.handlers)

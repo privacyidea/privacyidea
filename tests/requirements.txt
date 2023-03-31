@@ -1,16 +1,21 @@
 -r ../requirements.txt
-attrs==21.4.0
+attrs==22.2.0
 coverage==6.2; python_version == '3.6'
-coverage==6.3.2; python_version > '3.6'
-iniconfig==1.1.1
-mock==4.0.3
+coverage==7.2.2; python_version > '3.6'
+exceptiongroup==1.1.1; python_version > '3.6'
+iniconfig==1.1.1; python_version == '3.6'
+iniconfig==2.0.0; python_version > '3.6'
+mock==5.0.1
+packaging==23.0; python_version > '3.6'
 pluggy==1.0.0
-py==1.11.0
+py==1.11.0; python_version == '3.6'
+pyparsing==3.0.9; python_version > '3.6'
 pytest==7.0.1; python_version == '3.6'
-pytest==7.1.2; python_version > '3.6'
-pytest-cov==3.0.0
+pytest==7.2.2; python_version > '3.6'
+pytest-cov==4.0.0
 responses==0.17.0; python_version == '3.6'
-responses==0.20.0; python_version > '3.6'
-testfixtures==6.18.5
+responses==0.23.1; python_version > '3.6'
+testfixtures==7.1.0
 tomli==1.2.3; python_version == '3.6'
 tomli==2.0.1; python_version > '3.6'
+types-PyYAML==6.0.12.9; python_version > '3.6'
