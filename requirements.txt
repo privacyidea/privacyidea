@@ -77,6 +77,6 @@ SQLAlchemy==1.4.47
 typing_extensions==4.1.1; python_version == '3.6'
 typing_extensions==4.5.0; python_version > '3.6'
 urllib3==1.26.15
-Werkzeug==1.0.1
+Werkzeug==2.2.3
 zipp==3.6.0; python_version == '3.6'
 zipp==3.15.0; python_version > '3.6'
