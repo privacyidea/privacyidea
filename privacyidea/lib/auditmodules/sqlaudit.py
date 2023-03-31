@@ -49,7 +49,7 @@ from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import truncate_comma_list, is_true
 from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
-from sqlalchemy.sql import expression
+from sqlalchemy.sql.expression import FunctionElement
 from sqlalchemy.ext.compiler import compiles
 import datetime
 import traceback
@@ -64,10 +64,11 @@ metadata = MetaData()
 
 
 # Define function to convert SQL DateTime objects to an ISO-format string
-# By using <https://docs.sqlalchemy.org/en/13/core/compiler.html> we can
+# By using <https://docs.sqlalchemy.org/en/14/core/compiler.html> we can
 # differentiate between different dialects.
-class to_isodate(expression.FunctionElement):
+class to_isodate(FunctionElement):
     name = 'to_isodate'
+    inherit_cache = True
 
 
 @compiles(to_isodate, 'oracle')

@@ -15,12 +15,16 @@ getToken....
 """
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.user import (User)
-from privacyidea.lib.tokenclass import TokenClass, TOKENKIND, FAILCOUNTER_EXCEEDED, FAILCOUNTER_CLEAR_TIMEOUT
+from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
+                                        FAILCOUNTER_EXCEEDED,
+                                        FAILCOUNTER_CLEAR_TIMEOUT)
 from privacyidea.lib.token import weigh_token_type
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
-from privacyidea.models import (Token, Challenge, TokenRealm)
-from privacyidea.lib.config import (set_privacyidea_config, get_token_types, delete_privacyidea_config, SYSCONF)
-from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy, PolicyClass, delete_policy
+from privacyidea.models import (db, Token, Challenge, TokenRealm)
+from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
+                                    delete_privacyidea_config, SYSCONF)
+from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, PolicyClass,
+                                    delete_policy)
 from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
 from privacyidea.lib.error import PolicyError
 import datetime
@@ -54,9 +58,11 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_dynamic_policy_definitions,
                                    get_tokens_paginate,
                                    set_validity_period_end,
-                                   set_validity_period_start, remove_token, delete_tokeninfo,
-                                   import_token, get_one_token, get_tokens_from_serial_or_user,
-                                   get_tokens_paginated_generator, assign_tokengroup, unassign_tokengroup)
+                                   set_validity_period_start, delete_tokeninfo,
+                                   import_token, get_one_token,
+                                   get_tokens_from_serial_or_user,
+                                   get_tokens_paginated_generator,
+                                   assign_tokengroup, unassign_tokengroup)
 from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
@@ -1512,7 +1518,9 @@ class TokenTestCase(MyTestCase):
 
         # serial72 token has invalid type. Check behavior and remove it.
         self.assertEqual(list(get_tokens_paginated_generator(serial_wildcard="serial*")), [[]])
-        Token.query.filter_by(serial="serial72").delete()
+        # We need to remove the token directly in the DB since `remove_token()` would check the type
+        db.session.query(Token).filter_by(serial="serial72").delete()
+        db.session.commit()
 
         all_matching_tokens = get_tokens(serial_wildcard="S*")
         lists1 = list(get_tokens_paginated_generator(serial_wildcard="S*"))

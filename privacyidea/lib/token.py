@@ -68,7 +68,7 @@ import logging
 
 from sqlalchemy import (and_, func)
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql import expression
+from sqlalchemy.sql.expression import FunctionElement
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
@@ -114,8 +114,9 @@ ENCODING = "utf-8"
 # compare operation.
 # By using <https://docs.sqlalchemy.org/en/13/core/compiler.html> we can
 # differentiate between different dialects.
-class clob_to_varchar(expression.FunctionElement):
+class clob_to_varchar(FunctionElement):
     name = 'clob_to_varchar'
+    inherit_cache = True
 
 
 @compiles(clob_to_varchar)
@@ -1101,7 +1102,6 @@ def init_token(param, user=None, tokenrealms=None,
         if token_count == 0:
             db_token.delete()
         raise
-#        raise TokenAdminError(_("token create failed {0!r}").format(e), id=1112)
 
     # We only set the tokenkind here, if it was explicitly set in the
     # init_token call.
@@ -1117,6 +1117,8 @@ def init_token(param, user=None, tokenrealms=None,
     if validity_period_start:
         tokenobject.set_validity_period_start(validity_period_start)
 
+    # Safe the token object to make sure all changes are persisted in the db
+    tokenobject.save()
     return tokenobject
 
 

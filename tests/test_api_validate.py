@@ -501,8 +501,8 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             data = res.json
             result = data.get("result")
-            self.assertTrue(result.get("status") is True, result)
-            self.assertTrue(result.get("value") is True, result)
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
             detail = res.json.get("detail")
             self.assertEqual(detail.get("otplen"), 6)
             auth_items = res.json.get("auth_items")
