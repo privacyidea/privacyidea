@@ -301,6 +301,10 @@ def get_auth_token():
     else:
         # The user could not be identified against the admin database,
         # so we do the rest of the check
+        if password is None:
+            raise AuthError(_("Authentication failure. Wrong credentials"),
+                            id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS,
+                            details=details or {})
         options = {"g": g,
                    "clientip": g.client_ip}
         for key, value in request.all_data.items():

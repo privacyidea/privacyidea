@@ -1088,7 +1088,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "timelimituser@" + self.realm2,
-                                                 "pass": pin}):
+                                                 "password": pin}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 401)
             details = res.json.get("detail")

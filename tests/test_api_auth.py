@@ -203,11 +203,23 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertIn('token', result.get("value"), result)
             self.assertEqual('realm1', result['value']['realm'], result)
 
-        # test failed auth
+        # test failed auth wrong password
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "cornelius",
                                                  "password": "false"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            self.assertEqual(4031, result['error']['code'], result)
+            self.assertEqual('Authentication failure. Wrong credentials',
+                             result['error']['message'], result)
+
+        # test failed auth no password
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(401, res.status_code, res)
             result = res.json.get("result")
