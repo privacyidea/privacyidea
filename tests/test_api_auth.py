@@ -221,11 +221,11 @@ class AuthApiTestCase(MyApiTestCase):
                                            method='POST',
                                            data={"username": "cornelius"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(400, res.status_code, res)
+            self.assertEqual(401, res.status_code, res)
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
-            self.assertEqual(905, result['error']['code'], result)
-            self.assertEqual("ERR905: Missing parameter: 'password'",
+            self.assertEqual(4031, result['error']['code'], result)
+            self.assertEqual('Authentication failure. Wrong credentials',
                              result['error']['message'], result)
 
         # test with realm added to user. This fails since we do not split
@@ -436,12 +436,12 @@ class AuthApiTestCase(MyApiTestCase):
                                            data={"username": "cornelius"},
                                            environ_base={"REMOTE_USER": "cornelius"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 400, res)
+            self.assertEqual(res.status_code, 401, res)
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
-            self.assertEqual(result.get("error").get('code'), 905, result)
+            self.assertEqual(result.get("error").get('code'), 4031, result)
             self.assertEqual(result.get("error").get('message'),
-                             "ERR905: Missing parameter: 'password'", result)
+                             'Authentication failure. Wrong credentials', result)
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
@@ -454,12 +454,12 @@ class AuthApiTestCase(MyApiTestCase):
                                            data={"username": "cornelius"},
                                            environ_base={"REMOTE_USER": "cornelius"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 400, res)
+            self.assertEqual(res.status_code, 401, res)
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
-            self.assertEqual(result.get("error").get('code'), 905, result)
+            self.assertEqual(result.get("error").get('code'), 4031, result)
             self.assertEqual(result.get("error").get('message'),
-                             "ERR905: Missing parameter: 'password'", result)
+                             'Authentication failure. Wrong credentials', result)
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
@@ -520,7 +520,7 @@ class AuthApiTestCase(MyApiTestCase):
                                            data={"username": "cornelius@realm1"},
                                            environ_base={"REMOTE_USER": "cornelius@realm1"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 400, res)
+            self.assertEqual(res.status_code, 401, res)
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
