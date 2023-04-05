@@ -119,11 +119,7 @@ elif os.path.isfile("/etc/ssl/certs/ca-bundle.crt"):
 else:
     DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
 
-try:
-    TLS_NEGOTIATE_PROTOCOL = ssl.PROTOCOL_TLS
-except AttributeError as _e:
-    # this is Python < 2.7.13, it does not provide ssl.PROTOCOL_TLS
-    TLS_NEGOTIATE_PROTOCOL = ssl.PROTOCOL_SSLv23
+TLS_NEGOTIATE_PROTOCOL = ssl.PROTOCOL_TLS
 
 DEFAULT_TLS_PROTOCOL = TLS_NEGOTIATE_PROTOCOL
 
