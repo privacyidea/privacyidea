@@ -374,8 +374,6 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                 params["machineid"] = machineObject.id;
                 params["resolver"] = machineObject.resolver;
             }
-            console.log("Attach machine");
-            console.log(params);
             MachineFactory.attachTokenMachine(params, function (data) {
                 // clear form
                 $scope.form.application = null;

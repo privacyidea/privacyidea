@@ -46,13 +46,13 @@ myApp.controller("serviceidController", ["$scope", "$stateParams", "inform",
     }
 
     if ($location.path() === "/config/serviceid/list") {
-        // In the case of list, we fetch all radius servers
+        // In the case of list, we fetch all Service IDs
         $scope.getServiceids();
     }
 
     $scope.servicename = $stateParams.servicename;
     if ($scope.servicename) {
-        // We are editing an existing Tokengroup
+        // We are editing an existing Service ID
         $scope.getServiceid($scope.servicename);
     } else {
         // This is a new service
