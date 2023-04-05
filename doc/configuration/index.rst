@@ -22,5 +22,6 @@ It also contains a shortcut to the :ref:`policies`, :ref:`eventhandler` and
    radiusserver_config.rst
    privacyideaserver_config.rst
    sms_gateway_config.rst
+   serviceids.rst
    token_config.rst
    privacyidea-appliance.rst
