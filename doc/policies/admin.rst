@@ -421,7 +421,7 @@ type: bool
 .. index:: service ID
 
 This policy allows the administrator to add a new service ID to the list of
-defined services. These service ID can then be used in attaching SSH keys.
+defined services. These service IDs can then be used in attaching SSH keys.
 See :ref:`application_ssh`.
 
 serviceid_delete

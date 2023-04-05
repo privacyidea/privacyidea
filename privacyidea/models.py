@@ -3172,8 +3172,7 @@ class Serviceid(TimestampMethodsMixin, db.Model):
         self.Description = description
 
     def save(self):
-        si_func = Serviceid.query.filter_by(name=self.name).first
-        si = si_func()
+        si = Serviceid.query.filter_by(name=self.name).first()
         if si is None:
             return TimestampMethodsMixin.save(self)
         else:
