@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2023-01-16 21:51+0000\n"
-"Last-Translator: Enrico M. V. Fasanelli <enrico@infn.it>\n"
+"PO-Revision-Date: 2023-04-05 11:51+0000\n"
+"Last-Translator: Felix E <felix@eckhofer.com>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.15.1-dev\n"
+"X-Generator: Weblate 4.17-dev\n"
 
 # This is the level in the subscriptions
 #. level of subscription
@@ -1513,7 +1513,7 @@ msgstr "HOTP-Token Einstellungen"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:195
 msgid "HOTP: event based One Time Passwords"
-msgstr "HOTP: Ereignisbasiertes Einmal-Passwort"
+msgstr "HOTP: Ereignisbasiertes Einmalpasswort"
 
 #: privacyidea/static/components/config/views/config.events.details.html:61
 #: privacyidea/static/components/config/views/config.events.list.html:18
@@ -3211,7 +3211,7 @@ msgstr "TOTP-Token Einstellungen"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:196
 msgid "TOTP: time based One Time Passwords"
-msgstr "TOTP: Zeitbasiertes Einmal-Passwort"
+msgstr "TOTP: Zeitbasiertes Einmalpasswort"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:143
 msgid "Table"
@@ -3336,7 +3336,7 @@ msgid ""
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
 "    4226</a>."
 msgstr ""
-"Der HOTP-Token ist ein ereignisbasierte Einmal-Passwort-Token. Er ist in <a "
+"Der HOTP-Token ist ein ereignisbasiertes Einmalpasswort-Token. Er ist in <a "
 "href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
 "    4226 beschrieben</a>."
 
@@ -3499,8 +3499,8 @@ msgid ""
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc6238\">RFC\n"
 "    6238</a>."
 msgstr ""
-"Der TOTP-Token ist ein zeit-basierter Einmal-Passwort-Token.Er ist in <a "
-"href=\"https://tools.ietf.org/html/rfc6238\">RFC 6238</a> beschrieben."
+"Der TOTP-Token ist ein zeitbasierter Einmalpasswort-Token.Er ist in <a href="
+"\"https://tools.ietf.org/html/rfc6238\">RFC 6238</a> beschrieben."
 
 #: privacyidea/static/components/token/views/token.enroll.totp.html:1
 msgid ""
@@ -3640,8 +3640,8 @@ msgid ""
 "    The current OTP length of a programmed YubiKey can automatically be\n"
 "    determined by inserting it in the test field."
 msgstr ""
-"Der Yubikey ist ein USB-Gerät, das eine ereignis-basiertes Einmal-Passwort "
-"auswirft. Dazu wird es als Tastatur erkannt. Sie können den Yubikey mit "
+"Der Yubikey ist ein USB-Gerät, das ein ereignisbasiertes Einmalpasswort "
+"ausgibt. Dazu wird es als Tastatur erkannt. Sie können den Yubikey mit "
 "Personalisierungstools von Yubico initialisieren.\n"
 "\n"
 "Der geheime Schlüssel in Hex und die gesamte Länge des OTP-Wertes werden "
@@ -5045,7 +5045,7 @@ msgstr "mOTP-PIN"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:198
 msgid "mOTP: classical mobile One Time Passwords"
-msgstr "mOTP: Klassisches Mobiles Einmal-Passwort"
+msgstr "mOTP: Klassisches Mobiles Einmalpasswort"
 
 #: privacyidea/static/components/user/views/user.details.html:154
 msgid "maxfail"
