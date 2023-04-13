@@ -895,7 +895,7 @@ class PushTokenTestCase(MyTestCase):
                                            method='POST',
                                            data={"username": "cornelius",
                                                  "realm": self.realm1,
-                                                 "pass": "",
+                                                 "password": "",
                                                  "transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 401)
@@ -917,7 +917,7 @@ class PushTokenTestCase(MyTestCase):
                                            method='POST',
                                            data={"username": "cornelius",
                                                  "realm": self.realm1,
-                                                 "pass": "",
+                                                 "password": "",
                                                  "transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
