@@ -302,44 +302,43 @@ def get_auth_token():
         # The user could not be identified against the admin database,
         # so we do the rest of the check
         if password is None:
-            raise AuthError(_("Authentication failure. Wrong credentials"),
-                            id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS,
-                            details=details or {})
-        options = {"g": g,
-                   "clientip": g.client_ip}
-        for key, value in request.all_data.items():
-            if value and key not in ["g", "clientip"]:
-                options[key] = value
-        user_auth, role, details = check_webui_user(user_obj,
-                                                    password,
-                                                    options=options,
-                                                    superuser_realms=
-                                                    superuser_realms)
-        details = details or {}
-        serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]]) \
-            if 'multi_challenge' in details else details.get('serial')
-        if db_admin_exist(user_obj.login) and user_auth and realm == get_default_realm():
-            # If there is a local admin with the same login name as the user
-            # in the default realm, we inform about this in the log file.
-            # This condition can only be checked if the user was authenticated as it
-            # is the only way to verify if such a user exists.
-            log.warning("A user '{0!s}' exists as local admin and as user in "
-                        "your default realm!".format(user_obj.login))
-        if role == ROLE.ADMIN:
-            g.audit_object.log({"user": "",
-                                "administrator": user_obj.login,
-                                "realm": user_obj.realm,
-                                "resolver": user_obj.resolver,
-                                "serial": serials,
-                                "info": "{0!s}|loginmode={1!s}".format(log_used_user(user_obj),
-                                                                        details.get("loginmode"))})
+            g.audit_object.add_to_log({"info": 'Missing parameter "password"'}, add_with_comma=True)
         else:
-            g.audit_object.log({"user": user_obj.login,
-                                "realm": user_obj.realm,
-                                "resolver": user_obj.resolver,
-                                "serial": serials,
-                                "info": "{0!s}|loginmode={1!s}".format(log_used_user(user_obj),
-                                        details.get("loginmode"))})
+            options = {"g": g,
+                       "clientip": g.client_ip}
+            for key, value in request.all_data.items():
+                if value and key not in ["g", "clientip"]:
+                    options[key] = value
+            user_auth, role, details = check_webui_user(user_obj,
+                                                        password,
+                                                        options=options,
+                                                        superuser_realms=
+                                                        superuser_realms)
+            details = details or {}
+            serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]]) \
+                if 'multi_challenge' in details else details.get('serial')
+            if db_admin_exist(user_obj.login) and user_auth and realm == get_default_realm():
+                # If there is a local admin with the same login name as the user
+                # in the default realm, we inform about this in the log file.
+                # This condition can only be checked if the user was authenticated as it
+                # is the only way to verify if such a user exists.
+                log.warning("A user '{0!s}' exists as local admin and as user in "
+                            "your default realm!".format(user_obj.login))
+            if role == ROLE.ADMIN:
+                g.audit_object.log({"user": "",
+                                    "administrator": user_obj.login,
+                                    "realm": user_obj.realm,
+                                    "resolver": user_obj.resolver,
+                                    "serial": serials,
+                                    "info": "{0!s}|loginmode={1!s}".format(log_used_user(user_obj),
+                                                                           details.get("loginmode"))})
+            else:
+                g.audit_object.log({"user": user_obj.login,
+                                    "realm": user_obj.realm,
+                                    "resolver": user_obj.resolver,
+                                    "serial": serials,
+                                    "info": "{0!s}|loginmode={1!s}".format(log_used_user(user_obj),
+                                                                           details.get("loginmode"))})
 
     if not admin_auth and not user_auth:
         raise AuthError(_("Authentication failure. Wrong credentials"),
