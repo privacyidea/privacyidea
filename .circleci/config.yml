@@ -23,12 +23,12 @@ executors:
           MARIADB_USER: pi
           MARIADB_PASSWORD: test123
           MARIADB_RANDOM_ROOT_PASSWORD: yes
-  postgres: &postgres-executor
+  postgres:
     docker:
       - image: cimg/python:3.10
         environment:
           TEST_DATABASE_URL: postgresql+psycopg2://pi:test123@localhost/pi
-      - image: cimg/postgres:14.6
+      - image: cimg/postgres:14.7
         environment:
           POSTGRES_DB: pi
           POSTGRES_USER: pi
@@ -48,7 +48,7 @@ jobs:
       - run: pip install -U pip
       # We do not want any caching (always the latest packages) therefore we
       # install the packages directly (not using the python orb)
-      - run: pip install pytest pytest-cov mock responses testfixtures
+      - run: pip install pytest pytest-cov mock responses testfixtures pyparsing
       - run: pip install -e .
       - run: pip freeze > test-results/generic/packages.txt
       - run:
