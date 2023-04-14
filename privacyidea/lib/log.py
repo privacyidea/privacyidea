@@ -34,21 +34,25 @@ log = logging.getLogger(__name__)
 
 DEFAULT_LOGGING_CONFIG = {
     "version": 1,
-    "formatters": {"detail": {"()":
-                                  "privacyidea.lib.log.SecureFormatter",
-                              "format": "[%(asctime)s][%(process)d]"
-                                        "[%(thread)d][%(levelname)s]"
-                                        "[%(name)s:%(lineno)d] "
-                                        "%(message)s"}
-                   },
-    "handlers": {"file": {"formatter": "detail",
-                          "class":
-                              "logging.handlers.RotatingFileHandler",
-                          "backupCount": 5,
-                          "maxBytes": 10000000,
-                          "level": logging.DEBUG,
-                          "filename": "privacyidea.log"}
-                 },
+    "formatters": {
+        "detail": {
+            "()": "privacyidea.lib.log.SecureFormatter",
+            "format": "[%(asctime)s][%(process)d]"
+                      "[%(thread)d][%(levelname)s]"
+                      "[%(name)s:%(lineno)d] "
+                      "%(message)s"
+        }
+    },
+    "handlers": {
+        "file": {
+            "formatter": "detail",
+            "class": "logging.handlers.RotatingFileHandler",
+            "backupCount": 5,
+            "maxBytes": 10000000,
+            "level": logging.DEBUG,
+            "filename": "privacyidea.log"
+        }
+    },
     "loggers": {"privacyidea": {"handlers": ["file"],
                                 "qualname": "privacyidea",
                                 "level": logging.INFO}
@@ -58,17 +62,8 @@ DEFAULT_LOGGING_CONFIG = {
 
 class SecureFormatter(Formatter):
 
-    bad_chars = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19"
-
     def format(self, record):
-        try:
-            message = super(SecureFormatter, self).format(record)
-        except TypeError:
-            # In pyhton 2.6 the Formatter does not seem to 
-            # be defined as 
-            # class Formatter(object)
-            # Using it in the super-statement this will raise a TypeError
-            message = Formatter.format(self, record)
+        message = super(SecureFormatter, self).format(record)
         secured = False
 
         s = ""

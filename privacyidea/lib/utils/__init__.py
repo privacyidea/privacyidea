@@ -80,8 +80,8 @@ def check_time_in_range(time_range, check_time=None):
 
     :param time_range: The timerange
     :type time_range: basestring
-    :param time: The time to check
-    :type time: datetime
+    :param check_time: The time to check
+    :type check_time: datetime
     :return: True, if time is within time_range.
     """
     time_match = False
@@ -95,7 +95,7 @@ def check_time_in_range(time_range, check_time=None):
 
     check_time = check_time or datetime.now()
     check_day = check_time.isoweekday()
-    check_hour =dt_time(check_time.hour, check_time.minute)
+    check_hour = dt_time(check_time.hour, check_time.minute)
     # remove whitespaces
     time_range = ''.join(time_range.split())
     # split into list of time ranges
@@ -113,13 +113,13 @@ def check_time_in_range(time_range, check_time=None):
             ts = [int(x) for x in t_start.split(":")]
             te = [int(x) for x in t_end.split(":")]
             if len(ts) == 2:
-                time_start =dt_time(ts[0], ts[1])
+                time_start = dt_time(ts[0], ts[1])
             else:
-                time_start =dt_time(ts[0])
+                time_start = dt_time(ts[0])
             if len(te) == 2:
-                time_end =dt_time(te[0], te[1])
+                time_end = dt_time(te[0], te[1])
             else:
-                time_end =dt_time(te[0])
+                time_end = dt_time(te[0])
 
             # check the day and the time
             if (dow_index.get(dow_start) <= check_day <= dow_index.get(dow_end)
@@ -136,6 +136,7 @@ def check_time_in_range(time_range, check_time=None):
 def to_utf8(password):
     """
     Convert a password to utf8
+
     :param password: A password that should be converted to utf8
     :type password: str or bytes
     :return: a utf8 encoded password
@@ -155,7 +156,7 @@ def to_utf8(password):
 def to_unicode(s, encoding="utf-8"):
     """
     Converts the string s to unicode if it is of type bytes.
-    
+
     :param s: the string to convert
     :type s: bytes or str
     :param encoding: the encoding to use (default utf8)
@@ -213,7 +214,7 @@ def hexlify_and_unicode(s):
     :rtype: str
     """
 
-    res = to_unicode(binascii.hexlify(to_bytes(s)))
+    res = binascii.hexlify(to_bytes(s)).decode('utf-8')
     return res
 
 
@@ -221,12 +222,13 @@ def b32encode_and_unicode(s):
     """
     Base32-encode a str (which is first encoded to UTF-8)
     or a byte string and return the result as a str.
+
     :param s: str or bytes to base32-encode
     :type s: str or bytes
     :return: base32-encoded string converted to unicode
     :rtype: str
     """
-    res = to_unicode(base64.b32encode(to_bytes(s)))
+    res = base64.b32encode(to_bytes(s)).decode('utf-8')
     return res
 
 
@@ -234,12 +236,13 @@ def b64encode_and_unicode(s):
     """
     Base64-encode a str (which is first encoded to UTF-8)
     or a byte string and return the result as a str.
+
     :param s: str or bytes to base32-encode
     :type s: str or bytes
     :return: base64-encoded string converted to unicode
     :rtype: str
     """
-    res = to_unicode(base64.b64encode(to_bytes(s)))
+    res = base64.b64encode(to_bytes(s)).decode('utf-8')
     return res
 
 
@@ -247,12 +250,13 @@ def urlsafe_b64encode_and_unicode(s):
     """
     Base64-urlsafe-encode a str (which is first encoded to UTF-8)
     or a byte string and return the result as a str.
+
     :param s: str or bytes to base32-encode
     :type s: str or bytes
     :return: base64-encoded string converted to unicode
     :rtype: str
     """
-    res = to_unicode(base64.urlsafe_b64encode(to_bytes(s)))
+    res = base64.urlsafe_b64encode(to_bytes(s)).decode('utf-8')
     return res
 
 
@@ -442,6 +446,7 @@ def parse_timelimit(limit):
     one in three hours.
 
     It returns a tuple the number and the timedelta.
+
     :param limit: a timelimit
     :type limit: basestring
     :return: tuple of number and timedelta
@@ -679,6 +684,7 @@ def get_client_ip(request, proxy_settings):
         # If no proxy settings are defined, we do not map any IPs anyway.
         return request.remote_addr
 
+
 def check_ip_in_policy(client_ip, policy):
     """
     This checks, if the given client IP is contained in a list like
@@ -743,7 +749,7 @@ def reduce_realms(all_realms, policies):
     """
     This function reduces the realm list based on the policies
     If there is a policy, that acts for all realms, all realms are returned.
-    Otherwise only realms are returned, that are contained in the policies.
+    Otherwise, only realms are returned, that are contained in the policies.
     """
     realms = {}
     if not policies:
@@ -768,6 +774,7 @@ def reduce_realms(all_realms, policies):
 def is_true(value):
     """
     Returns True is the value is 1, "1", True or "true"
+
     :param value: string or integer
     :return: Boolean
     """
@@ -907,15 +914,16 @@ def parse_legacy_time(ts, return_date=False):
     """
     The new timestrings are of the format YYYY-MM-DDThh:mm+oooo.
     They contain the timezone offset!
-    
+
     Old legacy time strings are of format DD/MM/YY hh:mm without time zone 
     offset.
-    
+
     This function parses string and returns the new formatted time string 
     including the timezone offset.
-    :param timestring: 
+
+    :param ts:
     :param return_date: If set to True a date is returned instead of a string
-    :return: 
+    :return:
     """
     from privacyidea.lib.tokenclass import DATE_FORMAT
     d = parse_date_string(ts)
@@ -934,7 +942,7 @@ def parse_timedelta(s):
     """
     parses a string like +5d or -30m and returns a timedelta.
     Allowed identifiers are s, m, h, d, y.
-    
+
     :param s: a string like +30m or -5d
     :return: timedelta 
     """
@@ -974,7 +982,7 @@ def parse_time_offset_from_now(s):
     Allowed tags are {now} and {current_time}. Only one tag of {now} or {
     current_time} is allowed.
     Allowed offsets are "s": seconds, "m": minutes, "h": hours, "d": days.
-        
+
     :param s: The string to be parsed.
     :return: tuple of modified string and timedelta 
     """
@@ -1020,6 +1028,7 @@ def convert_column_to_unicode(value):
     """
     Helper function for models. If ``value`` is None or a unicode object, do nothing.
     Otherwise, convert it to a unicode object.
+
     :param value: the string to convert
     :type value: str
     :return: a unicode object or None
@@ -1035,6 +1044,7 @@ def convert_column_to_unicode(value):
 def convert_timestamp_to_utc(timestamp):
     """
     Convert a timezone-aware datetime object to a naive UTC datetime.
+
     :param timestamp: datetime object that should be converted
     :type timestamp: timezone-aware datetime object
     :return: timezone-naive datetime object
@@ -1189,11 +1199,7 @@ def get_module_class(package_name, class_name, check_method=None):
     helper method to load the Module class from a given
     package in literal.
 
-    :param package_name: literal of the Module
-    :param class_name: Name of the class in the module
-    :param check_method: Name of the method to check, if this would be the right class
-
-    example:
+    example::
 
         get_module_class("privacyidea.lib.auditmodules.sqlaudit", "Audit", "log")
 
@@ -1203,6 +1209,9 @@ def get_module_class(package_name, class_name, check_method=None):
         checks, if the method exists
         if not an error is thrown
 
+    :param package_name: literal of the Module
+    :param class_name: Name of the class in the module
+    :param check_method: Name of the method to check, if this would be the right class
     """
     mod = import_module(package_name)
     if not hasattr(mod, class_name):
@@ -1230,7 +1239,7 @@ def get_version_number():
 def get_version():
     """
     This returns the version, that is displayed in the WebUI and
-    self service portal.
+    self-service portal.
     """
     version = get_version_number()
     return "privacyIDEA {0!s}".format(version)
@@ -1281,8 +1290,9 @@ def prepare_result(obj, rid=1, details=None):
 def split_pin_pass(passw, otplen, prependpin):
     """
     Split a given password based on the otp length and prepend pin
+
     :param passw: The password like test123456 or 123456test
-    :type pass: str
+    :type passw: str
     :param otplen: The length of the otp value
     :param prependpin: The password is either in front or after the otp value
     :return:

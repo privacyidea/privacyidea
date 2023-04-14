@@ -280,30 +280,24 @@ class TotpTokenClass(HotpTokenClass):
 
     @staticmethod
     @log_with(log)
-    def _time2float(curTime):
+    def _time2float(curtime):
         """
-        convert a datetime object or an datetime sting into a
-        float
-        s. http://bugs.python.org/issue12750
+        convert a datetime object into a float (POSIX timestamp).
 
-        :param curTime: time in datetime format
-        :type curTime: datetime object
+        TODO: handle timezone-aware datetime objects
 
-        :return: time as float
+        :param curtime: time in datetime format
+        :type curtime: datetime.datetime
+        :return: seconds since 1.1.1970
         :rtype: float
         """
-        dt = datetime.datetime.now()
-        if type(curTime) == datetime.datetime:
-            dt = curTime
+        if type(curtime) == datetime.datetime:
+            dt = curtime
+        else:
+            dt = datetime.datetime.now()
 
         td = (dt - datetime.datetime(1970, 1, 1))
-        # for python 2.6 compatibility, we have to implement
-        # 2.7 .total_seconds()::
-        # TODO: fix to float!!!!
-        tCounter = ((td.microseconds +
-                     (td.seconds + td.days * 24 * 3600)
-                     * 10 ** 6) * 1.0) / 10 ** 6
-        return tCounter
+        return td.total_seconds()
 
     @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):

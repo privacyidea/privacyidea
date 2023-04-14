@@ -515,9 +515,6 @@ class Token(MethodsMixin, db.Model):
         self.so_pin_iv = hexlify_and_unicode(iv)
         return self.so_pin, self.so_pin_iv
 
-    def __unicode__(self):
-        return self.serial
-
     @log_with(log)
     def get(self, key=None, fallback=None, save=False):
         """
@@ -575,7 +572,8 @@ class Token(MethodsMixin, db.Model):
         ret['tokengroup'] = tokengroup_list
         return ret
 
-    __str__ = __unicode__
+    def __str__(self):
+        return self.serial
 
     def __repr__(self):
         """
