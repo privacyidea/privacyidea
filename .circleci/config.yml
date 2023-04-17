@@ -53,7 +53,7 @@ jobs:
       - run: pip freeze > test-results/generic/packages.txt
       - run:
           command: |
-            python -b -m pytest --cov=privacyidea --junit-xml=test-results/generic/results.xml tests/
+            python -b -m pytest --cov=privacyidea -W once::DeprecationWarning --junit-xml=test-results/generic/results.xml tests/
           name: Test generic
       - store_test_results:
           path: test-results
