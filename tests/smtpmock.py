@@ -25,10 +25,7 @@ limitations under the License.
 
 import smtplib
 
-try:
-    from inspect import formatargspec, getfullargspec as getargspec
-except ImportError:
-    from inspect import formatargspec, getargspec
+import inspect
 
 try:
     from collections import Sequence, Sized
@@ -52,23 +49,15 @@ def wrapper%(signature)s:
 def get_wrapped(func, wrapper_template, evaldict):
     # Preserve the argspec for the wrapped function so that testing
     # tools such as pytest can continue to use their fixture injection.
-    args = getargspec(func)
-    values = args.args[-len(args.defaults):] if args.defaults else None
 
-    signature = formatargspec(*args)
-    is_bound_method = hasattr(func, '__self__')
-    if is_bound_method:
-        args.args = args.args[1:]     # Omit 'self'
-    callargs = formatargspec(*args, formatvalue=lambda v: '=' + v)
+    signature = inspect.signature(func)
 
-    ctx = {'signature': signature, 'funcargs': callargs}
+    ctx = {'signature': signature, 'funcargs': signature}
     exec(wrapper_template % ctx, evaldict, evaldict)
 
     wrapper = evaldict['wrapper']
 
     update_wrapper(wrapper, func)
-    if is_bound_method:
-        wrapper = wrapper.__get__(func.__self__, type(func.__self__))
     return wrapper
 
 
@@ -90,6 +79,7 @@ class CallList(Sequence, Sized):
 
     def reset(self):
         self._calls = []
+
 
 class SmtpMock(object):
 
