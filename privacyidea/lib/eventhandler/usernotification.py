@@ -54,10 +54,7 @@ from privacyidea.lib import _
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
-try:
-    from urllib.request import urlopen
-except ImportError:  # pragma: no cover
-    from urllib import urlopen
+from urllib.request import urlopen
 import logging
 import os
 import traceback

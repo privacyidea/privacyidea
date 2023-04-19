@@ -21,10 +21,7 @@ limitations under the License.
 
 from collections import namedtuple
 
-try:
-    from collections import Sequence, Sized
-except ImportError:
-    from collections.abc import Sequence, Sized
+from collections.abc import Sequence, Sized
 
 from .smtpmock import get_wrapped
 

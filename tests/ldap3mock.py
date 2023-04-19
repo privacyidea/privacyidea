@@ -49,11 +49,7 @@ import pyparsing
 from .smtpmock import get_wrapped
 
 from collections import namedtuple
-
-try:
-    from collections import Sequence, Sized
-except ImportError:
-    from collections.abc import Sequence, Sized
+from collections.abc import Sequence, Sized
 
 from privacyidea.lib.utils import to_bytes, to_unicode
 
