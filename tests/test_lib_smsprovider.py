@@ -27,7 +27,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      create_sms_instance)
 from privacyidea.lib.smtpserver import add_smtpserver
 import responses
-from responses import matchers
+from responses import json_params_matcher
 import os
 from . import smtpmock
 from . import smppmock
@@ -178,6 +178,13 @@ class SmtpSMSTestCase(MyTestCase):
     identifier_config = {"MAILTO": "recp@example.com",
                          "IDENTIFIER": "myServer"}
 
+    regexp_config = {"MAILSERVER": "localhost:25",
+                     "MAILTO": "recp@example.com",
+                     "MAILSENDER": "pi@example.com",
+                     "MAILUSER": "username",
+                     "MAILPASSWORD": "sosecret",
+                     "REGEXP": "/[+-/. ]//"}
+
     def setUp(self):
         self.missing_provider = SmtpSMSProvider()
         self.missing_provider.load_config(self.missing_config)
@@ -193,6 +200,10 @@ class SmtpSMSTestCase(MyTestCase):
 
         self.identifier_provider = SmtpSMSProvider()
         self.identifier_provider.load_config(self.identifier_config)
+
+        self.regexp_provider = SmtpSMSProvider()
+        self.regexp_provider.load_config(self.regexp_config)
+
 
     def test_01_missing_config(self):
         self.assertRaises(SMSError, self.missing_provider.submit_message,
@@ -256,6 +267,35 @@ class SmtpSMSTestCase(MyTestCase):
         r = sms.submit_message("123456", "Halo")
         self.assertTrue(r)
 
+    @smtpmock.activate
+    def test_09_send_sms_regexp_success(self):
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
+        # Here we need to send the SMS
+        r = self.regexp_provider.submit_message("+49 123/456-78", "Hello")
+        self.assertTrue(r)
+
+        p = SmtpSMSProvider._mangle_phone("+49 123/456-78", self.regexp_config)
+        self.assertEqual("4912345678", p)
+
+        # Replace + with 00
+        p = SmtpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": r"/\+/00/"})
+        self.assertEqual("0049 123/456-78", p)
+        p = self.regexp_provider._mangle_phone("+49 123/456-78", {"REGEXP": r"/[\+/]//"})
+        self.assertEqual("49 123456-78", p)
+
+        # An invalid regexp is caught and a log error is written. The same
+        # phone number is returned
+        p = SmtpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": r"/+/00/"})
+        self.assertEqual("+49 123/456-78", p)
+
+        # Only use leading numbers and not the rest
+        p = SmtpSMSProvider._mangle_phone("12345abcdef", {"REGEXP":  r"/^([0-9]+).*/\1/"})
+        self.assertEqual("12345", p)
+
+        # Known limitation: The slash in the replace statement does not work!
+        p = SmtpSMSProvider._mangle_phone("12.34.56.78", {"REGEXP": r"/\./\//"})
+        self.assertEqual("12.34.56.78", p)
+
 
 class SipgateSMSTestCase(MyTestCase):
 
@@ -264,9 +304,17 @@ class SipgateSMSTestCase(MyTestCase):
               'PASSWORD': "password",
               'PROXY': "https://user:pw@1.2.3.4:8089"}
 
+    config_regexp = {'USERNAME': "user",
+                     'PASSWORD': "password",
+                     'PROXY': "https://user:pw@1.2.3.4:8089",
+                     "REGEXP": "/[+-/. ]//"}
+
     def setUp(self):
         self.provider = SipgateSMSProvider()
         self.provider.load_config(self.config)
+
+        self.regexp_provider = SipgateSMSProvider()
+        self.regexp_provider.load_config(self.config_regexp)
 
     @responses.activate
     def test_01_success(self):
@@ -283,6 +331,36 @@ class SipgateSMSTestCase(MyTestCase):
         # Here we need to send the SMS
         self.assertRaises(SMSError, self.provider.submit_message,
                           "123456", "Hello")
+
+    @responses.activate
+    def test_03_send_sms_regexp_success(self):
+        responses.add(responses.POST,
+                      self.url)
+        # Here we need to send the SMS
+        r = self.regexp_provider.submit_message("+49 123/456-78", "Hello")
+        self.assertTrue(r)
+
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", self.config_regexp)
+        self.assertEqual("4912345678", p)
+
+        # Replace + with 00
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": r"/\+/00/"})
+        self.assertEqual("0049 123/456-78", p)
+        p = self.regexp_provider._mangle_phone("+49 123/456-78", {"REGEXP": r"/[\+/]//"})
+        self.assertEqual("49 123456-78", p)
+
+        # An invalid regexp is caught and a log error is written. The same
+        # phone number is returned
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": r"/+/00/"})
+        self.assertEqual("+49 123/456-78", p)
+
+        # Only use leading numbers and not the rest
+        p = HttpSMSProvider._mangle_phone("12345abcdef", {"REGEXP":  r"/^([0-9]+).*/\1/"})
+        self.assertEqual("12345", p)
+
+        # Known limitation: The slash in the replace statement does not work!
+        p = HttpSMSProvider._mangle_phone("12.34.56.78", {"REGEXP": r"/\./\//"})
+        self.assertEqual("12.34.56.78", p)
 
     @responses.activate
     def test_08_smsgateway_success(self):
@@ -609,8 +687,8 @@ class HttpSMSTestCase(MyTestCase):
                       "http://some.other.service",
                       body=self.success_body,
                       match=[
-                          matchers.json_params_matcher({"text": 'Hello: 7',
-                                                        'phone': '123456'})
+                          json_params_matcher({"text": 'Hello: 7',
+                                               'phone': '123456'})
                       ],)
         # Here we need to send the SMS
         with mock.patch("logging.Logger.debug") as mock_log:
@@ -632,6 +710,18 @@ class SmppSMSTestCase(MyTestCase):
               'S_ADDR': "privacyIDEA",
               'D_ADDR_TON': "0x5",
               'D_ADDR_NPI': "0x1"}
+
+    config_regexp = {'SMSC_HOST': "192.168.1.1",
+                     'SMSC_PORT': "1234",
+                     'SYSTEM_ID': "privacyIDEA",
+                     'PASSWORD': "secret",
+                     'S_ADDR_TON': "0x5",
+                     'S_ADDR_NPI': "0x1",
+                     'S_ADDR': "privacyIDEA",
+                     'D_ADDR_TON': "0x5",
+                     'D_ADDR_NPI': "0x1",
+                     "REGEXP": "/[+-/. ]//"}
+
     provider_module = "privacyidea.lib.smsprovider.SmppSMSProvider" \
                       ".SmppSMSProvider"
 
@@ -644,6 +734,13 @@ class SmppSMSTestCase(MyTestCase):
         self.assertTrue(id > 0)
         self.provider = create_sms_instance(identifier=identifier)
         self.assertEqual(type(self.provider), SmppSMSProvider)
+
+        identifier_regexp = "myregexpSmppGW"
+        id_regexp = set_smsgateway(identifier_regexp, self.provider_module, description="test",
+                            options=self.config_regexp)
+        self.assertTrue(id_regexp > 0)
+        self.regexp_provider = create_sms_instance(identifier=identifier_regexp)
+        self.assertEqual(type(self.regexp_provider), SmppSMSProvider)
 
     def test_00_config(self):
         r = SmppSMSProvider.parameters()
@@ -692,3 +789,34 @@ class SmppSMSTestCase(MyTestCase):
                          systemid="privacyIDEA",
                          password="wrong")
         self.assertRaises(SMSError, self.provider.submit_message, "123456", "hello")
+
+    @smppmock.activate
+    def test_04_send_sms_regexp_success(self):
+        smppmock.setdata(connection_success=True,
+                         systemid="privacyIDEA",
+                         password="secret")
+        # Here we need to send the SMS
+        r = self.regexp_provider.submit_message("+49 123/456-78", "Hello")
+        self.assertTrue(r)
+
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", self.config_regexp)
+        self.assertEqual("4912345678", p)
+
+        # Replace + with 00
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": r"/\+/00/"})
+        self.assertEqual("0049 123/456-78", p)
+        p = self.regexp_provider._mangle_phone("+49 123/456-78", {"REGEXP": r"/[\+/]//"})
+        self.assertEqual("49 123456-78", p)
+
+        # An invalid regexp is caught and a log error is written. The same
+        # phone number is returned
+        p = HttpSMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": r"/+/00/"})
+        self.assertEqual("+49 123/456-78", p)
+
+        # Only use leading numbers and not the rest
+        p = HttpSMSProvider._mangle_phone("12345abcdef", {"REGEXP":  r"/^([0-9]+).*/\1/"})
+        self.assertEqual("12345", p)
+
+        # Known limitation: The slash in the replace statement does not work!
+        p = HttpSMSProvider._mangle_phone("12.34.56.78", {"REGEXP": r"/\./\//"})
+        self.assertEqual("12.34.56.78", p)
