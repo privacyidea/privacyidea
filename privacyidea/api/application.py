@@ -45,7 +45,14 @@ application_blueprint = Blueprint('application_blueprint', __name__)
 @log_with(log)
 def get_applications():
     """
-    returns a json list of the available applications
+    returns a json dict of the available applications
+
+    {"luks": {"options": {"slot": {"type": "int"},
+                          "partition": {"type": "str"}},
+     "ssh": {"options": {"user": {"type": "str"}},
+     "otherapplication": {"options": {"optionA": {"type": "int",
+                                                  "required": True}}
+    }
     """
     res = get_application_types()
     g.audit_object.log({"success": True})

@@ -1,5 +1,19 @@
 # Update Notes
 
+## Update from 3.8 to 3.9
+
+* To enhance the functionality of SSH key assignment, the REST API for GET /application
+  has changed. The options of an application are now returned like::
+
+   {"luks": {"options": {"slot": {"type": "int"},
+                         "partition": {"type": "str"}},
+      "ssh": {"options": {"user": {"type": "str"}},
+      "otherapplication": {"options": {"optionA": {"type": "int",
+                                                   "required": True}}
+   }
+
+  Unless you are using this API call directly, this is not relevant for normal operation.
+
 ## Update from 3.7 to 3.8
 
 * The algorithms for WebAuthn tokens have been enhanced. This is why it
