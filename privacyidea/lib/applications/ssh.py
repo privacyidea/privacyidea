@@ -24,6 +24,9 @@ This file is tested in tests/test_lib_machinetokens.py
 from privacyidea.lib.applications import MachineApplicationBase
 import logging
 from privacyidea.lib.token import get_tokens
+from privacyidea.lib.policy import TYPE
+from privacyidea.lib.serviceid import get_serviceids
+from privacyidea.lib import _
 log = logging.getLogger(__name__)
 
 
@@ -94,7 +97,12 @@ class MachineApplication(MachineApplicationBase):
     @staticmethod
     def get_options():
         """
-        returns a dictionary with a list of required and optional options
+        returns a dictionary with a list of options
         """
-        return {'required': [],
-                'optional': ['service_id', 'user']}
+        sids = [s.name for s in get_serviceids()]
+        return {'user': {'type': TYPE.STRING,
+                         'description': _('The username on the SSH server.')},
+                'service_id': {'type': TYPE.STRING,
+                               'description': _('The service ID of the SSH server. '
+                                                'Several servers can have the same service ID.'),
+                               'value': sids}}

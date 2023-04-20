@@ -1,26 +1,26 @@
 
 <h2 class="form-signin-heading"
-        ng-show="groupname"
-        translate>Edit Tokengroup {{ groupname }}</h2>
+        ng-show="servicename"
+        translate>Edit Service ID {{ servicename }}</h2>
 <h2 class="form-signin-heading"
-        ng-hide="groupname"
-        translate>Create a new Tokengroup {{ params.groupname }}</h2>
+        ng-hide="servicename"
+        translate>Create a new Service ID {{ params.servicename }}</h2>
 
-<form name="formTokengroup" role="form" validate
+<form name="formServiceid" role="form" validate
       class="form-horizontal">
 
-    <div class="form-group" ng-hide="groupname">
+    <div class="form-group" ng-hide="servicename">
         <label for="identifier" class="col-sm-3 control-label"
                 translate>Identifier</label>
         <div class="col-sm-9">
             <input name="identifier" id="identifier" class="form-control"
-                   ng-model="params.groupname" required
-                   placeholder="myNewGroup"
+                   ng-model="params.servicename" required
+                   placeholder="myNewService"
                    ng-pattern="inputNamePatterns.simple.pattern"
-                   title="{{ inputNamePatterns.simple.title | translate }}"
+                       title="{{ inputNamePatterns.simple.title | translate }}"
                    autofocus/>
             <p class="help-block" translate>This is the unique identifying name
-                for this group definition.</p>
+                for this service definition.</p>
         </div>
     </div>
 
@@ -35,11 +35,11 @@
     </div>
 
     <div class="text-center"
-         ng-show="checkRight('tokengroup_add')">
-        <button ng-click="saveTokengroup()"
-                ng-disabled="formTokengroup.$invalid"
+         ng-show="checkRight('serviceid_add')">
+        <button ng-click="saveServiceid()"
+                ng-disabled="formServiceid.$invalid"
                 class="btn btn-primary"
-                translate>Save Tokengroup
+                translate>Save Service ID
         </button>
     </div>
 

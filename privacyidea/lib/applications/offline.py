@@ -29,6 +29,7 @@ from privacyidea.lib.error import ValidateError, ParameterError
 import logging
 from passlib.hash import pbkdf2_sha512
 from privacyidea.lib.token import get_tokens
+from privacyidea.lib.policy import TYPE
 log = logging.getLogger(__name__)
 ROUNDS = 6549
 REFILLTOKEN_LENGTH = 40
@@ -184,5 +185,5 @@ class MachineApplication(MachineApplicationBase):
         """
         returns a dictionary with a list of required and optional options
         """
-        return {'required': [],
-                'optional': ['count', 'rounds']}
+        return {'count': {'type': TYPE.STRING},
+                'rounds': {'type': TYPE.STRING}}

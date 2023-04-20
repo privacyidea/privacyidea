@@ -22,6 +22,7 @@ from privacyidea.lib.applications import MachineApplicationBase
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.token import get_tokens
+from privacyidea.lib.policy import TYPE
 import logging
 log = logging.getLogger(__name__)
 
@@ -86,5 +87,6 @@ class MachineApplication(MachineApplicationBase):
         """
         returns a dictionary with a list of required and optional options
         """
-        return {'required': [],
-                'optional': ['slot', 'partition']}
+        return {'slot': {'type': TYPE.INT,
+                         'value': [0, 1, 2, 3, 4, 5, 6, 7]},
+                'partition': {'type': TYPE.STRING}}

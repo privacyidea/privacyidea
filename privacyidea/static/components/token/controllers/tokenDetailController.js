@@ -384,7 +384,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         };
 
         $scope.detachMachineToken = function (application, mtid) {
-            MachineFactory.detachTokenMachineById({serial: $scope.tokenSerial,
+            MachineFactory.detachTokenMachine({serial: $scope.tokenSerial,
                     application: application,
                     mtid: mtid
             }, function (data) {

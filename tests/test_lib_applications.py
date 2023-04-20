@@ -38,13 +38,16 @@ SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx377" \
          "TyCOpYi1BxN47c/kccxyNgjPw== user@example.com"
 OTPKEY = "3132333435363738393031323334353637383930"
 
+
 class SSHApplicationTestCase(MyTestCase):
 
     def test_01_get_options(self):
         # Can run as class
         options = SSHApplication.get_options()
-        self.assertEqual(options["required"], [])
-        self.assertEqual(options["optional"], ["service_id", "user"])
+        self.assertIn("user", options)
+        self.assertIn("service_id", options)
+        self.assertEqual("str", options.get("user").get("type"))
+        self.assertEqual("str", options.get("service_id").get("type"))
 
     def test_02_get_auth_item(self):
         serial = "ssh1"
@@ -77,8 +80,10 @@ class LUKSApplicationTestCase(MyTestCase):
     def test_01_get_options(self):
         # Can run as class
         options = LUKSApplication.get_options()
-        self.assertEqual(options["required"], [])
-        self.assertEqual(options["optional"], ['slot', 'partition'])
+        self.assertIn("slot", options)
+        self.assertIn("partition", options)
+        self.assertEqual("int", options.get("slot").get("type"))
+        self.assertEqual("str", options.get("partition").get("type"))
 
     def test_02_get_auth_item(self):
         serial = "UBOM12345"
@@ -111,8 +116,10 @@ class OfflineApplicationTestCase(MyTestCase):
     def test_01_get_options(self):
         # Can run as class
         options = OfflineApplication.get_options()
-        self.assertEqual(options["required"], [])
-        self.assertEqual(options["optional"], ['count', 'rounds'])
+        self.assertIn("count", options)
+        self.assertIn("rounds", options)
+        self.assertEqual("str", options.get("count").get("type"))
+        self.assertEqual("str", options.get("rounds").get("type"))
 
     def test_02_get_auth_item(self):
         serial = "OATH1"
@@ -174,8 +181,8 @@ class BaseApplicationTestCase(MyTestCase):
         self.assertEqual(base_app.get_authentication_item("hotp", "serial"),
                          "nothing")
         options = base_app.get_options()
-        self.assertEqual(options["required"], [])
-        self.assertEqual(options["optional"], [])
+        self.assertEqual(options["optionA"].get("type"), "bool")
+        self.assertTrue(options["optionA"].get("required"))
 
     def test_02_get_auth_item(self):
         auth_item = get_auth_item("base", "hotp", "serial")
@@ -190,8 +197,9 @@ class BaseApplicationTestCase(MyTestCase):
         apps = get_application_types()
         self.assertTrue("luks" in apps)
         self.assertTrue("ssh" in apps)
-        self.assertEqual(apps["ssh"]["options"]["optional"], ["service_id", "user"])
-        self.assertEqual(apps["luks"]["options"]["optional"], ["slot",
-                                                               "partition"])
+        self.assertIn("service_id", apps["ssh"]["options"])
+        self.assertIn("user", apps["ssh"]["options"])
+        self.assertIn("slot", apps["luks"]["options"])
+        self.assertIn("partition", apps["luks"]["options"])
 
 

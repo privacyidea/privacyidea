@@ -3133,6 +3133,37 @@ class MonitoringStats(MethodsMixin, db.Model):
         #self.save()
 
 
+class Serviceid(TimestampMethodsMixin, db.Model):
+    """
+    The serviceid table contains the defined service IDs. These service ID
+    describe services like "webservers" or "dbservers" which e.g. request SSH keys
+    from the privacyIDEA system.
+    """
+    __tablename__ = 'serviceid'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    id = db.Column(db.Integer, Sequence("serviceid_seq"), primary_key=True,
+                   nullable=False)
+    name = db.Column(db.Unicode(255), default='',
+                     unique=True, nullable=False)
+    Description = db.Column(db.Unicode(2000), default='')
+
+    @log_with(log)
+    def __init__(self, servicename, description=None):
+        self.name = servicename
+        self.Description = description
+
+    def save(self):
+        si = Serviceid.query.filter_by(name=self.name).first()
+        if si is None:
+            return TimestampMethodsMixin.save(self)
+        else:
+            # update
+            Serviceid.query.filter_by(id=si.id).update({'Description': self.Description})
+            ret = si.id
+            db.session.commit()
+        return ret
+
+
 class Tokengroup(TimestampMethodsMixin, db.Model):
     """
     The tokengroup table contains the definition of available token groups.
