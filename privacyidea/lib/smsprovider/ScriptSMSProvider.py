@@ -59,6 +59,7 @@ class ScriptSMSProvider(ISMSProvider):
         :param message: the message to submit to the phone
         :return:
         """
+        phone = self._mangle_phone(phone, self.config)
         log.debug("submitting message {0!s} to {1!s}".format(message, phone))
         if not self.smsgateway:
             # this should not happen. We now always use sms gateway definitions.
@@ -111,6 +112,12 @@ class ScriptSMSProvider(ISMSProvider):
                           "required": True,
                           "description": _("The script in script directory PI_SCRIPT_SMSPROVIDER_DIRECTORY to call. "
                                            "Expects phone as the parameter and the message from stdin.")
+                      },
+                      "REGEXP": {
+                          "description": _("Regular expression to modify the phone number "
+                                           "to make it compatible with provider. "
+                                           "Enter something like '/[\\+/]//' to remove "
+                                           "pluses and slashes.")
                       },
                       "background": {
                           "required": True,

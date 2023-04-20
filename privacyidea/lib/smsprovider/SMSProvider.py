@@ -38,6 +38,7 @@ from privacyidea.lib.error import ConfigAdminError
 from privacyidea.models import SMSGateway, SMSGatewayOption
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
 from privacyidea.lib.utils.export import (register_import, register_export)
+import re
 import logging
 log = logging.getLogger(__name__)
 
@@ -134,6 +135,21 @@ class ISMSProvider(object):
                   },
                   }
         return params
+
+    @staticmethod
+    def _mangle_phone(phone, config):
+        regexp = config.get("REGEXP")
+        if regexp:
+            try:
+                m = re.match("^/(.*)/(.*)/$", regexp)
+                if m:
+                    phone = re.sub(m.group(1), m.group(2), phone)
+            except re.error:
+                log.warning("Can not mangle phone number. "
+                            "Please check your REGEXP: {0!s}".format(regexp))
+
+        return phone
+
 
     def load_config(self, config_dict):
         """

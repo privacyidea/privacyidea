@@ -47,6 +47,7 @@ class SmppSMSProvider(ISMSProvider):
         :param message: the message to submit to the phone
         :return:
         """
+        phone = self._mangle_phone(phone, self.config)
         log.debug("submitting message {0!s} to {1!s}".format(message, phone))
         if not self.smsgateway:
             # this should not happen. We now always use sms gateway definitions.
@@ -137,7 +138,13 @@ class SmppSMSProvider(ISMSProvider):
                         "S_ADDR": {
                             "description": _("Source address (SMS sender)")},
                         "D_ADDR_TON": {"description": _("DESTINATION_ADDR_TON Special Flag")},
-                        "D_ADDR_NPI": {"description": _("D_ADDR_NPI Special Flag")}
+                        "D_ADDR_NPI": {"description": _("D_ADDR_NPI Special Flag")},
+                        "REGEXP": {
+                            "description": _("Regular expression to modify the phone number "
+                                             "to make it compatible with provider. "
+                                             "Enter something like '/[\\+/]//' to remove "
+                                             "pluses and slashes.")
+                        }
                     }
                     }
         return params

@@ -28,6 +28,7 @@ __doc__="""This module provides sending SMS via sipgate
 The code is tested in tests/test_lib_smsprovider
 """
 from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider, SMSError
+from privacyidea.lib import _
 import logging
 import requests
 log = logging.getLogger(__name__)
@@ -67,6 +68,7 @@ class SipgateSMSProvider(ISMSProvider):
     # They provide the self.config dictionary.
 
     def submit_message(self, phone, message):
+        phone = self._mangle_phone(phone, self.config)
         if self.smsgateway:
             username = self.smsgateway.option_dict.get("USERNAME")
             password = self.smsgateway.option_dict.get("PASSWORD")
@@ -117,6 +119,12 @@ class SipgateSMSProvider(ISMSProvider):
                           "description": "The sipgate password."},
                       "PROXY": {
                           "description": "An optional proxy URI."
+                      },
+                      "REGEXP": {
+                          "description": _("Regular expression to modify the phone number "
+                                           "to make it compatible with provider. "
+                                           "Enter something like '/[\\+/]//' to remove "
+                                           "pluses and slashes.")
                       }
                   }
                   }

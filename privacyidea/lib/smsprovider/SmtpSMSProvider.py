@@ -54,6 +54,7 @@ class SmtpSMSProvider(ISMSProvider):
         In case of a failure an exception is raised
         """
         if self.smsgateway:
+            phone = self._mangle_phone(phone, self.smsgateway.option_dict)
             identifier = self.smsgateway.option_dict.get("SMTPIDENTIFIER")
             recipient = self.smsgateway.option_dict.get("MAILTO").format(
                 otp=message, phone=phone)
@@ -63,6 +64,7 @@ class SmtpSMSProvider(ISMSProvider):
             body = self.smsgateway.option_dict.get("BODY", "{otp}").format(
                 otp=message, phone=phone)
         else:
+            phone = self._mangle_phone(phone, self.config)
             identifier = self.config.get("IDENTIFIER")
             server = self.config.get("MAILSERVER")
             sender = self.config.get("MAILSENDER")
@@ -126,7 +128,13 @@ class SmtpSMSProvider(ISMSProvider):
                       "BODY": {
                           "description": "The optional body of the email. "
                                          "Use tags {phone} and {otp}.",
-                          "type": "text" }
+                          "type": "text" },
+                      "REGEXP": {
+                          "description": _("Regular expression to modify the phone number "
+                                           "to make it compatible with provider. "
+                                           "Enter something like '/[\\+/]//' to remove "
+                                           "pluses and slashes.")
+                      }
                   }
                   }
         return params
