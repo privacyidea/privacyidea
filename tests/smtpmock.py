@@ -25,15 +25,8 @@ limitations under the License.
 
 import smtplib
 
-try:
-    from inspect import formatargspec, getfullargspec as getargspec
-except ImportError:
-    from inspect import formatargspec, getargspec
-
-try:
-    from collections import Sequence, Sized
-except ImportError:
-    from collections.abc import Sequence, Sized
+from inspect import formatargspec, getfullargspec as getargspec
+from collections.abc import Sequence, Sized
 
 from collections import namedtuple
 from functools import update_wrapper

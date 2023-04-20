@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 import unittest
-try:
-    from importlib.machinery import SourceFileLoader
-    from importlib.util import spec_from_loader, module_from_spec
-except ImportError:
-    pass
+from importlib.machinery import SourceFileLoader
+from importlib.util import spec_from_loader, module_from_spec
 
 SCRIPTS = [
     'creategoogleauthenticator-file',
@@ -39,8 +35,6 @@ SCRIPTS = [
 ]
 
 
-@unittest.skipIf(sys.version_info < (3, 0),
-                 'Scripts can currently only be tested with Python 3')
 class ScriptsTestCase(unittest.TestCase):
 
     def test_01_loading_scripts(self):

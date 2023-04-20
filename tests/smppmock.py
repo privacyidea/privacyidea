@@ -23,10 +23,7 @@ limitations under the License.
 from collections import namedtuple
 from mock import Mock
 
-try:
-    from collections import Sequence, Sized
-except ImportError:
-    from collections.abc import Sequence, Sized
+from collections.abc import Sequence, Sized
 
 from smpplib.exceptions import ConnectionError
 
