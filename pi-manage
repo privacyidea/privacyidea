@@ -69,6 +69,7 @@ import flask
 from shlex import quote as shlex_quote
 import importlib_metadata
 
+from urllib.parse import urlparse
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.crypto import geturandom
@@ -297,25 +298,26 @@ def create(directory="/var/lib/privacyidea/backup/",
     backup_file = "%s/%s-%s.tgz" % (directory, BASE_NAME, DATE)
 
     sqluri = app.config.get("SQLALCHEMY_DATABASE_URI")
-    sqltype = sqluri.split(":")[0]
+    parsed_sqluri = urlparse(app.config.get("SQLALCHEMY_DATABASE_URI"))
+    sqltype = parsed_sqluri.scheme
+
     if sqltype == "sqlite":
         productive_file = sqluri[len("sqlite:///"):]
         print("Backup SQLite %s" % productive_file)
         sqlfile = "%s/db-%s.sqlite" % (directory, DATE)
         call(["cp", productive_file, sqlfile])
     elif sqltype in MYSQL_DIALECTS:
-        m = re.match(r".*mysql://(.*):(.*)@(.*)/(\w*)\??(.*)", sqluri)
-        username = m.groups()[0]
-        password = m.groups()[1]
-        datahost = m.groups()[2]
-        database = m.groups()[3]
+        username = parsed_sqluri.username
+        password = parsed_sqluri.password
+        hostname = parsed_sqluri.hostname
+        database = parsed_sqluri.path[1:]
         # We strip parameters, but we do not use them
-        _parameters = m.groups()[4]
+        _parameters = parsed_sqluri.params
         defaults_file = "{0!s}/mysql.cnf".format(conf_dir)
         _write_mysql_defaults(defaults_file, username, password)
         call("mysqldump --defaults-file=%s -h %s %s > %s" % (
             shlex_quote(defaults_file),
-            shlex_quote(datahost),
+            shlex_quote(hostname),
             shlex_quote(database),
             shlex_quote(sqlfile)), shell=True)
     else:
