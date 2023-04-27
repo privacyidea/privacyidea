@@ -42,7 +42,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import (get_token_class, get_from_config,
-                                    SYSCONF, ensure_no_config_object)
+                                    SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import get_client_ip
 import json
@@ -59,8 +59,7 @@ def before_request():
     """
     ensure_no_config_object()
     request.all_data = get_all_params(request)
-    privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
-                         request.host
+    privacyidea_server = get_privacyidea_node(request.host)
     # Create a policy_object, that reads the database audit settings
     # and contains the complete policy definition during the request.
     # This audit_object can be used in the postpolicy and prepolicy and it
