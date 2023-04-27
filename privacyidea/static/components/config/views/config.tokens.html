@@ -56,6 +56,10 @@
                 <li role="presentation"
                     ng-class="{ active: tokentype == 'yubikey'}">
                     <a ui-sref="config.tokens({tokentype: 'yubikey'})">Yubikey</a></li>
+                </li>
+                <li role="presentation"
+                    ng-class="{ active: tokentype == 'daypassword'}">
+                    <a ui-sref="config.tokens({tokentype: 'daypassword'})">DayPassword</a>
                 <hr>
                 <li role="presentation">
                         <a target="_external" ng-href="{{ 'https://privacyidea.readthedocs.io/en/v'+

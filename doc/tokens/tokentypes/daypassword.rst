@@ -26,10 +26,10 @@ Software tokens
 Experiences
 ...........
 
-The Google Authenticator and the FreeOTP token can be enrolled easily in
-day password mode using the QR-Code enrollment Feature.
+The token will create a QR code for enrollment. You can scene this code with an authenticator
+app on your smartphone.
 
-The Google Authenticator is available for iOS, Android and Blackberry devices.
+The DayPassword token can only be enrolled with an authenticator app that supports the new token.
 
 Enrollment
 ~~~~~~~~~~

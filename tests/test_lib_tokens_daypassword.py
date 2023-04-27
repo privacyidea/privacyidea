@@ -285,13 +285,14 @@ class DayPasswordTokenTestCase(MyTestCase):
         token.update({"otpkey": self.otpkey,
                       "pin": "test",
                       "otplen": 6,
-                      "timeStep": "30s"})
+                      "timeStep": "1h"})
         token.set_otp_count(47251644)
+        token.get_tokeninfo("timeStep") == 3600
         # OTP does not exist
         self.assertTrue(token.check_otp_exist("222333") == -1)
         # OTP does exist
         res = token.check_otp_exist("722053", options={"initTime": 47251645 *
-                                                                   30})
+                                                                   3600})
         # Found the counter 47251647
         self.assertTrue(res == 47251647, res)
 

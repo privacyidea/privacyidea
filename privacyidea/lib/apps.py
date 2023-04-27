@@ -156,6 +156,8 @@ def create_google_authenticator_url(key=None, user=None,
 
     if tokentype.lower() == "totp":
         period = "period={0!s}&".format(period)
+    elif tokentype.lower() == "daypassword":
+        period = "period={0!s}&".format(period)
     else:
         period = ""
 

@@ -975,28 +975,31 @@ def parse_time_sec_int(s):
         ret = int(s)
         return ret
     except:
-        seconds = 0
-        minutes = 0
-        hours = 0
-        days = 0
-        a=0
-        s = s.split(":")
-        for i in s:
-            m = re.match(r"\s*([+-]?)\s*(\d+)\s*([smhdy])\s*$", s[a])
-            if not m:
-                log.warning("Unsupported time: {0!r}".format(s))
-                raise Exception("Unsupported time")
-            count = int(m.group(2))
-            if m.group(3) == "s":
-                seconds = count
-            elif m.group(3) == "m":
-                minutes = count
-            elif m.group(3) == "h":
-                hours = count
-            elif m.group(3) == "d":
-                days = count
-            a=a+1
-        ret = 86400*days+3600*hours+60*minutes+seconds
+        if s is None:
+            ret = None
+        else:
+            seconds = 0
+            minutes = 0
+            hours = 0
+            days = 0
+            a=0
+            s = s.split(":")
+            for i in s:
+                m = re.match(r"\s*([+-]?)\s*(\d+)\s*([smhdy])\s*$", s[a])
+                if not m:
+                    log.warning("Unsupported time: {0!r}".format(s))
+                    raise Exception("Unsupported time")
+                count = int(m.group(2))
+                if m.group(3) == "s":
+                    seconds = count
+                elif m.group(3) == "m":
+                    minutes = count
+                elif m.group(3) == "h":
+                    hours = count
+                elif m.group(3) == "d":
+                    days = count
+                a=a+1
+            ret = 86400*days+3600*hours+60*minutes+seconds
         return ret
 def parse_time_offset_from_now(s):
     """

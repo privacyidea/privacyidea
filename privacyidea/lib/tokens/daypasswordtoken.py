@@ -177,7 +177,7 @@ class DayPasswordTokenClass(TotpTokenClass):
     @property
     def timestep(self):
         timeStepping = parse_time_sec_int(self.get_tokeninfo("timeStep") or
-                                          get_from_config("daypassword.timeStep") or 30)
+                                          parse_time_sec_int(get_from_config("daypassword.timeStep")) or 30)
 
         return timeStepping
 
@@ -222,7 +222,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         return res
 
     @check_token_locked
-    def     check_otp(self, anOtpVal, counter=None, window=None, options=None):
+    def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         validate the token passwort against a given passwordvalue
 
