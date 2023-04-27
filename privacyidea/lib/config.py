@@ -981,14 +981,14 @@ def return_saml_attributes_on_fail():
     return r
 
 
-def get_privacyidea_node(default='localnode'):
+def get_privacyidea_node():
     """
     This returns the node name of the privacyIDEA node as found in the pi.cfg
     file in PI_NODE.
     If it does not exist, the PI_AUDIT_SERVERNAME is used.
     :return: the distinct node name
     """
-    node_name = get_app_config_value("PI_NODE", get_app_config_value("PI_AUDIT_SERVERNAME", default))
+    node_name = get_app_config_value("PI_NODE", get_app_config_value("PI_AUDIT_SERVERNAME", "localnode"))
     return node_name
 
 
