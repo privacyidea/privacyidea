@@ -22,8 +22,7 @@ class DayPasswordTokenClass(TotpTokenClass):
 
     previous_otp_offset = 0
 
-    desc_timestep = _('Specify the time step of the day password token. You can read the time like this '
-                      '"12d:10h:30m:03s" or "30h"')
+    desc_timestep = _('Specify the time step of the DayPassword token.')
 
     @log_with(log)
     def __init__(self, db_token):

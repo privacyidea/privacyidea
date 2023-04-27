@@ -37,4 +37,4 @@ Enrollment
 Default settings for day password tokens can be configured at :ref:`daypassword_token_config`.
 
 The enrollment is the same as described in :ref:`hotp_token`.
-However, when enrolling TBP token, you can specify some additional parameters.
+However, when enrolling DayPassword token, you can specify the timeStep.
