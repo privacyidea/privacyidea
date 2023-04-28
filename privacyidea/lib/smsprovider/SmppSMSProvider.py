@@ -140,10 +140,7 @@ class SmppSMSProvider(ISMSProvider):
                         "D_ADDR_TON": {"description": _("DESTINATION_ADDR_TON Special Flag")},
                         "D_ADDR_NPI": {"description": _("D_ADDR_NPI Special Flag")},
                         "REGEXP": {
-                            "description": _("Regular expression to modify the phone number "
-                                             "to make it compatible with provider. "
-                                             "Enter something like '/[\\+/]//' to remove "
-                                             "pluses and slashes.")
+                            "description": _(ISMSProvider.REGEXP_description)
                         }
                     }
                     }

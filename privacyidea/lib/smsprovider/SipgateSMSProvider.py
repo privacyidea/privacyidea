@@ -121,10 +121,7 @@ class SipgateSMSProvider(ISMSProvider):
                           "description": "An optional proxy URI."
                       },
                       "REGEXP": {
-                          "description": _("Regular expression to modify the phone number "
-                                           "to make it compatible with provider. "
-                                           "Enter something like '/[\\+/]//' to remove "
-                                           "pluses and slashes.")
+                          "description": _(ISMSProvider.REGEXP_description)
                       }
                   }
                   }

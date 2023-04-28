@@ -276,10 +276,7 @@ class HttpSMSProvider(ISMSProvider):
                           "values": ["yes", "no"]
                       },
                       "REGEXP": {
-                          "description": _("Regular expression to modify the phone number "                 
-                                           "to make it compatible with provider. "
-                                           "Enter something like '/[\\+/]//' to remove "
-                                           "pluses and slashes.")
+                          "description": _(ISMSProvider.REGEXP_description)
                       },
                       "PROXY": {"description": _("An optional proxy string. DEPRECATED. Do not use "
                                                  "this anymore. Rather use HTTP_PROXY for http "
