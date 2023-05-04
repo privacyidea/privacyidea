@@ -28,6 +28,7 @@ It also contains the error handlers.
 """
 
 from .lib.utils import (send_error, get_all_params)
+from ..lib.framework import get_app_config_value
 from ..lib.user import get_user_from_param
 import logging
 from .lib.utils import getParam
@@ -186,7 +187,7 @@ def before_request():
                                 get_from_config(SYSCONF.OVERRIDECLIENT))
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
-    privacyidea_server = get_privacyidea_node(request.host)
+    privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
     if serial and not "*" in serial:

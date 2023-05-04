@@ -34,6 +34,7 @@ The TiQR Token uses this API to implement its special functionalities. See
 from flask import (Blueprint,
                    request)
 from .lib.utils import getParam
+from ..lib.framework import get_app_config_value
 from ..lib.log import log_with
 from flask import g, jsonify, current_app
 import logging
@@ -59,7 +60,7 @@ def before_request():
     """
     ensure_no_config_object()
     request.all_data = get_all_params(request)
-    privacyidea_server = get_privacyidea_node(request.host)
+    privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Create a policy_object, that reads the database audit settings
     # and contains the complete policy definition during the request.
     # This audit_object can be used in the postpolicy and prepolicy and it
