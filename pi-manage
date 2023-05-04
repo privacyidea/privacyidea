@@ -311,15 +311,15 @@ def create(directory="/var/lib/privacyidea/backup/",
         password = parsed_sqluri.password
         hostname = parsed_sqluri.hostname
         database = parsed_sqluri.path[1:]
-        # We strip parameters, but we do not use them
-        _parameters = parsed_sqluri.params
         defaults_file = "{0!s}/mysql.cnf".format(conf_dir)
         _write_mysql_defaults(defaults_file, username, password)
-        call("mysqldump --defaults-file=%s -h %s %s > %s" % (
-            shlex_quote(defaults_file),
-            shlex_quote(hostname),
-            shlex_quote(database),
-            shlex_quote(sqlfile)), shell=True)
+        cmd = ['mysqldump', '--defaults-file={!s}'.format(
+            shlex_quote(defaults_file)), '-h',
+            shlex_quote(hostname)]
+        if parsed_sqluri.port:
+            cmd.extend(['-p', parsed_sqluri.port])
+        cmd.extend(['-B', shlex_quote(database), '-r', shlex_quote(sqlfile)])
+        call(cmd, shell=True)
     else:
         print("unsupported SQL syntax: %s" % sqltype)
         sys.exit(2)
