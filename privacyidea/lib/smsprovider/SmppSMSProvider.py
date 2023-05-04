@@ -140,7 +140,7 @@ class SmppSMSProvider(ISMSProvider):
                         "D_ADDR_TON": {"description": _("DESTINATION_ADDR_TON Special Flag")},
                         "D_ADDR_NPI": {"description": _("D_ADDR_NPI Special Flag")},
                         "REGEXP": {
-                            "description": _(ISMSProvider.REGEXP_description)
+                            "description": cls.REGEXP_description
                         }
                     }
                     }

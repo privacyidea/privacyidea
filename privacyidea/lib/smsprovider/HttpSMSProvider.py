@@ -276,7 +276,7 @@ class HttpSMSProvider(ISMSProvider):
                           "values": ["yes", "no"]
                       },
                       "REGEXP": {
-                          "description": _(ISMSProvider.REGEXP_description)
+                          "description": cls.REGEXP_description
                       },
                       "PROXY": {"description": _("An optional proxy string. DEPRECATED. Do not use "
                                                  "this anymore. Rather use HTTP_PROXY for http "

@@ -307,17 +307,9 @@ class SipgateSMSTestCase(MyTestCase):
               'PASSWORD': "password",
               'PROXY': "https://user:pw@1.2.3.4:8089"}
 
-    config_regexp = {'USERNAME': "user",
-                     'PASSWORD': "password",
-                     'PROXY': "https://user:pw@1.2.3.4:8089",
-                     "REGEXP": "/[+-/. ]//"}
-
     def setUp(self):
         self.provider = SipgateSMSProvider()
         self.provider.load_config(self.config)
-
-        self.regexp_provider = SipgateSMSProvider()
-        self.regexp_provider.load_config(self.config_regexp)
 
     @responses.activate
     def test_01_success(self):
@@ -337,10 +329,16 @@ class SipgateSMSTestCase(MyTestCase):
 
     @responses.activate
     def test_03_send_sms_regexp_success(self):
+        config_regexp = {'USERNAME': "user",
+                         'PASSWORD': "password",
+                         'PROXY': "https://user:pw@1.2.3.4:8089",
+                         "REGEXP": "/[+-/. ]//"}
+        regexp_provider = SipgateSMSProvider()
+        regexp_provider.load_config(config_regexp)
         responses.add(responses.POST,
                       self.url)
         # Here we need to send the SMS
-        r = self.regexp_provider.submit_message("+49 123/456-78", "Hello")
+        r = regexp_provider.submit_message("+49 123/456-78", "Hello")
         self.assertTrue(r)
 
     @responses.activate
@@ -670,17 +668,6 @@ class SmppSMSTestCase(MyTestCase):
               'D_ADDR_TON': "0x5",
               'D_ADDR_NPI': "0x1"}
 
-    config_regexp = {'SMSC_HOST': "192.168.1.1",
-                     'SMSC_PORT': "1234",
-                     'SYSTEM_ID': "privacyIDEA",
-                     'PASSWORD': "secret",
-                     'S_ADDR_TON': "0x5",
-                     'S_ADDR_NPI': "0x1",
-                     'S_ADDR': "privacyIDEA",
-                     'D_ADDR_TON': "0x5",
-                     'D_ADDR_NPI': "0x1",
-                     "REGEXP": "/[+-/. ]//"}
-
     provider_module = "privacyidea.lib.smsprovider.SmppSMSProvider" \
                       ".SmppSMSProvider"
 
@@ -693,13 +680,6 @@ class SmppSMSTestCase(MyTestCase):
         self.assertTrue(id > 0)
         self.provider = create_sms_instance(identifier=identifier)
         self.assertEqual(type(self.provider), SmppSMSProvider)
-
-        identifier_regexp = "myregexpSmppGW"
-        id_regexp = set_smsgateway(identifier_regexp, self.provider_module, description="test",
-                            options=self.config_regexp)
-        self.assertTrue(id_regexp > 0)
-        self.regexp_provider = create_sms_instance(identifier=identifier_regexp)
-        self.assertEqual(type(self.regexp_provider), SmppSMSProvider)
 
     def test_00_config(self):
         r = SmppSMSProvider.parameters()
@@ -751,10 +731,27 @@ class SmppSMSTestCase(MyTestCase):
 
     @smppmock.activate
     def test_04_send_sms_regexp_success(self):
+        config_regexp = {'SMSC_HOST': "192.168.1.1",
+                         'SMSC_PORT': "1234",
+                         'SYSTEM_ID': "privacyIDEA",
+                         'PASSWORD': "secret",
+                         'S_ADDR_TON': "0x5",
+                         'S_ADDR_NPI': "0x1",
+                         'S_ADDR': "privacyIDEA",
+                         'D_ADDR_TON': "0x5",
+                         'D_ADDR_NPI': "0x1",
+                         "REGEXP": "/[+-/. ]//"}
+
+        identifier_regexp = "myregexpSmppGW"
+        id_regexp = set_smsgateway(identifier_regexp, self.provider_module, description="test",
+                                   options=config_regexp)
+        self.assertTrue(id_regexp > 0)
+        regexp_provider = create_sms_instance(identifier=identifier_regexp)
+        self.assertEqual(type(regexp_provider), SmppSMSProvider)
         smppmock.setdata(connection_success=True,
                          systemid="privacyIDEA",
                          password="secret")
         # Here we need to send the SMS
-        r = self.regexp_provider.submit_message("+49 123/456-78", "Hello")
+        r = regexp_provider.submit_message("+49 123/456-78", "Hello")
         self.assertTrue(r)
 

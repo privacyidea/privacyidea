@@ -129,9 +129,9 @@ class SmtpSMSProvider(ISMSProvider):
                       "BODY": {
                           "description": "The optional body of the email. "
                                          "Use tags {phone} and {otp}.",
-                          "type": "text" },
+                          "type": "text"},
                       "REGEXP": {
-                          "description": _(ISMSProvider.REGEXP_description)
+                          "description": cls.REGEXP_description
                       }
                   }
                   }
