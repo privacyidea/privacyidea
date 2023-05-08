@@ -49,7 +49,7 @@ from six.moves.urllib.parse import quote
 
 from privacyidea.lib.log import log_with
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import to_byte_string, b32encode_and_unicode
+from privacyidea.lib.utils import to_byte_string, b32encode_and_unicode, parse_time_sec_int
 
 log = logging.getLogger(__name__)
 MAX_QRCODE_LEN = 180
@@ -157,7 +157,7 @@ def create_google_authenticator_url(key=None, user=None,
     if tokentype.lower() == "totp":
         period = "period={0!s}&".format(period)
     elif tokentype.lower() == "daypassword":
-        period = "period={0!s}&".format(period)
+        period = "period={0!s}&".format(parse_time_sec_int(period))
     else:
         period = ""
 

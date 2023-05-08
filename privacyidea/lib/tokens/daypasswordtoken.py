@@ -176,7 +176,7 @@ class DayPasswordTokenClass(TotpTokenClass):
     @property
     def timestep(self):
         timeStepping = parse_time_sec_int(self.get_tokeninfo("timeStep") or
-                                          parse_time_sec_int(get_from_config("daypassword.timeStep")) or 30)
+                                          (get_from_config("daypassword.timeStep")) or "1d")
 
         return timeStepping
 
@@ -210,7 +210,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         """
         options = options or {}
         timeStepping = parse_time_sec_int(self.get_tokeninfo("timeStep") or
-                                          get_from_config("daypassword.timeStep") or 30)
+                                          (get_from_config("daypassword.timeStep")) or "1d")
         window = (window or self.get_sync_window()) * timeStepping
         res = self.check_otp(otp, window=window, options=options)
 

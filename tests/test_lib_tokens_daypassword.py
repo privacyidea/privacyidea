@@ -3,6 +3,7 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+from privacyidea.lib.utils import parse_time_sec_int
 
 PWFILE = "tests/testdata/passwords"
 
@@ -795,3 +796,17 @@ class DayPasswordTokenTestCase(MyTestCase):
         p = DayPasswordTokenClass.get_default_settings(g, params)
         self.assertEqual(p, {})
         delete_policy("pol1")
+
+    def test_00_time_convert(self):
+        s = "2d"
+        i = parse_time_sec_int(s)
+        self.assertEqual(172800, i)
+
+        s = 172800
+        i = parse_time_sec_int(s)
+        self.assertEqual(172800, i)
+
+        s = "172800"
+        i = parse_time_sec_int(s)
+        self.assertEqual(172800, i)
+
