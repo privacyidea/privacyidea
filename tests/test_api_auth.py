@@ -786,7 +786,7 @@ class PreEventHandlerTest(MyApiTestCase):
                                            data={"username": "someuser",
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(401, res.status_code, res)
+            self.assertEqual(400, res.status_code, res)
             result = res.json.get("result")
             self.assertFalse(result.get("status"), result)
             detail = res.json.get("detail")

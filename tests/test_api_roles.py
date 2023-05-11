@@ -186,9 +186,9 @@ class APIAuthChallengeResponse(MyApiTestCase):
                                            data={"username": "selfservice",
                                                  "password": "pin"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 401, res)
+            self.assertTrue(res.status_code == 200, res)
             data = res.json
-            self.assertFalse(data.get("result").get("status"))
+            self.assertTrue(data.get("result").get("status"))
             detail = data.get("detail")
             self.assertTrue("enter otp" in detail.get("message"), detail.get("message"))
             transaction_id = detail.get("transaction_id")
@@ -215,7 +215,7 @@ class APIAuthChallengeResponse(MyApiTestCase):
                                            data={"username": "selfservice",
                                                  "password": 'test'}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 401, res)
+            self.assertEqual(res.status_code, 200, res)
             result = res.json.get('detail')
             self.assertTrue('multi_challenge' in result, result)
             self.assertEqual({'hotp1', 'hotp2'}, set([x['serial'] for x in result.get('multi_challenge')]))

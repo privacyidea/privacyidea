@@ -869,10 +869,10 @@ class PushTokenTestCase(MyTestCase):
                                                      PUSH_ACTION.WAIT: "10",
                                                      "password": "pushpin"}):
                 res = self.app.full_dispatch_request()
-                self.assertEqual(res.status_code, 401)
+                self.assertEqual(res.status_code, 200)
                 jsonresp = res.json
-                self.assertFalse(jsonresp.get("result").get("value"))
-                self.assertFalse(jsonresp.get("result").get("status"))
+                self.assertTrue(jsonresp.get("result").get("value"))
+                self.assertTrue(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
                 self.assertIn("transaction_id", jsonresp.get("detail"))
                 transaction_id = jsonresp.get("detail").get("transaction_id")
