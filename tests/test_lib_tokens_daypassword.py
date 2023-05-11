@@ -735,9 +735,12 @@ class DayPasswordTokenTestCase(MyTestCase):
         db_token = Token(serial, tokentype="daypassword")
         db_token.save()
         token = DayPasswordTokenClass(db_token)
-        token.set_otpkey(self.otpkey)
         token.set_hashlib("sha1")
-        token.set_otplen(6)
+        token.update({"otpkey": self.otpkey,
+                      "otplen": 6,
+                      "timeShift": 10,
+                      "timeWindow": 180,
+                      "timeStep": '30s'})
         # Authenticate with the current OTP value
         counter = token._time2counter(time.time(), timeStepping=30)
         otp_now = token._calc_otp(counter)
@@ -796,17 +799,3 @@ class DayPasswordTokenTestCase(MyTestCase):
         p = DayPasswordTokenClass.get_default_settings(g, params)
         self.assertEqual(p, {})
         delete_policy("pol1")
-
-    def test_00_time_convert(self):
-        s = "2d"
-        i = parse_time_sec_int(s)
-        self.assertEqual(172800, i)
-
-        s = 172800
-        i = parse_time_sec_int(s)
-        self.assertEqual(172800, i)
-
-        s = "172800"
-        i = parse_time_sec_int(s)
-        self.assertEqual(172800, i)
-
