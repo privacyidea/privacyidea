@@ -439,7 +439,7 @@ class DayPasswordTokenClass(TotpTokenClass):
             # use the current server time
             tCounter = self._time2float(datetime.datetime.now())
 
-        # we don't need to round here as we have alread float
+        # we don't need to round here as we have already float
         counter = int(((tCounter - self.timeshift) / self.timestep))
 
         otp_dict["shift"] = self.timeshift

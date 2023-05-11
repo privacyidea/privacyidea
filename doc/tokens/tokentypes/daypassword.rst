@@ -31,6 +31,9 @@ app on your smartphone.
 
 The DayPassword token can only be enrolled with an authenticator app that supports the new token.
 
+.. Note :: The link in the QR code lucks lick this:
+ otpauth://daypassword/DayPassword0000536F?secret=NW6IT27XNRXOAZEP4GILXB3GCKCANVQR&issuer=privacyIDEA&algorithm=SHA256&digits=6&period=86400
+
 Enrollment
 ~~~~~~~~~~
 
