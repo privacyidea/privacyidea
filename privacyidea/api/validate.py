@@ -78,7 +78,7 @@ from privacyidea.lib.utils import is_true
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
-                                    SYSCONF, ensure_no_config_object)
+                                    SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.decorators import add_serial_from_response_to_g
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
@@ -112,6 +112,8 @@ from privacyidea.lib.machine import list_machine_tokens
 from privacyidea.lib.applications.offline import MachineApplication
 import json
 
+from ..lib.framework import get_app_config_value
+
 log = logging.getLogger(__name__)
 
 validate_blueprint = Blueprint('validate_blueprint', __name__)
@@ -127,8 +129,7 @@ def before_request():
     ensure_no_config_object()
     request.all_data = get_all_params(request)
     request.User = get_user_from_param(request.all_data)
-    privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
-                         request.host
+    privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Create a policy_object, that reads the database audit settings
     # and contains the complete policy definition during the request.
     # This audit_object can be used in the postpolicy and prepolicy and it
