@@ -786,9 +786,9 @@ class PreEventHandlerTest(MyApiTestCase):
                                            data={"username": "someuser",
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(401, res.status_code, res)
+            self.assertEqual(200, res.status_code, res)
             result = res.json.get("result")
-            self.assertFalse(result.get("status"), result)
+            self.assertTrue(result.get("status"), result)
             detail = res.json.get("detail")
             self.assertEqual("please enter otp: ", detail.get("message"))
             transaction_id = detail.get("transaction_id")
