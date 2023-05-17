@@ -768,7 +768,7 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
     metadata.create_all(engine)
     if config:
         with open(config, 'r') as f:
-            yml_config = yaml.load(f)
+            yml_config = yaml.safe_load(f)
         auditlogs = session.query(LogEntry).all()
         delete_list = []
         for log in auditlogs:
