@@ -8,15 +8,16 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2023-02-09 12:39+0100\n"
-"PO-Revision-Date: 2022-12-22 23:48+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2023-05-18 16:53+0000\n"
+"Last-Translator: Alex <alexander.simm@posteo.de>\n"
+"Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-server/de/>\n"
 "Language: de\n"
-"Language-Team: German <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-server/de/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.18-dev\n"
 "Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:225
@@ -1406,7 +1407,6 @@ msgid "wrong otp pin"
 msgstr "falsche OTP-Pin"
 
 #: lib/token.py:2452
-#, fuzzy
 msgid "Admin is allowed to initialize {0!s} tokens."
 msgstr "Der Administrator kann {0!s} Token ausrollen."
 
@@ -3377,4 +3377,3 @@ msgstr ""
 #~ "Der API Schlüssel für den iOS "
 #~ "Client. Sie finden diesen in der "
 #~ "Firebase Konsole."
-
