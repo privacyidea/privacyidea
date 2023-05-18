@@ -1,9 +1,10 @@
 # Ryan Gu <ryan.gu@outlook.com>, 2024.
+# sanghb <sanghb@chengda.com.cn>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"Last-Translator: sanghb <sanghb@chengda.com.cn>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
 "privacyidea/privacyidea-webui/zh_Hans/>\n"
 "Language: zh_Hans\n"
