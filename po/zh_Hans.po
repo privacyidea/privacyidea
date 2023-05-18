@@ -1,15 +1,15 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2022-12-10 13:47+0000\n"
-"Last-Translator: Eric <hamburger1024@duck.com>\n"
+"PO-Revision-Date: 2023-05-19 00:54+0000\n"
+"Last-Translator: sanghb <sanghb@chengda.com.cn>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
-"privacyidea/privacyidea-server/zh_Hans/>\n"
+"privacyidea/privacyidea-webui/zh_Hans/>\n"
 "Language: zh_Hans\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 4.15-dev\n"
+"X-Generator: Weblate 4.18-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -45,6 +45,9 @@ msgid ""
 "\">\n"
 "                        Ask for the privacyIDEA Enterprise Edition, now!</a>"
 msgstr ""
+"<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/"
+"\">\n"
+"                        立即访问privacyIDEA企业版!</a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
