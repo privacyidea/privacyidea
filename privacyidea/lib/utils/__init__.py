@@ -334,6 +334,7 @@ def decode_base32check(encoded_data, always_upper=True):
         strip_padding(base32(sha1(payload)[:4] + payload))
 
     Raise a ParameterError if the encoded payload is malformed.
+
     :param encoded_data: The base32 encoded data.
     :type encoded_data: str
     :param always_upper: If we should convert lowercase to uppercase
@@ -359,7 +360,7 @@ def decode_base32check(encoded_data, always_upper=True):
     if len(decoded_data) < 4:
         raise ParameterError("Malformed base32check data: Too short")
     checksum, payload = decoded_data[:4], decoded_data[4:]
-    payload_hash = hashlib.sha1(payload).digest()
+    payload_hash = hashlib.sha1(payload).digest()  # nosec B324 # used as checksum for 2step enrollment
     if payload_hash[:4] != checksum:
         raise ParameterError("Malformed base32check data: Incorrect checksum")
     return hexlify_and_unicode(payload)
