@@ -2047,6 +2047,6 @@ def _verify_signature(public_key, alg, data, signature):
         padding = PSS(mgf=MGF1(SHA256()), salt_length=PSS.MAX_LENGTH)
         public_key.verify(signature, data, padding, SHA256())
     elif alg == COSE_ALGORITHM.RS1:
-        public_key.verify(signature, data, PKCS1v15(), SHA1())
+        public_key.verify(signature, data, PKCS1v15(), SHA1())  # nosec B303 # part of webauthn specification
     else:
         raise NotImplementedError()

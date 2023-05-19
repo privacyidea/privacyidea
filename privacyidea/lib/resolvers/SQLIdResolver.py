@@ -415,7 +415,7 @@ class IdResolver (UserIdResolver):
                     str(self.pool_recycle),
                     str(self.pool_timeout))
         id_str = "\x00".join(id_parts)
-        resolver_id = binascii.hexlify(hashlib.sha1(id_str.encode('utf8')).digest())
+        resolver_id = binascii.hexlify(hashlib.sha1(id_str.encode('utf8')).digest())  # nosec B324 # hash used as unique identifier
         return "sql." + resolver_id.decode('utf8')
 
     @staticmethod
