@@ -568,7 +568,7 @@ class CertificateTokenClass(TokenClass):
         # TODO define a random passphrase and hand it to the user
         passphrase = self.token.get_pin()
         if passphrase == -1:
-            passphrase = ""
+            passphrase = ""  # nosec B105 # defaults to empty passphrase
         pkcs12_bin = pkcs12.export(passphrase=passphrase.encode('utf8'))
         return pkcs12_bin
 

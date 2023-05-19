@@ -1485,7 +1485,7 @@ def replace_function_event_handler(text, token_serial=None, tokenowner=None, log
     if token_serial is not None:
         token_serial = token_serial
     else:
-        token_serial = ""
+        token_serial = ""  # nosec B105 # Reset serial
 
     try:
         attributes = {

@@ -90,7 +90,7 @@ class ATTR(object):
     SSL_CA_CERT = "ssl_ca_cert"
     SSL_CLIENT_CERT = "ssl_client_cert"
     SSL_CLIENT_KEY = "ssl_client_key"
-    SSL_CLIENT_KEY_PASSWORD = "ssl_client_key_password"
+    SSL_CLIENT_KEY_PASSWORD = "ssl_client_key_password"  # nosec B105 # key name
 
 
 class MSCAConnector(BaseCAConnector):

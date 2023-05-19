@@ -173,7 +173,7 @@ class IdResolver (UserIdResolver):
         self.port = 0
         self.limit = 100
         self.user = ""
-        self.password = ""
+        self.password = "" # nosec B105 # default parameter
         self.table = ""
         self.TABLE = None
         self.map = {}
@@ -535,7 +535,7 @@ class IdResolver (UserIdResolver):
         Server, Database
         """
         port = ""
-        password = ""
+        password = "" # nosec B105 # default parameter
         conParams = ""
         if param.get("Port"):
             port = ":{0!s}".format(param.get("Port"))

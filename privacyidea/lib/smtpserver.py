@@ -274,7 +274,7 @@ def list_smtpservers(identifier=None, server=None):
         decrypted_password = decryptPassword(server_obj.config.password)
         # If the database contains garbage, use the empty password as fallback
         if decrypted_password == FAILED_TO_DECRYPT_PASSWORD:
-            decrypted_password = ""
+            decrypted_password = ""  # nosec B105 # reset password in case of error
         res[server_obj.config.identifier] = server_obj.config.get()
         res[server_obj.config.identifier].pop('id')
         res[server_obj.config.identifier].pop('identifier')
