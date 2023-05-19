@@ -1435,7 +1435,7 @@ def save_client_application_type(request, action):
     :return:
     """
     # retrieve the IP. This will also be the mapped IP!
-    client_ip = g.client_ip or "0.0.0.0"
+    client_ip = g.client_ip or "0.0.0.0"  # nosec B104 # default IP if no IP in request
     # ...and the user agent.
     ua = request.user_agent
     save_clientapplication(client_ip, "{0!s}".format(ua) or "unknown")
