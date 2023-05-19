@@ -94,7 +94,7 @@ class RegistrationTokenClass(PasswordTokenClass):
 
     """
 
-    password_detail_key = "registrationcode"
+    password_detail_key = "registrationcode"  # nosec B105 # key name
 
     def __init__(self, aToken):
         PasswordTokenClass.__init__(self, aToken)

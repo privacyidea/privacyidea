@@ -56,7 +56,7 @@ class IdResolver (UserIdResolver):
         self.auth_server = ''
         self.resource_server = ''
         self.auth_client = 'localhost'
-        self.auth_secret = ''
+        self.auth_secret = ''  # nosec B105 # default parameter
         self.access_token = None
 
     def checkPass(self, uid, password):

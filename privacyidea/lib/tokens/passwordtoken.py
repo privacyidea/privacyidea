@@ -48,7 +48,7 @@ class PasswordTokenClass(TokenClass):
     This Token can be used for a scenario like losttoken
     """
 
-    password_detail_key = "password"
+    password_detail_key = "password"  # nosec B105 # key name
     default_length = DEFAULT_LENGTH
     default_contents = DEFAULT_CONTENTS
 

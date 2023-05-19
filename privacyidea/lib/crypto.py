@@ -85,7 +85,7 @@ ROUNDS = 9
 DEFAULT_HASH_ALGO_LIST = ['argon2', 'pbkdf2_sha512']
 DEFAULT_HASH_ALGO_PARAMS = {'argon2__rounds': ROUNDS}
 
-FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
+FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"  # nosec B105 # placeholder in case of error
 
 log = logging.getLogger(__name__)
 
@@ -824,7 +824,7 @@ def create_hsm_object(config):
                 hsm_parameters[param] = config.get(key)
         logging_params = dict(hsm_parameters)
         if "password" in logging_params:
-            logging_params["password"] = "XXXX"
+            logging_params["password"] = "XXXX"  # nosec B105 # Hide password
         log.info("calling HSM module with parameters {0}".format(logging_params))
 
     return hsm_class(hsm_parameters)

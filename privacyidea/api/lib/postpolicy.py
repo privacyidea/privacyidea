@@ -386,7 +386,7 @@ def add_user_detail_to_response(request, response):
         # The policy was set, we need to add the user
         #  details
         ui = request.User.info.copy()
-        ui["password"] = ""
+        ui["password"] = ""  # nosec B105 # Hide a potential password
         for key, value in ui.items():
             if type(value) == datetime.datetime:
                 ui[key] = str(value)

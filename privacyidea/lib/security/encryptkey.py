@@ -351,7 +351,7 @@ if __name__ == "__main__":  # pragma: no cover
         log.info("password encrypt/decrypt test successful")
 
         # pin
-        password = "topSekr3t"
+        password = "topSekr3t"  # nosec B105 # used for testing
         crypted = p.encrypt_pin(password)
         text = p.decrypt_pin(crypted)
         assert (text == password)

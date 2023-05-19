@@ -100,7 +100,7 @@ class PUSH_ACTION(object):
 class PushAllowPolling(object):
     ALLOW = 'allow'
     DENY = 'deny'
-    TOKEN = 'token'
+    TOKEN = 'token'  # nosec B105 # key name
 
 
 def strip_key(key):

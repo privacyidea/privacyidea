@@ -294,8 +294,8 @@ class ACTION(object):
     REALM = "realm"
     REGISTRATIONCODE_LENGTH = "registration.length"
     REGISTRATIONCODE_CONTENTS = "registration.contents"
-    PASSWORD_LENGTH = "pw.length"
-    PASSWORD_CONTENTS = "pw.contents"
+    PASSWORD_LENGTH = "pw.length"  # nosec B105 # policy name
+    PASSWORD_CONTENTS = "pw.contents"  # nosec B105 # policy name
     REMOTE_USER = "remote_user"
     REQUIREDEMAIL = "requiredemail"
     RESET = "reset"
@@ -374,7 +374,7 @@ class ACTION(object):
     STATISTICSREAD = "statistics_read"
     STATISTICSDELETE = "statistics_delete"
     LOGIN_TEXT = "login_text"
-    DIALOG_NO_TOKEN = "dialog_no_token"
+    DIALOG_NO_TOKEN = "dialog_no_token"  # nosec B105 # policy name
     SHOW_ANDROID_AUTHENTICATOR = "show_android_privacyidea_authenticator"
     SHOW_IOS_AUTHENTICATOR = "show_ios_privacyidea_authenticator"
     SHOW_CUSTOM_AUTHENTICATOR = "show_custom_authenticator"
@@ -410,7 +410,7 @@ class GROUP(object):
     will be grouped in the UI."""
     TOOLS = "tools"
     SYSTEM = "system"
-    TOKEN = "token"
+    TOKEN = "token"  # nosec B105 # group name
     ENROLLMENT = "enrollment"
     GENERAL = "general"
     MACHINE = "machine"
@@ -474,7 +474,7 @@ class CONDITION_SECTION(object):
     __doc__ = """This is a list of available sections for conditions of policies """
     USERINFO = "userinfo"
     TOKENINFO = "tokeninfo"
-    TOKEN = "token"
+    TOKEN = "token"  # nosec B105 # section name
     HTTP_REQUEST_HEADER = "HTTP Request header"
     HTTP_ENVIRONMENT = "HTTP Environment"
 
