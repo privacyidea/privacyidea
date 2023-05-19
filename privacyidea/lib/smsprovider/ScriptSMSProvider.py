@@ -76,7 +76,9 @@ class ScriptSMSProvider(ISMSProvider):
         rcode = 0
         try:
             log.info("Starting script {script!r}.".format(script=script_name))
-            p = subprocess.Popen(proc_args, cwd=self.script_directory, universal_newlines=True, stdin=subprocess.PIPE)
+            # Trusted input/no user input: The scripts are created by user root and read from hard disk
+            p = subprocess.Popen(proc_args, cwd=self.script_directory,
+                                 universal_newlines=True, stdin=subprocess.PIPE)  # nosec B603
             p.communicate(message)
             if background == SCRIPT_WAIT:
                 rcode = p.wait()

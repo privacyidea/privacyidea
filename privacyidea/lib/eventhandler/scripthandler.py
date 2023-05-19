@@ -201,7 +201,8 @@ class ScriptEventHandler(BaseEventHandler):
                 log.debug('Committing current transaction for script '
                           '{0!s}'.format(script_name))
                 db.session.commit()
-            p = subprocess.Popen(proc_args, cwd=self.script_directory, universal_newlines=True)
+            # Trusted input/no user input: The scripts are created by user root and read from hard disk
+            p = subprocess.Popen(proc_args, cwd=self.script_directory, universal_newlines=True)  # nosec B603
             if handler_options.get("background") == SCRIPT_WAIT:
                 rcode = p.wait()
 
