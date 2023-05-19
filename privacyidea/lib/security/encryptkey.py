@@ -58,7 +58,10 @@ except ImportError:
     log.info("The python module PyKCS11 is not available. "
              "So we can not use the PKCS11 security module.")
 
-DEFAULT_LOCK_DIR = "/dev/shm/pilock"
+# The lock directory is used for locking the different processes during startup
+# to avoid a deadlock when accessing the HSM.
+# The directory for logging can be configured via PI_HSM_MODULE_LOCK_DIR in pi.cfg
+DEFAULT_LOCK_DIR = "/dev/shm/pilock"  # nosec B108 # Used for locking during startup
 DEFAULT_TIMEOUT = 15
 
 

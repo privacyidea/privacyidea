@@ -75,7 +75,7 @@ def visit_delete_limit_mysql(element, compiler, **kw):
 
         DELETE FROM pidea_audit WHERE ... LIMIT ...
     """
-    return 'DELETE FROM {} WHERE {} LIMIT {:d}'.format(
+    return 'DELETE FROM {} WHERE {} LIMIT {:d}'.format(  # nosec B608 # no user input used in query construction
         compiler.process(element.table, asfrom=True, **kw),
         compiler.process(element.filter), element.limit)
 
