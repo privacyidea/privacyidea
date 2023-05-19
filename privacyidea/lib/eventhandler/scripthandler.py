@@ -38,7 +38,7 @@ from privacyidea.lib.error import ServerError
 from privacyidea.lib import _
 from privacyidea.app import db
 import logging
-import subprocess
+import subprocess  # nosec B404 # We know what we are doing and only allow trusted script calls
 import os
 import traceback
 
