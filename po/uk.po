@@ -2,17 +2,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-12-22 15:13+0100\n"
-"Last-Translator: Artem <artem@molotov.work>\n"
+"PO-Revision-Date: 2023-05-20 13:53+0000\n"
+"Last-Translator: Dan <denqwerta@gmail.com>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/uk/>\n"
+"privacyidea-webui/uk/>\n"
 "Language: uk\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
-"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Poedit 3.2.2\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 4.18-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -113,7 +113,7 @@ msgstr ""
 "RHEL дозволяють легко оновлювати та захищати\n"
 "                        робочі процеси.\n"
 "                    </li>\n"
-"                    <li> Ексклюзивний додаток <b> Appliance</b> -Tool, що "
+"                    <li> Ексклюзивний <b> Appliance</b> -інструмент, що "
 "дозволяє легко налаштувати RADIUS-клієнти, MySQL master\n"
 "                        master реплікації,\n"
 "                        резервне копіювання та відновлення...\n"
@@ -445,9 +445,8 @@ msgstr "Вам надіслано електронне повідомлення 
 #: privacyidea/static/components/machine/views/machine.details.html:51
 #: privacyidea/static/components/token/views/token.details.html:584
 #: privacyidea/static/components/token/views/token.details.html:669
-#, fuzzy
 msgid "Application"
-msgstr "Додаток"
+msgstr "Застосунок"
 
 #: privacyidea/static/components/components/views/component.clienttype.html:7
 msgid "Application Type"
@@ -733,7 +732,7 @@ msgstr ""
 "Натисніть <a href=\"{{ enrolledToken.motpurl.value }}\"> тут </a> або "
 "відскануйте\n"
 "            QR-код, якщо ви\n"
-"            хочете додати токен у свій додаток mOTP, наприклад Token2."
+"            хочете додати токен у свій застосунок mOTP, наприклад Token2."
 
 #: privacyidea/static/components/token/views/token.enrolled.tiqr.html:13
 msgid ""
@@ -745,7 +744,7 @@ msgstr ""
 "Натисніть <a href=\"{{ enrolledToken.tiqrenroll.value }}\"> тут </a> або\n"
 "            відскануйте\n"
 "            QR-код, якщо ви\n"
-"            хочете додати токен у свій додаток TiQR."
+"            хочете додати токен у свій застосунок TiQR."
 
 #: privacyidea/static/components/components/views/component.clienttype.html:8
 #: privacyidea/static/components/config/views/config.policies.details.html:240
@@ -1557,15 +1556,15 @@ msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:418
 msgid "Get the Authenticator App for Android."
-msgstr "Отримати додаток-автентифікатор для Android."
+msgstr "Отримати застосунок-автентифікатор для Android."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:424
 msgid "Get the Authenticator App for iOS."
-msgstr "Отримати додаток-автентифікатор для iOS."
+msgstr "Отримати застосунок-автентифікатор для iOS."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:430
 msgid "Get the Authenticator App."
-msgstr "Отримати додаток-автентифікатор."
+msgstr "Отримати застосунок-автентифікатор."
 
 #: privacyidea/static/components/register/views/register.html:38
 #: privacyidea/static/components/register/views/register.html:42
@@ -2442,6 +2441,11 @@ msgid ""
 "link</a> on your\n"
 "            smartphone."
 msgstr ""
+"Будь ласка, відскануйте QR-код за допомогою застосунку privacyIDEA "
+"Authenticator\n"
+"            або натисніть <a href=\"{{ enrolledToken.pushurl.value }}\">це "
+"посилання</a> на вашому\n"
+"            смартфоні."
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:39
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:39
