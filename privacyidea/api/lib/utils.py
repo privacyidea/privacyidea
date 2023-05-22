@@ -25,6 +25,8 @@
 #
 import string
 
+import flask
+
 from ...lib.error import (ParameterError,
                           AuthError, ERROR)
 from ...lib.log import log_with
@@ -272,7 +274,7 @@ def check_unquote(request, data):
         return copy(data)
 
 
-def get_all_params(request):
+def get_all_params(request: flask.Request):
     """
     Retrieve all parameters from a request, no matter if these are GET or POST requests
     or parameters are contained as viewargs like the serial in DELETE /token/<serial>

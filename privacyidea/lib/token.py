@@ -65,6 +65,8 @@ import string
 import datetime
 import os
 import logging
+from typing import TypeVar
+
 from six import string_types
 
 from sqlalchemy import (and_, func)
@@ -554,7 +556,10 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     return ret
 
 
-def get_one_token(*args, **kwargs):
+TokenClassT = TypeVar('TokenClassT', bound=TokenClass)
+
+
+def get_one_token(*args, **kwargs) -> TokenClassT:
     """
     Fetch exactly one token according to the given filter arguments, which are passed to
     ``get_tokens``. Raise ``ResourceNotFoundError`` if no token was found. Raise
