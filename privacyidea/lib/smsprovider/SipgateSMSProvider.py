@@ -61,6 +61,7 @@ REQUEST_XML='''<?xml version="1.0" encoding="UTF-8"?>
 
 URL = "https://samurai.sipgate.net/RPC2"
 
+
 class SipgateSMSProvider(ISMSProvider):
 
     # We do not need to overwrite the __init__ and
@@ -82,6 +83,7 @@ class SipgateSMSProvider(ISMSProvider):
             protocol = proxy.split(":")[0]
             proxies = {protocol: proxy}
 
+        log.debug("submitting message {0!r} to {1!s}".format(message, phone))
         r = requests.post(URL,
                           data=REQUEST_XML % (phone.strip().strip("+"),
                                               message),
@@ -96,7 +98,6 @@ class SipgateSMSProvider(ISMSProvider):
             raise SMSError(r.status_code, "SMS could not be "
                                           "sent: %s" % r.status_code)
         return True
-
 
     @classmethod
     def parameters(cls):

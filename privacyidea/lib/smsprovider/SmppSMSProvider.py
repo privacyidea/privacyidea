@@ -41,18 +41,19 @@ class SmppSMSProvider(ISMSProvider):
 
     def submit_message(self, phone, message):
         """
-        send a message to a phone via an smpp protocol to smsc
+        send a message to a phone via a smpp protocol to smsc
 
         :param phone: the phone number
         :param message: the message to submit to the phone
         :return:
         """
-        phone = self._mangle_phone(phone, self.config)
-        log.debug("submitting message {0!s} to {1!s}".format(message, phone))
         if not self.smsgateway:
             # this should not happen. We now always use sms gateway definitions.
             log.warning("Missing smsgateway definition!")
             raise SMSError(-1, "Missing smsgateway definition!")
+
+        phone = self._mangle_phone(phone, self.smsgateway.option_dict)
+        log.debug("submitting message {0!r} to {1!s}".format(message, phone))
 
         smsc_host = self.smsgateway.option_dict.get("SMSC_HOST")
         smsc_port = self.smsgateway.option_dict.get("SMSC_PORT")

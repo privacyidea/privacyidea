@@ -63,7 +63,6 @@ class HttpSMSProvider(ISMSProvider):
         :param message: the message to submit to the phone
         :return:
         """
-        log.debug("submitting message {0!r} to {1!s}".format(message, phone))
         parameter = {}
         headers = {}
         if self.smsgateway:
@@ -100,6 +99,8 @@ class HttpSMSProvider(ISMSProvider):
             https_proxy = self.config.get('HTTPS_PROXY')
             parameter = self._get_parameters(message, phone)
             timeout = self.config.get("TIMEOUT") or 3
+
+        log.debug("submitting message {0!r} to {1!s}".format(message, phone))
 
         if url is None:
             log.warning("can not submit message. URL is missing.")

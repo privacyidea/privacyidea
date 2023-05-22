@@ -79,13 +79,13 @@ class SmtpSMSProvider(ISMSProvider):
                           "MAILSERVER and MAILSENDER) needed" % self.config)
                 raise SMSError(-1, "Incomplete SMS config.")
 
-            log.debug("submitting message {0!r} to {1!s}".format(body, phone))
             recipient = recipient.replace(PHONE_TAG, phone)
             subject = subject.replace(PHONE_TAG, phone)
             subject = subject.replace(MSG_TAG, message)
             body = body.replace(PHONE_TAG, phone)
             body = body.replace(MSG_TAG, message)
 
+        log.debug("submitting message {0!r} to {1!s}".format(body, phone))
         if identifier:
             r = send_email_identifier(identifier, recipient, subject, body)
         else:

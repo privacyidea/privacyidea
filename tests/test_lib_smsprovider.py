@@ -157,7 +157,6 @@ class SMSTestCase(MyTestCase):
         self.assertEqual(sms.smsgateway.header_dict.get("Authorization"), "QWERTZ")
         self.assertEqual(sms.smsgateway.option_dict.get("Authorization"), None)
 
-
     def test_04_REGEXP(self):
         p = ISMSProvider._mangle_phone("+49 123/456-78", {"REGEXP": "/[+-/. ]//"})
         self.assertEqual("4912345678", p)
@@ -180,6 +179,7 @@ class SMSTestCase(MyTestCase):
         # Known limitation: The slash in the replace statement does not work!
         p = ISMSProvider._mangle_phone("12.34.56.78", {"REGEXP": r"/\./\//"})
         self.assertEqual("12.34.56.78", p)
+
 
 class SmtpSMSTestCase(MyTestCase):
 
@@ -277,8 +277,10 @@ class SmtpSMSTestCase(MyTestCase):
                                      "BODY": "{otp}"})
         self.assertTrue(id > 0)
         sms = create_sms_instance(identifier)
-        r = sms.submit_message("123456", "Halo")
-        self.assertTrue(r)
+        with mock.patch("logging.Logger.debug") as log:
+            r = sms.submit_message("123456", "Halo")
+            self.assertTrue(r)
+            log.assert_any_call("submitting message {0!r} to {1!s}".format("Halo", "123456"))
 
     @smtpmock.activate
     def test_09_send_sms_regexp_success(self):
@@ -297,7 +299,7 @@ class SmtpSMSTestCase(MyTestCase):
             # Here we need to send the SMS
             r = self.regexp_provider.submit_message("+49 123/456-78", "Hello")
             self.assertTrue(r)
-            log.assert_any_call("submitting message {0!r} to {1!s}".format("<otp>", "4912345678"))
+            log.assert_any_call("submitting message {0!r} to {1!s}".format("Hello", "4912345678"))
 
 
 class SipgateSMSTestCase(MyTestCase):
@@ -338,8 +340,10 @@ class SipgateSMSTestCase(MyTestCase):
         responses.add(responses.POST,
                       self.url)
         # Here we need to send the SMS
-        r = regexp_provider.submit_message("+49 123/456-78", "Hello")
-        self.assertTrue(r)
+        with mock.patch("logging.Logger.debug") as log:
+            r = regexp_provider.submit_message("+49 123/456-78", "Hello")
+            self.assertTrue(r)
+            log.assert_any_call("submitting message {0!r} to {1!s}".format("Hello", "4912345678"))
 
     @responses.activate
     def test_08_smsgateway_success(self):
@@ -352,8 +356,10 @@ class SipgateSMSTestCase(MyTestCase):
                             options=self.config)
         self.assertTrue(id > 0)
         sms = create_sms_instance(identifier)
-        r = sms.submit_message("123456", "Hello")
-        self.assertTrue(r)
+        with mock.patch("logging.Logger.debug") as log:
+            r = sms.submit_message("123456", "Hello")
+            self.assertTrue(r)
+            log.assert_any_call("submitting message {0!r} to {1!s}".format("Hello", "123456"))
 
 
 class ScriptSMSTestCase(MyTestCase):
@@ -374,24 +380,26 @@ class ScriptSMSTestCase(MyTestCase):
         self.assertRaises(SMSError, sms.submit_message, "123456", "Hello")
         delete_smsgateway(identifier)
         
-        # We bail out, fi no smsgateway definition is given!
+        # We bail out, if no smsgateway definition is given!
         sms = ScriptSMSProvider(directory=self.directory)
         self.assertRaises(SMSError, sms.submit_message, "123456", "Hello")
-
 
     def test_02_success(self):
         # the script runs successfully
         identifier = "myScriptSMS"
         config = {"background": SCRIPT_WAIT,
-                  "script": "success.sh"}
+                  "script": "success.sh",
+                  "REGEXP": "/[+-/. ]//"}
         provider_module = "privacyidea.lib.smsprovider.ScriptSMSProvider" \
                           ".ScriptSMSProvider"
         id = set_smsgateway(identifier, provider_module, description="test",
                             options=config)
         self.assertTrue(id > 0)
         sms = ScriptSMSProvider(smsgateway=get_smsgateway(identifier)[0], directory=self.directory)
-        r = sms.submit_message("123456", "Hello")
-        self.assertTrue(r)
+        with mock.patch("logging.Logger.info") as log:
+            r = sms.submit_message("+49 123/456-78", "Hello")
+            self.assertTrue(r)
+            log.assert_any_call("SMS delivered to 4912345678.")
         delete_smsgateway(identifier)
 
     def test_02_fail(self):
@@ -519,8 +527,10 @@ class HttpSMSTestCase(MyTestCase):
                       self.post_url,
                       body=self.success_body)
         # Here we need to send the SMS
-        r = self.regexp_provider.submit_message("+49 123/456-78", "Hello")
-        self.assertTrue(r)
+        with mock.patch("logging.Logger.debug") as log:
+            r = self.regexp_provider.submit_message("+49 123/456-78", "Hello")
+            self.assertTrue(r)
+            log.assert_any_call("submitting message {0!r} to {1!s}".format("Hello", "4912345678"))
 
     @responses.activate
     def test_02_send_sms_post_fail(self):
@@ -672,8 +682,7 @@ class SmppSMSTestCase(MyTestCase):
                       ".SmppSMSProvider"
 
     def setUp(self):
-
-        # Use a the gateway definition for configuring the provider
+        # Use the gateway definition for configuring the provider
         identifier = "mySmppGW"
         id = set_smsgateway(identifier, self.provider_module, description="test",
                             options=self.config)
@@ -752,6 +761,9 @@ class SmppSMSTestCase(MyTestCase):
                          systemid="privacyIDEA",
                          password="secret")
         # Here we need to send the SMS
-        r = regexp_provider.submit_message("+49 123/456-78", "Hello")
-        self.assertTrue(r)
+        with mock.patch("logging.Logger.debug") as log:
+            r = regexp_provider.submit_message("+49 123/456-78", "Hello")
+            self.assertTrue(r)
+            log.assert_any_call("submitting message {0!r} to {1!s}".format("Hello", "4912345678"))
 
+        delete_smsgateway(identifier_regexp)
