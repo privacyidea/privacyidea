@@ -110,7 +110,7 @@ class TelegramBot:
             return False
 
     def _confirm_callback(self, callback: CallbackQuery, text: str):
-        self._bot.answer_callback_query(callback.id, text)
+        self._bot.answer_callback_query(callback.id, text, show_alert=True)
 
     @cache
     def get_bot_name(self):

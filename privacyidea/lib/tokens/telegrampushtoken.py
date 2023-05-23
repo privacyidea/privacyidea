@@ -59,7 +59,7 @@ import time
 log = logging.getLogger(__name__)
 
 DEFAULT_CHALLENGE_TEXT = _("Please confirm the authentication in your Telegram!")
-DEFAULT_MOBILE_TEXT = _("Do you want to confirm the login?")
+DEFAULT_MOBILE_TEXT = _("Is this you attempting to login from [{0}]?")
 TELEGRAM_CHAT_ID = "telegram_chat_id"
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 DELAY = 1.0
@@ -106,9 +106,9 @@ class TelegramMessageData:
 
 
 def _build_message_data(serial, challenge, options):
-    message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
+    message_on_mobile = str.format(get_action_values_from_options(SCOPE.AUTH,
                                                        TELEGRAM_PUSH_ACTION.MOBILE_TEXT,
-                                                       options) or DEFAULT_MOBILE_TEXT
+                                                       options) or DEFAULT_MOBILE_TEXT, options.get("clientip"))
     return TelegramMessageData(message_on_mobile, serial, challenge)
 
 
@@ -426,72 +426,8 @@ class TelegramPushTokenClass(TokenClass):
 
         The method returns a tuple ``("json", {})``
 
-        This endpoint provides several functionalities:
-
-        - It is used for the 2nd enrollment step of the smartphone.
-          It accepts the following parameters:
-
-            .. sourcecode:: http
-
-              POST /ttype/push HTTP/1.1
-              Host: https://yourprivacyideaserver
-
-              serial=<token serial>
-              fbtoken=<Firebase token>
-              pubkey=<public key>
-
-        - It is also used when the smartphone sends the signed response
-          to the challenge during authentication. The following parameters are accepted:
-
-            .. sourcecode:: http
-
-              POST /ttype/push HTTP/1.1
-              Host: https://yourprivacyideaserver
-
-              serial=<token serial>
-              nonce=<the actual challenge>
-              signature=<signature over {nonce}|{serial}>
-
-        - The smartphone can also decline the authentication request, by sending
-          a response to the server:
-
-            .. sourcecode:: http
-
-              POST /ttype/push HTTP/1.1
-              Host: https://yourprivacyideaserver
-
-              serial=<token serial>
-              nonce=<the actual challenge>
-              decline=1
-              signature=<signature over {nonce}|{serial}|decline
-
-        - In some cases the Firebase service changes the token of a device. This
-          needs to be communicated to privacyIDEA through this endpoint
-          (https://github.com/privacyidea/privacyidea/wiki/concept%3A-pushtoken-poll#update
-          -firebase-token):
-
-            .. sourcecode:: http
-
-              POST /ttype/push HTTP/1.1
-              Host: https://yourprivacyideaserver
-
-              new_fb_token=<new Firebase token>
-              serial=<token serial>
-              timestamp=<timestamp>
-              signature=SIGNATURE(<new_fb_token>|<serial>|<timestamp>)
-
-        - And it also acts as an endpoint for polling challenges:
-
-            .. sourcecode:: http
-
-              GET /ttype/push HTTP/1.1
-              Host: https://yourprivacyideaserver
-
-              serial=<tokenserial>
-              timestamp=<timestamp>
-              signature=SIGNATURE(<tokenserial>|<timestamp>)
-
-          More on polling can be found here: https://github.com/privacyidea/privacyidea/wiki/concept%3A-pushtoken-poll
+        This endpoint provides a webhook target for Telegram Bot API,
+        since polling Bot API in a background thread is not feasible in Flask/WSGI context
 
         :param request: The Flask request
         :param g: The Flask global object g
@@ -561,7 +497,7 @@ class TelegramPushTokenClass(TokenClass):
                 res = bot.submit_message(telegram_chatid, message)
 
             # Create the challenge in the challenge table if either the message
-            # was successfully submitted to the Firebase API
+            # was successfully submitted to the Bot API
             if res:
                 validity = int(get_from_config('DefaultChallengeValidityTime', 120))
                 tokentype = self.get_tokentype().lower()
@@ -601,7 +537,7 @@ class TelegramPushTokenClass(TokenClass):
         """
         High level interface which covers the check_pin and check_otp
         This is the method that verifies single shot authentication.
-        The challenge is send to the smartphone app and privacyIDEA
+        The challenge is sent to the smartphone app and privacyIDEA
         waits for the response to arrive.
 
         :param passw: the password which could be pin+otp value
