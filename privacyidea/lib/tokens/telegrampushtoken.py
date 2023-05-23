@@ -28,6 +28,8 @@ This code is tested in tests/test_lib_tokens_push
 """
 
 import base64
+from functools import cache
+
 import telebot
 
 
@@ -59,22 +61,23 @@ log = logging.getLogger(__name__)
 DEFAULT_CHALLENGE_TEXT = _("Please confirm the authentication in your Telegram!")
 DEFAULT_MOBILE_TEXT = _("Do you want to confirm the login?")
 TELEGRAM_CHAT_ID = "telegram_chat_id"
-GWTYPE = u'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider'
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 DELAY = 1.0
 
 
 class TELEGRAM_PUSH_ACTION(object):
     TELEGRAM_BOT_TOKEN = "tpush_bot_token"
-    TELEGRAM_BOT_API_URL = "tpush_registration_url"
-    REGISTRATION_URL = "tpush_registration_url"
+    TELEGRAM_BOT_API_URL = "tpush_bot_api_url"
+    WEBHOOK_URL = "tpush_webhook_url"
     TTL = "tpush_ttl"
     MOBILE_TEXT = "tpush_text_on_mobile"
-    MOBILE_TITLE = "tpush_title_on_mobile"
     WAIT = "tpush_wait"
 
 
 class PushClickEvent:
+    """
+    Event which will be sent by Telegram bot upon receiving user click on inline button
+    """
     serial: str
     challenge: str
     is_accepted: bool
@@ -87,31 +90,19 @@ class PushClickEvent:
             log.error(f"Exception parsing callback data: {err}")
             raise
 
+
 class TelegramMessageData:
+    """
+    Simple DTO for sending a private message from a bot to a user, possibly with callback_data for inline buttons
+    """
     message: str
-    callback_data: str
+    callback_data: str | None
 
     def __init__(self, message: str, serial: str = None, challenge: str = None):
         self.message = message
         self.callback_data = None
         if serial is not None and challenge is not None:
             self.callback_data = f"{serial}_{challenge}"
-
-def strip_key(key):
-    """
-    strip the headers and footers like
-    -----BEGIN PUBLIC RSA KEY-----
-    -----END PUBLIC KEY-----
-    -----BEGIN PRIVATE RSA KEY-----
-    as well as whitespace
-
-    :param key: key as a string
-    :return: stripped key
-    """
-    if key.startswith("-----BEGIN"):
-        return "\n".join(key.strip().splitlines()[1:-1]).strip()
-    else:
-        return key.strip()
 
 
 def _build_message_data(serial, challenge, options):
@@ -123,37 +114,33 @@ def _build_message_data(serial, challenge, options):
 
 class TelegramPushTokenClass(TokenClass):
     """
-    The :ref:`push_token` uses the Firebase service to send challenges to the
-    user's smartphone. The user confirms on the smartphone, signs the
-    challenge and sends it back to privacyIDEA.
+    The :ref:`tpush_token` uses Telegram Bot Api to send challenges to the
+    user's account in Telegram. The user confirms challenge by clicking button in a chat with the bot, Bot Api sends 
+    a confirmation event back to PrivacyIDEA through webhook.
 
     The enrollment occurs in two enrollment steps:
 
     **Step 1**:
       The device is enrolled using a QR code, which encodes the following URI::
 
-          otpauth://pipush/PIPU0006EF85?url=https://yourprivacyideaserver/enroll/this/token&ttl=120
+      https://t.me/telegram_bot_username?start=enrollment_credential
 
     **Step 2**:
-      In the QR code is a URL, where the smartphone sends the remaining data for the enrollment:
+      The QR code contains a Telegram deep link, which should automatically redirect user to a chat with the bot
+      and automatically send a /start command with 64-symbol enrollment_credential passed back to the Bot API.
+      Bot API calls a webhook with that event, which by default uses following endpoint:
 
         .. sourcecode:: http
 
-            POST /ttype/push HTTP/1.1
+            POST /ttype/tpush HTTP/1.1
             Host: https://yourprivacyideaserver/
-
-            enrollment_credential=<hex nonce>
-            serial=<token serial>
-            fbtoken=<Firebase token>
-            pubkey=<public key>
 
     For more information see:
 
-    - https://github.com/privacyidea/privacyidea/issues/1342
-    - https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken
+    - https://github.com/privacyidea/privacyidea/issues/3615
     """
     mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE, AUTHENTICATIONMODE.OUTOFBAND]
-    client_mode = CLIENTMODE.POLL # todo ?
+    client_mode = CLIENTMODE.POLL
     # A disabled PUSH token has to be removed from the list of checked tokens.
     check_if_disabled = False
     # If the token is enrollable via multichallenge
@@ -177,7 +164,7 @@ class TelegramPushTokenClass(TokenClass):
         return "PITGP"
 
     @staticmethod
-    #@cache
+    @cache
     def get_class_info(key=None, ret='all'):
         """
         returns all or a subtree of the token definition
@@ -193,24 +180,18 @@ class TelegramPushTokenClass(TokenClass):
         res = {'type': 'telegram_push',
                'title': _('Telegram PUSH Token'),
                'description':
-                    _('Telegram PUSH: Send a push notification to a telegram user through a bot'),
+                    _('Telegram PUSH: Send a push notification to a Telegram user through a bot'),
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.ENROLL: {
-                       # TELEGRAM_PUSH_ACTION.FIREBASE_CONFIG: {
-                       #     'type': 'str',
-                       #     'desc': _('The configuration of your Firebase application.'),
-                       #     'group': group,
-                       #     'value': [POLL_ONLY] + [gw.identifier for gw in gws]
-                       # },
-                       TELEGRAM_PUSH_ACTION.REGISTRATION_URL: {
+                       TELEGRAM_PUSH_ACTION.WEBHOOK_URL: {
                             "required": True,
                             'type': 'str',
                             'group': group,
-                            'desc': _('The URL the Push App should contact in the second enrollment step.'
-                                      ' Usually it is the endpoint /ttype/push of the privacyIDEA server.')
+                            'desc': _('The URL the Telegram Bot API should use for calling webhooks.'
+                                      ' Usually it is the endpoint /ttype/tpush of the privacyIDEA server.')
                        },
                        TELEGRAM_PUSH_ACTION.TTL: {
                            'type': 'int',
@@ -219,12 +200,13 @@ class TelegramPushTokenClass(TokenClass):
                        },
                        ACTION.MAXTOKENUSER: {
                            'type': 'int',
-                           'desc': _("The user may only have this maximum number of Push tokens assigned."),
+                           'desc': _("The user may only have this maximum number of Telegram Push tokens assigned."),
                            'group': GROUP.TOKEN
                        },
                        ACTION.MAXACTIVETOKENUSER: {
                            'type': 'int',
-                           'desc': _("The user may only have this maximum number of active Push tokens assigned."),
+                           'desc': _("The user may only have this maximum number"
+                                     " of active Telegram Push tokens assigned."),
                            'group': GROUP.TOKEN
                        }
                    },
@@ -233,8 +215,9 @@ class TelegramPushTokenClass(TokenClass):
                             "required": True,
                             'type': 'str',
                             'group': group,
-                            'desc': _('The URL the Push App should contact in the second enrollment step.'
-                                      ' Usually it is the endpoint /ttype/push of the privacyIDEA server.')
+                            'desc': _('The URL of Telegram Bot API which PrivacyIDEA will work with.'
+                                      ' It could be a main https://api.telegram.org/bot{0}/{1} '
+                                      ' or URL of your local Bot API server')
                        },
                        TELEGRAM_PUSH_ACTION.TELEGRAM_BOT_TOKEN: {
                            'type': 'str',
@@ -243,12 +226,7 @@ class TelegramPushTokenClass(TokenClass):
                        },
                        TELEGRAM_PUSH_ACTION.MOBILE_TEXT: {
                            'type': 'str',
-                           'desc': _('The question the user sees on his mobile phone.'),
-                           'group': group
-                       },
-                       TELEGRAM_PUSH_ACTION.MOBILE_TITLE: {
-                           'type': 'str',
-                           'desc': _('The title of the notification, the user sees on his mobile phone.'),
+                           'desc': _('The question the bot asks when challenging user'),
                            'group': group
                        },
                        TELEGRAM_PUSH_ACTION.WAIT: {
@@ -315,7 +293,7 @@ class TelegramPushTokenClass(TokenClass):
         elif "genkey" in upd_param:
             # We are in step 1:
             upd_param["2stepinit"] = 1
-            # Telegram deep link to a bot accept query parameter up to 64 symbols in base64
+            # Telegram deep link to a bot accepts a query parameter up to 64 symbols in base64
             # Each base64 symbol can encode 6 bits, so we have 48 bytes in our disposal
             random_bytes = base64.urlsafe_b64encode(geturandom(48))
             self.add_tokeninfo("enrollment_credential", random_bytes)
@@ -344,7 +322,7 @@ class TelegramPushTokenClass(TokenClass):
             extra_data.update({"image": imageurl})
         if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
             # Get enrollment values from the policy
-            # Get the values from the configured PUSH config
+            # Get the values from the configured TPUSH config
             # this allows to upgrade our crypto
             extra_data["v"] = 1
             extra_data["serial"] = self.get_serial()
@@ -354,7 +332,7 @@ class TelegramPushTokenClass(TokenClass):
                 extra_data.update({'pin': True})
 
             # We display this during the first enrollment step!
-            bot = self.get_bot({"g": params.get("g"), "user": user})
+            bot = self._get_bot({"g": params.get("g"), "user": user})
             enrollment_credential = self.get_tokeninfo("enrollment_credential")
             qr_url = f"https://t.me/{bot.get_bot_name()}?start={enrollment_credential}"
             response_detail["pushurl"] = {"description": _("URL for privacyIDEA Telegram Push Token"),
@@ -369,13 +347,16 @@ class TelegramPushTokenClass(TokenClass):
     _bot_factory = None
 
     @classmethod
-    def get_bot(cls, options):
+    def _get_bot(cls, options):
+        """
+        Calls a bot factory method with necessary configuration values
+        """
         bot_token = get_action_values_from_options(
             SCOPE.AUTH, TELEGRAM_PUSH_ACTION.TELEGRAM_BOT_TOKEN, options)
         bot_api_url = get_action_values_from_options(
             SCOPE.AUTH, TELEGRAM_PUSH_ACTION.TELEGRAM_BOT_API_URL, options)
         webhook_url = get_action_values_from_options(
-            SCOPE.ENROLL, TELEGRAM_PUSH_ACTION.REGISTRATION_URL, options)
+            SCOPE.ENROLL, TELEGRAM_PUSH_ACTION.WEBHOOK_URL, options)
         return cls._bot_factory(bot_token, bot_api_url, webhook_url)
 
     @classmethod
@@ -392,16 +373,14 @@ class TelegramPushTokenClass(TokenClass):
             if chals and chals[0].is_valid() and chals[0].get_session() == CHALLENGE_SESSION.ENROLLMENT:
                 chals[0].set_otp_status(True)
                 chals[0].save()
-            reply_func(TelegramMessageData("Registration of Telegram Push token successfully completed."))
+            reply_func(TelegramMessageData(_("Registration of Telegram Push token successfully completed.")))
             return True
         except ResourceNotFoundError:
             log.debug("No token with this serial number in the rollout state 'clientwait'.")
-            #raise ResourceNotFoundError("No token with this serial number "
-            #                            "in the rollout state 'clientwait'.")
-        reply_func(TelegramMessageData("No unregistered token found for this enrollment challenge"))
+        reply_func(TelegramMessageData(_("No unregistered token found for this enrollment challenge.")))
 
     @classmethod
-    def _on_push_click(self, push_click_event: PushClickEvent):
+    def _on_push_click(cls, push_click_event: PushClickEvent, reply_func: Callable[[str], Any]):
         log.debug("Handling the authentication response from the Telegram.")
         # Do the 2nd step of the authentication
         # Find valid challenges
@@ -410,14 +389,16 @@ class TelegramPushTokenClass(TokenClass):
         if challengeobject_list:
             # There are valid challenges, so we check this signature
             for chal in challengeobject_list:
-                    log.debug("Found matching challenge {0!s}.".format(chal))
-                    if not push_click_event.is_accepted:
-                        # If the challenge is decline, we delete it from the DB
-                        chal.delete()
-                    else:
-                        chal.set_otp_status(True)
-                        chal.save()
-                    return True
+                log.debug("Found matching challenge {0!s}.".format(chal))
+                if not push_click_event.is_accepted:
+                    # If the challenge is declined, we delete it from the DB
+                    chal.delete()
+                    reply_func(_("Login declined"))
+                else:
+                    chal.set_otp_status(True)
+                    chal.save()
+                    reply_func(_("Login confirmed"))
+                return True
         return False
 
     @classmethod
@@ -431,10 +412,9 @@ class TelegramPushTokenClass(TokenClass):
         :rtype: (bool, dict)
         """
         details = {}
-        result = False
 
         update = telebot.types.Update.de_json(request_data)
-        bot = cls.get_bot({"g": g})
+        bot = cls._get_bot({"g": g})
         result = bot.process_new_update(update)
         return result, details
 
@@ -442,7 +422,7 @@ class TelegramPushTokenClass(TokenClass):
     def api_endpoint(cls, request: PiRequestClass, g):
         """
         This provides a function which is called by the API endpoint
-        ``/ttype/push`` which is defined in :doc:`../../api/ttype`
+        ``/ttype/tpush`` which is defined in :doc:`../../api/ttype`
 
         The method returns a tuple ``("json", {})``
 
@@ -576,7 +556,7 @@ class TelegramPushTokenClass(TokenClass):
         if telegram_chatid:
             challenge = b32encode_and_unicode(geturandom(10))
             if options.get("session") != CHALLENGE_SESSION.ENROLLMENT:
-                bot = self.get_bot(options)
+                bot = self._get_bot(options)
                 message = _build_message_data(self.token.serial, challenge, options)
                 res = bot.submit_message(telegram_chatid, message)
 
@@ -609,7 +589,7 @@ class TelegramPushTokenClass(TokenClass):
         else:
             log.warning(u"The token {0!s} has no tokeninfo {1!s}. "
                         u"The message could not be sent.".format(self.token.serial,
-                                                                 TELEGRAM_PUSH_ACTION.FIREBASE_CONFIG))
+                                                                 TELEGRAM_CHAT_ID))
             if is_true(options.get("exception")):
                 raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")
 
