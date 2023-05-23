@@ -92,8 +92,6 @@ def before_request():
     g.event_config = EventConfiguration()
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
-
-
     username = getParam(request.all_data, "username")
     if username:
         # We only fill request.User, if we really have a username.
