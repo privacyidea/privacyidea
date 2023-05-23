@@ -309,7 +309,7 @@ class TelegramPushTokenClass(TokenClass):
             self.del_tokeninfo("enrollment_credential")
             self.token.rollout_state = "enrolled"
             self.token.active = True
-            #encrypting chat_id since it can be considered sensitive, personal information
+            # encrypting chat_id since it can be considered sensitive, personal information
             self.add_tokeninfo(TELEGRAM_CHAT_ID, upd_param.get(TELEGRAM_CHAT_ID), value_type="password")
 
         elif "genkey" in upd_param:
@@ -386,7 +386,7 @@ class TelegramPushTokenClass(TokenClass):
                                         tokentype="tpush",
                                         rollout_state=ROLLOUTSTATE.CLIENTWAIT)
             serial = token_obj.get_serial()
-            token_obj.update({"serial": serial, TELEGRAM_CHAT_ID: chat_id, "enrollment_credential": enrollment_credential})
+            token_obj.update({"serial": serial, TELEGRAM_CHAT_ID: str(chat_id), "enrollment_credential": enrollment_credential})
             # in case of validate/check enrollment
             chals = get_challenges(serial=serial)
             if chals and chals[0].is_valid() and chals[0].get_session() == CHALLENGE_SESSION.ENROLLMENT:
