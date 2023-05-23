@@ -111,6 +111,7 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.machine import list_machine_tokens
 from privacyidea.lib.applications.offline import MachineApplication
 import json
+import threading
 
 from ..lib.framework import get_app_config_value
 
@@ -126,31 +127,10 @@ def before_request():
     """
     This is executed before the request
     """
-    ensure_no_config_object()
-    request.all_data = get_all_params(request)
     request.User = get_user_from_param(request.all_data)
-    privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
-    # Create a policy_object, that reads the database audit settings
-    # and contains the complete policy definition during the request.
-    # This audit_object can be used in the postpolicy and prepolicy and it
-    # can be passed to the innerpolicies.
-
-    g.policy_object = PolicyClass()
-
-    g.audit_object = getAudit(current_app.config, g.startdate)
     g.event_config = EventConfiguration()
-    # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
-    g.serial = getParam(request.all_data, "serial", default=None)
-    g.audit_object.log({"success": False,
-                        "action_detail": "",
-                        "client": g.client_ip,
-                        "client_user_agent": request.user_agent.browser,
-                        "privacyidea_server": privacyidea_server,
-                        "action": "{0!s} {1!s}".format(request.method, request.url_rule),
-                        "info": ""})
 
 
 @validate_blueprint.route('/offlinerefill', methods=['POST'])

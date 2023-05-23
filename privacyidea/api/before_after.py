@@ -88,6 +88,31 @@ def log_begin_request():
     log.debug("Begin handling of request {!r}".format(request.full_path))
     g.startdate = datetime.datetime.now()
 
+    # remove session from param and gather all parameters, either
+    # from the Form data or from JSON in the request body.
+    ensure_no_config_object()
+    request.all_data = get_all_params(request)
+    privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
+    # Create a policy_object, that reads the database audit settings
+    # and contains the complete policy definition during the request.
+    # This audit_object can be used in the postpolicy and prepolicy and it
+    # can be passed to the innerpolicies.
+    g.policy_object = PolicyClass()
+    g.audit_object = getAudit(current_app.config)
+    # access_route contains the ip adresses of all clients, hops and proxies.
+    g.client_ip = get_client_ip(request,
+                                get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.serial = getParam(request.all_data, "serial", default=None)
+
+    g.audit_object.log({"serial":g.serial,
+                        "success": False,
+                        "action_detail": "",
+                        "client": g.client_ip,
+                        "client_user_agent": request.user_agent.browser,
+                        "privacyidea_server": privacyidea_server,
+                        "action": "{0!s} {1!s}".format(request.method, request.url_rule),
+                        "thread_id": "{0!s}".format(threading.current_thread().ident),
+                        "info": ""})
 
 @token_blueprint.teardown_app_request
 def teardown_request(exc):
@@ -155,10 +180,6 @@ def before_request():
 
     The checks for ONLY admin are preformed in api/system.py
     """
-    # remove session from param and gather all parameters, either
-    # from the Form data or from JSON in the request body.
-    ensure_no_config_object()
-    request.all_data = get_all_params(request)
     if g.logged_in_user.get("role") == "user":
         # A user is calling this API. First thing we do is restricting the user parameter.
         # ...to restrict token view, audit view or token actions.
@@ -179,30 +200,21 @@ def before_request():
         # policy and will not resolve to a user object
         request.User = User()
 
-    g.policy_object = PolicyClass()
-    g.audit_object = getAudit(current_app.config, g.startdate)
     g.event_config = EventConfiguration()
-    # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
-    privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Already get some typical parameters to log
-    serial = getParam(request.all_data, "serial")
-    if serial and not "*" in serial:
-        g.serial = serial
-        tokentype = get_token_type(serial)
+    if g.serial and "*" not in g.serial:
+        tokentype = get_token_type(g.serial)
         if not request.User:
             # We determine the user object by the given serial number
             try:
-                request.User = get_token_owner(serial) or User()
+                request.User = get_token_owner(g.serial) or User()
             except ResourceNotFoundError:
                 # The serial might not exist! This would raise an exception
                 pass
 
     else:
-        g.serial = None
         tokentype = None
 
     if request.User:
@@ -214,19 +226,10 @@ def before_request():
         audit_resolver = getParam(request.all_data, "resolver")
         audit_username = getParam(request.all_data, "user")
 
-    g.audit_object.log({"success": False,
-                        "serial": serial,
-                        "user": audit_username,
+    g.audit_object.log({"user": audit_username,
                         "realm": audit_realm,
                         "resolver": audit_resolver,
-                        "token_type": tokentype,
-                        "client": g.client_ip,
-                        "client_user_agent": request.user_agent.browser,
-                        "privacyidea_server": privacyidea_server,
-                        "action": "{0!s} {1!s}".format(request.method, request.url_rule),
-                        "action_detail": "",
-                        "thread_id": "{0!s}".format(threading.current_thread().ident),
-                        "info": ""})
+                        "token_type": tokentype})
 
     if g.logged_in_user.get("role") == "admin":
         # An administrator is calling this API
