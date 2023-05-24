@@ -66,7 +66,7 @@ In case if authenticating a serial number:
  * :func:`privacyidea.lib.tokenclass.TokenClass.check_otp`
 
 """
-from flask import (Blueprint, request, g, current_app)
+from flask import (Blueprint, request, g)
 from privacyidea.lib.user import get_user_from_param, log_used_user
 from .lib.utils import send_result, getParam
 from ..lib.decorators import (check_user_or_serial_in_request)
@@ -75,11 +75,8 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
 from privacyidea.lib.utils import is_true
-from privacyidea.api.lib.utils import get_all_params
-from privacyidea.lib.config import (return_saml_attributes, get_from_config,
-                                    return_saml_attributes_on_fail,
-                                    SYSCONF, ensure_no_config_object, get_privacyidea_node)
-from privacyidea.lib.audit import getAudit
+from privacyidea.lib.config import (return_saml_attributes,
+                                    return_saml_attributes_on_fail)
 from privacyidea.api.lib.decorators import add_serial_from_response_to_g
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
@@ -96,12 +93,10 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             add_user_detail_to_response, construct_radius_response,
                                             mangle_challenge_response, is_authorized,
                                             multichallenge_enroll_via_validate, preferred_client_mode)
-from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 import logging
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
-from privacyidea.lib.utils import get_client_ip
 from privacyidea.lib.event import event
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
 from privacyidea.lib.subscriptions import CheckSubscription
@@ -111,9 +106,6 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.machine import list_machine_tokens
 from privacyidea.lib.applications.offline import MachineApplication
 import json
-import threading
-
-from ..lib.framework import get_app_config_value
 
 log = logging.getLogger(__name__)
 

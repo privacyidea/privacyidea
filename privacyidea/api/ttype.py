@@ -34,30 +34,17 @@ The TiQR Token uses this API to implement its special functionalities. See
 from flask import (Blueprint,
                    request)
 from .lib.utils import getParam
-from ..lib.framework import get_app_config_value
 from ..lib.log import log_with
 from flask import g, jsonify, current_app
 import logging
-from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.policy import PolicyClass
-from privacyidea.lib.audit import getAudit
-from privacyidea.lib.config import (get_token_class, get_from_config,
-                                    SYSCONF, ensure_no_config_object, get_privacyidea_node)
+from privacyidea.lib.config import get_token_class
 from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.utils import get_client_ip
 import json
 
 log = logging.getLogger(__name__)
 
 ttype_blueprint = Blueprint('ttype_blueprint', __name__)
-
-
-@ttype_blueprint.before_request
-def before_request():
-    """
-    This is executed before the request
-    """
 
 
 @ttype_blueprint.route('/<ttype>', methods=['POST', 'GET'])

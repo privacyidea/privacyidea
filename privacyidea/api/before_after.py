@@ -98,11 +98,28 @@ def log_begin_request():
     # This audit_object can be used in the postpolicy and prepolicy and it
     # can be passed to the innerpolicies.
     g.policy_object = PolicyClass()
+
+    # Save the HTTP header in the localproxy object
+    g.request_headers = request.headers
     g.audit_object = getAudit(current_app.config)
+
     # access_route contains the ip addresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request,
                                 get_from_config(SYSCONF.OVERRIDECLIENT))
+
+    # check for valid serial
     g.serial = getParam(request.all_data, "serial", default=None)
+    if g.serial and "*" not in g.serial:
+        g.tokentype = get_token_type(g.serial)
+        if not request.User:
+            # We determine the user object by the given serial number
+            try:
+                request.User = get_token_owner(g.serial) or User()
+            except ResourceNotFoundError:
+                # The serial might not exist! This would raise an exception
+                pass
+    else:
+        g.tokentype = None
 
     g.audit_object.log({"serial":g.serial,
                         "success": False,
@@ -201,21 +218,6 @@ def before_request():
         request.User = User()
 
     g.event_config = EventConfiguration()
-    # Save the HTTP header in the localproxy object
-    g.request_headers = request.headers
-    # Already get some typical parameters to log
-    if g.serial and "*" not in g.serial:
-        tokentype = get_token_type(g.serial)
-        if not request.User:
-            # We determine the user object by the given serial number
-            try:
-                request.User = get_token_owner(g.serial) or User()
-            except ResourceNotFoundError:
-                # The serial might not exist! This would raise an exception
-                pass
-
-    else:
-        tokentype = None
 
     if request.User:
         audit_username = request.User.login
@@ -229,7 +231,7 @@ def before_request():
     g.audit_object.log({"user": audit_username,
                         "realm": audit_realm,
                         "resolver": audit_resolver,
-                        "token_type": tokentype})
+                        "token_type": g.tokentype})
 
     if g.logged_in_user.get("role") == "admin":
         # An administrator is calling this API
