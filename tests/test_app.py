@@ -41,7 +41,7 @@ class AppTestCase(unittest.TestCase):
                       'policy_blueprint', 'login_blueprint', 'jwtauth', 'user_blueprint',
                       'audit_blueprint', 'machineresolver_blueprint', 'machine_blueprint',
                       'application_blueprint', 'caconnector_blueprint', 'cert_blueprint',
-                      'ttype_blueprint', 'register_blueprint', 'smtpserver_blueprint',
+                      'register_blueprint', 'smtpserver_blueprint',
                       'recover_blueprint', 'radiusserver_blueprint', 'periodictask_blueprint',
                       'privacyideaserver_blueprint', 'eventhandling_blueprint',
                       'smsgateway_blueprint', 'client_blueprint', 'subscriptions_blueprint',
