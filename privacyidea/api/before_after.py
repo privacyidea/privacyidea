@@ -109,17 +109,6 @@ def log_begin_request():
 
     # check for valid serial
     g.serial = getParam(request.all_data, "serial", default=None)
-    if g.serial and "*" not in g.serial:
-        g.tokentype = get_token_type(g.serial)
-        if not request.User:
-            # We determine the user object by the given serial number
-            try:
-                request.User = get_token_owner(g.serial) or User()
-            except ResourceNotFoundError:
-                # The serial might not exist! This would raise an exception
-                pass
-    else:
-        g.tokentype = None
 
     g.audit_object.log({"serial":g.serial,
                         "success": False,
@@ -219,6 +208,19 @@ def before_request():
 
     g.event_config = EventConfiguration()
 
+    # check for valid serial
+    if g.serial and "*" not in g.serial:
+        tokentype = get_token_type(g.serial)
+        if not request.User:
+            # We determine the user object by the given serial number
+            try:
+                request.User = get_token_owner(g.serial) or User()
+            except ResourceNotFoundError:
+                # The serial might not exist! This would raise an exception
+                pass
+    else:
+        tokentype = None
+
     if request.User:
         audit_username = request.User.login
         audit_realm = request.User.realm
@@ -231,7 +233,7 @@ def before_request():
     g.audit_object.log({"user": audit_username,
                         "realm": audit_realm,
                         "resolver": audit_resolver,
-                        "token_type": g.tokentype})
+                        "token_type": tokentype})
 
     if g.logged_in_user.get("role") == "admin":
         # An administrator is calling this API
