@@ -66,7 +66,7 @@ PyYAML==6.0
 redis==4.3.6; python_version == '3.6'
 redis==4.5.4; python_version > '3.6'
 requests==2.27.1; python_version == '3.6'
-requests==2.28.2; python_version > '3.6'
+requests==2.31.0; python_version > '3.6'
 rsa==4.9
 segno==1.5.2
 six==1.16.0
