@@ -73,7 +73,7 @@ class SMSError(Exception):
 class ISMSProvider(object):
     """ the SMS Provider Interface - BaseClass """
 
-    REGEXP_description = _("Regular expression to modify the phone number to make it compatible with provider. "
+    regexp_description = _("Regular expression to modify the phone number to make it compatible with provider. "
                            "For example to remove pluses and slashes enter something like '/[\\+/]//'.")
 
     def __init__(self, db_smsprovider_object=None, smsgateway=None):

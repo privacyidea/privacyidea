@@ -114,7 +114,7 @@ class ScriptSMSProvider(ISMSProvider):
                                            "Expects phone as the parameter and the message from stdin.")
                       },
                       "REGEXP": {
-                          "description": cls.REGEXP_description
+                          "description": cls.regexp_description
                       },
                       "background": {
                           "required": True,

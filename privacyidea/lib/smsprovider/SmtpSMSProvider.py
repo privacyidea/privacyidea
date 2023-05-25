@@ -131,7 +131,7 @@ class SmtpSMSProvider(ISMSProvider):
                                          "Use tags {phone} and {otp}.",
                           "type": "text"},
                       "REGEXP": {
-                          "description": cls.REGEXP_description
+                          "description": cls.regexp_description
                       }
                   }
                   }

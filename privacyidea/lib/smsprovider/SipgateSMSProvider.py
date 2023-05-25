@@ -122,7 +122,7 @@ class SipgateSMSProvider(ISMSProvider):
                           "description": "An optional proxy URI."
                       },
                       "REGEXP": {
-                          "description": cls.REGEXP_description
+                          "description": cls.regexp_description
                       }
                   }
                   }
