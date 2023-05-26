@@ -31,6 +31,8 @@ the core API.
 The TiQR Token uses this API to implement its special functionalities. See
 :ref:`code_tiqr_token`.
 """
+import threading
+
 from flask import (Blueprint,
                    request)
 from .lib.utils import getParam
@@ -77,6 +79,7 @@ def before_request():
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
+                        "thread_id": "{0!s}".format(threading.current_thread().ident),
                         "info": ""})
 
 

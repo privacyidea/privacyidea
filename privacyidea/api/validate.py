@@ -66,6 +66,9 @@ In case if authenticating a serial number:
  * :func:`privacyidea.lib.tokenclass.TokenClass.check_otp`
 
 """
+
+import threading
+
 from flask import (Blueprint, request, g, current_app)
 from privacyidea.lib.user import get_user_from_param, log_used_user
 from .lib.utils import send_result, getParam
@@ -150,6 +153,7 @@ def before_request():
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
+                        "thread_id": "{0!s}".format(threading.current_thread().ident),
                         "info": ""})
 
 
