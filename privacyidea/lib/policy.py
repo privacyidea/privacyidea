@@ -1609,7 +1609,7 @@ def get_static_policy_definitions(scope=None):
                                'a token.'),
                            'mainmenu': [MAIN_MENU.TOKENS],
                            'group': GROUP.TOKEN},
-            ACTION.REVOKE: {'tpye': 'bool',
+            ACTION.REVOKE: {'type': 'bool',
                             'desc': _("Admin is allowed to revoke a token"),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
