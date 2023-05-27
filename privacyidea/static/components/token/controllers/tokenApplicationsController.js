@@ -2,15 +2,15 @@
 myApp.controller("tokenApplicationsController", ['$scope', 'TokenFactory', 'MachineFactory',
                                                'UserFactory', '$stateParams',
                                                '$state', '$rootScope',
-                                               'ValidateFactory', 'AuthFactory', 'gettextCatalog',
+                                               'ValidateFactory', 'AuthFactory', 'gettextCatalog', '$location',
                                                function ($scope, TokenFactory, MachineFactory,
                                                          UserFactory, $stateParams,
                                                          $state, $rootScope,
                                                          ValidateFactory,
-                                                         AuthFactory, gettextCatalog) {
+                                                         AuthFactory, gettextCatalog, $location) {
     $scope.tokenSerial = "";
-    // This is the parents object
-    $scope.loggedInUser = AuthFactory.getUser();
+    //$scope.loggedInUser = AuthFactory.getUser();
+    $scope.currentApplication = $stateParams.application;
     $scope.form = {filter: {}};
     $scope.sortby = "serial";
     $scope.reverse = false;
@@ -24,6 +24,7 @@ myApp.controller("tokenApplicationsController", ['$scope', 'TokenFactory', 'Mach
 
     // define functions
     $scope.changeApplication = function() {
+        $location.path("/token/applications/" + $scope.currentApplication);
         $scope.get();
     };
     // Change the pagination

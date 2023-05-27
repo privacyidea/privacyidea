@@ -89,8 +89,9 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
                     controller: "tokenChallengesController"
                 })
                 .state('token.applications', {
-                    url: "/applications",
+                    url: "/applications/:application",
                     templateUrl: tokenpath + "token.applications.html" + versioningSuffixProviderProvider.$get().$get(),
-                    controller: "tokenApplicationsController"
+                    controller: "tokenApplicationsController",
+                    params: { "application": "ssh"}
                 });
         }]);
