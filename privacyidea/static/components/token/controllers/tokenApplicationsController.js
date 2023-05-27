@@ -12,6 +12,8 @@ myApp.controller("tokenApplicationsController", ['$scope', 'TokenFactory', 'Mach
     // This is the parents object
     $scope.loggedInUser = AuthFactory.getUser();
     $scope.form = {filter: {}};
+    $scope.sortby = "serial";
+    $scope.reverse = false;
     $scope.formInit = {
         applications: {"ssh": gettextCatalog.getString("SSH: Attaching ssh keys to services."),
             "offline": gettextCatalog.getString("offline: Use HOTP token for offline login to notebooks.")
@@ -37,8 +39,15 @@ myApp.controller("tokenApplicationsController", ['$scope', 'TokenFactory', 'Mach
             for (kf in $scope.form.filter) {
                 $scope.params[kf] = "*" + ($scope.form.filter[kf] || "") + "*";
             }
+            $scope.params.pagesize = 15;
+            $scope.params.sortby = this.sortby;
+            if (this.reverse) {
+                $scope.params.sortdir = "desc";
+            } else {
+                $scope.params.sortdir = "asc";
+            }
+
             MachineFactory.getMachineTokens($scope.params, function (data) {
-                console.log(data.result.value);
                 $scope.machinetokens = data.result.value;
             });
         }
