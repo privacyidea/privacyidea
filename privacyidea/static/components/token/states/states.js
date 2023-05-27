@@ -87,5 +87,10 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
                     url: "/challenges",
                     templateUrl: tokenpath + "token.challenges.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "tokenChallengesController"
+                })
+                .state('token.applications', {
+                    url: "/applications",
+                    templateUrl: tokenpath + "token.applications.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "tokenApplicationsController"
                 });
         }]);
