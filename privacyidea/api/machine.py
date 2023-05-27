@@ -235,22 +235,28 @@ def list_machinetokens_api():
     :param resolver: Identify the machine by the machine ID and the resolver name
     :query sortby: sort the output by column. Can be 'serial', 'service_id'...
     :query sortdir: asc/desc
-    :query page: request a certain page
-    :query pagesize: number of returned values
     :query application: The type of application like "ssh" or "offline".
     :param <options>: You can also filter for options like the 'service_id' or 'user' for SSH applications, or
         'count' and 'rounds' for offline applications. The filter allows the use of "*" to match substrings.
-    :return:
+    :return: JSON list of dicts
+
+    [{'application': 'ssh',
+      'id': 1,
+      'options': {'service_id': 'webserver',
+                  'user': 'root'},
+      'resolver': None,
+      'serial': 'SSHKEY1',
+      'type': 'sshkey'},
+       ...
+       ]
     """
     hostname = getParam(request.all_data, "hostname")
     machineid = getParam(request.all_data, "machineid")
     resolver = getParam(request.all_data, "resolver")
     serial = getParam(request.all_data, "serial")
     application = getParam(request.all_data, "application")
-    sortby = getParam(request.all_data, "sortby")
-    sortdir = getParam(request.all_data, "sortdir")
-    page = getParam(request.all_data, "page")
-    pagesize = getParam(request.all_data, "pagesize")
+    sortby = getParam(request.all_data, "sortby", "serial")
+    sortdir = getParam(request.all_data, "sortdir", "asc")
     filter_params = {}
     # Use remaining params as filters
     for key, value in {k: v for k, v in request.all_data.items() if k not in [
@@ -275,6 +281,11 @@ def list_machinetokens_api():
         res = list_machine_tokens(hostname=hostname, machine_id=machineid, resolver_name=resolver,
                                   serial=serial, application=application, filter_params=filter_params,
                                   serial_pattern=serial_pattern)
+
+    if sortby == "serial":
+        res.sort(key=lambda x: x.get("serial"), reverse=sortdir == "desc")
+    else:
+        res.sort(key=lambda x: x.get("options", {}).get(sortby, ""), reverse=sortdir == "desc")
 
     g.audit_object.log({'success': True,
                         'info': "serial: {0!s}, hostname: {1!s}".format(serial,

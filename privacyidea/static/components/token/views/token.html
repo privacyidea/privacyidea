@@ -65,7 +65,7 @@
                     <li role="presentation"
                         ng-class="{active: $state.includes('token.applications')}"
                         ng-show="loggedInUser.role == 'admin' &&
-                            checkRight('listtoken') &&
+                            checkRight('tokenlist') &&
                             checkRight('machinelist') &&
                             checkRight('manage_machine_tokens')">
                         <a ui-sref="token.applications">

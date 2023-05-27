@@ -292,3 +292,19 @@ class APIMachinesServiceIDTestCase(MyApiTestCase):
             for v in value:
                 # We only get SSHKEY1
                 self.assertEqual(v.get("serial"), self.serial1)
+
+        # sort by service_id
+        with self.app.test_request_context(
+                '/machine/token?application=ssh&serial=*KEY1&sortby=service_id',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            value = result.get("value")
+            # One token is attached via user "admin"
+            self.assertEqual(len(value), 3)
+            self.assertEqual(value[0].get("options").get("user"), "root")
+            self.assertEqual(value[1].get("options").get("user"), "admin")
+            self.assertEqual(value[2].get("options").get("user"), "root")
