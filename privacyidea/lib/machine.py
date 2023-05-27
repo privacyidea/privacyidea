@@ -38,6 +38,7 @@ from privacyidea.lib.utils import fetch_one_resource
 from netaddr import IPAddress
 from sqlalchemy import and_
 import logging
+import re
 
 log = logging.getLogger(__name__)
 from privacyidea.lib.log import log_with
@@ -311,7 +312,8 @@ def list_machine_tokens(hostname=None,
                         resolver_name=None,
                         serial=None,
                         application=None,
-                        filter_params=None):
+                        filter_params=None,
+                        serial_pattern=None):
     """
     Returns a list of tokens assigned to the given machine.
 
@@ -335,6 +337,7 @@ def list_machine_tokens(hostname=None,
     if application:
         sql_query = sql_query.filter(MachineToken.application == application)
     if serial:
+        # discrete serial
         token_id = get_token_id(serial)
         sql_query = sql_query.filter(MachineToken.token_id == token_id)
 
@@ -345,10 +348,22 @@ def list_machine_tokens(hostname=None,
         for option in option_list:
             options[option.mt_key] = option.mt_value
         include_mt = True
-        for key, value in filter_params.items():
-            # Check if the machinetoken contains the correct filter values
-            if options.get(key) != value:
+        # check serial_pattern
+        if serial_pattern:
+            if not re.match(serial_pattern, row.token.serial, re.I):
                 include_mt = False
+        # we still think, it should be included
+        if include_mt:
+            for key, value in filter_params.items():
+                tokenoptionvalue = options.get(key, "")
+                if "*" in value:
+                    # Simple wildcard matching
+                    pattern = value.replace("*", ".*")
+                    # We do a case insensitive match
+                    if not re.match(pattern, tokenoptionvalue, re.I):
+                        include_mt = False
+                elif tokenoptionvalue != value:
+                    include_mt = False
         if include_mt:
             res.append({"serial": row.token.serial,
                         "machine_id": machine_id,

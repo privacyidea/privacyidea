@@ -233,3 +233,62 @@ class APIMachinesServiceIDTestCase(MyApiTestCase):
             self.assertEqual(value[0]["application"], "ssh")
             self.assertEqual(value[0].get("options").get("service_id"), self.serviceID2)
             self.assertEqual(value[0].get("serial"), self.serial1)
+
+        # test filter and wildcards
+
+        # Find all tokens attached to a *server
+        with self.app.test_request_context(
+                '/machine/token?service_id=*server*&application=ssh',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            value = result.get("value")
+            self.assertEqual(len(value), 4)
+            self.assertEqual(value[0]["application"], "ssh")
+
+        # Find all tokens attached to the user *root*
+        with self.app.test_request_context(
+                '/machine/token?application=ssh&user=*oot',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            value = result.get("value")
+            # 3 tokens are attached via user "root"
+            self.assertEqual(len(value), 3)
+            self.assertEqual(value[0]["application"], "ssh")
+
+        # Find all tokens attached to the user *adm*
+        with self.app.test_request_context(
+                '/machine/token?application=ssh&user=*adm*',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            value = result.get("value")
+            # One token is attached via user "admin"
+            self.assertEqual(len(value), 1)
+            self.assertEqual(value[0]["application"], "ssh")
+
+        # Filter vor *KEY1
+        with self.app.test_request_context(
+                '/machine/token?application=ssh&serial=*KEY1',
+                method='GET',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertEqual(result["status"], True)
+            value = result.get("value")
+            # One token is attached via user "admin"
+            self.assertEqual(len(value), 3)
+            for v in value:
+                # We only get SSHKEY1
+                self.assertEqual(v.get("serial"), self.serial1)

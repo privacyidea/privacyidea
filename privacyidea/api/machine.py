@@ -233,7 +233,13 @@ def list_machinetokens_api():
     :param hostname: Identify the machine by the hostname
     :param machineid: Identify the machine by the machine ID and the resolver name
     :param resolver: Identify the machine by the machine ID and the resolver name
-    :param <options>: You can also filter for options like the 'service_id' for SSH applications
+    :query sortby: sort the output by column. Can be 'serial', 'service_id'...
+    :query sortdir: asc/desc
+    :query page: request a certain page
+    :query pagesize: number of returned values
+    :query application: The type of application like "ssh" or "offline".
+    :param <options>: You can also filter for options like the 'service_id' or 'user' for SSH applications, or
+        'count' and 'rounds' for offline applications. The filter allows the use of "*" to match substrings.
     :return:
     """
     hostname = getParam(request.all_data, "hostname")
@@ -241,12 +247,22 @@ def list_machinetokens_api():
     resolver = getParam(request.all_data, "resolver")
     serial = getParam(request.all_data, "serial")
     application = getParam(request.all_data, "application")
+    sortby = getParam(request.all_data, "sortby")
+    sortdir = getParam(request.all_data, "sortdir")
+    page = getParam(request.all_data, "page")
+    pagesize = getParam(request.all_data, "pagesize")
     filter_params = {}
     # Use remaining params as filters
     for key, value in {k: v for k, v in request.all_data.items() if k not in [
-        "hostname", "machineid", "resolver", "serial", "application", "client", "g"
+        "hostname", "machineid", "resolver", "serial", "application", "client", "g",
+        "sortby", "sortdir", "page", "pagesize"
     ]}.items():
         filter_params[key] = value
+
+    serial_pattern = None
+    if serial and "*" in serial:
+        serial_pattern = serial.replace("*", ".*")
+        serial = None
 
     if not hostname and not machineid and not resolver and serial and not filter_params:
         # We return the list of the machines for the given serial
@@ -257,7 +273,8 @@ def list_machinetokens_api():
             machineid = None
             resolver = None
         res = list_machine_tokens(hostname=hostname, machine_id=machineid, resolver_name=resolver,
-                                  serial=serial, application=application, filter_params=filter_params)
+                                  serial=serial, application=application, filter_params=filter_params,
+                                  serial_pattern=serial_pattern)
 
     g.audit_object.log({'success': True,
                         'info': "serial: {0!s}, hostname: {1!s}".format(serial,
