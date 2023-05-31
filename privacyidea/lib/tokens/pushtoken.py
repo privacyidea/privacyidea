@@ -186,9 +186,11 @@ def _build_smartphone_data(serial, challenge, registration_url, pem_privkey, opt
                                                options) or "1"
     sslverify = getParam({"sslverify": sslverify}, "sslverify",
                          allowed_values=["0", "1"], default="1")
-    message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
+    message_on_mobile = str.format(get_action_values_from_options(SCOPE.AUTH,
                                                        PUSH_ACTION.MOBILE_TEXT,
-                                                       options) or DEFAULT_MOBILE_TEXT
+                                                       options) or DEFAULT_MOBILE_TEXT, client_ip=options.get("clientip"),
+                                                       username = options.get('username')
+                                                       )
     title = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.MOBILE_TITLE,
                                            options) or "privacyIDEA"
     smartphone_data = {"nonce": challenge,

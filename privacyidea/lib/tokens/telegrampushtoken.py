@@ -59,7 +59,7 @@ import time
 log = logging.getLogger(__name__)
 
 DEFAULT_CHALLENGE_TEXT = _("Please confirm the authentication in your Telegram!")
-DEFAULT_MOBILE_TEXT = _("Is this you attempting to login from [{0}]?")
+DEFAULT_MOBILE_TEXT = _("Is this you attempting to login as {username} from [{client_ip}]?")
 TELEGRAM_CHAT_ID = "telegram_chat_id"
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 DELAY = 1.0
@@ -108,7 +108,9 @@ class TelegramMessageData:
 def _build_message_data(serial, challenge, options):
     message_on_mobile = str.format(get_action_values_from_options(SCOPE.AUTH,
                                                        TELEGRAM_PUSH_ACTION.MOBILE_TEXT,
-                                                       options) or DEFAULT_MOBILE_TEXT, options.get("clientip"))
+                                                       options) or DEFAULT_MOBILE_TEXT, client_ip=options.get("clientip"),
+                                                       username = options.get('username')
+                                                       )
     return TelegramMessageData(message_on_mobile, serial, challenge)
 
 
@@ -226,7 +228,8 @@ class TelegramPushTokenClass(TokenClass):
                        },
                        TELEGRAM_PUSH_ACTION.MOBILE_TEXT: {
                            'type': 'str',
-                           'desc': _('The question the bot asks when challenging user'),
+                           'desc': _('The question the bot asks when challenging user.' 
+                                     'It can be a Python format string with named variables username and client_ip'),
                            'group': group
                        },
                        TELEGRAM_PUSH_ACTION.WAIT: {
@@ -481,9 +484,6 @@ class TelegramPushTokenClass(TokenClass):
         additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
         """
         options = options or {}
-        message = get_action_values_from_options(SCOPE.AUTH,
-                                                 ACTION.CHALLENGETEXT,
-                                                 options) or DEFAULT_CHALLENGE_TEXT
 
         data = None
         # Initially we assume there is no error from Firebase
