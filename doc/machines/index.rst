@@ -87,7 +87,7 @@ managing in WebUI
 .................
 
 The administrator can view all SSH keys attached to service in the WebUI at *Tokens -> Token Applications*. There the
-admininistrator can filter for service_ids., to find all SSH keys that are attached e.g. to webservers.
+administrator can filter for service_ids., to find all SSH keys that are attached e.g. to webservers.
 
 .. note:: To disable a SSH key for all servers, you simply can disable the
     distinct SSH token in privacyIDEA.
