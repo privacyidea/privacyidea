@@ -109,7 +109,7 @@ class DayPasswordTokenTestCase(MyTestCase):
     def test_04_base_methods(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
-        self.assertTrue(token.check_otp("123456", 1, 10) == -1)
+        self.assertTrue(token.check_otp("123456", 1, options={'initTime': "10"}) == -1)
 
         c = token.create_challenge("transactionid")
         self.assertTrue(c[0], c)
@@ -292,10 +292,10 @@ class DayPasswordTokenTestCase(MyTestCase):
         # OTP does not exist
         self.assertTrue(token.check_otp_exist("222333") == -1)
         # OTP does exist
-        res = token.check_otp_exist("722053", options={"initTime": 47251645 *
+        res = token.check_otp_exist("942826", options={"initTime": 47251645 *
                                                                    3600})
         # Found the counter 47251647
-        self.assertTrue(res == 47251647, res)
+        self.assertEqual(47251644, res)
 
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -385,7 +385,6 @@ class DayPasswordTokenTestCase(MyTestCase):
         token.update({"otpkey": self.otpkey,
                       "otplen": 6,
                       "timeShift": 10,
-                      "timeWindow": 180,
                       "timeStep": '30s'
                       })
 
@@ -432,19 +431,19 @@ class DayPasswordTokenTestCase(MyTestCase):
         # The tokenclass saves the counter to the database
         self.assertTrue(token.token.count == 47251647, token.token.count)
 
-        check = token.check_otp("705493", counter=47251648)
+        check = token.check_otp("722053", counter=47251648)
         # The OTP 705493 is of counter 47251649, but it matches also.
-        self.assertTrue(check == 47251649, check)
+        self.assertEqual(47251647, check)
 
         # successful authentication
-        res = token.authenticate("test589836")
+        res = token.authenticate("test722053")
         # This is the OTP value of the counter=47251650
-        self.assertTrue(res == (True, 47251650, None), res)
+        self.assertEqual((True, 47251647, None), res)
 
         # try the same OTP value again will not fail!
-        res = token.authenticate("test589836")
+        res = token.authenticate("test722053")
         # This is the OTP value of the counter=47251650
-        self.assertTrue(res == (True, 47251650, None), res)
+        self.assertEqual((True, 47251647, None), res)
 
         res = token.get_multi_otp()
         self.assertTrue(res[0] is False, res)
@@ -491,9 +490,9 @@ class DayPasswordTokenTestCase(MyTestCase):
         # The OTP for this counter was already presented to the server
         token.token.count = 47251648
         # 47251647 -> 722053
-        res = token.check_otp("722053", options={"initTime": 47251649 * 30})
+        res = token.check_otp("032819", options={"initTime": 47251649 * 30})
         # self.assertTrue(res == 47251647, res)
-        self.assertTrue(res == 47251647, res)
+        self.assertEqual(47251648, res)
 
         # simple OTPs of current time
         ret, _, dct = token.get_multi_otp(1)
@@ -565,28 +564,28 @@ class DayPasswordTokenTestCase(MyTestCase):
         token.token.count = 47251640
         token.set_sync_window(10)
         # counter = 47251649 => otp = 705493, is out of sync
-        r = token.check_otp(anOtpVal="705493", window=30,
+        r = token.check_otp(anOtpVal="705493",
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
         # counter = 47251650 => otp = 389836, will be autosynced.
-        r = token.check_otp(anOtpVal="589836", window=30,
+        r = token.check_otp(anOtpVal="589836",
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == 47251650, r)
 
         # counter = 47251640 => otp = 166325 is an old OTP value
         # counter = 47251641 => otp = 432730 is an old OTP value
         # Autoresync with two times the same old OTP value must not work out!
-        r = token.check_otp(anOtpVal="166325", window=30,
+        r = token.check_otp(anOtpVal="166325",
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
-        r = token.check_otp(anOtpVal="166325", window=30,
+        r = token.check_otp(anOtpVal="166325",
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
         # Autoresync with two consecutive old OTP values must not work out!
-        r = token.check_otp(anOtpVal="166325", window=30,
+        r = token.check_otp(anOtpVal="166325",
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
-        r = token.check_otp(anOtpVal="432730", window=30,
+        r = token.check_otp(anOtpVal="432730",
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
 
@@ -595,11 +594,11 @@ class DayPasswordTokenTestCase(MyTestCase):
         # Just try some bullshit config value
         set_privacyidea_config("AutoResyncTimeout", "totally not a number")
         # counter = 47251648 => otp = 032819, is out of sync
-        r = token.check_otp(anOtpVal="032819", window=30,
+        r = token.check_otp(anOtpVal="032819",
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
         # counter = 47251650 => otp = 589836, will NOT _autosync
-        r = token.check_otp(anOtpVal="589836", window=30,
+        r = token.check_otp(anOtpVal="589836",
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
 
@@ -610,11 +609,11 @@ class DayPasswordTokenTestCase(MyTestCase):
         token.token.count = 47251640
         token.set_sync_window(10)
         # counter = 47251649 => otp = 705493, is out of sync
-        r = token.check_otp(anOtpVal="705493", window=30,
+        r = token.check_otp(anOtpVal="705493",
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
         # counter = 47251650 => otp = 389836, will not get autosynced.
-        r = token.check_otp(anOtpVal="589836", window=30,
+        r = token.check_otp(anOtpVal="589836",
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
 
@@ -739,12 +738,11 @@ class DayPasswordTokenTestCase(MyTestCase):
         token.update({"otpkey": self.otpkey,
                       "otplen": 6,
                       "timeShift": 10,
-                      "timeWindow": 180,
                       "timeStep": '30s'})
         # Authenticate with the current OTP value
         counter = token._time2counter(time.time(), timeStepping=30)
         otp_now = token._calc_otp(counter)
-        r = token.check_otp(otp_now, window=180)
+        r = token.check_otp(otp_now)
         self.assertEqual(r, counter)
         # Now we try several is_previous_otp and the timeShift must stay the same!
         ts0 = float(token.get_tokeninfo("timeShift"))

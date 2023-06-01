@@ -162,13 +162,11 @@ class DayPasswordTokenClass(TotpTokenClass):
         HotpTokenClass.update(self, param, reset_failcount=reset_failcount)
 
         timeStep = param.get("timeStep", self.timestep)
-        timeWindow = param.get("timeWindow", self.timewindow)
         timeShift = param.get("timeShift", self.timeshift)
         # we support various hashlib methods, but only on create
         # which is effectively set in the update
         hashlibStr = param.get("hashlib", self.hashlib)
 
-        self.add_tokeninfo("timeWindow", timeWindow)
         self.add_tokeninfo("timeShift", timeShift)
         self.add_tokeninfo("timeStep", timeStep)
         self.add_tokeninfo("hashlib", hashlibStr)
@@ -186,33 +184,21 @@ class DayPasswordTokenClass(TotpTokenClass):
                      get_from_config("daypassword.hashlib", 'sha1')
         return hashlibStr
 
-    @property
-    def timewindow(self):
-        window = int(self.get_tokeninfo("timeWindow") or
-                     get_from_config("daypassword.timeWindow") or 180)
-        return window
-
     @log_with(log)
-    def check_otp_exist(self, otp, window=None, options=None, symetric=True,
+    def check_otp_exist(self, otp, options=None, symetric=True,
                         inc_counter=True):
         """
         checks if the given password value is/are values of this very token at all.
         This is used to autoassign and to determine the serial number of
         a token.
-        In fact it is a check_otp with an enhanced window.
 
         :param otp: the to be verified otp value
         :type otp: string
-        :param window: the lookahead window for the counter in seconds!!!
-        :type window: int
         :return: counter or -1 if otp does not exist
         :rtype:  int
         """
         options = options or {}
-        timeStepping = parse_time_sec_int(self.get_tokeninfo("timeStep") or
-                                          (get_from_config("daypassword.timeStep")) or "1d")
-        window = (window or self.get_sync_window()) * timeStepping
-        res = self.check_otp(otp, window=window, options=options)
+        res = self.check_otp(otp, options=options)
 
         if inc_counter and res >= 0:
             # As usually the counter is increased in lib.token.checkUserPass,
@@ -221,7 +207,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         return res
 
     @check_token_locked
-    def check_otp(self, anOtpVal, counter=None, window=None, options=None):
+    def check_otp(self, anOtpVal, counter=None, options=None):
         """
         validate the token passwort against a given passwordvalue
 
@@ -230,8 +216,6 @@ class DayPasswordTokenClass(TotpTokenClass):
         :param counter: the counter state, that should be verified. For DayPasswordToken
         this is the unix system time (seconds) divided by 30/60
         :type counter: int
-        :param window: the counter +window (sec), which should be checked
-        :type window: int
         :param options: the dict, which could contain token specific info
         :type options: dict
         :return: the counter or -1
@@ -242,7 +226,6 @@ class DayPasswordTokenClass(TotpTokenClass):
         secretHOtp = self.token.get_otpkey()
         oCount = self.get_otp_count()
         inow = int(time.time())
-        window = window or self.timewindow
 
         initTime = int(options.get('initTime', -1))
         if initTime != -1:
@@ -261,7 +244,7 @@ class DayPasswordTokenClass(TotpTokenClass):
                            otplen,
                            self.get_hashlib(self.hashlib))
         res = hmac2Otp.checkOtp(anOtpVal,
-                                int(window / self.timestep),
+                                int(1),
                                 symetric=True)
 
         if -1 == res:
@@ -463,8 +446,7 @@ class DayPasswordTokenClass(TotpTokenClass):
     @staticmethod
     def get_setting_type(key):
         settings = {"daypassword.hashlib": "public",
-                    "daypassword.timeStep": "public",
-                    "daypassword.timeWindow": "public"}
+                    "daypassword.timeStep": "public"}
         return settings.get(key, "")
 
     @classmethod
