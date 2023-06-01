@@ -608,6 +608,7 @@ def poll_transaction(transaction_id=None):
 
     :jsonparam transaction_id: a transaction ID
     """
+
     if transaction_id is None:
         transaction_id = getParam(request.all_data, "transaction_id", required)
     # Fetch a list of non-exired challenges with the given transaction ID
@@ -616,12 +617,22 @@ def poll_transaction(transaction_id=None):
                            if challenge.is_valid()]
     answered_challenges = extract_answered_challenges(matching_challenges)
 
+    decline_challenges = []
     if answered_challenges:
         result = True
         log_challenges = answered_challenges
+        details = {"challenge_declined": "accept"}
     else:
         result = False
-        log_challenges = matching_challenges
+        for challenge in matching_challenges:
+            if challenge.data == "challenge_declined":
+                decline_challenges.append(challenge)
+        if decline_challenges:
+            log_challenges = decline_challenges
+            details = {"challenge_status": "declined"}
+        else:
+            log_challenges = matching_challenges
+            details = {"challenge_status": "pending"}
 
     # We now determine the information that should be written to the audit log:
     # * If there are no answered valid challenges, we log all token serials of challenges matching
@@ -642,8 +653,8 @@ def poll_transaction(transaction_id=None):
 
     # In any case, we log the transaction ID
     g.audit_object.log({
-        "info": "transaction_id: {}".format(transaction_id),
+        "info": "transaction_id: {}, status: {}".format(transaction_id, details.get("challenge_status")),
         "success": result
     })
 
-    return send_result(result)
+    return send_result(result, rid=2, details=details)
