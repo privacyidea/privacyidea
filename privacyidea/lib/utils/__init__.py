@@ -1282,8 +1282,6 @@ def prepare_result(obj, rid=1, details=None):
             r_authentication = "CHALLENGE"
         elif not obj and (details.get("challenge_status") is "declined"):
             r_authentication = "DECLINED"
-        elif not obj and (details.get("challenge_status") is "pending"):
-            r_authentication = "PENDING"
         else:
             r_authentication = "REJECT"
         res["result"]["authentication"] = r_authentication
