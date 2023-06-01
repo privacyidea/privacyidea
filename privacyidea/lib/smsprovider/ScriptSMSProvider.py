@@ -59,18 +59,19 @@ class ScriptSMSProvider(ISMSProvider):
         :param message: the message to submit to the phone
         :return:
         """
-        log.debug("submitting message {0!s} to {1!s}".format(message, phone))
         if not self.smsgateway:
             # this should not happen. We now always use sms gateway definitions.
             log.warning("Missing smsgateway definition!")
             raise SMSError(-1, "Missing smsgateway definition!")
 
+        phone = self._mangle_phone(phone, self.smsgateway.option_dict)
+        log.debug("submitting message {0!s} to {1!s}".format(message, phone))
+
         script = self.smsgateway.option_dict.get("script")
         background = self.smsgateway.option_dict.get("background")
 
         script_name = self.script_directory + "/" + script
-        proc_args = [script_name]
-        proc_args.append(phone)
+        proc_args = [script_name, phone]
 
         # As the message can contain blanks... it is passed via stdin
         rcode = 0
@@ -113,6 +114,9 @@ class ScriptSMSProvider(ISMSProvider):
                           "required": True,
                           "description": _("The script in script directory PI_SCRIPT_SMSPROVIDER_DIRECTORY to call. "
                                            "Expects phone as the parameter and the message from stdin.")
+                      },
+                      "REGEXP": {
+                          "description": cls.regexp_description
                       },
                       "background": {
                           "required": True,
