@@ -50,8 +50,10 @@ class APIMachinesServiceIDTestCase(MyApiTestCase):
         self.assertEqual(token_obj.type, "sshkey")
 
     def test_02_attach_tokens(self):
-        # Attach token S1 to webserver and mailserver
-        # Attach token S2 to mailserver
+        # Do the following token attachemends:
+        # * S1: webserver and mailserver
+        # * S2: only mailserver
+        # Attach token S1 to webserver
         with self.app.test_request_context('/machine/token',
                                            method='POST',
                                            data={"serial": self.serial1,
@@ -220,6 +222,7 @@ class APIMachinesServiceIDTestCase(MyApiTestCase):
             self.assertEqual(value[1].get("options").get("service_id"), self.serviceID2)
             self.assertEqual(value[1].get("serial"), self.serial2)
 
+        # Get token for service_id self.serviceID2 and the application=ssh and the user=admin
         with self.app.test_request_context(
                 '/machine/token?service_id={0!s}&application=ssh&user=admin'.format(self.serviceID2),
                 method='GET',
