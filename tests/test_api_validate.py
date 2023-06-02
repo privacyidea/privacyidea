@@ -4790,7 +4790,8 @@ class AChallengeResponse(MyApiTestCase):
 
         # check audit log
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
-        self.assertEqual(entry["info"], "transaction_id: 123456, status: pending")
+        self.assertEqual(entry["action_detail"], "transaction_id: 123456")
+        self.assertEqual(entry["info"], "status: pending")
         self.assertEqual(entry["serial"], None)
         self.assertEqual(entry["user"], None)
 
@@ -4804,7 +4805,8 @@ class AChallengeResponse(MyApiTestCase):
 
         # but audit log contains both serials and the user
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
-        self.assertEqual(entry["info"], "transaction_id: {}, status: pend".format(transaction_id))
+        self.assertEqual(entry["action_detail"], "transaction_id: {}".format(transaction_id))
+        self.assertEqual(entry["info"], "status: pending")
         self.assertIn("tok1", entry["serial"])
         self.assertIn("tok2", entry["serial"])
         self.assertFalse(entry["success"])
@@ -4822,7 +4824,8 @@ class AChallengeResponse(MyApiTestCase):
 
         # and the audit log contains no serials and the user
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
-        self.assertEqual(entry["info"], "transaction_id: {}, status: pending".format(old_transaction_id))
+        self.assertEqual(entry["action_detail"], "transaction_id: {}".format(old_transaction_id))
+        self.assertEqual(entry["info"], "status: pending")
         self.assertEqual(entry["serial"], None)
         self.assertFalse(entry["success"])
 
@@ -4839,7 +4842,8 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(res.json["result"]["value"])
 
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
-        self.assertEqual(entry["info"], "transaction_id: {}, status: None".format(transaction_id))
+        self.assertEqual(entry["action_detail"], "transaction_id: {}".format(transaction_id))
+        self.assertEqual(entry["info"], "status: None")
         # tok2 is not written to the audit log
         self.assertEqual(entry["serial"], "tok1")
         self.assertTrue(entry["success"])
