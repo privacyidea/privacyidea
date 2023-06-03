@@ -1580,6 +1580,10 @@ def get_static_policy_definitions(scope=None):
                              'Admin is allowed to set token properties.'),
                          'mainmenu': [MAIN_MENU.TOKENS],
                          'group': GROUP.TOKEN},
+            ACTION.SETDESCRIPTION: {'type': 'bool',
+                                    'desc': _('The admin is allowed to set the token description.'),
+                                    'mainmenu': [MAIN_MENU.TOKENS],
+                                    'group': GROUP.TOKEN},
             ACTION.SETPIN: {'type': 'bool',
                             'desc': _(
                                 'Admin is allowed to set the OTP PIN of '
