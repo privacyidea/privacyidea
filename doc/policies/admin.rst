@@ -114,6 +114,16 @@ to set those token properties like ``description``, ``max_failcount``
 or ``validity_period_start`` at the ``/token/set`` endpoints
 (see :ref:`rest_token`).
 
+setdescription
+~~~~~~~~~~~~~~
+
+type: bool
+
+The admin is allowed to set the description of tokens via the endpoint `/token/descriptipon`.
+
+.. note:: That an admin can also be allowed to the the description of a token by granting the
+   before mentioned policy `set`.
+
 setpin
 ~~~~~~
 
