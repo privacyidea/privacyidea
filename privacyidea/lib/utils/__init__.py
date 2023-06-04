@@ -348,7 +348,6 @@ def decode_base32check(encoded_data, always_upper=True):
     encoded_length = len(encoded_data)
     if encoded_length % 8 != 0:
         encoded_data += "=" * (8 - (encoded_length % 8))
-    assert len(encoded_data) % 8 == 0
     # Decode as base32
     try:
         decoded_data = base64.b32decode(encoded_data)
