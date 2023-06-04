@@ -3,6 +3,7 @@
 import os
 import logging
 import secrets
+import random
 import string
 log = logging.getLogger(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -35,8 +36,8 @@ def _random_password(size):
     log.info("SECRET_KEY not set in config. Generating a random key.")
     passwd = [secrets.choice(string.ascii_lowercase + \
                             string.ascii_uppercase + string.digits) for _x in range(size)]
-    # return shuffled password
-    secrets.shuffle(passwd)
+    # return shuffled password - as the password was already randomly generated, this might actually be not necessary
+    random.shuffle(passwd)  #
     return "".join(passwd)
 
 
