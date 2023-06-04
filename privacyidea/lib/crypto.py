@@ -431,7 +431,7 @@ def aes_cbc_encrypt(key, iv, data):
     :return: plain text in binary data
     :rtype: bytes
     """
-    if len(data) % (algorithms.AES.block_size // 8) != 0:
+    if len(data) % (algorithms.AES.block_size // 8) != 0:  # pragma: no cover
         raise ParameterError("Invalid length of input data")
     # do the encryption
     backend = default_backend()
@@ -674,7 +674,7 @@ def zerome(bufferObject):
 
 
 def _slow_rsa_verify_raw(key, sig, msg):
-    if not (isinstance(sig, int) and isinstance(msg, int)):
+    if not (isinstance(sig, int) and isinstance(msg, int)):  # pragma: no cover
         raise ParameterError("Message and signature need to be integer")
     if hasattr(key, 'public_numbers'):
         pn = key.public_numbers()

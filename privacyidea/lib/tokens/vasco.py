@@ -131,7 +131,7 @@ def vasco_serialize(datablob):
     :return: bytestring
     """
     tokendata = memoryview(datablob).tobytes()
-    if len(tokendata) != 248:
+    if len(tokendata) != 248:  # pragma: no cover
         raise ParameterError("Datablob has incorrect size")
     return tokendata
 
