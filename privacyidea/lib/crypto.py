@@ -47,7 +47,7 @@ This lib.crypto is tested in tests/test_lib_crypto.py
 import hmac
 import logging
 from hashlib import sha256
-import random
+import secrets
 import string
 import binascii
 import ctypes
@@ -649,7 +649,7 @@ def get_alphanum_str(length=16):
     """
     ret = ""
     for i in range(length):
-        ret += random.choice(string.ascii_letters + string.digits)
+        ret += secrets.choice(string.ascii_letters + string.digits)
     return ret
 
 
@@ -865,7 +865,7 @@ def generate_password(size=6, characters=string.ascii_lowercase +
     # fill the password until size with allowed characters
     passwd.extend(urandom.choice(characters) for _x in range(size - len(requirements)))
     # return shuffled password
-    random.shuffle(passwd)
+    secrets.shuffle(passwd)
     return "".join(passwd)
 
 
