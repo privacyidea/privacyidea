@@ -11,10 +11,7 @@ or Keycloak which enable these
 application to authenticate users against privacyIDEA.
 
 You may also write your own application plugin or connect your own application
-to privacyIDEA. This is quite simple using a REST API
-:ref:`rest_validate`. In order to support more sophisticated token types like
-challenge-response or out-of-band tokens, you should take a look at the
-various :ref:`authentication_modes`.
+to privacyIDEA. To do so, please check the :ref:`plugin_guide`.
 
 .. _pam_plugin:
 
@@ -501,3 +498,4 @@ You can find further plugins for
 Dokuwiki, Wordpress, Contao and Django at `cornelinux Github page <https://github
 .com/cornelinux?tab=repositories>`_.
 
+Again, check the :ref:`plugin_guide`.
