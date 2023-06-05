@@ -231,21 +231,46 @@ def list_machinetokens_api():
 
     :param serial: Return the MachineTokens for a the given Token
     :param hostname: Identify the machine by the hostname
-    :param machineid: Identify the machine by the machine ID and the resolver
-        name
-    :param resolver: Identify the machine by the machine ID and the resolver
-        name
-    :return:
+    :param machineid: Identify the machine by the machine ID and the resolver name
+    :param resolver: Identify the machine by the machine ID and the resolver name
+    :query sortby: sort the output by column. Can be 'serial', 'service_id'...
+    :query sortdir: asc/desc
+    :query application: The type of application like "ssh" or "offline".
+    :param <options>: You can also filter for options like the 'service_id' or 'user' for SSH applications, or
+        'count' and 'rounds' for offline applications. The filter allows the use of "*" to match substrings.
+    :return: JSON list of dicts
+
+    [{'application': 'ssh',
+      'id': 1,
+      'options': {'service_id': 'webserver',
+                  'user': 'root'},
+      'resolver': None,
+      'serial': 'SSHKEY1',
+      'type': 'sshkey'},
+       ...
+       ]
     """
     hostname = getParam(request.all_data, "hostname")
     machineid = getParam(request.all_data, "machineid")
     resolver = getParam(request.all_data, "resolver")
     serial = getParam(request.all_data, "serial")
     application = getParam(request.all_data, "application")
+    sortby = getParam(request.all_data, "sortby", "serial")
+    sortdir = getParam(request.all_data, "sortdir", "asc")
+    filter_params = {}
+    # Use remaining params as filters
+    for key, value in {k: v for k, v in request.all_data.items() if k not in [
+        "hostname", "machineid", "resolver", "serial", "application", "client", "g",
+        "sortby", "sortdir", "page", "pagesize"
+    ]}.items():
+        filter_params[key] = value
 
-    res = []
+    serial_pattern = None
+    if serial and "*" in serial:
+        serial_pattern = serial.replace("*", ".*")
+        serial = None
 
-    if not hostname and not machineid and not resolver:
+    if not hostname and not machineid and not resolver and serial and not filter_params:
         # We return the list of the machines for the given serial
         res = list_token_machines(serial)
     else:
@@ -253,8 +278,14 @@ def list_machinetokens_api():
             hostname = None
             machineid = None
             resolver = None
-        res = list_machine_tokens(hostname=hostname, machine_id=machineid,
-                                  resolver_name=resolver)
+        res = list_machine_tokens(hostname=hostname, machine_id=machineid, resolver_name=resolver,
+                                  serial=serial, application=application, filter_params=filter_params,
+                                  serial_pattern=serial_pattern)
+
+    if sortby == "serial":
+        res.sort(key=lambda x: x.get("serial"), reverse=sortdir == "desc")
+    else:
+        res.sort(key=lambda x: x.get("options", {}).get(sortby, ""), reverse=sortdir == "desc")
 
     g.audit_object.log({'success': True,
                         'info': "serial: {0!s}, hostname: {1!s}".format(serial,
@@ -290,15 +321,13 @@ def set_option_api():
     # get additional options:
     options_add = {}
     options_del = []
-    for key in request.all_data.keys():
-        if key not in ["hostname", "machineid", "resolver", "serial",
-                       "application", "mtid"]:
-            # We use the key as additional option
-            value = request.all_data.get(key)
-            if value:
-                options_add[key] = request.all_data.get(key)
-            else:
-                options_del.append(key)
+    for key, value in {k: v for k, v in request.all_data.items() if k not in [
+        "hostname", "machineid", "resolver", "serial", "application", "client", "g", "mtid"
+    ]}.items():
+        if value:
+            options_add[key] = value
+        else:
+            options_del.append(key)
 
     if mtid:
         o_add = add_option(machinetoken_id=mtid, options=options_add)
