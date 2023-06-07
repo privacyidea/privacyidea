@@ -1,3 +1,39 @@
+Version 3.9, 2023-xx-xx, (state: 2023-05-29)
+
+  Features:
+  * Tokentype: Application Specific password (#3260)
+  * Add machine grouping aka service IDs to be used with
+    application specific passwords and SSH keys (#3300, #3246, #3533)
+
+  Enhancements:
+  * Add event handler to set token application like "offline" (#3335)
+  * Add chalenge response with pin reset for better usability with
+    client plugins (#3261)
+  * Allow to force description during rollout (#3469)
+  * Add verify enrollment for indexed secret token (#3452)
+  * Clean up the usage of PI_NODE and AUDIT_SERVERNAME to allow a
+    consistent naming in the audit log (#3589)
+  * Remove PI_VASCO_LIB error message in log file (#3470)
+  * Add event handler status to audit log (#3430)
+  * Optimize URL decoding for different clients (#3337)
+  * Upgrade to SQLAlchemy 1.4 (#2798)
+  * UI: Multiselect policies in WebUI (#3493)
+  * UI: Make the whole header of an accordion clickable (#3425)
+  * UI: Improved grouping in the system menu (#3419)
+  * UI: Add italian translation (#3508)  
+  * Docs: Improve documentation for /validate/check-enrollment (#3507)
+  * Docs: Improve policy mangle documentation (#3565)
+
+  Fixes:
+  * Fix /auth endpoint in case no password is available (#3438)
+  * Return all images as data:image, so that they can be used by the
+    client plugins (#3450)
+  * Fix typo in policy definition to fix revoke permission (#3608)
+  * Add missing thread ID to audit log in case of /validate/check
+    (#3578)
+  * Fix pi-manage backup with non-default SQL port (#3570)
+  * Fix SQLAlchemy warnings (#3547)
+
 Version 3.8.1, 2023-02-06
 
   Fixes:
