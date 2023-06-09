@@ -741,6 +741,7 @@ class PushTokenTestCase(MyTestCase):
             # Result-Value is True
             self.assertTrue(jsonresp.get("result").get("value"))
 
+
     def test_04_decline_auth_request(self):
         # get enrolled push token
         toks = get_tokens(tokentype="push")
@@ -808,7 +809,6 @@ class PushTokenTestCase(MyTestCase):
             rj = res.json
             self.assertTrue(rj['result']['status'])
             self.assertFalse(rj['result']['value'])
-
         # Now decline the auth request for real
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
@@ -820,10 +820,21 @@ class PushTokenTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(res.json['result']['status'])
             self.assertTrue(res.json['result']['value'])
-        # check, that the challenge does not exist anymore.
+
         challengeobject_list = get_challenges(serial=tokenobj.token.serial,
                                               transaction_id=transaction_id)
-        self.assertEqual(0, len(challengeobject_list))
+        self.assertEqual(1, len(challengeobject_list))
+
+        with self.app.test_request_context('/validate/polltransaction', method='GET',
+                                           data={'transaction_id': transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+            self.assertEqual(res.json["detail"]["challenge_status"], "declined", res.json["detail"]["challenge_status"])
+
+
+
 
     def test_05_strip_key(self):
         stripped_pubkey = strip_key(self.smartphone_public_key_pem)

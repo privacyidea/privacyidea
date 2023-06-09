@@ -605,8 +605,7 @@ class PushTokenClass(TokenClass):
                         # The signature was valid
                         log.debug("Found matching challenge {0!s}.".format(chal))
                         if decline:
-                            # If the challenge is decline, we delete it from the DB
-                            chal.delete()
+                            chal.set_data("challenge_declined")
                         else:
                             chal.set_otp_status(True)
                             chal.save()
