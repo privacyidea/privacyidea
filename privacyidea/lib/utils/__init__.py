@@ -1280,7 +1280,7 @@ def prepare_result(obj, rid=1, details=None):
         elif not obj and details.get("multi_challenge"):
             # We have a challenge authentication
             r_authentication = "CHALLENGE"
-        elif not obj and (details.get("challenge_status") is "declined"):
+        elif not obj and (details.get("challenge_status") == "declined"):
             r_authentication = "DECLINED"
         else:
             r_authentication = "REJECT"
