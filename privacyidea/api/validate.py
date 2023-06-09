@@ -617,18 +617,18 @@ def poll_transaction(transaction_id=None):
                            if challenge.is_valid()]
     answered_challenges = extract_answered_challenges(matching_challenges)
 
-    decline_challenges = []
+    declined_challenges = []
     if answered_challenges:
         result = True
         log_challenges = answered_challenges
-        details = {"challenge_declined": "accept"}
+        details = {"challenge_status": "accept"}
     else:
         result = False
         for challenge in matching_challenges:
             if challenge.data == "challenge_declined":
-                decline_challenges.append(challenge)
-        if decline_challenges:
-            log_challenges = decline_challenges
+                declined_challenges.append(challenge)
+        if declined_challenges:
+            log_challenges = declined_challenges
             details = {"challenge_status": "declined"}
         else:
             log_challenges = matching_challenges
