@@ -4843,7 +4843,7 @@ class AChallengeResponse(MyApiTestCase):
 
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
         self.assertEqual(entry["action_detail"], "transaction_id: {}".format(transaction_id))
-        self.assertEqual(entry["info"], "status: None")
+        self.assertEqual(entry["info"], "status: accept")
         # tok2 is not written to the audit log
         self.assertEqual(entry["serial"], "tok1")
         self.assertTrue(entry["success"])
