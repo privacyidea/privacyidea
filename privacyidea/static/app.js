@@ -83,7 +83,7 @@ myApp.constant("radiusServerUrl", backendUrl + instance + "/radiusserver");
 myApp.constant("privacyideaServerUrl", backendUrl + instance + "/privacyideaserver");
 myApp.constant("recoveryUrl", backendUrl + instance + "/recover");
 myApp.constant("resourceNamePatterns", {
-    simple: {pattern: "^[a-zA-Z0-9_.-]+$",
+    simple: {pattern: "^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*$",
         title: gettext("The resource name must consist of letters, numbers and '_', '-', '.'")},
 /* we have to ignore "test" and "test_request" as a resource name explicitly */
     withoutTest: {pattern: "^(?!test$)([A-Za-z0-9_.-]+)$",
