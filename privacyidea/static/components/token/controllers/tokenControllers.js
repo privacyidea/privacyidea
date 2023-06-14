@@ -222,8 +222,18 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             "applspec": gettextCatalog.getString("ApplSpec: Application Specific Password Token")},
         timesteps: [30, 60],
         otplens: [6, 8],
-        hashlibs: ["sha1", "sha256", "sha512"]
+        hashlibs: ["sha1", "sha256", "sha512"],
+        service_ids: {}
     };
+
+    $scope.loadAvailableServiceIDs = function () {
+        ConfigFactory.getServiceid("", function (data) {
+            serviceids = data.result.value;
+            angular.forEach(serviceids, function (serviceid_data, name) {
+                $scope.formInit.service_ids[name] = name + ": " + serviceid_data.description;
+                });
+        })
+    }
 
     $scope.setVascoSerial = function() {
         if ($scope.form.otpkey.length === 496) {
@@ -271,6 +281,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             $scope.form.genkey = false;
         } else {
             $scope.form.genkey = true;
+        }
+        if ($scope.form.type === "applspec") {
+            $scope.loadAvailableServiceIDs();
         }
         if ($scope.form.type === "yubikey") {
             // save the original otp length
