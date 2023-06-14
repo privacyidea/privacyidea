@@ -47,6 +47,7 @@ This lib.crypto is tested in tests/test_lib_crypto.py
 import hmac
 import logging
 from hashlib import sha256
+import secrets
 import random
 import string
 import binascii
@@ -56,7 +57,7 @@ import base64
 import traceback
 from passlib.context import CryptContext
 from privacyidea.lib.log import log_with
-from privacyidea.lib.error import HSMException
+from privacyidea.lib.error import HSMException, ParameterError
 from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
                                        get_app_config)
 from privacyidea.lib.utils import (to_unicode, to_bytes, hexlify_and_unicode,
@@ -430,7 +431,8 @@ def aes_cbc_encrypt(key, iv, data):
     :return: plain text in binary data
     :rtype: bytes
     """
-    assert len(data) % (algorithms.AES.block_size // 8) == 0
+    if len(data) % (algorithms.AES.block_size // 8) != 0:  # pragma: no cover
+        raise ParameterError("Invalid length of input data")
     # do the encryption
     backend = default_backend()
     mode = modes.CBC(iv)
@@ -648,7 +650,7 @@ def get_alphanum_str(length=16):
     """
     ret = ""
     for i in range(length):
-        ret += random.choice(string.ascii_letters + string.digits)
+        ret += secrets.choice(string.ascii_letters + string.digits)
     return ret
 
 
@@ -672,8 +674,8 @@ def zerome(bufferObject):
 
 
 def _slow_rsa_verify_raw(key, sig, msg):
-    assert isinstance(sig, int)
-    assert isinstance(msg, int)
+    if not (isinstance(sig, int) and isinstance(msg, int)):  # pragma: no cover
+        raise ParameterError("Message and signature need to be integer")
     if hasattr(key, 'public_numbers'):
         pn = key.public_numbers()
     elif hasattr(key, 'private_numbers'):  # pragma: no cover
@@ -860,10 +862,10 @@ def generate_password(size=6, characters=string.ascii_lowercase +
     if len(requirements) > size:
         log.info('The number of requirements is larger then the password length.')
     # add one random character from each string in the requirements list
-    passwd = [urandom.choice(str) for str in requirements]
+    passwd = [secrets.choice(str) for str in requirements]
     # fill the password until size with allowed characters
-    passwd.extend(urandom.choice(characters) for _x in range(size - len(requirements)))
-    # return shuffled password
+    passwd.extend(secrets.choice(characters) for _x in range(size - len(requirements)))
+    # Shuffle, so that we mix the requirements and the generic characters
     random.shuffle(passwd)
     return "".join(passwd)
 

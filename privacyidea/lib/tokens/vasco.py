@@ -57,15 +57,16 @@ try:
 except Exception as exx:
     log.warning("Could not load VASCO library: {!r}".format(exx))
 
+
 def check_vasco(fn):
-    '''
+    """
     This is a decorator:
     checks if vasco dll is defined,
     it then runs the function otherwise raises RuntimeError
 
     :param fn: function - the to be called function
     :return: return the function call result
-    '''
+    """
     def new(*args, **kw):
         if not vasco_dll:
             raise RuntimeError("No VASCO library available")
@@ -119,26 +120,29 @@ def vasco_verify(data, params, password, challenge=b"\0" * 16):
                                        password_buffer,
                                        challenge_buffer)
 
-    return (res, data)
+    return res, data
 
 
 def vasco_serialize(datablob):
     """
     Convert the given ``TDigipassBlob`` object to a bytestring and return it
+
     :param datablob: Digipass blob
     :return: bytestring
     """
     tokendata = memoryview(datablob).tobytes()
-    assert len(tokendata) == 248
+    if len(tokendata) != 248:  # pragma: no cover
+        raise ParameterError("Datablob has incorrect size")
     return tokendata
 
+
 def vasco_deserialize(tokendata):
-    '''
+    """
     Convert the given bytestring to a ``TDigipassBlob`` object and return it
 
     :param tokendata: A string of 248 bytes
     :return: The Vasco data blob
-    '''
+    """
     if len(tokendata) != 248:
         raise ParameterError("Data blob has incorrect size")
     return TDigipassBlob.from_buffer_copy(tokendata)
@@ -178,4 +182,4 @@ def vasco_otp_check(otpkey, otp):
     (res, data) = vasco_verify(data, kp, otp)
     otpkey = vasco_serialize(data)
 
-    return (res, otpkey)
+    return res, otpkey

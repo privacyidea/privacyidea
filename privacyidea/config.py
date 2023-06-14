@@ -2,7 +2,7 @@
 
 import os
 import logging
-import random
+import secrets
 import string
 log = logging.getLogger(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -33,10 +33,8 @@ WQIDAQAB
 
 def _random_password(size):
     log.info("SECRET_KEY not set in config. Generating a random key.")
-    passwd = [random.choice(string.ascii_lowercase + \
-                            string.ascii_uppercase + string.digits) for _x in range(size)]
-    # return shuffled password
-    random.shuffle(passwd)
+    passwd = [secrets.choice(string.ascii_lowercase + \
+                             string.ascii_uppercase + string.digits) for _x in range(size)]
     return "".join(passwd)
 
 

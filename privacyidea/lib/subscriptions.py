@@ -210,7 +210,8 @@ def raise_exception_probability(subscription=None):
     if not subscription:
         # No subscription at all. We are in a kind of demo mode and return
         # True with a 50% chance
-        return random.randrange(0, 2)
+        # This is only for probability, so we use the less secure but faster random module
+        return random.randrange(0, 2)  # nosec B311
 
     expire = subscription.get("date_till")
     delta = datetime.datetime.now() - expire
@@ -220,7 +221,8 @@ def raise_exception_probability(subscription=None):
         # After 74 days we get 80%
         # After 94 days we get 100%
         p = 0.2 + ((delta.days-14.0)/30.0) * 0.3
-        return random.random() < p
+        # This is only for probability, so we use the less secure but faster random module
+        return random.random() < p  # nosec B311
 
     return False
 
@@ -239,7 +241,8 @@ def subscription_exceeded_probability(active_tokens, allowed_tokens):
     # old, hard behaviour
     # return active_tokens > allowed_tokens
     if active_tokens > allowed_tokens:
-        prob_check = random.randrange(active_tokens +1)
+        # This is only for probability, so we use the less secure but faster random module
+        prob_check = random.randrange(active_tokens + 1)  # nosec B311
         return prob_check > allowed_tokens
     else:
         return False

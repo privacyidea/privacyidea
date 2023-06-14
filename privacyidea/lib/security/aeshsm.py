@@ -325,14 +325,14 @@ if __name__ == "__main__":  # pragma: no cover
     password = "topSekr3t" * 16
     crypted = p.encrypt_password(password)
     text = p.decrypt_password(crypted)
-    assert(text == password)
+    assert(text == password)  # nosec B101 # This is actually a test
     log.info("password encrypt/decrypt test successful")
 
     # pin
     password = "topSekr3t"  # nosec B105 # used for testing
     crypted = p.encrypt_pin(password)
     text = p.decrypt_pin(crypted)
-    assert (text == password)
+    assert (text == password)  # nosec B101 # This is actually a test
     log.info("pin encrypt/decrypt test successful")
 
     p = AESHardwareSecurityModule({"module": module, "slot": 2,
@@ -346,7 +346,7 @@ if __name__ == "__main__":  # pragma: no cover
 
     # generic encrypt / decrypt
     cipher = p.encrypt(plain, tmp_iv)
-    assert (plain != cipher)
+    assert (plain != cipher)  # nosec B101 # This is actually a test
     text = p.decrypt(cipher, tmp_iv)
-    assert (text == plain)
+    assert (text == plain)  # nosec B101 # This is actually a test
     log.info("generic encrypt/decrypt test successful")
