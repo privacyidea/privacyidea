@@ -862,10 +862,10 @@ def generate_password(size=6, characters=string.ascii_lowercase +
     if len(requirements) > size:
         log.info('The number of requirements is larger then the password length.')
     # add one random character from each string in the requirements list
-    passwd = [urandom.choice(str) for str in requirements]
+    passwd = [secrets.choice(str) for str in requirements]
     # fill the password until size with allowed characters
-    passwd.extend(urandom.choice(characters) for _x in range(size - len(requirements)))
-    # return shuffled password - as the password was already randomly generated, this might actually be not necessary
+    passwd.extend(secrets.choice(characters) for _x in range(size - len(requirements)))
+    # Shuffle, so that we mix the requirements and the generic characters
     random.shuffle(passwd)
     return "".join(passwd)
 
