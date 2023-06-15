@@ -85,6 +85,9 @@ class MigrateTokenTestCase(MyTestCase):
         test = token_to_dict(tokenobject)
 
         create_token_from_dict(test)
+        remove_token("NEW001")
+        remove_token("NEW002")
+
 
 
 class TokenTestCase(MyTestCase):
