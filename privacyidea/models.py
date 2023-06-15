@@ -216,7 +216,6 @@ class Token(MethodsMixin, db.Model):
                  otpkey="",
                  userid=None, resolver=None, realm=None,
                  **kwargs):
-        super(Token, self).__init__(**kwargs)
         self.serial = '' + serial
         self.tokentype = tokentype
         self.count = 0

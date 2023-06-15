@@ -2586,3 +2586,66 @@ def list_tokengroups(tokengroup=None):
         tgs = TokenTokengroup.query.all()
 
     return tgs
+
+
+def token_to_dict(token):
+    """
+    Store the database columns of the token into a dict.
+    Also store the tokeninfo into a list of dicts.
+
+    :param token: The database token object
+    :return: a dict, containing the token and the tokeninfo
+    """
+    token_dict = {}
+    columns = Token.__table__.columns
+    for column in columns:
+        # TODO: handle the secret key, needs to be decrypted
+        value = getattr(token.token, column.key)
+        if column.key not in 'id':
+            token_dict[column.key] = value
+
+    # add the information
+    info_list = []
+
+    for ti in token.token.info_list:
+        tokeninfo = {"token_id": ti.token_id,
+                     "Description": ti.Description,
+                     "Key": ti.Key,
+                     "Type": ti.Type,
+                     "Value": ti.Value}
+        info_list.append(tokeninfo)
+
+    token_dict["info_list"] = info_list
+
+    user_assignment = []
+    for ti in token.token.owners:
+        assign_info = {"id": ti.user_id,
+                       "realm_id": ti.realm_id,
+                       "resolver": ti.resolver,
+                       "realm": ti.realm.name}
+        user_assignment.append(assign_info)
+
+    token_dict["user_assignment"] = user_assignment
+
+    return token_dict
+
+
+def create_token_from_dict(serialized_token):
+    """
+    :param serialized_token: dict containing all token objects
+    :return: database ID of the token
+    """
+    # create database object directly, since we have the encrypted data
+    token_dict = serialized_token
+    user_assignment = token_dict.pop('user_assignment')
+
+    for item in user_assignment:
+        for key, value in item.items():
+            token_dict[key] = value
+
+    token_dict['serial'] = 'NEW002'
+
+    r = Token(**token_dict).save()
+    for item in token_dict['info_list']:
+        item['token_id'] = r
+    return r

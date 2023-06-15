@@ -18,7 +18,7 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
                                         FAILCOUNTER_EXCEEDED,
                                         FAILCOUNTER_CLEAR_TIMEOUT)
-from privacyidea.lib.token import weigh_token_type
+from privacyidea.lib.token import weigh_token_type, token_to_dict, create_token_from_dict
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import (db, Token, Challenge, TokenRealm)
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
@@ -72,6 +72,19 @@ from dateutil.tz import tzlocal
 PWFILE = "tests/testdata/passwords"
 OTPKEY = "3132333435363738393031323334353637383930"
 OTPKE2 = "31323334353637383930313233343536373839AA"
+
+
+class MigrateTokenTestCase(MyTestCase):
+
+    def test_123123123_migrate_tokens(self):
+        self.setUp_user_realms()
+        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
+                                  "otpkey": "1234567890123456"},
+                                 user=User(login="cornelius",
+                                           realm=self.realm1))
+        test = token_to_dict(tokenobject)
+
+        create_token_from_dict(test)
 
 
 class TokenTestCase(MyTestCase):
