@@ -238,7 +238,6 @@ angular.module("privacyideaApp")
             $scope.do_login_stuff(response.data);
             // login data is not needed anymore, remove from scope
             $scope.login = {username: "", password: ""};
-        }, function (response) {
             // failed auth request (may be challenge-response)
             //debug: console.log("challenge response");
             //debug: console.log(error);
@@ -253,9 +252,9 @@ angular.module("privacyideaApp")
                     $state.go("response");
                 }
                 inform.add(gettextCatalog.getString("Challenge Response " +
-                    "Authentication. You" +
-                    " are not completely authenticated, yet."),
-                    {type: "warning", ttl:5000});
+                        "Authentication. You" +
+                        " are not completely authenticated, yet."),
+                    {type: "warning", ttl: 5000});
                 $scope.hideResponseInput = true;
                 $scope.u2fSignRequests = Array();
                 $scope.webAuthnSignRequests = [];
@@ -348,19 +347,20 @@ angular.module("privacyideaApp")
                             $scope.do_login_stuff
                         )
                     }
-                } else {
-                        // TODO: Do we want to display the error message?
-                        // This can show an attacker, if a username exists.
-                        // But this can also be due to a problem like
-                        // "HSM not ready".
-                        $scope.transactionid = "";
-                        var errmsg = gettextCatalog.getString("Authentication failed.");
-                        inform.add(errmsg + " " + error.result.error.message,
-                            {type: "danger", ttl: 10000});
                 }
             }
+        }, function () {
+            // TODO: Do we want to display the error message?
+            // This can show an attacker, if a username exists.
+            // But this can also be due to a problem like
+            // "HSM not ready".
+            $scope.transactionid = "";
+            var errmsg = gettextCatalog.getString("Authentication failed.");
+            inform.add(errmsg + " " + error.result.error.message,
+                {type: "danger", ttl: 10000});
         });
     };
+
     $scope.check_authentication = function() {
         // This function is used to poll, if a challenge response
         // authentication was performed successfully in the background
