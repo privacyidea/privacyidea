@@ -28,9 +28,12 @@
 </div>
 <div class="form-group">
     <label for="service_id" translate>Service ID</label>
-    <input type="text"
-           required
-           class="form-control"
-           placeholder="Enter the service_id..."
-           ng-model="form.service_id" name="service_id">
+
+    <select class="form-control"
+            required
+            id="sevice_id"
+            ng-model="form.service_id"
+            ng-options="type as desc for (type, desc) in formInit.service_ids">
+    </select>
+
 </div>
