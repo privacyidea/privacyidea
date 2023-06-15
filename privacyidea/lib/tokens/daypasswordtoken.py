@@ -185,7 +185,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         return hashlibStr
 
     @log_with(log)
-    def check_otp_exist(self, otp, options=None, symetric=True,
+    def check_otp_exist(self, otp, options=None, symetric=False,
                         inc_counter=True):
         """
         checks if the given password value is/are values of this very token at all.
@@ -245,7 +245,7 @@ class DayPasswordTokenClass(TotpTokenClass):
                            self.get_hashlib(self.hashlib))
         res = hmac2Otp.checkOtp(anOtpVal,
                                 int(1),
-                                symetric=True)
+                                symetric=False)
 
         if -1 == res:
             # _autosync: test if two consecutive otps have been provided
@@ -272,9 +272,6 @@ class DayPasswordTokenClass(TotpTokenClass):
             log.debug("now       : {0!r}".format(nowDt))
             log.debug("delta     : {0!r}".format((tokentime - inow)))
 
-            new_shift = (tokentime - inow)
-            log.debug("the counter {0!r} matched. New shift: {1!r}".format(res, new_shift))
-            self.add_tokeninfo('timeShift', new_shift)
         return res
 
     @log_with(log)
@@ -305,7 +302,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         syncWindow = self.get_sync_window()
 
         # check if the otpval is valid in the sync scope
-        res = hmac2Otp.checkOtp(anOtpVal, syncWindow, symetric=True)
+        res = hmac2Otp.checkOtp(anOtpVal, syncWindow, symetric=False)
         log.debug("found otpval {0!r} in syncwindow ({1!r}): {2!r}".format(anOtpVal, syncWindow, res))
 
         if res != -1:
