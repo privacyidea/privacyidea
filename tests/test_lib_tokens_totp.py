@@ -11,6 +11,7 @@ from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOPE)
+from unittest import mock
 from privacyidea.models import (Token,
                                  Config,
                                  Challenge)
@@ -280,6 +281,7 @@ class TOTPTokenTestCase(MyTestCase):
         token.inc_otp_counter(counter=20)
         self.assertTrue(token.token.count == 21, token.token.count)
 
+    @mock.patch('time.time', mock.MagicMock(return_value=1686902767))
     def test_98_get_otp(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
