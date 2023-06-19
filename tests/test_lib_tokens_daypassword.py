@@ -281,6 +281,20 @@ class DayPasswordTokenTestCase(MyTestCase):
         token.inc_otp_counter(counter=20)
         self.assertTrue(token.token.count == 21, token.token.count)
 
+    def test_98_get_otp(self):
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = DayPasswordTokenClass(db_token)
+        token.update({"otpkey": self.otpkey,
+                      "pin": "test",
+                      "otplen": 6,
+                      "timeShift": 0})
+        counter = token._time2counter(time.time(), timeStepping=30)
+        otp_now = token._calc_otp(counter)
+        otp = token.get_otp()
+        res = token.check_otp_exist(otp[2])
+        self.assertEqual(res, counter)
+        self.assertEqual(otp[2], otp_now)
+
     def test_13_check_otp(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
