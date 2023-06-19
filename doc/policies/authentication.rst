@@ -782,7 +782,7 @@ type: string
 
 This action sets a list of the client mode in the preferred order. You can enter the different client
 modes in the order you like. For example: "interactive, webauthn, poll, u2f". The client you're using
-will show you the riad login for you're preferred client mode. For example: this is you're list:
-"interactive, webauthn, poll, u2f" and in you're multi challenge are a webauthn and u2f token,
-than you're client will automatically show you the login for a webauthn token.
+will show you the correct login for your preferred client mode. For example, this is your list:
+"interactive, webauthn, poll, u2f" and in your multi challenge are a webauthn and u2f token,
+than your client will automatically show you the login for a webauthn token.
  .. note:: The default list is "interactive, webauthn, poll, u2f"
