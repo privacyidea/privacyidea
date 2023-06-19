@@ -555,12 +555,12 @@ class TotpTokenClass(HotpTokenClass):
                            self.get_hashlib(self.hashlib))
 
         if time_seconds is None:
-            time_seconds = self._time2float(datetime.datetime.now())
+            time_seconds = time.time()
         if current_time:
             time_seconds = self._time2float(current_time)
 
         # we don't need to round here as we have already float
-        counter = int(((time_seconds - self.timeshift) / self.timestep))
+        counter = int(((time_seconds + self.timeshift) / self.timestep) + 0.5)
         otpval = hmac2Otp.generate(counter=counter,
                                    inc_counter=False,
                                    do_truncation=do_truncation,
