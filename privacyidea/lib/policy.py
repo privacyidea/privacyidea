@@ -2354,8 +2354,8 @@ def get_static_policy_definitions(scope=None):
             ACTION.PREFERREDCLIENTMODE: {
                 'type': 'str',
                 'desc': _('You can set the client modes in the order that you prefer. '
-                          'For example: "interactive, webauthn, poll, u2f". Accepted'
-                          ' values are:"interactive, webauthn, poll, u2f"')
+                          'For example: "interactive webauthn poll u2f". Accepted'
+                          ' values are:"interactive webauthn poll u2f"')
             }
         },
         SCOPE.AUTHZ: {
