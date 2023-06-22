@@ -428,7 +428,7 @@ class TotpTokenClass(HotpTokenClass):
                 else:
                     log.info("Autoresync successful for token {0!s}.".format(self.token.serial))
                     server_time = time.time()
-                    counter = int((server_time / self.timestep) + 0.5)
+                    counter = self._time2counter(server_time, self.timestep)
 
                     shift = otp2c - counter
                     info["timeShift"] = shift
@@ -474,7 +474,7 @@ class TotpTokenClass(HotpTokenClass):
         else:
             server_time = time.time() + self.timeshift
 
-        counter = int((server_time / self.timestep) + 0.5)
+        counter = self._time2counter(server_time, self.timestep)
         log.debug("counter (current time): {0:d}".format(counter))
 
         oCount = self.get_otp_count()
@@ -560,7 +560,7 @@ class TotpTokenClass(HotpTokenClass):
             time_seconds = self._time2float(current_time)
 
         # we don't need to round here as we have already float
-        counter = int(((time_seconds + self.timeshift) / self.timestep) + 0.5)
+        counter = self._time2counter(time_seconds + self.timeshift, self.timestep)
         otpval = hmac2Otp.generate(counter=counter,
                                    inc_counter=False,
                                    do_truncation=do_truncation,
@@ -612,7 +612,7 @@ class TotpTokenClass(HotpTokenClass):
             tCounter = self._time2float(datetime.datetime.now())
 
         # we don't need to round here as we have alread float
-        counter = int(((tCounter - self.timeshift) / self.timestep))
+        counter = self._time2counter(tCounter - self.timeshift, self.timestep)
 
         otp_dict["shift"] = self.timeshift
         otp_dict["timeStepping"] = self.timeshift
