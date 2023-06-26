@@ -422,7 +422,7 @@ class UserNotificationEventHandler(BaseEventHandler):
 
                 if attach_qrcode and googleurl_img:
                     # get the image part of the googleurl
-                    googleurl = urlopen(googleurl_img)
+                    googleurl = urlopen(googleurl_img)  #  nosec B310   # no user input
                     mail_body = MIMEMultipart('related')
                     mail_body.attach(MIMEText(body, mimetype))
                     mail_img = MIMEImage(googleurl.read())
