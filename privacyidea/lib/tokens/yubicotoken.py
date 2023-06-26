@@ -181,10 +181,12 @@ class YubicoTokenClass(TokenClass):
             try:
                 if do_yubico_post:
                     r = requests.post(yubico_url,
-                                      data=p)
+                                      data=p,
+                                      timeout=60)
                 else:
                     r = requests.get(yubico_url,
-                                     params=urlencode(p))
+                                     params=urlencode(p),
+                                     timeout=60)
 
                 if r.status_code == requests.codes.ok:
                     response = r.text
