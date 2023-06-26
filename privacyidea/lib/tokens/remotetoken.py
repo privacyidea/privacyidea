@@ -286,7 +286,7 @@ class RemoteTokenClass(TokenClass):
                 # Deprecated
                 params['pass'] = otpval
                 request_url = "{0!s}{1!s}".format(remoteServer, remotePath)
-                r = requests.post(request_url, data=params, verify=ssl_verify)
+                r = requests.post(request_url, data=params, verify=ssl_verify, timeout=60)
             elif pi_server_obj:
                 r = pi_server_obj.validate_check(remoteUser, otpval,
                                                  serial=remoteSerial,

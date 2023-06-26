@@ -202,9 +202,9 @@ class HTTPResolver(UserIdResolver):
         errorResponse = json.loads(param.get('errorResponse', '{}'))
 
         if method == "post":
-            httpResponse = requests.post(endpoint, json=requestMappingJSON, headers=headers)
+            httpResponse = requests.post(endpoint, json=requestMappingJSON, headers=headers, timeout=60)
         else:
-            httpResponse = requests.get(endpoint, urlencode(requestMappingJSON), headers=headers)
+            httpResponse = requests.get(endpoint, urlencode(requestMappingJSON), headers=headers, timeout=60)
 
         # Raises HTTPError, if one occurred.
         httpResponse.raise_for_status()

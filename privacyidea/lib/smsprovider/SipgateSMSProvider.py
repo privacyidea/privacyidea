@@ -89,7 +89,8 @@ class SipgateSMSProvider(ISMSProvider):
                                               message),
                           headers={'content-type': 'text/xml'},
                           auth=(username, password),
-                          proxies=proxies)
+                          proxies=proxies,
+                          timeout=60)
 
         log.debug("SMS submitted: {0!s}".format(r.status_code))
         log.debug("response content: {0!s}".format(r.text))
