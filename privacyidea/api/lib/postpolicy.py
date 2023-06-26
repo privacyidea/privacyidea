@@ -48,7 +48,7 @@ from privacyidea.lib.error import PolicyError, ValidateError
 from flask import g, current_app, make_response
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, AUTHORIZED
 from privacyidea.lib.policy import DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL
-from privacyidea.lib.policy import DEFAULT_PREFERRED_CLIENT_MODE
+from privacyidea.lib.policy import DEFAULT_PREFERRED_CLIENT_MODE_LIST
 from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_auth_items
@@ -340,28 +340,29 @@ def preferred_client_mode(request, response):
         .action_values(allow_white_space_in_action=True, unique=True)
 
     if detail_pol:
-        # Split comma or several whitespaces
-        preferred_client_mode_list = re.split("\s+|,", list(detail_pol)[0])
+        # Split at whitespaces and strip
+        preferred_client_mode_list = str.split(list(detail_pol)[0])
     else:
-        preferred_client_mode_list = DEFAULT_PREFERRED_CLIENT_MODE
+        preferred_client_mode_list = DEFAULT_PREFERRED_CLIENT_MODE_LIST
     if content.get("detail"):
         detail = content.get("detail")
         if detail.get("multi_challenge"):
             multi_challenge = detail.get("multi_challenge")
-            l = []
-            for x in multi_challenge:
-                l.append(x.get("client_mode"))
+            client_modes = [x.get('client_mode') for x in multi_challenge]
 
             try:
-                preferred = [x for x in preferred_client_mode_list if x in l][0]
+                preferred = [x for x in preferred_client_mode_list if x in client_modes][0]
                 content.setdefault("detail", {})["preferred_client_mode"] = preferred
             except IndexError as err:
                 content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
-                log.error('There was no except client mode in the multi-challenge. The preferred mode is'
-                          ' set to interactive. Please check your policy. Error: {0} '.format(err))
-            except Exception as err:                                                                #pragma no cover
-                content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'           #pragma no cover
-                log.error('something with the preferred client mode got wrong: {0}'.format(err))    #pragma no cover
+                log.error('There was no acceptable client mode in the multi-challenge list. '
+                          'The preferred client mode is set to "interactive". '
+                          'Please check Your policy ({0!s}). '
+                          'Error: {1!s} '.format(preferred_client_mode_list, err))
+            except Exception as err:  # pragma no cover
+                content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
+                log.error('Something went wrong during setting the preferred '
+                          'client mode. Error: {0!s}'.format(err))
 
     response.set_data(json.dumps(content))
     return response

@@ -3694,7 +3694,6 @@ class MultiChallege(MyApiTestCase):
     serial_push = "PIPU001"
 
     def setUp(self):
-        super(MultiChallege, self).setUp()
         self.setUp_user_realms()
 
     def test_00_pin_change_via_validate_chalresp(self):
@@ -3883,8 +3882,6 @@ class MultiChallege(MyApiTestCase):
         REGISTRATION_URL = "http://test/ttype/push"
         TTL = "10"
 
-        self.setUp_user_realms()
-
         # set policy
         from privacyidea.lib.tokens.pushtoken import POLL_ONLY
         set_policy("push2", scope=SCOPE.ENROLL,
@@ -3893,12 +3890,13 @@ class MultiChallege(MyApiTestCase):
                        PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL,
                        PUSH_ACTION.TTL, TTL))
 
-        # create push token for user
+        pin = "otppin"
+        # create push token for user with PIN
         # 1st step
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "push",
-                                                 "pin": "otppin",
+                                                 "pin": pin,
                                                  "user": "selfservice",
                                                  "realm": self.realm1,
                                                  "serial": self.serial_push,
@@ -3919,48 +3917,44 @@ class MultiChallege(MyApiTestCase):
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            detail = res.json.get("detail")
 
-
-        # create hotp token for user
+        # create hotp token for the user with same PIN
         init_token({"serial": "CR2A",
-                             "type": "hotp",
-                             "otpkey": "31323334353637383930313233343536373839AA",
-                             "pin": "otppin"}, user=User("selfservice", self.realm1))
-        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
-            ACTION.CHALLENGERESPONSE))
+                    "type": "hotp",
+                    "otpkey": "31323334353637383930313233343536373839AA",
+                    "pin": pin}, user=User("selfservice", self.realm1))
+        set_policy("test49", scope=SCOPE.AUTH,
+                   action="{0!s}=hotp totp, {1!s}=  poll   u2f   webauthn ".format(
+                       ACTION.CHALLENGERESPONSE, ACTION.PREFERREDCLIENTMODE))
 
-        set_policy("test", scope=SCOPE.AUTH, action="{0!s}=poll, webauthn, interactive, u2f".format(
-            ACTION.PREFERREDCLIENTMODE))
-
-        # authenticate with spass
+        # authenticate with PIN to trigger challenge-response
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "selfservice",
                                                  "realm": self.realm1,
-                                                 "pass": "otppin"}):
+                                                 "pass": pin}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             detail = res.json.get("detail")
-            self.assertEqual(detail.get("preferred_client_mode"), 'poll')
+            self.assertEqual(detail.get("preferred_client_mode"), 'poll', detail)
 
         delete_policy("test49")
-        delete_policy("test")
         delete_policy("push2")
+        remove_token(serial)
+        remove_token("CR2A")
 
     def test_04_preferred_client_mode_default(self):
-        self.setUp_user_realms()
-        OTPKE2 = "31323334353637383930313233343536373839"
+        OTPKEY2 = "31323334353637383930313233343536373839"
         user = User("multichal", self.realm1)
         pin = "test49"
-        token_a = init_token({"serial": "CR2AAA",
-                              "type": "hotp",
-                              "otpkey": OTPKE2,
-                              "pin": pin}, user)
-        token_b = init_token({"serial": "CR2B",
-                              "type": "hotp",
-                              "otpkey": self.otpkey,
-                              "pin": pin}, user)
+        init_token({"serial": "CR2AAA",
+                    "type": "hotp",
+                    "otpkey": OTPKEY2,
+                    "pin": pin}, user)
+        init_token({"serial": "CR2B",
+                    "type": "hotp",
+                    "otpkey": self.otpkey,
+                    "pin": pin}, user)
         set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
             ACTION.CHALLENGERESPONSE))
 
@@ -3977,20 +3971,22 @@ class MultiChallege(MyApiTestCase):
             self.assertEqual(detail.get("preferred_client_mode"), 'interactive')
 
         delete_policy("test49")
+        remove_token("CR2AAA")
+        remove_token("CR2B")
 
     def test_05_preferred_client_mode_no_accepted_values(self):
         self.setUp_user_realms()
-        OTPKE2 = "31323334353637383930313233343536373839"
+        OTPKEY2 = "31323334353637383930313233343536373839"
         user = User("multichal", self.realm1)
         pin = "test49"
-        token_a = init_token({"serial": "CR2AAA",
-                              "type": "hotp",
-                              "otpkey": OTPKE2,
-                              "pin": pin}, user)
-        token_b = init_token({"serial": "CR2B",
-                              "type": "hotp",
-                              "otpkey": self.otpkey,
-                              "pin": pin}, user)
+        init_token({"serial": "CR2AAA",
+                    "type": "hotp",
+                    "otpkey": OTPKEY2,
+                    "pin": pin}, user)
+        init_token({"serial": "CR2B",
+                    "type": "hotp",
+                    "otpkey": self.otpkey,
+                    "pin": pin}, user)
         set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
             ACTION.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
@@ -4009,15 +4005,17 @@ class MultiChallege(MyApiTestCase):
 
         delete_policy("test49")
         delete_policy("test")
+        remove_token("CR2AAA")
+        remove_token("CR2B")
+
 
 class AChallengeResponse(MyApiTestCase):
 
     serial = "hotp1"
     serial_email = "email1"
-    serial_sms= "sms1"
+    serial_sms = "sms1"
 
     def setUp(self):
-        super(AChallengeResponse, self).setUp()
         self.setUp_user_realms()
 
     def test_01_challenge_response_token_deactivate(self):

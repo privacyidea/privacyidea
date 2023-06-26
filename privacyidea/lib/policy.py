@@ -202,7 +202,7 @@ required = False
 
 DEFAULT_ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=it.netknights.piauthenticator"
 DEFAULT_IOS_APP_URL = "https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301"
-DEFAULT_PREFERRED_CLIENT_MODE = ['interactive', 'webauthn', 'poll', 'u2f']
+DEFAULT_PREFERRED_CLIENT_MODE_LIST = ['interactive', 'webauthn', 'poll', 'u2f']
 
 
 class SCOPE(object):
@@ -2354,8 +2354,8 @@ def get_static_policy_definitions(scope=None):
             ACTION.PREFERREDCLIENTMODE: {
                 'type': 'str',
                 'desc': _('You can set the client modes in the order that you prefer. '
-                          'For example: "interactive webauthn poll u2f". Accepted'
-                          ' values are:"interactive, webauthn, poll, u2f"')
+                          'For example: "interactive webauthn poll u2f". Accepted '
+                          'values are: <code>interactive webauthn poll u2f</code>')
             }
         },
         SCOPE.AUTHZ: {
