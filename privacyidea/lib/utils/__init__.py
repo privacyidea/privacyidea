@@ -964,6 +964,7 @@ def parse_timedelta(s):
     td = timedelta(seconds=seconds, minutes=minutes, hours=hours, days=days)
     return td
 
+
 def parse_time_sec_int(s):
     """
     parses a string like 5d or 24h into an int with gives the time in sec. You can use y, d, h, m and s.
@@ -1000,6 +1001,8 @@ def parse_time_sec_int(s):
 
             ret = 86400*days+3600*hours+60*minutes+seconds
         return ret
+
+
 def parse_time_offset_from_now(s):
     """
     Parses a string as used in the token event handler

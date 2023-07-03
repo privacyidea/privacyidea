@@ -1,4 +1,18 @@
-from __future__ import division
+# -*- coding: utf-8 -*-
+#
+# This code is free software; you can redistribute it and/or
+# modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+# License as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 import logging
 import time
 import datetime
@@ -13,13 +27,10 @@ from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.utils import determine_logged_in_userparams, parse_time_sec_int
 from privacyidea.lib import _
 
-optional = True
-required = False
-
 log = logging.getLogger(__name__)
 
-class DayPasswordTokenClass(TotpTokenClass):
 
+class DayPasswordTokenClass(TotpTokenClass):
     previous_otp_offset = 0
 
     desc_timestep = _('Specify the time step of the DayPassword token.')
@@ -50,6 +61,7 @@ class DayPasswordTokenClass(TotpTokenClass):
     def get_class_prefix():
         """
         Return the prefix, that is used as a prefix for the serial numbers.
+
         :return: DayPasswordToken
         """
         return "DayPassword"
@@ -69,7 +81,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         """
         res = {'type': 'daypassword',
                'title': 'Time based Password',
-               'description': _('daypassword: A totp token with a variable timestep and the possibility'
+               'description': _('DayPassword: A time-based token with a variable timestep and the possibility'
                                 ' to use the otp more than ones.'),
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
@@ -77,34 +89,34 @@ class DayPasswordTokenClass(TotpTokenClass):
                'policy': {
                    SCOPE.USER: {
                        'daypassword_timestep': {'type': 'str',
-                                         'desc': DayPasswordTokenClass.desc_timestep},
+                                                'desc': DayPasswordTokenClass.desc_timestep},
                        'daypassword_hashlib': {'type': 'str',
-                                        'value': ["sha1",
-                                                  "sha256",
-                                                  "sha512"],
-                                        'desc': DayPasswordTokenClass.desc_hash_func},
+                                               'value': ["sha1",
+                                                         "sha256",
+                                                         "sha512"],
+                                               'desc': DayPasswordTokenClass.desc_hash_func},
                        'daypassword_otplen': {'type': 'int',
-                                       'value': [6, 8],
-                                       'desc': DayPasswordTokenClass.desc_otp_len},
+                                              'value': [6, 8],
+                                              'desc': DayPasswordTokenClass.desc_otp_len},
                        'daypassword_force_server_generate': {'type': 'bool',
-                                                      'desc': DayPasswordTokenClass.desc_key_gen},
+                                                             'desc': DayPasswordTokenClass.desc_key_gen},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
                                  'desc': DayPasswordTokenClass.desc_two_step_user}
                    },
                    SCOPE.ADMIN: {
                        'daypassword_timestep': {'type': 'str',
-                                         'desc': DayPasswordTokenClass.desc_timestep},
+                                                'desc': DayPasswordTokenClass.desc_timestep},
                        'daypassword_hashlib': {'type': 'str',
-                                        'value': ["sha1",
-                                                  "sha256",
-                                                  "sha512"],
-                                        'desc': DayPasswordTokenClass.desc_hash_func},
+                                               'value': ["sha1",
+                                                         "sha256",
+                                                         "sha512"],
+                                               'desc': DayPasswordTokenClass.desc_hash_func},
                        'daypassword_otplen': {'type': 'int',
-                                       'value': [6, 8],
-                                       'desc': DayPasswordTokenClass.desc_otp_len},
+                                              'value': [6, 8],
+                                              'desc': DayPasswordTokenClass.desc_otp_len},
                        'daypassword_force_server_generate': {'type': 'bool',
-                                                      'desc': DayPasswordTokenClass.desc_key_gen},
+                                                             'desc': DayPasswordTokenClass.desc_key_gen},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
                                  'desc': DayPasswordTokenClass.desc_two_step_admin}
@@ -457,6 +469,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         with these values.
 
         The returned dictionary is added to the parameters of the API call.
+
         :param g: context object, see documentation of ``Match``
         :param params: The call parameters
         :type params: dict
