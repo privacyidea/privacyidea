@@ -19,7 +19,7 @@ m+qnl1W6iD0z5ws/SrtWBJiMuFm3hGaXdQLZVABSqgmvaru3GZbldlQU/0pcV855
 NwIDAQAB
 -----END PUBLIC KEY-----"""
 
-non_matchin_pubkey = b"""-----BEGIN PUBLIC KEY-----
+non_matching_pubkey = b"""-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0R9Nos93gt6JdiY/Q+ac
 WuukYcwr+JlCDa+RX8UDuKfF3wVkSjwAl6s3ADrEnRIgi9qCQD52o29YEVugftVh
 HKiC+Gw5Cf95hkWKLl1MFoI6JUMDnNtPlPJrsCwLCi79TV+24BZ0v19P9ivxDa+c
@@ -94,7 +94,7 @@ class TestingConfig(Config):
                        "realm": "realm1",
                        "username": "userA",
                        "resolver": "resolverX"},
-                      {"public_key": non_matchin_pubkey,
+                      {"public_key": non_matching_pubkey,
                        "algorithm": "RS256",
                        "role": "user",
                        "realm": "realm1",

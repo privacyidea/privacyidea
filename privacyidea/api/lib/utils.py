@@ -34,6 +34,7 @@ import time
 import logging
 import json
 import jwt
+from ipaddress import ip_address
 import threading
 import re
 from copy import copy
@@ -63,7 +64,7 @@ required = False
 def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_values=None):
     """
     returns a parameter from the request parameters.
-    
+
     :param param: the dictionary of parameters
     :type param: dict
     :param key: the name of the parameter
@@ -78,7 +79,7 @@ def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_
     :param allowed_values: A list of allowed values. If another value is given,
         then the default value is returned
     :type allow_empty: bool
-    
+
     :return: the value (literal) of the parameter if exists or nothing
              in case the parameter is optional, otherwise throw an exception
     """
@@ -95,25 +96,24 @@ def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_
         raise ParameterError("Parameter {0!r} must not be empty".format(key), id=905)
 
     if allowed_values and ret not in allowed_values:
-            ret = default
+        ret = default
 
     return ret
 
 
 def send_result(obj, rid=1, details=None):
-    '''
-    sendResult - return an json result document
+    """
+    Return a json result document
 
     :param obj: simple result object like dict, sting or list
     :type obj: dict or list or string/unicode
     :param rid: id value, for future versions
     :type rid: int
     :param details: optional parameter, which allows to provide more detail
-    :type  details: None or simple type like dict, list or string/unicode
-
+    :type  details: dict
     :return: json rendered sting result
     :rtype: string
-    '''
+    """
     return jsonify(prepare_result(obj, rid, details))
 
 
@@ -163,7 +163,7 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
 
 def send_html(output):
     """
-    Send the ouput as HTML to the client with the correct mimetype.
+    Send the output as HTML to the client with the correct mimetype.
 
     :param output: The HTML to send to the client
     :type output: str
@@ -177,7 +177,8 @@ def send_file(output, filename, content_type='text/csv'):
     """
     Send the output to the client with the "Content-disposition" header to
     declare it as a downloadable file.
-    :param output: The data that should be send as a file
+
+    :param output: The data that should be sent as a file
     :type output: str
     :param filename: The proposed filename
     :type filename: str
@@ -196,7 +197,7 @@ def send_csv_result(obj, data_key="tokens",
     """
     returns a CSV document of the input data (like in /token/list)
 
-    It takes a obj as a dict like:
+    It takes an obj as a dict like:
     { "tokens": [ { ...token1... }, { ...token2....}, ... ],
       "count": 100,
       "....": .... }
@@ -209,7 +210,7 @@ def send_csv_result(obj, data_key="tokens",
     :param filename: The filename to save the CSV to.
     :type filename: basestring
     :return: The result serialized as a CSV
-    :rtype: Response object
+    :rtype: flask.Response
     """
     delim = "'"
     output = ""
@@ -253,7 +254,7 @@ def check_unquote(request, data):
     https://httpwg.org/specs/rfc9110.html#field.user-agent
 
     :param request: The Flask request context
-    :type request: flask.Request
+    :type request: Flask.Request
     :param data: The dictionary containing the requested data
     :type data: dict
     :return: New dictionary with the possibly unquoted values
@@ -283,13 +284,13 @@ def get_all_params(request):
     return_param = {}
     if param:
         log.debug("Update params in request {0!s} {1!s} with values.".format(request.method,
-                                                                              request.base_url))
+                                                                             request.base_url))
         # Add the unquoted HTML and form parameters
         return_param = check_unquote(request, request.values)
 
     if request.is_json:
         log.debug("Update params in request {0!s} {1!s} with JSON data.".format(request.method,
-                                                                                 request.base_url))
+                                                                                request.base_url))
         # Add the original JSON data
         return_param.update(request.json)
     elif body:
@@ -303,7 +304,7 @@ def get_all_params(request):
 
     if request.view_args:
         log.debug("Update params in request {0!s} {1!s} with view_args.".format(request.method,
-                                                                                 request.base_url))
+                                                                                request.base_url))
         # We add the unquoted view_args
         return_param.update(check_unquote(request, request.view_args))
 
@@ -326,15 +327,22 @@ def get_priority_from_param(param):
     return priority
 
 
-def verify_auth_token(auth_token, required_role=None):
+def verify_auth_token(auth_token, required_role=None, request_ip=None):
     """
     Check if a given auth token is valid.
 
     Return a dictionary describing the authenticated user.
 
     :param auth_token: The Auth Token
-    :param required_role: list of "user" and "admin"
-    :return: dict with authtype, realm, rights, role, username, exp, nonce
+    :type auth_token: str
+    :param required_role: List of required roles to accept this token.
+    :type required_role: list[str]
+    :param request_ip: The IP address of the client from the current request
+                       (after cleaning up the proxy chain)
+    :type request_ip: str
+    :return: Dictionary with authtype, realm, rights, role, username, exp, iat,
+             clientip and nonce. If the token could not be verified an exception is raised
+    :rtype: dict
     """
     r = None
     if required_role is None:
@@ -343,35 +351,39 @@ def verify_auth_token(auth_token, required_role=None):
         raise AuthError(_("Authentication failure. Missing Authorization header."),
                         id=ERROR.AUTHENTICATE_AUTH_HEADER)
 
-    headers = jwt.get_unverified_header(auth_token)
-    algorithm = headers.get("alg")
+    try:
+        headers = jwt.get_unverified_header(auth_token)
+        algorithm = headers.get("alg")
+    except jwt.DecodeError as err:
+        raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
+                        id=ERROR.AUTHENTICATE_DECODING_ERROR)
     wrong_username = None
     if algorithm in TRUSTED_JWT_ALGOS:
-        # The trusted JWTs are RSA, PSS or eliptic curve signed
+        # The trusted JWTs are RSA, PSS or elliptic curve signed
         trusted_jwts = current_app.config.get("PI_TRUSTED_JWT", [])
-        for trusted_jwt in trusted_jwts:
+        # only check trusted JWTs for which the algorithm matches
+        for trusted_jwt in [x for x in trusted_jwts if x.get('algorithm') == algorithm]:
             try:
-                if trusted_jwt.get("algorithm") in TRUSTED_JWT_ALGOS:
-                    j = jwt.decode(auth_token,
-                                   trusted_jwt.get("public_key"),
-                                   algorithms=[trusted_jwt.get("algorithm")])
-                    if dict((k, j.get(k)) for k in ("role", "resolver", "realm")) == \
-                            dict((k, trusted_jwt.get(k)) for k in ("role", "resolver", "realm")):
-                        if re.match(trusted_jwt.get("username") + "$", j.get("username")):
-                            r = j
-                            break
-                        else:
-                            r = wrong_username = j.get("username")
-                else:
-                    log.warning("Unsupported JWT algorithm in PI_TRUSTED_JWT.")
+                j = jwt.decode(auth_token,
+                               trusted_jwt.get("public_key"),
+                               algorithms=[trusted_jwt.get("algorithm")])
+                if dict((k, j.get(k)) for k in ("role", "resolver", "realm")) == \
+                        dict((k, trusted_jwt.get(k)) for k in ("role", "resolver", "realm")):
+                    if re.match(trusted_jwt.get("username") + "$", j.get("username")):
+                        r = j
+                        break
+                    else:
+                        r = wrong_username = j.get("username")
             except jwt.DecodeError as err:
-                log.info("A given JWT definition does not match.")
+                log.info("Could not decode the given JWT with a trusted JWT "
+                         "configuration (trying next): {0!s}".format(err))
             except jwt.ExpiredSignatureError as err:
                 # We have the correct token. It expired, so we raise an error
                 raise AuthError(_("Authentication failure. Your token has expired: {0!s}").format(err),
                                 id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
-
-    if not r:
+    else:
+        # If the asymmetric algorithms don't match we try to decode the
+        # regular JWT issued by the "/auth" endpoint
         try:
             r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
         except jwt.DecodeError as err:
@@ -383,12 +395,40 @@ def verify_auth_token(auth_token, required_role=None):
     if wrong_username:
         raise AuthError(_("Authentication failure. The username {0!s} is not allowed to "
                           "impersonate via JWT.".format(wrong_username)))
+    if not r:
+        raise AuthError(_("Authentication failure. Could not verify the JWT token."))
+
+    # check if the IP of the request matches the IP encoded in the JWT
+    check_ip = current_app.config.get("PI_JWT_CHECK_IP", "permissive").lower()
+    if check_ip == "disabled":
+        pass
+    elif 'clientip' in r:
+        try:
+            res = ip_address(r.get('clientip')) != ip_address(request_ip)
+        except ValueError as _e:
+            # ip_address() does not like None values
+            raise AuthError(_("Authentication failure. Could not reliably "
+                              "determine the client IP."))
+        if res:
+            if check_ip == "permissive":
+                log.info("IP of assigned token and current client IP of "
+                         "request mismatch ({0!s} != {1!s})".format(r.get("clientip"), request_ip))
+            elif check_ip == "enforcing":
+                log.error("IP of assigned token and current client IP of "
+                          "request mismatch ({0!s} != {1!s})".format(r.get("clientip"), request_ip))
+                raise AuthError(_("Authentication failure. JWT token ip mismatch."))
+            else:
+                # TODO: should we raise an error here since it could be
+                #  that the IP check was meant to be enforced?
+                log.warning("Unknown configuration value for "
+                            "PI_JWT_CHECK_IP: {0!s}".format(check_ip))
+
     if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does
         # not match
         raise AuthError(_("Authentication failure. "
-                        "You do not have the necessary role ({0!s}) to access "
-                        "this resource!").format(required_role),
+                          "You do not have the necessary role ({0!s}) to access "
+                          "this resource!").format(required_role),
                         id=ERROR.AUTHENTICATE_MISSING_RIGHT)
     return r
 

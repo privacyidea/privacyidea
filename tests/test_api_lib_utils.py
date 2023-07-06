@@ -13,8 +13,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.error import ParameterError
 import jwt
 import mock
-import datetime
-import warnings
+from datetime import datetime, timezone, timedelta
 from urllib.parse import quote
 from privacyidea.lib.error import AuthError
 from privacyidea.lib.token import init_token, remove_token
@@ -55,6 +54,12 @@ class UtilsTestCase(MyApiTestCase):
         check_policy_name("pi-update-policysomething")
 
     def test_03_verify_auth_token(self):
+        # throws exception if the token is not usable
+        self.assertRaisesRegex(
+            AuthError,
+            "Error during decoding your token",
+            verify_auth_token, auth_token="sometextbutnojwt", required_role=["user"])
+
         # create a jwt with a trusted private key
         with open("tests/testdata/jwt_sign.key", "r") as f:
             key = f.read()
@@ -67,7 +72,7 @@ class UtilsTestCase(MyApiTestCase):
                                 key=key,
                                 algorithm="RS256")
         r = verify_auth_token(auth_token=auth_token,
-                              required_role="user")
+                              required_role=["user"])
         self.assertEqual(r.get("realm"), "realmX")
         self.assertEqual(r.get("username"), "hans")
         self.assertEqual(r.get("resolver"), "resolverX", )
@@ -80,63 +85,75 @@ class UtilsTestCase(MyApiTestCase):
                                          "resolver": "resolverX"},
                                 key=key,
                                 algorithm="RS256")
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=DeprecationWarning)
-            self.assertRaisesRegex(
-                AuthError,
-                "The username hanswurst is not allowed to impersonate via JWT.",
-                verify_auth_token, auth_token=auth_token, required_role="user")
+        self.assertRaisesRegex(
+            AuthError,
+            "The username hanswurst is not allowed to impersonate via JWT.",
+            verify_auth_token, auth_token=auth_token, required_role=["user"])
 
         # A user ending with hans is not allowed
-        # A user starting with hans and ending with "t" is not allowed
         auth_token = jwt.encode(payload={"role": "user",
                                          "username": "kleinerhans",
                                          "realm": "realmX",
                                          "resolver": "resolverX"},
                                 key=key,
                                 algorithm="RS256")
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=DeprecationWarning)
-            self.assertRaisesRegex(
-                AuthError,
-                "The username kleinerhans is not allowed to impersonate via JWT.",
-                verify_auth_token, auth_token=auth_token, required_role="user")
+        self.assertRaisesRegex(
+            AuthError,
+            "The username kleinerhans is not allowed to impersonate via JWT.",
+            verify_auth_token, auth_token=auth_token, required_role=["user"])
+
+        # Check an auth-token with missing claims
+        auth_token = jwt.encode(payload={"role": "user",
+                                         "username": "hans",
+                                         "realm": "realmX"},
+                                key=key,
+                                algorithm="RS256")
+        self.assertRaisesRegex(
+            AuthError,
+            "Authentication failure. Could not verify the JWT token.",
+            verify_auth_token, auth_token=auth_token, required_role=["user"])
 
         # Successful authentication with dedicated user
-        with mock.patch("logging.Logger.warning") as mock_log:
-            auth_token = jwt.encode(payload={"role": "user",
-                                             "username": "userA",
-                                             "realm": "realm1",
-                                             "resolver": "resolverX"},
-                                    key=key,
-                                    algorithm="RS256")
-            r = verify_auth_token(auth_token=auth_token,
-                                  required_role="user")
-            self.assertEqual(r.get("realm"), "realm1")
-            self.assertEqual(r.get("username"), "userA")
-            self.assertEqual(r.get("resolver"), "resolverX",)
-            self.assertEqual(r.get("role"), "user")
-            # ...but there is an unsupported configuration
-            mock_log.assert_called_once_with("Unsupported JWT algorithm in PI_TRUSTED_JWT.")
+        auth_token = jwt.encode(payload={"role": "user",
+                                         "username": "userA",
+                                         "realm": "realm1",
+                                         "resolver": "resolverX"},
+                                key=key,
+                                algorithm="RS256")
+        r = verify_auth_token(auth_token=auth_token,
+                              required_role=["user"])
+        self.assertEqual(r.get("realm"), "realm1")
+        self.assertEqual(r.get("username"), "userA")
+        self.assertEqual(r.get("resolver"), "resolverX",)
+        self.assertEqual(r.get("role"), "user")
 
         # The signature has expired
         expired_token = jwt.encode(payload={"role": "admin",
-                                            "exp": datetime.datetime.utcnow()-datetime.timedelta(seconds=1000)},
+                                            "exp": (datetime.now(tz=timezone.utc)
+                                                    - timedelta(seconds=1000))},
                                    key=key,
                                    algorithm="RS256")
-        self.assertRaises(AuthError, verify_auth_token, auth_token=expired_token, required_role="admin")
+        self.assertRaises(AuthError, verify_auth_token, auth_token=expired_token, required_role=["admin"])
 
-        # The signature does not match
+        # Check if the IP of token matches the request
+        # First check if the default setting of "permissive" writes the mismatch to the logs
         with mock.patch("logging.Logger.info") as mock_log:
             auth_token = jwt.encode(payload={"role": "user",
                                              "username": "userA",
                                              "realm": "realm1",
-                                             "resolver": "resolverX"},
+                                             "resolver": "resolverX",
+                                             "clientip": "1.2.3.4"},
                                     key=key,
                                     algorithm="RS256")
-            verify_auth_token(auth_token=auth_token,
-                              required_role="user")
-            mock_log.assert_any_call("A given JWT definition does not match.")
+            r = verify_auth_token(auth_token=auth_token,
+                                  required_role=["user"],
+                                  request_ip='1.1.1.1')
+            self.assertEqual(r.get("realm"), "realm1", r)
+            self.assertEqual(r.get("username"), "userA", r)
+            self.assertEqual(r.get("resolver"), "resolverX", r)
+            self.assertEqual(r.get("role"), "user", r)
+            mock_log.assert_any_call("IP of assigned token and current client IP of "
+                                     "request mismatch (1.2.3.4 != 1.1.1.1)")
 
     def test_04_check_jwt_username_in_audit(self):
         # Here we check, if the username from the trusted JWT appears in the audit log.
@@ -156,9 +173,11 @@ class UtilsTestCase(MyApiTestCase):
                                            headers={"Authorization": auth_token}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 400, res)
+            result = res.json
+            self.assertEqual(result['result']['error']['code'], 904, result)
 
         # We see the user from the trusted JWT in the audit log.
-        ae = self.find_most_recent_audit_entry(action="GET /token/")
+        ae = self.find_most_recent_audit_entry(action="GET /token/", success=0)
         self.assertEqual(ae.get("user"), "userA")
 
     def test_05_is_fqdn(self):

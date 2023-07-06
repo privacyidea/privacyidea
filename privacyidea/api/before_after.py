@@ -87,6 +87,8 @@ log = logging.getLogger(__name__)
 def log_begin_request():
     log.debug("Begin handling of request {!r}".format(request.full_path))
     g.startdate = datetime.datetime.now()
+    # access_route contains the ip addresses of all clients, hops and proxies.
+    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
 
 
 @token_blueprint.teardown_app_request
@@ -97,7 +99,7 @@ def teardown_request(exc):
     except AttributeError:
         # In certain error cases the before_request was not handled
         # completely so that we do not have an audit_object
-        # Also during calling webui, there is not audit_object, yet.
+        # Also during calling webui, there is no audit_object, yet.
         pass
     call_finalizers()
     log.debug("End handling of request {!r}".format(request.full_path))
@@ -182,9 +184,6 @@ def before_request():
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config, g.startdate)
     g.event_config = EventConfiguration()
-    # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))

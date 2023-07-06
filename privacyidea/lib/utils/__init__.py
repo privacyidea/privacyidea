@@ -480,7 +480,7 @@ def parse_date(date_string):
     in the future.
 
     It can also parse fixed date_strings like
-    
+
       23.12.2016 23:30
       23.12.2016
       2016/12/23 11:30pm
@@ -672,12 +672,6 @@ def get_client_ip(request, proxy_settings):
         else:
             # This is the case if a X-Forwarded-For header is provided.
             path_to_client = [request.remote_addr] + list(reversed(request.access_route))
-        # A possible ``client`` parameter is appended to the *end* of the path to client.
-        if (not hasattr(request, "blueprint") or
-            request.blueprint in ["validate_blueprint", "ttype_blueprint",
-                                  "jwtauth"]) \
-                and "client" in request.all_data:
-            path_to_client.append(request.all_data["client"])
         # We now refer to ``check_proxy`` to extract the mapped IP from ``path_to_client``.
         return str(check_proxy([IPAddress(ip) for ip in path_to_client], proxy_settings))
     else:
@@ -818,14 +812,14 @@ def compare_value_value(value1, comparator, value2):
     """
     This function compares value1 and value2 with the comparator.
     The comparator may be "==", "=", "!=", ">", "<", ">=", "=>", "<=" or "=<".
-    
+
     If the values can be converted to integers or dates, they are compared as such,
     otherwise as strings.
 
     In case of dates make sure they can be parsed by 'parse_date()', otherwise
     they will be compared as strings.
 
-    :param value1: First value 
+    :param value1: First value
     :param value2: Second value
     :param comparator: The comparator
     :return: True or False
@@ -915,10 +909,10 @@ def parse_legacy_time(ts, return_date=False):
     The new timestrings are of the format YYYY-MM-DDThh:mm+oooo.
     They contain the timezone offset!
 
-    Old legacy time strings are of format DD/MM/YY hh:mm without time zone 
+    Old legacy time strings are of format DD/MM/YY hh:mm without time zone
     offset.
 
-    This function parses string and returns the new formatted time string 
+    This function parses string and returns the new formatted time string
     including the timezone offset.
 
     :param ts:
@@ -944,7 +938,7 @@ def parse_timedelta(s):
     Allowed identifiers are s, m, h, d, y.
 
     :param s: a string like +30m or -5d
-    :return: timedelta 
+    :return: timedelta
     """
     seconds = 0
     minutes = 0
@@ -977,14 +971,14 @@ def parse_time_offset_from_now(s):
     Parses a string as used in the token event handler
         "New date {now}+5d. Some {other} {tags}" or
         "New date {now}-30m! Some {other} {tags}".
-    This returns the string "New date {now}. Some {other} {tags}" and the 
+    This returns the string "New date {now}. Some {other} {tags}" and the
     timedelta of 5 days.
     Allowed tags are {now} and {current_time}. Only one tag of {now} or {
     current_time} is allowed.
     Allowed offsets are "s": seconds, "m": minutes, "h": hours, "d": days.
 
     :param s: The string to be parsed.
-    :return: tuple of modified string and timedelta 
+    :return: tuple of modified string and timedelta
     """
     td = timedelta()
     m1 = re.search(r"(^.*{current_time})([+-]\d+[smhd])(.*$)", s)

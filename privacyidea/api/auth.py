@@ -51,8 +51,7 @@ from flask import (Blueprint,
                    g)
 import jwt
 from functools import wraps
-from datetime import (datetime,
-                      timedelta)
+from datetime import datetime, timedelta, timezone
 from privacyidea.lib.error import AuthError, ERROR
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
@@ -62,16 +61,16 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
-from privacyidea.api.lib.postpolicy import (postpolicy, get_webui_settings, add_user_detail_to_response, check_tokentype, 
-                                            check_tokeninfo, check_serial, no_detail_on_fail, no_detail_on_success,
+from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
+                                            check_tokeninfo, check_serial, no_detail_on_success,
                                             get_webui_settings)
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            webauthntoken_auth, increase_failcounter_on_challenge)
 from privacyidea.api.lib.utils import (send_result, get_all_params,
                                        verify_auth_token, getParam)
-from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode, to_unicode
-from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
+from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
+from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.event import event, EventConfiguration
 from privacyidea.lib import _
 import logging
@@ -95,9 +94,6 @@ def before_request():
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config)
     g.event_config = EventConfiguration()
-    # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
     g.serial = getParam(request.all_data, "serial", default=None)
@@ -218,7 +214,6 @@ def get_auth_token():
     password = getParam(request.all_data, "password")
     realm_param = getParam(request.all_data, "realm")
     details = {}
-    realm = ''
 
     # the realm parameter has precedence! Check if it exists
     if realm_param and not realm_is_defined(realm_param):
@@ -312,8 +307,7 @@ def get_auth_token():
             user_auth, role, details = check_webui_user(user_obj,
                                                         password,
                                                         options=options,
-                                                        superuser_realms=
-                                                        superuser_realms)
+                                                        superuser_realms=superuser_realms)
             details = details or {}
             serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]]) \
                 if 'multi_challenge' in details else details.get('serial')
@@ -370,13 +364,16 @@ def get_auth_token():
     # What is the log level?
     log_level = current_app.config.get("PI_LOGLEVEL", 30)
 
+    now = datetime.now(tz=timezone.utc)
     token = jwt.encode({"username": loginname,
                         "realm": realm,
                         "nonce": nonce,
                         "role": role,
                         "authtype": authtype,
-                        "exp": datetime.utcnow() + validity,
-                        "rights": rights},
+                        "exp": now + validity,
+                        "iat": now,
+                        "rights": rights,
+                        "clientip": g.client_ip},
                        secret, algorithm='HS256')
 
     # Add the role to the response, so that the WebUI can make decisions
@@ -408,14 +405,16 @@ def user_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        check_auth_token(required_role=["user", "admin"])
+        check_auth_token(required_role=[ROLE.USER, ROLE.ADMIN])
         return f(*args, **kwargs)
     return decorated_function
 
 
 def check_auth_token(required_role=None):
     """
-    This checks the authentication token
+    Check the authentication token from the request.
+
+    The verified user information will be added to Flasks g-object.
 
     You need to pass an authentication header:
 
@@ -424,11 +423,14 @@ def check_auth_token(required_role=None):
     You can do this using httpie like this:
 
         http -j POST http://localhost:5000/system/getConfig Authorization:ewrt
+
+    :param required_role: List of required roles to accept this token.
+    :type required_role: list
     """
     auth_token = request.headers.get('PI-Authorization')
     if not auth_token:
         auth_token = request.headers.get('Authorization')
-    r = verify_auth_token(auth_token, required_role)
+    r = verify_auth_token(auth_token, required_role=required_role, request_ip=g.client_ip)
     g.logged_in_user = {"username": r.get("username"),
                         "realm": r.get("realm"),
                         "role": r.get("role")}
@@ -438,7 +440,7 @@ def check_auth_token(required_role=None):
 @user_required
 def get_rights():
     """
-    This returns the rights of the logged in user.
+    This returns the rights of the logged-in user.
 
     :reqheader Authorization: The authorization token acquired by /auth request
     """

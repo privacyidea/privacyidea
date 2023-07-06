@@ -60,6 +60,7 @@ def get_accepted_language(req):
     # (The best match wins)
     return req.accept_languages.best_match(pi_lang_list, default=pi_lang_list[0])
 
+
 @login_blueprint.before_request
 def before_request():
     """
@@ -67,8 +68,6 @@ def before_request():
     """
     g.policy_object = PolicyClass()
     g.audit_object = None
-    # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
 
 
 @login_blueprint.route('/', methods=['GET'])
