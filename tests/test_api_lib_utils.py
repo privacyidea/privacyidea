@@ -55,6 +55,11 @@ class UtilsTestCase(MyApiTestCase):
         check_policy_name("pi-update-policysomething")
 
     def test_03_verify_auth_token(self):
+        # check broken JWT
+        self.assertRaises(AuthError, verify_auth_token,
+                          auth_token='not_valid_jwt',
+                          required_role="user")
+
         # create a jwt with a trusted private key
         with open("tests/testdata/jwt_sign.key", "r") as f:
             key = f.read()
