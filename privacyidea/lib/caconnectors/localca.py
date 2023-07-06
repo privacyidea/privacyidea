@@ -31,7 +31,7 @@ from privacyidea.lib.error import CAError
 from privacyidea.lib.utils import int_to_hex, to_unicode
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConnectors
 from OpenSSL import crypto
-from subprocess import Popen, PIPE  #  nosec B404
+from subprocess import Popen, PIPE  # nosec B404
 import yaml
 import datetime
 import shlex
@@ -424,7 +424,8 @@ class LocalCAConnector(BaseCAConnector):
                                                           certificate_filename))
         # run the command
         args = shlex.split(cmd)
-        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)  #  nosec B603
+        # the command is configured by the administrator: CA key, CA cert, number of days, the config file
+        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)  # nosec B603
         result, error = p.communicate()
         if p.returncode != 0:  # pragma: no cover
             # Some error occurred
@@ -479,6 +480,8 @@ class LocalCAConnector(BaseCAConnector):
             cert_obj = certificate
         else:
             raise CAError("Certificate in unsupported format")
+        if reason not in CRL_REASONS:
+            raise CAError("Unsupported revoke reason")
 
         serial = cert_obj.get_serial_number()
         serial_hex = int_to_hex(serial)
@@ -489,7 +492,9 @@ class LocalCAConnector(BaseCAConnector):
                                reason=reason)
         workingdir = self.config.get(ATTR.WORKING_DIR)
         args = shlex.split(cmd)
-        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)  #  nosec B603
+        # The command is configured by the administrator: CA key, CA cert, config file, certificate,
+        # the revoking reason is fetched earlier
+        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)  # nosec B603
         result, error = p.communicate()
         if p.returncode != 0:  # pragma: no cover
             # Some error occurred
@@ -534,7 +539,8 @@ class LocalCAConnector(BaseCAConnector):
                                          config=self.config.get(ATTR.OPENSSL_CNF),
                                          CRL=crl)
             args = shlex.split(cmd)
-            p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)  #  nosec B603
+            # The command is configured by the admin: CA key, CA cert, config file and CRL location
+            p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)  # nosec B603
             result, error = p.communicate()
             if p.returncode != 0:  # pragma: no cover
                 # Some error occurred
@@ -683,7 +689,8 @@ def _init_ca(config):
     print("Running command...")
     print(command)
     args = shlex.split(command)
-    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, universal_newlines=True)  #  nosec B603
+    # The command is created by the root user at the command line anyways
+    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, universal_newlines=True)  # nosec B603
     result, error = p.communicate()
     if p.returncode != 0:  # pragma: no cover
         # Some error occurred
@@ -697,7 +704,8 @@ def _init_ca(config):
     print("Running command...")
     print(command)
     args = shlex.split(command)
-    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, universal_newlines=True)  #  nosec B603
+    # The command is created by the root user at the command line anyways
+    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, universal_newlines=True)  # nosec B603
     result, error = p.communicate()
     if p.returncode != 0:  # pragma: no cover
         # Some error occurred
