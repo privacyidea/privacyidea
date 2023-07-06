@@ -2,14 +2,14 @@
 # Copyright (C) 2020 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
-#
+# Marco Naimoli <marco.naimoli@unipd.it>, 2023.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2023-02-09 12:39+0100\n"
-"PO-Revision-Date: 2023-03-16 11:41+0000\n"
-"Last-Translator: Davide Ferri <davide.ferri@aubay.it>\n"
+"PO-Revision-Date: 2023-07-05 09:50+0000\n"
+"Last-Translator: Marco Naimoli <marco.naimoli@unipd.it>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/it/>\n"
 "Language: it\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.16.2-dev\n"
+"X-Generator: Weblate 5.0-dev\n"
 "Generated-By: Babel 2.10.1\n"
 
 #: api/auth.py:225
@@ -920,6 +920,8 @@ msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
 msgstr ""
+"Permetti all'utente di autenticarsi (default). Se configurato a '{0!s}', "
+"l'autenticazione dell'utente verrà negata."
 
 #: lib/policy.py:2338
 msgid ""
