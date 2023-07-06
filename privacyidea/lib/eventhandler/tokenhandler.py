@@ -305,7 +305,7 @@ class TokenEventHandler(BaseEventHandler):
                    ACTION_TYPE.ADD_TOKENGROUP:
                        {"tokengroup":
                             {
-                                "type": "string",
+                                "type": "str",
                                 "required": True,
                                 "description": _("Add a tokengroup to the token."),
                                 "value": [tg.name for tg in get_tokengroups()]
@@ -314,7 +314,7 @@ class TokenEventHandler(BaseEventHandler):
                    ACTION_TYPE.REMOVE_TOKENGROUP:
                        {"tokengroup":
                             {
-                                "type": "string",
+                                "type": "str",
                                 "required": True,
                                 "description": _("Remove a tokengroup from the token."),
                                 "value": [tg.name for tg in get_tokengroups()]
@@ -323,7 +323,7 @@ class TokenEventHandler(BaseEventHandler):
                    ACTION_TYPE.ATTACH_APPLICATION:
                        {"machine ID":
                             {
-                                "type": "string",
+                                "type": "str",
                                 "required": False,
                                 "description": _("The ID of the machine you want to attach the token to")
 
@@ -337,7 +337,7 @@ class TokenEventHandler(BaseEventHandler):
                         },
                         "application":
                             {
-                                "type": "string",
+                                "type": "str",
                                 "required": True,
                                 "description": _("Set a token application like 'offline' or 'SSH'. Note: Not all tokens"
                                                  " work well with all applications!"),
@@ -345,7 +345,7 @@ class TokenEventHandler(BaseEventHandler):
                             },
                         "count":
                             {
-                                "type": "string",
+                                "type": "str",
                                 "visibleIf": "application",
                                 "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
                                 "description": _("The number of offline OTP values available"),
@@ -353,7 +353,7 @@ class TokenEventHandler(BaseEventHandler):
                             },
                         "rounds":
                             {
-                                "type": "string",
+                                "type": "str",
                                 "visibleIf": "application",
                                 "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
                                 "description": _("The number of rounds for password hashing"),
@@ -361,21 +361,21 @@ class TokenEventHandler(BaseEventHandler):
                             },
                         "user":
                             {
-                                "type": "string",
+                                "type": "str",
                                 "visibleIf": "application",
                                 "visibleValue": TOKEN_APPLICATIONS.SSH,
                                 "required": False
                             },
                         "slot":
                             {
-                                "type": "string",
+                                "type": "str",
                                 "visibleIf": "application",
                                 "visibleValue": TOKEN_APPLICATIONS.LUKS,
                                 "required": False
                             },
                         "partition":
                             {
-                                "type": "string",
+                                "type": "str",
                                 "visibleIf": "application",
                                 "visibleValue": TOKEN_APPLICATIONS.LUKS,
                                 "required": False
