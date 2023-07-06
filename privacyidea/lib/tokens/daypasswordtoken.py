@@ -99,10 +99,7 @@ class DayPasswordTokenClass(TotpTokenClass):
                                               'value': [6, 8],
                                               'desc': DayPasswordTokenClass.desc_otp_len},
                        'daypassword_force_server_generate': {'type': 'bool',
-                                                             'desc': DayPasswordTokenClass.desc_key_gen},
-                       '2step': {'type': 'str',
-                                 'value': ['allow', 'force'],
-                                 'desc': DayPasswordTokenClass.desc_two_step_user}
+                                                             'desc': DayPasswordTokenClass.desc_key_gen}
                    },
                    SCOPE.ADMIN: {
                        'daypassword_timestep': {'type': 'str',
@@ -116,10 +113,7 @@ class DayPasswordTokenClass(TotpTokenClass):
                                               'value': [6, 8],
                                               'desc': DayPasswordTokenClass.desc_otp_len},
                        'daypassword_force_server_generate': {'type': 'bool',
-                                                             'desc': DayPasswordTokenClass.desc_key_gen},
-                       '2step': {'type': 'str',
-                                 'value': ['allow', 'force'],
-                                 'desc': DayPasswordTokenClass.desc_two_step_admin}
+                                                             'desc': DayPasswordTokenClass.desc_key_gen}
                    },
                    SCOPE.ENROLL: {
                        '2step_clientsize': {'type': 'int',
@@ -174,12 +168,10 @@ class DayPasswordTokenClass(TotpTokenClass):
         HotpTokenClass.update(self, param, reset_failcount=reset_failcount)
 
         timeStep = param.get("timeStep", self.timestep)
-        timeShift = param.get("timeShift", self.timeshift)
         # we support various hashlib methods, but only on create
         # which is effectively set in the update
         hashlibStr = param.get("hashlib", self.hashlib)
 
-        self.add_tokeninfo("timeShift", timeShift)
         self.add_tokeninfo("timeStep", timeStep)
         self.add_tokeninfo("hashlib", hashlibStr)
 
@@ -243,7 +235,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         if initTime != -1:
             server_time = int(initTime)
         else:
-            server_time = time.time() + self.timeshift
+            server_time = time.time()
 
         # If we have a counter from the parameter list
         if not counter:
@@ -258,10 +250,6 @@ class DayPasswordTokenClass(TotpTokenClass):
         res = hmac2Otp.checkOtp(anOtpVal,
                                 int(1),
                                 symetric=False)
-
-        if -1 == res:
-            # _autosync: test if two consecutive otps have been provided
-            res = self._autosync(hmac2Otp, anOtpVal)
 
         if res != -1:
             # on success, we have to save the last attempt
@@ -283,72 +271,6 @@ class DayPasswordTokenClass(TotpTokenClass):
             log.debug("tokentime : {0!r}".format(tokenDt))
             log.debug("now       : {0!r}".format(nowDt))
             log.debug("delta     : {0!r}".format((tokentime - inow)))
-
-        return res
-
-    @log_with(log)
-    def _autosync(self, hmac2Otp, anOtpVal):
-        """
-        synchronize the token based on two otp values automatically.
-        If the OTP is invalid, that OTP counter is stored.
-        If an old OTP counter is stored, it is checked, if the new
-        OTP value is the next value after this counter.
-
-        internal method to realize the _autosync within the
-        checkOtp method
-
-        :param hmac2Otp: the hmac object (with reference to the token secret)
-        :type hmac2Otp: hmac object
-        :param anOtpVal: the actual otp value
-        :type anOtpVal: string
-        :return: counter or -1 if otp does not exist
-        :rtype:  int
-        """
-        res = -1
-        autosync = get_from_config("AutoResync", False, return_bool=True)
-        # if _autosync is not enabled: do nothing
-        if autosync is False:
-            return res
-
-        info = self.get_tokeninfo()
-        syncWindow = self.get_sync_window()
-
-        # check if the otpval is valid in the sync scope
-        res = hmac2Otp.checkOtp(anOtpVal, syncWindow, symetric=False)
-        log.debug("found otpval {0!r} in syncwindow ({1!r}): {2!r}".format(anOtpVal, syncWindow, res))
-
-        if res != -1:
-            # if former is defined
-            if "otp1c" in info:
-                # check if this is consecutive
-                otp1c = int(info.get("otp1c"))
-                otp2c = res
-                log.debug("otp1c: {0!r}, otp2c: {1!r}".format(otp1c, otp2c))
-                if (otp1c + 1) != otp2c:
-                    log.debug("Autoresync failed for token {0!s}. OTP values too far apart.".format(self.token.serial))
-                    res = -1
-                elif otp2c <= self.token.count:
-                    # The resync was done with previous (old) OTP values
-                    log.debug("Autoresync failed for token {0!s}. Previous OTP values used.".format(self.token.serial))
-                    res = -1
-                else:
-                    log.info("Autoresync successful for token {0!s}.".format(self.token.serial))
-                    server_time = time.time()
-                    counter = int((server_time / self.timestep) + 0.5)
-
-                    shift = otp2c - counter
-                    info["timeShift"] = shift
-                    self.set_tokeninfo(info)
-
-                # now clean the resync data
-                del info["otp1c"]
-                self.set_tokeninfo(info)
-
-            else:
-                log.debug("setting otp1c: {0!s}".format(res))
-                info["otp1c"] = res
-                self.set_tokeninfo(info)
-                res = -1
 
         return res
 
@@ -380,7 +302,7 @@ class DayPasswordTokenClass(TotpTokenClass):
             time_seconds = self._time2float(current_time)
 
         # we don't need to round here as we have already float
-        counter = int(((time_seconds + self.timeshift) / self.timestep) + 0.5)
+        counter = int((time_seconds / self.timestep) + 0.5)
         otpval = hmac2Otp.generate(counter=counter,
                                    inc_counter=False,
                                    do_truncation=do_truncation,
@@ -432,17 +354,14 @@ class DayPasswordTokenClass(TotpTokenClass):
             tCounter = self._time2float(datetime.datetime.now())
 
         # we don't need to round here as we have already float
-        counter = int(((tCounter - self.timeshift) / self.timestep))
-
-        otp_dict["shift"] = self.timeshift
-        otp_dict["timeStepping"] = self.timeshift
+        counter = int((tCounter / self.timestep))
 
         if count > 0:
             error = "OK"
             for i in range(0, count):
                 otpval = hmac2Otp.generate(counter=counter + i,
                                            inc_counter=False)
-                timeCounter = ((counter + i) * self.timestep) + self.timeshift
+                timeCounter = (counter + i) * self.timestep
 
                 val_time = datetime.datetime. \
                     fromtimestamp(timeCounter).strftime("%Y-%m-%d %H:%M:%S")

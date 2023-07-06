@@ -973,33 +973,11 @@ def parse_time_sec_int(s):
     :return: time in sec as int
     """
     try:
-        ret = int(s)
-        return ret
+        td = parse_timedelta(s)
+        td_sec = abs(td).total_seconds()
+        return int(td_sec)
     except:
-        if s is None:
-            ret = None
-        else:
-            seconds = 0
-            minutes = 0
-            hours = 0
-            days = 0
-            m = re.match(r"\s*(\d+)\s*([smhdy])\s*$", s)
-            if not m:
-                log.warning("Unsupported timedelta: {0!r}".format(s))
-                raise Exception("Unsupported timedelta")
-            count = int(m.group(1))
-            if m.group(2) == "s":
-                seconds = count
-            elif m.group(2) == "m":
-                minutes = count
-            elif m.group(2) == "h":
-                hours = count
-            elif m.group(2) == "d":
-                days = count
-            elif m.group(2) == "y":
-                days = 365 * count
-
-            ret = 86400*days+3600*hours+60*minutes+seconds
+        ret = int(s)
         return ret
 
 
