@@ -287,6 +287,9 @@ class LocalCATestCase(MyTestCase):
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=requester"
                          ".localdomain'>")
 
+        # Fail to revoke certificate due to non-existing-reasing
+        self.assertRaises(CAError, cacon.revoke_cert, cert, reason="$(rm -fr)")
+
         # Revoke certificate
         r = cacon.revoke_cert(cert)
         serial_hex = int_to_hex(serial)
