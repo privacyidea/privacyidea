@@ -635,6 +635,54 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertIn('token', result.get("value"), result)
             self.assertEqual('realm1', result['value']['realm'], result)
 
+    def test_07_user_not_in_userstore(self):
+        # If a user can not be found in the userstore we always get the response "Wrong Credentials"
+        # Setup realm
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(self.realm1,
+                                    [self.resolvername1])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+        set_default_realm(self.realm1)
+
+        # user authenticates against userstore but user does not exist
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "user-really-does-not-exist",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            error = result.get("error")
+            self.assertEqual(4031, error.get("code"))
+            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"))
+
+        # set a policy to authenticate against privacyIDEA
+        set_policy("piLogin", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(ACTION.LOGINMODE))
+
+        # user authenticates against privacyidea but user does not exist
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "user-really-does-not-exist",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            error = result.get("error")
+            self.assertEqual(4031, error.get("code"))
+            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"))
+
+        # cleanup
+        delete_policy("piLogin")
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
+
 
 class AdminFromUserstore(OverrideConfigTestCase):
     class Config(TestingConfig):
