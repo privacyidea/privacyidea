@@ -45,6 +45,7 @@ from privacyidea.api.application import application_blueprint
 from privacyidea.api.caconnector import caconnector_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.auth import jwtauth
+from privacyidea.lib.telegrambot.telegrambot import TelegramBot
 from privacyidea.webui.login import login_blueprint, get_accepted_language
 from privacyidea.webui.certificate import cert_blueprint
 from privacyidea.api.machineresolver import machineresolver_blueprint
@@ -176,6 +177,7 @@ def create_app(config_name="development",
     app.register_blueprint(subscriptions_blueprint, url_prefix='/subscriptions')
     app.register_blueprint(monitoring_blueprint, url_prefix='/monitoring')
     app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
+    TelegramBot.init_callbacks()
     db.init_app(app)
     migrate = Migrate(app, db)
 

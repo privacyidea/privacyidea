@@ -293,7 +293,7 @@ def init():
     """
     response_details = {}
     tokenrealms = None
-    param = request.all_data
+    param: dict = request.all_data
 
     # check admin authorization
     # user_tnum = len(getTokens4UserOrSerial(user))
@@ -314,6 +314,7 @@ def init():
         g.audit_object.log({"success": True})
         # The token was created successfully, so we add token specific
         # init details like the google URL to the response
+        param.update({"g": g})
         init_details = tokenobject.get_init_detail(param, user)
         response_details.update(init_details)
 

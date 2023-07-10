@@ -70,6 +70,7 @@ def before_request():
     # access_route contains the ip adresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request,
                                 get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.request_headers = request.headers
     g.serial = getParam(request.all_data, "serial") or None
     g.audit_object.log({"success": False,
                         "action_detail": "",

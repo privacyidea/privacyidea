@@ -743,6 +743,7 @@ def get_token_list():
     module_list.add("privacyidea.lib.tokens.pushtoken")
     module_list.add("privacyidea.lib.tokens.indexedsecrettoken")
     module_list.add("privacyidea.lib.tokens.webauthntoken")
+    module_list.add("privacyidea.lib.tokens.telegrampushtoken")
 
     # Dynamic token modules
     dynamic_token_modules = get_app_config_value("PI_TOKEN_MODULES")

@@ -73,6 +73,7 @@ from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminErro
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
+from privacyidea.lib.tokens.telegrampushtoken import TELEGRAM_PUSH_ACTION
 from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type, get_token_owner)
@@ -1464,13 +1465,18 @@ def pushtoken_wait(request, action):
     :return:
     """
     user_object = request.User
-    waiting = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.WAIT,
+    check_push_wait(request, user_object, PUSH_ACTION.WAIT)
+    check_push_wait(request, user_object, TELEGRAM_PUSH_ACTION.WAIT)
+
+
+def check_push_wait(request, user_object, action):
+    waiting = Match.user(g, scope=SCOPE.AUTH, action=action,
                          user_object=user_object if user_object else None)\
         .action_values(unique=True, allow_white_space_in_action=True)
     if len(waiting) >= 1:
-        request.all_data[PUSH_ACTION.WAIT] = int(list(waiting)[0])
+        request.all_data[action] = int(list(waiting)[0])
     else:
-        request.all_data[PUSH_ACTION.WAIT] = False
+        request.all_data[action] = False
 
 
 def pushtoken_add_config(request, action):

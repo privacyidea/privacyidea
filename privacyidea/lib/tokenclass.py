@@ -82,6 +82,8 @@ import hashlib
 import traceback
 from datetime import datetime, timedelta
 
+import flask
+
 from .error import (TokenAdminError,
                     ParameterError)
 
@@ -1689,7 +1691,7 @@ class TokenClass(object):
         return token_dict
 
     @classmethod
-    def api_endpoint(cls, request, g):
+    def api_endpoint(cls, request: flask.Request, g):
         """
         This provides a function to be plugged into the API endpoint
         /ttype/<tokentype> which is defined in api/ttype.py
