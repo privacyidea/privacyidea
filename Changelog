@@ -45,12 +45,12 @@ Version 3.9, 2023-xx-xx, (state: 2023-07-09)
   * Fetch error when decoding JWT (#3028)
   * UI: Fetch error when user does not exist (#3672)
   * Ensure subprocess calls are secure (#3625)
-  * TOTP code cleanup: Use time2counter whereever necessary (#3664)
+  * TOTP code cleanup: Use time2counter wherever necessary (#3664)
   * Fix totp.get_otp test function (#3660)
   * Fix typos (#3661)
   * Update docs about TOTP apps, that have limited capabilities (#3634)
   * Enhance schemas for urlopen (#3622)
-  * Add timeout to requets calls (#3621)
+  * Add timeout to requests calls (#3621)
 
 Version 3.8.1, 2023-02-06
 
