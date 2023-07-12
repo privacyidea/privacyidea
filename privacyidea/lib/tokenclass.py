@@ -1924,3 +1924,20 @@ class TokenClass(object):
         :return:
         """
         return True
+
+    def _to_dict(self):
+        """
+        export the token information to a dictionary.
+
+        This can be used to re-encrypt tokens.
+
+        :return: a dict, containing the token and the tokeninfo
+        """
+        token_dict = {
+            "serial": self.get_serial(),
+            "type": self.get_type(),
+            "otpkey": self.token.get_otpkey().getKey()
+            # TODO: More tokendata?
+        }
+        token_dict.update(self.get_tokeninfo())
+        return token_dict
