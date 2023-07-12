@@ -247,7 +247,6 @@ class DaplugTokenClass(HotpTokenClass):
         return res
 
     def split_pin_pass(self, passw, user=None, options=None):
-        res = 0
         try:
             otplen = int(self.token.otplen)
         except ValueError:  # pragma: no cover
@@ -264,4 +263,4 @@ class DaplugTokenClass(HotpTokenClass):
             pin = passw[otplen:]
             otpval = passw[0:otplen]
 
-        return res, pin, otpval
+        return len(passw) >= otplen, pin, otpval
