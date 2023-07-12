@@ -5,7 +5,8 @@ This test file tests the api.lib.policy.py
 The api.lib.policy.py depends on lib.policy and on flask!
 """
 import json
-
+import logging
+from testfixtures import log_capture
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,
                                              ATTESTATION_LEVEL, ATTESTATION_FORM,
                                              USER_VERIFICATION_LEVEL)
@@ -946,7 +947,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # finally delete policy
         delete_policy("pol1")
 
-    def test_09_pin_policies(self):
+    @log_capture(level=logging.DEBUG)
+    def test_09_pin_policies(self, capture):
         create_realm("home", [self.resolvername1])
         g.logged_in_user = {"username": "user1",
                             "realm": "",
@@ -1014,11 +1016,32 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "pin": ""}
         self.assertTrue(check_otp_pin(req))
 
+        # check that no pin is checked during rollover or verify
+        logging.getLogger('privacyidea').setLevel(logging.DEBUG)
+        req.all_data = {
+            "user": "cornelius",
+            "realm": "home",
+            "rollover": True
+        }
+        self.assertTrue(check_otp_pin(req))
+        capture.check_present(("privacyidea.api.lib.prepolicy", "DEBUG",
+                               "Disable PIN checking due to rollover (True) or verify (None)"))
+        req.all_data = {
+            "user": "cornelius",
+            "realm": "home",
+            "verify": 123456
+        }
+        self.assertTrue(check_otp_pin(req))
+        capture.check_present(("privacyidea.api.lib.prepolicy", "DEBUG",
+                               "Disable PIN checking due to rollover (None) or verify (123456)"))
+        logging.getLogger('privacyidea').setLevel(logging.INFO)
+
         # finally delete policy
         delete_policy("pol1")
         delete_realm("home")
 
-    def test_09_pin_policies_admin(self):
+    @log_capture(level=logging.DEBUG)
+    def test_09_pin_policies_admin(self, capture):
         create_realm("home", [self.resolvername1])
         g.logged_in_user = {"username": "super",
                             "realm": "",
@@ -1083,6 +1106,26 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "user": "cornelius",
                         "pin": ""}
         self.assertTrue(check_otp_pin(req))
+
+        # check that no pin is checked during rollover or verify
+        logging.getLogger('privacyidea').setLevel(logging.DEBUG)
+        req.all_data = {
+            "user": "cornelius",
+            "realm": "home",
+            "rollover": True
+        }
+        self.assertTrue(check_otp_pin(req))
+        capture.check_present(("privacyidea.api.lib.prepolicy", "DEBUG",
+                               "Disable PIN checking due to rollover (True) or verify (None)"))
+        req.all_data = {
+            "user": "cornelius",
+            "realm": "home",
+            "verify": 123456
+        }
+        self.assertTrue(check_otp_pin(req))
+        capture.check_present(("privacyidea.api.lib.prepolicy", "DEBUG",
+                               "Disable PIN checking due to rollover (None) or verify (123456)"))
+        logging.getLogger('privacyidea').setLevel(logging.INFO)
 
         # finally delete policy
         delete_policy("pol1")

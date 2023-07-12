@@ -53,7 +53,7 @@
         </div>
         <!-- Token PIN -->
         <div class="form-group"
-             ng-if="loggedInUser.role == 'user' && !hidePin &&
+             ng-if="loggedInUser.role == 'user' && !hidePin && !$state.includes('token.rollover') &&
                     (!$state.includes('token.wizard') || getRightsValue('otp_pin_minlength'))&&
                     checkRight('enrollpin')">
             <label for="otppin" translate>PIN/Password</label>
