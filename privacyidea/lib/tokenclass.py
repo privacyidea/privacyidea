@@ -511,7 +511,8 @@ class TokenClass(object):
 
         (res, pin, otpval) = self.split_pin_pass(passw, user=user,
                                                  options=options)
-        if res != -1:
+        if res:
+            # If the otpvalue is too short, we do not check the PIN at all, since res is False
             pin_match = self.check_pin(pin, user=user, options=options)
             if pin_match is True:
                 otp_counter = self.check_otp(otpval, options=options)
@@ -1392,7 +1393,8 @@ class TokenClass(object):
         otplen = self.token.otplen
         log.debug("Splitting the an OTP value of length {0!s} from the password.".format(otplen))
         pin, otpval = split_pin_pass(passw, otplen, get_prepend_pin())
-        return True, pin, otpval
+        # If the provided passw is shorter than the expected otplen, we return the status False
+        return len(passw) >= otplen, pin, otpval
 
     def status_validation_fail(self):
         """

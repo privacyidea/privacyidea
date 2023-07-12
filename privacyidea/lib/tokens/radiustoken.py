@@ -362,7 +362,7 @@ class RadiusTokenClass(RemoteTokenClass):
         Split the PIN and the OTP value.
         Only if it is locally checked and not remotely.
         """
-        res = 0
+        res = True
         pin = ""
         otpval = passw
         if self.check_pin_local:

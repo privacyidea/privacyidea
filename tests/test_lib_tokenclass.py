@@ -475,6 +475,11 @@ class TokenBaseTestCase(MyTestCase):
         res, pin, value = token.split_pin_pass("test123456")
         self.assertTrue(pin == "test", pin)
         self.assertTrue(value == "123456", value)
+        # too short
+        res, pin, value = token.split_pin_pass("12345")
+        self.assertFalse(res)
+        self.assertEqual("12345", value)
+        self.assertEqual("", pin)
         
     def test_15_check_pin(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
