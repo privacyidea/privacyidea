@@ -82,64 +82,55 @@ class DayPasswordTokenClass(TotpTokenClass):
         res = {'type': 'daypassword',
                'title': 'Time based Password',
                'description': _('DayPassword: A time-based token with a variable timestep and the possibility'
-                                ' to use the otp more than ones.'),
+                                ' to use the OTP more than once.'),
                'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
-               'ui_enroll': ["admin", "user"],
+               'ui_enroll': [SCOPE.ADMIN, SCOPE.USER],
                'policy': {
                    SCOPE.USER: {
-                       'daypassword_timestep': {'type': 'str',
-                                                'desc': DayPasswordTokenClass.desc_timestep},
-                       'daypassword_hashlib': {'type': 'str',
-                                               'value': ["sha1",
-                                                         "sha256",
-                                                         "sha512"],
-                                               'desc': DayPasswordTokenClass.desc_hash_func},
-                       'daypassword_otplen': {'type': 'int',
-                                              'value': [6, 8],
-                                              'desc': DayPasswordTokenClass.desc_otp_len},
-                       'daypassword_force_server_generate': {'type': 'bool',
-                                                             'desc': DayPasswordTokenClass.desc_key_gen}
+                       'timestep': {'type': 'str',
+                                    'desc': DayPasswordTokenClass.desc_timestep},
+                       'hashlib': {'type': 'str',
+                                   'value': ["sha1",
+                                             "sha256",
+                                             "sha512"],
+                                   'desc': DayPasswordTokenClass.desc_hash_func},
+                       'otplen': {'type': 'int',
+                                  'value': [6, 8],
+                                  'desc': DayPasswordTokenClass.desc_otp_len},
+                       'force_server_generate': {'type': 'bool',
+                                                 'desc': DayPasswordTokenClass.desc_key_gen}
                    },
                    SCOPE.ADMIN: {
-                       'daypassword_timestep': {'type': 'str',
-                                                'desc': DayPasswordTokenClass.desc_timestep},
-                       'daypassword_hashlib': {'type': 'str',
-                                               'value': ["sha1",
-                                                         "sha256",
-                                                         "sha512"],
-                                               'desc': DayPasswordTokenClass.desc_hash_func},
-                       'daypassword_otplen': {'type': 'int',
-                                              'value': [6, 8],
-                                              'desc': DayPasswordTokenClass.desc_otp_len},
-                       'daypassword_force_server_generate': {'type': 'bool',
-                                                             'desc': DayPasswordTokenClass.desc_key_gen}
+                       'timestep': {'type': 'str',
+                                    'desc': DayPasswordTokenClass.desc_timestep},
+                       'hashlib': {'type': 'str',
+                                   'value': ["sha1",
+                                             "sha256",
+                                             "sha512"],
+                                   'desc': DayPasswordTokenClass.desc_hash_func},
+                       'otplen': {'type': 'int',
+                                  'value': [6, 8],
+                                  'desc': DayPasswordTokenClass.desc_otp_len},
+                       'force_server_generate': {'type': 'bool',
+                                                 'desc': DayPasswordTokenClass.desc_key_gen}
                    },
                    SCOPE.ENROLL: {
-                       '2step_clientsize': {'type': 'int',
-                                            'desc': _("The size of the OTP seed part contributed "
-                                                      "by the client (in bytes)")},
-                       '2step_serversize': {'type': 'int',
-                                            'desc': _("The size of the OTP seed part "
-                                                      "contributed by the server (in bytes)")},
-                       '2step_difficulty': {'type': 'int',
-                                            'desc': _("The difficulty factor used for the "
-                                                      "OTP seed generation ""(should be at least "
-                                                      "10000)")},
-                       'daypassword_' + ACTION.FORCE_APP_PIN: {
+                       ACTION.FORCE_APP_PIN: {
                            'type': 'bool',
                            'desc': _('Enforce setting an app pin for the privacyIDEA '
                                      'Authenticator App')
                        },
                        ACTION.MAXTOKENUSER: {
                            'type': 'int',
-                           'desc': _("The user may only have this maximum number of remote tokens assigned."),
+                           'desc': _("The user may only have this maximum "
+                                     "number of daypassword tokens assigned."),
                            'group': GROUP.TOKEN
                        },
                        ACTION.MAXACTIVETOKENUSER: {
                            'type': 'int',
-                           'desc': _(
-                               "The user may only have this maximum number of active remote tokens assigned."),
+                           'desc': _("The user may only have this maximum number "
+                                     "of active daypassword tokens assigned."),
                            'group': GROUP.TOKEN
                        }
 
@@ -254,8 +245,6 @@ class DayPasswordTokenClass(TotpTokenClass):
         if res != -1:
             # on success, we have to save the last attempt
             self.set_otp_count(res)
-            # We could also store it temporarily
-            # self.auth_details["matched_otp_counter"] = res
 
             # here we calculate the new drift/shift between the server time
             # and the tokentime

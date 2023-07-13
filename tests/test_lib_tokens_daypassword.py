@@ -1,12 +1,6 @@
 """
-This test file tests the lib.tokenclass
-
-The lib.tokenclass depends on the DB model and lib.user
+This test file tests the lib.tokens.daypasswordtoken.py
 """
-from privacyidea.lib.utils import parse_time_sec_int
-
-PWFILE = "tests/testdata/passwords"
-
 import datetime
 import binascii
 import time
@@ -17,8 +11,10 @@ from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOPE)
 from privacyidea.models import (Token, Config, Challenge)
-from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
+from privacyidea.lib.config import set_prepend_pin
 from privacyidea.lib.tokens.daypasswordtoken import DayPasswordTokenClass
+
+PWFILE = "tests/testdata/passwords"
 
 
 class DayPasswordTokenTestCase(MyTestCase):
@@ -302,12 +298,11 @@ class DayPasswordTokenTestCase(MyTestCase):
                       "otplen": 6,
                       "timeStep": "1h"})
         token.set_otp_count(47251644)
-        token.get_tokeninfo("timeStep") == 3600
+        self.assertEqual(token.get_tokeninfo("timeStep"), "1h", token.get_tokeninfo())
         # OTP does not exist
-        self.assertTrue(token.check_otp_exist("222333") == -1)
+        self.assertEqual(token.check_otp_exist("222333"), -1)
         # OTP does exist
-        res = token.check_otp_exist('063321', options={"initTime": 47251645 *
-                                                                   3600})
+        res = token.check_otp_exist('063321', options={"initTime": 47251645 * 3600})
         # Found the counter 47251645
         self.assertEqual(47251645, res)
 
@@ -404,22 +399,22 @@ class DayPasswordTokenTestCase(MyTestCase):
     def test_18_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
-        resp = token.is_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                           "test123456")
+        resp = token.is_challenge_response("test123456",
+                                           user=User(login="cornelius",
+                                                     realm=self.realm1))
         self.assertFalse(resp, resp)
 
         transaction_id = "123456789"
-        C = Challenge(self.serial1, transaction_id=transaction_id, challenge="Who are you?")
-        C.save()
-        resp = token.is_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                           "test123456",
+        chal = Challenge(self.serial1, transaction_id=transaction_id, challenge="Who are you?")
+        chal.save()
+        resp = token.is_challenge_response("test123456",
+                                           user=User(login="cornelius",
+                                                     realm=self.realm1),
                                            options={"transaction_id": transaction_id})
         self.assertTrue(resp, resp)
 
         # test if challenge is valid
-        C.is_valid()
+        chal.is_valid()
 
     @mock.patch('time.time', mock.MagicMock(return_value=1686902767))
     def test_19_pin_otp_functions(self):
@@ -477,8 +472,7 @@ class DayPasswordTokenTestCase(MyTestCase):
         self.assertTrue(47251644 in res[2].get("otp"), res[2].get("otp"))
 
         # Simulate the server time
-        res = token.get_multi_otp(count=5, curTime=datetime.datetime(2014,
-                                                                     12, 12))
+        res = token.get_multi_otp(count=5, curTime=datetime.datetime(2014, 12, 12))
         self.assertTrue(res[0], res)
         self.assertTrue(res[1] == "OK", res)
         self.assertTrue(len(res[2].get("otp")) == 5, res[2].get("otp"))
