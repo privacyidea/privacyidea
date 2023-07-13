@@ -194,6 +194,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     $scope.formInit = {
         tokenTypes: {"hotp": gettextCatalog.getString("HOTP: event based One Time Passwords"),
             "totp": gettextCatalog.getString("TOTP: time based One Time Passwords"),
+            "Daypassword": gettextCatalog.getString("DayPassword: Time Based Password"),
             "spass": gettextCatalog.getString("SPass: Simple Pass token. Static passwords"),
             "motp": gettextCatalog.getString("mOTP: classical mobile One Time Passwords"),
             "sshkey": gettextCatalog.getString("SSH Public Key: The public SSH key"),
@@ -276,6 +277,10 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             // preset TOTP hashlib
             $scope.form.hashlib = $scope.systemDefault['totp.hashlib'] || 'sha1';
             $scope.form.timeStep = parseInt($scope.systemDefault['totp.timeStep'] || '30');
+        } else if ($scope.form.type === "daypassword") {
+            // preset DayPassword hashlib
+            $scope.form.hashlib = $scope.systemDefault['daypassword.hashlib'] || 'sha1';
+            $scope.form.timeStep = parseInt($scope.systemDefault['daypassword.timeStep'] || '60');
         }
         if ($scope.form.type === "vasco") {
             $scope.form.genkey = false;

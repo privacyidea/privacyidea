@@ -480,7 +480,7 @@ def parse_date(date_string):
     in the future.
 
     It can also parse fixed date_strings like
-    
+
       23.12.2016 23:30
       23.12.2016
       2016/12/23 11:30pm
@@ -818,14 +818,14 @@ def compare_value_value(value1, comparator, value2):
     """
     This function compares value1 and value2 with the comparator.
     The comparator may be "==", "=", "!=", ">", "<", ">=", "=>", "<=" or "=<".
-    
+
     If the values can be converted to integers or dates, they are compared as such,
     otherwise as strings.
 
     In case of dates make sure they can be parsed by 'parse_date()', otherwise
     they will be compared as strings.
 
-    :param value1: First value 
+    :param value1: First value
     :param value2: Second value
     :param comparator: The comparator
     :return: True or False
@@ -944,7 +944,7 @@ def parse_timedelta(s):
     Allowed identifiers are s, m, h, d, y.
 
     :param s: a string like +30m or -5d
-    :return: timedelta 
+    :return: timedelta
     """
     seconds = 0
     minutes = 0
@@ -953,7 +953,7 @@ def parse_timedelta(s):
     m = re.match(r"\s*([+-]?)\s*(\d+)\s*([smhdy])\s*$", s)
     if not m:
         log.warning("Unsupported timedelta: {0!r}".format(s))
-        raise Exception("Unsupported timedelta")
+        raise TypeError(f"Unsupported timedelta {s!r}")
     count = int(m.group(2))
     if m.group(1) == "-":
         count = - count
@@ -972,19 +972,37 @@ def parse_timedelta(s):
     return td
 
 
+def parse_time_sec_int(s):
+    """
+    parses a string like 5d or 24h into an int with gives the time in sec. You can use y, d, h, m and s.
+
+    :param s: time string like 5d or 24h
+    :type s: str or int
+    :return: time in seconds as an integer value
+    :rtype: int
+    """
+    try:
+        td = parse_timedelta(s)
+        ret = abs(td).total_seconds()
+    except TypeError as _e:
+        # parse_timedelta() does not accept int values
+        ret = s
+    return int(ret)
+
+
 def parse_time_offset_from_now(s):
     """
     Parses a string as used in the token event handler
         "New date {now}+5d. Some {other} {tags}" or
         "New date {now}-30m! Some {other} {tags}".
-    This returns the string "New date {now}. Some {other} {tags}" and the 
+    This returns the string "New date {now}. Some {other} {tags}" and the
     timedelta of 5 days.
     Allowed tags are {now} and {current_time}. Only one tag of {now} or {
     current_time} is allowed.
     Allowed offsets are "s": seconds, "m": minutes, "h": hours, "d": days.
 
     :param s: The string to be parsed.
-    :return: tuple of modified string and timedelta 
+    :return: tuple of modified string and timedelta
     """
     td = timedelta()
     m1 = re.search(r"(^.*{current_time})([+-]\d+[smhd])(.*$)", s)
