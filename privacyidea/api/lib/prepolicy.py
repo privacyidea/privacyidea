@@ -320,10 +320,14 @@ def check_otp_pin(request=None, action=None):
     raised.
     """
     params = request.all_data
-    realm = params.get("realm")
     pin = params.get("otppin", "") or params.get("pin", "")
     serial = params.get("serial")
     tokentype = params.get("type")
+    rollover = params.get("rollover")
+    verify = params.get("verify")
+    if rollover or verify:
+        log.debug(f"Disable PIN checking due to rollover ({rollover}) or verify ({verify})")
+        return True
     if not serial and action == ACTION.SETPIN:
         path_elems = request.path.split("/")
         serial = path_elems[-1]
@@ -1525,12 +1529,12 @@ def u2ftoken_allowed(request, action):
      action=U2FACTION.REQ it checks, if the assertion certificate is an
      allowed U2F token type.
 
-     If the token, which is enrolled contains a non allowed attestation 
+     If the token, which is enrolled contains a non allowed attestation
      certificate, we bail out.
 
-    :param request: 
-    :param action: 
-    :return: 
+    :param request:
+    :param action:
+    :return:
     """
 
     ttype = request.all_data.get("type")
@@ -1568,7 +1572,7 @@ def u2ftoken_allowed(request, action):
 
 def allowed_audit_realm(request=None, action=None):
     """
-    This decorator function takes the request and adds additional parameters 
+    This decorator function takes the request and adds additional parameters
     to the request according to the policy
     for the SCOPE.ADMIN or ACTION.AUDIT
     :param request:
