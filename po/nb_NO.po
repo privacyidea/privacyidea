@@ -1953,10 +1953,6 @@ msgstr ""
 msgid "Mobile"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.daypassword.html:42
-msgid "Most Authenticator Apps only supports an OTP length of 6."
-msgstr ""
-
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:304
 msgid "Multivalue Attributes"
 msgstr ""
@@ -3064,8 +3060,16 @@ msgstr ""
 msgid "Software"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.enroll.daypassword.html:42
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:55
+#: privacyidea/static/components/token/views/token.enroll.totp.html:55
+msgid "Some Authenticator Apps only support an OTP length of 6."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:67
-msgid "Some Authenticator Apps only support specific algorithms."
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:68
+#: privacyidea/static/components/token/views/token.enroll.totp.html:77
+msgid "Some Authenticator Apps only support the SHA1 algorithm."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:37
@@ -3265,16 +3269,6 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enrolled.tiqr.html:11
 msgid "The Enrollment URL"
-msgstr ""
-
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:55
-#: privacyidea/static/components/token/views/token.enroll.totp.html:55
-msgid "The Google Authenticator only supports an OTP length of 6."
-msgstr ""
-
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:68
-#: privacyidea/static/components/token/views/token.enroll.totp.html:77
-msgid "The Google Authenticator only supports the SHA1 algorithm."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:2

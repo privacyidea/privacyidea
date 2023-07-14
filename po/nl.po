@@ -2184,11 +2184,6 @@ msgstr "Microsoft CA worker poort"
 msgid "Mobile"
 msgstr "Mobiel"
 
-#: privacyidea/static/components/token/views/token.enroll.daypassword.html:42
-#, fuzzy
-msgid "Most Authenticator Apps only supports an OTP length of 6."
-msgstr "De Google Authenticator ondersteunt slechts een OTP-lengte van 6."
-
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:304
 msgid "Multivalue Attributes"
 msgstr "Multiwaarde attributen"
@@ -3339,9 +3334,18 @@ msgstr "Overgeslagen Tokens"
 msgid "Software"
 msgstr "Software"
 
-#: privacyidea/static/components/token/views/token.enroll.daypassword.html:67
+#: privacyidea/static/components/token/views/token.enroll.daypassword.html:42
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:55
+#: privacyidea/static/components/token/views/token.enroll.totp.html:55
 #, fuzzy
-msgid "Some Authenticator Apps only support specific algorithms."
+msgid "Some Authenticator Apps only support an OTP length of 6."
+msgstr "De Google Authenticator ondersteunt slechts een OTP-lengte van 6."
+
+#: privacyidea/static/components/token/views/token.enroll.daypassword.html:67
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:68
+#: privacyidea/static/components/token/views/token.enroll.totp.html:77
+#, fuzzy
+msgid "Some Authenticator Apps only support the SHA1 algorithm."
 msgstr "De Google Authenticator ondersteunt enkel het SHA1-algoritme."
 
 #: privacyidea/static/components/token/views/token.enroll.html:37
@@ -3565,16 +3569,6 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.tiqr.html:11
 msgid "The Enrollment URL"
 msgstr "De aanmeldings-URL"
-
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:55
-#: privacyidea/static/components/token/views/token.enroll.totp.html:55
-msgid "The Google Authenticator only supports an OTP length of 6."
-msgstr "De Google Authenticator ondersteunt slechts een OTP-lengte van 6."
-
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:68
-#: privacyidea/static/components/token/views/token.enroll.totp.html:77
-msgid "The Google Authenticator only supports the SHA1 algorithm."
-msgstr "De Google Authenticator ondersteunt enkel het SHA1-algoritme."
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:2
 msgid ""
@@ -5653,6 +5647,12 @@ msgstr "venster"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "{{ auditdata.count }} items gevonden."
+
+#~ msgid "The Google Authenticator only supports an OTP length of 6."
+#~ msgstr "De Google Authenticator ondersteunt slechts een OTP-lengte van 6."
+
+#~ msgid "The Google Authenticator only supports the SHA1 algorithm."
+#~ msgstr "De Google Authenticator ondersteunt enkel het SHA1-algoritme."
 
 #~ msgid "Certificate: Enroll an x509 Certificate Token."
 #~ msgstr "Certificaat: een x509 certificaat-token registreren."

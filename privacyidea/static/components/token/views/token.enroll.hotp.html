@@ -53,7 +53,7 @@
             ng-options="otplen for otplen in formInit.otplens">
     </select>
     <p class="help-block" ng-show="form.genkey" translate>
-        The Google Authenticator only supports an OTP length of 6.
+        Some Authenticator Apps only support an OTP length of 6.
     </p>
 </div>
 
@@ -66,6 +66,6 @@
             ng-options="hashlib for hashlib in formInit.hashlibs">
     </select>
     <p class="help-block" ng-show="form.genkey" translate>
-        The Google Authenticator only supports the SHA1 algorithm.
+        Some Authenticator Apps only support the SHA1 algorithm.
     </p>
 </div>

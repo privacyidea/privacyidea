@@ -2183,11 +2183,6 @@ msgstr ""
 msgid "Mobile"
 msgstr "Mobile"
 
-#: privacyidea/static/components/token/views/token.enroll.daypassword.html:42
-#, fuzzy
-msgid "Most Authenticator Apps only supports an OTP length of 6."
-msgstr "Google Authenticator, yalnızca bir OTP uzunluğunu destekler."
-
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:304
 msgid "Multivalue Attributes"
 msgstr "Çok değerli özellikler"
@@ -3343,9 +3338,18 @@ msgstr "Atlanan belirteçler"
 msgid "Software"
 msgstr "Yazılım"
 
-#: privacyidea/static/components/token/views/token.enroll.daypassword.html:67
+#: privacyidea/static/components/token/views/token.enroll.daypassword.html:42
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:55
+#: privacyidea/static/components/token/views/token.enroll.totp.html:55
 #, fuzzy
-msgid "Some Authenticator Apps only support specific algorithms."
+msgid "Some Authenticator Apps only support an OTP length of 6."
+msgstr "Google Authenticator, yalnızca bir OTP uzunluğunu destekler."
+
+#: privacyidea/static/components/token/views/token.enroll.daypassword.html:67
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:68
+#: privacyidea/static/components/token/views/token.enroll.totp.html:77
+#, fuzzy
+msgid "Some Authenticator Apps only support the SHA1 algorithm."
 msgstr "Google Authenticator yalnızca SHA1 algoritmasını destekler."
 
 #: privacyidea/static/components/token/views/token.enroll.html:37
@@ -3571,16 +3575,6 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.tiqr.html:11
 msgid "The Enrollment URL"
 msgstr "Kayıt URL'si"
-
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:55
-#: privacyidea/static/components/token/views/token.enroll.totp.html:55
-msgid "The Google Authenticator only supports an OTP length of 6."
-msgstr "Google Authenticator, yalnızca bir OTP uzunluğunu destekler."
-
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:68
-#: privacyidea/static/components/token/views/token.enroll.totp.html:77
-msgid "The Google Authenticator only supports the SHA1 algorithm."
-msgstr "Google Authenticator yalnızca SHA1 algoritmasını destekler."
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:2
 msgid ""
@@ -5646,6 +5640,12 @@ msgstr "pencere"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "{{auditdata.count}} girişleri bulundu."
+
+#~ msgid "The Google Authenticator only supports an OTP length of 6."
+#~ msgstr "Google Authenticator, yalnızca bir OTP uzunluğunu destekler."
+
+#~ msgid "The Google Authenticator only supports the SHA1 algorithm."
+#~ msgstr "Google Authenticator yalnızca SHA1 algoritmasını destekler."
 
 #~ msgid "Certificate: Enroll an x509 Certificate Token."
 #~ msgstr "Sertifika: X509 sertifika belirteci kaydolun."

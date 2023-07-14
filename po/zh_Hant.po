@@ -2171,11 +2171,6 @@ msgstr ""
 msgid "Mobile"
 msgstr "手機"
 
-#: privacyidea/static/components/token/views/token.enroll.daypassword.html:42
-#, fuzzy
-msgid "Most Authenticator Apps only supports an OTP length of 6."
-msgstr "Google Authenticator 僅支持長度為 6 的 OTP。"
-
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:304
 msgid "Multivalue Attributes"
 msgstr "多值屬性"
@@ -3348,9 +3343,18 @@ msgstr "令牌"
 msgid "Software"
 msgstr "軟體"
 
-#: privacyidea/static/components/token/views/token.enroll.daypassword.html:67
+#: privacyidea/static/components/token/views/token.enroll.daypassword.html:42
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:55
+#: privacyidea/static/components/token/views/token.enroll.totp.html:55
 #, fuzzy
-msgid "Some Authenticator Apps only support specific algorithms."
+msgid "Some Authenticator Apps only support an OTP length of 6."
+msgstr "Google Authenticator 僅支持長度為 6 的 OTP。"
+
+#: privacyidea/static/components/token/views/token.enroll.daypassword.html:67
+#: privacyidea/static/components/token/views/token.enroll.hotp.html:68
+#: privacyidea/static/components/token/views/token.enroll.totp.html:77
+#, fuzzy
+msgid "Some Authenticator Apps only support the SHA1 algorithm."
 msgstr "Google 身份驗證器僅支持 SHA1 算法。"
 
 #: privacyidea/static/components/token/views/token.enroll.html:37
@@ -3571,16 +3575,6 @@ msgstr "電子郵件令牌將 OTP 值發送到使用者的電子郵件位址。"
 #: privacyidea/static/components/token/views/token.enrolled.tiqr.html:11
 msgid "The Enrollment URL"
 msgstr "註冊網址"
-
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:55
-#: privacyidea/static/components/token/views/token.enroll.totp.html:55
-msgid "The Google Authenticator only supports an OTP length of 6."
-msgstr "Google Authenticator 僅支持長度為 6 的 OTP。"
-
-#: privacyidea/static/components/token/views/token.enroll.hotp.html:68
-#: privacyidea/static/components/token/views/token.enroll.totp.html:77
-msgid "The Google Authenticator only supports the SHA1 algorithm."
-msgstr "Google 身份驗證器僅支持 SHA1 算法。"
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:2
 msgid ""
@@ -5626,6 +5620,12 @@ msgstr ""
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "{{ auditdata.count }} 找到的條目。"
+
+#~ msgid "The Google Authenticator only supports an OTP length of 6."
+#~ msgstr "Google Authenticator 僅支持長度為 6 的 OTP。"
+
+#~ msgid "The Google Authenticator only supports the SHA1 algorithm."
+#~ msgstr "Google 身份驗證器僅支持 SHA1 算法。"
 
 #~ msgid "Certificate: Enroll an x509 Certificate Token."
 #~ msgstr "證書：註冊 x509 證書令牌。"
