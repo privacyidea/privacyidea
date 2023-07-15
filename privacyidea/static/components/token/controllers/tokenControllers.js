@@ -344,6 +344,21 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             $scope.preset_indexedsecret();
         });
 
+    // Helper function to populate user information
+    $scope.get_user_infos = function(data) {
+        var userObject = data.result.value[0];
+        $scope.form.email = userObject.email;
+        if (typeof userObject.mobile === "string") {
+            $scope.form.phone = userObject.mobile;
+        } else {
+            $scope.phone_list = userObject.mobile;
+            if ($scope.phone_list && $scope.phone_list.length === 1) {
+                $scope.form.phone = $scope.phone_list[0];
+            }
+        }
+        return userObject;
+    }
+
     // Get the realms and fill the realm dropdown box
     if (AuthFactory.getRole() === 'admin') {
         ConfigFactory.getRealms(function (data) {
@@ -372,23 +387,16 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 UserFactory.getUsers({realm: $scope.newUser.realm,
                     username: $scope.newUser.user},
                     function(data) {
-                        var userObject = data.result.value[0];
-                        $scope.form.email = userObject.email;
-                        if (typeof userObject.mobile === "string") {
-                            $scope.form.phone = userObject.mobile;
-                        } else {
-                            $scope.phone_list = userObject.mobile;
-                            if ($scope.phone_list && $scope.phone_list.length === 1) {
-                                $scope.form.phone = $scope.phone_list[0];
-                            }
-                        }
-                });
+                    $scope.get_user_infos(data)});
             }
         });
     } else if (AuthFactory.getRole() === 'user') {
         // init the user, if token.enroll was called as a normal user
         $scope.newUser.user = AuthFactory.getUser().username;
         $scope.newUser.realm = AuthFactory.getUser().realm;
+        UserFactory.getUserDetails({}, function(data) {
+            $scope.User = $scope.get_user_infos(data);
+        });
     }
 
     // Read the tokentypes from the server
