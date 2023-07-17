@@ -1022,6 +1022,7 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         TLS_VERSION: "2",
         START_TLS: true,
         SERVERPOOL_ROUNDS: 2,
+        SERVERPOOL_STRATEGY: 1,
         SERVERPOOL_SKIP: 30
     };
     $scope.result = {};
@@ -1031,6 +1032,9 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
                                   {value: "4", name: "TLS v1.1"},
                                   {value: "5", name: "TLS v1.2"},
                                   {value: "2", name: "TLS v1.3"}];
+    $scope.ldap_pooling_strategy_options = [{value: "1", name: "ROUND_ROBIN"},
+                                            {value: "2", name: "FIRST"},
+                                            {value: "3", name: "RANDOM"}];
 
     $('html,body').scrollTop(0);
 

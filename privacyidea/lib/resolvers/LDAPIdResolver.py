@@ -105,6 +105,9 @@ ENCODING = "utf-8"
 SERVERPOOL_ROUNDS = 2
 # The number of seconds a non-responding server is removed from the server pool
 SERVERPOOL_SKIP = 30
+# The pooling strategy for the ldap servers
+LDAP_STRATEGY = {"ROUND_ROBIN": ldap3.ROUND_ROBIN, "FIRST": ldap3.FIRST, "RANDOM": ldap3.RANDOM}
+SERVERPOOL_STRATEGY = "ROUND_ROBIN"
 
 # 1 sec == 10^9 nano secs == 10^7 * (100 nano secs)
 MS_AD_MULTIPLYER = 10 ** 7
@@ -320,6 +323,7 @@ class IdResolver (UserIdResolver):
         self.serverpool_persistent = False
         self.serverpool_rounds = SERVERPOOL_ROUNDS
         self.serverpool_skip = SERVERPOOL_SKIP
+        self.serverpool_strategy = SERVERPOOL_STRATEGY
         self.serverpool = None
         self.keytabfile = None
         # The number of seconds that ldap3 waits if no server is left in the pool, before
@@ -849,6 +853,7 @@ class IdResolver (UserIdResolver):
         self.serverpool_persistent = is_true(config.get("SERVERPOOL_PERSISTENT", False))
         self.serverpool_rounds = int(config.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
+        self.serverpool_strategy = config.get("SERVERPOOL_STRATEGY") or SERVERPOOL_STRATEGY
         # The configuration might have changed. We reset the serverpool
         self.serverpool = None
         self.i_am_bound = False
@@ -898,7 +903,7 @@ class IdResolver (UserIdResolver):
 
     @classmethod
     def create_serverpool(cls, urilist, timeout, get_info=None, tls_context=None, rounds=SERVERPOOL_ROUNDS,
-                          exhaust=SERVERPOOL_SKIP, pool_cls=ldap3.ServerPool):
+                          exhaust=SERVERPOOL_SKIP, pool_cls=ldap3.ServerPool, strategy=SERVERPOOL_STRATEGY):
         """
         This create the serverpool for the ldap3 connection.
         The URI from the LDAP resolver can contain a comma separated list of
@@ -925,7 +930,8 @@ class IdResolver (UserIdResolver):
         :rtype: serverpool_cls
         """
         get_info = get_info or ldap3.SCHEMA
-        server_pool = pool_cls(None, ldap3.ROUND_ROBIN,
+        strategy = LDAP_STRATEGY.get(strategy)
+        server_pool = pool_cls(None, strategy,
                                active=rounds,
                                exhaust=exhaust)
         for uri in urilist.split(","):
@@ -952,8 +958,9 @@ class IdResolver (UserIdResolver):
         if self.serverpool_persistent:
             return self.get_persistent_serverpool(get_info)
         else:
-            return self.create_serverpool(self.uri, self.timeout, get_info,
-                                          self.tls_context, self.serverpool_rounds, self.serverpool_skip)
+            return self.create_serverpool(self.uri, self.timeout, get_info, self.tls_context,
+                                          self.serverpool_rounds, self.serverpool_skip,
+                                          strategy=self.serverpool_strategy)
 
     def get_persistent_serverpool(self, get_info=None):
         """
@@ -978,7 +985,7 @@ class IdResolver (UserIdResolver):
             # Create a suitable instance of ``LockingServerPool``
             server_pool = self.create_serverpool(self.uri, self.timeout, get_info,
                                                  self.tls_context, self.serverpool_rounds, self.serverpool_skip,
-                                                 pool_cls=LockingServerPool)
+                                                 pool_cls=LockingServerPool, strategy=self.serverpool_strategy)
             # It may happen that another thread tries to add an instance to the dictionary concurrently.
             # However, only one of them will win, and the other ``LockingServerPool`` instance will be
             # garbage-collected eventually.
@@ -1025,6 +1032,7 @@ class IdResolver (UserIdResolver):
                                 'TLS_CA_FILE': 'string',
                                 'START_TLS': 'bool',
                                 'CACHE_TIMEOUT': 'int',
+                                'SERVERPOOL_STRATEGY': 'str',
                                 'SERVERPOOL_ROUNDS': 'int',
                                 'SERVERPOOL_SKIP': 'int',
                                 'SERVERPOOL_PERSISTENT': 'bool',

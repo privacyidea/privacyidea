@@ -1166,11 +1166,12 @@ class LDAPResolverTestCase(MyTestCase):
     def test_07_get_serverpool(self):
         timeout = 5
         urilist = "ldap://themis"
-        server_pool = LDAPResolver.create_serverpool(urilist, timeout)
+        strategy = "FIRST"
+        server_pool = LDAPResolver.create_serverpool(urilist, timeout, strategy=strategy)
         self.assertEqual(len(server_pool), 1)
         self.assertEqual(server_pool.active, SERVERPOOL_ROUNDS)
         self.assertEqual(server_pool.exhaust, SERVERPOOL_SKIP)
-        self.assertEqual(server_pool.strategy, "ROUND_ROBIN")
+        self.assertEqual(server_pool.strategy, "FIRST")
 
         urilist = "ldap://themis, ldap://server2"
         server_pool = LDAPResolver.create_serverpool(urilist, timeout)
