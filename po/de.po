@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2023-05-23 14:53+0000\n"
-"Last-Translator: Tanja Rolinger <tanja.rolinger@gmail.com>\n"
+"PO-Revision-Date: 2023-07-19 11:07+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.18-dev\n"
+"X-Generator: Weblate 5.0-dev\n"
 
 # This is the level in the subscriptions
 #. level of subscription
@@ -170,7 +170,6 @@ msgstr ""
 "haben! Für Immer!</b></p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:149
-#, fuzzy
 msgid ""
 "<p><b>You are using privacyIDEA with more than 50 users.</b></p>\n"
 "                <p>Thank you for your trust!</p>\n"
@@ -189,16 +188,15 @@ msgstr ""
 "<p><b>Sie benutzen privacyIDEA nun mit mehr als 50 aktiven Token.</b></p>\n"
 "<p>Es freut uns sehr, dass Sie privacyIDEA Ihr Vertrauen schenken.</p>\n"
 "<p>Für den produktiven Unternehmenseinsatz raten wir, die <a target="
-"\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/"
-"\">privacyIDEA Enterprise Edition</a> einzusetzen.\n"
-"Die NetKnights GmbH bietet die <a target=\"netknights\" href=\"https://"
-"netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a> "
-"mit Support und Service Level   Agreement. Weiterhin bietet NetKnights  "
-"Dienstleistungen, Planungsunterstützung und beauftragte Weiterentwicklungen."
-"</p>"
+"\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/\""
+">privacyIDEA Enterprise Edition</a> einzusetzen.\n"
+"Die NetKnights GmbH bietet die <a target=\"netknights\" href=\"https"
+"://netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</"
+"a> mit Support und Service Level Agreement. Weiterhin bietet NetKnights "
+"Dienstleistungen, Planungsunterstützung und beauftragte "
+"Weiterentwicklungen.</p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:18
-#, fuzzy
 msgid ""
 "<p>First, we would like to give you some background\n"
 "                    information on privacyIDEA.</p>\n"
@@ -214,16 +212,16 @@ msgid ""
 "                    paid programming of new features.\n"
 "                </p>"
 msgstr ""
-"<p>Zu Beginn möchten wir Ihnen Hintergrundinformationen zu privacyIDEA geben."
-"</p>\n"
+"<p>Zu Beginn möchten wir Ihnen Hintergrundinformationen zu privacyIDEA "
+"geben.</p>\n"
 "<p>privacyIDEA ist ein Multi-Faktor-Authentifizierungs-System für den "
 "<b>Unternehmenseinsatz</b>. privacyIDEA ist Open Source. Die Core-Entwickler "
 "werden in Deutschland bei der NetKnights GmbH beschäftigt. Die NetKnights "
 "GmbH bietet die <a target=\"netknights\" href=\"https://netknights.it/"
-"produkte/privacyidea/\">privacyIDEA Enterprise Edition</a> mit  <b>Support "
-"und Service Level Agreement</b>. Weiterhin bietet NetKnights  "
-"Dienstleistungen, Planungsunterstützung und beauftragte Weiterentwicklungen."
-"</p>"
+"produkte/privacyidea/\">privacyIDEA Enterprise Edition</a> mit <b>Support "
+"und Service Level Agreement</b>. Weiterhin bietet NetKnights "
+"Dienstleistungen, Planungsunterstützung und beauftragte "
+"Weiterentwicklungen.</p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:131
 msgid ""
@@ -414,9 +412,8 @@ msgid "Application Type"
 msgstr "Applikationstyp"
 
 #: privacyidea/static/components/token/views/token.enroll.applspec.html:22
-#, fuzzy
 msgid "Application specific password"
-msgstr "Applikationstyp"
+msgstr "Applikationsspezifisches Passwort"
 
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
@@ -665,7 +662,6 @@ msgid "Clear default realm"
 msgstr "Standard-Realm zurücksetzen"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:20
-#, fuzzy
 msgid ""
 "Clear failcounter\n"
 "            after minutes"
@@ -806,7 +802,6 @@ msgid "Count Window"
 msgstr "Zählerfenster"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:155
-#, fuzzy
 msgid ""
 "Count Window of\n"
 "                newly enrolled tokens"
@@ -869,9 +864,8 @@ msgid "Create a new SQL Resolver"
 msgstr "Erzeuge einen neuen SQL-Resolver"
 
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:5
-#, fuzzy
 msgid "Create a new Service ID {{ params.servicename }}"
-msgstr "Einen neuen SMTP-Server anlegen {{ params.identifier }}"
+msgstr "Eine neue Dienste-Kennzeichnung erstellen {{ params.servicename }}"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:5
 msgid "Create a new Tokengroup {{ params.groupname }}"
@@ -949,9 +943,8 @@ msgid "Date"
 msgstr "Datum"
 
 #: privacyidea/static/components/config/views/config.token.daypassword.html:1
-#, fuzzy
 msgid "DayPassword Token settings"
-msgstr "HOTP-Token Einstellungen"
+msgstr "DayPassword-Token Einstellungen"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:5
 msgid "Default"
@@ -1006,9 +999,8 @@ msgid "Delete"
 msgstr "Löschen"
 
 #: privacyidea/static/components/config/views/dialog.confirm_delete.html:12
-#, fuzzy
 msgid "Delete Configuration"
-msgstr "Veraltete Konfiguration"
+msgstr "Konfiguration löschen"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:12
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:32
@@ -1115,36 +1107,30 @@ msgstr "Wollen Sie wirklich den Benutzer in der Benutzerquelle löschen?"
 
 #: privacyidea/static/components/config/views/config.events.details.html:17
 #: privacyidea/static/components/config/views/config.events.list.html:81
-#, fuzzy
 msgid "Do you really want to delete this event?"
-msgstr "Wollen Sie wirklich den Benutzer in der Benutzerquelle löschen?"
+msgstr "Wollen Sie wirklich diese Ereignisdefinition löschen?"
 
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:25
-#, fuzzy
 msgid "Do you really want to delete this machine resolver?"
-msgstr "Wollen Sie wirklich den Benutzer in der Benutzerquelle löschen?"
+msgstr "Wollen Sie wirklich diesen Maschinen-Resolver löschen?"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:107
-#, fuzzy
 msgid "Do you really want to delete this object?"
-msgstr "Wollen Sie wirklich den Benutzer in der Benutzerquelle löschen?"
+msgstr "Wollen Sie dieses Objekt wirklich löschen?"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:18
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:52
-#, fuzzy
 msgid "Do you really want to delete this periodic task?"
-msgstr "Wollen Sie wirklich den Benutzer in der Benutzerquelle löschen?"
+msgstr "Wollen Sie wirklich diese Regelmäßige Aufgabe löschen?"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:16
 #: privacyidea/static/components/config/views/config.policies.list.html:76
-#, fuzzy
 msgid "Do you really want to delete this policy?"
-msgstr "Wollen Sie wirklich den Benutzer in der Benutzerquelle löschen?"
+msgstr "Wollen Sie diese Richtlinie wirklich löschen?"
 
 #: privacyidea/static/components/config/views/config.resolvers.list.html:24
-#, fuzzy
 msgid "Do you really want to delete this resolver?"
-msgstr "Wollen Sie wirklich den Benutzer in der Benutzerquelle löschen?"
+msgstr "Wollen Sie diesen Benutzer-Resolver wirklich löschen?"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:148
 msgid "Domain CA"
@@ -1263,9 +1249,8 @@ msgid "Edit SQL Resolver {{ resolvername }}"
 msgstr "Bearbeite SQL-Resolver {{ resolvername }}"
 
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:2
-#, fuzzy
 msgid "Edit Service ID {{ servicename }}"
-msgstr "Bearbeite Resolver {{ resolvername }}"
+msgstr "Bearbeite Dienst-Kennzeichnung {{ servicename }}"
 
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:2
 msgid "Edit Tokengroup {{ groupname }}"
@@ -1386,9 +1371,8 @@ msgid "Enter second OTP value"
 msgstr "Zweiten OTP-Wert eingeben"
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:31
-#, fuzzy
 msgid "Enter the secret..."
-msgstr "OTP Schlüssel eingeben..."
+msgstr "Geheimnis eingeben..."
 
 #: privacyidea/static/components/login/views/login.html:37
 msgid ""
@@ -1430,7 +1414,6 @@ msgid "Expiration"
 msgstr "Gültig bis"
 
 #: privacyidea/static/components/token/views/token.enroll.html:77
-#, fuzzy
 msgid "Extended Atttributes"
 msgstr "Erweiterte Attribute"
 
@@ -1544,14 +1527,12 @@ msgid "Generate Request"
 msgstr "Zertifikatsanforderung erzeugen"
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:16
-#, fuzzy
 msgid "Generate secret on the Server"
-msgstr "OTP-Schlüssel auf dem Server erzeugen"
+msgstr "Geheimnis auf dem Server erzeugen"
 
 #: privacyidea/static/components/token/views/token.enroll.applspec.html:12
-#, fuzzy
 msgid "Generate the static password on the Server"
-msgstr "Das Schlüsselpaar auf dem Server erzeugen"
+msgstr "Das Passwort auf dem Server erzeugen"
 
 #: privacyidea/static/components/token/views/token.html:94
 msgid "Get Serial"
@@ -1598,6 +1579,8 @@ msgstr "HOTP-Token Einstellungen"
 #: privacyidea/static/components/token/views/token.applications.offline.html:5
 msgid "HOTP tokens can be attached with offline to e.g. notebooks."
 msgstr ""
+"HOTP Token können mit der \"offline\" Anwendung beispielsweise Notebooks "
+"zugeordnet werden."
 
 #: privacyidea/static/components/config/views/config.events.details.html:62
 #: privacyidea/static/components/config/views/config.events.list.html:18
@@ -1683,9 +1666,8 @@ msgid "Help about manage Users"
 msgstr "Hilfe zur Benutzerverwaltung"
 
 #: privacyidea/static/components/config/views/config.system.html:170
-#, fuzzy
 msgid "Help on Service IDs"
-msgstr "Hilfe zu SMTP-Servern"
+msgstr "Hilfe zu Dienste-Kennzeichnungen"
 
 #: privacyidea/static/components/config/views/config.system.html:144
 msgid "Help on Tokengroups"
@@ -1699,13 +1681,12 @@ msgstr ""
 "Gateway."
 
 #: privacyidea/static/components/config/views/config.token.daypassword.html:6
-#, fuzzy
 msgid ""
 "Here you can define settings, that will be set as default values, when\n"
 "    enrolling a DayPassword token."
 msgstr ""
 "Hier können Sie Werte definieren, die als Standard-Werte für neu ausgerollte "
-"HOTP-Token verwendet werden."
+"DayPassword-Token verwendet werden."
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:7
 msgid ""
@@ -1837,7 +1818,6 @@ msgstr ""
 "ein anderes SMS-Gateway versenden soll, so wählen Sie dies bitte hier aus."
 
 #: privacyidea/static/components/token/views/token.import.html:51
-#, fuzzy
 msgid ""
 "If you are enrolling the Yubikey in HOTP mode, You should use the\n"
 "            PSKC file format in the newer version of the Yubikey GUI."
@@ -1901,7 +1881,6 @@ msgstr ""
 "fehlgeschlagen ist."
 
 #: privacyidea/static/components/config/views/config.system.edit.html:53
-#, fuzzy
 msgid ""
 "Include SAML attributes in the\n"
 "            authentication response."
@@ -1978,16 +1957,14 @@ msgid "List SMTP server definitions"
 msgstr "Alle SMTP-Server anzeigen"
 
 #: privacyidea/static/components/config/views/config.system.html:158
-#, fuzzy
 msgid "List Service ID definitions"
-msgstr "Alle SMTP-Server anzeigen"
+msgstr "Alle Dienste-Kennzeichnungen anzeigen"
 
 #: privacyidea/static/components/config/views/config.system.html:132
 msgid "List Tokengroup definitions"
 msgstr "Alle Tokengruppen anzeigen"
 
 #: privacyidea/static/components/config/views/config.system.html:82
-#, fuzzy
 msgid ""
 "List privacyIDEA server\n"
 "                                    definitions"
@@ -2088,7 +2065,6 @@ msgid "Mark the token as lost"
 msgstr "Den Token als verloren markieren"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:168
-#, fuzzy
 msgid ""
 "Max Failcount of\n"
 "                newly enrolled tokens"
@@ -2159,9 +2135,8 @@ msgid "New SMTP server"
 msgstr "Neuen SMTP-Server anlegen"
 
 #: privacyidea/static/components/config/views/config.system.html:163
-#, fuzzy
 msgid "New Service ID definition"
-msgstr "Neue Tokengruppen Definition"
+msgstr "Neue Dienste-Kennzeichnung definieren"
 
 #: privacyidea/static/components/config/views/config.system.html:137
 msgid "New Tokengroup definition"
@@ -2297,7 +2272,6 @@ msgid "OTP length"
 msgstr "OTP-Länge"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:141
-#, fuzzy
 msgid ""
 "OTP length of\n"
 "                newly enrolled tokens"
@@ -2326,9 +2300,8 @@ msgstr ""
 "wird?"
 
 #: privacyidea/static/components/token/views/token.applications.offline.html:3
-#, fuzzy
 msgid "Offline tokens attached to notebooks"
-msgstr "Maschinen, an die dieser Token angehängt ist"
+msgstr "Maschinen, an die dieser \"offline\" Token angehängt ist"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:165
 msgid "Okay"
@@ -2393,9 +2366,8 @@ msgstr "PIN erfolgreich gesetzt."
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:29
 #: privacyidea/static/components/directives/views/directive.assignuser.html:36
 #: privacyidea/static/components/token/views/token.enroll.html:59
-#, fuzzy
 msgid "PIN/Password"
-msgstr "Passwort"
+msgstr "PIN/Passwort"
 
 #: privacyidea/static/components/token/views/token.details.html:203
 msgid "PKCS12"
@@ -2560,13 +2532,12 @@ msgid "Pre Shared Key"
 msgstr "Preshared Key"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:43
-#, fuzzy
 msgid ""
 "Prepend the PIN in front of the OTP value\n"
 "            . Otherwise it will be post pended."
 msgstr ""
-"OTP-PIN dem OTP-Wert voranstellen. Ansonsten wird die OTP-PIN hinten "
-"angehängt."
+"OTP-PIN dem OTP-Wert voranstellen. Andernfalls wird die OTP-PIN an den OTP-"
+"Wert angehängt."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:145
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:265
@@ -2780,9 +2751,8 @@ msgstr "Remote Benutzer"
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:46
 #: privacyidea/static/components/token/views/token.enroll.html:67
-#, fuzzy
 msgid "Repeat PIN or password"
-msgstr "Passwort wiederholen"
+msgstr "PIN/Passwort wiederholen"
 
 #: privacyidea/static/components/login/views/pinchange.html:20
 msgid "Repeat new PIN"
@@ -2903,7 +2873,7 @@ msgstr "Rollover Token {{ form.serial }}"
 
 #: privacyidea/static/components/token/views/token.applications.offline.html:44
 msgid "Rounds"
-msgstr ""
+msgstr "Anzahl Runden"
 
 #: privacyidea/static/components/token/views/token.getserial.html:79
 msgid "Run search"
@@ -2958,9 +2928,8 @@ msgid "SSH public Key"
 msgstr "Öffentlicher SSH-Schlüssel"
 
 #: privacyidea/static/components/token/views/token.applications.ssh.html:46
-#, fuzzy
 msgid "SSH user"
-msgstr "Benutzer speichern"
+msgstr "SSH Benutzer"
 
 #: privacyidea/static/components/token/controllers/tokenApplicationsController.js:18
 msgid "SSH: Attaching ssh keys to services."
@@ -3019,9 +2988,8 @@ msgid "Save SMTP server"
 msgstr "SMTP-Server speichern"
 
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:39
-#, fuzzy
 msgid "Save Service ID"
-msgstr "SMTP-Server speichern"
+msgstr "Dienste-Kennzeichnung speichern"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:235
 msgid "Save System Config"
@@ -3090,13 +3058,11 @@ msgid "Select Realm"
 msgstr "Realm auswählen"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:133
-#, fuzzy
 msgid ""
 "Select a predefined\n"
 "                <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
 msgstr ""
-"Wählen Sie eine bestehende \n"
-"                                <a ui-sref=\"config.smtp\">SMTP-Server "
+"Wählen Sie eine bestehende <a ui-sref=\"config.smtp\">SMTP-Server "
 "Konfiguration</a>."
 
 #: privacyidea/static/components/config/views/config.token.radius.html:9
@@ -3200,18 +3166,16 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.applications.ssh.html:36
 #: privacyidea/static/components/token/views/token.enroll.applspec.html:30
-#, fuzzy
 msgid "Service ID"
-msgstr "Server-URI"
+msgstr "Dienste-Kennzeichnung"
 
 #: privacyidea/static/components/config/controllers/serviceidController.js:71
 msgid "Service ID saved."
-msgstr ""
+msgstr "Dienste-Kennzeichnung gespeichert."
 
 #: privacyidea/static/components/config/views/config.system.html:152
-#, fuzzy
 msgid "Service IDs"
-msgstr "Server-URI"
+msgstr "Dienste-Kennzeichnungen"
 
 #: privacyidea/static/components/token/views/token.details.html:443
 msgid "Set PIN"
@@ -3283,16 +3247,14 @@ msgstr "Software"
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:42
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:55
 #: privacyidea/static/components/token/views/token.enroll.totp.html:55
-#, fuzzy
 msgid "Some Authenticator Apps only support an OTP length of 6."
-msgstr "Der Google Authenticator unterstützt lediglich OTP Länge 6."
+msgstr "Einige Authenticator-Apps unterstützen lediglich OTPs der Länge 6."
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:67
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:68
 #: privacyidea/static/components/token/views/token.enroll.totp.html:77
-#, fuzzy
 msgid "Some Authenticator Apps only support the SHA1 algorithm."
-msgstr "Der Google Authenticator unterstützt lediglich den SHA1-Algorithmus."
+msgstr "Einige Authenticator-Apps unterstützen lediglich den SHA1-Algorithmus."
 
 #: privacyidea/static/components/token/views/token.enroll.html:37
 msgid "Some nice words..."
@@ -3345,7 +3307,6 @@ msgid "Sync Window"
 msgstr "Sync-Fenster"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:180
-#, fuzzy
 msgid ""
 "Sync Window of\n"
 "                newly enrolled tokens"
@@ -3479,16 +3440,12 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:1
-#, fuzzy
 msgid ""
 "The DayPassword token is a time based password token. You can paste a secret "
 "key or\n"
 "    have the server generate the secret and scan the QR code with an "
 "authenticator app that supports the token."
 msgstr ""
-"Der TOTP-Token ist ein zeit-basierter Token.  Diesen können Sie in Ihre "
-"Smartphone-App (z.B. PrivacyIDEAAuthenticator) importieren, indem Sie den QR-"
-"Code scannen."
 
 #: privacyidea/static/components/config/views/config.token.email.html:2
 msgid ""
@@ -3520,7 +3477,6 @@ msgstr ""
 "    4226 beschrieben</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:1
-#, fuzzy
 msgid ""
 "The HOTP token is an event based token. You can paste a secret key or\n"
 "    have the server generate the secret and scan the QR code with a\n"
@@ -3532,8 +3488,9 @@ msgid ""
 msgstr ""
 "Der HOTP-Token ist ein ereignis-basierte Token. Sie können den geheimen OTP-"
 "Schlüssel hier einfügen oder den Server einen Schlüssel generieren lassen. "
-"Diesen können Sie in Ihre Smartphone-App importieren, indem Sie den QR-Code "
-"scannen."
+"Diesen können Sie in Ihre Smartphone-App (z.B. dem privacyIDEA-Authenticator)"
+" importieren, indem Sie den QR-Code scannen. Beachten Sie, dass andere "
+"Authenticator-Apps möglicherweise nicht alle Parameter unterstützen."
 
 #: privacyidea/static/components/login/views/login.html:94
 msgid ""
@@ -3659,7 +3616,6 @@ msgstr ""
 "\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.spass.html:1
-#, fuzzy
 msgid ""
 "The Simple Pass Token does not take additional arguments. You only need to\n"
 "    specify an OTP PIN."
@@ -3688,7 +3644,6 @@ msgstr ""
 "\"https://tools.ietf.org/html/rfc6238\">RFC 6238</a> beschrieben."
 
 #: privacyidea/static/components/token/views/token.enroll.totp.html:1
-#, fuzzy
 msgid ""
 "The TOTP token is a time based token. You can paste a secret key or\n"
 "    have the server generate the secret and scan the QR code with a\n"
@@ -3699,9 +3654,10 @@ msgid ""
 "    might have limitations in the supported hash algorithms or other "
 "parameters."
 msgstr ""
-"Der TOTP-Token ist ein zeit-basierter Token.  Diesen können Sie in Ihre "
-"Smartphone-App (z.B. PrivacyIDEAAuthenticator) importieren, indem Sie den QR-"
-"Code scannen."
+"Der TOTP-Token ist ein zeit-basierter Token. Diesen können Sie in Ihre "
+"Smartphone-App (z.B. dem privacyIDEA-Authenticator) importieren, indem Sie "
+"den QR-Code scannen. Beachten Sie, dass andere Authenticator-Apps "
+"möglicherweise nicht alle Parameter unterstützen."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:2
 msgid ""
@@ -3848,7 +3804,6 @@ msgid "The added value of privacyIDEA Enterprise Edition"
 msgstr "Der Mehrwert der privacyIDEA Enterprise Edition"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:87
-#, fuzzy
 msgid ""
 "The added values of the\n"
 "                    <a target=\"netknights\" href=\"https://netknights.it/en/"
@@ -3856,7 +3811,8 @@ msgid ""
 "                    are:"
 msgstr ""
 "Ihre Vorteile der <a target=\"netknights\" href=\"https://netknights.it/en/"
-"produkte/privacyidea/\">privacyIDEA Enterprise Edition</a> sind unter anderem"
+"produkte/privacyidea/\">privacyIDEA Enterprise Edition</a> sind unter "
+"anderem:"
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:7
 msgid ""
@@ -4014,7 +3970,7 @@ msgstr ""
 "Manche Komponenten können im Detail anderen Lizenzen folgen. privacyIDEA "
 "wurde ursprünglich als Fork von LinOTP erstellt, das durch die LSE Leading "
 "Security Experts GmbH lizenziert wurde. Für weitere Details schauen Sie "
-"bitte beim  <a href=\"http://github.com/privacyidea/privacyidea\" target="
+"bitte beim <a href=\"http://github.com/privacyidea/privacyidea\" target="
 "\"github\">Backend Service</a>."
 
 #: privacyidea/static/app.js:143
@@ -4147,7 +4103,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.applspec.html:16
 msgid "The server will create the static password."
-msgstr ""
+msgstr "Der Server wird ein Passwort erzeugen."
 
 #: privacyidea/static/components/token/views/token.enroll.html:126
 msgid ""
@@ -4421,11 +4377,10 @@ msgid ""
 msgstr "Ein eindeutiger Name, der diese Tokengruppe bezeichnet."
 
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:22
-#, fuzzy
 msgid ""
 "This is the unique identifying name\n"
 "                for this service definition."
-msgstr "Ein eindeutiger Name, der diese Tokengruppe bezeichnet."
+msgstr "Ein eindeutiger Name für diese Dienste-Kennzeichnung."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:22
 msgid ""
@@ -4548,13 +4503,12 @@ msgid "To"
 msgstr "Bis"
 
 #: privacyidea/static/components/token/views/token.applications.ssh.html:8
-#, fuzzy
 msgid ""
 "To define service IDs go to <a ui-sref=\"config.serviceid\">Service ID "
 "config</a>"
 msgstr ""
-"Wählen Sie eine bestehende <a ui-sref=\"config.smtp\">SMTP-Server "
-"Konfiguration</a>."
+"Um eine Dienste-Kennzeichnung zu erstellen gehen Sie zu <a ui-sref=\"config."
+"serviceid\">Dienste-Kennzeichnungen Konfiguration</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:9
 msgid ""
@@ -4567,9 +4521,8 @@ msgstr ""
 "tokens({tokentype:'radius'})\">RADIUS Token Konfiguration</a> setzen."
 
 #: privacyidea/static/components/token/views/token.html:73
-#, fuzzy
 msgid "Token Applications"
-msgstr "Applikation"
+msgstr "Token Anwendungen"
 
 #: privacyidea/static/components/token/views/token.getserial.html:22
 msgid "Token Type"
@@ -4667,9 +4620,8 @@ msgstr "Typ"
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:34
 #: privacyidea/static/components/directives/views/directive.assignuser.html:41
 #: privacyidea/static/components/token/views/token.enroll.html:63
-#, fuzzy
 msgid "Type a PIN or password"
-msgstr "Geben Sie ein Passwort ein"
+msgstr "Geben Sie eine PIN/ein Passwort ein"
 
 #: privacyidea/static/components/recovery/views/recovery.reset.html:14
 #: privacyidea/static/components/token/views/token.enroll.motp.html:39
@@ -4730,12 +4682,10 @@ msgid "Uploaded Tokens"
 msgstr "Hochgeladene Token"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:7
-#, fuzzy
 msgid ""
 "Use @ sign to split the username\n"
 "            and the realm."
-msgstr ""
-"Verwende das @-Zeichen, um den Benutzernamen und den Realm abzutrennen."
+msgstr "Verwende das @-Zeichen, um den Benutzernamen und den Realm abzutrennen."
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:56
 msgid "Use HTTP proxy"
@@ -4768,7 +4718,6 @@ msgid "User"
 msgstr "Benutzer"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:93
-#, fuzzy
 msgid ""
 "User Cache\n"
 "            expiration in seconds"
@@ -5049,9 +4998,8 @@ msgid "Your OTP pin expires on"
 msgstr "Ihre OTP PIN läuft ab am"
 
 #: privacyidea/static/components/token/views/token.enrolled.applspec.html:8
-#, fuzzy
 msgid "Your Password:"
-msgstr "Ihr Passwort zurücksetzen"
+msgstr "Ihr Passwort:"
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:4
 msgid ""
@@ -5288,9 +5236,8 @@ msgid "password"
 msgstr "Passwort"
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:36
-#, fuzzy
 msgid "password length"
-msgstr "Passwort"
+msgstr "Länge des Passworts"
 
 #: privacyidea/static/components/user/views/user.list.html:35
 msgid "phone"
