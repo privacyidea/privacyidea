@@ -601,6 +601,7 @@ def trigger_challenge():
 @prepolicy(mangle, request=request)
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
+@event("validate_poll_transaction", request, g)
 def poll_transaction(transaction_id=None):
     """
     Given a mandatory transaction ID, check if any non-expired challenge for this transaction ID
