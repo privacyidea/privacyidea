@@ -234,16 +234,16 @@ angular.module("privacyideaApp")
         }, {
             withCredentials: true
         }).then(function (response) {
-            // successful authentication
-            $scope.do_login_stuff(response.data);
-            // login data is not needed anymore, remove from scope
-            $scope.login = {username: "", password: ""};
             // failed auth request (may be challenge-response)
             //debug: console.log("challenge response");
             //debug: console.log(error);
             let error = response.data;
-            $scope.login.password = "";
-            if (error.detail && error.detail.transaction_id) {
+            if (error.result.value && error.result.value.token) {
+                // successful authentication
+                $scope.do_login_stuff(response.data);
+                // login data is not needed anymore, remove from scope
+                $scope.login = {username: "", password: ""};
+            } else if (error.detail && error.detail.transaction_id) {
                 // In case of error.detail.transaction_id is present, we
                 // have a challenge response and we need to go to the state response
                 if ($scope.unlocking === false) {
@@ -345,15 +345,21 @@ angular.module("privacyideaApp")
                     }
                 }
             }
-        }, function () {
+        }, function (error) {
             // TODO: Do we want to display the error message?
             // This can show an attacker, if a username exists.
             // But this can also be due to a problem like
             // "HSM not ready".
             $scope.transactionid = "";
-            var errmsg = gettextCatalog.getString("Authentication failed.");
-            inform.add(errmsg + " " + error.result.error.message,
-                {type: "danger", ttl: 10000});
+            if ($state.current.name === "response") {
+                inform.add(gettextCatalog.getString("Challenge Response " +
+                        "Authentication. Your response was not valid!"),
+                    {type: "warning", ttl: 5000});
+            } else {
+                var errmsg = gettextCatalog.getString("Authentication failed.");
+                inform.add(errmsg + " " + error.data.result.error.message,
+                    {type: "danger", ttl: 10000});
+            }
         });
     };
 
