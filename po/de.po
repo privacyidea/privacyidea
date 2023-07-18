@@ -188,8 +188,8 @@ msgid ""
 msgstr ""
 "<p><b>Sie benutzen privacyIDEA nun mit mehr als 50 aktiven Token.</b></p>\n"
 "<p>Es freut uns sehr, dass Sie privacyIDEA Ihr Vertrauen schenken.</p>\n"
-"<p>Für den produktiven Unternehmenseinsatz raten wir, die <a target="
-"\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/"
+"<p>Für den produktiven Unternehmenseinsatz raten wir, die <a "
+"target=\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/"
 "\">privacyIDEA Enterprise Edition</a> einzusetzen.\n"
 "Die NetKnights GmbH bietet die <a target=\"netknights\" href=\"https://"
 "netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a> "
@@ -418,6 +418,11 @@ msgstr "Applikationstyp"
 msgid "Application specific password"
 msgstr "Applikationstyp"
 
+#: privacyidea/static/components/token/views/token.applications.html:2
+#, fuzzy
+msgid "Application:"
+msgstr "Applikation"
+
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
 "As the values are encrypted with AES128-CBC, you need to give a\n"
@@ -457,7 +462,7 @@ msgstr "Zugewiesener Benutzer"
 msgid "Assignment State"
 msgstr "Zuweisung"
 
-#: privacyidea/static/components/token/views/token.details.html:715
+#: privacyidea/static/components/token/views/token.details.html:714
 msgid "Attach Machine"
 msgstr "Maschine anhängen"
 
@@ -676,7 +681,7 @@ msgstr "Lösche den Fehlerzähler nach Minuten"
 msgid ""
 "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
 "            the QR Code, if you\n"
-"            want to add the Token to your Authenticator App."
+"            want to add the Token to your smartphone authenticator App."
 msgstr ""
 "Klicken Sie <a href=\"{{ enrolledToken.googleurl.value }}\">hier</a> oder "
 "scannen Sie den QR-Code, um den Token in Ihrer Smartphone-App hinzuzufügen."
@@ -1281,7 +1286,7 @@ msgstr "Bearbeite Hosts-Maschinen-Resolver {{ resolvername }}"
 msgid "Edit privacyIDEA server {{ identifier }}"
 msgstr "privacyIDEA-Server {{ identifier }} bearbeiten"
 
-#: privacyidea/static/components/user/views/user.html:47
+#: privacyidea/static/components/user/views/user.html:48
 msgid "Edit realms"
 msgstr "Realms bearbeiten"
 
@@ -1484,8 +1489,9 @@ msgid ""
 "For Email tokens to work properly you need to set the\n"
 "    <a ui-sref=\"config.tokens({tokentype:'email'})\">Email Token Config</a>!"
 msgstr ""
-"Damit E-Mail-Token richtig funktionieren, müssen Sie die   <a ui-sref="
-"\"config.tokens({tokentype:'email'})\">Email-Token Konfiguration</a> setzen!"
+"Damit E-Mail-Token richtig funktionieren, müssen Sie die   <a ui-"
+"sref=\"config.tokens({tokentype:'email'})\">Email-Token Konfiguration</a> "
+"setzen!"
 
 #: privacyidea/static/components/token/views/token.import.html:25
 msgid "For HOTP and TOTP tokens:"
@@ -1666,7 +1672,7 @@ msgstr "Hilfe zu Tokenenstellungen"
 msgid "Help about Tokentypes"
 msgstr "Hilfe zu Tokentypen"
 
-#: privacyidea/static/components/user/views/user.html:71
+#: privacyidea/static/components/user/views/user.html:72
 msgid "Help about User Details"
 msgstr "Hilfe zu Benutzerdetails"
 
@@ -1674,11 +1680,11 @@ msgstr "Hilfe zu Benutzerdetails"
 msgid "Help about UserResolver"
 msgstr "Hilfe zu Benutzer-Resolvern"
 
-#: privacyidea/static/components/user/views/user.html:59
+#: privacyidea/static/components/user/views/user.html:60
 msgid "Help about Users"
 msgstr "Hilfe zu Benutzern"
 
-#: privacyidea/static/components/user/views/user.html:65
+#: privacyidea/static/components/user/views/user.html:66
 msgid "Help about manage Users"
 msgstr "Hilfe zur Benutzerverwaltung"
 
@@ -1839,7 +1845,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.import.html:51
 #, fuzzy
 msgid ""
-"If you are enrolling the Yubikey in HOTP mode, You should use the\n"
+"If you are enrolling the Yubikey in HOTP mode, you should use the\n"
 "            PSKC file format in the newer version of the Yubikey GUI."
 msgstr ""
 "Wenn Sie den Yubikey im HOTP-Modus initialisieren, sollten Sie in neueren "
@@ -2639,19 +2645,9 @@ msgid "Quick Resolver Test"
 msgstr "Schneller Resolver-Test"
 
 #: privacyidea/static/components/machine/views/machine.html:15
+#: privacyidea/static/components/user/views/user.html:45
 msgid "Quick links"
 msgstr "Verwandte Themen"
-
-#: privacyidea/static/components/user/views/user.html:44
-msgid ""
-"Quick links>\n"
-"                        <ul class=\"nav nav-pills nav-stacked\">\n"
-"                            <li ng-show=\"checkRight('resolverwrite')\">\n"
-"                                <a ui-sref=\"config.realms.list\" "
-"translate>Edit realms</a>\n"
-"                            </li>\n"
-"                        </ul>"
-msgstr ""
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
 msgid "RADIUS Config saved."
@@ -3213,6 +3209,14 @@ msgstr ""
 msgid "Service IDs"
 msgstr "Server-URI"
 
+#: privacyidea/static/components/config/views/config.serviceid.list.html:1
+msgid ""
+"Service IDs can be used to attach e.g. SSH keys to certain machines and "
+"services.\n"
+"To view attached tokens go to <a ui-sref=\"token.applications\">token "
+"applications</a>."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.details.html:443
 msgid "Set PIN"
 msgstr "PIN setzen"
@@ -3655,8 +3659,8 @@ msgid ""
 "The Serial number for the OTP value {{ otp }} is\n"
 "    <a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
 msgstr ""
-"Die Seriennummer für den Token mit dem OTP-Wert {{ otp }} ist <a ui-sref="
-"\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
+"Die Seriennummer für den Token mit dem OTP-Wert {{ otp }} ist <a ui-"
+"sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.spass.html:1
 #, fuzzy
@@ -3684,8 +3688,8 @@ msgid ""
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc6238\">RFC\n"
 "    6238</a>."
 msgstr ""
-"Der TOTP-Token ist ein zeitbasierter Einmalpasswort-Token.Er ist in <a href="
-"\"https://tools.ietf.org/html/rfc6238\">RFC 6238</a> beschrieben."
+"Der TOTP-Token ist ein zeitbasierter Einmalpasswort-Token.Er ist in <a "
+"href=\"https://tools.ietf.org/html/rfc6238\">RFC 6238</a> beschrieben."
 
 #: privacyidea/static/components/token/views/token.enroll.totp.html:1
 #, fuzzy
@@ -3870,18 +3874,18 @@ msgid ""
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "Die Authentifizierung kann von der normalen privacyIDEA <a href=\"http://"
-"privacyidea.readthedocs.org/en/latest/modules/api/validate.html\" target="
-"\"_blank\">validate API</a> aber auch vom <a href=\"http://privacyidea."
-"readthedocs.org/en/latest/modules/lib/tokentypes/yubikey.html#privacyidea."
-"lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" target=\"_blank"
-"\">Yubico Validation Protokoll</a> durchgeführt werden."
+"privacyidea.readthedocs.org/en/latest/modules/api/validate.html\" "
+"target=\"_blank\">validate API</a> aber auch vom <a href=\"http://"
+"privacyidea.readthedocs.org/en/latest/modules/lib/tokentypes/yubikey."
+"html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
+"target=\"_blank\">Yubico Validation Protokoll</a> durchgeführt werden."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
 msgid ""
 "The authentication request is forwarded to the YubiCloud. For accessing\n"
 "    the YubiCloud you need to enter an API Client ID and an API Key, which\n"
-"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" target="
-"\"_extern\">here</a>."
+"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" "
+"target=\"_extern\">here</a>."
 msgstr ""
 "Die Authentisierungsanfrage wird an die YubiCloud weitergeleitet. Um die "
 "YubiCloud ansprechen zu können, benötigt man ein API Client ID und einen API "
@@ -4014,8 +4018,8 @@ msgstr ""
 "Manche Komponenten können im Detail anderen Lizenzen folgen. privacyIDEA "
 "wurde ursprünglich als Fork von LinOTP erstellt, das durch die LSE Leading "
 "Security Experts GmbH lizenziert wurde. Für weitere Details schauen Sie "
-"bitte beim  <a href=\"http://github.com/privacyidea/privacyidea\" target="
-"\"github\">Backend Service</a>."
+"bitte beim  <a href=\"http://github.com/privacyidea/privacyidea\" "
+"target=\"github\">Backend Service</a>."
 
 #: privacyidea/static/app.js:143
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
@@ -4373,8 +4377,8 @@ msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
 "        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
 "        For more details see the\n"
-"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
-"\">RFC\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" "
+"target=\"OCRA\">RFC\n"
 "            6287</a>."
 msgstr ""
 "Dies ist die OCRA-Suite, die von der TiQR-App verwendet wird. Standardmäßig "
@@ -5098,8 +5102,8 @@ msgid ""
 msgstr ""
 "Ihre Subskription ist nicht mehr gültig. Entweder haben Sie die Anzahl der "
 "erlaubten Token überschritten oder Ihre Subskription ist abgelaufen. Bitte "
-"überprüfen Sie, ob Sie Ihre <a ui-sref=\"component.subscriptions"
-"\">Subskription</a> erneuern müssen."
+"überprüfen Sie, ob Sie Ihre <a ui-sref=\"component."
+"subscriptions\">Subskription</a> erneuern müssen."
 
 #: privacyidea/static/components/login/views/pinchange.html:5
 msgid ""
@@ -5449,9 +5453,10 @@ msgstr "Tokentyp"
 msgid "total tokens: {{ tokendata.count }}"
 msgstr "Tokenanzahl: {{ tokendata.count }}"
 
-#: privacyidea/static/components/user/views/user.html:52
-msgid "total users: {{ usercount }}"
-msgstr "Benutzeranzahl: {{ usercount }}"
+#: privacyidea/static/components/user/views/user.html:53
+#, fuzzy
+msgid "total users:"
+msgstr "Anzahl der Tokens:"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:97
 msgid ""
@@ -5503,6 +5508,19 @@ msgstr "Fenster"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
+
+#, fuzzy
+#~ msgid ""
+#~ "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
+#~ "            the QR Code, if you\n"
+#~ "            want to add the Token to your Authenticator App."
+#~ msgstr ""
+#~ "Klicken Sie <a href=\"{{ enrolledToken.googleurl.value }}\">hier</a> oder "
+#~ "scannen Sie den QR-Code, um den Token in Ihrer Smartphone-App "
+#~ "hinzuzufügen."
+
+#~ msgid "total users: {{ usercount }}"
+#~ msgstr "Benutzeranzahl: {{ usercount }}"
 
 #~ msgid "The Google Authenticator only supports an OTP length of 6."
 #~ msgstr "Der Google Authenticator unterstützt lediglich OTP Länge 6."
@@ -5685,9 +5703,6 @@ msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
 #~ "   vom QR-Code einscannen. So können Sie das Smartphone zu einem "
 #~ "Authentisierungs-Token umwandeln."
 
-#~ msgid "total tokens:"
-#~ msgstr "Anzahl der Tokens:"
-
 #~ msgid ""
 #~ "Congratulations. Your PUSH token {{ enrolledToken.serial }} was "
 #~ "successfully enrolled."
@@ -5849,11 +5864,11 @@ msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
 #~ "entsprechende Haftbarkeit. Das Unternehmen NetKnights GmbH beschäftigt "
 #~ "die Hauptentwickler von privacyIDEA und kann Sie bei der Integration in "
 #~ "Ihre Umgebung unterstützen. Weiterhin erhalten Sie  <a href=\"https://"
-#~ "netknights.it/leistungen/service-level-agreements/\" target=\"netknights"
-#~ "\">Service Level Agreements</a>, Support und eine <a href=\"https://"
-#~ "netknights.it/produkte/privacyidea/\" target=\"netknights\">Enterprise "
-#~ "Edition</a>, die zustätzliche Paketierungen und Appliance-"
-#~ "Funktionalitäten mitbringt.</p>"
+#~ "netknights.it/leistungen/service-level-agreements/\" "
+#~ "target=\"netknights\">Service Level Agreements</a>, Support und eine <a "
+#~ "href=\"https://netknights.it/produkte/privacyidea/\" "
+#~ "target=\"netknights\">Enterprise Edition</a>, die zustätzliche "
+#~ "Paketierungen und Appliance-Funktionalitäten mitbringt.</p>"
 
 #~ msgid "Professional Services and Enterprise Edition"
 #~ msgstr "Professionelle Leistungen und Enterprise Edition"

@@ -439,6 +439,11 @@ msgstr "Applicatie-type"
 msgid "Application specific password"
 msgstr "Applicatie-type"
 
+#: privacyidea/static/components/token/views/token.applications.html:2
+#, fuzzy
+msgid "Application:"
+msgstr "Applicatie"
+
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
 "As the values are encrypted with AES128-CBC, you need to give a\n"
@@ -478,7 +483,7 @@ msgstr "Toegewezen gebruiker"
 msgid "Assignment State"
 msgstr "Toewijzingsstatus"
 
-#: privacyidea/static/components/token/views/token.details.html:715
+#: privacyidea/static/components/token/views/token.details.html:714
 msgid "Attach Machine"
 msgstr "Machine koppelen"
 
@@ -703,7 +708,7 @@ msgstr ""
 msgid ""
 "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
 "            the QR Code, if you\n"
-"            want to add the Token to your Authenticator App."
+"            want to add the Token to your smartphone authenticator App."
 msgstr ""
 "Klik <a href=\"{{ enrolledToken.googleurl.value }}\">hier</a> of scan\n"
 "            de QR Code, als je\n"
@@ -1324,7 +1329,7 @@ msgstr ""
 msgid "Edit privacyIDEA server {{ identifier }}"
 msgstr "Bewerk privacyIDEA-server {{ identifier }}"
 
-#: privacyidea/static/components/user/views/user.html:47
+#: privacyidea/static/components/user/views/user.html:48
 msgid "Edit realms"
 msgstr "Bewerk realms"
 
@@ -1714,7 +1719,7 @@ msgstr "Help over token-instellingen"
 msgid "Help about Tokentypes"
 msgstr "Help over token-types"
 
-#: privacyidea/static/components/user/views/user.html:71
+#: privacyidea/static/components/user/views/user.html:72
 msgid "Help about User Details"
 msgstr "Help over gebruikersdetails"
 
@@ -1722,11 +1727,11 @@ msgstr "Help over gebruikersdetails"
 msgid "Help about UserResolver"
 msgstr "Help over gebruikers-resolver"
 
-#: privacyidea/static/components/user/views/user.html:59
+#: privacyidea/static/components/user/views/user.html:60
 msgid "Help about Users"
 msgstr "Help over gebruikers"
 
-#: privacyidea/static/components/user/views/user.html:65
+#: privacyidea/static/components/user/views/user.html:66
 msgid "Help about manage Users"
 msgstr "Help over gebruikersbeheer"
 
@@ -1890,7 +1895,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.import.html:51
 #, fuzzy
 msgid ""
-"If you are enrolling the Yubikey in HOTP mode, You should use the\n"
+"If you are enrolling the Yubikey in HOTP mode, you should use the\n"
 "            PSKC file format in the newer version of the Yubikey GUI."
 msgstr ""
 "Als je een Yubikey aanmeldt in HOTP modus, dan moet je het\n"
@@ -2700,19 +2705,9 @@ msgid "Quick Resolver Test"
 msgstr "Snelle resolver-test"
 
 #: privacyidea/static/components/machine/views/machine.html:15
+#: privacyidea/static/components/user/views/user.html:45
 msgid "Quick links"
 msgstr "Snelle links"
-
-#: privacyidea/static/components/user/views/user.html:44
-msgid ""
-"Quick links>\n"
-"                        <ul class=\"nav nav-pills nav-stacked\">\n"
-"                            <li ng-show=\"checkRight('resolverwrite')\">\n"
-"                                <a ui-sref=\"config.realms.list\" "
-"translate>Edit realms</a>\n"
-"                            </li>\n"
-"                        </ul>"
-msgstr ""
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
 msgid "RADIUS Config saved."
@@ -3266,6 +3261,14 @@ msgstr ""
 #, fuzzy
 msgid "Service IDs"
 msgstr "Server URI"
+
+#: privacyidea/static/components/config/views/config.serviceid.list.html:1
+msgid ""
+"Service IDs can be used to attach e.g. SSH keys to certain machines and "
+"services.\n"
+"To view attached tokens go to <a ui-sref=\"token.applications\">token "
+"applications</a>."
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:443
 msgid "Set PIN"
@@ -3960,15 +3963,15 @@ msgstr ""
 msgid ""
 "The authentication request is forwarded to the YubiCloud. For accessing\n"
 "    the YubiCloud you need to enter an API Client ID and an API Key, which\n"
-"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" target="
-"\"_extern\">here</a>."
+"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" "
+"target=\"_extern\">here</a>."
 msgstr ""
 "De authenticatievraag is doorgestuurd naar de YubiCloud. Voor toegang tot "
 "de\n"
 "     YubiCloud moet je een API Client ID en een API-sleutel ingeven, die je "
 "kan\n"
-"     aanvragen bij  <a href=\"https://upgrade.yubico.com/getapikey/\" target="
-"\"_extern\">yubico.com</a>."
+"     aanvragen bij  <a href=\"https://upgrade.yubico.com/getapikey/\" "
+"target=\"_extern\">yubico.com</a>."
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
 msgid "The certificate was enrolled successfully."
@@ -4487,15 +4490,15 @@ msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
 "        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
 "        For more details see the\n"
-"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
-"\">RFC\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" "
+"target=\"OCRA\">RFC\n"
 "            6287</a>."
 msgstr ""
 "Dit is de OCRA suite, gebruikt door de TiQR App.\n"
 "        De standaard OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
 "        Bekijk voor meer details \n"
-"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
-"\">RFC\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" "
+"target=\"OCRA\">RFC\n"
 "            6287</a>."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:115
@@ -5593,9 +5596,10 @@ msgstr "token type"
 msgid "total tokens: {{ tokendata.count }}"
 msgstr "totaal aantal tokens: {{ tokendata.count }}"
 
-#: privacyidea/static/components/user/views/user.html:52
-msgid "total users: {{ usercount }}"
-msgstr "totaal aantal gebruikers: {{ usercount }}"
+#: privacyidea/static/components/user/views/user.html:53
+#, fuzzy
+msgid "total users:"
+msgstr "Alle gebruikers"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:97
 msgid ""
@@ -5647,6 +5651,19 @@ msgstr "venster"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "{{ auditdata.count }} items gevonden."
+
+#, fuzzy
+#~ msgid ""
+#~ "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
+#~ "            the QR Code, if you\n"
+#~ "            want to add the Token to your Authenticator App."
+#~ msgstr ""
+#~ "Klik <a href=\"{{ enrolledToken.googleurl.value }}\">hier</a> of scan\n"
+#~ "            de QR Code, als je\n"
+#~ "            het token wil toevoegen aan je Google Authenticator."
+
+#~ msgid "total users: {{ usercount }}"
+#~ msgstr "totaal aantal gebruikers: {{ usercount }}"
 
 #~ msgid "The Google Authenticator only supports an OTP length of 6."
 #~ msgstr "De Google Authenticator ondersteunt slechts een OTP-lengte van 6."

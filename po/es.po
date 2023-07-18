@@ -187,9 +187,9 @@ msgid ""
 msgstr ""
 "<p> <b> Estás utilizando privacyIDEA con más de 50 usuarios. </b> </p> <p> "
 "¡Gracias por tu confianza! </p>\n"
-"<p> Para un uso empresarial productivo, recomendamos la <a target="
-"\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/\"> "
-"privacyIDEA Enterprise Edition </a>. </p>\n"
+"<p> Para un uso empresarial productivo, recomendamos la <a "
+"target=\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/"
+"\"> privacyIDEA Enterprise Edition </a>. </p>\n"
 "<p> NetKnights proporciona <a target=\"netknights\" href=\"https://"
 "netknights.it/en/produkte/privacyidea/\"> privacyIDEA Enterprise Edition </"
 "a> que incluye <b> Acuerdos de nivel de servicio y soporte </ b>. Además, "
@@ -415,6 +415,11 @@ msgstr "Tipo de Aplicación"
 msgid "Application specific password"
 msgstr "Tipo de Aplicación"
 
+#: privacyidea/static/components/token/views/token.applications.html:2
+#, fuzzy
+msgid "Application:"
+msgstr "Aplicación"
+
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
 "As the values are encrypted with AES128-CBC, you need to give a\n"
@@ -454,7 +459,7 @@ msgstr "Usuario asignado"
 msgid "Assignment State"
 msgstr "Estado de asignación"
 
-#: privacyidea/static/components/token/views/token.details.html:715
+#: privacyidea/static/components/token/views/token.details.html:714
 msgid "Attach Machine"
 msgstr "Añadir la máquina"
 
@@ -673,7 +678,7 @@ msgstr "Borrar el contador de fallos después de minutos"
 msgid ""
 "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
 "            the QR Code, if you\n"
-"            want to add the Token to your Authenticator App."
+"            want to add the Token to your smartphone authenticator App."
 msgstr ""
 "Haga clic en <a href=\"{{ enrolledToken.googleurl.value }}\"> aquí </a> o "
 "escanee el código QR, si desea agregar el token a su Autenticador de Google."
@@ -1278,7 +1283,7 @@ msgstr "Editar Almacén de Máquinas (hosts) {{resolvername}}"
 msgid "Edit privacyIDEA server {{ identifier }}"
 msgstr "Editar el servidor privacyIDEA {{identifier}}"
 
-#: privacyidea/static/components/user/views/user.html:47
+#: privacyidea/static/components/user/views/user.html:48
 msgid "Edit realms"
 msgstr "Editar dominios"
 
@@ -1668,7 +1673,7 @@ msgstr ""
 msgid "Help about Tokentypes"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:71
+#: privacyidea/static/components/user/views/user.html:72
 msgid "Help about User Details"
 msgstr ""
 
@@ -1676,11 +1681,11 @@ msgstr ""
 msgid "Help about UserResolver"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:59
+#: privacyidea/static/components/user/views/user.html:60
 msgid "Help about Users"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:65
+#: privacyidea/static/components/user/views/user.html:66
 msgid "Help about manage Users"
 msgstr ""
 
@@ -1840,7 +1845,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.import.html:51
 #, fuzzy
 msgid ""
-"If you are enrolling the Yubikey in HOTP mode, You should use the\n"
+"If you are enrolling the Yubikey in HOTP mode, you should use the\n"
 "            PSKC file format in the newer version of the Yubikey GUI."
 msgstr ""
 "Si inscribe la Yubikey en modo HOTP, debe usar el formato de archivo PSKC en "
@@ -2630,19 +2635,9 @@ msgid "Quick Resolver Test"
 msgstr "Prueba rápida del Almacén"
 
 #: privacyidea/static/components/machine/views/machine.html:15
+#: privacyidea/static/components/user/views/user.html:45
 msgid "Quick links"
 msgstr "Enlaces rápidos"
-
-#: privacyidea/static/components/user/views/user.html:44
-msgid ""
-"Quick links>\n"
-"                        <ul class=\"nav nav-pills nav-stacked\">\n"
-"                            <li ng-show=\"checkRight('resolverwrite')\">\n"
-"                                <a ui-sref=\"config.realms.list\" "
-"translate>Edit realms</a>\n"
-"                            </li>\n"
-"                        </ul>"
-msgstr ""
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
 msgid "RADIUS Config saved."
@@ -3198,6 +3193,14 @@ msgstr ""
 #, fuzzy
 msgid "Service IDs"
 msgstr "Servidor URI"
+
+#: privacyidea/static/components/config/views/config.serviceid.list.html:1
+msgid ""
+"Service IDs can be used to attach e.g. SSH keys to certain machines and "
+"services.\n"
+"To view attached tokens go to <a ui-sref=\"token.applications\">token "
+"applications</a>."
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:443
 msgid "Set PIN"
@@ -3804,8 +3807,8 @@ msgstr ""
 msgid ""
 "The authentication request is forwarded to the YubiCloud. For accessing\n"
 "    the YubiCloud you need to enter an API Client ID and an API Key, which\n"
-"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" target="
-"\"_extern\">here</a>."
+"    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" "
+"target=\"_extern\">here</a>."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
@@ -4182,8 +4185,8 @@ msgid ""
 "This is the OCRA suite used by the TiQR App.\n"
 "        The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.\n"
 "        For more details see the\n"
-"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA"
-"\">RFC\n"
+"        <a href=\"http://tools.ietf.org/html/rfc6287#page-8\" "
+"target=\"OCRA\">RFC\n"
 "            6287</a>."
 msgstr ""
 
@@ -5173,9 +5176,10 @@ msgstr ""
 msgid "total tokens: {{ tokendata.count }}"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:52
-msgid "total users: {{ usercount }}"
-msgstr ""
+#: privacyidea/static/components/user/views/user.html:53
+#, fuzzy
+msgid "total users:"
+msgstr "Todos los Usuarios"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:97
 msgid ""
@@ -5222,6 +5226,16 @@ msgstr ""
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr ""
+
+#, fuzzy
+#~ msgid ""
+#~ "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
+#~ "            the QR Code, if you\n"
+#~ "            want to add the Token to your Authenticator App."
+#~ msgstr ""
+#~ "Haga clic en <a href=\"{{ enrolledToken.googleurl.value }}\"> aquí </a> o "
+#~ "escanee el código QR, si desea agregar el token a su Autenticador de "
+#~ "Google."
 
 #~ msgid "The Google Authenticator only supports an OTP length of 6."
 #~ msgstr "Google Authenticator solo admite una longitud de OTP de 6."
