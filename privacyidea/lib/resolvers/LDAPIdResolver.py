@@ -1032,7 +1032,7 @@ class IdResolver (UserIdResolver):
                                 'TLS_CA_FILE': 'string',
                                 'START_TLS': 'bool',
                                 'CACHE_TIMEOUT': 'int',
-                                'SERVERPOOL_STRATEGY': 'str',
+                                'SERVERPOOL_STRATEGY': 'string',
                                 'SERVERPOOL_ROUNDS': 'int',
                                 'SERVERPOOL_SKIP': 'int',
                                 'SERVERPOOL_PERSISTENT': 'bool',

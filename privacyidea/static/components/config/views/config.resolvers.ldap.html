@@ -32,20 +32,20 @@
                    placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"/>
         </div>
     </div>
-        <div class="form-group"
-        ng_show="params.LDAPURI.toLowerCase().substring() ===','">
+    <div class="form-group"
+         ng_show="params.LDAPURI.includes(',', 5)">
         <label for="ldap_pooling_strategy"
             class="col-sm-3 control-label" translate>
-            pooling strategy
+            Pooling strategy
         </label>
         <div class="col-sm-4">
             <select class="form-control"
                     name="ldap_pooling_strategy" id="ldap_pooling_strategy"
-                    ng-model="params.LDAP_POOLING_STRATEGY">
+                    ng-model=ng-model="params.SERVERPOOL_STRATEGY">
                     <option ng-repeat="o in ldap_pooling_strategy_options"
-                            ng-selected="{{o.name==params.LDAP_POOLING_STRATEGY}}"
-                            value="{{o.value}}">
-                        {{o.name}}
+                            ng-selected="{{params.LDAP_POOLING_STRATEGY}}"
+                            value="{{o}}">
+                        {{o}}
                     </option>
             </select>
         </div>
