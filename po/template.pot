@@ -308,6 +308,10 @@ msgstr ""
 msgid "Application specific password"
 msgstr ""
 
+#: privacyidea/static/components/token/views/token.applications.html:2
+msgid "Application:"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
 "As the values are encrypted with AES128-CBC, you need to give a\n"
@@ -345,7 +349,7 @@ msgstr ""
 msgid "Assignment State"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.details.html:715
+#: privacyidea/static/components/token/views/token.details.html:714
 msgid "Attach Machine"
 msgstr ""
 
@@ -554,7 +558,7 @@ msgstr ""
 msgid ""
 "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
 "            the QR Code, if you\n"
-"            want to add the Token to your Authenticator App."
+"            want to add the Token to your smartphone authenticator App."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:27
@@ -1132,7 +1136,7 @@ msgstr ""
 msgid "Edit privacyIDEA server {{ identifier }}"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:47
+#: privacyidea/static/components/user/views/user.html:48
 msgid "Edit realms"
 msgstr ""
 
@@ -1499,7 +1503,7 @@ msgstr ""
 msgid "Help about Tokentypes"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:71
+#: privacyidea/static/components/user/views/user.html:72
 msgid "Help about User Details"
 msgstr ""
 
@@ -1507,11 +1511,11 @@ msgstr ""
 msgid "Help about UserResolver"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:59
+#: privacyidea/static/components/user/views/user.html:60
 msgid "Help about Users"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:65
+#: privacyidea/static/components/user/views/user.html:66
 msgid "Help about manage Users"
 msgstr ""
 
@@ -1643,7 +1647,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.import.html:51
 msgid ""
-"If you are enrolling the Yubikey in HOTP mode, You should use the\n"
+"If you are enrolling the Yubikey in HOTP mode, you should use the\n"
 "            PSKC file format in the newer version of the Yubikey GUI."
 msgstr ""
 
@@ -2394,17 +2398,8 @@ msgid "Quick Resolver Test"
 msgstr ""
 
 #: privacyidea/static/components/machine/views/machine.html:15
+#: privacyidea/static/components/user/views/user.html:45
 msgid "Quick links"
-msgstr ""
-
-#: privacyidea/static/components/user/views/user.html:44
-msgid ""
-"Quick links>\n"
-"                        <ul class=\"nav nav-pills nav-stacked\">\n"
-"                            <li ng-show=\"checkRight('resolverwrite')\">\n"
-"                                <a ui-sref=\"config.realms.list\" translate>Edit realms</a>\n"
-"                            </li>\n"
-"                        </ul>"
 msgstr ""
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
@@ -2937,6 +2932,12 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.system.html:152
 msgid "Service IDs"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.serviceid.list.html:1
+msgid ""
+"Service IDs can be used to attach e.g. SSH keys to certain machines and services.\n"
+"To view attached tokens go to <a ui-sref=\"token.applications\">token applications</a>."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:443
@@ -4780,8 +4781,8 @@ msgstr ""
 msgid "total tokens: {{ tokendata.count }}"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:52
-msgid "total users: {{ usercount }}"
+#: privacyidea/static/components/user/views/user.html:53
+msgid "total users:"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:97

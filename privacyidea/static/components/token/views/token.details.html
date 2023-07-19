@@ -692,20 +692,19 @@
         <!-- Options for a new MachineToken -->
         <div class="form-group"
              ng-repeat="(optionname, option) in Applications[form.application].options">
-            <label for="option_{{ optionnamme }}">{{ optionname | capitalize }}</label>
-            <input class="form-control"
+            <label for="option_{{ optionname }}">{{ optionname | capitalize }}</label>
+            <input class="form-control" id="option_{{ optionname }}"
                    ng-required="option.required && !option.value"
                    ng-model="form.options[optionname]"
                    ng-show="option.type==='str' && !option.value">
-            <select class="form-control"
+            <select class="form-control" id="option_{{ optionname }}"
                     ng-show="option.value"
                     ng-required="option.required && option.value"
                     ng-model="form.options[optionname]"
                     ng-options="value for value in option.value"></select>
-            <input type="checkbox"
+            <input type="checkbox" id="option_{{ optionname }}"
                    ng-model="form.options[optionname]"
                    ng-show="option.type==='bool'">
-            </select>
             <p class="help help-block">
                   {{ option.description }}
             </p>
@@ -723,4 +722,3 @@
 
 <ng-include src="instanceUrl + '/static/components/token/views/dialog.ask_token_delete.html'">
 </ng-include>
-
