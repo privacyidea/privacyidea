@@ -2,21 +2,22 @@
 # Copyright (C) 2017 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
-#
+# Paul Lettich <paul.lettich@netknights.it>, 2023.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2023-07-14 13:52+0200\n"
-"PO-Revision-Date: 2023-05-18 16:53+0000\n"
-"Last-Translator: Alex <alexander.simm@posteo.de>\n"
+"PO-Revision-Date: 2023-07-19 11:05+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-server/de/>\n"
 "Language: de\n"
-"Language-Team: German <https://hosted.weblate.org/projects/privacyidea"
-"/privacyidea-server/de/>\n"
-"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.0-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:225
@@ -162,9 +163,8 @@ msgid "Admin is allowed to set token properties."
 msgstr "Der Administrator kann Token-Eigenschaften verändern."
 
 #: lib/policy.py:1584
-#, fuzzy
 msgid "The admin is allowed to set the token description."
-msgstr "Der Benutzer darf die Token-Beschreibung setzen."
+msgstr "Der Administrator darf die Token-Beschreibung setzen."
 
 #: lib/policy.py:1588
 msgid "Admin is allowed to set the OTP PIN of tokens."
@@ -1946,9 +1946,8 @@ msgid "Set this tokeninfo key."
 msgstr "Setze diesen Schlüssel in der Tokeninfo-Tabelle."
 
 #: lib/eventhandler/tokenhandler.py:293
-#, fuzzy
 msgid "Set the above key to this value."
-msgstr "Setze der oben genannten Schlüssel auf diesen Wert."
+msgstr "Setze den oben genannten Schlüssel auf diesen Wert."
 
 #: lib/eventhandler/tokenhandler.py:302
 msgid "Delete this tokeninfo key."
