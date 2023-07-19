@@ -4,9 +4,9 @@ Re-Encrypting data
 ------------------
 
 You might need to reencrypt your token data, i.e. the secret OTP keys of your tokens.
-It could be since you are changing your security module or you think your encryption key is compromized.
+It could be since you are changing your security module or you think your encryption key is compromised.
 
-privacyIDEA provides tooks to reencrypt your token data.
+privacyIDEA provides tools to reencrypt your token data.
 
 Note, that currently we do not reencrypt configuration data like LDAP resolver passwords.
 
