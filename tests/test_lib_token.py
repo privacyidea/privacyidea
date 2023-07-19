@@ -2137,7 +2137,8 @@ class ExportAndReencryptTestCase(MyTestCase):
         for t in tokens:
             init_token({"type": t[1],
                         "serial": t[0],
-                        "otpkey": t[2]})
+                        "otpkey": t[2],
+                        "timeStep": 60})
 
         # export tokens
         token_dicts = []
@@ -2147,6 +2148,8 @@ class ExportAndReencryptTestCase(MyTestCase):
             self.assertIn(d.get("type"), ["hotp", "totp"])
             # Change the OTPKey
             d["otpkey"] = CHANGED_KEY
+            # Change the timestep
+            d["timeStep"] = 30
             token_dicts.append(d)
 
         # Update the otpkey
@@ -2159,4 +2162,8 @@ class ExportAndReencryptTestCase(MyTestCase):
         token_objects = get_tokens()
         for tok in token_objects:
             d = tok._to_dict()
+            # Check that "reencryption" worked
             self.assertEqual(CHANGED_KEY, d.get("otpkey"))
+            # Also check, that the tokeninfo for TOTP was updated
+            if d.get("type") == "totp":
+                self.assertEqual("30", d.get("timeStep"), d)

@@ -56,8 +56,9 @@ from privacyidea.app import create_app
 from flask_script import Manager
 import re
 import sys
-from base64 import b32encode
-from binascii import unhexlify
+from yaml import safe_dump as yaml_safe_dump
+from yaml import safe_load as yaml_safe_load
+
 
 
 __version__ = "0.1"
@@ -451,9 +452,13 @@ def export_user_data(token_list, attributes=None):
                               'by the user.',
                 dest='sum_tokens', action='store_true')
 @manager.option('--action', help='Which action should be performed on the '
-                                 'found tokens. {0!s}'.format("|".join(ALLOWED_ACTIONS)))
+                                 'found tokens. {0!s}. Exporting to PSKC only supports '
+                                 'HOTP, TOTP and PW tokens!'.format("|".join(ALLOWED_ACTIONS)))
 @manager.option('--csv', dest='csv', action='store_true',
                 help='In case of a simple find, the output is written as CSV instead of the '
+                     'formatted output.')
+@manager.option('--yaml', dest='yaml', action='store_true',
+                help='In case of a simple find, the output is written as YAML instead of the '
                      'formatted output.')
 @manager.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
 @manager.option('--assigned', help='True|False|None')
@@ -471,7 +476,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
          set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv,
          chunksize, attributes, b32, has_not_tokeninfo_key, has_tokeninfo_key,
          tokenattribute, tokenattribute_value, tokenattribute_value_greater_than,
-         tokenattribute_value_less_than):
+         tokenattribute_value_less_than, yaml):
     """
     finds all tokens which match the conditions
     """
@@ -547,19 +552,29 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 for tokenobj in tlist:
                     if tokenobj.type.lower() not in ["totp", "hotp"]:
                         continue
-                    type = tokenobj.type.lower()
+                    token_dict = tokenobj._to_dict(b32=b32)
                     owner = "{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm) if tokenobj.user else "n/a"
-                    serial = tokenobj.token.serial
-                    otplen = tokenobj.token.otplen
-                    otpkey = tokenobj.token.get_otpkey().getKey()
-                    if b32:
-                        otpkey = b32encode(unhexlify(otpkey))
-                    otpkey = to_unicode(otpkey)
                     if type == "totp":
-                        timestep = tokenobj.get_tokeninfo("timeStep")
-                        print("{!s}, {!s}, {!s}, {!s}, {!s}, {!s}".format(owner, serial, otpkey, type, otplen, timestep))
+                        print("{!s}, {!s}, {!s}, {!s}, {!s}, {!s}".format(owner, token_dict.get("serial"),
+                                                                          token_dict.get("otpkey"),
+                                                                          token_dict.get("type"),
+                                                                          token_dict.get("otplen"),
+                                                                          token_dict.get("timestep")))
                     else:
-                        print("{!s}, {!s}, {!s}, {!s}, {!s}".format(owner, serial, otpkey, type, otplen))
+                        print("{!s}, {!s}, {!s}, {!s}, {!s}".format(owner, token_dict.get("serial"),
+                                                                    token_dict.get("otpkey"),
+                                                                    token_dict.get("type"),
+                                                                    token_dict.get("otplen")))
+            elif yaml:
+                token_list = []
+                for tokenobj in tlist:
+                    try:
+                        token_dict = tokenobj._to_dict(b32=b32)
+                        token_dict["owner"] = "{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm) if tokenobj.user else "n/a"
+                        token_list.append(token_dict)
+                        print(yaml_safe_dump(token_list))
+                    except Exception as e:
+                        sys.stderr.write("\nFailed to export token {0!s}.\n".format(token_dict.get("serial")))
             else:
                 key, token_num, soup = export_pskc(tlist)
                 sys.stderr.write("\n{0!s} tokens exported.\n".format(token_num))
@@ -601,6 +616,28 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
         del tlist
 
 
+@manager.option('--yaml', dest='yaml',
+                help='Specify the YAML file with the previously exported tokens.')
+def updatetokens(yaml):
+    """
+    This can update existing tokens in the privacyIDEA system. You can specify a yaml file with the tokendata.
+    Can be used to reencrypt data, when changing the encryption key.
+    """
+    print("Loading YAML data. This may take a while.")
+    token_list = yaml_safe_load(open(yaml, 'r').read())
+    for tok in token_list:
+        del(tok["owner"])
+        tok_objects = get_tokens(serial=tok.get("serial"))
+        if len(tok_objects) == 0:
+            sys.stderr.write("\nCan not find token {0!s}. Not updating.\n".format(tok.get("serial")))
+        else:
+            print("Updating token {0!s}.".format(tok.get("serial")))
+            try:
+                tok_objects[0].update(tok)
+            except Exception as e:
+                sys.stderr.write("\nFailed to update token {0!s}.".format(tok.get("serial")))
+
+
 @manager.option('--pskc', dest='pskc',
                 help='Import this PSKC file.')
 @manager.option('--preshared_key_hex', dest='preshared_key_hex',
@@ -611,6 +648,9 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                      "'check_fail_soft' : Skip tokens with invalid HMAC\n"
                      "'check_fail_hard' : Only import tokens if all HMAC are valid.")
 def loadtokens(pskc, preshared_key_hex, validate_mac):
+    """
+    Loads token data from a PSKC file.
+    """
     from privacyidea.lib.importotp import parsePSKCdata
 
     with open(pskc, 'r') as pskcfile:

@@ -18,6 +18,7 @@ Frequently Asked Questions
    shortcuts
    resolver
    crypto-considerations
+   re-encryption
    time
    policies
    performance
