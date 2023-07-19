@@ -130,8 +130,12 @@ class WebHookHandler(BaseEventHandler):
         if request is not None:
             token_serial = request.all_data.get('serial')
             tokenowner = self._get_tokenowner(request)
-        user = User(login=g.logged_in_user.get('username'),
-                    realm=g.logged_in_user.get('realm'))
+
+        try:
+            user = User(login=g.logged_in_user.get('username'),
+                        realm=g.logged_in_user.get('realm'))
+        except:
+            user = None
 
         if replace:
             webhook_text = replace_function_event_handler(webhook_text, token_serial=token_serial,
