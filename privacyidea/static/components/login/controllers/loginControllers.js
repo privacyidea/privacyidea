@@ -319,42 +319,39 @@ angular.module("privacyideaApp")
                     );
                 }
             } else {
-                if ($state.current.name === "response") {
-                    // We are already in the response state, but the first
-                    // response was not valid.
-                    inform.add(gettextCatalog.getString("Challenge Response " +
-                            "Authentication. Your response was not valid!"),
-                        {type: "warning", ttl: 5000});
-                    // in case of U2F we try for a 2nd signature
-                    // In case of u2f we do:
-                    if ($scope.u2f_first_error) {
-                        U2fFactory.sign_request($scope.u2f_first_error,
-                            $scope.u2fSignRequests,
-                            $scope.login.username,
-                            $scope.transactionid, $scope.do_login_stuff);
-                    }
-                    // In case of WebAuthn we try for a 2nd signature:
-                    if ($scope.webauthn_first_error) {
-                        webAuthnToken.sign_request(
-                            $scope.webauthn_first_error,
-                            $scope.webAuthnSignRequests,
-                            $scope.login.username,
-                            $scope.transactionid,
-                            $scope.do_login_stuff
-                        )
-                    }
-                }
+                inform.add(gettextCatalog.getString("Something went wrong!"),
+                    {type: "error", ttl: 5000});
+                $state.go("login");
             }
         }, function (error) {
             // TODO: Do we want to display the error message?
             // This can show an attacker, if a username exists.
             // But this can also be due to a problem like
             // "HSM not ready".
-            $scope.transactionid = "";
             if ($state.current.name === "response") {
+                // We are already in the response state, but the first
+                // response was not valid.
                 inform.add(gettextCatalog.getString("Challenge Response " +
                         "Authentication. Your response was not valid!"),
                     {type: "warning", ttl: 5000});
+                // in case of U2F we try for a 2nd signature
+                // In case of u2f we do:
+                if ($scope.u2f_first_error) {
+                    U2fFactory.sign_request($scope.u2f_first_error,
+                        $scope.u2fSignRequests,
+                        $scope.login.username,
+                        $scope.transactionid, $scope.do_login_stuff);
+                }
+                // In case of WebAuthn we try for a 2nd signature:
+                if ($scope.webauthn_first_error) {
+                    webAuthnToken.sign_request(
+                        $scope.webauthn_first_error,
+                        $scope.webAuthnSignRequests,
+                        $scope.login.username,
+                        $scope.transactionid,
+                        $scope.do_login_stuff
+                    )
+                }
             } else {
                 var errmsg = gettextCatalog.getString("Authentication failed.");
                 inform.add(errmsg + " " + error.data.result.error.message,
