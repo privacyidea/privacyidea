@@ -4,7 +4,7 @@ docutils==0.17.1
 imagesize==1.4.1
 Pallets-Sphinx-Themes==1.2.3
 pyenchant==3.2.2
-Pygments==2.14.0
+Pygments==2.15.0
 snowballstemmer==2.2.0
 Sphinx==4.5.0
 sphinxcontrib-applehelp==1.0.4
