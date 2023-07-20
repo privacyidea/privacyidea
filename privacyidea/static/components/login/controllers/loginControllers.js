@@ -237,13 +237,13 @@ angular.module("privacyideaApp")
             // failed auth request (may be challenge-response)
             //debug: console.log("challenge response");
             //debug: console.log(error);
-            let error = response.data;
-            if (error.result.value && error.result.value.token) {
+            let data = response.data;
+            if (data.result.value && data.result.value.token) {
                 // successful authentication
                 $scope.do_login_stuff(response.data);
                 // login data is not needed anymore, remove from scope
                 $scope.login = {username: "", password: ""};
-            } else if (error.detail && error.detail.transaction_id) {
+            } else if (data.detail && data.detail.transaction_id) {
                 // In case of error.detail.transaction_id is present, we
                 // have a challenge response and we need to go to the state response
                 if ($scope.unlocking === false) {
@@ -258,14 +258,14 @@ angular.module("privacyideaApp")
                 $scope.hideResponseInput = true;
                 $scope.u2fSignRequests = Array();
                 $scope.webAuthnSignRequests = [];
-                $scope.transactionid = error.detail["transaction_id"];
+                $scope.transactionid = data.detail["transaction_id"];
                 // Challenge Response always contains multi_challenge!
-                var multi_challenge = error.detail.multi_challenge;
+                var multi_challenge = data.detail.multi_challenge;
                 if (multi_challenge.length > 1) {
                     $scope.challenge_message = gettextCatalog.getString('Please confirm with one of these tokens:');
                     $scope.challenge_multiple_tokens = true;
                 } else {
-                    $scope.challenge_message = error.detail.message;
+                    $scope.challenge_message = data.detail.message;
                     $scope.challenge_multiple_tokens = false;
                 }
                 for (var i = 0; i < multi_challenge.length; i++) {
@@ -302,14 +302,14 @@ angular.module("privacyideaApp")
                 }
                 // In case of u2f we do:
                 if ($scope.u2fSignRequests.length > 0) {
-                    $scope.u2f_first_error = error;
-                    U2fFactory.sign_request(error, $scope.u2fSignRequests,
+                    $scope.u2f_first_error = data;
+                    U2fFactory.sign_request(data, $scope.u2fSignRequests,
                         $scope.login.username,
                         $scope.transactionid, $scope.do_login_stuff);
                 }
                 // In case of webAuthn we do:
                 if ($scope.webAuthnSignRequests.length > 0) {
-                    $scope.webauthn_first_error = error;
+                    $scope.webauthn_first_error = data;
                     webAuthnToken.sign_request(
                         $scope.webauthn_first_error,
                         $scope.webAuthnSignRequests,
