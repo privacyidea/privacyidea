@@ -13,7 +13,9 @@ Note, that currently we do not reencrypt configuration data like LDAP resolver p
 Reencryption is currently done offline. You will have to export your existing tokens and reimport the tokens to
 the system with the new security module or encryption key.
 
-This process will only update existing tokens in the new system. It will not create these tokens.
+This process will only update existing tokens in the new system. It will not create these tokens and it will not change
+user assignments.
+
 
 Export tokens
 ~~~~~~~~~~~~~
@@ -46,3 +48,18 @@ Tokens with a broken OTP key may fail to export or import. This could e.g. happe
 
 If a token does not exist in the new system, it will not be updated!
 
+Configuration data is not reencrypted during this process.
+
+Thoughts about the configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We described how you can reencrypt the token data. Configuration data is not reencrypted.
+If you want to reencrypt the configuration data, you can use `pi-manage` to export and import the configuration.
+
+Export resolvers:
+
+    pi-manage config exporter -t resolver -f yaml
+
+This will export the resolver configuration with the decrypted passwords. You could then import the configuration on
+the new system to encrypt the passwords again. However, you could also set the password in the configuration of
+the new system, this way it will be also encrypted correctly.
