@@ -359,6 +359,12 @@ msgstr "Typ aplikace"
 msgid "Application specific password"
 msgstr "Typ aplikace"
 
+#: privacyidea/static/components/token/views/token.applications.html:2
+#, fuzzy
+#| msgid "Application"
+msgid "Application:"
+msgstr "Aplikace"
+
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
 "As the values are encrypted with AES128-CBC, you need to give a\n"
@@ -398,7 +404,7 @@ msgstr "Přiřazený uživatel"
 msgid "Assignment State"
 msgstr "Stav přiřazení"
 
-#: privacyidea/static/components/token/views/token.details.html:715
+#: privacyidea/static/components/token/views/token.details.html:714
 msgid "Attach Machine"
 msgstr ""
 
@@ -618,7 +624,7 @@ msgstr ""
 msgid ""
 "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
 "            the QR Code, if you\n"
-"            want to add the Token to your Authenticator App."
+"            want to add the Token to your smartphone authenticator App."
 msgstr ""
 "Klikněte <a href=\"{{ enrolledToken.googleurl.value }}\">zde</a> nebo "
 "naskenujte\n"
@@ -1221,7 +1227,7 @@ msgstr ""
 msgid "Edit privacyIDEA server {{ identifier }}"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:47
+#: privacyidea/static/components/user/views/user.html:48
 msgid "Edit realms"
 msgstr "Upravit domény"
 
@@ -1596,7 +1602,7 @@ msgstr ""
 msgid "Help about Tokentypes"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:71
+#: privacyidea/static/components/user/views/user.html:72
 msgid "Help about User Details"
 msgstr ""
 
@@ -1604,11 +1610,11 @@ msgstr ""
 msgid "Help about UserResolver"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:59
+#: privacyidea/static/components/user/views/user.html:60
 msgid "Help about Users"
 msgstr ""
 
-#: privacyidea/static/components/user/views/user.html:65
+#: privacyidea/static/components/user/views/user.html:66
 msgid "Help about manage Users"
 msgstr ""
 
@@ -1755,7 +1761,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.import.html:51
 msgid ""
-"If you are enrolling the Yubikey in HOTP mode, You should use the\n"
+"If you are enrolling the Yubikey in HOTP mode, you should use the\n"
 "            PSKC file format in the newer version of the Yubikey GUI."
 msgstr ""
 
@@ -2541,19 +2547,9 @@ msgid "Quick Resolver Test"
 msgstr "Rychlý test resolveru"
 
 #: privacyidea/static/components/machine/views/machine.html:15
+#: privacyidea/static/components/user/views/user.html:45
 msgid "Quick links"
 msgstr "Rychlé odkazy"
-
-#: privacyidea/static/components/user/views/user.html:44
-msgid ""
-"Quick links>\n"
-"                        <ul class=\"nav nav-pills nav-stacked\">\n"
-"                            <li ng-show=\"checkRight('resolverwrite')\">\n"
-"                                <a ui-sref=\"config.realms.list\" "
-"translate>Edit realms</a>\n"
-"                            </li>\n"
-"                        </ul>"
-msgstr ""
 
 #: privacyidea/static/components/config/controllers/radiusServerController.js:89
 msgid "RADIUS Config saved."
@@ -3094,6 +3090,14 @@ msgstr ""
 #, fuzzy
 msgid "Service IDs"
 msgstr "URI serveru"
+
+#: privacyidea/static/components/config/views/config.serviceid.list.html:1
+msgid ""
+"Service IDs can be used to attach e.g. SSH keys to certain machines and "
+"services.\n"
+"To view attached tokens go to <a ui-sref=\"token.applications\">token "
+"applications</a>."
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:443
 msgid "Set PIN"
@@ -5168,9 +5172,11 @@ msgstr "typ tokenu"
 msgid "total tokens: {{ tokendata.count }}"
 msgstr "celkem tokenů: {{ tokendata.count }}"
 
-#: privacyidea/static/components/user/views/user.html:52
-msgid "total users: {{ usercount }}"
-msgstr "celkem uživatelů: {{ usercount }}"
+#: privacyidea/static/components/user/views/user.html:53
+#, fuzzy
+#| msgid "All users"
+msgid "total users:"
+msgstr "Uživatelé"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:97
 msgid ""
@@ -5219,6 +5225,20 @@ msgstr "tolerance"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "Nalezeno {{ auditdata.count }} záznamů."
+
+#, fuzzy
+#~ msgid ""
+#~ "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
+#~ "            the QR Code, if you\n"
+#~ "            want to add the Token to your Authenticator App."
+#~ msgstr ""
+#~ "Klikněte <a href=\"{{ enrolledToken.googleurl.value }}\">zde</a> nebo "
+#~ "naskenujte\n"
+#~ "            QR kód pro přidání tokenu\n"
+#~ "            do TOTP aplikace (např. Google Authenticator)."
+
+#~ msgid "total users: {{ usercount }}"
+#~ msgstr "celkem uživatelů: {{ usercount }}"
 
 #~ msgid "The Google Authenticator only supports an OTP length of 6."
 #~ msgstr "Aplikace Google Authenticator podporuje pouze kódy s délkou 6."
