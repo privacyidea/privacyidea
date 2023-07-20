@@ -72,7 +72,7 @@ from dateutil.tz import tzlocal
 PWFILE = "tests/testdata/passwords"
 OTPKEY = "3132333435363738393031323334353637383930"
 OTPKE2 = "31323334353637383930313233343536373839AA"
-CHANGED_KEY = b'31323334353637383930313233343536373839AA'
+CHANGED_KEY = '31323334353637383930313233343536373839AA'
 
 
 class TokenTestCase(MyTestCase):
@@ -2146,6 +2146,7 @@ class ExportAndReencryptTestCase(MyTestCase):
         for tok in token_objects:
             d = tok._to_dict()
             self.assertIn(d.get("type"), ["hotp", "totp"])
+            self.assertEqual(self.otpkey, d.get("otpkey"))
             # Change the OTPKey
             d["otpkey"] = CHANGED_KEY
             # Change the timestep
