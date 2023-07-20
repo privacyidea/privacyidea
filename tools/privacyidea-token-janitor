@@ -572,9 +572,9 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                         token_dict = tokenobj._to_dict(b32=b32)
                         token_dict["owner"] = "{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm) if tokenobj.user else "n/a"
                         token_list.append(token_dict)
-                        print(yaml_safe_dump(token_list))
                     except Exception as e:
                         sys.stderr.write("\nFailed to export token {0!s}.\n".format(token_dict.get("serial")))
+                print(yaml_safe_dump(token_list))
             else:
                 key, token_num, soup = export_pskc(tlist)
                 sys.stderr.write("\n{0!s} tokens exported.\n".format(token_num))
