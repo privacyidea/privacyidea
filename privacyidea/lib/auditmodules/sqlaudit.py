@@ -132,10 +132,13 @@ class Audit(AuditBase):
         self.sign_data = not self.config.get("PI_AUDIT_NO_SIGN")
         self.sign_object = None
         self.verify_old_sig = self.config.get('PI_CHECK_OLD_SIGNATURES')
+        # Disable the costly checking of private RSA keys when loading them.
+        self.check_private_key = not self.config.get("PI_AUDIT_NO_PRIVATE_KEY_CHECK", False)
         if self.sign_data:
             self.read_keys(self.config.get("PI_AUDIT_KEY_PUBLIC"),
                            self.config.get("PI_AUDIT_KEY_PRIVATE"))
-            self.sign_object = Sign(self.private, self.public)
+            self.sign_object = Sign(self.private, self.public,
+                                    check_private_key=self.check_private_key)
         # Read column_length from the config file
         config_column_length = self.config.get("PI_AUDIT_SQL_COLUMN_LENGTH", {})
         # fill the missing parts with the default from the models
@@ -336,7 +339,7 @@ class Audit(AuditBase):
         """
         Check if the audit log contains the entries before and after
         the given id.
-        
+
         TODO: We can not check at the moment if the first or the last entries
               were deleted. If we want to do this, we need to store some signed
               meta information:
@@ -370,7 +373,7 @@ class Audit(AuditBase):
         """
         This function creates a string from the logentry so
         that this string can be signed.
-        
+
         Note: Not all elements of the LogEntry are used to generate the
         string (the Signature is not!), otherwise we could have used pickle
 

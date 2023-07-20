@@ -141,7 +141,7 @@ class postrequest(object):
 def sign_response(request, response):
     """
     This decorator is used to sign the response. It adds the nonce from the
-    request, if it exist and adds the nonce and the signature to the response.
+    request, if it exists and adds the nonce and the signature to the response.
 
     .. note:: This only works for JSON responses. So if we fail to decode the
        JSON, we just pass on.
@@ -159,10 +159,14 @@ def sign_response(request, response):
         return response
 
     priv_file_name = current_app.config.get("PI_AUDIT_KEY_PRIVATE")
+
+    # Disable the costly checking of private RSA keys when loading them.
+    check_private_key = not current_app.config.get("PI_RESPONSE_NO_PRIVATE_KEY_CHECK", False)
     try:
         with open(priv_file_name, 'rb') as priv_file:
             priv_key = priv_file.read()
-        sign_object = Sign(priv_key, public_key=None)
+        sign_object = Sign(priv_key, public_key=None,
+                           check_private_key=check_private_key)
     except (IOError, ValueError, TypeError) as e:
         log.info('Could not load private key from '
                  'file {0!s}: {1!r}!'.format(priv_file_name, e))
