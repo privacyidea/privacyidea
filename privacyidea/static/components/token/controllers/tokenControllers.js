@@ -394,9 +394,11 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         // init the user, if token.enroll was called as a normal user
         $scope.newUser.user = AuthFactory.getUser().username;
         $scope.newUser.realm = AuthFactory.getUser().realm;
-        UserFactory.getUserDetails({}, function(data) {
-            $scope.User = $scope.get_user_infos(data);
-        });
+        if ($scope.checkRight('userlist')) {
+            UserFactory.getUserDetails({}, function(data) {
+                $scope.User = $scope.get_user_infos(data);
+            });
+        }
     }
 
     // Read the tokentypes from the server
