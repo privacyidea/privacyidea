@@ -41,9 +41,8 @@
         <div class="col-sm-4">
             <select class="form-control"
                     name="ldap_pooling_strategy" id="ldap_pooling_strategy"
-                    ng-model=ng-model="params.SERVERPOOL_STRATEGY">
+                    ng-model="params.SERVERPOOL_STRATEGY">
                     <option ng-repeat="o in ldap_pooling_strategy_options"
-                            ng-selected="{{params.LDAP_POOLING_STRATEGY}}"
                             value="{{o}}">
                         {{o}}
                     </option>
