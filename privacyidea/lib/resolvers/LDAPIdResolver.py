@@ -94,7 +94,7 @@ try:
     import gssapi
     have_gssapi = True
 except ImportError:
-    log.warning('Could not import gssapi package. Kerberos authentication not available')
+    log.info('Could not import gssapi package. Kerberos authentication not available')
     have_gssapi = False
 
 CACHE = {}
@@ -105,6 +105,9 @@ ENCODING = "utf-8"
 SERVERPOOL_ROUNDS = 2
 # The number of seconds a non-responding server is removed from the server pool
 SERVERPOOL_SKIP = 30
+# The pooling strategy for the ldap servers
+LDAP_STRATEGY = {"ROUND_ROBIN": ldap3.ROUND_ROBIN, "FIRST": ldap3.FIRST, "RANDOM": ldap3.RANDOM}
+SERVERPOOL_STRATEGY = "ROUND_ROBIN"
 
 # 1 sec == 10^9 nano secs == 10^7 * (100 nano secs)
 MS_AD_MULTIPLYER = 10 ** 7
@@ -229,7 +232,7 @@ def ignore_sizelimit_exception(conn, generator):
 
 def cache(func):
     """
-    cache the user with his loginname, resolver and UID in a local 
+    cache the user with his loginname, resolver and UID in a local
     dictionary cache.
     This is a per process cache.
     """
@@ -320,6 +323,7 @@ class IdResolver (UserIdResolver):
         self.serverpool_persistent = False
         self.serverpool_rounds = SERVERPOOL_ROUNDS
         self.serverpool_skip = SERVERPOOL_SKIP
+        self.serverpool_strategy = SERVERPOOL_STRATEGY
         self.serverpool = None
         self.keytabfile = None
         # The number of seconds that ldap3 waits if no server is left in the pool, before
@@ -439,7 +443,7 @@ class IdResolver (UserIdResolver):
     def _get_uid(entry, uidtype):
         uid = None
         if uidtype.lower() == "dn":
-           uid = entry.get("dn")
+            uid = entry.get("dn")
         else:
             attributes = entry.get("attributes")
             if type(attributes.get(uidtype)) == list:
@@ -495,8 +499,8 @@ class IdResolver (UserIdResolver):
             self._bind()
             search_userId = self._trim_user_id(userId)
             filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
-                                                     self.uidtype,
-                                                     search_userId)
+                                                    self.uidtype,
+                                                    search_userId)
             self.l.search(search_base=self.basedn,
                           search_scope=self.scope,
                           search_filter=filter,
@@ -525,7 +529,6 @@ class IdResolver (UserIdResolver):
                                             self.noreferrals,
                                             start_tls=self.start_tls,
                                             keytabfile=self.keytabfile)
-            #log.error("LDAP Server Pool States: %s" % server_pool.pool_states)
             if not self.l.bind():
                 raise Exception("Wrong credentials")
             self.i_am_bound = True
@@ -579,12 +582,12 @@ class IdResolver (UserIdResolver):
         else:
             search_userId = to_unicode(self._trim_user_id(userId))
             filter = "(&{0!s}({1!s}={2!s}))".format(self.searchfilter,
-                                                     self.uidtype,
-                                                     search_userId)
+                                                    self.uidtype,
+                                                    search_userId)
             self.l.search(search_base=self.basedn,
-                              search_scope=self.scope,
-                              search_filter=filter,
-                              attributes=list(self.userinfo.values()))
+                          search_scope=self.scope,
+                          search_filter=filter,
+                          attributes=list(self.userinfo.values()))
 
         r = self.l.response
         r = self._trim_result(r)
@@ -614,7 +617,8 @@ class IdResolver (UserIdResolver):
                         if isinstance(ldap_v, str):
                             ret[map_k] = ldap_v.strip("{").strip("}")
                         else:
-                            raise Exception("The LDAP returns an objectGUID, that is no string: {0!s}".format(type(ldap_v)))
+                            raise Exception("The LDAP returns an objectGUID, "
+                                            "that is no string: {0!s}".format(type(ldap_v)))
                     elif type(ldap_v) == list and map_k not in self.multivalueattributes:
                         # lists that are not in self.multivalueattributes return first value
                         # as a string. Multi-value-attributes are returned as a list
@@ -629,6 +633,7 @@ class IdResolver (UserIdResolver):
     def getUsername(self, user_id):
         """
         Returns the username/loginname for a given user_id
+
         :param user_id: The user_id in this resolver
         :type user_id: string
         :return: username
@@ -662,7 +667,7 @@ class IdResolver (UserIdResolver):
                     else:
                         search_login_name = login_name
                     loginname_filter += "({!s}={!s})".format(l_attribute.strip(),
-                                                              search_login_name)
+                                                             search_login_name)
                 except ValueError:
                     # This happens if we have a self.loginname_attribute like ["sAMAccountName","objectGUID"],
                     # the user logs in with his sAMAccountName, which can
@@ -676,7 +681,7 @@ class IdResolver (UserIdResolver):
             else:
                 search_login_name = login_name
             loginname_filter = "{!s}={!s}".format(self.loginname_attribute[0],
-                                                   search_login_name)
+                                                  search_login_name)
 
         log.debug("login name filter: {!r}".format(loginname_filter))
         filter = "(&{0!s}({1!s}))".format(self.searchfilter, loginname_filter)
@@ -730,7 +735,7 @@ class IdResolver (UserIdResolver):
                     get_ad_timestamp_now(), self.userinfo[search_key])
             else:
                 filter += "({0!s}={1!s})".format(self.userinfo[search_key],
-                                                  searchDict[search_key])
+                                                 searchDict[search_key])
         filter += ")"
 
         g = self.l.extend.standard.paged_search(search_base=self.basedn,
@@ -769,8 +774,8 @@ class IdResolver (UserIdResolver):
         :rtype: str
         """
         s = "{0!s}{1!s}{2!s}{3!s}".format(self.uri, self.basedn,
-                                           self.searchfilter,
-                                           sorted(self.userinfo.items(), key=itemgetter(0)))
+                                          self.searchfilter,
+                                          sorted(self.userinfo.items(), key=itemgetter(0)))
         r = binascii.hexlify(hashlib.sha1(s.encode("utf-8")).digest())  # nosec B324 # hash used as unique identifier
         return r.decode('utf8')
 
@@ -849,6 +854,7 @@ class IdResolver (UserIdResolver):
         self.serverpool_persistent = is_true(config.get("SERVERPOOL_PERSISTENT", False))
         self.serverpool_rounds = int(config.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
+        self.serverpool_strategy = config.get("SERVERPOOL_STRATEGY") or SERVERPOOL_STRATEGY
         # The configuration might have changed. We reset the serverpool
         self.serverpool = None
         self.i_am_bound = False
@@ -898,9 +904,9 @@ class IdResolver (UserIdResolver):
 
     @classmethod
     def create_serverpool(cls, urilist, timeout, get_info=None, tls_context=None, rounds=SERVERPOOL_ROUNDS,
-                          exhaust=SERVERPOOL_SKIP, pool_cls=ldap3.ServerPool):
+                          exhaust=SERVERPOOL_SKIP, pool_cls=ldap3.ServerPool, strategy=SERVERPOOL_STRATEGY):
         """
-        This create the serverpool for the ldap3 connection.
+        This creates the serverpool for the ldap3 connection.
         The URI from the LDAP resolver can contain a comma separated list of
         LDAP servers. These are split and then added to the pool.
 
@@ -921,11 +927,14 @@ class IdResolver (UserIdResolver):
         :param exhaust: The seconds, for how long a non-reachable server should be
             removed from the serverpool
         :param pool_cls: ``ldap3.ServerPool`` subclass that should be instantiated
+        :param strategy: The pooling strategy of the server-pool
+        :type strategy: str
         :return: Server Pool
-        :rtype: serverpool_cls
+        :rtype: ldap3.ServerPool
         """
         get_info = get_info or ldap3.SCHEMA
-        server_pool = pool_cls(None, ldap3.ROUND_ROBIN,
+        strategy = LDAP_STRATEGY.get(strategy, SERVERPOOL_STRATEGY)
+        server_pool = pool_cls(None, strategy,
                                active=rounds,
                                exhaust=exhaust)
         for uri in urilist.split(","):
@@ -946,20 +955,23 @@ class IdResolver (UserIdResolver):
         is enabled, invoke ``get_persistent_serverpool`` to retrieve a per-process
         server pool instance. If it is not enabled, invoke ``create_serverpool``
         to retrieve a per-request server pool instance.
+
         :param get_info: one of ldap3.SCHEMA, ldap3.NONE, ldap3.ALL
         :return: a ``ServerPool``/``LockingServerPool`` instance
         """
         if self.serverpool_persistent:
             return self.get_persistent_serverpool(get_info)
         else:
-            return self.create_serverpool(self.uri, self.timeout, get_info,
-                                          self.tls_context, self.serverpool_rounds, self.serverpool_skip)
+            return self.create_serverpool(self.uri, self.timeout, get_info, self.tls_context,
+                                          self.serverpool_rounds, self.serverpool_skip,
+                                          strategy=self.serverpool_strategy)
 
     def get_persistent_serverpool(self, get_info=None):
         """
         Return a process-level instance of ``LockingServerPool`` for the current LDAP resolver
         configuration. Retrieve it from the app-local store. If such an instance does not exist
         yet, create one.
+
         :param get_info: one of ldap3.SCHEMA, ldap3.NONE, ldap3.ALL
         :return: a ``LockingServerPool`` instance
         """
@@ -978,7 +990,7 @@ class IdResolver (UserIdResolver):
             # Create a suitable instance of ``LockingServerPool``
             server_pool = self.create_serverpool(self.uri, self.timeout, get_info,
                                                  self.tls_context, self.serverpool_rounds, self.serverpool_skip,
-                                                 pool_cls=LockingServerPool)
+                                                 pool_cls=LockingServerPool, strategy=self.serverpool_strategy)
             # It may happen that another thread tries to add an instance to the dictionary concurrently.
             # However, only one of them will win, and the other ``LockingServerPool`` instance will be
             # garbage-collected eventually.
@@ -1025,6 +1037,7 @@ class IdResolver (UserIdResolver):
                                 'TLS_CA_FILE': 'string',
                                 'START_TLS': 'bool',
                                 'CACHE_TIMEOUT': 'int',
+                                'SERVERPOOL_STRATEGY': 'string',
                                 'SERVERPOOL_ROUNDS': 'int',
                                 'SERVERPOOL_SKIP': 'int',
                                 'SERVERPOOL_PERSISTENT': 'bool',
@@ -1037,16 +1050,17 @@ class IdResolver (UserIdResolver):
         """
         This function lets you test the to be saved LDAP connection.
 
+        Parameters are:
+            BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
+            LDAPSEARCHFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE,
+            AUTHTYPE, TLS_VERIFY, TLS_VERSION, TLS_CA_FILE, SERVERPOOL_ROUNDS,
+            SERVERPOOL_SKIP, SERVERPOOL_STRATEGY
+
         :param param: A dictionary with all necessary parameter to test
                         the connection.
         :type param: dict
         :return: Tuple of success and a description
         :rtype: (bool, string)
-
-        Parameters are:
-            BINDDN, BINDPW, LDAPURI, TIMEOUT, LDAPBASE, LOGINNAMEATTRIBUTE,
-            LDAPSEARCHFILTER, USERINFO, SIZELIMIT, NOREFERRALS, CACERTIFICATE,
-            AUTHTYPE, TLS_VERIFY, TLS_VERSION, TLS_CA_FILE, SERVERPOOL_ROUNDS, SERVERPOOL_SKIP
         """
         success = False
         uidtype = param.get("UIDTYPE")
@@ -1055,6 +1069,8 @@ class IdResolver (UserIdResolver):
         size_limit = int(param.get("SIZELIMIT", 500))
         serverpool_rounds = int(param.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         serverpool_skip = int(param.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
+        pool_strat = param.get("SERVERPOOL_STRATEGY") or SERVERPOOL_STRATEGY
+        serverpool_strategy = LDAP_STRATEGY.get(pool_strat, SERVERPOOL_STRATEGY)
         start_tls = is_true(param.get("START_TLS", False)) and not ldap_uri.lower().startswith("ldaps")
         tls_context = cls._get_tls_context(ldap_uri=ldap_uri,
                                            start_tls=start_tls,
@@ -1068,7 +1084,8 @@ class IdResolver (UserIdResolver):
                                                 tls_context=tls_context,
                                                 get_info=get_info,
                                                 rounds=serverpool_rounds,
-                                                exhaust=serverpool_skip)
+                                                exhaust=serverpool_skip,
+                                                strategy=serverpool_strategy)
             l = cls.create_connection(authtype=param.get("AUTHTYPE",
                                                          AUTHTYPE.SIMPLE),
                                       server=server_pool,
@@ -1204,7 +1221,7 @@ class IdResolver (UserIdResolver):
                         pw_hash = ldap_salted_sha1.hash(value[1][0])
                         value[1][0] = pw_hash
                         ldap_attributes[self.map.get(fieldname)] = value
-                    except TypeError as e:
+                    except TypeError as _e:
                         pw_hash = ldap_salted_sha1.hash(value)
                         ldap_attributes[self.map.get(fieldname)] = pw_hash
                 else:
