@@ -219,6 +219,7 @@ Name                  contained       in demo subscription
 ====================  ==============  ========================
 Keycloak              10000           N/A
 SimpleSAMLphp         10000           N/A
+privacyIDEA PAM       10000           N/A
 ADFS                  50              50
 Credential Provider   50              50
 OwnCloud              50              N/A
