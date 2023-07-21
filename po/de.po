@@ -3,12 +3,13 @@
 # NNLemling <sebastian@lemling.de>, 2024.
 # "J. Lavoie" <j.lavoie@net-c.ca>, 2024.
 # Felix E <felix@eckhofer.com>, 2024.
+# pablo-knight <julio.storch@netknights.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Felix E <felix@eckhofer.com>\n"
+"Last-Translator: pablo-knight <julio.storch@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
