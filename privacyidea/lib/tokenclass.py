@@ -104,6 +104,9 @@ from privacyidea.lib.utils import (is_true, decode_base32check,
                                    parse_legacy_time, split_pin_pass)
 from privacyidea.lib import _
 from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
+from base64 import b32encode
+from binascii import unhexlify
+
 
 
 #DATE_FORMAT = "%d/%m/%y %H:%M"
@@ -1926,3 +1929,34 @@ class TokenClass(object):
         :return:
         """
         return True
+
+    def _to_dict(self, b32=False):
+        """
+        export the token information to a dictionary.
+
+        This can be used to re-encrypt tokens.
+
+        :param b32: Export otp key b32encoded
+
+        :return: a dict, containing the token and the tokeninfo
+        """
+        token_dict = {
+            "serial": self.get_serial(),
+            "type": self.get_type(),
+            "otpkey": self.token.get_otpkey().getKey(),
+            "description": self.token.description,
+            "otplen": self.get_otplen(),
+            "maxfail": self.get_max_failcount(),
+            "failcount": self.get_failcount(),
+            "counter": self.get_otp_count(),
+            "window": self.get_otp_count_window(),
+            "active": self.is_active(),
+            "revoked": self.token.revoked,
+            "locked": self.token.locked,
+            "rollout_state": self.token.rollout_state
+        }
+        if b32:
+            token_dict["otpkey"] = b32encode(unhexlify(token_dict.get("otpkey")))
+        token_dict["otpkey"] = to_unicode(token_dict.get("otpkey"))
+        token_dict.update(self.get_tokeninfo())
+        return token_dict
