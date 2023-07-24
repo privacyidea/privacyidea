@@ -55,21 +55,25 @@ This way a database administrator is not able to inject rogue password hashes.
 
 The admin password hashing is performed in *lib.crypto:hash_with_pepper*.
 
+.. _faq_crypto_audit:
+
 Audit Signing
 ~~~~~~~~~~~~~
 
-The audit log is digitally signed. (see :ref:`Audit` and :ref:`cfgfile`).
+The audit log is digitally signed. (see :ref:`audit` and :ref:`audit_parameters`).
 
-The audit log can be handled by different modules. privacyIDEA comes with an
-SQL Audit Module.
+The audit log can be handled by different modules. privacyIDEA comes with a
+SQL Audit Module which is enabled by default.
 
 For signing the audit log the SQL Audit Module uses the RSA keys specified
-with the values *PI_AUDIT_KEY_PUBLIC* and *PI_AUDIT_KEY_PRIVATE* in
+with the values ``PI_AUDIT_KEY_PUBLIC`` and ``PI_AUDIT_KEY_PRIVATE`` in
 :ref:`cfgfile`.
 
 By default the installer generates 2048bit RSA keys.
 
+If the validity of the private key can be assured, the config entry
+``PI_AUDIT_NO_PRIVATE_KEY_CHECK = True`` avoids a time-consuming check during
+the loading of the private key (See also :ref:`faq_perf_crypto_audit`).
+
 The audit signing is performed in *lib.crypto:Sign.sign* using SHA2-256 as
 hash function.
-
-
