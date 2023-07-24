@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2023-07-14 13:52+0200\n"
-"PO-Revision-Date: 2023-07-19 11:05+0000\n"
+"PO-Revision-Date: 2023-07-20 15:05+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -33,14 +33,12 @@ msgid "Authentication failure. Wrong credentials"
 msgstr "Authentifizierungsfehler. Falsche Login-Daten"
 
 #: api/lib/prepolicy.py:2237
-#, fuzzy
 msgid "Missing description for {} token."
-msgstr "Die neue Beschreibung des Tokens."
+msgstr "Fehlende Beschreibung für {} Token."
 
 #: api/lib/prepolicy.py:2238
-#, fuzzy
 msgid "Description required for {} token."
-msgstr "Die neue Beschreibung des Tokens."
+msgstr "Eine Beschreibung ist erforderlich für {} Token."
 
 #: api/lib/utils.py:345
 msgid "Authentication failure. Missing Authorization header."
@@ -527,20 +525,17 @@ msgid "The Admin is allowed delete a tokengroup."
 msgstr "Der Administrator kann Token-Gruppen löschen."
 
 #: lib/policy.py:1984
-#, fuzzy
 msgid "The Admin is allowed list the available service ID definitions."
-msgstr "Der Administrator kann die verfügbaren Token-Gruppen anzeigen."
+msgstr ""
+"Der Administrator kann die verfügbaren Dienste-Kennzeichnungen anzeigen."
 
 #: lib/policy.py:1989
-#, fuzzy
 msgid "The Admin is allowed to add a new service ID definition."
-msgstr "Der Administrator darf RADIUS-Server-Definitionen lesen."
+msgstr "Der Administrator darf neue Dienste-Kennzeichnungen hinzufügen."
 
 #: lib/policy.py:1994
-#, fuzzy
 msgid "The Admin is allowed delete a service ID definition."
-msgstr ""
-"Der Administrator kann Konfigurationen der Zertifizierungsstellen löschen."
+msgstr "Der Administrator kann Dienste-Kennzeichnungen löschen."
 
 #: lib/policy.py:1999
 msgid "The Admin is allowed to manage the tokengroups of a token."
@@ -673,6 +668,8 @@ msgid ""
 "During the rollout process, this policy makes the description required for "
 "all selected tokentypes."
 msgstr ""
+"Diese Richtlinie erzwingt die Angabe einer Beschreibung beim ausrollen für "
+"die angegebenen Tokentypen."
 
 #: lib/policy.py:2153
 msgid "Limit the number of tokens a user may have assigned."
@@ -1241,6 +1238,9 @@ msgid ""
 "If this is checked, there will be a confirmation prompt when deleting "
 "policies, events, mresolver, resolver or periodic tasks!"
 msgstr ""
+"Wenn diese Aktion aktiviert ist, wird beim Löschen von Richtlinien, "
+"Ereignissen, Regelmäßigen Aufgaben oder (Maschinen-)Resolvern ein "
+"Bestätigungsdialog angezeigt!"
 
 #: lib/policy.py:2599
 msgid ""
@@ -1472,9 +1472,8 @@ msgid "please enter otp: "
 msgstr "Bitte geben Sie einen OTP-Wert ein: "
 
 #: lib/applications/ssh.py:104
-#, fuzzy
 msgid "The username on the SSH server."
-msgstr "Den Key auf dem Server generieren."
+msgstr "Der Benutzername auf dem SSH-Server."
 
 #: lib/applications/ssh.py:106
 msgid ""
