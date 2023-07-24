@@ -141,7 +141,7 @@ Glossary
 
            *Audit Log*
 
-        privacyIDEA comes with a default SQL audit module (see :ref:`code_audit`).
+        privacyIDEA comes with a default SQL audit module (see :ref:`audit`).
 
         Starting with version 3.2 privacyIDEA also provides a :ref:`logger_audit` and
         a :ref:`container_audit` which can be used to send privacyIDEA audit log messages
@@ -351,7 +351,7 @@ Glossary
            role.
 
         .. note:: Use this carefully. Imagine you defined a resolver to a specific
-           group in your Active Directory to be the pricacyIDEA admins. Then the Active
+           group in your Active Directory to be the privacyIDEA admins. Then the Active
            Directory domain admins can
            simply add users to be administrator in privacyIDEA.
 
@@ -430,8 +430,3 @@ Glossary
         A company using privacyIDEA needs to be aware of this.
 
         For the product privacyIDEA we provide the suitable `support <https://netknights.it/en/produkte/privacyidea/>`_ with a defined response time and with fixed costs.
-
-
-
-
-

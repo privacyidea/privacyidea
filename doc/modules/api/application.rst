@@ -1,4 +1,4 @@
-.. _rest_audit:
+.. _rest_application:
 
 .. use the docstring from the module file
 .. automodule:: privacyidea.api.application
@@ -11,4 +11,3 @@ Application endpoints
    :blueprints: application_blueprint
 
    :include-empty-docstring:
-
