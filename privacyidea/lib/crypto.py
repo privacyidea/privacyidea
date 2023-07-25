@@ -501,7 +501,7 @@ def geturandom(length=20, hex=False):
     '''
     hsm = get_hsm()
     ret = hsm.random(length)
-        
+
     if hex:
         ret = to_unicode(binascii.hexlify(ret))
     return ret
@@ -693,13 +693,18 @@ class Sign(object):
     """
     sig_ver = 'rsa_sha256_pss'
 
-    def __init__(self, private_key=None, public_key=None):
+    def __init__(self, private_key=None, public_key=None, check_private_key=True):
         """
+        Initialize the Sign object with the given Keys.
+
         :param private_key: The private Key data in PEM format
         :type private_key: bytes or None
         :param public_key:  The public key data in PEM format
         :type public_key: bytes or None
-        :return: Sign Object
+        :param check_private_key: Check the private key when loading (default: True)
+        :type check_private_key: bool
+        :return: The Sign Object
+        :rtype: Sign
         """
         self.private = None
         self.public = None
@@ -708,7 +713,8 @@ class Sign(object):
             try:
                 self.private = serialization.load_pem_private_key(private_key,
                                                                   password=None,
-                                                                  backend=backend)
+                                                                  backend=backend,
+                                                                  unsafe_skip_rsa_key_validation=not check_private_key)
             except Exception as e:
                 log.error("Error loading private key: ({0!r})".format(e))
                 log.debug(traceback.format_exc())
