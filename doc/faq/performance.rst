@@ -58,9 +58,10 @@ Please also read :ref:`crypto_considerations` to understand the implications.
 The Audit-log
 ^^^^^^^^^^^^^
 
-Each entry in the :ref:`audit` log is signed to detect tampering. When the
-safety of the private key in ``PI_AUDIT_KEY_PRIVATE`` can be assured, the config
-entry ``PI_AUDIT_NO_PRIVATE_KEY_CHECK = True`` in :ref:`cfgfile` can improve the performance.
+Each entry in the :ref:`audit` log is digitally signed to detect tampering.
+If you can be sure that the private key in ``PI_AUDIT_KEY_PRIVATE`` has not been
+tampered with, you can set the config entry ``PI_AUDIT_NO_PRIVATE_KEY_CHECK = True``
+in :ref:`cfgfile` to improve the performance when loading the key.
 
 With the config entry ``PI_AUDIT_NO_SIGN = True`` the signing of the Audit-log
 can be deactivated completely.
@@ -68,9 +69,12 @@ can be deactivated completely.
 The privacyIDEA Response
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-By default, privacyIDEA signs every JSON-Response with the private key in ``PI_AUDIT_KEY_PRIVATE``. To improve the performance when loading the private key the config entry ``PI_RESPONSE_NO_PRIVATE_KEY_CHECK`` can be set to ``True``.
+By default, privacyIDEA signs every JSON-Response with the private key in
+``PI_AUDIT_KEY_PRIVATE``. To improve the performance when loading the private
+key the config entry ``PI_RESPONSE_NO_PRIVATE_KEY_CHECK`` can be set to ``True``.
 
-The signing of the response can be disabled completely by setting ``PI_NO_RESPONSE_SIGN`` to ``True``.
+The signing of the response can be disabled completely by setting
+``PI_NO_RESPONSE_SIGN`` to ``True``.
 
 Logging
 ~~~~~~~

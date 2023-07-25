@@ -71,9 +71,9 @@ with the values ``PI_AUDIT_KEY_PUBLIC`` and ``PI_AUDIT_KEY_PRIVATE`` in
 
 By default the installer generates 2048bit RSA keys.
 
-If the validity of the private key can be assured, the config entry
-``PI_AUDIT_NO_PRIVATE_KEY_CHECK = True`` avoids a time-consuming check during
-the loading of the private key (See also :ref:`faq_perf_crypto_audit`).
+If you can assure that the private key has not been tampered with, the config
+entry ``PI_AUDIT_NO_PRIVATE_KEY_CHECK = True`` avoids a time-consuming check during
+loading of the private key (See also :ref:`faq_perf_crypto_audit`).
 
 The audit signing is performed in *lib.crypto:Sign.sign* using SHA2-256 as
 hash function.

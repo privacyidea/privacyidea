@@ -125,9 +125,13 @@ sheet to customize the look and feel. Read more at :ref:`themes`.
    set ``PI_LOGLEVEL = 9``, which is a lower log level than ``logging.DEBUG``.
    Use this setting with caution and always delete the logfiles!
 
-privacyIDEA digitally signs the responses. You can disable this using the
-parameter ``PI_NO_RESPONSE_SIGN``. Set this to *True* to suppress the
-response signature.
+privacyIDEA digitally signs the responses with the private key in
+``PI_AUDIT_KEY_PRIVATE``. If you can be sure that the private key has
+not been tampered with, you can set the parameter ``PI_AUDIT_NO_PRIVATE_KEY_CHECK``
+to ``True`` in order to improve the performance when loading the key.
+
+You can disable the signing of the responses completely using the parameter
+``PI_NO_RESPONSE_SIGN``. Set this to ``True`` to suppress the response signature.
 
 You can set ``PI_UI_DEACTIVATED = True`` to deactivate the privacyIDEA UI.
 This can be interesting if you are only using the command line client or your
@@ -180,7 +184,12 @@ In certain cases when you experiencing problems you may use the parameters
 ``PI_AUDIT_POOL_SIZE`` and ``PI_AUDIT_POOL_RECYCLE``. However, they are only
 effective if you also set ``PI_ENGINE_REGISTRY_CLASS`` to ``"shared"``.
 
-If you by any reason want to avoid signing audit entries you can
+For signing and verifying each Audit entry, the RSA keys in ``PI_AUDIT_KEY_PRIVATE``
+and ``PI_AUDIT_KEY_PUBLIC`` are used. If you can be sure that the private key has
+not been tampered with, you can set the parameter ``PI_AUDIT_NO_PRIVATE_KEY_CHECK``
+to ``True`` in order to improve the performance when loading the key.
+
+If you by any reason want to avoid signing audit entries entirely, you can
 set ``PI_AUDIT_NO_SIGN = True``. If ``PI_AUDIT_NO_SIGN`` is set to ``True``
 audit entries will not be signed and also the signature of audit entries will not be
 verified. Audit entries will appear with the *signature* *fail*.
