@@ -28,7 +28,7 @@ communicates with the privacyIDEA server via the API. The PAM module also suppor
 authentication. In this case you need to configure an offline machine application. (See
 :ref:`application_offline`)
 
-You can install the PAM module by using the source code file. It is a python module, that
+You can install the PAM module by using the source code files. It is a python module, that
 requires python-pam::
 
   git clone https://github.com/privacyidea/pam_python.git
@@ -274,13 +274,13 @@ Whether the validity of the SSL certificate should be checked or not.
 
 **Enable privacyIDEA for backend users**
 
-If checked, a user trying to authenticate at the backend, will need to
+If checked, a user trying to authenticate at the backend will need to
 authenticate against privacyIDEA.
 
 
 **Enable privacyIDEA for frontend users**
 
-If checked, a user trying to authenticate at the frontend, will need to
+If checked, a user trying to authenticate at the frontend will need to
 authenticate against privacyIDEA.
 
 **Pass to other authentication module**
@@ -420,7 +420,7 @@ ownCloud
 
 .. index:: ownCloud
 
-The ownCloud plugin is a ownCloud user backend. The directory
+The ownCloud plugin is an ownCloud user backend. The directory
 ``user_privacyidea`` needs to be copied to your owncloud ``apps`` directory.
 
 .. figure:: owncloud.png
@@ -441,7 +441,7 @@ original password from the original user backend.
 .. note:: At the moment using a desktop client with a one time password is not
    supported.
 
-**ownCloud 9.1 and Nextcloud 10** come with a new two factor framework. The new
+**ownCloud 9.1 and Nextcloud 10** come with a new two-factor framework. The new
 privacyIDEA ownCloud App allows you to add a second factor, that is centrally
 managed by privacyIDEA to the ownCloud or Nextcloud installation.
 
@@ -478,14 +478,14 @@ Windows
 
 Credential Provider
 ~~~~~~~~~~~~~~~~~~~
-The privacyIDEA Credential Provider adds two factor authentication to
+The privacyIDEA Credential Provider adds two-factor authentication to
 the Windows desktop or Terminal server.
 See http://privacyidea-credential-provider.readthedocs.io
 
 Provider Class
 ~~~~~~~~~~~~~~
 
-There is a dot Net provider class, which you can use to integrate privacyIDEA
+There is a **.Net** provider class, which you can use to integrate privacyIDEA
 authentication into other products and worflows.
 See https://github.com/sbidy/privacyIDEA_dotnetProvider
 
@@ -495,7 +495,7 @@ Further plugins
 .. index:: Dokuwiki, Wordpress, Contao, Django
 
 You can find further plugins for
-Dokuwiki, Wordpress, Contao and Django at `cornelinux Github page <https://github
+Dokuwiki, WordPress, Contao and Django at `cornelinux Github page <https://github
 .com/cornelinux?tab=repositories>`_.
 
 Again, check the :ref:`plugin_guide`.

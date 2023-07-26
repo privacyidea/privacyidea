@@ -47,7 +47,7 @@ To summarize, it is useful to have a pre-authentication or "setup" step in your 
 can be triggered before any UI is shown. This way, if any challenges were triggered, their messages can be presented right away.
 Also your plugin will know which authentication modes it has to offer to serve the triggered token.
 
-Now lets briefly outline how PUSH and WebAuthn token work. A PUSH token is a challenge-response token which has to be confirmed on a smartphone.
+Now let's briefly outline how PUSH and WebAuthn token work. A PUSH token is a challenge-response token which has to be confirmed on a smartphone.
 When a PUSH token is triggered, privacyIDEA generates a challenge for the authentication and waits for the response from the smartphone.
 The plugin is not notified when the challenge has been answered but has to request the status of challenge itself, repeatedly (polling).
 When the plugin polled success for a challenge, it has to *try* to finalize the authentication by calling `/validate/check` with
