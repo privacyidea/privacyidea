@@ -14,24 +14,24 @@ First step
 ~~~~~~~~~~
 
 In the first step the user will enter his OTP PIN and the sending of the SMS is
-triggered. The user is denied the access.
+triggered. The user is denied access.
 
 Second step
 ~~~~~~~~~~~
 
-In the second step the user authenticates with the OTP PIN and the OTP value
+In the second step, the user authenticates with the OTP PIN and the OTP value
 he received via SMS. The user is granted access.
 
 .. index:: transaction_id
 
-Alternatively the user can authenticate with the *transaction_id* that was
+Alternatively, the user can authenticate with the *transaction_id* that was
 sent to him in the response during the first step and only the OTP value. The
 *transaction_id* assures that the user already presented the first factor (OTP
 PIN) successfully.
 
 .. index:: Sipgate, Clickatel
 
-A python SMS provider module defines how the SMS is sent. This can be done
+A Python SMS provider module defines how the SMS is sent. This can be done
 using an HTTP SMS Gateway. Most services like Clickatel or sendsms.de provide
 such a simple HTTP gateway. Another possibility is to send SMS via sipgate, 
 which provides an XMLRPC API.
@@ -41,13 +41,13 @@ The last possibility to send SMS is to use an attached GSM modem.
 
 .. index:: SMS Gateway
 
-Starting with version 2.13 the SMS configuration has been redesigned. You can
+Starting with version 2.13, the SMS configuration has been redesigned. You can
 now centrally define SMS gateways. These SMS gateways can be used for sending
 SMS OTP token but also for the event notifications. (See
 :ref:`usernotification`)
 
 For configuring SMS Gateways read :ref:`sms_gateway_config`.
-I this token configuration you can select on defined gateway to send SMS for
+In this token configuration you can select on defined gateway to send SMS for
 authentication.
 
 Configuration Parameters

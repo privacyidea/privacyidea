@@ -9,10 +9,10 @@ AppId
 ~~~~~
 
 You need to configure the AppId of the privacyIDEA server. The AppId is
-define in the FIDO specification [#fido]_.
+defined in the FIDO specification [#fido]_.
 
 The AppId is the URL of your privacyIDEA and used to find or create the right
-key pair on the U2F device. The AppId must correspond the the URL that is
+key pair on the U2F device. The AppId must correspond to the URL that is
 used to call the privacyIDEA server.
 
 .. note:: if you register a U2F device with an AppId
@@ -24,7 +24,7 @@ used to call the privacyIDEA server.
 Facets
 ~~~~~~
 
-If specifying the AppId as the FQDN you will only be able to authenticate at
+If specifying the AppId as the FQDN, you will only be able to authenticate at
 the privacyIDEA server itself or at any application in a sub directory on the
 privacyIDEA server. This is OK, if you are running a SAML IdP on the same
 server.
@@ -44,7 +44,7 @@ define a policy that contains a list of the other hosts
 
 For more information on AppId and trusted facets see [#fido]_.
 
-For further details and for information how to add U2F to your application you
+For further details and information on how to add U2F to your application you
 can see the code documentation at
 :ref:`code_u2f_token`.
 
@@ -58,7 +58,7 @@ do so you need to do the following steps:
 
       https://pi.your-network.com/ttype/u2f
 
-   Add the path */ttype/u2f* is crucial. Otherwise privacyIDEA will not
+   Adding the path */ttype/u2f* is crucial. Otherwise privacyIDEA will not
    return the trusted facets.
 
 2. Define a policy with the list of trusted facets. (see

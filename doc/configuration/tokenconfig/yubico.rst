@@ -14,8 +14,8 @@ the Yubico Cloud service or another (possibly self hosted) validation server.
 
    *Configure the Yubico Cloud mode*
 
-To contact the Yubico Cloud service you need to get an API key and a Client
-ID from Yubico and enter these here in the config dialog. In that case you
+To contact the Yubico Cloud service, you need to get an API key and a Client
+ID from Yubico and enter them here in the config dialog. In that case, you
 can leave the Yubico URL blank and privacyIDEA will use the Yubico servers.
 
 You can use another validation host, e.g. a self hosted validation server.

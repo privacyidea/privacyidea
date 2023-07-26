@@ -25,18 +25,18 @@ First step
 
 In the first step the user will enter his OTP PIN and the sending of the
 email is
-triggered. The user is denied the access.
+triggered. The user is denied access.
 
 Seconds step
 ~~~~~~~~~~~~
 
-In the second step the user authenticates with the OTP PIN and the OTP value
+In the second step, the user authenticates with the OTP PIN and the OTP value
 he received via email. The user is granted access.
 
 .. _index: transaction_id
 
-Alternatively the user can authenticate with the *transaction_id* that was
-sent to him in the response during the first step and only the OTP value. The
+Alternatively, the user can authenticate with the *transaction_id* that was
+sent to him in the response during the first step and only use the OTP value. The
 *transaction_id* assures that the user already presented the first factor (OTP
 PIN) successfully.
 
@@ -59,7 +59,7 @@ There are few more config entries handled, which are deprecated in recent versio
 
 * ``email.port`` - The port of the mail server.
 
-* ``email.username`` - If the mail server requires authentication you need to enter a username. If
+* ``email.username`` - If the mail server requires authentication, you need to enter a username. If
   no username is entered, no authentication is performed on the mail server.
 
 * ``email.password`` - The password of the mail username to send emails.
