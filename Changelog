@@ -1,4 +1,4 @@
-Version 3.9, 2023-xx-xx, (state: 2023-07-24)
+Version 3.9dev1, 2023-07-28
 
   Features:
   * Tokentype: Application Specific password (#3260, #3585)
@@ -8,7 +8,7 @@ Version 3.9, 2023-xx-xx, (state: 2023-07-24)
 
   Enhancements:
   * Add event handler to set token application like "offline" (#3335)
-  * Add chalenge response with pin reset for better usability with
+  * Add challenge response with pin reset for better usability with
     client plugins (#3261)
   * Allow to force description during rollout (#3469)
   * Allow an administrator to explicitly (only) set a description (#3609)
