@@ -3330,11 +3330,11 @@ class RegistrationAndPasswordToken(MyApiTestCase):
                                            method='POST',
                                            data={"user": "cornelius",
                                                  "service_id": "thunderbird",
-                                                 "pass": "test{0!s}".format(password)}):
+                                                 "pass": quote("test{0!s}".format(password))}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
-            self.assertEqual("ACCEPT", data.get("result").get("authentication"), data)
+            self.assertEqual("ACCEPT", data.get("result").get("authentication"), (data, password))
 
         # delete token
         remove_token(serial)
