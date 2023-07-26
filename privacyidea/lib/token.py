@@ -708,7 +708,7 @@ def get_token_owner(serial):
     the token is identified and retrieved by it's serial number
 
     If the token has no owner, None is returned
-    
+
     Wildcards in the serial number are ignored. This raises
     ``ResourceNotFoundError`` if the token could not be found.
 
@@ -1727,7 +1727,7 @@ def set_description(serial, description, user=None):
 def set_failcounter(serial, counter, user=None):
     """
     Set the fail counter of a  token.
-    
+
     :param serial: The serial number of the token (exact)
     :param counter: THe counter to which the fail counter should be set
     :param user: An optional user
@@ -2429,6 +2429,9 @@ def check_token_list(tokenobject_list, passw, user=None, options=None, allow_res
                 tokenobject.inc_failcount()
                 if increase_auth_counters:
                     tokenobject.inc_count_auth()
+    else:
+        # There is no suitable token for authentication
+        reply_dict["message"] = _("No suitable token found for authentication.")
 
     return res, reply_dict
 

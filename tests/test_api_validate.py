@@ -3308,33 +3308,38 @@ class RegistrationAndPasswordToken(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": "test{0!s}".format(password)}):
+                                                 "pass": quote("test{0!s}".format(password))}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
             self.assertEqual("REJECT", data.get("result").get("authentication"), data)
+            self.assertEqual("No suitable token found for authentication.",
+                             data.get("detail").get("message"), data)
 
         # now check the authentication. wrong service_id
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
                                                  "service_id": "wrong",
-                                                 "pass": "test{0!s}".format(password)}):
+                                                 "pass": quote("test{0!s}".format(password))}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
             self.assertEqual("REJECT", data.get("result").get("authentication"), data)
+            self.assertEqual("No suitable token found for authentication.",
+                             data.get("detail").get("message"), data)
 
         # now check the authentication. correct service_id
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
                                                  "service_id": "thunderbird",
-                                                 "pass": "test{0!s}".format(password)}):
+                                                 "pass": quote("test{0!s}".format(password))}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
-            self.assertEqual("ACCEPT", data.get("result").get("authentication"), data)
+            self.assertEqual("ACCEPT", data.get("result").get("authentication"), (data, password))
+            self.assertEqual("matching 1 tokens", data.get("detail").get("message"), data)
 
         # delete token
         remove_token(serial)
