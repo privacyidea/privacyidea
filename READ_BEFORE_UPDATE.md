@@ -2,29 +2,40 @@
 
 ## Update from 3.8 to 3.9
 
+* The response of the API `POST /auth` has changed if the WebUI policy action
+  `login_mode` is set `privacyIDEA` and the user has a challenge-response token.
+  Until version 3.8 an error-response was returned which contained the necessary
+  data for the WebUI to ask for the corresponding response.
+  Since version 3.9 the initial request now returns a valid response with the
+  challenge-data but without the authentication token (#3436)
 * To enhance the functionality of SSH key assignment, the REST API for GET /application
-  has changed. The options of an application are now returned like::
-
+  has changed. The options of an application are now returned like:
+  ```json
    {"luks": {"options": {"slot": {"type": "int"},
                          "partition": {"type": "str"}},
       "ssh": {"options": {"user": {"type": "str"}},
       "otherapplication": {"options": {"optionA": {"type": "int",
                                                    "required": True}}
    }
-
+  ```
   Unless you are using this API call directly, this is not relevant for normal operation.
+
+The database table `serviceid` is added, there is no data migration
+necessary.
+
+Be sure to run the schema update script!
 
 ## Update from 3.7 to 3.8
 
 * The algorithms for WebAuthn tokens have been enhanced. This is why it
   was necessary to change the policy definition for WebAuthn Token enrollment.
-  In enrollment policy action name "webauthn_public_key_credential_algorithm_preference"
-  will be changed to "webauthn_public_key_credential_algorithms".
+  The enrollment policy action name `webauthn_public_key_credential_algorithm_preference`
+  will be changed to `webauthn_public_key_credential_algorithms`.
   The values will also be adapted from
-    ecdsa_preferred -> ecdsa rsassa-pss
-    ecdsa_only -> ecdsa
-    rsassa-pss_preferred -> rsassa-pss ecdsa
-    rsassa-pss_only -> rsassa-pss
+  * `ecdsa_preferred` -> `ecdsa rsassa-pss`
+  * `ecdsa_only` -> `ecdsa`
+  * `rsassa-pss_preferred` -> `rsassa-pss ecdsa`
+  * `rsassa-pss_only` -> `rsassa-pss`
   Existing policies are changed in the schema update script.
 
 Several database changes have been added. These are all *adds* without data migration.
@@ -177,7 +188,7 @@ The current database schema now is d5870fd2f2a4.
   The database schema in regards to the token assignment is changed.
   The token assignment is moved from the table "token" to the table
   "tokenowner". The user columns in the "token" table are deleted and
-  migrated to the "tokenowner" table.   
+  migrated to the "tokenowner" table.
 
 * The packaging for ubuntu has changed. While privacyIDEA 2.23 was
   installed into the system environment, the ubuntu packages
