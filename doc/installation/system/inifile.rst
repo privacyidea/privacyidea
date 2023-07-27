@@ -101,6 +101,9 @@ can be set, for example::
 Further information on possible parameters can be found in the
 `PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
 
+Translation
+-----------
+
 ``PI_PREFERRED_LANGUAGE`` is a list in which the preferred languages can be defined.
 The browser's language settings are compared to this list and the "best match" wins.
 If none of the languages set in the browser match, the first language in the list
@@ -108,8 +111,13 @@ will be used as the default language::
 
     PI_PREFERRED_LANGUAGE = ["en", "de", "es", "fr"]
 
-.. note:: If ``PI_PREFERRED_LANGUAGE`` is not defined, the following list is used.
-   ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr']
+.. note:: If ``PI_PREFERRED_LANGUAGE`` is not defined, the following list is used:
+
+   .. autodata:: privacyidea.webui.login.DEFAULT_LANGUAGE_LIST
+
+The parameter ``PI_TRANSLATION_WARNING`` can be used to provide a prefix, that is
+set in front of every string in the UI, that is not translated to the language your browser
+is using.
 
 Logging
 -------
@@ -139,10 +147,6 @@ own UI and you do not want to present the UI to the user or the outside world.
 
 .. note:: The API calls are all still accessible, i.e. privacyIDEA is
    technically fully functional.
-
-The parameter ``PI_TRANSLATION_WARNING`` can be used to provide a prefix, that is
-set in front of every string in the UI, that is not translated to the language your browser
-is using.
 
 .. _engine-registry:
 
