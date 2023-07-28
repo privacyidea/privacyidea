@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-07-14 13:52+0200\n"
+"POT-Creation-Date: 2023-07-27 15:28+0200\n"
 "PO-Revision-Date: 2023-07-20 15:05+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
@@ -28,7 +28,7 @@ msgstr "Authentifizierungsfehler. Unbekannter Realm: {0!s}."
 msgid "Authentication failure. Missing Username"
 msgstr "Authentifizierungsfehler. Fehlender Benutzername"
 
-#: api/auth.py:344
+#: api/auth.py:350
 msgid "Authentication failure. Wrong credentials"
 msgstr "Authentifizierungsfehler. Falsche Login-Daten"
 
@@ -1439,23 +1439,27 @@ msgstr "früherer OTP-Wert wieder verwendet"
 msgid "wrong otp pin"
 msgstr "falsche OTP-Pin"
 
-#: lib/token.py:2456
+#: lib/token.py:2434
+msgid "No suitable token found for authentication."
+msgstr ""
+
+#: lib/token.py:2459
 msgid "Admin is allowed to initialize {0!s} tokens."
 msgstr "Der Administrator kann {0!s} Token ausrollen."
 
-#: lib/token.py:2464
+#: lib/token.py:2467
 msgid "The user is allowed to enroll a {0!s} token."
 msgstr "Der Benutzer darf einen {0!s} Token ausrollen."
 
-#: lib/token.py:2495
+#: lib/token.py:2498
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr "Setze die maximal erlaubte PIN-Länge für den {0!s} Token."
 
-#: lib/token.py:2502
+#: lib/token.py:2505
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr "Sete die minimal notwendite PIN-Länge für den {0!s} Token."
 
-#: lib/token.py:2508
+#: lib/token.py:2511
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
@@ -1463,11 +1467,11 @@ msgstr ""
 "Definiere den notwendigen Inhalte der OTP PIN für den {0!s} Token. (c) "
 "Buchstaben, (n) Ziffern, (s) Sonderzeichen, (o) Andere [+/-]!"
 
-#: lib/token.py:2553 lib/token.py:2569
+#: lib/token.py:2556 lib/token.py:2572
 msgid "The tokengroup does not exist."
 msgstr "Die Token-Gruppe existiert nicht."
 
-#: lib/tokenclass.py:1671
+#: lib/tokenclass.py:1674
 msgid "please enter otp: "
 msgstr "Bitte geben Sie einen OTP-Wert ein: "
 
@@ -2031,19 +2035,19 @@ msgstr ""
 "überschrieben. Der Name kann die in der Dokumentation spezifizierten Tags "
 "enthalten, und auch den Tag '{random}'."
 
-#: lib/eventhandler/webhookeventhandler.py:85
+#: lib/eventhandler/webhookeventhandler.py:86
 msgid "The URL the WebHook is posted to"
 msgstr "Die URL, an die der WebHook gesendet wird"
 
-#: lib/eventhandler/webhookeventhandler.py:90
+#: lib/eventhandler/webhookeventhandler.py:91
 msgid "The encoding that is sent to the WebHook, for example json"
 msgstr "Das Format, welches an den WebHook gesendet wird, beispielsweise json"
 
-#: lib/eventhandler/webhookeventhandler.py:98
+#: lib/eventhandler/webhookeventhandler.py:99
 msgid "You can replace placeholder like {logged_in_user}"
 msgstr "Sie können Platzhalter wie {logged_in_user} benutzen"
 
-#: lib/eventhandler/webhookeventhandler.py:103
+#: lib/eventhandler/webhookeventhandler.py:104
 msgid "The data posted in the WebHook"
 msgstr "Die an den WebHook gesendeten Daten"
 
@@ -2054,7 +2058,7 @@ msgstr ""
 "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden %i Maschinen-"
 "Objekte gefunden."
 
-#: lib/resolvers/LDAPIdResolver.py:1113
+#: lib/resolvers/LDAPIdResolver.py:1130
 msgid ""
 "Your LDAP config found {0!s} user objects, but only {1!s} with the specified "
 "uidtype"
@@ -2062,7 +2066,7 @@ msgstr ""
 "Für die LDAP-Konfiguration wurden {0!s} Benutzerobjekte gefunden, aber "
 "lediglich {1!s} mit dem angegebenen UID Typ"
 
-#: lib/resolvers/LDAPIdResolver.py:1116
+#: lib/resolvers/LDAPIdResolver.py:1133
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr ""
 "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden {0!s} "
@@ -2515,7 +2519,7 @@ msgstr "URL für Google Authenticator und vergleichbare Apps"
 msgid "URL for OATH token"
 msgstr "URL für OATH Token"
 
-#: lib/tokens/hotptoken.py:827 lib/tokens/pushtoken.py:1045
+#: lib/tokens/hotptoken.py:827 lib/tokens/pushtoken.py:1048
 msgid "Please scan the QR code!"
 msgstr "Bitte scannen Sie den QR-Code!"
 
@@ -2657,19 +2661,19 @@ msgstr ""
 msgid "Do you want to confirm the login?"
 msgstr "Wollen Sie die Anmeldung bestätigen?"
 
-#: lib/tokens/pushtoken.py:297
+#: lib/tokens/pushtoken.py:300
 msgid "PUSH Token"
 msgstr "PUSH Token"
 
-#: lib/tokens/pushtoken.py:299
+#: lib/tokens/pushtoken.py:302
 msgid "PUSH: Send a push notification to a smartphone."
 msgstr "PUSH: Sendet eine Push Nachricht an ein Smartphone."
 
-#: lib/tokens/pushtoken.py:307
+#: lib/tokens/pushtoken.py:310
 msgid "The configuration of your Firebase application."
 msgstr "Die Konfiguration der Firebase Anwendung."
 
-#: lib/tokens/pushtoken.py:315
+#: lib/tokens/pushtoken.py:318
 msgid ""
 "The URL the Push App should contact in the second enrollment step. Usually "
 "it is the endpoint /ttype/push of the privacyIDEA server."
@@ -2678,53 +2682,53 @@ msgstr ""
 "nachdem der Benutzer den QR-Code gescannt hat. Üblicherweise ist das der "
 "Endpunkt /ttype/push des privacyIDEA Servers."
 
-#: lib/tokens/pushtoken.py:321
+#: lib/tokens/pushtoken.py:324
 msgid ""
 "The second enrollment step must be completed within this time (in minutes)."
 msgstr ""
 "Der zweite Rollout-Schritt muss innerhalb dieser Zeit abgeschlossen sein (in "
 "Minuten)."
 
-#: lib/tokens/pushtoken.py:325
+#: lib/tokens/pushtoken.py:328
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
 msgstr ""
 "Das Smartphone überprüft die SSL-Verbindung während des Rollouts. (Standard: "
 "1)"
 
-#: lib/tokens/pushtoken.py:331
+#: lib/tokens/pushtoken.py:334
 msgid "The user may only have this maximum number of Push tokens assigned."
 msgstr ""
 "Der Benutzer darf nur maximal diese Anzahl an Push Token zugewiesen haben."
 
-#: lib/tokens/pushtoken.py:336
+#: lib/tokens/pushtoken.py:339
 msgid ""
 "The user may only have this maximum number of active Push tokens assigned."
 msgstr ""
 "Der Benutzer darf nur maximal diese Anzahl an aktiven Push Token zugewiesen "
 "haben."
 
-#: lib/tokens/pushtoken.py:342
+#: lib/tokens/pushtoken.py:345
 msgid "Require to unlock the Smartphone before Push requests can be accepted"
 msgstr ""
 "Das Smartphone muss entsperrt werden, bevor Push-Anfragen akzeptiert werden "
 "können"
 
-#: lib/tokens/pushtoken.py:348
+#: lib/tokens/pushtoken.py:351
 msgid "The question the user sees on his mobile phone."
 msgstr "Die Frage, die der Benutzer auf seinem Mobilgerät angezeigt bekommt."
 
-#: lib/tokens/pushtoken.py:353
+#: lib/tokens/pushtoken.py:356
 msgid "The title of the notification, the user sees on his mobile phone."
 msgstr ""
 "Die Überschrift, die der Benutzer auf seinem Mobilgerät angezeigt bekommt."
 
-#: lib/tokens/pushtoken.py:358
+#: lib/tokens/pushtoken.py:361
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr ""
 "Das Smartphone überprüft die SSL-Verbindung während des Anmeldevorgangs. "
 "(Standard: 1)"
 
-#: lib/tokens/pushtoken.py:364
+#: lib/tokens/pushtoken.py:367
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
@@ -2732,13 +2736,13 @@ msgstr ""
 "Der Benutzer hat die Anzahl an Sekunden Zeit, um die Challenge in der ersten "
 "Anfrage zu beantworten."
 
-#: lib/tokens/pushtoken.py:370
+#: lib/tokens/pushtoken.py:373
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr ""
 "Push Token können den privacyIDEA Server nach "
 "Authentifizierungsanforderungen abfragen."
 
-#: lib/tokens/pushtoken.py:505
+#: lib/tokens/pushtoken.py:508
 msgid "URL for privacyIDEA Push Token"
 msgstr "URL des privacyIDEA Push Tokens"
 

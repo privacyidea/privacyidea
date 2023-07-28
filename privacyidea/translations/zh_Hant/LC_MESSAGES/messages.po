@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-07-14 13:52+0200\n"
+"POT-Creation-Date: 2023-07-27 15:28+0200\n"
 "PO-Revision-Date: 2021-12-31 19:53+0000\n"
 "Last-Translator: Michael Yang <pcgames99@gmail.com>\n"
 "Language-Team: Chinese (Traditional) <https://hosted.weblate.org/projects/"
@@ -27,7 +27,7 @@ msgstr "身份驗證失敗。未知領域: {0!s}。"
 msgid "Authentication failure. Missing Username"
 msgstr "身份驗證失敗。缺少使用者名"
 
-#: api/auth.py:344
+#: api/auth.py:350
 msgid "Authentication failure. Wrong credentials"
 msgstr "身份驗證失敗。憑據錯誤"
 
@@ -1250,24 +1250,28 @@ msgstr ""
 msgid "wrong otp pin"
 msgstr ""
 
-#: lib/token.py:2456
+#: lib/token.py:2434
+msgid "No suitable token found for authentication."
+msgstr ""
+
+#: lib/token.py:2459
 #, fuzzy
 msgid "Admin is allowed to initialize {0!s} tokens."
 msgstr "允許管理員初始化{0!s}令牌。"
 
-#: lib/token.py:2464
+#: lib/token.py:2467
 msgid "The user is allowed to enroll a {0!s} token."
 msgstr "允許用戶註冊{0!s}令牌。"
 
-#: lib/token.py:2495
+#: lib/token.py:2498
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr "設置{0!s}令牌允許的最大 PIN 長度。"
 
-#: lib/token.py:2502
+#: lib/token.py:2505
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr "設置{0!s}令牌所需的最小 PIN 長度。"
 
-#: lib/token.py:2508
+#: lib/token.py:2511
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
@@ -1275,11 +1279,11 @@ msgstr ""
 "指定 {0!s} 令牌所需的 PIN 內容。 (c) 字符、(n) 數字、(s) 特殊、(o) 其他。 "
 "[+/-]！"
 
-#: lib/token.py:2553 lib/token.py:2569
+#: lib/token.py:2556 lib/token.py:2572
 msgid "The tokengroup does not exist."
 msgstr ""
 
-#: lib/tokenclass.py:1671
+#: lib/tokenclass.py:1674
 msgid "please enter otp: "
 msgstr "請輸入 otp： "
 
@@ -1796,19 +1800,19 @@ msgstr ""
 "通知的檔名。現有檔將被覆蓋。該名稱可以包含文檔中指定的標記，也可以包含標記 "
 "{random}。"
 
-#: lib/eventhandler/webhookeventhandler.py:85
+#: lib/eventhandler/webhookeventhandler.py:86
 msgid "The URL the WebHook is posted to"
 msgstr ""
 
-#: lib/eventhandler/webhookeventhandler.py:90
+#: lib/eventhandler/webhookeventhandler.py:91
 msgid "The encoding that is sent to the WebHook, for example json"
 msgstr ""
 
-#: lib/eventhandler/webhookeventhandler.py:98
+#: lib/eventhandler/webhookeventhandler.py:99
 msgid "You can replace placeholder like {logged_in_user}"
 msgstr ""
 
-#: lib/eventhandler/webhookeventhandler.py:103
+#: lib/eventhandler/webhookeventhandler.py:104
 msgid "The data posted in the WebHook"
 msgstr ""
 
@@ -1817,13 +1821,13 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr "您的LDAP配置似乎正常，%i 機器物件已找到。"
 
-#: lib/resolvers/LDAPIdResolver.py:1113
+#: lib/resolvers/LDAPIdResolver.py:1130
 msgid ""
 "Your LDAP config found {0!s} user objects, but only {1!s} with the specified "
 "uidtype"
 msgstr "您的 LDAP 配置找到了 {0!s} 個用戶物件，但只有 {1!s} 具有指定的 uidtype"
 
-#: lib/resolvers/LDAPIdResolver.py:1116
+#: lib/resolvers/LDAPIdResolver.py:1133
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr "您的LDAP配置似乎正常，找到 {0!s} 個用戶物件。"
 
@@ -2214,7 +2218,7 @@ msgstr "谷歌身份驗證器的網址"
 msgid "URL for OATH token"
 msgstr "OATH 令牌的網址"
 
-#: lib/tokens/hotptoken.py:827 lib/tokens/pushtoken.py:1045
+#: lib/tokens/hotptoken.py:827 lib/tokens/pushtoken.py:1048
 msgid "Please scan the QR code!"
 msgstr "請掃描二維碼"
 
@@ -2329,19 +2333,19 @@ msgstr ""
 msgid "Do you want to confirm the login?"
 msgstr "是否要確認登錄？"
 
-#: lib/tokens/pushtoken.py:297
+#: lib/tokens/pushtoken.py:300
 msgid "PUSH Token"
 msgstr "推送令牌"
 
-#: lib/tokens/pushtoken.py:299
+#: lib/tokens/pushtoken.py:302
 msgid "PUSH: Send a push notification to a smartphone."
 msgstr "推送：向智慧手機發送推送通知。"
 
-#: lib/tokens/pushtoken.py:307
+#: lib/tokens/pushtoken.py:310
 msgid "The configuration of your Firebase application."
 msgstr "您的 Firebase 應用的配置。"
 
-#: lib/tokens/pushtoken.py:315
+#: lib/tokens/pushtoken.py:318
 msgid ""
 "The URL the Push App should contact in the second enrollment step. Usually "
 "it is the endpoint /ttype/push of the privacyIDEA server."
@@ -2349,51 +2353,51 @@ msgstr ""
 "推送應用在第二個註冊步驟中應聯繫的URL。通常它是privacyIDEA伺服器的端點/ttype/"
 "push。"
 
-#: lib/tokens/pushtoken.py:321
+#: lib/tokens/pushtoken.py:324
 msgid ""
 "The second enrollment step must be completed within this time (in minutes)."
 msgstr "第二個註冊步驟必須在此時間內完成（以分鐘為單位）。"
 
-#: lib/tokens/pushtoken.py:325
+#: lib/tokens/pushtoken.py:328
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
 msgstr "智能手機需要在註冊期間驗證 SSL。（預設值 1）"
 
-#: lib/tokens/pushtoken.py:331
+#: lib/tokens/pushtoken.py:334
 msgid "The user may only have this maximum number of Push tokens assigned."
 msgstr "使用者只能分配此最大數量的推送令牌。"
 
-#: lib/tokens/pushtoken.py:336
+#: lib/tokens/pushtoken.py:339
 msgid ""
 "The user may only have this maximum number of active Push tokens assigned."
 msgstr "使用者只能分配此最大數量的活動推送令牌。"
 
-#: lib/tokens/pushtoken.py:342
+#: lib/tokens/pushtoken.py:345
 msgid "Require to unlock the Smartphone before Push requests can be accepted"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:348
+#: lib/tokens/pushtoken.py:351
 msgid "The question the user sees on his mobile phone."
 msgstr "用戶在行動電話上看到的問題。"
 
-#: lib/tokens/pushtoken.py:353
+#: lib/tokens/pushtoken.py:356
 msgid "The title of the notification, the user sees on his mobile phone."
 msgstr "使用者在其行動電話上看到的通知的標題。"
 
-#: lib/tokens/pushtoken.py:358
+#: lib/tokens/pushtoken.py:361
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr "智能手機需要在身份驗證期間驗證 SSL。（預設值 1）"
 
-#: lib/tokens/pushtoken.py:364
+#: lib/tokens/pushtoken.py:367
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
 msgstr "等待秒數，以便使用者在第一個請求中確認質詢。"
 
-#: lib/tokens/pushtoken.py:370
+#: lib/tokens/pushtoken.py:373
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr "配置是否允許推送令牌輪詢質詢"
 
-#: lib/tokens/pushtoken.py:505
+#: lib/tokens/pushtoken.py:508
 msgid "URL for privacyIDEA Push Token"
 msgstr "privacyIDEA 推送令牌的URL"
 
