@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2023-07-27 15:28+0200\n"
-"PO-Revision-Date: 2023-07-20 15:05+0000\n"
+"PO-Revision-Date: 2023-07-29 11:06+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -941,7 +941,6 @@ msgstr ""
 "4h/5m."
 
 #: lib/policy.py:2356
-#, fuzzy
 msgid ""
 "You can set the client modes in the order that you prefer. For example: "
 "\"interactive webauthn poll u2f\". Accepted values are: <code>interactive "
@@ -949,7 +948,7 @@ msgid ""
 msgstr ""
 "Sie können die Client-Modi in der von Ihnen bevorzugten Reihenfolge "
 "festlegen. Zum Beispiel: \"interactive webauthn poll u2f\". Akzeptierte "
-"Werte sind:\"interactive, webauthn, poll, u2f\""
+"Werte sind:<code>interactive webauthn poll u2f</code>"
 
 #: lib/policy.py:2364
 msgid ""
@@ -1441,7 +1440,7 @@ msgstr "falsche OTP-Pin"
 
 #: lib/token.py:2434
 msgid "No suitable token found for authentication."
-msgstr ""
+msgstr "Kein passender Token für die Authentifizierung gefunden."
 
 #: lib/token.py:2459
 msgid "Admin is allowed to initialize {0!s} tokens."
@@ -1955,6 +1954,7 @@ msgstr "Entferne eine Token-Gruppe vom Token."
 #: lib/eventhandler/tokenhandler.py:328
 msgid "The ID of the machine you want to attach the token to"
 msgstr ""
+"Die Kennzeichnung der Maschine an die dieser Token angehängt werden soll"
 
 #: lib/eventhandler/tokenhandler.py:334
 msgid "Set the service_id for an SSH application."
