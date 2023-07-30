@@ -1,4 +1,4 @@
-# Lukáš Krejza <gryffus@hkfree.org>, 2023.
+# Lukáš Krejza <gryffus@hkfree.org>, 2023, 2024.
 # Dominik František Bučík <bucik@ics.muni.cz>, 2024.
 # Pavel Břoušek <brousek@ics.muni.cz>, 2024.
 msgid ""
@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"Last-Translator: Lukáš Krejza <gryffus@hkfree.org>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/cs/>\n"
 "Language: cs\n"
