@@ -1,17 +1,18 @@
+# Lukáš Krejza <gryffus@hkfree.org>, 2023.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2022-12-22 14:47+0100\n"
-"Last-Translator: Pavel Břoušek <brousek@ics.muni.cz>\n"
+"PO-Revision-Date: 2023-08-01 16:08+0000\n"
+"Last-Translator: Lukáš Krejza <gryffus@hkfree.org>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/cs/>\n"
+"privacyidea-webui/cs/>\n"
 "Language: cs\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
-"X-Generator: Poedit 3.2.2\n"
+"X-Generator: Weblate 5.0-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -360,10 +361,8 @@ msgid "Application specific password"
 msgstr "Typ aplikace"
 
 #: privacyidea/static/components/token/views/token.applications.html:2
-#, fuzzy
-#| msgid "Application"
 msgid "Application:"
-msgstr "Aplikace"
+msgstr "Aplikace:"
 
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
