@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2023-07-27 12:08+0000\n"
+"PO-Revision-Date: 2023-08-01 16:08+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
@@ -71,7 +71,6 @@ msgstr ""
 "an Sonntagen aus.</li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
-#, fuzzy
 msgid ""
 "<li>Support and\n"
 "                        <a target=\"netknights\" href=\"https://netknights."
@@ -103,8 +102,8 @@ msgid ""
 "                    </li>"
 msgstr ""
 "<li><b>Support</b> mit definierten Reaktionszeiten, <a target=\"netknights\" "
-"href=\"https://netknights.it/en/leistungen/service-level-agreements/"
-"\">Service Level Agreements</a>, durch die NetKnights GmbH.</li>\n"
+"href=\"https://netknights.it/en/leistungen/service-level-agreements/\""
+">Service Level Agreements</a>, durch die NetKnights GmbH.</li>\n"
 "<li>Stabile Enterprise-Pakete für Ubuntu und RHEL ermöglichen leichte "
 "Updates und einen sicheren Betrieb.</li>\n"
 "<li>Ein exklusives <b>Appliance</b>-Tool, das bspw. die leichte Einrichtung "
@@ -213,16 +212,16 @@ msgid ""
 "                    paid programming of new features.\n"
 "                </p>"
 msgstr ""
-"<p>Zu Beginn möchten wir Ihnen Hintergrundinformationen zu privacyIDEA geben."
-"</p>\n"
+"<p>Zu Beginn möchten wir Ihnen Hintergrundinformationen zu privacyIDEA "
+"geben.</p>\n"
 "<p>privacyIDEA ist ein Multi-Faktor-Authentifizierungs-System für den "
-"<b>Unternehmenseinsatz</b>. privacyIDEA ist Open Source. Die Core-Entwickler "
+"<b>Unternehmenseinsatz</b>. privacyIDEA ist Open Source. Die Kern-Entwickler "
 "werden in Deutschland bei der NetKnights GmbH beschäftigt. Die NetKnights "
 "GmbH bietet die <a target=\"netknights\" href=\"https://netknights.it/"
 "produkte/privacyidea/\">privacyIDEA Enterprise Edition</a> mit <b>Support "
 "und Service Level Agreement</b>. Weiterhin bietet NetKnights "
-"Dienstleistungen, Planungsunterstützung und beauftragte Weiterentwicklungen."
-"</p>"
+"Dienstleistungen, Planungsunterstützung und beauftragte "
+"Weiterentwicklungen.</p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:131
 msgid ""
@@ -417,10 +416,8 @@ msgid "Application specific password"
 msgstr "Applikationsspezifisches Passwort"
 
 #: privacyidea/static/components/token/views/token.applications.html:2
-#, fuzzy
-#| msgid "Application"
 msgid "Application:"
-msgstr "Applikation"
+msgstr "Anwendung:"
 
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
@@ -677,7 +674,6 @@ msgstr "Lösche den Fehlerzähler nach Minuten"
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:27
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:27
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:27
-#, fuzzy
 msgid ""
 "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
 "            the QR Code, if you\n"
@@ -2516,7 +2512,7 @@ msgstr "Pool-Timeout"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:37
 msgid "Pooling strategy"
-msgstr ""
+msgstr "Pooling-Strategie"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:37
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:48
@@ -2905,7 +2901,7 @@ msgstr "SMTP-Server"
 
 #: privacyidea/static/components/token/views/token.applications.ssh.html:3
 msgid "SSH Tokens attached to services"
-msgstr ""
+msgstr "SSH-Tokens, die mit Diensten verbunden sind"
 
 #: privacyidea/static/components/token/views/token.applications.ssh.html:5
 msgid ""
@@ -2914,6 +2910,11 @@ msgid ""
 "and may differ from the token owner. To attach the token to a service ID go "
 "to the token details."
 msgstr ""
+"SSH-Tokens können mit einer Dienste-Kennzeichnung und einem Benutzer "
+"verknüpft werden. Der Benutzer ist der Benutzer auf dem SSH-Server\n"
+"und kann sich vom Besitzer des Tokens unterscheiden. Um den SSH-Token mit "
+"einer Dienste-Kennzeichnung zu verknüpfen, rufen Sie zu den Token-Details "
+"auf."
 
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:9
 msgid "SSH public Key"
@@ -2925,7 +2926,7 @@ msgstr "SSH Benutzer"
 
 #: privacyidea/static/components/token/controllers/tokenApplicationsController.js:18
 msgid "SSH: Attaching ssh keys to services."
-msgstr ""
+msgstr "SSH: SSH-Schlüssel mit Diensten verbinden."
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:67
 msgid "SSL Config"
@@ -3176,6 +3177,10 @@ msgid ""
 "To view attached tokens go to <a ui-sref=\"token.applications\">token "
 "applications</a>."
 msgstr ""
+"Dienste-Kennzeichnungen können genutzt werden um beispielsweise SSH-"
+"Schlüssel bestimmten Servern oder Diensten zuzuordnen. Die zugeordneten "
+"Token können Sie unter <a ui-sref=\"token.applications\">token applications</"
+"a> einsehen."
 
 #: privacyidea/static/components/token/views/token.details.html:443
 msgid "Set PIN"
@@ -3262,7 +3267,7 @@ msgstr "Ein paar nette Worte..."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:322
 msgid "Something went wrong!"
-msgstr ""
+msgstr "Etwas ist schief gelaufen!"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:61
 msgid ""
@@ -3420,6 +3425,9 @@ msgid ""
 "only be used to authenticate\n"
 "    at this service."
 msgstr ""
+"Das anwendungsspezifische Passwort-Token ist ein statisches Passwort, "
+"welches an bestimmte Dienste gebunden werden kann. Dieses statische Passwort "
+"kann dann nur zur Authentifizierung bei diesem Dienst genutzt werden."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:22
 msgid ""
@@ -3442,6 +3450,8 @@ msgid ""
 "The DayPassword Token is a time based password token.\n"
 "    It is based on the TOTP token, but it can be used more than once.."
 msgstr ""
+"Das DayPassword Token ist ein zeit-basiertes Passwort-Token. Es basiert auf "
+"dem TOTP Token, kann aber mehr als einmal verwendet werden..."
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:1
 msgid ""
@@ -3450,6 +3460,10 @@ msgid ""
 "    have the server generate the secret and scan the QR code with an "
 "authenticator app that supports the token."
 msgstr ""
+"Das DayPassword Token ist ein zeit-basiertes Passwort-Token. Sie können "
+"einen geheimen Schlüssel einfügen oder das Geheimnis vom Server generieren "
+"lassen und den QR-Code mit einer Authentifizierungs-App scannen, die den "
+"Token unterstützt."
 
 #: privacyidea/static/components/config/views/config.token.email.html:2
 msgid ""
@@ -4130,6 +4144,8 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:54
 msgid "The time in which the password can be used. For example '1d' or '12h'."
 msgstr ""
+"Der Zeitraum, in dem das Passwort genutzt werden kann. zum Beispiel "
+"<code>1d</code> oder <code>12h</code>."
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:34
 #: privacyidea/static/components/token/views/token.enrolled.webauthn.html:32
@@ -4252,23 +4268,21 @@ msgstr ""
 "denen dieser Resolver enthalten ist."
 
 #: privacyidea/static/components/config/views/config.system.edit.html:116
-#, fuzzy
 msgid ""
 "These client IP addresses or subnets are\n"
 "                allowed to masquerade as another client."
 msgstr ""
-"Diese Client IP Adressen oder Subnetze dürfen sich als ein anderer Client "
-"(andere IP-Adresse) ausgeben."
+"Diese Client-IP Adressen oder Subnetze dürfen sich als ein anderer Client ("
+"eine andere IP-Adresse) ausgeben."
 
 #: privacyidea/static/components/config/views/config.system.doc.html:2
-#, fuzzy
 msgid ""
 "This documentation contains the current\n"
 "    configuration of your system in restructured text. You can use\n"
 "    this to document your installed system."
 msgstr ""
 "Diese Dokumentation enthält die aktuelle System-Konfiguration im "
-"\"restructured text\" Format.Dies kann verwendet werden, um einen "
+"<em>reStructuredText</em> Format. Dies kann verwendet werden, um eine "
 "Dokumentation des installierten Systems zu erstellen."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:19
@@ -4512,7 +4526,7 @@ msgid ""
 "config</a>"
 msgstr ""
 "Um eine Dienste-Kennzeichnung zu erstellen gehen Sie zu <a ui-sref=\"config."
-"serviceid\">Dienste-Kennzeichnungen Konfiguration</a>."
+"serviceid\">Dienste-Kennzeichnungen Konfiguration</a>"
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:9
 msgid ""
@@ -5229,7 +5243,7 @@ msgstr "Nr."
 
 #: privacyidea/static/components/token/controllers/tokenApplicationsController.js:19
 msgid "offline: Use HOTP token for offline login to notebooks."
-msgstr ""
+msgstr "offline: HOTP-Token für die Offline-Anmeldung an Notebooks verwenden."
 
 #: privacyidea/static/components/user/views/user.details.html:155
 msgid "otplen"
@@ -5280,6 +5294,11 @@ msgid ""
 "tokens, set the PIN of the tokens,\n"
 "                disable tokens or even delete tokens."
 msgstr ""
+"privacyIDEA ist ein System zur Verwaltung Ihrer Token.<br>\n"
+"Sie haben derzeit keinen zugewiesenen Token.<br>\n"
+"Sie können hier Ihre eigenen Token verwalten: Sie können neue Token "
+"erstellen, die PIN der Token festlegen, Token deaktivieren oder sogar Token "
+"löschen."
 
 #: privacyidea/static/templates/menu.html:6
 msgid ""
@@ -5402,10 +5421,8 @@ msgid "total tokens: {{ tokendata.count }}"
 msgstr "Tokenanzahl: {{ tokendata.count }}"
 
 #: privacyidea/static/components/user/views/user.html:53
-#, fuzzy
-#| msgid "total tokens:"
 msgid "total users:"
-msgstr "Anzahl der Tokens:"
+msgstr "Anzahl der Benutzer:"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:97
 msgid ""
