@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """ Test for the '/auth' API-endpoint """
+import logging
+
+from testfixtures import log_capture
 from .base import MyApiTestCase, OverrideConfigTestCase
 import mock
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
@@ -789,9 +792,9 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             mock_log.assert_called_with("user uid 1004 failed to authenticate")
 
 
-class PreEventHandlerTest(MyApiTestCase):
+class EventHandlerTest(MyApiTestCase):
 
-    def test_01_setup_eventhandlers(self):
+    def test_01_pre_eventhandlers(self):
         # This test create an HOTP token with C/R with a pre-event handler
         # and the user uses this HOTP token to directly login to /auth
 
@@ -822,7 +825,7 @@ class PreEventHandlerTest(MyApiTestCase):
                         options={"tokentype": "hotp", "user": "1",
                                  "additional_params": {
                                      'otpkey': self.otpkey,
-                                     # We need to set gekey=0, otherwise the Tokenhandler will
+                                     # We need to set genkey=0, otherwise the Tokenhandler will
                                      # generate a random otpkey
                                      'genkey': 0}})
         # cleanup tokens
@@ -875,3 +878,28 @@ class PreEventHandlerTest(MyApiTestCase):
         delete_policy("crhotp")
         delete_event(eid)
         remove_token(hotptoken.token.serial)
+
+    @log_capture
+    def test_02_post_eventhandler(self, capture):
+        self.setUp_user_realms()
+        # Create an event handler, that creates HOTP token on /auth with default OTP key
+        eid = set_event("post_event_log", event=["auth"], handlermodule="Logging",
+                        action="logging", position="post",
+                        options={"level": logging.INFO,
+                                 "message": "User: {user} Event: {action}"})
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "someuser",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+
+        capture.check_present(
+            ('pi-eventlogger', 'INFO',
+             'User: someuser Event: /auth')
+        )
+
+        delete_event(eid)
