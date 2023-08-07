@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-07-14 13:52+0200\n"
-"PO-Revision-Date: 2023-07-20 15:05+0000\n"
+"POT-Creation-Date: 2023-07-27 15:28+0200\n"
+"PO-Revision-Date: 2023-08-01 14:01+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -28,7 +28,7 @@ msgstr "Authentifizierungsfehler. Unbekannter Realm: {0!s}."
 msgid "Authentication failure. Missing Username"
 msgstr "Authentifizierungsfehler. Fehlender Benutzername"
 
-#: api/auth.py:344
+#: api/auth.py:350
 msgid "Authentication failure. Wrong credentials"
 msgstr "Authentifizierungsfehler. Falsche Login-Daten"
 
@@ -74,8 +74,7 @@ msgstr "'{0!s}' ist ein ungültiger Name für eine Richtlinie."
 
 #: api/lib/utils.py:416
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
-msgstr ""
-"Der Name der Richtlinie darf nur die Zeichen 'a-zA-Z0-9_. -' enthalten."
+msgstr "Der Name der Richtlinie darf nur die Zeichen 'a-zA-Z0-9_. -' enthalten"
 
 #: lib/challengeresponsedecorators.py:151
 msgid "Please enter the new PIN again"
@@ -941,7 +940,6 @@ msgstr ""
 "4h/5m."
 
 #: lib/policy.py:2356
-#, fuzzy
 msgid ""
 "You can set the client modes in the order that you prefer. For example: "
 "\"interactive webauthn poll u2f\". Accepted values are: <code>interactive "
@@ -949,7 +947,7 @@ msgid ""
 msgstr ""
 "Sie können die Client-Modi in der von Ihnen bevorzugten Reihenfolge "
 "festlegen. Zum Beispiel: \"interactive webauthn poll u2f\". Akzeptierte "
-"Werte sind:\"interactive, webauthn, poll, u2f\""
+"Werte sind:<code>interactive webauthn poll u2f</code>"
 
 #: lib/policy.py:2364
 msgid ""
@@ -1439,23 +1437,27 @@ msgstr "früherer OTP-Wert wieder verwendet"
 msgid "wrong otp pin"
 msgstr "falsche OTP-Pin"
 
-#: lib/token.py:2456
+#: lib/token.py:2434
+msgid "No suitable token found for authentication."
+msgstr "Kein passender Token für die Authentifizierung gefunden."
+
+#: lib/token.py:2459
 msgid "Admin is allowed to initialize {0!s} tokens."
 msgstr "Der Administrator kann {0!s} Token ausrollen."
 
-#: lib/token.py:2464
+#: lib/token.py:2467
 msgid "The user is allowed to enroll a {0!s} token."
 msgstr "Der Benutzer darf einen {0!s} Token ausrollen."
 
-#: lib/token.py:2495
+#: lib/token.py:2498
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr "Setze die maximal erlaubte PIN-Länge für den {0!s} Token."
 
-#: lib/token.py:2502
+#: lib/token.py:2505
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr "Sete die minimal notwendite PIN-Länge für den {0!s} Token."
 
-#: lib/token.py:2508
+#: lib/token.py:2511
 msgid ""
 "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
@@ -1463,11 +1465,11 @@ msgstr ""
 "Definiere den notwendigen Inhalte der OTP PIN für den {0!s} Token. (c) "
 "Buchstaben, (n) Ziffern, (s) Sonderzeichen, (o) Andere [+/-]!"
 
-#: lib/token.py:2553 lib/token.py:2569
+#: lib/token.py:2556 lib/token.py:2572
 msgid "The tokengroup does not exist."
 msgstr "Die Token-Gruppe existiert nicht."
 
-#: lib/tokenclass.py:1671
+#: lib/tokenclass.py:1674
 msgid "please enter otp: "
 msgstr "Bitte geben Sie einen OTP-Wert ein: "
 
@@ -1480,6 +1482,8 @@ msgid ""
 "The service ID of the SSH server. Several servers can have the same service "
 "ID."
 msgstr ""
+"Die Dienste-Kennzeichnung des SSH-Servers. Unterschiedliche SSH-Server "
+"können die selbe Dienste-Kennzeichnung haben."
 
 #: lib/eventhandler/base.py:146
 msgid ""
@@ -1833,14 +1837,14 @@ msgid "set a new realm of the token"
 msgstr "Setze einen neuen Token-Realm"
 
 #: lib/eventhandler/tokenhandler.py:143
-#, fuzzy
 msgid ""
 "The new realm will be the only realm of the token. I.e. all other realms "
 "will be removed from this token. If disabled, the realm will be added to the "
 "token."
 msgstr ""
 "Der neue Realm ist der einzige Realm des Tokens. D.h. alle anderen evtl. "
-"zugeordneten Realms dieses Tokens werden gelöscht."
+"zugeordneten Realms dieses Tokens werden gelöscht. Ist diese Option "
+"deaktiviert, wird der Realm zu den vorhandenen Realms des Tokens hinzugefügt."
 
 #: lib/eventhandler/tokenhandler.py:158
 msgid "set the PIN of the token to a random PIN of this length."
@@ -1951,24 +1955,27 @@ msgstr "Entferne eine Token-Gruppe vom Token."
 #: lib/eventhandler/tokenhandler.py:328
 msgid "The ID of the machine you want to attach the token to"
 msgstr ""
+"Die Kennzeichnung der Maschine an die dieser Token angehängt werden soll"
 
 #: lib/eventhandler/tokenhandler.py:334
 msgid "Set the service_id for an SSH application."
-msgstr ""
+msgstr "Legen Sie die Dienste-Kennzeichnung für eine SSH-Anwendung fest."
 
 #: lib/eventhandler/tokenhandler.py:342
 msgid ""
 "Set a token application like 'offline' or 'SSH'. Note: Not all tokens work "
 "well with all applications!"
 msgstr ""
+"Legen Sie eine Token-Anwendung wie \"offline\" oder \"SSH\" fest. Hinweis: "
+"Nicht alle Token funktionieren mit allen Anwendungen gleichermaßen!"
 
 #: lib/eventhandler/tokenhandler.py:351
 msgid "The number of offline OTP values available"
-msgstr ""
+msgstr "Die Anzahl der verfügbaren Offline-OTP-Werte"
 
 #: lib/eventhandler/tokenhandler.py:359
 msgid "The number of rounds for password hashing"
-msgstr ""
+msgstr "Die Anzahl der Runden für das Passwort Hashing"
 
 #: lib/eventhandler/usernotification.py:123
 msgid "Send notification email via this email server."
@@ -2031,19 +2038,19 @@ msgstr ""
 "überschrieben. Der Name kann die in der Dokumentation spezifizierten Tags "
 "enthalten, und auch den Tag '{random}'."
 
-#: lib/eventhandler/webhookeventhandler.py:85
+#: lib/eventhandler/webhookeventhandler.py:86
 msgid "The URL the WebHook is posted to"
 msgstr "Die URL, an die der WebHook gesendet wird"
 
-#: lib/eventhandler/webhookeventhandler.py:90
+#: lib/eventhandler/webhookeventhandler.py:91
 msgid "The encoding that is sent to the WebHook, for example json"
 msgstr "Das Format, welches an den WebHook gesendet wird, beispielsweise json"
 
-#: lib/eventhandler/webhookeventhandler.py:98
+#: lib/eventhandler/webhookeventhandler.py:99
 msgid "You can replace placeholder like {logged_in_user}"
 msgstr "Sie können Platzhalter wie {logged_in_user} benutzen"
 
-#: lib/eventhandler/webhookeventhandler.py:103
+#: lib/eventhandler/webhookeventhandler.py:104
 msgid "The data posted in the WebHook"
 msgstr "Die an den WebHook gesendeten Daten"
 
@@ -2054,7 +2061,7 @@ msgstr ""
 "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden %i Maschinen-"
 "Objekte gefunden."
 
-#: lib/resolvers/LDAPIdResolver.py:1113
+#: lib/resolvers/LDAPIdResolver.py:1130
 msgid ""
 "Your LDAP config found {0!s} user objects, but only {1!s} with the specified "
 "uidtype"
@@ -2062,7 +2069,7 @@ msgstr ""
 "Für die LDAP-Konfiguration wurden {0!s} Benutzerobjekte gefunden, aber "
 "lediglich {1!s} mit dem angegebenen UID Typ"
 
-#: lib/resolvers/LDAPIdResolver.py:1116
+#: lib/resolvers/LDAPIdResolver.py:1133
 msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgstr ""
 "Die LDAP-Konfiguration scheint in Ordnung zu sein. Es wurden {0!s} "
@@ -2142,7 +2149,6 @@ msgid "The timeout in seconds."
 msgstr "Timeout in Sekunden."
 
 #: lib/smsprovider/SMSProvider.py:76
-#, fuzzy
 msgid ""
 "Regular expression to modify the phone number to make it compatible with "
 "provider. For example to remove pluses and slashes enter something like '/[\\"
@@ -2245,24 +2251,24 @@ msgid ""
 "Application Specific Password: A token with a fixed password. Can be used "
 "for certain applications or services."
 msgstr ""
+"Anwendungsspezifisches Passwort: Ein Token mit einem festen Passwort. Kann "
+"für bestimmte Anwendungen oder Dienste verwendet werden."
 
 #: lib/tokens/applicationspecificpasswordtoken.py:87
-#, fuzzy
 msgid ""
 "The user may only have this maximum number of application specific password "
 "tokens assigned."
 msgstr ""
-"Der Benutzer darf nur maximal diese Anzahl an aktiven Password Token "
-"zugewiesen haben."
+"Dem Benutzer darf nur diese maximale Anzahl von anwendungsspezifischen "
+"Passwort-Tokens zugewiesen werden."
 
 #: lib/tokens/applicationspecificpasswordtoken.py:93
-#, fuzzy
 msgid ""
 "The user may only have this maximum number of active application specific "
 "password tokens assigned."
 msgstr ""
-"Der Benutzer darf nur maximal diese Anzahl an aktiven Password Token "
-"zugewiesen haben."
+"Der Benutzer darf nur maximal diese Anzahl an aktiven anwendungsspezifischen "
+"Password-Token zugewiesen haben."
 
 #: lib/tokens/certificatetoken.py:282
 msgid "Certificate: Enroll an x509 Certificate Token."
@@ -2330,15 +2336,16 @@ msgstr ""
 "zugewiesen haben."
 
 #: lib/tokens/daypasswordtoken.py:36
-#, fuzzy
 msgid "Specify the time step of the DayPassword token."
-msgstr "Geben Sie den Zeitschritt des zeitbasierten OTP-Tokens an."
+msgstr "Geben Sie den Zeitschritt für das DayPassword-Token an."
 
 #: lib/tokens/daypasswordtoken.py:84
 msgid ""
 "DayPassword: A time-based token with a variable timestep and the possibility "
 "to use the OTP more than once."
 msgstr ""
+"DayPassword: Ein zeit-basierter Token mit einem variablen Zeitschritt und "
+"der Möglichkeit, den OTP-Wert mehr als einmal zu verwenden."
 
 #: lib/tokens/daypasswordtoken.py:121 lib/tokens/hotptoken.py:176
 #: lib/tokens/totptoken.py:161
@@ -2347,21 +2354,19 @@ msgstr ""
 "Erzwingt das Setzen einer Token-PIN in der privacyIDEA Authenticator App"
 
 #: lib/tokens/daypasswordtoken.py:126
-#, fuzzy
 msgid ""
 "The user may only have this maximum number of daypassword tokens assigned."
 msgstr ""
-"Der Benutzer darf nur maximal diese Anzahl an Password Token zugewiesen "
-"haben."
+"Dem Benutzer darf nur diese maximale Anzahl von DayPasswort-Tokens "
+"zugewiesen werden."
 
 #: lib/tokens/daypasswordtoken.py:132
-#, fuzzy
 msgid ""
 "The user may only have this maximum number of active daypassword tokens "
 "assigned."
 msgstr ""
-"Der Benutzer darf nur maximal diese Anzahl an aktiven Password Token "
-"zugewiesen haben."
+"Dem Benutzer darf nur diese maximale Anzahl von aktiven DayPassword-Tokens "
+"zugewiesen werden."
 
 #: lib/tokens/emailtoken.py:156
 msgid "EMail Token"
@@ -2515,7 +2520,7 @@ msgstr "URL für Google Authenticator und vergleichbare Apps"
 msgid "URL for OATH token"
 msgstr "URL für OATH Token"
 
-#: lib/tokens/hotptoken.py:827 lib/tokens/pushtoken.py:1045
+#: lib/tokens/hotptoken.py:827 lib/tokens/pushtoken.py:1048
 msgid "Please scan the QR code!"
 msgstr "Bitte scannen Sie den QR-Code!"
 
@@ -2657,19 +2662,19 @@ msgstr ""
 msgid "Do you want to confirm the login?"
 msgstr "Wollen Sie die Anmeldung bestätigen?"
 
-#: lib/tokens/pushtoken.py:297
+#: lib/tokens/pushtoken.py:300
 msgid "PUSH Token"
 msgstr "PUSH Token"
 
-#: lib/tokens/pushtoken.py:299
+#: lib/tokens/pushtoken.py:302
 msgid "PUSH: Send a push notification to a smartphone."
 msgstr "PUSH: Sendet eine Push Nachricht an ein Smartphone."
 
-#: lib/tokens/pushtoken.py:307
+#: lib/tokens/pushtoken.py:310
 msgid "The configuration of your Firebase application."
 msgstr "Die Konfiguration der Firebase Anwendung."
 
-#: lib/tokens/pushtoken.py:315
+#: lib/tokens/pushtoken.py:318
 msgid ""
 "The URL the Push App should contact in the second enrollment step. Usually "
 "it is the endpoint /ttype/push of the privacyIDEA server."
@@ -2678,53 +2683,53 @@ msgstr ""
 "nachdem der Benutzer den QR-Code gescannt hat. Üblicherweise ist das der "
 "Endpunkt /ttype/push des privacyIDEA Servers."
 
-#: lib/tokens/pushtoken.py:321
+#: lib/tokens/pushtoken.py:324
 msgid ""
 "The second enrollment step must be completed within this time (in minutes)."
 msgstr ""
 "Der zweite Rollout-Schritt muss innerhalb dieser Zeit abgeschlossen sein (in "
 "Minuten)."
 
-#: lib/tokens/pushtoken.py:325
+#: lib/tokens/pushtoken.py:328
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
 msgstr ""
 "Das Smartphone überprüft die SSL-Verbindung während des Rollouts. (Standard: "
 "1)"
 
-#: lib/tokens/pushtoken.py:331
+#: lib/tokens/pushtoken.py:334
 msgid "The user may only have this maximum number of Push tokens assigned."
 msgstr ""
 "Der Benutzer darf nur maximal diese Anzahl an Push Token zugewiesen haben."
 
-#: lib/tokens/pushtoken.py:336
+#: lib/tokens/pushtoken.py:339
 msgid ""
 "The user may only have this maximum number of active Push tokens assigned."
 msgstr ""
 "Der Benutzer darf nur maximal diese Anzahl an aktiven Push Token zugewiesen "
 "haben."
 
-#: lib/tokens/pushtoken.py:342
+#: lib/tokens/pushtoken.py:345
 msgid "Require to unlock the Smartphone before Push requests can be accepted"
 msgstr ""
 "Das Smartphone muss entsperrt werden, bevor Push-Anfragen akzeptiert werden "
 "können"
 
-#: lib/tokens/pushtoken.py:348
+#: lib/tokens/pushtoken.py:351
 msgid "The question the user sees on his mobile phone."
 msgstr "Die Frage, die der Benutzer auf seinem Mobilgerät angezeigt bekommt."
 
-#: lib/tokens/pushtoken.py:353
+#: lib/tokens/pushtoken.py:356
 msgid "The title of the notification, the user sees on his mobile phone."
 msgstr ""
 "Die Überschrift, die der Benutzer auf seinem Mobilgerät angezeigt bekommt."
 
-#: lib/tokens/pushtoken.py:358
+#: lib/tokens/pushtoken.py:361
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr ""
 "Das Smartphone überprüft die SSL-Verbindung während des Anmeldevorgangs. "
 "(Standard: 1)"
 
-#: lib/tokens/pushtoken.py:364
+#: lib/tokens/pushtoken.py:367
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
@@ -2732,13 +2737,13 @@ msgstr ""
 "Der Benutzer hat die Anzahl an Sekunden Zeit, um die Challenge in der ersten "
 "Anfrage zu beantworten."
 
-#: lib/tokens/pushtoken.py:370
+#: lib/tokens/pushtoken.py:373
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr ""
 "Push Token können den privacyIDEA Server nach "
-"Authentifizierungsanforderungen abfragen."
+"Authentifizierungsanforderungen abfragen"
 
-#: lib/tokens/pushtoken.py:505
+#: lib/tokens/pushtoken.py:508
 msgid "URL for privacyIDEA Push Token"
 msgstr "URL des privacyIDEA Push Tokens"
 
@@ -3106,11 +3111,8 @@ msgstr ""
 "werden."
 
 #: lib/tokens/webauthntoken.py:654
-#, fuzzy
 msgid "A human-readable name for the organization rolling out WebAuthn tokens."
-msgstr ""
-"Ein menschenlesbarer Name der Organisation, welche die WebAuthn Token "
-"ausstellt."
+msgstr "Der Name der Organisation, welche die WebAuthn-Token ausstellt."
 
 #: lib/tokens/webauthntoken.py:659
 msgid ""
@@ -3159,13 +3161,12 @@ msgstr ""
 "Token dies unterstützt)"
 
 #: lib/tokens/webauthntoken.py:703
-#, fuzzy
 msgid ""
 "Which algorithm are available to use for creating public key credentials for "
 "WebAuthn tokens. (Default: [{0!s}], Order: [{1!s}])"
 msgstr ""
-"Der Algorithmus, mit dem öffentliche Schlüssel für WebAuthn Token erzeugt "
-"werden sollen. Standard: [{0!s}], Reihenfolge: [{1!s}]"
+"Der Algorithmus, mit dem Schlüsselpaare für WebAuthn Token erzeugt werden "
+"sollen. Standard: [{0!s}], Reihenfolge: [{1!s}]"
 
 #: lib/tokens/webauthntoken.py:710
 msgid ""
