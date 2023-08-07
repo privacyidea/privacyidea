@@ -281,7 +281,7 @@ msgstr "API 密鑰"
 msgid "API client ID"
 msgstr "API 客戶端 ID"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:673
+#: privacyidea/static/components/token/controllers/tokenControllers.js:683
 msgid "Abort operation on unverifiable token"
 msgstr ""
 
@@ -498,7 +498,7 @@ msgstr "附加令牌"
 msgid "Attach to a new Machine"
 msgstr "連接到新電腦"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:292
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:309
 msgid "Attribute mapping"
 msgstr "屬性映射"
 
@@ -510,7 +510,7 @@ msgstr "審計"
 msgid "Authentication Server URI"
 msgstr "身份驗證伺服器 URI"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:357
+#: privacyidea/static/components/login/controllers/loginControllers.js:356
 msgid "Authentication failed."
 msgstr "身份驗證失敗。"
 
@@ -540,22 +540,22 @@ msgid "Base Config"
 msgstr "基本配置"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:82
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:99
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:116
 msgid "Base DN"
 msgstr "基礎 DN"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:92
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:134
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:151
 msgid "Bind DN"
 msgstr "綁定 DN"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:102
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:144
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:161
 msgid "Bind Password"
 msgstr "綁定密碼"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:113
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:121
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:138
 msgid "Bind Type"
 msgstr "綁定類型"
 
@@ -603,7 +603,7 @@ msgstr ""
 msgid "CRL Configuration"
 msgstr "CRL 配置"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:177
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:194
 msgid "Cache Timeout (seconds)"
 msgstr "Cache 超時（秒）"
 
@@ -651,12 +651,12 @@ msgstr "證書範本"
 msgid "Certificates Templates file"
 msgstr "證書範本檔"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:255
+#: privacyidea/static/components/login/controllers/loginControllers.js:254
 msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr "質詢回應身份驗證。您尚未完全通過身份驗證。"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:329
+#: privacyidea/static/components/login/controllers/loginControllers.js:334
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr "質詢回應身份驗證。您的回復無效！"
 
@@ -704,16 +704,6 @@ msgstr ""
 "幾分鐘后"
 
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:27
-#, fuzzy
-msgid ""
-"Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
-"            the QR Code, if you\n"
-"            want to add the Token to your smartphone authenticator App."
-msgstr ""
-"點擊<a href=\"{{ enrolledToken.googleurl.value }}\">這裡</a>或掃描\n"
-"二維碼，如果您\n"
-"想要將令牌添加到您的谷歌身份驗證器。"
-
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:27
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:27
 #, fuzzy
@@ -970,7 +960,7 @@ msgstr "主機名屬性"
 msgid "Custom attributes for user {{ username }}"
 msgstr "使用者 {{ username }} 的令牌"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:250
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:267
 msgid "DN of a new created user object"
 msgstr "新創建的用戶物件的 DN"
 
@@ -1135,7 +1125,7 @@ msgstr "潜入!"
 msgid "Do not use an authentication counter per token."
 msgstr "不要為每個令牌使用身份驗證計數器。"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:671
+#: privacyidea/static/components/token/controllers/tokenControllers.js:681
 msgid "Do not verify the authenticity"
 msgstr ""
 
@@ -1336,7 +1326,7 @@ msgstr "編輯領域"
 msgid "Edit user"
 msgstr "編輯使用者"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:230
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:247
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:90
 msgid "Edit user store"
 msgstr "編輯使用者存儲"
@@ -1624,15 +1614,15 @@ msgstr "獲取系統文件"
 msgid "Get available CAs"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:431
+#: privacyidea/static/components/login/controllers/loginControllers.js:430
 msgid "Get the Authenticator App for Android."
 msgstr "獲取適用於 Android 的身份驗證器應用程序。"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:437
+#: privacyidea/static/components/login/controllers/loginControllers.js:436
 msgid "Get the Authenticator App for iOS."
 msgstr "獲取適用於 iOS 的身份驗證器應用程序。"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:443
+#: privacyidea/static/components/login/controllers/loginControllers.js:442
 msgid "Get the Authenticator App."
 msgstr "獲取身份驗證器應用程序。"
 
@@ -1978,7 +1968,7 @@ msgstr "它會將缺少的註冊數據發送到配置的終結點。"
 msgid "Key"
 msgstr "鑰匙"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:147
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:164
 msgid "Keyfile Path"
 msgstr ""
 
@@ -2177,7 +2167,7 @@ msgstr ""
 msgid "Mobile"
 msgstr "手機"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:304
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:321
 msgid "Multivalue Attributes"
 msgstr "多值屬性"
 
@@ -2266,7 +2256,7 @@ msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr "找不到 OTP 值 {{ otp }} 的序列號。"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:152
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:328
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:345
 msgid "No anonymous referral chasing"
 msgstr "沒有匿名推薦追逐"
 
@@ -2274,7 +2264,7 @@ msgstr "沒有匿名推薦追逐"
 msgid "No machine found"
 msgstr "未找到電腦"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:335
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:352
 msgid "No retrieval of schema information"
 msgstr "不檢索架構資訊"
 
@@ -2368,7 +2358,7 @@ msgstr ""
 msgid "OTP validity time"
 msgstr "OTP有效期"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:244
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:261
 msgid "Object classes of a new created user object"
 msgstr "新創建的用戶物件的物件類"
 
@@ -2440,7 +2430,7 @@ msgstr "覆蓋授權用戶端"
 msgid "PGP Key"
 msgstr "PGP 金鑰"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:665
+#: privacyidea/static/components/login/controllers/loginControllers.js:664
 msgid "PIN changed successfully."
 msgstr "PIN 已成功更改。"
 
@@ -2498,7 +2488,7 @@ msgstr "密碼設置成功。"
 msgid "Paste the ssh PUBLIC key"
 msgstr "粘貼 ssh 公鑰"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:217
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:234
 msgid "Per-process server pool"
 msgstr "每進程伺服器池"
 
@@ -2520,7 +2510,7 @@ msgstr "電話號碼"
 msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr "請至少回答以下問題中的 {{ num_answers }}。"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:267
+#: privacyidea/static/components/login/controllers/loginControllers.js:265
 msgid "Please confirm with one of these tokens:"
 msgstr "請使用以下令牌之一進行確認："
 
@@ -2602,6 +2592,10 @@ msgstr "池大小"
 msgid "Pool timeout"
 msgstr "池超時"
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:37
+msgid "Pooling strategy"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.radius.edit.html:37
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:48
 #: privacyidea/static/components/config/views/config.smtp.edit.html:37
@@ -2627,11 +2621,11 @@ msgstr ""
 "                .否則將被擱置。"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:145
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:265
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:282
 msgid "Preset Active Directory"
 msgstr "預設活動目錄"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:262
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:279
 msgid "Preset OpenLDAP"
 msgstr "預設 OpenLDAP"
 
@@ -2694,7 +2688,7 @@ msgstr "問卷"
 msgid "Questionnaire Token settings"
 msgstr "調查問卷令牌設置"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:341
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:358
 msgid "Quick Resolver Test"
 msgstr "快速解析器測試"
 
@@ -2756,7 +2750,7 @@ msgstr "在每個請求上從使用者源動態讀取數位。"
 msgid "Realm"
 msgstr "領域"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:626
+#: privacyidea/static/components/login/controllers/loginControllers.js:625
 msgid "Realm defrealm created."
 msgstr "已創建領域解凍。"
 
@@ -3022,7 +3016,7 @@ msgid "SSL Config"
 msgstr "配置"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:40
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:37
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:54
 msgid "STARTTLS"
 msgstr "STARTTLS"
 
@@ -3105,7 +3099,7 @@ msgstr "保存領域"
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:40
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:208
 #: privacyidea/static/components/config/views/config.resolvers.http.html:93
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:353
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:370
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:39
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:88
 msgid "Save resolver"
@@ -3117,12 +3111,12 @@ msgid "Save user"
 msgstr "保存使用者"
 
 #: privacyidea/static/components/config/views/config.policies.list.html:16
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:108
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:125
 msgid "Scope"
 msgstr "範圍"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:167
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:281
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:298
 msgid "Search Filter"
 msgstr "搜索過濾器"
 
@@ -3244,11 +3238,11 @@ msgstr "伺服器"
 msgid "Server URI"
 msgstr "伺服器 URI"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:199
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:216
 msgid "Server pool retry rounds"
 msgstr "伺服器池重試輪次"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:207
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:224
 msgid "Server pool skip timeout (seconds)"
 msgstr "伺服器池跳過超時（秒）"
 
@@ -3330,11 +3324,11 @@ msgid "Show selected conditions only"
 msgstr "僅顯示選定的操作"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:134
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:189
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:206
 msgid "Size Limit"
 msgstr "大小限制"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:672
+#: privacyidea/static/components/token/controllers/tokenControllers.js:682
 msgid "Skip tokens that can not be verified"
 msgstr ""
 
@@ -3364,6 +3358,10 @@ msgstr "Google 身份驗證器僅支持 SHA1 算法。"
 #: privacyidea/static/components/token/views/token.enroll.html:37
 msgid "Some nice words..."
 msgstr "一些好話..."
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:322
+msgid "Something went wrong!"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:61
 msgid ""
@@ -3439,7 +3437,7 @@ msgstr "系統配置已保存。"
 msgid "System entry deleted."
 msgstr "系統條目已刪除。"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:53
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:70
 msgid "TLS Version"
 msgstr ""
 
@@ -3473,7 +3471,7 @@ msgid "Test HTTP Resolver"
 msgstr "測試 HTTP 解析器"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:204
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:348
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:365
 msgid "Test LDAP Resolver"
 msgstr "測試 LDAP 解析器"
 
@@ -3987,7 +3985,7 @@ msgid "The client device can not be used for this type of request."
 msgstr "用戶端設備不能用於此類請求。"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:68
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:85
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:102
 msgid ""
 "The file containing the CA certificate which signed the\n"
 "                    LDAP TLS certificate."
@@ -4328,7 +4326,7 @@ msgstr ""
 "可以從內部修改此資料庫中的用戶數據\n"
 "                    privacyIDEA。"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:238
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:255
 #, fuzzy
 msgid ""
 "The user data in this database can be modified from within\n"
@@ -4579,7 +4577,7 @@ msgstr ""
 "這必須是有效的 FQDN，並且還必須具有有效的頂級域 -\n"
 "        否則，您可能會收到U2F錯誤 2（錯誤請求）。"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:224
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:241
 msgid ""
 "This setting activates a LDAP server pool that is persisted between requests."
 msgstr "此設置將啟動在請求之間持久保存的LDAP伺服器池。"
@@ -4637,7 +4635,7 @@ msgid "Timeout"
 msgstr "超時"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:125
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:169
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:186
 msgid "Timeout (seconds)"
 msgstr "逾時（秒）"
 
@@ -4793,7 +4791,7 @@ msgstr "鍵入密碼"
 msgid "U2F Token settings"
 msgstr "U2F 令牌設置"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:313
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:330
 msgid "UID Type"
 msgstr "UID 類型"
 
@@ -4861,7 +4859,7 @@ msgid "Use SSL"
 msgstr "使用 SSL"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:48
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:45
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:62
 msgid "Use STARTTLS on a plain LDAP connection usually on port 389."
 msgstr "通常在端口 389 上的普通 LDAP 連接上使用 STARTTLS。"
 
@@ -4978,7 +4976,7 @@ msgstr "驗證 SSL 證書"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:56
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:7
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:73
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:90
 msgid "Verify TLS"
 msgstr "驗證 TLS"
 
@@ -4988,7 +4986,7 @@ msgid "Verify Token"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:64
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:81
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:98
 msgid "Verify the TLS cerificate of the server."
 msgstr "驗證伺服器的 TLS 證書。"
 
@@ -5067,7 +5065,7 @@ msgstr ""
 "您以 {{ loggedInUser.username }} 的身份登錄\n"
 "                            @ {{ loggedInUser.realm }}."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:521
+#: privacyidea/static/components/login/controllers/loginControllers.js:520
 msgid ""
 "You are using a certain amount of Push tokens. Note, that you need a valid "
 "subscription, to use Push tokens in push mode. Otherwise Push tokens will "
@@ -5154,7 +5152,7 @@ msgstr "您將在 {{ myCountdown }} 秒後登出。"
 msgid "Your CSR to the certificate authority failed."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:409
+#: privacyidea/static/components/login/controllers/loginControllers.js:408
 #, fuzzy
 msgid "Your OTP pin expires on"
 msgstr "您的OTP密碼密碼過期"
@@ -5193,7 +5191,7 @@ msgstr ""
 msgid "Your secret phrase."
 msgstr "你的密語。"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:528
+#: privacyidea/static/components/login/controllers/loginControllers.js:527
 #, fuzzy
 msgid "Your subscription for the privacyIDEA Authenticator has expired."
 msgstr "通過privacyIDEA Authenticator App使用兩步註冊"
@@ -5625,6 +5623,16 @@ msgstr ""
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "{{ auditdata.count }} 找到的條目。"
+
+#, fuzzy
+#~ msgid ""
+#~ "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
+#~ "            the QR Code, if you\n"
+#~ "            want to add the Token to your smartphone authenticator App."
+#~ msgstr ""
+#~ "點擊<a href=\"{{ enrolledToken.googleurl.value }}\">這裡</a>或掃描\n"
+#~ "二維碼，如果您\n"
+#~ "想要將令牌添加到您的谷歌身份驗證器。"
 
 #, fuzzy
 #~ msgid ""

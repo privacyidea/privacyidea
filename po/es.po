@@ -258,7 +258,7 @@ msgstr "API Key"
 msgid "API client ID"
 msgstr "ID del cliente de API"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:673
+#: privacyidea/static/components/token/controllers/tokenControllers.js:683
 msgid "Abort operation on unverifiable token"
 msgstr ""
 
@@ -472,7 +472,7 @@ msgstr "Añadir Token"
 msgid "Attach to a new Machine"
 msgstr "Añadir una nueva Máquina"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:292
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:309
 msgid "Attribute mapping"
 msgstr "Mapeo de atributos"
 
@@ -484,7 +484,7 @@ msgstr "Auditoría"
 msgid "Authentication Server URI"
 msgstr "URI del servidor de autenticación"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:357
+#: privacyidea/static/components/login/controllers/loginControllers.js:356
 msgid "Authentication failed."
 msgstr "Fallo en la autenticación."
 
@@ -514,22 +514,22 @@ msgid "Base Config"
 msgstr "Configuración básica"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:82
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:99
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:116
 msgid "Base DN"
 msgstr "DN base"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:92
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:134
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:151
 msgid "Bind DN"
 msgstr "Enlazar DN"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:102
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:144
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:161
 msgid "Bind Password"
 msgstr "Enlazar Password"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:113
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:121
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:138
 msgid "Bind Type"
 msgstr "Bind Tipo"
 
@@ -577,7 +577,7 @@ msgstr "CAs"
 msgid "CRL Configuration"
 msgstr "Configuración CRL"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:177
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:194
 msgid "Cache Timeout (seconds)"
 msgstr "Timeout de caché (segundos)"
 
@@ -623,13 +623,13 @@ msgstr "Plantilla de certificado"
 msgid "Certificates Templates file"
 msgstr "Fichero de plantillas de certificados"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:255
+#: privacyidea/static/components/login/controllers/loginControllers.js:254
 msgid ""
 "Challenge Response Authentication. You are not completely authenticated, yet."
 msgstr ""
 "Autenticación de respuesta de desafío. Aún no está completamente autenticado."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:329
+#: privacyidea/static/components/login/controllers/loginControllers.js:334
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr "Autenticación de respuesta de desafío. ¡Tu respuesta no fue válida!"
 
@@ -675,15 +675,6 @@ msgid ""
 msgstr "Borrar el contador de fallos después de minutos"
 
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:27
-#, fuzzy
-msgid ""
-"Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
-"            the QR Code, if you\n"
-"            want to add the Token to your smartphone authenticator App."
-msgstr ""
-"Haga clic en <a href=\"{{ enrolledToken.googleurl.value }}\"> aquí </a> o "
-"escanee el código QR, si desea agregar el token a su Autenticador de Google."
-
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:27
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:27
 #, fuzzy
@@ -931,7 +922,7 @@ msgstr ""
 msgid "Custom attributes for user {{ username }}"
 msgstr "Atributos personalizados para el usuario {{username}}"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:250
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:267
 msgid "DN of a new created user object"
 msgstr "DN de un nuevo usuario creado"
 
@@ -1096,7 +1087,7 @@ msgstr "!Entre!"
 msgid "Do not use an authentication counter per token."
 msgstr "No utilice un contador de autenticación por token."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:671
+#: privacyidea/static/components/token/controllers/tokenControllers.js:681
 msgid "Do not verify the authenticity"
 msgstr ""
 
@@ -1292,7 +1283,7 @@ msgstr "Editar dominios"
 msgid "Edit user"
 msgstr "Editar usuario"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:230
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:247
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:90
 msgid "Edit user store"
 msgstr "Editar Almacén de usuarios"
@@ -1581,15 +1572,15 @@ msgstr "Obtener documentación del sistema"
 msgid "Get available CAs"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:431
+#: privacyidea/static/components/login/controllers/loginControllers.js:430
 msgid "Get the Authenticator App for Android."
 msgstr "Obtenga la aplicación Authenticator para Android."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:437
+#: privacyidea/static/components/login/controllers/loginControllers.js:436
 msgid "Get the Authenticator App for iOS."
 msgstr "Obtenga la aplicación Authenticator para iOS."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:443
+#: privacyidea/static/components/login/controllers/loginControllers.js:442
 msgid "Get the Authenticator App."
 msgstr "Obtenga la aplicación Authenticator."
 
@@ -1935,7 +1926,7 @@ msgstr "Enviará los datos de registro que faltan al \"endpoint\" configurado."
 msgid "Key"
 msgstr "Clave"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:147
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:164
 msgid "Keyfile Path"
 msgstr ""
 
@@ -2125,7 +2116,7 @@ msgstr ""
 msgid "Mobile"
 msgstr "Móvil"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:304
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:321
 msgid "Multivalue Attributes"
 msgstr "Atributos multivaluados"
 
@@ -2210,7 +2201,7 @@ msgstr ""
 "No se pudo encontrar ningún número de serie para el valor de OTP {{otp}}."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:152
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:328
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:345
 msgid "No anonymous referral chasing"
 msgstr "No encontradas referencias anónimas"
 
@@ -2218,7 +2209,7 @@ msgstr "No encontradas referencias anónimas"
 msgid "No machine found"
 msgstr "No se encontró ninguna máquina"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:335
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:352
 msgid "No retrieval of schema information"
 msgstr "No se recupera la información del esquema"
 
@@ -2310,7 +2301,7 @@ msgstr "Longitud de OTP de los tokens recién inscritos"
 msgid "OTP validity time"
 msgstr "Tiempo de validez de OTP"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:244
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:261
 msgid "Object classes of a new created user object"
 msgstr "Clases de objeto de un nuevo usuario creado"
 
@@ -2382,7 +2373,7 @@ msgstr "Anular Clientes de Autorización"
 msgid "PGP Key"
 msgstr "Clave PGP"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:665
+#: privacyidea/static/components/login/controllers/loginControllers.js:664
 msgid "PIN changed successfully."
 msgstr "PIN cambiado correctamente."
 
@@ -2439,7 +2430,7 @@ msgstr "La contraseña se estableció correctamente."
 msgid "Paste the ssh PUBLIC key"
 msgstr "Pegue la clave ssh pública"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:217
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:234
 msgid "Per-process server pool"
 msgstr "Grupo de servidores por proceso"
 
@@ -2461,7 +2452,7 @@ msgstr "Número de teléfono"
 msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr "Responda al menos {{num_answers}} de las siguientes preguntas."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:267
+#: privacyidea/static/components/login/controllers/loginControllers.js:265
 msgid "Please confirm with one of these tokens:"
 msgstr "Confirme con uno de estos tokens:"
 
@@ -2542,6 +2533,10 @@ msgstr "Tamaño del Pool"
 msgid "Pool timeout"
 msgstr "Timeout del Pool"
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:37
+msgid "Pooling strategy"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.radius.edit.html:37
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:48
 #: privacyidea/static/components/config/views/config.smtp.edit.html:37
@@ -2566,11 +2561,11 @@ msgstr ""
 "Ponga el PIN delante del valor de OTP. De lo contrario, quedará pendiente."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:145
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:265
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:282
 msgid "Preset Active Directory"
 msgstr "Preseleccione Directorio activo"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:262
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:279
 msgid "Preset OpenLDAP"
 msgstr "Preseleccione OpenLDAP"
 
@@ -2631,7 +2626,7 @@ msgstr "Cuestionario"
 msgid "Questionnaire Token settings"
 msgstr "Configuración del token de cuestionario"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:341
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:358
 msgid "Quick Resolver Test"
 msgstr "Prueba rápida del Almacén"
 
@@ -2696,7 +2691,7 @@ msgstr ""
 msgid "Realm"
 msgstr "Dominio"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:626
+#: privacyidea/static/components/login/controllers/loginControllers.js:625
 msgid "Realm defrealm created."
 msgstr "Dominio predeterminado creado."
 
@@ -2956,7 +2951,7 @@ msgid "SSL Config"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:40
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:37
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:54
 msgid "STARTTLS"
 msgstr "STARTTLS"
 
@@ -3035,7 +3030,7 @@ msgstr "Guardar Dominios"
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:40
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:208
 #: privacyidea/static/components/config/views/config.resolvers.http.html:93
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:353
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:370
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:39
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:88
 msgid "Save resolver"
@@ -3047,12 +3042,12 @@ msgid "Save user"
 msgstr "Guardar Usuario"
 
 #: privacyidea/static/components/config/views/config.policies.list.html:16
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:108
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:125
 msgid "Scope"
 msgstr "Alcance"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:167
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:281
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:298
 msgid "Search Filter"
 msgstr "Filtro de búsqueda"
 
@@ -3172,11 +3167,11 @@ msgstr "Servidor"
 msgid "Server URI"
 msgstr "Servidor URI"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:199
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:216
 msgid "Server pool retry rounds"
 msgstr "Reintentos del grupo de servidores"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:207
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:224
 msgid "Server pool skip timeout (seconds)"
 msgstr "Timeout de omisión del grupo de servidores (segundos)"
 
@@ -3254,11 +3249,11 @@ msgid "Show selected conditions only"
 msgstr "Mostrar solo las condiciones seleccionadas"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:134
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:189
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:206
 msgid "Size Limit"
 msgstr "Tamaño límite"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:672
+#: privacyidea/static/components/token/controllers/tokenControllers.js:682
 msgid "Skip tokens that can not be verified"
 msgstr ""
 
@@ -3287,6 +3282,10 @@ msgstr "Google Authenticator solo admite el algoritmo SHA1."
 #: privacyidea/static/components/token/views/token.enroll.html:37
 msgid "Some nice words..."
 msgstr "Algunas palabras..."
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:322
+msgid "Something went wrong!"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:61
 msgid ""
@@ -3358,7 +3357,7 @@ msgstr "Configuración del sistema guardada."
 msgid "System entry deleted."
 msgstr "Entrada del sistema eliminada."
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:53
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:70
 msgid "TLS Version"
 msgstr "Versión TLS"
 
@@ -3392,7 +3391,7 @@ msgid "Test HTTP Resolver"
 msgstr "Test del Almacén HTTP"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:204
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:348
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:365
 msgid "Test LDAP Resolver"
 msgstr "Test del Almacén LDAP"
 
@@ -3835,7 +3834,7 @@ msgid "The client device can not be used for this type of request."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:68
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:85
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:102
 msgid ""
 "The file containing the CA certificate which signed the\n"
 "                    LDAP TLS certificate."
@@ -4080,7 +4079,7 @@ msgid ""
 "                    privacyIDEA."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:238
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:255
 msgid ""
 "The user data in this database can be modified from within\n"
 "                privacyIDEA."
@@ -4265,7 +4264,7 @@ msgid ""
 "        otherwise you might receive a U2F Error 2 (Bad Request)."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:224
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:241
 msgid ""
 "This setting activates a LDAP server pool that is persisted between requests."
 msgstr ""
@@ -4316,7 +4315,7 @@ msgid "Timeout"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:125
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:169
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:186
 msgid "Timeout (seconds)"
 msgstr ""
 
@@ -4465,7 +4464,7 @@ msgstr ""
 msgid "U2F Token settings"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:313
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:330
 msgid "UID Type"
 msgstr ""
 
@@ -4528,7 +4527,7 @@ msgid "Use SSL"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:48
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:45
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:62
 msgid "Use STARTTLS on a plain LDAP connection usually on port 389."
 msgstr ""
 
@@ -4642,7 +4641,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:56
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:7
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:73
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:90
 msgid "Verify TLS"
 msgstr ""
 
@@ -4652,7 +4651,7 @@ msgid "Verify Token"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:64
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:81
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:98
 msgid "Verify the TLS cerificate of the server."
 msgstr ""
 
@@ -4721,7 +4720,7 @@ msgid ""
 "                            @  {{ loggedInUser.realm }}."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:521
+#: privacyidea/static/components/login/controllers/loginControllers.js:520
 msgid ""
 "You are using a certain amount of Push tokens. Note, that you need a valid "
 "subscription, to use Push tokens in push mode. Otherwise Push tokens will "
@@ -4788,7 +4787,7 @@ msgstr ""
 msgid "Your CSR to the certificate authority failed."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:409
+#: privacyidea/static/components/login/controllers/loginControllers.js:408
 msgid "Your OTP pin expires on"
 msgstr ""
 
@@ -4823,7 +4822,7 @@ msgstr ""
 msgid "Your secret phrase."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:528
+#: privacyidea/static/components/login/controllers/loginControllers.js:527
 msgid "Your subscription for the privacyIDEA Authenticator has expired."
 msgstr ""
 
@@ -5228,6 +5227,16 @@ msgstr ""
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr ""
+
+#, fuzzy
+#~ msgid ""
+#~ "Click <a href=\"{{ enrolledToken.googleurl.value }}\">here</a> or scan\n"
+#~ "            the QR Code, if you\n"
+#~ "            want to add the Token to your smartphone authenticator App."
+#~ msgstr ""
+#~ "Haga clic en <a href=\"{{ enrolledToken.googleurl.value }}\"> aquí </a> o "
+#~ "escanee el código QR, si desea agregar el token a su Autenticador de "
+#~ "Google."
 
 #, fuzzy
 #~ msgid ""
