@@ -10,27 +10,26 @@ TiQR Token Configuration
 
    *TiQR Token configuration*
 
-TiQR Registration Server
+Configuration Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-You need at least enter the *TiQR Registration Server*.
-This is the URL of your privacyIDEA installation, that can be reached from
-the smartphone during enrollment. So your smartphone needs to be on the same
-LAN (WLAN) like the privacyIDEA server or the enrollment URL needs to be
-accessible from the internet.
+**TiQR Registration Server**
+   You need to at least enter the *TiQR Registration Server*.
+   This is the URL of your privacyIDEA installation, that can be reached from
+   the smartphone during enrollment. So your smartphone needs to be on the same
+   LAN (WLAN) like the privacyIDEA server, or the enrollment URL needs to be
+   accessible from the internet.
 
-You also need to specify the path, which is usually */ttype/tiqr*.
+   You also need to specify the path, which is usually ``/ttype/tiqr``.
 
-During enrollment the parameter *action=metadata* and *action=enrollment* is
-added.
+   During enrollment, the parameter ``action=metadata`` and ``action=enrollment`` is
+   added.
 
-.. note:: We do not recommend putting the registration URL on the internet.
+   .. note:: We do not recommend putting the registration URL on the internet.
 
-TiQR Authentication Server
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+**TiQR Authentication Server**
+   This is the URL that is used during authentication.
+   This can be a different URL than the *Registration Server*. If it is left blank,
+   the URL of the *Registration Server* is used.
 
-This is the URL that is used during authentication.
-This can be another URL than the *Registration Server*. If it is left blank,
-the URL of the *Registration Server* is used.
-
-During authentication the parameter *operation=login* is added.
+   During authentication the parameter ``operation=login`` is added.

@@ -11,7 +11,7 @@ this can be easily done since there is a ready made package available (see
 :ref:`install_ubuntu_freeradius`).
 
 However, it can also be installed on other distributions.
-The FreeRADIUS plugin is a perl module, that e.g. requires on a Ubuntu/Debian system
+The FreeRADIUS plugin is a Perl module, that e.g. requires on a Ubuntu/Debian system
 the following packages to be installed:
 
 * libconfig-inifiles-perl

@@ -43,7 +43,7 @@ with the option --auth-user-pass prompts for username and password for
 every renegotiation.
 
 Network-Manager does not rechallenge the user and the VPN connection hangs,
-so you'll need to disabled the renegotiation.
+so you'll need to disable the renegotiation.
 
 If you are also requiring client certificates, the user needs
 
@@ -122,7 +122,7 @@ After the changes restart your OpenVPN service and keep a look at the
 logs of OpenVPN on your access server as well as the freeradius logs on
 your RADIUS server.
 
-If you use *privacyidea-radius* 2.6 or earlier, you make sure you have the
+If you use *privacyidea-radius* 2.6 or earlier, make sure you have the
 following entry in */etc/freeradius/sites-enabled/privacyidea*::
 
   [...]
@@ -131,8 +131,8 @@ following entry in */etc/freeradius/sites-enabled/privacyidea*::
   }
   [...]
 
-Otherwise RADIUS will authenticate your user, but refuse to add the 
-accounting data that the OpenVPN plugin sends and the connect will fail.
+Otherwise RADIUS will authenticate your user, but refuse to add the
+accounting data that the OpenVPN plugin sends and the connection will fail.
 
 Using the PAM module for RADIUS in OpenVPN
 ==========================================
@@ -157,7 +157,7 @@ Then you need to configure the OpenVPN server like this::
    [...]
    plugin /usr/lib/openvpn/openvpn-auth-pam.so openvpn
 
-Now we need to tell the PAM plugin which RADIUS server to use. Modify the 
+Now we need to tell the PAM plugin which RADIUS server to use. Modify the
 file */etc/pam_radius_auth.conf* to point to your RADIUS server and add
 the shared secret::
 

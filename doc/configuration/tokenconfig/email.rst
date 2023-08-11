@@ -11,7 +11,7 @@ Email Token Configuration
 
    *Email Token configuration*
 
-For the email token to work, you have to first setup an :ref:`smtpserver` and link it
+For the :ref:`email token <email_token>` to work, you have to first setup an :ref:`smtpserver` and link it
 to the Email Token configuration at *Config -> Tokens -> Email*. The UI warns the user
 if one of these requirements is not fulfilled yet.
 
@@ -24,51 +24,28 @@ First step
 ~~~~~~~~~~
 
 In the first step the user will enter his OTP PIN and the sending of the
-email is
-triggered. The user is denied the access.
+email is triggered. The user is denied access for now.
 
 Seconds step
 ~~~~~~~~~~~~
 
-In the second step the user authenticates with the OTP PIN and the OTP value
-he received via email. The user is granted access.
+In the second step, the user authenticates with the OTP PIN and the OTP value
+he received via email. The user is granted access if the OTP values match.
 
 .. _index: transaction_id
 
-Alternatively the user can authenticate with the *transaction_id* that was
-sent to him in the response during the first step and only the OTP value. The
-*transaction_id* assures that the user already presented the first factor (OTP
+Alternatively, the user can authenticate with the ``transaction_id`` that was
+sent to him in the response during the first step and only use the OTP value. The
+``transaction_id`` assures that the user already presented the first factor (OTP
 PIN) successfully.
 
 Configuration Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Concurrent Challenges**
+**SMTP server configuration**
+  The mail server configuration that is used to send emails.
 
-The config entry ``email.concurrent_challenges`` set in :ref:`cfgfile` will save the sent OTP
-value in the challenge database. This way several challenges can be open at the same
-time. The user can answer the challenges in an arbitrary order.
-Set this to a true value. Defaults to off.
-
-Deprecated Configuration Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-There are few more config entries handled, which are deprecated in recent versions of privacyIDEA.
-
-* ``email.mailserver`` - The name or IP address of the mail server that is used to send emails.
-
-* ``email.port`` - The port of the mail server.
-
-* ``email.username`` - If the mail server requires authentication you need to enter a username. If
-  no username is entered, no authentication is performed on the mail server.
-
-* ``email.password`` - The password of the mail username to send emails.
-
-* ``email.mailfrom`` - The mail address of the mail sender. This needs to correspond to the *Mail
-  User*.
-
-* ``email.validtime`` - This is the time in seconds, for how long the sent OTP value is valid. If a
+**OTP validity time**
+  This is the time in seconds, for how long the sent OTP value is valid. If a
   user tries to authenticate with the sent OTP value after this time,
   authentication will fail.
-
-* ``email.tls`` - Whether the mail server should use TLS.

@@ -16,7 +16,7 @@ REST API :ref:`rest_token` and specially the *init* and *assign*-methods.
 
 Technically the decorators in :ref:`code_api_policy` are used.
 
-The following actions are available in the scope 
+The following actions are available in the scope
 *enrollment*:
 
 max_token_per_realm
@@ -77,7 +77,7 @@ This policy takes a fixed string, to add additional information about the
 issuer of the soft token.
 
 You can use the tags ``{user}``, ``{realm}``, ``{serial}``, ``{givenname}``
-and ``{surname}`` in the label.
+and ``{surname}`` in the issuer label.
 
 .. note:: A good idea is to set this to the instance name of your privacyIDEA
    installation or the name of your company.
@@ -269,7 +269,7 @@ losttoken_PW_length
 type: int
 
 This is the length of the generated password for the lost token process.
- 
+
 losttoken_PW_contents
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -299,7 +299,7 @@ losttoken_valid
 
 type: int
 
-This is how many days the replacement token for the lost token should 
+This is how many days the replacement token for the lost token should
 be valid. After this many days the replacement can not be used anymore.
 
 yubikey_access_code
@@ -850,4 +850,3 @@ To prevent tokens from becoming unidentifiable after a device loss, a descriptio
 be enforced with the "require_description policy". The desired token-types can be
 selected here. After setting up the policy, the selected token types can only be
 enrolled if a description is set during enrollment.
-

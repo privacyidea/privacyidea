@@ -6,8 +6,7 @@ WebUI Policies
 WebUI policies define the behaviour of the WebUI.
 After activating WebUI policies, the UI must be reloaded once for the change to take effect
 
-.. index:: WebUI Login, WebUI Policy, Login Policy
-
+.. index:: WebUI Login, WebUI Policy, Login Policy, login mode
 .. _policy_login_mode:
 
 login_mode
