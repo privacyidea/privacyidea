@@ -383,25 +383,20 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             });
         };
 
-        $scope.detachMachineToken = function (machineid, resolver, application) {
+        $scope.detachMachineToken = function (application, mtid) {
             MachineFactory.detachTokenMachine({serial: $scope.tokenSerial,
                     application: application,
-                    machineid: machineid,
-                    resolver: resolver
+                    mtid: mtid
             }, function (data) {
                 $scope.getMachines();
             });
         };
 
-        $scope.saveOptions = function(machineid, resolver, application, options) {
+        $scope.saveOptions = function(mtid, options) {
             var params = options;
-            params["machineid"] = machineid;
-            params["resolver"] = resolver;
-            params["serial"] = $scope.tokenSerial;
-            params["application"] = application;
+            params["mtid"] = mtid;
             MachineFactory.saveOptions(params, function (data) {
                 $scope.getMachines();
-                //debug: console.log(data);
             });
         };
 

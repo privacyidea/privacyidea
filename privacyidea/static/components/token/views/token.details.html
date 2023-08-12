@@ -146,7 +146,8 @@
             logged-in-user="loggedInUser"></tr>
         <!-- If setData is called within the directive tokenDataEdit,
         the function set in the parent scope is called -->
-        <tr ng-show="loggedInUser.role==='admin'"
+        <tr ng-show="loggedInUser.role==='admin' &&
+                     !checkRight('setdescription')"
             token-data-edit text="{{ 'Description'|translate }}"
             button-text="{{ 'Set description'|translate }}"
             token-data="{{ token.description }}"
@@ -156,6 +157,19 @@
             token-key="description"
             callback-cancel="get()"
             callback="set(key, value)"
+            logged-in-user="loggedInUser"></tr>
+        <tr ng-show="loggedInUser.role==='admin' &&
+                     checkRight('setdescription')"
+            token-data-edit text="{{ 'Description'|translate }}"
+            button-text="{{ 'Set description'|translate }}"
+            token-data="{{ token.description }}"
+            token-locked="{{ token.locked }}"
+            hide-buttons="{{ hide_buttons }}"
+            set-right="{{ checkRight('setdescription') }}"
+            editable-as-user = true
+            token-key="description"
+            callback-cancel="get()"
+            callback="setdescription(value)"
             logged-in-user="loggedInUser"></tr>
         <tr ng-show="loggedInUser.role==='user'"
             token-data-edit text="{{ 'Description'|translate }}"
@@ -598,36 +612,35 @@
                 <td>{{ machine.application }}</td>
                 <!-- Options -->
                 <td ng-hide="machine.optionsEdit">
-                    <span ng-repeat="option
-                    in Applications[machine.application].options.required">
-                        <b>{{ option | capitalize }}:</b>
-                        {{ machine.options[option] }}<br>
-                    </span>
-                    <span ng-repeat="option
-                    in Applications[machine.application].options.optional">
-                        <b>{{ option | capitalize }}:</b>
-                        {{ machine.options[option] }}<br>
+                    <span ng-repeat="(optionname, option) in Applications[machine.application].options">
+                        <b>{{ optionname | capitalize }}:</b>
+                        {{ machine.options[optionname] }}<br>
                     </span>
                 </td>
                 <!-- Edit options -->
                 <td ng-show="machine.optionsEdit">
                     <div class="form-group"
-                         ng-repeat="option
-                         in Applications[machine.application].options.required">
-                        <label for="option_{{ option }}">{{ option | capitalize }}</label>
-                        <input name="option_{{ option }}"
-                               ng-model="machine.options[option]"
-                               class="form-control" ng-required="1"
-                               placeholder="required">
+                         ng-repeat="(optionname, option)
+                         in Applications[machine.application].options">
+                        <label for="option_{{ optionnamme }}">{{ optionname | capitalize }}</label>
+                        <input class="form-control"
+                               ng-required="option.required && !option.value"
+                               ng-model="machine.options[optionname]"
+                               ng-show="option.type==='str' && !option.value">
+                        <select class="form-control"
+                                ng-show="option.value"
+                                ng-required="option.required && option.value"
+                                ng-model="machine.options[optionname]"
+                                ng-options="value for value in option.value"></select>
+                        <input type="checkbox"
+                               ng-model="machine.options[optionname]"
+                               ng-show="option.type==='bool'">
+                        </select>
+                        <p class="help help-block">
+                              {{ option.description }}
+                        </p>
                     </div>
-                    <div class="form-group"
-                         ng-repeat="option
-                         in Applications[machine.application].options.optional">
-                        <label for="option_{{ option }}">{{ option | capitalize }}</label>
-                        <input name="option_{{ option }}"
-                               ng-model="machine.options[option]"
-                               class="form-control" placeholder="optional">
-                    </div>
+
                 </td>
                 <td ng-hide="machine.optionsEdit">
                     <button class="btn btn-primary"
@@ -635,16 +648,13 @@
                             translate>Edit Options
                     </button>
                     <button class="btn btn-danger"
-                            ng-click="detachMachineToken(machine.machine_id,
-                            machine.resolver, machine.application)"
+                            ng-click="detachMachineToken(machine.application, machine.id)"
                             translate>Detach
                     </button>
                 </td>
                 <td ng-show="machine.optionsEdit">
                     <button class="btn btn-primary"
-                            ng-click="saveOptions(machine.machine_id,
-                            machine.resolver, machine.application,
-                            machine.options);
+                            ng-click="saveOptions(machine.id, machine.options);
                             machine.optionsEdit=false"
                             translate>Save Options
                     </button>
@@ -681,19 +691,23 @@
 
         <!-- Options for a new MachineToken -->
         <div class="form-group"
-             ng-repeat="option in Applications[form.application].options.required">
-            <label for="option_{{ option }}">{{ option | capitalize }}</label>
-            <input name="option_{{ option }}"
-                   ng-model="form.options[option]"
-                   class="form-control" ng-required="1"
-                   placeholder="required">
-        </div>
-        <div class="form-group"
-             ng-repeat="option in Applications[form.application].options.optional">
-            <label for="option_{{ option }}">{{ option | capitalize }}</label>
-            <input name="option_{{ option }}"
-                   ng-model="form.options[option]"
-                   class="form-control" placeholder="optional">
+             ng-repeat="(optionname, option) in Applications[form.application].options">
+            <label for="option_{{ optionname }}">{{ optionname | capitalize }}</label>
+            <input class="form-control" id="option_{{ optionname }}"
+                   ng-required="option.required && !option.value"
+                   ng-model="form.options[optionname]"
+                   ng-show="option.type==='str' && !option.value">
+            <select class="form-control" id="option_{{ optionname }}"
+                    ng-show="option.value"
+                    ng-required="option.required && option.value"
+                    ng-model="form.options[optionname]"
+                    ng-options="value for value in option.value"></select>
+            <input type="checkbox" id="option_{{ optionname }}"
+                   ng-model="form.options[optionname]"
+                   ng-show="option.type==='bool'">
+            <p class="help help-block">
+                  {{ option.description }}
+            </p>
         </div>
 
         <div class="text-center">
@@ -708,4 +722,3 @@
 
 <ng-include src="instanceUrl + '/static/components/token/views/dialog.ask_token_delete.html'">
 </ng-include>
-

@@ -297,6 +297,10 @@ the fixed string "user".
 This way you can add, remove or modify the contents of the three parameters.
 For more information on the regular expressions see [#pythonre]_.
 
+The mangling happens *after* the user resolving as described in :ref:`relate_realm`.
+
+.. note:: This means that you can not mangle a non-existing user or a non-existing realm.
+
 .. note:: You must escape the backslash as **\\\\** to refer to the found
    substrings.
 
@@ -380,8 +384,9 @@ of this token type. This way, we avoid loops in this authentication process.
 This means, a user could authenticate via passthru or using a registration code and right during
 this authentication session be asked to enroll a new token.
 
-.. note:: During this kind of enrollment the policies for *max_token* are not checked. Also, currently no
-   token PIN is set.
+.. note:: During this kind of enrollment the policies for *max_token*, *require_description*
+   and *verify_enrollment* are not checked.
+   Also, currently no token PIN is set.
 
 The different ways of enrollment are defined in detail by the token types:
 
@@ -776,8 +781,8 @@ preferred_client_mode
 type: string
 
 This action sets a list of the client mode in the preferred order. You can enter the different client
-modes in the order you like. For example: "interactive, webauthn, poll, u2f". The client you're using
-will show you the riad login for you're preferred client mode. For example: this is you're list:
-"interactive, webauthn, poll, u2f" and in you're multi challenge are a webauthn and u2f token,
-than you're client will automatically show you the login for a webauthn token.
- .. note:: The default list is "interactive, webauthn, poll, u2f"
+modes in the order you like. For example: "interactive webauthn poll u2f". The client you are using
+will show you the correct login for your preferred client mode. For example if this is your list:
+"interactive webauthn poll u2f" and in Your multi-challenge list are a webauthn and u2f token,
+then your client will automatically show you the login for a webauthn token.
+ .. note:: The default list is "interactive webauthn poll u2f"

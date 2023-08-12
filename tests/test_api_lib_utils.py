@@ -15,7 +15,7 @@ import jwt
 import mock
 import datetime
 import warnings
-from six.moves.urllib.parse import quote
+from urllib.parse import quote
 from privacyidea.lib.error import AuthError
 from privacyidea.lib.token import init_token, remove_token
 
@@ -55,6 +55,11 @@ class UtilsTestCase(MyApiTestCase):
         check_policy_name("pi-update-policysomething")
 
     def test_03_verify_auth_token(self):
+        # check broken JWT
+        self.assertRaises(AuthError, verify_auth_token,
+                          auth_token='not_valid_jwt',
+                          required_role="user")
+
         # create a jwt with a trusted private key
         with open("tests/testdata/jwt_sign.key", "r") as f:
             key = f.read()
@@ -82,7 +87,7 @@ class UtilsTestCase(MyApiTestCase):
                                 algorithm="RS256")
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', category=DeprecationWarning)
-            self.assertRaisesRegexp(
+            self.assertRaisesRegex(
                 AuthError,
                 "The username hanswurst is not allowed to impersonate via JWT.",
                 verify_auth_token, auth_token=auth_token, required_role="user")
@@ -97,7 +102,7 @@ class UtilsTestCase(MyApiTestCase):
                                 algorithm="RS256")
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', category=DeprecationWarning)
-            self.assertRaisesRegexp(
+            self.assertRaisesRegex(
                 AuthError,
                 "The username kleinerhans is not allowed to impersonate via JWT.",
                 verify_auth_token, auth_token=auth_token, required_role="user")

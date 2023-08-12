@@ -38,11 +38,7 @@ from privacyidea.lib.framework import get_app_config_value
 import os
 import traceback
 from sqlalchemy import func
-from six import PY2, string_types
 
-
-if not PY2:
-    long = int
 
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
 SIGN_FORMAT = """{application}
@@ -70,6 +66,7 @@ APPLICATIONS = {"demo_application": 0,
                 "owncloud": 50,
                 "privacyidea-ldap-proxy": 50,
                 "privacyidea-cp": 50,
+                "privacyidea-pam": 10000,
                 "privacyidea-adfs": 50,
                 "privacyidea-keycloak": 10000,
                 "simplesamlphp": 10000,
@@ -132,10 +129,10 @@ def save_subscription(subscription):
     :type subscription: dict
     :return: True in case of success
     """
-    if isinstance(subscription.get("date_from"), string_types):
+    if isinstance(subscription.get("date_from"), str):
         subscription["date_from"] = datetime.datetime.strptime(
             subscription.get("date_from"), SUBSCRIPTION_DATE_FORMAT)
-    if isinstance(subscription.get("date_till"), string_types):
+    if isinstance(subscription.get("date_till"), str):
         subscription["date_till"] = datetime.datetime.strptime(
             subscription.get("date_till"), SUBSCRIPTION_DATE_FORMAT)
 
@@ -214,7 +211,8 @@ def raise_exception_probability(subscription=None):
     if not subscription:
         # No subscription at all. We are in a kind of demo mode and return
         # True with a 50% chance
-        return random.randrange(0, 2)
+        # This is only for probability, so we use the less secure but faster random module
+        return random.randrange(0, 2)  # nosec B311
 
     expire = subscription.get("date_till")
     delta = datetime.datetime.now() - expire
@@ -224,7 +222,8 @@ def raise_exception_probability(subscription=None):
         # After 74 days we get 80%
         # After 94 days we get 100%
         p = 0.2 + ((delta.days-14.0)/30.0) * 0.3
-        return random.random() < p
+        # This is only for probability, so we use the less secure but faster random module
+        return random.random() < p  # nosec B311
 
     return False
 
@@ -243,7 +242,8 @@ def subscription_exceeded_probability(active_tokens, allowed_tokens):
     # old, hard behaviour
     # return active_tokens > allowed_tokens
     if active_tokens > allowed_tokens:
-        prob_check = random.randrange(active_tokens +1)
+        # This is only for probability, so we use the less secure but faster random module
+        prob_check = random.randrange(active_tokens + 1)  # nosec B311
         return prob_check > allowed_tokens
     else:
         return False

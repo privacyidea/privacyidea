@@ -19,7 +19,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import functools
 
 from privacyidea.lib.queue import get_job_queue
 from privacyidea.config import TestingConfig

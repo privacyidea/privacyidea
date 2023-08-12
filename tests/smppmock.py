@@ -20,17 +20,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from __future__ import (
-    absolute_import, print_function, division, unicode_literals
-)
-
 from collections import namedtuple
 from mock import Mock
 
-try:
-    from collections import Sequence, Sized
-except ImportError:
-    from collections.abc import Sequence, Sized
+from collections.abc import Sequence, Sized
 
 from smpplib.exceptions import ConnectionError
 

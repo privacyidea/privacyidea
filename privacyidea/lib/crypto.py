@@ -44,22 +44,20 @@ calling function handle the data.
 
 This lib.crypto is tested in tests/test_lib_crypto.py
 """
-from __future__ import division
 import hmac
 import logging
 from hashlib import sha256
+import secrets
 import random
 import string
 import binascii
-import six
 import ctypes
 
 import base64
 import traceback
-from six import PY2
 from passlib.context import CryptContext
 from privacyidea.lib.log import log_with
-from privacyidea.lib.error import HSMException
+from privacyidea.lib.error import HSMException, ParameterError
 from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
                                        get_app_config)
 from privacyidea.lib.utils import (to_unicode, to_bytes, hexlify_and_unicode,
@@ -73,22 +71,10 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
-import passlib.hash
-from passlib.hash import argon2
-try:
-    # For Python 3.6 and above
-    from secrets import compare_digest
-except ImportError:
-    # For Python 2.7 and above
-    from hmac import compare_digest
-
 
 def safe_compare(a, b):
-    return compare_digest(to_bytes(a), to_bytes(b))
+    return hmac.compare_digest(to_bytes(a), to_bytes(b))
 
-
-if not PY2:
-    long = int
 
 ROUNDS = 9
 
@@ -100,7 +86,7 @@ ROUNDS = 9
 DEFAULT_HASH_ALGO_LIST = ['argon2', 'pbkdf2_sha512']
 DEFAULT_HASH_ALGO_PARAMS = {'argon2__rounds': ROUNDS}
 
-FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"
+FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"  # nosec B105 # placeholder in case of error
 
 log = logging.getLogger(__name__)
 
@@ -140,7 +126,7 @@ class SecretObj(object):
         '''
         self._setupKey_()
         backend = default_backend()
-        cipher = Cipher(algorithms.AES(self.bkey), modes.ECB(), backend=backend)
+        cipher = Cipher(algorithms.AES(self.bkey), modes.ECB(), backend=backend)  # nosec B305 # part of Yubikey specification
         decryptor = cipher.decryptor()
         msg_bin = decryptor.update(enc_data) + decryptor.finalize()
         self._clearKey_(preserve=self.preserve)
@@ -304,7 +290,7 @@ def encryptPassword(password):
 
     This function returns a unicode string with a
     hexlified contents of the IV and the encrypted data separated by a
-    colon like u"4956:44415441"
+    colon like "4956:44415441"
 
     :param password: the password
     :type password: bytes or str
@@ -445,7 +431,8 @@ def aes_cbc_encrypt(key, iv, data):
     :return: plain text in binary data
     :rtype: bytes
     """
-    assert len(data) % (algorithms.AES.block_size // 8) == 0
+    if len(data) % (algorithms.AES.block_size // 8) != 0:  # pragma: no cover
+        raise ParameterError("Invalid length of input data")
     # do the encryption
     backend = default_backend()
     mode = modes.CBC(iv)
@@ -514,7 +501,7 @@ def geturandom(length=20, hex=False):
     '''
     hsm = get_hsm()
     ret = hsm.random(length)
-        
+
     if hex:
         ret = to_unicode(binascii.hexlify(ret))
     return ret
@@ -663,7 +650,7 @@ def get_alphanum_str(length=16):
     """
     ret = ""
     for i in range(length):
-        ret += random.choice(string.ascii_letters + string.digits)
+        ret += secrets.choice(string.ascii_letters + string.digits)
     return ret
 
 
@@ -687,8 +674,8 @@ def zerome(bufferObject):
 
 
 def _slow_rsa_verify_raw(key, sig, msg):
-    assert isinstance(sig, six.integer_types)
-    assert isinstance(msg, six.integer_types)
+    if not (isinstance(sig, int) and isinstance(msg, int)):  # pragma: no cover
+        raise ParameterError("Message and signature need to be integer")
     if hasattr(key, 'public_numbers'):
         pn = key.public_numbers()
     elif hasattr(key, 'private_numbers'):  # pragma: no cover
@@ -706,13 +693,18 @@ class Sign(object):
     """
     sig_ver = 'rsa_sha256_pss'
 
-    def __init__(self, private_key=None, public_key=None):
+    def __init__(self, private_key=None, public_key=None, check_private_key=True):
         """
+        Initialize the Sign object with the given Keys.
+
         :param private_key: The private Key data in PEM format
         :type private_key: bytes or None
         :param public_key:  The public key data in PEM format
         :type public_key: bytes or None
-        :return: Sign Object
+        :param check_private_key: Check the private key when loading (default: True)
+        :type check_private_key: bool
+        :return: The Sign Object
+        :rtype: Sign
         """
         self.private = None
         self.public = None
@@ -721,7 +713,8 @@ class Sign(object):
             try:
                 self.private = serialization.load_pem_private_key(private_key,
                                                                   password=None,
-                                                                  backend=backend)
+                                                                  backend=backend,
+                                                                  unsafe_skip_rsa_key_validation=not check_private_key)
             except Exception as e:
                 log.error("Error loading private key: ({0!r})".format(e))
                 log.debug(traceback.format_exc())
@@ -780,7 +773,7 @@ class Sign(object):
 
         sver = ''
         try:
-            sver, signature = six.text_type(signature).split(':')
+            sver, signature = str(signature).split(':')
         except ValueError:
             # if the signature does not contain a colon we assume an old style signature.
             pass
@@ -839,7 +832,7 @@ def create_hsm_object(config):
                 hsm_parameters[param] = config.get(key)
         logging_params = dict(hsm_parameters)
         if "password" in logging_params:
-            logging_params["password"] = "XXXX"
+            logging_params["password"] = "XXXX"  # nosec B105 # Hide password
         log.info("calling HSM module with parameters {0}".format(logging_params))
 
     return hsm_class(hsm_parameters)
@@ -875,10 +868,10 @@ def generate_password(size=6, characters=string.ascii_lowercase +
     if len(requirements) > size:
         log.info('The number of requirements is larger then the password length.')
     # add one random character from each string in the requirements list
-    passwd = [urandom.choice(str) for str in requirements]
+    passwd = [secrets.choice(str) for str in requirements]
     # fill the password until size with allowed characters
-    passwd.extend(urandom.choice(characters) for _x in range(size - len(requirements)))
-    # return shuffled password
+    passwd.extend(secrets.choice(characters) for _x in range(size - len(requirements)))
+    # Shuffle, so that we mix the requirements and the generic characters
     random.shuffle(passwd)
     return "".join(passwd)
 

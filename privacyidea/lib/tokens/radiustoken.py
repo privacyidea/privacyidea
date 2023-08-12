@@ -51,7 +51,7 @@ import traceback
 import binascii
 from privacyidea.lib.utils import is_true, to_bytes, hexlify_and_unicode, to_unicode
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
-from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
+from privacyidea.lib.tokenclass import TokenClass, TOKENKIND, AUTHENTICATIONMODE
 from privacyidea.api.lib.utils import getParam, ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_from_config
@@ -76,11 +76,11 @@ log = logging.getLogger(__name__)
 
 ###############################################
 class RadiusTokenClass(RemoteTokenClass):
+    mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE]
 
     def __init__(self, db_token):
         RemoteTokenClass.__init__(self, db_token)
         self.set_type("radius")
-        self.mode = ['authenticate', 'challenge']
 
     @staticmethod
     def get_class_type():
@@ -362,7 +362,7 @@ class RadiusTokenClass(RemoteTokenClass):
         Split the PIN and the OTP value.
         Only if it is locally checked and not remotely.
         """
-        res = 0
+        res = True
         pin = ""
         otpval = passw
         if self.check_pin_local:

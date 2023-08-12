@@ -2,7 +2,7 @@
 
 import os
 import logging
-import random
+import secrets
 import string
 log = logging.getLogger(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -33,10 +33,8 @@ WQIDAQAB
 
 def _random_password(size):
     log.info("SECRET_KEY not set in config. Generating a random key.")
-    passwd = [random.choice(string.ascii_lowercase + \
-                            string.ascii_uppercase + string.digits) for _x in range(size)]
-    # return shuffled password
-    random.shuffle(passwd)
+    passwd = [secrets.choice(string.ascii_lowercase + \
+                             string.ascii_uppercase + string.digits) for _x in range(size)]
     return "".join(passwd)
 
 
@@ -74,7 +72,7 @@ class TestingConfig(Config):
     TESTING = True
     # This is used to encrypt the auth token
     SUPERUSER_REALM = ['adminrealm']
-    SECRET_KEY = 'secret'
+    SECRET_KEY = 'secret'  # nosec B105 # used for testing
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
     # This is used to encrypt the admin passwords

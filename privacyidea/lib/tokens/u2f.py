@@ -26,7 +26,6 @@ import base64
 import logging
 import time
 import struct
-import six
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from cryptography.exceptions import InvalidSignature
@@ -46,6 +45,7 @@ log = logging.getLogger(__name__)
 def url_decode(url):
     """
     Decodes a base64 encoded, not padded string as used in FIDO U2F
+
     :param url: base64 urlsafe encoded string
     :type url: basestring or bytes
     :return: the decoded string
@@ -81,10 +81,10 @@ def parse_response_data(resp_data):
     :param resp_data: response data from the FIDO U2F client
     :type resp_data: hex string
     :return: tuple of user_presence_byte(byte), counter(int),
-        signature(hexstring)
+        signature(bytearray)
     """
     resp_data_bin = binascii.unhexlify(resp_data)
-    user_presence = six.int2byte(six.indexbytes(resp_data_bin, 0))
+    user_presence = bytes((resp_data_bin[0], ))
     signature = resp_data_bin[5:]
     counter = struct.unpack(">L", resp_data_bin[1:5])[0]
     return user_presence, counter, signature
@@ -110,12 +110,12 @@ def parse_registration_data(reg_data, verify_cert=True):
     :return: tuple
     """
     reg_data_bin = url_decode(reg_data)
-    reserved_byte = six.int2byte(six.indexbytes(reg_data_bin, 0))  # must be '\x05'
-    if reserved_byte != b'\x05':
-        raise Exception("The registration data is in a wrong format. It must"
+    reserved_byte_value = reg_data_bin[0]  # must be 5
+    if reserved_byte_value != 5:
+        raise Exception("The registration data is in a wrong format. It must "
                         "start with 0x05")
     user_pub_key = reg_data_bin[1:66]
-    key_handle_len = six.indexbytes(reg_data_bin, 66)
+    key_handle_len = reg_data_bin[66]
     # We need to save the key handle
     key_handle = reg_data_bin[67:67+key_handle_len]
 
@@ -218,7 +218,7 @@ def check_response(user_pub_key, app_id, client_data, signature,
     :param counter: A counter
     :type counter: int
     :param user_presence_byte: User presence byte
-    :type user_presence_byte: byte
+    :type user_presence_byte: bytes
     :param signature: The signature of the authentication request
     :type signature: hex string
     :return:

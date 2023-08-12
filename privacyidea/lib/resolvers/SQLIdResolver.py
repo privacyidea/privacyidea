@@ -37,9 +37,8 @@ import re
 
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
-from sqlalchemy import and_
-from sqlalchemy import create_engine
-from sqlalchemy import Integer, cast, String
+from sqlalchemy import (Integer, cast, String, MetaData, Table, and_,
+                        create_engine, select, insert, delete)
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
@@ -49,10 +48,8 @@ from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import (is_true, censor_connect_string,
                                    convert_column_to_unicode)
 from passlib.context import CryptContext
-from base64 import b64decode, b64encode
 from passlib.utils import h64
-
-from passlib.utils.compat import uascii_to_str, u
+from passlib.utils.compat import uascii_to_str
 from passlib.utils.compat import unicode as pl_unicode
 from passlib.utils import to_unicode
 import passlib.utils.handlers as uh
@@ -111,64 +108,7 @@ class phpass_drupal(uh.HasRounds, uh.HasSalt, uh.GenericHandler):  # pragma: no 
         return h64.encode_bytes(result).decode("ascii")[:self.checksum_size]
 
 
-class _SaltedBase64DigestHelper(uh.HasRawSalt, uh.HasRawChecksum, uh.GenericHandler):  # pragma: no cover
-    """helper for ldap_salted_sha256/512"""
-    setting_kwds = ("salt", "salt_size")
-    checksum_chars = uh.PADDED_BASE64_CHARS
-
-    ident = None
-    _hash_func = None
-    _hash_regex = None
-    min_salt_size = 4
-    default_salt_size = 4
-    max_salt_size = 16
-
-    @classmethod
-    def from_string(cls, hash):
-        hash = to_unicode(hash, "ascii", "hash")
-        m = cls._hash_regex.match(hash)
-        if not m:
-            raise uh.exc.InvalidHashError(cls)
-        try:
-            data = b64decode(m.group("tmp").encode("ascii"))
-        except TypeError:
-            raise uh.exc.MalformedHashError(cls)
-        cs = cls.checksum_size
-        assert cs
-        return cls(checksum=data[:cs], salt=data[cs:])
-
-    def to_string(self):
-        data = self.checksum + self.salt
-        hash = self.ident + b64encode(data).decode("ascii")
-        return uascii_to_str(hash)
-
-    def _calc_checksum(self, secret):
-        if isinstance(secret, pl_unicode):
-            secret = secret.encode("utf-8")
-        return self._hash_func(secret + self.salt).digest()
-
-
-class ldap_salted_sha256(_SaltedBase64DigestHelper):
-    name = 'ldap_salted_sha256'
-    ident = '{SSHA256}'
-    checksum_size = 32
-    max_salt_size = 32
-    _hash_func = hashlib.sha256
-    _hash_regex = re.compile(u(r"^\{SSHA256\}(?P<tmp>[+/a-zA-Z0-9]{48,}={0,2})$"))
-
-
-class ldap_salted_sha512(_SaltedBase64DigestHelper):
-    name = 'ldap_salted_sha512'
-    ident = '{SSHA512}'
-    checksum_size = 64
-    max_salt_size = 64
-    _hash_func = hashlib.sha512
-    _hash_regex = re.compile(u(r"^\{SSHA512\}(?P<tmp>[+/a-zA-Z0-9]{88,}={0,2})$"))
-
-
 register_crypt_handler(phpass_drupal)
-register_crypt_handler(ldap_salted_sha256)
-register_crypt_handler(ldap_salted_sha512)
 
 # The list of supported password hash types for verification (passlib handler)
 pw_ctx = CryptContext(schemes=['phpass',
@@ -197,22 +137,6 @@ hash_type_dict = {"PHPASS": 'phpass',
                   }
 
 log = logging.getLogger(__name__)
-ENCODING = "utf-8"
-
-SQLSOUP_LOADED = False
-try:
-    from sqlsoup import SQLSoup
-    SQLSOUP_LOADED = True
-except ImportError:  # pragma: no cover
-    log.debug("SQLSoup could not be loaded!")
-
-if SQLSOUP_LOADED is False:  # pragma: no cover
-    try:
-        from sqlalchemy.ext.sqlsoup import SQLSoup
-        log.debug("SQLSoup loaded from SQLAlchemy.")
-        SQLSOUP_LOADED = True
-    except ImportError:
-        log.error("SQLSoup could not be loaded from SQLAlchemy!")
 
 
 class IdResolver (UserIdResolver):
@@ -249,8 +173,9 @@ class IdResolver (UserIdResolver):
         self.port = 0
         self.limit = 100
         self.user = ""
-        self.password = ""
+        self.password = "" # nosec B105 # default parameter
         self.table = ""
+        self.TABLE = None
         self.map = {}
         self.reverse_map = {}
         self.where = ""
@@ -260,6 +185,7 @@ class IdResolver (UserIdResolver):
         self.session = None
         self.pool_size = 10
         self.pool_timeout = 120
+        self.pool_recycle = 7200
         self.engine = None
         self._editable = False
         self.password_hash_type = None
@@ -272,6 +198,7 @@ class IdResolver (UserIdResolver):
     def _append_where_filter(conditions, table, where):
         """
         Append contents of WHERE statement to the list of filter conditions
+
         :param conditions: filter conditions
         :type conditions: list
         :return: list of filter conditions
@@ -283,13 +210,13 @@ class IdResolver (UserIdResolver):
                 # administrator enters nonsense
                 (w_column, w_cond, w_value) = part.split()
                 if w_cond.lower() == "like":
-                    conditions.append(getattr(table, w_column).like(w_value))
+                    conditions.append(table.columns[w_column].like(w_value))
                 elif w_cond == "==":
-                    conditions.append(getattr(table, w_column) == w_value)
+                    conditions.append(table.columns[w_column] == w_value)
                 elif w_cond == ">":
-                    conditions.append(getattr(table, w_column) > w_value)
+                    conditions.append(table.columns[w_column] > w_value)
                 elif w_cond == "<":
-                    conditions.append(getattr(table, w_column) < w_value)
+                    conditions.append(table.columns[w_column] < w_value)
 
         return conditions
 
@@ -338,24 +265,23 @@ class IdResolver (UserIdResolver):
         userinfo = {}
 
         try:
-            conditions = []
-            conditions.append(self._get_userid_filter(userId))
+            conditions = [self._get_userid_filter(userId)]
             conditions = self._append_where_filter(conditions, self.TABLE,
                                                    self.where)
             filter_condition = and_(*conditions)
-            result = self.session.query(self.TABLE).filter(filter_condition)
+            result = self.session.execute(select(self.TABLE).filter(filter_condition))
 
-            for r in result:
+            for r in result.mappings():
                 if userinfo:  # pragma: no cover
                     raise Exception("More than one user with userid {0!s} found!".format(userId))
                 userinfo = self._get_user_from_mapped_object(r)
         except Exception as exx:  # pragma: no cover
-            log.error("Could not get the userinformation: {0!r}".format(exx))
+            log.error("Could not get the user information: {0!r}".format(exx))
 
         return userinfo
     
     def _get_userid_filter(self, userId):
-        column = getattr(self.TABLE, self.map.get("userid"))
+        column = self.TABLE.columns[self.map.get("userid")]
         if isinstance(column.type, String):
             return column == str(userId)
         elif isinstance(column.type, Integer):
@@ -368,8 +294,9 @@ class IdResolver (UserIdResolver):
     def getUsername(self, userId):
         """
         Returns the username/loginname for a given userid
-        :param userid: The userid in this resolver
-        :type userid: string
+
+        :param userId: The userid in this resolver
+        :type userId: string
         :return: username
         :rtype: string
         """
@@ -390,20 +317,20 @@ class IdResolver (UserIdResolver):
         try:
             conditions = []
             column = self.map.get("username")
-            conditions.append(getattr(self.TABLE, column).like(LoginName))
+            conditions.append(self.TABLE.columns[column].like(LoginName))
             conditions = self._append_where_filter(conditions, self.TABLE,
                                                    self.where)
             filter_condition = and_(*conditions)
-            result = self.session.query(self.TABLE).filter(filter_condition)
+            result = self.session.execute(select(self.TABLE).filter(filter_condition))
 
-            for r in result:
+            for r in result.mappings():
                 if userid != "":    # pragma: no cover
                     raise Exception("More than one user with loginname"
                                     " %s found!" % LoginName)
                 user = self._get_user_from_mapped_object(r)
                 userid = convert_column_to_unicode(user["userid"])
         except Exception as exx:    # pragma: no cover
-            log.error("Could not get the userinformation: {0!r}".format(exx))
+            log.error("Could not get the user ID: {0!r}".format(exx))
 
         return userid
 
@@ -414,11 +341,17 @@ class IdResolver (UserIdResolver):
         :return: User
         :rtype: dict
         """
-        r = ro.__dict__
         user = {}
+        try:
+            if self.map.get("userid") in ro:
+                user["id"] = ro[self.map.get("userid")]
+        except UnicodeEncodeError:  # pragma: no cover
+            log.error("Failed to convert user: {0!r}".format(ro))
+            log.debug("{0!s}".format(traceback.format_exc()))
+
         for key in self.map.keys():
             try:
-                raw_value = r.get(self.map.get(key))
+                raw_value = ro.get(self.map.get(key))
                 if raw_value:
                     if key == 'userid':
                         val = convert_column_to_unicode(raw_value)
@@ -430,7 +363,7 @@ class IdResolver (UserIdResolver):
 
             except UnicodeDecodeError:  # pragma: no cover
                 user[key] = "decoding_error"
-                log.error("Failed to convert user: {0!r}".format(r))
+                log.error("Failed to convert user: {0!r}".format(ro))
                 log.debug("{0!s}".format(traceback.format_exc()))
 
         return user
@@ -449,17 +382,17 @@ class IdResolver (UserIdResolver):
             column = self.map.get(key)
             value = searchDict.get(key)
             value = value.replace("*", "%")
-            conditions.append(getattr(self.TABLE, column).like(value))
+            conditions.append(self.TABLE.columns[column].like(value))
 
         conditions = self._append_where_filter(conditions, self.TABLE,
                                                self.where)
         filter_condition = and_(*conditions)
 
-        result = self.session.query(self.TABLE).\
-            filter(filter_condition).\
-            limit(self.limit)
+        result = self.session.execute(select(self.TABLE).
+                                      filter(filter_condition).
+                                      limit(self.limit))
 
-        for r in result:
+        for r in result.mappings():
             user = self._get_user_from_mapped_object(r)
             if "userid" in user:
                 users.append(user)
@@ -482,7 +415,7 @@ class IdResolver (UserIdResolver):
                     str(self.pool_recycle),
                     str(self.pool_timeout))
         id_str = "\x00".join(id_parts)
-        resolver_id = binascii.hexlify(hashlib.sha1(id_str.encode('utf8')).digest())
+        resolver_id = binascii.hexlify(hashlib.sha1(id_str.encode('utf8')).digest())  # nosec B324 # hash used as unique identifier
         return "sql." + resolver_id.decode('utf8')
 
     @staticmethod
@@ -513,7 +446,7 @@ class IdResolver (UserIdResolver):
         self.password_hash_type = config.get("Password_Hash_Type", "SSHA256")
         usermap = config.get('Map', {})
         self.map = yaml.safe_load(usermap)
-        self.reverse_map = dict([[v, k] for k, v in self.map.items()])
+        self.reverse_map = {v: k for k, v in self.map.items()}
         self.where = config.get('Where', "")
         self.encoding = str(config.get('Encoding') or "latin1")
         self.conParams = config.get('conParams', "")
@@ -523,7 +456,7 @@ class IdResolver (UserIdResolver):
         # (necessary for MySQL servers, which terminate idle connections after some hours)
         self.pool_recycle = int(config.get('poolRecycle') or 7200)
 
-        # create the connectstring like
+        # create the connect-string like
         params = {'Port': self.port,
                   'Password': self.password,
                   'conParams': self.conParams,
@@ -534,18 +467,14 @@ class IdResolver (UserIdResolver):
         self.connect_string = self._create_connect_string(params)
 
         # get an engine from the engine registry, using self.getResolverId() as the key,
-        # which involves the connect string and the pool settings.
+        # which involves the connect-string and the pool settings.
         self.engine = get_engine(self.getResolverId(), self._create_engine)
-        # We use ``scoped_session`` to be sure that the SQLSoup object
-        # also uses ``self.session``.
-        Session = scoped_session(sessionmaker(bind=self.engine))
+        # We use ``scoped_session``.
+        self.session = scoped_session(sessionmaker(bind=self.engine))()
         # Session should be closed on teardown
-        self.session = Session()
         register_finalizer(self.session.close)
         self.session._model_changes = {}
-        self.db = SQLSoup(self.engine, session=Session)
-        self.db.session._model_changes = {}
-        self.TABLE = self.db.entity(self.table)
+        self.TABLE = Table(self.table, MetaData(), autoload_with=self.engine)
 
         return self
 
@@ -556,17 +485,17 @@ class IdResolver (UserIdResolver):
             log.debug("using pool_size={0!s}, pool_timeout={1!s}, pool_recycle={2!s}".format(
                 self.pool_size, self.pool_timeout, self.pool_recycle))
             engine = create_engine(self.connect_string,
-                                        encoding=self.encoding,
-                                        convert_unicode=False,
-                                        pool_size=self.pool_size,
-                                        pool_recycle=self.pool_recycle,
-                                        pool_timeout=self.pool_timeout)
+                                   encoding=self.encoding,
+                                   convert_unicode=False,
+                                   pool_size=self.pool_size,
+                                   pool_recycle=self.pool_recycle,
+                                   pool_timeout=self.pool_timeout)
         except TypeError:
             # The DB Engine/Poolclass might not support the pool_size.
             log.debug("connecting without pool_size.")
             engine = create_engine(self.connect_string,
-                                        encoding=self.encoding,
-                                        convert_unicode=False)
+                                   encoding=self.encoding,
+                                   convert_unicode=False)
         return engine
 
     @classmethod
@@ -600,13 +529,13 @@ class IdResolver (UserIdResolver):
     @staticmethod
     def _create_connect_string(param):
         """
-        create the connectstring
+        create the connect-string.
 
         Port, Password, conParams, Driver, User,
         Server, Database
         """
         port = ""
-        password = ""
+        password = "" # nosec B105 # default parameter
         conParams = ""
         if param.get("Port"):
             port = ":{0!s}".format(param.get("Port"))
@@ -624,9 +553,6 @@ class IdResolver (UserIdResolver):
                                                    port,
                                                    param.get("Database") or "",
                                                    conParams)
-        # SQLAlchemy does not like a unicode connect string!
-#        if param.get("Driver").lower() == "sqlite":
-#            connect_string = str(connect_string)
         return connect_string
 
     @classmethod
@@ -646,17 +572,14 @@ class IdResolver (UserIdResolver):
 
         """
         num = -1
-        desc = None
 
         connect_string = cls._create_connect_string(param)
         log.info("using the connect string {0!s}".format(censor_connect_string(connect_string)))
         engine = create_engine(connect_string)
         # create a configured "Session" class
-        Session = scoped_session(sessionmaker(bind=engine))
-        session = Session()
-        db = SQLSoup(engine, session=Session)
+        session = scoped_session(sessionmaker(bind=engine))()
         try:
-            TABLE = db.entity(param.get("Table"))
+            TABLE = Table(param.get("Table"), MetaData(), autoload_with=engine)
             conditions = cls._append_where_filter([], TABLE,
                                                   param.get("Where"))
             filter_condition = and_(*conditions)
@@ -689,12 +612,13 @@ class IdResolver (UserIdResolver):
         determine the way how to create the UID.
         """
         attributes = attributes or {}
+        # TODO: add try/except
         kwargs = self.prepare_attributes_for_db(attributes)
-        log.debug("Insert new user with attributes {0!s}".format(kwargs))
-        r = self.TABLE.insert(**kwargs)
-        self.db.commit()
+        log.info("Insert new user with attributes {0!s}".format(kwargs))
+        r = self.session.execute(insert(self.TABLE).values(**kwargs))
+        self.session.commit()
         # Return the UID of the new object
-        return getattr(r, self.map.get("userid"))
+        return r.inserted_primary_key[self.map.get("userid")]
 
     def prepare_attributes_for_db(self, attributes):
         """
@@ -728,15 +652,13 @@ class IdResolver (UserIdResolver):
         """
         res = True
         try:
-            conditions = []
-            conditions.append(self._get_userid_filter(uid))
+            conditions = [self._get_userid_filter(uid)]
             conditions = self._append_where_filter(conditions, self.TABLE,
                                                    self.where)
             filter_condition = and_(*conditions)
-            user_obj = self.session.query(self.TABLE).filter(
-                filter_condition).first()
-            self.session.delete(user_obj)
+            self.session.execute(delete(self.TABLE).where(filter_condition))
             self.session.commit()
+            log.info('Deleted user with uid: {0!s}'.format(uid))
         except Exception as exx:
             log.error("Error deleting user: {0!s}".format(exx))
             res = False
@@ -749,7 +671,7 @@ class IdResolver (UserIdResolver):
         attribute mapping know, which field contains the password,
         this function can also take care for password changing.
 
-        Attributes that are not contained in the dict attributes are not
+        Attributes that are not contained in the attributes dict are not
         modified.
 
         :param uid: The uid of the user object in the resolver.
@@ -758,18 +680,28 @@ class IdResolver (UserIdResolver):
         :type attributes: dict
         :return: True in case of success
         """
+        r = False
         attributes = attributes or {}
-        params = self.prepare_attributes_for_db(attributes)
-        kwargs = {self.map.get("userid"): uid}
-        r = self.TABLE.filter_by(**kwargs).update(params)
-        self.db.commit()
+        try:
+            params = self.prepare_attributes_for_db(attributes)
+            kwargs = {self.map.get("userid"): uid}
+            r = self.session.query(self.TABLE).filter_by(**kwargs).update(params)
+            self.session.commit()
+            log.info('Updated user attributes for user with uid {0!s}'.format(uid))
+        except Exception as exx:
+            log.error('Error updating user attributes for user with uid {0!s}: '
+                      '{1!s}'.format(uid, exx))
+            log.debug('Error updating attributes {0!s}'.format(attributes), exc_info=True)
+
         return r
 
     @property
     def editable(self):
         """
         Return true, if the instance of the resolver is configured editable
+
         :return:
+        :rtype: bool
         """
         # Depending on the database this might look different
         # Usually this is "1"

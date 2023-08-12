@@ -50,7 +50,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import challenge_response_allowed
-from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
+from privacyidea.lib.tokenclass import TokenClass, TOKENKIND, AUTHENTICATIONMODE
 from privacyidea.lib.privacyideaserver import get_privacyideaserver
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
@@ -73,6 +73,7 @@ class RemoteTokenClass(TokenClass):
     Using the Remote token you can assign one physical token to many
     different users.
     """
+    mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE]
 
     def __init__(self, db_token):
         """
@@ -82,7 +83,6 @@ class RemoteTokenClass(TokenClass):
         """
         TokenClass.__init__(self, db_token)
         self.set_type("remote")
-        self.mode = ['authenticate', 'challenge']
 
     @staticmethod
     def get_class_type():
@@ -286,7 +286,7 @@ class RemoteTokenClass(TokenClass):
                 # Deprecated
                 params['pass'] = otpval
                 request_url = "{0!s}{1!s}".format(remoteServer, remotePath)
-                r = requests.post(request_url, data=params, verify=ssl_verify)
+                r = requests.post(request_url, data=params, verify=ssl_verify, timeout=60)
             elif pi_server_obj:
                 r = pi_server_obj.validate_check(remoteUser, otpval,
                                                  serial=remoteSerial,

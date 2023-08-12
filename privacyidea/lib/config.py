@@ -25,7 +25,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""The config module takes care about storing server configuration in
+__doc__ = """The config module takes care about storing server configuration in
 the Config database table.
 
 It provides functions to retrieve (get) and and set configuration.
@@ -51,12 +51,11 @@ from .crypto import decryptPassword
 from .resolvers.UserIdResolver import UserIdResolver
 from .machines.base import BaseMachineResolver
 from .caconnectors.baseca import BaseCAConnector
-# We need these imports to return the list of CA connector types. Bummer: New import for each new Class anyways.
+# We need these imports to return the list of CA connector types. Bummer: New import for each new Class anyway.
 from .caconnectors import localca, msca
 from .utils import reload_db, is_true
 import importlib
 import datetime
-from six import with_metaclass, string_types
 
 log = logging.getLogger(__name__)
 
@@ -270,7 +269,7 @@ class LocalConfigClass(object):
                 pass
             if isinstance(r_config, int):
                 r_config = r_config > 0
-            if isinstance(r_config, string_types):
+            if isinstance(r_config, str):
                 r_config = is_true(r_config.lower())
 
         return r_config
@@ -721,7 +720,9 @@ def get_token_list():
     module_list.add("privacyidea.lib.tokens.hotptoken")
     module_list.add("privacyidea.lib.tokens.motptoken")
     module_list.add("privacyidea.lib.tokens.passwordtoken")
+    module_list.add("privacyidea.lib.tokens.applicationspecificpasswordtoken")
     module_list.add("privacyidea.lib.tokens.remotetoken")
+    module_list.add("privacyidea.lib.tokens.daypasswordtoken")
     module_list.add("privacyidea.lib.tokens.spasstoken")
     module_list.add("privacyidea.lib.tokens.sshkeytoken")
     module_list.add("privacyidea.lib.tokens.totptoken")
@@ -981,14 +982,14 @@ def return_saml_attributes_on_fail():
     return r
 
 
-def get_privacyidea_node():
+def get_privacyidea_node(default='localnode'):
     """
     This returns the node name of the privacyIDEA node as found in the pi.cfg
     file in PI_NODE.
     If it does not exist, the PI_AUDIT_SERVERNAME is used.
     :return: the distinct node name
     """
-    node_name = get_app_config_value("PI_NODE", get_app_config_value("PI_AUDIT_SERVERNAME", "localnode"))
+    node_name = get_app_config_value("PI_NODE", get_app_config_value("PI_AUDIT_SERVERNAME", default))
     return node_name
 
 

@@ -1,0 +1,66 @@
+
+
+<h3><translate>SSH Tokens attached to services</translate></h3>
+
+<p><translate>SSH Tokens can be attached to a service ID with a user. The user is the user on the SSH server
+and may differ from the token owner. To attach the token to a service ID go to the token details.</translate></p>
+
+<p><translate>To define service IDs go to <a ui-sref="config.serviceid">Service ID config</a></translate></p>
+
+<div uib-pagination ng-show="machinetokens.count > 15"
+     total-items="machinetokens.count" ng-model="params.page"
+     previous-text="{{ 'Previous'|translate }}"
+     next-text="{{ 'Next'|translate }}"
+     last-text="{{ 'Last'|translate }}"
+     first-text="{{ 'First'|translate }}"
+     items-per-page="15"
+     max-size="5"
+     boundary-links="true" ng-change="machientokenPageChanged()"></div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped" id="tablemachinetokens">
+        <thead>
+        <tr>
+            <!-- | token serial | application (offline) | tokenowner | <options> | -->
+            <th class="pifilter">
+                <button class="btn btn-default unsorted"
+                        pi-sort-by="serial"
+                        translate>serial
+                </button>
+                <pi-filter ng-model="form.filter.serial"
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
+            </th>
+            <th class="pifilter">
+                <button pi-sort-by="service_id"
+                        class="btn btn-default
+                            unsorted"
+                        translate>Service ID
+                </button>
+                <pi-filter ng-model="form.filter.service_id"
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"></pi-filter>
+            </th>
+            <th class="pifilter">
+                <button pi-sort-by="user"
+                        class="btn btn-default
+                            unsorted"
+                        translate>SSH user
+                </button>
+                <pi-filter ng-model="form.filter.user"
+                           ng-change="get()"></pi-filter>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="mtok in machinetokens">
+            <td><a ui-sref="token.details({tokenSerial:mtok.serial})"
+                   ng-click="$rootScope.returnTo=token.applications;">
+                {{ mtok.serial }}</a></td>
+            <td>{{ mtok.options.service_id }}</td>
+            <td>{{ mtok.options.user }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>

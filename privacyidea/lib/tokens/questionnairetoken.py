@@ -38,7 +38,7 @@ from privacyidea.lib import _
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
 from privacyidea.lib.crypto import safe_compare
-import random
+import secrets
 import json
 import datetime
 
@@ -229,7 +229,7 @@ class QuestionnaireTokenClass(TokenClass):
             used_questions = []
         # Reduce the allowed questions
         remaining_questions = {k: v for (k, v) in questions.items() if k not in used_questions}
-        message_id = random.choice(list(remaining_questions))
+        message_id = secrets.choice(list(remaining_questions))
         message = remaining_questions[message_id]
         used_questions = (options.get("data", "") + ",{0!s}".format(message_id)).strip(",")
 

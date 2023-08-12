@@ -1,0 +1,15 @@
+<form name="formTokenApplications" role="form">
+    <label for="token_application" translate>Application:</label>
+    <select class="form-control"
+            id="token_application"
+            ng-change="changeApplication()"
+            ng-model="currentApplication"
+            ng-options="application as desc for (application, desc) in formInit.applications">
+    </select>
+
+    <!-- This is the token data section. It differs for every token type-->
+    <ng-include src="instanceUrl +
+        '/static/components/token/views/token.applications.'
+         + currentApplication + '.html' + fileVersionSuffix">
+    </ng-include>
+</form>

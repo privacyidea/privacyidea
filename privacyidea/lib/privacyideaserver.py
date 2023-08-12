@@ -17,7 +17,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-from six.moves.urllib.parse import quote
+from urllib.parse import quote
 from privacyidea.models import PrivacyIDEAServer as PrivacyIDEAServerDB
 import logging
 from privacyidea.lib.log import log_with
@@ -80,7 +80,8 @@ class PrivacyIDEAServer(object):
             data["resolver"] = resolver
         response = requests.post(self.config.url + "/validate/check",
                                  data=data,
-                                 verify=self.config.tls)
+                                 verify=self.config.tls,
+                                 timeout=60)
 
         return response
 
@@ -101,7 +102,8 @@ class PrivacyIDEAServer(object):
         """
         response = requests.post(config.url + "/validate/check",
                                  data={"user": quote(user), "pass": quote(password)},
-                                 verify=config.tls
+                                 verify=config.tls,
+                                 timeout=60
                           )
         log.debug("Sent request to privacyIDEA server. status code returned: "
                   "{0!s}".format(response.status_code))

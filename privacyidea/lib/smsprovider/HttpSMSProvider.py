@@ -47,28 +47,13 @@ The code is tested in tests/test_lib_smsprovider
 from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
 from privacyidea.lib import _
 import requests
-from six.moves.urllib.parse import urlparse
-import re
+from urllib.parse import urlparse
 import logging
-import json
+
 log = logging.getLogger(__name__)
 
 
 class HttpSMSProvider(ISMSProvider):
-
-    @staticmethod
-    def _mangle_phone(phone, config):
-        regexp = config.get("REGEXP")
-        if regexp:
-            try:
-                m = re.match("^/(.*)/(.*)/$", regexp)
-                if m:
-                    phone = re.sub(m.group(1), m.group(2), phone)
-            except re.error:
-                log.warning("Can not mangle phone number. "
-                            "Please check your REGEXP: {0!s}".format(regexp))
-
-        return phone
 
     def submit_message(self, phone, message):
         """
@@ -78,7 +63,6 @@ class HttpSMSProvider(ISMSProvider):
         :param message: the message to submit to the phone
         :return:
         """
-        log.debug("submitting message {0!r} to {1!s}".format(message, phone))
         parameter = {}
         headers = {}
         if self.smsgateway:
@@ -115,6 +99,8 @@ class HttpSMSProvider(ISMSProvider):
             https_proxy = self.config.get('HTTPS_PROXY')
             parameter = self._get_parameters(message, phone)
             timeout = self.config.get("TIMEOUT") or 3
+
+        log.debug("submitting message {0!r} to {1!s}".format(message, phone))
 
         if url is None:
             log.warning("can not submit message. URL is missing.")
@@ -291,10 +277,7 @@ class HttpSMSProvider(ISMSProvider):
                           "values": ["yes", "no"]
                       },
                       "REGEXP": {
-                          "description": _("Regular expression to modify the phone number "                 
-                                           "to make it compatible with provider. "
-                                           "Enter something like '/[\\+/]//' to remove "
-                                           "pluses and slashes.")
+                          "description": cls.regexp_description
                       },
                       "PROXY": {"description": _("An optional proxy string. DEPRECATED. Do not use "
                                                  "this anymore. Rather use HTTP_PROXY for http "

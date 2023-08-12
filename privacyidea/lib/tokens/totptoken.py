@@ -34,7 +34,6 @@ This file contains the definition of the TOTP token class
 It depends on the DB model, and the lib.tokenclass.
 TOTP is defined in https://tools.ietf.org/html/rfc6238
 """
-from __future__ import division
 import logging
 import time
 import datetime
@@ -281,30 +280,24 @@ class TotpTokenClass(HotpTokenClass):
 
     @staticmethod
     @log_with(log)
-    def _time2float(curTime):
+    def _time2float(curtime):
         """
-        convert a datetime object or an datetime sting into a
-        float
-        s. http://bugs.python.org/issue12750
+        convert a datetime object into a float (POSIX timestamp).
 
-        :param curTime: time in datetime format
-        :type curTime: datetime object
+        TODO: handle timezone-aware datetime objects
 
-        :return: time as float
+        :param curtime: time in datetime format
+        :type curtime: datetime.datetime
+        :return: seconds since 1.1.1970
         :rtype: float
         """
-        dt = datetime.datetime.now()
-        if type(curTime) == datetime.datetime:
-            dt = curTime
+        if type(curtime) == datetime.datetime:
+            dt = curtime
+        else:
+            dt = datetime.datetime.now()
 
         td = (dt - datetime.datetime(1970, 1, 1))
-        # for python 2.6 compatibility, we have to implement
-        # 2.7 .total_seconds()::
-        # TODO: fix to float!!!!
-        tCounter = ((td.microseconds +
-                     (td.seconds + td.days * 24 * 3600)
-                     * 10 ** 6) * 1.0) / 10 ** 6
-        return tCounter
+        return td.total_seconds()
 
     @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
@@ -435,7 +428,7 @@ class TotpTokenClass(HotpTokenClass):
                 else:
                     log.info("Autoresync successful for token {0!s}.".format(self.token.serial))
                     server_time = time.time()
-                    counter = int((server_time / self.timestep) + 0.5)
+                    counter = self._time2counter(server_time, self.timestep)
 
                     shift = otp2c - counter
                     info["timeShift"] = shift
@@ -481,7 +474,7 @@ class TotpTokenClass(HotpTokenClass):
         else:
             server_time = time.time() + self.timeshift
 
-        counter = int((server_time / self.timestep) + 0.5)
+        counter = self._time2counter(server_time, self.timestep)
         log.debug("counter (current time): {0:d}".format(counter))
 
         oCount = self.get_otp_count()
@@ -562,12 +555,12 @@ class TotpTokenClass(HotpTokenClass):
                            self.get_hashlib(self.hashlib))
 
         if time_seconds is None:
-            time_seconds = self._time2float(datetime.datetime.now())
+            time_seconds = time.time()
         if current_time:
             time_seconds = self._time2float(current_time)
 
         # we don't need to round here as we have already float
-        counter = int(((time_seconds - self.timeshift) / self.timestep))
+        counter = self._time2counter(time_seconds + self.timeshift, self.timestep)
         otpval = hmac2Otp.generate(counter=counter,
                                    inc_counter=False,
                                    do_truncation=do_truncation,
@@ -619,7 +612,7 @@ class TotpTokenClass(HotpTokenClass):
             tCounter = self._time2float(datetime.datetime.now())
 
         # we don't need to round here as we have alread float
-        counter = int(((tCounter - self.timeshift) / self.timestep))
+        counter = self._time2counter(tCounter - self.timeshift, self.timestep)
 
         otp_dict["shift"] = self.timeshift
         otp_dict["timeStepping"] = self.timeshift

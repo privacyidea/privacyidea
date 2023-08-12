@@ -1,0 +1,66 @@
+
+
+<h3><translate>Offline tokens attached to notebooks</translate></h3>
+
+<p><translate>HOTP tokens can be attached with offline to e.g. notebooks.</translate></p>
+
+<div uib-pagination ng-show="machinetokens.count > 15"
+     total-items="machinetokens.count" ng-model="params.page"
+     previous-text="{{ 'Previous'|translate }}"
+     next-text="{{ 'Next'|translate }}"
+     last-text="{{ 'Last'|translate }}"
+     first-text="{{ 'First'|translate }}"
+     items-per-page="15"
+     max-size="5"
+     boundary-links="true" ng-change="machientokenPageChanged()"></div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped" id="tablemachinetokens">
+        <thead>
+        <tr>
+            <!-- | token serial | application (offline) | tokenowner | <options> | -->
+            <th class="pifilter">
+                <button class="btn btn-default unsorted"
+                        pi-sort-by="serial"
+                        translate>serial
+                </button>
+                <pi-filter ng-model="form.filter.serial"
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
+            </th>
+            <th class="pifilter">
+                <button pi-sort-by="count"
+                        class="btn btn-default
+                            unsorted"
+                        translate>Count
+                </button>
+                <pi-filter ng-model="form.filter.count"
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
+            </th>
+            <th class="pifilter">
+                <button pi-sort-by="rounds"
+                        class="btn btn-default
+                            unsorted"
+                        translate>Rounds
+                </button>
+                <pi-filter ng-model="form.filter.rounds"
+                           ng-change="get('livesearch')"
+                           ng-keypress="($event.which==13)?get():return"
+                ></pi-filter>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="mtok in machinetokens">
+            <td><a ui-sref="token.details({tokenSerial:mtok.serial})"
+                   ng-click="$rootScope.returnTo=token.applications;">
+                {{ mtok.serial }}</a></td>
+            <td>{{ mtok.options.count }}</td>
+            <td>{{ mtok.options.rounds }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>

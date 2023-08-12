@@ -234,17 +234,16 @@ angular.module("privacyideaApp")
         }, {
             withCredentials: true
         }).then(function (response) {
-            // successful authentication
-            $scope.do_login_stuff(response.data);
-            // login data is not needed anymore, remove from scope
-            $scope.login = {username: "", password: ""};
-        }, function (response) {
             // failed auth request (may be challenge-response)
             //debug: console.log("challenge response");
             //debug: console.log(error);
-            let error = response.data;
-            $scope.login.password = "";
-            if (error.detail && error.detail.transaction_id) {
+            let data = response.data;
+            if (data.result.value && data.result.value.token) {
+                // successful authentication
+                $scope.do_login_stuff(response.data);
+                // login data is not needed anymore, remove from scope
+                $scope.login = {username: "", password: ""};
+            } else if (data.detail && data.detail.transaction_id) {
                 // In case of error.detail.transaction_id is present, we
                 // have a challenge response and we need to go to the state response
                 if ($scope.unlocking === false) {
@@ -253,21 +252,20 @@ angular.module("privacyideaApp")
                     $state.go("response");
                 }
                 inform.add(gettextCatalog.getString("Challenge Response " +
-                    "Authentication. You" +
-                    " are not completely authenticated, yet."),
-                    {type: "warning", ttl:5000});
+                        "Authentication. You" +
+                        " are not completely authenticated, yet."),
+                    {type: "warning", ttl: 5000});
                 $scope.hideResponseInput = true;
                 $scope.u2fSignRequests = Array();
                 $scope.webAuthnSignRequests = [];
-                $scope.transactionid = error.detail["transaction_id"];
-
+                $scope.transactionid = data.detail["transaction_id"];
                 // Challenge Response always contains multi_challenge!
-                var multi_challenge = error.detail.multi_challenge;
+                var multi_challenge = data.detail.multi_challenge;
                 if (multi_challenge.length > 1) {
                     $scope.challenge_message = gettextCatalog.getString('Please confirm with one of these tokens:');
                     $scope.challenge_multiple_tokens = true;
                 } else {
-                    $scope.challenge_message = error.detail.message;
+                    $scope.challenge_message = data.detail.message;
                     $scope.challenge_multiple_tokens = false;
                 }
                 for (var i = 0; i < multi_challenge.length; i++) {
@@ -296,7 +294,6 @@ angular.module("privacyideaApp")
                         }
                     }
                 }
-
                 //debug: console.log($scope.polling);
                 $scope.login.password = "";
                 // In case of TiQR we need to start the poller
@@ -305,15 +302,14 @@ angular.module("privacyideaApp")
                 }
                 // In case of u2f we do:
                 if ($scope.u2fSignRequests.length > 0) {
-                    $scope.u2f_first_error = error;
-                    U2fFactory.sign_request(error, $scope.u2fSignRequests,
+                    $scope.u2f_first_error = data;
+                    U2fFactory.sign_request(data, $scope.u2fSignRequests,
                         $scope.login.username,
                         $scope.transactionid, $scope.do_login_stuff);
                 }
-
                 // In case of webAuthn we do:
                 if ($scope.webAuthnSignRequests.length > 0) {
-                    $scope.webauthn_first_error = error;
+                    $scope.webauthn_first_error = data;
                     webAuthnToken.sign_request(
                         $scope.webauthn_first_error,
                         $scope.webAuthnSignRequests,
@@ -323,44 +319,47 @@ angular.module("privacyideaApp")
                     );
                 }
             } else {
-                if ($state.current.name === "response") {
-                    // We are already in the response state, but the first
-                    // response was not valid.
-                    inform.add(gettextCatalog.getString("Challenge Response " +
-                            "Authentication. Your response was not valid!"),
-                        {type: "warning", ttl: 5000});
-                    // in case of U2F we try for a 2nd signature
-                    // In case of u2f we do:
-                    if ($scope.u2f_first_error) {
-                        U2fFactory.sign_request($scope.u2f_first_error,
-                            $scope.u2fSignRequests,
-                            $scope.login.username,
-                            $scope.transactionid, $scope.do_login_stuff);
-                    }
-
-                    // In case of WebAuthn we try for a 2nd signature:
-                    if ($scope.webauthn_first_error) {
-                        webAuthnToken.sign_request(
-                            $scope.webauthn_first_error,
-                            $scope.webAuthnSignRequests,
-                            $scope.login.username,
-                            $scope.transactionid,
-                            $scope.do_login_stuff
-                        )
-                    }
-                } else {
-                        // TODO: Do we want to display the error message?
-                        // This can show an attacker, if a username exists.
-                        // But this can also be due to a problem like
-                        // "HSM not ready".
-                        $scope.transactionid = "";
-                        var errmsg = gettextCatalog.getString("Authentication failed.");
-                        inform.add(errmsg + " " + error.result.error.message,
-                            {type: "danger", ttl: 10000});
+                inform.add(gettextCatalog.getString("Something went wrong!"),
+                    {type: "error", ttl: 5000});
+                $state.go("login");
+            }
+        }, function (error) {
+            // TODO: Do we want to display the error message?
+            // This can show an attacker, if a username exists.
+            // But this can also be due to a problem like
+            // "HSM not ready".
+            if ($state.current.name === "response") {
+                // We are already in the response state, but the first
+                // response was not valid.
+                inform.add(gettextCatalog.getString("Challenge Response " +
+                        "Authentication. Your response was not valid!"),
+                    {type: "warning", ttl: 5000});
+                // in case of U2F we try for a 2nd signature
+                // In case of u2f we do:
+                if ($scope.u2f_first_error) {
+                    U2fFactory.sign_request($scope.u2f_first_error,
+                        $scope.u2fSignRequests,
+                        $scope.login.username,
+                        $scope.transactionid, $scope.do_login_stuff);
                 }
+                // In case of WebAuthn we try for a 2nd signature:
+                if ($scope.webauthn_first_error) {
+                    webAuthnToken.sign_request(
+                        $scope.webauthn_first_error,
+                        $scope.webAuthnSignRequests,
+                        $scope.login.username,
+                        $scope.transactionid,
+                        $scope.do_login_stuff
+                    )
+                }
+            } else {
+                var errmsg = gettextCatalog.getString("Authentication failed.");
+                inform.add(errmsg + " " + error.data.result.error.message,
+                    {type: "danger", ttl: 10000});
             }
         });
     };
+
     $scope.check_authentication = function() {
         // This function is used to poll, if a challenge response
         // authentication was performed successfully in the background
@@ -446,6 +445,7 @@ angular.module("privacyideaApp")
                 $scope.qr_col_md = "col-md-" + parseInt(12 / $scope.qr_images.length);
             }
             $scope.audit_page_size = data.result.value.audit_page_size;
+            $scope.require_description = data.result.value.require_description;
             $scope.token_page_size = data.result.value.token_page_size;
             $scope.user_page_size = data.result.value.user_page_size;
             $scope.user_details_in_tokenlist = data.result.value.user_details;

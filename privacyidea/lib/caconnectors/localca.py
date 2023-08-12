@@ -31,15 +31,13 @@ from privacyidea.lib.error import CAError
 from privacyidea.lib.utils import int_to_hex, to_unicode
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConnectors
 from OpenSSL import crypto
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE  # nosec B404
 import yaml
 import datetime
 import shlex
 import re
 import logging
 import os
-from six import string_types
-from six.moves import input
 import traceback
 
 log = logging.getLogger(__name__)
@@ -426,7 +424,8 @@ class LocalCAConnector(BaseCAConnector):
                                                           certificate_filename))
         # run the command
         args = shlex.split(cmd)
-        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)
+        # the command is configured by the administrator: CA key, CA cert, number of days, the config file
+        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)  # nosec B603
         result, error = p.communicate()
         if p.returncode != 0:  # pragma: no cover
             # Some error occurred
@@ -475,12 +474,14 @@ class LocalCAConnector(BaseCAConnector):
         :return: Returns the serial number of the revoked certificate. Otherwise
             an error is raised.
         """
-        if isinstance(certificate, string_types):
+        if isinstance(certificate, str):
             cert_obj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
         elif type(certificate) == crypto.X509:
             cert_obj = certificate
         else:
             raise CAError("Certificate in unsupported format")
+        if reason not in CRL_REASONS:
+            raise CAError("Unsupported revoke reason")
 
         serial = cert_obj.get_serial_number()
         serial_hex = int_to_hex(serial)
@@ -491,7 +492,9 @@ class LocalCAConnector(BaseCAConnector):
                                reason=reason)
         workingdir = self.config.get(ATTR.WORKING_DIR)
         args = shlex.split(cmd)
-        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)
+        # The command is configured by the administrator: CA key, CA cert, config file, certificate,
+        # the revoking reason is fetched earlier
+        p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)  # nosec B603
         result, error = p.communicate()
         if p.returncode != 0:  # pragma: no cover
             # Some error occurred
@@ -536,7 +539,8 @@ class LocalCAConnector(BaseCAConnector):
                                          config=self.config.get(ATTR.OPENSSL_CNF),
                                          CRL=crl)
             args = shlex.split(cmd)
-            p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)
+            # The command is configured by the admin: CA key, CA cert, config file and CRL location
+            p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)  # nosec B603
             result, error = p.communicate()
             if p.returncode != 0:  # pragma: no cover
                 # Some error occurred
@@ -685,7 +689,8 @@ def _init_ca(config):
     print("Running command...")
     print(command)
     args = shlex.split(command)
-    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, universal_newlines=True)
+    # The command is created by the root user at the command line anyways
+    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, universal_newlines=True)  # nosec B603
     result, error = p.communicate()
     if p.returncode != 0:  # pragma: no cover
         # Some error occurred
@@ -699,7 +704,8 @@ def _init_ca(config):
     print("Running command...")
     print(command)
     args = shlex.split(command)
-    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, universal_newlines=True)
+    # The command is created by the root user at the command line anyways
+    p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=config.directory, universal_newlines=True)  # nosec B603
     result, error = p.communicate()
     if p.returncode != 0:  # pragma: no cover
         # Some error occurred

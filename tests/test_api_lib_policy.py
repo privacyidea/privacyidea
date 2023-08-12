@@ -4,9 +4,9 @@ This test file tests the api.lib.policy.py
 
 The api.lib.policy.py depends on lib.policy and on flask!
 """
-from __future__ import print_function
 import json
-
+import logging
+from testfixtures import log_capture
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AUTHENTICATOR_ATTACHMENT_TYPE,
                                              ATTESTATION_LEVEL, ATTESTATION_FORM,
                                              USER_VERIFICATION_LEVEL)
@@ -50,7 +50,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            webauthntoken_allowed, check_application_tokentype,
                                            required_piv_attestation, check_custom_user_attributes,
                                            hide_tokeninfo, init_ca_template, init_ca_connector,
-                                           init_subject_components, increase_failcounter_on_challenge)
+                                           init_subject_components, increase_failcounter_on_challenge,
+                                           require_description)
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.realm import delete_realm
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
@@ -946,7 +947,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # finally delete policy
         delete_policy("pol1")
 
-    def test_09_pin_policies(self):
+    @log_capture(level=logging.DEBUG)
+    def test_09_pin_policies(self, capture):
         create_realm("home", [self.resolvername1])
         g.logged_in_user = {"username": "user1",
                             "realm": "",
@@ -1014,11 +1016,32 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "pin": ""}
         self.assertTrue(check_otp_pin(req))
 
+        # check that no pin is checked during rollover or verify
+        logging.getLogger('privacyidea').setLevel(logging.DEBUG)
+        req.all_data = {
+            "user": "cornelius",
+            "realm": "home",
+            "rollover": True
+        }
+        self.assertTrue(check_otp_pin(req))
+        capture.check_present(("privacyidea.api.lib.prepolicy", "DEBUG",
+                               "Disable PIN checking due to rollover (True) or verify (None)"))
+        req.all_data = {
+            "user": "cornelius",
+            "realm": "home",
+            "verify": 123456
+        }
+        self.assertTrue(check_otp_pin(req))
+        capture.check_present(("privacyidea.api.lib.prepolicy", "DEBUG",
+                               "Disable PIN checking due to rollover (None) or verify (123456)"))
+        logging.getLogger('privacyidea').setLevel(logging.INFO)
+
         # finally delete policy
         delete_policy("pol1")
         delete_realm("home")
 
-    def test_09_pin_policies_admin(self):
+    @log_capture(level=logging.DEBUG)
+    def test_09_pin_policies_admin(self, capture):
         create_realm("home", [self.resolvername1])
         g.logged_in_user = {"username": "super",
                             "realm": "",
@@ -1083,6 +1106,26 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "user": "cornelius",
                         "pin": ""}
         self.assertTrue(check_otp_pin(req))
+
+        # check that no pin is checked during rollover or verify
+        logging.getLogger('privacyidea').setLevel(logging.DEBUG)
+        req.all_data = {
+            "user": "cornelius",
+            "realm": "home",
+            "rollover": True
+        }
+        self.assertTrue(check_otp_pin(req))
+        capture.check_present(("privacyidea.api.lib.prepolicy", "DEBUG",
+                               "Disable PIN checking due to rollover (True) or verify (None)"))
+        req.all_data = {
+            "user": "cornelius",
+            "realm": "home",
+            "verify": 123456
+        }
+        self.assertTrue(check_otp_pin(req))
+        capture.check_present(("privacyidea.api.lib.prepolicy", "DEBUG",
+                               "Disable PIN checking due to rollover (None) or verify (123456)"))
+        logging.getLogger('privacyidea').setLevel(logging.INFO)
 
         # finally delete policy
         delete_policy("pol1")
@@ -2948,10 +2991,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             scope=SCOPE.ENROLL,
             action=WEBAUTHNACTION.REQ + "=" + allowed_certs
         )
-        self.assertRaisesRegexp(PolicyError,
-                                'The WebAuthn token is not allowed to be registered '
-                                'due to a policy restriction.',
-                                webauthntoken_allowed, request, None)
+        self.assertRaisesRegex(PolicyError,
+                               'The WebAuthn token is not allowed to be registered '
+                               'due to a policy restriction.',
+                               webauthntoken_allowed, request, None)
 
         set_policy(
             name="WebAuthn",
@@ -3172,7 +3215,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # first test without any policy to delete the department. This is not allowed
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "department"}
-        self.assertRaisesRegexp(PolicyError,
+        self.assertRaisesRegex(PolicyError,
                                 "ERR303: You are not allowed to delete the custom user attribute department!",
                                 check_custom_user_attributes, req, "delete")
 
@@ -3217,9 +3260,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # You are not allowed to set a different department
         req.all_data = {"user": "cornelius", "realm": self.realm1,
                         "key": "department", "value": "different"}
-        self.assertRaisesRegexp(PolicyError,
-                                "ERR303: You are not allowed to set the custom user attribute department!",
-                                check_custom_user_attributes, req, "set")
+        self.assertRaisesRegex(PolicyError,
+                               "ERR303: You are not allowed to set the custom user attribute department!",
+                               check_custom_user_attributes, req, "set")
 
         # You are allowed to set color to any value
         req.all_data = {"user": "cornelius", "realm": self.realm1,
@@ -3341,6 +3384,41 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # delete policy
         delete_policy("increase_failcounter_on_challenge")
+
+    def test_61_required_description_for_specified_token_types(self):
+        g.logged_in_user = {"username": "cornelius",
+                            "role": "user"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={})
+        env = builder.get_environ()
+        # Set policy
+        set_policy(name="require_description",
+                   scope=SCOPE.ENROLL,
+                   action=["{0!s}=hotp".format(ACTION.REQUIRE_DESCRIPTION)])
+        req = Request(env)
+        req.User = User("cornelius")
+
+        # Only a description is set, no type
+        # This should work without a defined type because hotp is default
+        req.all_data = {"description": "test"}
+        self.assertIsNone(require_description(req))
+
+        # Totp token is not defined in pol and should be rolled oud without desc
+        req.all_data = {"type": "totp"}
+        self.assertIsNone(require_description(req))
+
+        # Type and description is set, token should be rolled out
+        req.all_data = {"type": "hotp",
+                        "description": "test"}
+        self.assertIsNone(require_description(req))
+
+        # This should not work, a description is required for hotp
+        req.all_data = {"type": "hotp"}
+        self.assertRaisesRegex(PolicyError,
+                               "ERR303: Description required for hotp token.",
+                               require_description, req)
+
+        delete_policy("require_description")
 
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):

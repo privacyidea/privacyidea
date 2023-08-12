@@ -151,5 +151,5 @@ class mTimeOtp(object):
             key = self.key
 
         vhash = "{0:d}{1!s}{2!s}".format(counter, key, pin)
-        motp = md5(to_bytes(vhash)).hexdigest()[:self.digits]
+        motp = md5(to_bytes(vhash)).hexdigest()[:self.digits]  # nosec B324 # md5 used in mOTP algorithm
         return to_unicode(motp)

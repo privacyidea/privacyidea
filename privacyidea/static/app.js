@@ -76,13 +76,14 @@ myApp.constant("subscriptionsUrl", backendUrl + instance + "/subscriptions");
 myApp.constant("policyUrl", backendUrl + instance + "/policy");
 myApp.constant("registerUrl", backendUrl + instance + "/register");
 myApp.constant("tokengroupUrl", backendUrl + instance + "/tokengroup");
+myApp.constant("serviceidUrl", backendUrl + instance + "/serviceid");
 myApp.constant("CAConnectorUrl", backendUrl + instance + "/caconnector");
 myApp.constant("smtpServerUrl", backendUrl + instance + "/smtpserver");
 myApp.constant("radiusServerUrl", backendUrl + instance + "/radiusserver");
 myApp.constant("privacyideaServerUrl", backendUrl + instance + "/privacyideaserver");
 myApp.constant("recoveryUrl", backendUrl + instance + "/recover");
 myApp.constant("resourceNamePatterns", {
-    simple: {pattern: "^[a-zA-Z0-9_.-]+$",
+    simple: {pattern: "^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*$",
         title: gettext("The resource name must consist of letters, numbers and '_', '-', '.'")},
 /* we have to ignore "test" and "test_request" as a resource name explicitly */
     withoutTest: {pattern: "^(?!test$)([A-Za-z0-9_.-]+)$",

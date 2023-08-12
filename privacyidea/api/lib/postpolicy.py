@@ -48,7 +48,7 @@ from privacyidea.lib.error import PolicyError, ValidateError
 from flask import g, current_app, make_response
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, AUTHORIZED
 from privacyidea.lib.policy import DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL
-from privacyidea.lib.policy import DEFAULT_PREFERRED_CLIENT_MODE
+from privacyidea.lib.policy import DEFAULT_PREFERRED_CLIENT_MODE_LIST
 from privacyidea.lib.policy import Match
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token
 from privacyidea.lib.machine import get_auth_items
@@ -141,7 +141,7 @@ class postrequest(object):
 def sign_response(request, response):
     """
     This decorator is used to sign the response. It adds the nonce from the
-    request, if it exist and adds the nonce and the signature to the response.
+    request, if it exists and adds the nonce and the signature to the response.
 
     .. note:: This only works for JSON responses. So if we fail to decode the
        JSON, we just pass on.
@@ -159,10 +159,14 @@ def sign_response(request, response):
         return response
 
     priv_file_name = current_app.config.get("PI_AUDIT_KEY_PRIVATE")
+
+    # Disable the costly checking of private RSA keys when loading them.
+    check_private_key = not current_app.config.get("PI_RESPONSE_NO_PRIVATE_KEY_CHECK", False)
     try:
         with open(priv_file_name, 'rb') as priv_file:
             priv_key = priv_file.read()
-        sign_object = Sign(priv_key, public_key=None)
+        sign_object = Sign(priv_key, public_key=None,
+                           check_private_key=check_private_key)
     except (IOError, ValueError, TypeError) as e:
         log.info('Could not load private key from '
                  'file {0!s}: {1!r}!'.format(priv_file_name, e))
@@ -340,28 +344,29 @@ def preferred_client_mode(request, response):
         .action_values(allow_white_space_in_action=True, unique=True)
 
     if detail_pol:
-        # Split comma or several whitespaces
-        preferred_client_mode_list = re.split("\s+|,", list(detail_pol)[0])
+        # Split at whitespaces and strip
+        preferred_client_mode_list = str.split(list(detail_pol)[0])
     else:
-        preferred_client_mode_list = DEFAULT_PREFERRED_CLIENT_MODE
+        preferred_client_mode_list = DEFAULT_PREFERRED_CLIENT_MODE_LIST
     if content.get("detail"):
         detail = content.get("detail")
         if detail.get("multi_challenge"):
             multi_challenge = detail.get("multi_challenge")
-            l = []
-            for x in multi_challenge:
-                l.append(x.get("client_mode"))
+            client_modes = [x.get('client_mode') for x in multi_challenge]
 
             try:
-                preferred = [x for x in preferred_client_mode_list if x in l][0]
+                preferred = [x for x in preferred_client_mode_list if x in client_modes][0]
                 content.setdefault("detail", {})["preferred_client_mode"] = preferred
             except IndexError as err:
                 content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
-                log.error('There was no except client mode in the multi-challenge. The preferred mode is'
-                          ' set to interactive. Please check your policy. Error: {0} '.format(err))
-            except Exception as err:                                                                #pragma no cover
-                content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'           #pragma no cover
-                log.error('something with the preferred client mode got wrong: {0}'.format(err))    #pragma no cover
+                log.error('There was no acceptable client mode in the multi-challenge list. '
+                          'The preferred client mode is set to "interactive". '
+                          'Please check Your policy ({0!s}). '
+                          'Error: {1!s} '.format(preferred_client_mode_list, err))
+            except Exception as err:  # pragma no cover
+                content.setdefault("detail", {})["preferred_client_mode"] = 'interactive'
+                log.error('Something went wrong during setting the preferred '
+                          'client mode. Error: {0!s}'.format(err))
 
     response.set_data(json.dumps(content))
     return response
@@ -386,7 +391,7 @@ def add_user_detail_to_response(request, response):
         # The policy was set, we need to add the user
         #  details
         ui = request.User.info.copy()
-        ui["password"] = ""
+        ui["password"] = ""  # nosec B105 # Hide a potential password
         for key, value in ui.items():
             if type(value) == datetime.datetime:
                 ui[key] = str(value)
@@ -591,6 +596,8 @@ def get_webui_settings(request, response):
                                                     user=loginname, realm=realm).action_values(unique=True)
         logout_redirect_url_pol = Match.generic(g, scope=SCOPE.WEBUI, action=ACTION.LOGOUT_REDIRECT,
                                                 user=loginname, realm=realm).action_values(unique=True)
+        require_description = Match.generic(g, scope=SCOPE.ENROLL, action=ACTION.REQUIRE_DESCRIPTION,
+                                            user=loginname, realm=realm).action_values(unique=False)
 
         qr_image_android = create_img(DEFAULT_ANDROID_APP_URL) if qr_android_authenticator else None
         qr_image_ios = create_img(DEFAULT_IOS_APP_URL) if qr_ios_authenticator else None
@@ -598,6 +605,7 @@ def get_webui_settings(request, response):
         audit_page_size = DEFAULT_AUDIT_PAGE_SIZE
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
+        require_description = list(require_description.keys())
         default_tokentype = DEFAULT_TOKENTYPE
         logout_redirect_url = ""
         if len(audit_page_size_pol) == 1:
@@ -661,6 +669,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["qr_image_ios"] = qr_image_ios
         content["result"]["value"]["qr_image_custom"] = qr_image_custom
         content["result"]["value"]["logout_redirect_url"] = logout_redirect_url
+        content["result"]["value"]["require_description"] = require_description
         response.set_data(json.dumps(content))
     return response
 

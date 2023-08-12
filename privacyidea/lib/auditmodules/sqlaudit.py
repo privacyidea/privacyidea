@@ -49,11 +49,10 @@ from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import truncate_comma_list, is_true
 from sqlalchemy import MetaData, cast, String
 from sqlalchemy import asc, desc, and_, or_
-from sqlalchemy.sql import expression
+from sqlalchemy.sql.expression import FunctionElement
 from sqlalchemy.ext.compiler import compiles
 import datetime
 import traceback
-from six import string_types
 from privacyidea.models import audit_column_length as column_length
 from privacyidea.models import Audit as LogEntry
 from sqlalchemy import create_engine
@@ -65,10 +64,11 @@ metadata = MetaData()
 
 
 # Define function to convert SQL DateTime objects to an ISO-format string
-# By using <https://docs.sqlalchemy.org/en/13/core/compiler.html> we can
+# By using <https://docs.sqlalchemy.org/en/14/core/compiler.html> we can
 # differentiate between different dialects.
-class to_isodate(expression.FunctionElement):
+class to_isodate(FunctionElement):
     name = 'to_isodate'
+    inherit_cache = True
 
 
 @compiles(to_isodate, 'oracle')
@@ -132,10 +132,13 @@ class Audit(AuditBase):
         self.sign_data = not self.config.get("PI_AUDIT_NO_SIGN")
         self.sign_object = None
         self.verify_old_sig = self.config.get('PI_CHECK_OLD_SIGNATURES')
+        # Disable the costly checking of private RSA keys when loading them.
+        self.check_private_key = not self.config.get("PI_AUDIT_NO_PRIVATE_KEY_CHECK", False)
         if self.sign_data:
             self.read_keys(self.config.get("PI_AUDIT_KEY_PUBLIC"),
                            self.config.get("PI_AUDIT_KEY_PRIVATE"))
-            self.sign_object = Sign(self.private, self.public)
+            self.sign_object = Sign(self.private, self.public,
+                                    check_private_key=self.check_private_key)
         # Read column_length from the config file
         config_column_length = self.config.get("PI_AUDIT_SQL_COLUMN_LENGTH", {})
         # fill the missing parts with the default from the models
@@ -196,7 +199,7 @@ class Audit(AuditBase):
         for column, l in self.custom_column_length.items():
             if column in self.audit_data:
                 data = self.audit_data[column]
-                if isinstance(data, string_types):
+                if isinstance(data, str):
                     if column == "policies":
                         # The policies column is shortened per comma entry
                         data = truncate_comma_list(data, l)
@@ -336,7 +339,7 @@ class Audit(AuditBase):
         """
         Check if the audit log contains the entries before and after
         the given id.
-        
+
         TODO: We can not check at the moment if the first or the last entries
               were deleted. If we want to do this, we need to store some signed
               meta information:
@@ -370,7 +373,7 @@ class Audit(AuditBase):
         """
         This function creates a string from the logentry so
         that this string can be signed.
-        
+
         Note: Not all elements of the LogEntry are used to generate the
         string (the Signature is not!), otherwise we could have used pickle
 

@@ -2,8 +2,10 @@
    ng-hide="$state.includes('token.wizard')"
    translate>The TOTP token is a time based token. You can paste a secret key or
     have the server generate the secret and scan the QR code with a
-    smartphone app like the Google Authenticator or FreeOTP turning your
-    smartphone into an authentication device.
+    smartphone app like the privacyIDEA Authenticator turning your
+    smartphone into an authentication device. You can also use other
+    authenticator apps like Google Authenticator, Microsoft Authenticator, Authy or FreeOTP. But note, that these
+    might have limitations in the supported hash algorithms or other parameters.
 </p>
 
 <ng-include src="instanceUrl + '/static/components/token/views/token.display.apps.html'">
@@ -51,7 +53,7 @@
             ng-options="otplen for otplen in formInit.otplens">
     </select>
     <p class="help-block" ng-show="form.genkey" translate>
-        The Google Authenticator only supports an OTP length of 6.
+        Some Authenticator Apps only support an OTP length of 6.
     </p>
 </div>
 <div class="form-group"
@@ -73,6 +75,6 @@
             ng-options="hashlib for hashlib in formInit.hashlibs">
     </select>
     <p class="help-block" ng-show="form.genkey" translate>
-        The Google Authenticator only supports the SHA1 algorithm.
+        Some Authenticator Apps only support the SHA1 algorithm.
     </p>
 </div>

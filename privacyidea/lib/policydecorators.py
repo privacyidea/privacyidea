@@ -121,19 +121,16 @@ def challenge_response_allowed(func):
                                                  action=ACTION.CHALLENGERESPONSE, user_object=user_object)\
                 .action_values(unique=False, write_to_audit_log=False)
             log.debug("Found these allowed tokentypes: {0!s}".format(list(allowed_tokentypes_dict)))
-
-            # allowed_tokentypes_dict.keys() is a list of actions from several policies. I
-            # could look like this:
-            # ["tiqr hotp totp", "tiqr motp"]
+            allowed_tokentypes_dict = {k.lower(): v for k, v in allowed_tokentypes_dict.items()}
+            token = token.get_tokentype().lower()
             chal_resp_found = False
-            for toks in allowed_tokentypes_dict:
-                if token.get_tokentype().upper() in [x.upper() for x in toks.split(" ")]:
-                    # This token is allowed to to chal resp
-                    chal_resp_found = True
-                    g.audit_object.add_policy(allowed_tokentypes_dict.get(toks))
+            if token in allowed_tokentypes_dict:
+                # This token is allowed to do challenge-response
+                chal_resp_found = True
+                g.audit_object.add_policy(allowed_tokentypes_dict.get(token))
 
             if not chal_resp_found:
-                # No policy to allow this token to do challenge response
+                # No policy to allow this token to do challenge-response
                 return False
 
         f_result = func(*args, **kwds)
@@ -642,15 +639,17 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
 
     r = wrapped_function(*args, **kwds)
 
+    toks_avail = [tok for tok in tokenobject_list if tok.get_class_type() not in ['registration']]
+
     # A successful authentication was done
-    if r[0] and g and allow_reset:
-        token_owner = tokenobject_list[0].user
+    if r[0] and g and allow_reset and toks_avail:
+        token_owner = kwds.get('user') or toks_avail[0].user
         reset_all = Match.user(g, scope=SCOPE.AUTH, action=ACTION.RESETALLTOKENS,
                                user_object=token_owner if token_owner else None).policies()
         if reset_all:
             log.debug("Reset failcounter of all tokens of {0!s}".format(
                 token_owner))
-            for tok_obj_reset in tokenobject_list:
+            for tok_obj_reset in toks_avail:
                 try:
                     tok_obj_reset.reset()
                 except Exception:

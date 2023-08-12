@@ -184,7 +184,7 @@ def list_radiusservers(identifier=None, server=None):
         decrypted_password = decryptPassword(server.config.secret)
         # If the database contains garbage, use the empty password as fallback
         if decrypted_password == FAILED_TO_DECRYPT_PASSWORD:
-            decrypted_password = ""
+            decrypted_password = ""  # nosec B105 # Reset password in case of error
         res[server.config.identifier] = {"server": server.config.server,
                                          "port": server.config.port,
                                          "dictionary": server.config.dictionary,

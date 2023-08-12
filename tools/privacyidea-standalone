@@ -33,8 +33,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-from __future__ import print_function
-
 __doc__ = """
 This script can be used to create a self-contained local privacyIDEA
 instance that does not require a web server to run. Instead,
@@ -45,14 +43,12 @@ The ``configure`` command starts a local development server that can
 be used to setup tokens. This server must not be exposed to the network!
 The ``check`` command can then be used to authenticate users."""
 
-import six
 import json
 import os
 import shutil
 import string
 import subprocess
 from functools import wraps
-from six.moves import input
 
 import sqlalchemy
 import sys
@@ -166,7 +162,7 @@ def create_pepper(length=24, chunk_size=8, charset=PEPPER_CHARSET):
     pepper = ''
     while len(pepper) < length:
         random_bytes = DefaultSecurityModule.random(chunk_size)
-        printables = ''.join(chr(b) for b in six.iterbytes(random_bytes) if chr(b) in charset)
+        printables = ''.join(chr(b) for b in random_bytes if chr(b) in charset)
         pepper += printables
     return pepper[:length]
 
@@ -217,7 +213,7 @@ def create():
             secret_key = DefaultSecurityModule.random(24)
             pi_pepper = create_pepper()
 
-            secret_key_hex = ''.join('\\x{:02x}'.format(b) for b in six.iterbytes(secret_key))
+            secret_key_hex = ''.join('\\x{:02x}'.format(b) for b in secret_key)
             # create a pi.cfg
             pi_cfg = os.path.join(instance_dir, 'pi.cfg')
             with open(pi_cfg, 'w') as f:

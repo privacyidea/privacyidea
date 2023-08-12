@@ -299,9 +299,11 @@ The token with the serial ``OAUTH0004C934`` will be deleted.
 export
 ......
 
-With **export** the found tokens can be exported as csv or pskc.
+With **export** the found tokens can be exported as csv, yaml or pskc.
 
-Export is only possible with HOTP and TOTP token.
+CSV will only export HOTP and TOTP tokens.
+The PSKC file exports HOTP, TOTP and password tokens (PW).
+YAML in theory can export all token types and all tokeninfo.
 
 Example::
 
@@ -309,7 +311,9 @@ Example::
 
 The token with the serial ``OAUTH0004C934`` will be exported and saved in an xml file.
 
-Note that you need your encryption key for re-import.
+.. note:: With PSCK you need your encryption key for re-import.
+
+.. note:: You can also use YAML export or re-encrypting data. See :ref:`faq_reencryption`.
 
 listuser
 ........

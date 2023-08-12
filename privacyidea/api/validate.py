@@ -66,6 +66,9 @@ In case if authenticating a serial number:
  * :func:`privacyidea.lib.tokenclass.TokenClass.check_otp`
 
 """
+
+import threading
+
 from flask import (Blueprint, request, g, current_app)
 from privacyidea.lib.user import get_user_from_param, log_used_user
 from .lib.utils import send_result, getParam
@@ -78,7 +81,7 @@ from privacyidea.lib.utils import is_true
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
-                                    SYSCONF, ensure_no_config_object)
+                                    SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.audit import getAudit
 from privacyidea.api.lib.decorators import add_serial_from_response_to_g
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
@@ -112,6 +115,8 @@ from privacyidea.lib.machine import list_machine_tokens
 from privacyidea.lib.applications.offline import MachineApplication
 import json
 
+from ..lib.framework import get_app_config_value
+
 log = logging.getLogger(__name__)
 
 validate_blueprint = Blueprint('validate_blueprint', __name__)
@@ -127,8 +132,7 @@ def before_request():
     ensure_no_config_object()
     request.all_data = get_all_params(request)
     request.User = get_user_from_param(request.all_data)
-    privacyidea_server = current_app.config.get("PI_AUDIT_SERVERNAME") or \
-                         request.host
+    privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Create a policy_object, that reads the database audit settings
     # and contains the complete policy definition during the request.
     # This audit_object can be used in the postpolicy and prepolicy and it
@@ -149,6 +153,7 @@ def before_request():
                         "client_user_agent": request.user_agent.browser,
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
+                        "thread_id": "{0!s}".format(threading.current_thread().ident),
                         "info": ""})
 
 
@@ -596,6 +601,7 @@ def trigger_challenge():
 @prepolicy(mangle, request=request)
 @CheckSubscription(request)
 @prepolicy(api_key_required, request=request)
+@event("validate_poll_transaction", request, g)
 def poll_transaction(transaction_id=None):
     """
     Given a mandatory transaction ID, check if any non-expired challenge for this transaction ID
@@ -607,6 +613,7 @@ def poll_transaction(transaction_id=None):
 
     :jsonparam transaction_id: a transaction ID
     """
+
     if transaction_id is None:
         transaction_id = getParam(request.all_data, "transaction_id", required)
     # Fetch a list of non-exired challenges with the given transaction ID
@@ -615,12 +622,22 @@ def poll_transaction(transaction_id=None):
                            if challenge.is_valid()]
     answered_challenges = extract_answered_challenges(matching_challenges)
 
+    declined_challenges = []
     if answered_challenges:
         result = True
         log_challenges = answered_challenges
+        details = {"challenge_status": "accept"}
     else:
         result = False
-        log_challenges = matching_challenges
+        for challenge in matching_challenges:
+            if challenge.data == "challenge_declined":
+                declined_challenges.append(challenge)
+        if declined_challenges:
+            log_challenges = declined_challenges
+            details = {"challenge_status": "declined"}
+        else:
+            log_challenges = matching_challenges
+            details = {"challenge_status": "pending"}
 
     # We now determine the information that should be written to the audit log:
     # * If there are no answered valid challenges, we log all token serials of challenges matching
@@ -641,8 +658,9 @@ def poll_transaction(transaction_id=None):
 
     # In any case, we log the transaction ID
     g.audit_object.log({
-        "info": "transaction_id: {}".format(transaction_id),
+        "info": "status: {}".format(details.get("challenge_status")),
+        "action_detail": "transaction_id: {}".format(transaction_id),
         "success": result
     })
 
-    return send_result(result)
+    return send_result(result, rid=2, details=details)

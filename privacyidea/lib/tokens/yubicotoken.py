@@ -52,7 +52,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
 from privacyidea.lib.tokens.yubikeytoken import (yubico_check_api_signature,
                                                  yubico_api_signature)
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
@@ -181,10 +181,12 @@ class YubicoTokenClass(TokenClass):
             try:
                 if do_yubico_post:
                     r = requests.post(yubico_url,
-                                      data=p)
+                                      data=p,
+                                      timeout=60)
                 else:
                     r = requests.get(yubico_url,
-                                     params=urlencode(p))
+                                     params=urlencode(p),
+                                     timeout=60)
 
                 if r.status_code == requests.codes.ok:
                     response = r.text

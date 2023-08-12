@@ -184,8 +184,9 @@ def attach_token_api():
 
 @machine_blueprint.route('/token/<serial>/<machineid>/<resolver>/<application>',
                          methods=['DELETE'])
+@machine_blueprint.route('/token/<serial>/<application>/<mtid>', methods=['DELETE'])
 @prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
-def detach_token_api(serial, machineid, resolver, application):
+def detach_token_api(serial, machineid=None, resolver=None, application=None, mtid=None):
     """
     Detach a token from a machine with a certain application.
 
@@ -194,6 +195,7 @@ def detach_token_api(serial, machineid, resolver, application):
     :param resolver: identify the machine by the machine ID and the resolver name
     :param serial: identify the token by the serial number
     :param application: the name of the application like "luks" or "ssh".
+    :param mtid: the ID of the machinetoken definition
 
     :return: json result with "result": true and the machine list in "value".
 
@@ -211,7 +213,7 @@ def detach_token_api(serial, machineid, resolver, application):
 
     """
     r = detach_token(serial, application,
-                     machine_id=machineid, resolver_name=resolver)
+                     machine_id=machineid, resolver_name=resolver, mtid=mtid)
 
     g.audit_object.log({'success': True,
                         'info': "serial: {0!s}, application: {1!s}".format(serial,
@@ -229,21 +231,46 @@ def list_machinetokens_api():
 
     :param serial: Return the MachineTokens for a the given Token
     :param hostname: Identify the machine by the hostname
-    :param machineid: Identify the machine by the machine ID and the resolver
-        name
-    :param resolver: Identify the machine by the machine ID and the resolver
-        name
-    :return:
+    :param machineid: Identify the machine by the machine ID and the resolver name
+    :param resolver: Identify the machine by the machine ID and the resolver name
+    :query sortby: sort the output by column. Can be 'serial', 'service_id'...
+    :query sortdir: asc/desc
+    :query application: The type of application like "ssh" or "offline".
+    :param <options>: You can also filter for options like the 'service_id' or 'user' for SSH applications, or
+        'count' and 'rounds' for offline applications. The filter allows the use of "*" to match substrings.
+    :return: JSON list of dicts
+
+    [{'application': 'ssh',
+      'id': 1,
+      'options': {'service_id': 'webserver',
+                  'user': 'root'},
+      'resolver': None,
+      'serial': 'SSHKEY1',
+      'type': 'sshkey'},
+       ...
+       ]
     """
     hostname = getParam(request.all_data, "hostname")
     machineid = getParam(request.all_data, "machineid")
     resolver = getParam(request.all_data, "resolver")
     serial = getParam(request.all_data, "serial")
     application = getParam(request.all_data, "application")
+    sortby = getParam(request.all_data, "sortby", "serial")
+    sortdir = getParam(request.all_data, "sortdir", "asc")
+    filter_params = {}
+    # Use remaining params as filters
+    for key, value in {k: v for k, v in request.all_data.items() if k not in [
+        "hostname", "machineid", "resolver", "serial", "application", "client", "g",
+        "sortby", "sortdir", "page", "pagesize"
+    ]}.items():
+        filter_params[key] = value
 
-    res = []
+    serial_pattern = None
+    if serial and "*" in serial:
+        serial_pattern = serial.replace("*", ".*")
+        serial = None
 
-    if not hostname and not machineid and not resolver:
+    if not hostname and not machineid and not resolver and serial and not filter_params:
         # We return the list of the machines for the given serial
         res = list_token_machines(serial)
     else:
@@ -251,8 +278,14 @@ def list_machinetokens_api():
             hostname = None
             machineid = None
             resolver = None
-        res = list_machine_tokens(hostname=hostname, machine_id=machineid,
-                                  resolver_name=resolver)
+        res = list_machine_tokens(hostname=hostname, machine_id=machineid, resolver_name=resolver,
+                                  serial=serial, application=application, filter_params=filter_params,
+                                  serial_pattern=serial_pattern)
+
+    if sortby == "serial":
+        res.sort(key=lambda x: x.get("serial"), reverse=sortdir == "desc")
+    else:
+        res.sort(key=lambda x: x.get("options", {}).get(sortby, ""), reverse=sortdir == "desc")
 
     g.audit_object.log({'success': True,
                         'info': "serial: {0!s}, hostname: {1!s}".format(serial,
@@ -272,6 +305,7 @@ def set_option_api():
     :param resolver: identify the machine by the machine ID and the resolver name
     :param serial: identify the token by the serial number
     :param application: the name of the application like "luks" or "ssh".
+    :param mtid: the ID of the machinetoken definition
 
     Parameters not listed will be treated as additional options.
 
@@ -280,32 +314,37 @@ def set_option_api():
     hostname = getParam(request.all_data, "hostname")
     machineid = getParam(request.all_data, "machineid")
     resolver = getParam(request.all_data, "resolver")
-    serial = getParam(request.all_data, "serial", optional=False)
-    application = getParam(request.all_data, "application", optional=False)
+    serial = getParam(request.all_data, "serial")
+    application = getParam(request.all_data, "application")
+    mtid = getParam(request.all_data, "mtid")
 
     # get additional options:
     options_add = {}
     options_del = []
-    for key in request.all_data.keys():
-        if key not in ["hostname", "machineid", "resolver", "serial",
-                       "application"]:
-            # We use the key as additional option
-            value = request.all_data.get(key)
-            if value:
-                options_add[key] = request.all_data.get(key)
-            else:
-                options_del.append(key)
+    for key, value in {k: v for k, v in request.all_data.items() if k not in [
+        "hostname", "machineid", "resolver", "serial", "application", "client", "g", "mtid"
+    ]}.items():
+        if value:
+            options_add[key] = value
+        else:
+            options_del.append(key)
 
-    o_add = add_option(serial=serial, application=application,
-                       hostname=hostname,
-                       machine_id=machineid, resolver_name=resolver,
-                       options=options_add)
+    if mtid:
+        o_add = add_option(machinetoken_id=mtid, options=options_add)
+    else:
+        o_add = add_option(serial=serial, application=application,
+                           hostname=hostname,
+                           machine_id=machineid, resolver_name=resolver,
+                           options=options_add)
     o_del = len(options_del)
     for k in options_del:
-        delete_option(serial=serial, application=application,
-                      hostname=hostname,
-                      machine_id=machineid, resolver_name=resolver,
-                      key=k)
+        if mtid:
+            delete_option(machinetoken_id=mtid, key=k)
+        else:
+            delete_option(serial=serial, application=application,
+                          hostname=hostname,
+                          machine_id=machineid, resolver_name=resolver,
+                          key=k)
 
     g.audit_object.log({'success': True,
                         'info': "serial: {0!s}, application: {1!s}".format(serial,
@@ -363,7 +402,7 @@ def get_auth_items_api(application=None):
     hostname = getParam(request.all_data, "hostname", optional=False)
     # Get optional additional filter parameters
     filter_param = request.all_data
-    for key in ["challenge", "hostname"]:
+    for key in ["challenge", "hostname", "application"]:
         if key in filter_param:
             del(filter_param[key])
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
 import base64
 import getpass
 import hashlib
@@ -18,7 +17,7 @@ def get_hash(passwd, salt):
     :type salt: bytestring
     :return: string
 
-    lets see if doctest works:
+    let's see if doctest works:
 
     >>> print(get_hash('test', b'test'))
     {SSHA}Uau5Y2B43vv4iNhFenx2+FyPEUx0ZXN0

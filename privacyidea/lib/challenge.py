@@ -27,10 +27,9 @@ The method is tested in test_lib_challenges
 """
 
 import logging
-import six
 from .log import log_with
 from ..models import Challenge
-from privacyidea.lib.error import ParameterError
+
 log = logging.getLogger(__name__)
 
 

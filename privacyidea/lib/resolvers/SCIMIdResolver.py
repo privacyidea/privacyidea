@@ -44,7 +44,7 @@ from .UserIdResolver import UserIdResolver
 import yaml
 import requests
 import base64
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 from privacyidea.lib.utils import to_bytes, to_unicode, convert_column_to_unicode
 
 log = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ class IdResolver (UserIdResolver):
         self.auth_server = ''
         self.resource_server = ''
         self.auth_client = 'localhost'
-        self.auth_secret = ''
+        self.auth_secret = ''  # nosec B105 # default parameter
         self.access_token = None
 
     def checkPass(self, uid, password):
@@ -258,7 +258,7 @@ class IdResolver (UserIdResolver):
         headers = {'Authorization': "Bearer {0}".format(access_token),
                    'content-type': 'application/json'}
         url = '{0}/Users?{1}'.format(resource_server, urlencode(params))
-        resp = requests.get(url, headers=headers)
+        resp = requests.get(url, headers=headers, timeout=60)
         if resp.status_code != 200:
             info = "Could not get user list: {0!s}".format(resp.status_code)
             log.error(info)
@@ -283,7 +283,7 @@ class IdResolver (UserIdResolver):
         headers = {'Authorization': "Bearer {0}".format(access_token),
                    'content-type': 'application/json'}
         url = '{0}/Users/{1}'.format(resource_server, userid)
-        resp = requests.get(url, headers=headers)
+        resp = requests.get(url, headers=headers, timeout=60)
 
         if resp.status_code != 200:
             info = "Could not get user: {0!s}".format(resp.status_code)
@@ -300,7 +300,8 @@ class IdResolver (UserIdResolver):
 
         url = "{0!s}/oauth/token?grant_type=client_credentials".format(server)
         resp = requests.get(url,
-                            headers={'Authorization': 'Basic ' + auth})
+                            headers={'Authorization': 'Basic ' + auth},
+                            timeout=60)
 
         if resp.status_code != 200:
             info = "Could not get access token: {0!s}".format(resp.status_code)

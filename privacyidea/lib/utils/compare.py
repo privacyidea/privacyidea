@@ -29,7 +29,7 @@ In order to add a new comparator:
 import csv
 import logging
 import re
-from six import wraps
+from functools import wraps
 
 from privacyidea.lib.framework import _
 

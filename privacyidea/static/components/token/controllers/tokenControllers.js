@@ -192,37 +192,21 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
     $scope.enrolling = false;
 
     $scope.formInit = {
-        tokenTypes: {"hotp": gettextCatalog.getString("HOTP: event based One Time Passwords"),
-            "totp": gettextCatalog.getString("TOTP: time based One Time Passwords"),
-            "spass": gettextCatalog.getString("SPass: Simple Pass token. Static passwords"),
-            "motp": gettextCatalog.getString("mOTP: classical mobile One Time Passwords"),
-            "sshkey": gettextCatalog.getString("SSH Public Key: The public SSH key"),
-            "yubikey": gettextCatalog.getString("Yubikey AES mode: One Time Passwords with" +
-                " Yubikey"),
-            "remote": gettextCatalog.getString("Remote Token: Forward authentication request" +
-                " to another server"),
-            "yubico": gettextCatalog.getString("Yubikey Cloud mode: Forward authentication" +
-                " request to YubiCloud"),
-            "radius": gettextCatalog.getString("RADIUS: Forward authentication request to a" +
-                " RADIUS server"),
-            "email": gettextCatalog.getString("EMail: Send a One Time Password to the users email" +
-                " address."),
-            "sms": gettextCatalog.getString("SMS: Send a One Time Password to the users" +
-                " mobile phone."),
-            "certificate": gettextCatalog.getString("Certificate: Enroll an x509 Certificate" +
-                " Token."),
-            "4eyes": gettextCatalog.getString("Four Eyes: Two or more users are required to" +
-                " log in."),
-            "tiqr": gettextCatalog.getString("TiQR: Authenticate with Smartphone by scanning" +
-                " a QR code."),
-            "u2f": gettextCatalog.getString("U2F: Universal 2nd Factor hardware token."),
-            "indexedsecret": gettextCatalog.getString("IndexedSecret: Challenge token based on a shared secret."),
-            "webAuthn": gettextCatalog.getString("WebAuthn: Web Authentication hardware token."),
-            "paper": gettextCatalog.getString("PAPER: OTP values on a sheet of paper.")},
+        tokenTypes: {},  // will be set later with response from server
         timesteps: [30, 60],
         otplens: [6, 8],
-        hashlibs: ["sha1", "sha256", "sha512"]
+        hashlibs: ["sha1", "sha256", "sha512"],
+        service_ids: {}
     };
+
+    $scope.loadAvailableServiceIDs = function () {
+        ConfigFactory.getServiceid("", function (data) {
+            serviceids = data.result.value;
+            angular.forEach(serviceids, function (serviceid_data, name) {
+                $scope.formInit.service_ids[name] = name + ": " + serviceid_data.description;
+                });
+        })
+    }
 
     $scope.setVascoSerial = function() {
         if ($scope.form.otpkey.length === 496) {
@@ -265,11 +249,18 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             // preset TOTP hashlib
             $scope.form.hashlib = $scope.systemDefault['totp.hashlib'] || 'sha1';
             $scope.form.timeStep = parseInt($scope.systemDefault['totp.timeStep'] || '30');
+        } else if ($scope.form.type === "daypassword") {
+            // preset DayPassword hashlib
+            $scope.form.hashlib = $scope.systemDefault['daypassword.hashlib'] || 'sha1';
+            $scope.form.timeStep = parseInt($scope.systemDefault['daypassword.timeStep'] || '60');
         }
         if ($scope.form.type === "vasco") {
             $scope.form.genkey = false;
         } else {
             $scope.form.genkey = true;
+        }
+        if ($scope.form.type === "applspec") {
+            $scope.loadAvailableServiceIDs();
         }
         if ($scope.form.type === "yubikey") {
             // save the original otp length
@@ -353,6 +344,21 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             $scope.preset_indexedsecret();
         });
 
+    // Helper function to populate user information
+    $scope.get_user_infos = function(data) {
+        var userObject = data.result.value[0];
+        $scope.form.email = userObject.email;
+        if (typeof userObject.mobile === "string") {
+            $scope.form.phone = userObject.mobile;
+        } else {
+            $scope.phone_list = userObject.mobile;
+            if ($scope.phone_list && $scope.phone_list.length === 1) {
+                $scope.form.phone = $scope.phone_list[0];
+            }
+        }
+        return userObject;
+    }
+
     // Get the realms and fill the realm dropdown box
     if (AuthFactory.getRole() === 'admin') {
         ConfigFactory.getRealms(function (data) {
@@ -381,26 +387,21 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
                 UserFactory.getUsers({realm: $scope.newUser.realm,
                     username: $scope.newUser.user},
                     function(data) {
-                        var userObject = data.result.value[0];
-                        $scope.form.email = userObject.email;
-                        if (typeof userObject.mobile === "string") {
-                            $scope.form.phone = userObject.mobile;
-                        } else {
-                            $scope.phone_list = userObject.mobile;
-                            if ($scope.phone_list && $scope.phone_list.length === 1) {
-                                $scope.form.phone = $scope.phone_list[0];
-                            }
-                        }
-                });
+                    $scope.get_user_infos(data)});
             }
         });
     } else if (AuthFactory.getRole() === 'user') {
         // init the user, if token.enroll was called as a normal user
         $scope.newUser.user = AuthFactory.getUser().username;
         $scope.newUser.realm = AuthFactory.getUser().realm;
+        if ($scope.checkRight('userlist')) {
+            UserFactory.getUserDetails({}, function(data) {
+                $scope.User = $scope.get_user_infos(data);
+            });
+        }
     }
 
-    // Read the the tokentypes from the server
+    // Read the tokentypes from the server
     TokenFactory.getEnrollTokens(function(data){
         //debug: console.log("getEnrollTokens");
         //debug: console.log(data);

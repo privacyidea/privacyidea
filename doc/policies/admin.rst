@@ -114,6 +114,16 @@ to set those token properties like ``description``, ``max_failcount``
 or ``validity_period_start`` at the ``/token/set`` endpoints
 (see :ref:`rest_token`).
 
+setdescription
+~~~~~~~~~~~~~~
+
+type: bool
+
+The admin is allowed to set the description of tokens via the endpoint `/token/descriptipon`.
+
+.. note:: That an admin can also be allowed to the the description of a token by granting the
+   before mentioned policy `set`.
+
 setpin
 ~~~~~~
 
@@ -410,6 +420,35 @@ type: bool
 
 If the policy ``tokengroup_delete`` is defined, the administrator is allowed to
 delete existing tokengroup definitions.
+
+.. _policy_serviceids:
+
+serviceid_add
+~~~~~~~~~~~~~
+
+type: bool
+
+.. index:: service ID
+
+This policy allows the administrator to add a new service ID to the list of
+defined services. These service IDs can then be used in attaching SSH keys or can be used with
+application specific passwords.
+
+See :ref:`serviceids`
+
+serviceid_delete
+~~~~~~~~~~~~~~~~
+
+type: bool
+
+This policy allows the administrator to delete a service ID definition.
+
+servivceid_list
+~~~~~~~~~~~~~~~
+
+type: bool
+
+This policy allows the administrator to list all defined service IDs.
 
 getserial
 ~~~~~~~~~

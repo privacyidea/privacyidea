@@ -50,7 +50,6 @@
 # ./manage.py db migrate
 # ./manage.py create_tables
 #
-from __future__ import print_function
 import os
 import sys
 import datetime
@@ -67,9 +66,10 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 import flask
-from six.moves import shlex_quote
+from shlex import quote as shlex_quote
 import importlib_metadata
 
+from urllib.parse import urlparse
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.crypto import geturandom
@@ -298,27 +298,28 @@ def create(directory="/var/lib/privacyidea/backup/",
     backup_file = "%s/%s-%s.tgz" % (directory, BASE_NAME, DATE)
 
     sqluri = app.config.get("SQLALCHEMY_DATABASE_URI")
-    sqltype = sqluri.split(":")[0]
+    parsed_sqluri = urlparse(app.config.get("SQLALCHEMY_DATABASE_URI"))
+    sqltype = parsed_sqluri.scheme
+
     if sqltype == "sqlite":
         productive_file = sqluri[len("sqlite:///"):]
         print("Backup SQLite %s" % productive_file)
         sqlfile = "%s/db-%s.sqlite" % (directory, DATE)
         call(["cp", productive_file, sqlfile])
     elif sqltype in MYSQL_DIALECTS:
-        m = re.match(r".*mysql://(.*):(.*)@(.*)/(\w*)\??(.*)", sqluri)
-        username = m.groups()[0]
-        password = m.groups()[1]
-        datahost = m.groups()[2]
-        database = m.groups()[3]
-        # We strip parameters, but we do not use them
-        _parameters = m.groups()[4]
+        username = parsed_sqluri.username
+        password = parsed_sqluri.password
+        hostname = parsed_sqluri.hostname
+        database = parsed_sqluri.path[1:]
         defaults_file = "{0!s}/mysql.cnf".format(conf_dir)
         _write_mysql_defaults(defaults_file, username, password)
-        call("mysqldump --defaults-file=%s -h %s %s > %s" % (
-            shlex_quote(defaults_file),
-            shlex_quote(datahost),
-            shlex_quote(database),
-            shlex_quote(sqlfile)), shell=True)
+        cmd = ['mysqldump', '--defaults-file={!s}'.format(
+            shlex_quote(defaults_file)), '-h',
+            shlex_quote(hostname)]
+        if parsed_sqluri.port:
+            cmd.extend(['-P', str(parsed_sqluri.port)])
+        cmd.extend(['-B', shlex_quote(database), '-r', shlex_quote(sqlfile)])
+        call(cmd, shell=True)
     else:
         print("unsupported SQL syntax: %s" % sqltype)
         sys.exit(2)
@@ -769,7 +770,7 @@ def rotate_audit(highwatermark=10000, lowwatermark=5000, age=0, config=None,
     metadata.create_all(engine)
     if config:
         with open(config, 'r') as f:
-            yml_config = yaml.load(f)
+            yml_config = yaml.safe_load(f)
         auditlogs = session.query(LogEntry).all()
         delete_list = []
         for log in auditlogs:

@@ -31,6 +31,7 @@ import requests
 from requests.exceptions import HTTPError, Timeout, ConnectionError, RequestException
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import replace_function_event_handler
+from privacyidea.lib.error import UserError
 
 
 log = logging.getLogger(__name__)
@@ -130,8 +131,13 @@ class WebHookHandler(BaseEventHandler):
         if request is not None:
             token_serial = request.all_data.get('serial')
             tokenowner = self._get_tokenowner(request)
-        user = User(login=g.logged_in_user.get('username'),
-                    realm=g.logged_in_user.get('realm'))
+
+        try:
+            user = User(login=g.logged_in_user.get('username'),
+                        realm=g.logged_in_user.get('realm'))
+        except (UserError, AttributeError) as e:  # pragma: no cover
+            log.info('Could not determine user: {0!s}'.format(e))
+            user = None
 
         if replace:
             webhook_text = replace_function_event_handler(webhook_text, token_serial=token_serial,

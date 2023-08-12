@@ -11,6 +11,7 @@ from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOPE)
+from unittest import mock
 from privacyidea.models import (Token,
                                  Config,
                                  Challenge)
@@ -280,6 +281,21 @@ class TOTPTokenTestCase(MyTestCase):
         token.inc_otp_counter(counter=20)
         self.assertTrue(token.token.count == 21, token.token.count)
 
+    @mock.patch('time.time', mock.MagicMock(return_value=1686902767))
+    def test_98_get_otp(self):
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TotpTokenClass(db_token)
+        token.update({"otpkey": self.otpkey,
+                      "pin": "test",
+                      "otplen": 6,
+                      "timeShift": 0})
+        counter = token._time2counter(time.time(), timeStepping=30)
+        otp_now = token._calc_otp(counter)
+        otp = token.get_otp()
+        res = token.check_otp_exist(otp[2])
+        self.assertEqual(res, counter)
+        self.assertEqual(otp[2], otp_now)
+
     def test_13_check_otp(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
@@ -422,7 +438,7 @@ class TOTPTokenTestCase(MyTestCase):
         # get the OTP value for counter 1417549521
         res = token.get_otp(time_seconds=1417549521)
         self.assertTrue(res[0] == 1, res)
-        self.assertTrue(res[2] == "589836", res)
+        self.assertTrue(res[2] == "227747", res)
 
         check = token.check_otp("722053", counter=47251647)
         # The OTP 722053 is of counter 47251647

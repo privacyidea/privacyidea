@@ -104,6 +104,9 @@ from privacyidea.lib.utils import (is_true, decode_base32check,
                                    parse_legacy_time, split_pin_pass)
 from privacyidea.lib import _
 from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTION)
+from base64 import b32encode
+from binascii import unhexlify
+
 
 
 #DATE_FORMAT = "%d/%m/%y %H:%M"
@@ -168,8 +171,6 @@ class TokenClass(object):
     hKeyRequired = False
     mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE]
     client_mode = CLIENTMODE.INTERACTIVE
-    # Usually a token will be checked in the lib:check_token_list, even if it is disabled
-    check_if_disabled = True
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
     # If the token is enrollable via multichallenge
@@ -513,7 +514,8 @@ class TokenClass(object):
 
         (res, pin, otpval) = self.split_pin_pass(passw, user=user,
                                                  options=options)
-        if res != -1:
+        if res:
+            # If the otpvalue is too short, we do not check the PIN at all, since res is False
             pin_match = self.check_pin(pin, user=user, options=options)
             if pin_match is True:
                 otp_counter = self.check_otp(otpval, options=options)
@@ -707,6 +709,20 @@ class TokenClass(object):
 
     def is_active(self):
         return self.token.active
+
+    def use_for_authentication(self, options):
+        """
+        This method checks, if this token should be used for authentication.
+        Certain token classes could be excluded from the authentication request in
+        certain situations.
+
+        Returns True, if the token should be used for authentication.
+        Returns False, if the token should be completely ignored for authentication.
+
+        :param options: This is the option list, that basically contains the Request parameters.
+        :return:
+        """
+        return True
 
     @property
     def rollout_state(self):
@@ -1380,7 +1396,8 @@ class TokenClass(object):
         otplen = self.token.otplen
         log.debug("Splitting the an OTP value of length {0!s} from the password.".format(otplen))
         pin, otpval = split_pin_pass(passw, otplen, get_prepend_pin())
-        return True, pin, otpval
+        # If the provided passw is shorter than the expected otplen, we return the status False
+        return len(passw) >= otplen, pin, otpval
 
     def status_validation_fail(self):
         """
@@ -1912,3 +1929,34 @@ class TokenClass(object):
         :return:
         """
         return True
+
+    def _to_dict(self, b32=False):
+        """
+        export the token information to a dictionary.
+
+        This can be used to re-encrypt tokens.
+
+        :param b32: Export otp key b32encoded
+
+        :return: a dict, containing the token and the tokeninfo
+        """
+        token_dict = {
+            "serial": self.get_serial(),
+            "type": self.get_type(),
+            "otpkey": self.token.get_otpkey().getKey(),
+            "description": self.token.description,
+            "otplen": self.get_otplen(),
+            "maxfail": self.get_max_failcount(),
+            "failcount": self.get_failcount(),
+            "counter": self.get_otp_count(),
+            "window": self.get_otp_count_window(),
+            "active": self.is_active(),
+            "revoked": self.token.revoked,
+            "locked": self.token.locked,
+            "rollout_state": self.token.rollout_state
+        }
+        if b32:
+            token_dict["otpkey"] = b32encode(unhexlify(token_dict.get("otpkey")))
+        token_dict["otpkey"] = to_unicode(token_dict.get("otpkey"))
+        token_dict.update(self.get_tokeninfo())
+        return token_dict

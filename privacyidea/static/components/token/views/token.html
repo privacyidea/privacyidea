@@ -62,6 +62,17 @@
                             <span translate>List Challenges</span>
                         </a>
                     </li>
+                    <li role="presentation"
+                        ng-class="{active: $state.includes('token.applications')}"
+                        ng-show="loggedInUser.role == 'admin' &&
+                            checkRight('tokenlist') &&
+                            checkRight('machinelist') &&
+                            checkRight('manage_machine_tokens')">
+                        <a ui-sref="token.applications">
+                            <span class="glyphicon glyphicon-hdd"></span>
+                            <span translate>Token Applications</span>
+                        </a>
+                    </li>
                     <hr>
                     <li role="presentation"
                         ng-class="{active: $state.includes('token.lost')}"

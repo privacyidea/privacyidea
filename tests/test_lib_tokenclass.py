@@ -202,6 +202,8 @@ class TokenBaseTestCase(MyTestCase):
         
         token.set_sync_window(53)
         self.assertTrue(token.get_sync_window() == 53)
+        # since we need this token later, we need to persist its data to the db
+        token.save()
 
     def test_06_set_pin(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -473,6 +475,11 @@ class TokenBaseTestCase(MyTestCase):
         res, pin, value = token.split_pin_pass("test123456")
         self.assertTrue(pin == "test", pin)
         self.assertTrue(value == "123456", value)
+        # too short
+        res, pin, value = token.split_pin_pass("12345")
+        self.assertFalse(res)
+        self.assertEqual("12345", value)
+        self.assertEqual("", pin)
         
     def test_15_check_pin(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -551,7 +558,7 @@ class TokenBaseTestCase(MyTestCase):
         db_token.set_pin("test")
         # No challenge request, since we have the wrong pin
         req = token.is_challenge_request("testX", User(login="cornelius",
-                                                      realm=self.realm1))
+                                                       realm=self.realm1))
         self.assertFalse(req, req)
         # A challenge request, since we have the correct pin
         req = token.is_challenge_request("test",
@@ -559,31 +566,31 @@ class TokenBaseTestCase(MyTestCase):
                                               realm=self.realm1))
         self.assertTrue(req, req)
 
-        resp = token.is_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                            "test123456")
+        resp = token.is_challenge_response("test123456",
+                                           User(login="cornelius",
+                                                realm=self.realm1))
         self.assertFalse(resp, resp)
 
         # A the token has not DB entry in the challenges table, basically
         # "is_cahllenge_response"
-        resp = token.is_challenge_response(User(login="cornelius",
+        resp = token.is_challenge_response("test123456",
+                                           User(login="cornelius",
                                                 realm=self.realm1),
-                                            "test123456",
-                                            options={"transaction_id": transaction_id})
+                                           options={"transaction_id": transaction_id})
         self.assertTrue(resp)
         # ... but is does not "has_db_challenge_response"
-        resp = token.has_db_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                               "test123456",
+        resp = token.has_db_challenge_response("test123456",
+                                               User(login="cornelius",
+                                                    realm=self.realm1),
                                                options={"transaction_id": transaction_id})
         self.assertFalse(resp)
 
         # Create a challenge
         C = Challenge(serial=self.serial1, transaction_id=transaction_id, challenge="12")
         C.save()
-        resp = token.is_challenge_response(User(login="cornelius",
+        resp = token.is_challenge_response("test123456",
+                                           User(login="cornelius",
                                                 realm=self.realm1),
-                                           "test123456",
                                            options={"transaction_id": transaction_id})
         self.assertTrue(resp)
 
@@ -644,10 +651,10 @@ class TokenBaseTestCase(MyTestCase):
         token = TokenClass(db_token)
         token_data = token.get_as_dict()
 
-        self.assertTrue("info" in token_data)
-        self.assertTrue(token_data.get("user_id") == "1000")
-        self.assertTrue(token_data.get("tokentype") == "newtype")
-        self.assertTrue(token_data.get("count_window") == 52)
+        self.assertIn("info", token_data, token_data)
+        self.assertEqual(token_data.get("user_id"), "1000", token_data)
+        self.assertEqual(token_data.get("tokentype"), "newtype", token_data)
+        self.assertEqual(token_data.get("count_window"), 52, token_data)
 
     def test_22_store_tokeninfo_longer_than_2000_byte(self):
         data = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDJy0rLoxqc8SsY8DVAFi" \

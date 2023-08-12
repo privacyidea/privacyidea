@@ -26,6 +26,10 @@ from privacyidea.lib.token import check_user_pass
 from privacyidea.lib.policydecorators import libpolicy, login_mode
 from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
 from privacyidea.lib.utils import fetch_one_resource
+import logging
+
+log = logging.getLogger(__name__)
+
 
 
 class ROLE(object):
@@ -125,10 +129,13 @@ def check_webui_user(user_obj,
 
     if check_otp:
         # check if the given password matches an OTP token
-        check, details = check_user_pass(user_obj, password, options=options)
-        details["loginmode"] = "privacyIDEA"
-        if check:
-            user_auth = True
+        try:
+            check, details = check_user_pass(user_obj, password, options=options)
+            details["loginmode"] = "privacyIDEA"
+            if check:
+                user_auth = True
+        except Exception as e:
+            log.debug("Error authenticating user against privacyIDEA: {0!r}".format(e))
     else:
         # check the password of the user against the userstore
         if user_obj.check_password(password):

@@ -85,7 +85,7 @@ def _create_static_password(key_hex):
     msg_hex = "000000000000ffffffffffffffff0f2e"
     msg_bin = binascii.unhexlify(msg_hex)
     cipher = Cipher(algorithms.AES(binascii.unhexlify(key_hex)),
-                    modes.ECB(), default_backend())
+                    modes.ECB(), default_backend())  # nosec B305 # part of Yubikey specification
     encryptor = cipher.encryptor()
     password_bin = encryptor.update(msg_bin) + encryptor.finalize()
     password = modhex_encode(password_bin)

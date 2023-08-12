@@ -33,6 +33,23 @@
         </div>
     </div>
     <div class="form-group"
+         ng_show="params.LDAPURI.includes(',')">
+        <label for="ldap_pooling_strategy"
+            class="col-sm-3 control-label" translate>
+            Pooling strategy
+        </label>
+        <div class="col-sm-4">
+            <select class="form-control"
+                    name="ldap_pooling_strategy" id="ldap_pooling_strategy"
+                    ng-model="params.SERVERPOOL_STRATEGY">
+                    <option ng-repeat="o in ldap_pooling_strategy_options"
+                            value="{{o}}">
+                        {{o}}
+                    </option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group"
         ng_show="params.LDAPURI.toLowerCase().substring(0,5) ==='ldap:'">
         <label for="starttls"
             class="col-sm-3 control-label" translate>

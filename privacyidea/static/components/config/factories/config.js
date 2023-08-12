@@ -56,13 +56,14 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                                 "radiusServerUrl", "smsgatewayUrl",
                                 "defaultRealmUrl", "systemUrl", "periodicTaskUrl",
                                 "privacyideaServerUrl", "CAConnectorUrl", "tokengroupUrl",
+                                "serviceidUrl",
                                 function (AuthFactory, $http, $state, $rootScope,
                                           resolverUrl, realmUrl, machineResolverUrl,
                                           policyUrl, eventUrl, smtpServerUrl,
                                           radiusServerUrl, smsgatewayUrl,
                                           defaultRealmUrl, systemUrl,
                                           periodicTaskUrl, privacyideaServerUrl,
-                                          CAConnectorUrl, tokengroupUrl) {
+                                          CAConnectorUrl, tokengroupUrl, serviceidUrl) {
     /**
      Each service - just like this service factory - is a singleton.
      */
@@ -481,6 +482,24 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
         },
         delTokengroup: function(groupname, callback) {
             $http.delete(tokengroupUrl + "/" + groupname, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
+        },
+        getServiceid: function(sname, callback) {
+            $http.get(serviceidUrl + "/" + sname, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
+        },
+        addServiceid: function(params, callback) {
+            $http.post(serviceidUrl + "/" + params["servicename"], params, {
+                headers: {'PI-Authorization': AuthFactory.getAuthToken(),
+                          'Content-Type': 'application/json'}
+            }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
+        },
+        delServiceid: function(sname, callback) {
+            $http.delete(serviceidUrl + "/" + sname, {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken(),
                           'Content-Type': 'application/json'}
             }).then(function(response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });

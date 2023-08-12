@@ -6,6 +6,7 @@ This file contains the event handlers tests. It tests:
 lib/eventhandler/usernotification.py (one event handler module)
 lib/event.py (the decorator)
 """
+import requests.exceptions
 import responses
 import os
 import mock
@@ -16,6 +17,7 @@ from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUser
 from privacyidea.lib.eventhandler.customuserattributeshandler import USER_TYPE
 from privacyidea.lib.eventhandler.webhookeventhandler import ACTION_TYPE, WebHookHandler, CONTENT_TYPE
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
+from privacyidea.lib.machine import list_token_machines
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.config import get_config_object
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
@@ -1058,12 +1060,12 @@ class FederationEventTestCase(MyTestCase):
         from privacyidea.lib.eventhandler.federationhandler import ACTION_TYPE
         from privacyidea.lib.privacyideaserver import add_privacyideaserver
         responses.add(responses.POST, "https://remote/token/init",
-                      body="""{"jsonrpc": "2.0", 
-                               "detail": {"googleurl": 
-                                              {"value": "otpauth://totp/TOTP0019C11A?secret=5IUZZICQQI7CFA6VZA4HO6L52RA4ZIVC&period=30&digits=6&issuer=privacyIDEA", 
-                                               "description": "URL for google Authenticator", 
+                      body="""{"jsonrpc": "2.0",
+                               "detail": {"googleurl":
+                                              {"value": "otpauth://totp/TOTP0019C11A?secret=5IUZZICQQI7CFA6VZA4HO6L52RA4ZIVC&period=30&digits=6&issuer=privacyIDEA",
+                                               "description": "URL for google Authenticator",
                                                "img": "data:image/png;base64,YII="},
-                               "threadid": 140161650956032}, 
+                               "threadid": 140161650956032},
                                "versionnumber": "2.20.1",
                                "version": "privacyIDEA 2.20.1",
                                "result": {"status": true,
@@ -2425,6 +2427,53 @@ class TokenEventTestCase(MyTestCase):
 
         remove_token("SPASS01")
 
+    def test_14_attach_token(self):
+        # create token
+        init_token({"serial": "offHOTP", "genkey": 1})
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "SPASS01"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS01"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "offHOTP", "type": "hotp"}
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # The count window of the token will be set to 123
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def":{
+                       "options": {
+                                   "application": "offline",
+                                   "count": "12"}}
+                   }
+
+
+        t_handler = TokenEventHandler()
+        res = t_handler.do("attach application", options=options)
+        self.assertTrue(res)
+
+        # check if the options were set.
+        token_obj = list_token_machines(serial="offHOTP")[0]
+        self.assertEqual(token_obj.get("application"), "offline")
+        self.assertEqual(token_obj.get("hostname"), "any host")
+        self.assertEqual(token_obj.get("machine_id"), "any machine")
+
 
 class CustomUserAttributesTestCase(MyTestCase):
 
@@ -2586,15 +2635,16 @@ class CustomUserAttributesTestCase(MyTestCase):
 
 class WebhookTestCase(MyTestCase):
 
+    def setUp(self):
+        super(WebhookTestCase, self).setUp()
+        self.setUp_user_realms()
+
     @patch('requests.post')
     def test_01_send_webhook(self, mock_post):
         with mock.patch("logging.Logger.info") as mock_log:
             mock_post.return_value.status_code = 200
             mock_post.return_value.json.return_value = 'response'
-            # Setup realm and user
-            self.setUp_user_realms()
 
-            user = User("hans", self.realm1)
             g = FakeFlaskG()
             g.logged_in_user = {'username': 'hans',
                                 'realm': self.realm1}
@@ -2644,12 +2694,12 @@ class WebhookTestCase(MyTestCase):
             "URL": {
                 "type": "str",
                 "required": True,
-                "description": ("The URL the WebHook is posted to")
+                "description": "The URL the WebHook is posted to"
             },
             "content_type": {
                 "type": "str",
                 "required": True,
-                "description": ("The encoding that is sent to the WebHook, for example json"),
+                "description": "The encoding that is sent to the WebHook, for example json",
                 "value": [
                     CONTENT_TYPE.JSON,
                     CONTENT_TYPE.URLENCODED]
@@ -2657,21 +2707,17 @@ class WebhookTestCase(MyTestCase):
             "replace": {
                 "type": "bool",
                 "required": True,
-                "description": ("You can replace placeholder like {logged_in_user}")
+                "description": "You can replace placeholder like {logged_in_user}"
             },
             "data": {
                 "type": "str",
                 "required": True,
-                "description": ('The data posted in the WebHook')
+                "description": 'The data posted in the WebHook'
             }
         }})
 
     def test_03_wrong_action_type(self):
         with mock.patch("logging.Logger.warning") as mock_log:
-            # Setup realm and user
-            self.setUp_user_realms()
-
-            user = User("hans", self.realm1)
             g = FakeFlaskG()
             g.logged_in_user = {'username': 'hans',
                                 'realm': self.realm1}
@@ -2695,10 +2741,6 @@ class WebhookTestCase(MyTestCase):
 
     def test_04_wrong_content_type(self):
         with mock.patch("logging.Logger.warning") as mock_log:
-            # Setup realm and user
-            self.setUp_user_realms()
-
-            user = User("hans", self.realm1)
             g = FakeFlaskG()
             g.logged_in_user = {'username': 'hans',
                                 'realm': self.realm1}
@@ -2720,11 +2762,10 @@ class WebhookTestCase(MyTestCase):
             text = 'Unknown content type value: False_Type'
             mock_log.assert_any_call(text)
 
-    def test_05_wrong_url(self):
-        # Setup realm and user
-        self.setUp_user_realms()
+    @patch('requests.post')
+    def test_05_wrong_url(self, mock_post):
+        mock_post.side_effect = requests.exceptions.ConnectionError()
 
-        user = User("hans", self.realm1)
         g = FakeFlaskG()
         g.logged_in_user = {'username': 'hans',
                             'realm': self.realm1}
@@ -2749,10 +2790,7 @@ class WebhookTestCase(MyTestCase):
         with mock.patch("logging.Logger.info") as mock_log:
             mock_post.return_value.status_code = 200
             mock_post.return_value.json.return_value = 'response'
-            # Setup realm and user
-            self.setUp_user_realms()
 
-            user = User("hans", self.realm1)
             g = FakeFlaskG()
             g.logged_in_user = {'username': 'hans',
                                 'realm': self.realm1}
@@ -2785,9 +2823,6 @@ class WebhookTestCase(MyTestCase):
                 mock_post.return_value.status_code = 200
                 mock_post.return_value.json.return_value = 'response'
 
-                # Setup realm and user
-                self.setUp_user_realms()
-
                 init_token({"serial": "SPASS01", "type": "spass"},
                            User("cornelius", self.realm1))
                 g = FakeFlaskG()
@@ -2813,16 +2848,16 @@ class WebhookTestCase(MyTestCase):
                                            "replace":
                                                True,
                                            "data":
-                                               '{{token_serial} {token_owner} {user_realm}}'
+                                               '{token_serial} {token_owner} {unknown_tag}'
                                            }
                            }
                            }
                 res = t_handler.do("post_webhook", options=options)
                 self.assertTrue(res)
-                mock_log.assert_any_call("Unable to replace placeholder: (Single '}' encountered in format string)!"
+                mock_log.assert_any_call("Unable to replace placeholder: ('unknown_tag')!"
                                          " Please check the webhooks data option.")
                 text = 'A webhook is send to {0!r} with the text: {1!r}'.format(
-                    'http://test.com', '{{token_serial} {token_owner} {user_realm}}')
+                    'http://test.com', '{token_serial} {token_owner} {unknown_tag}')
                 mock_info.assert_any_call(text)
                 mock_info.assert_called_with(200)
 
@@ -2832,9 +2867,6 @@ class WebhookTestCase(MyTestCase):
             with mock.patch("logging.Logger.info") as mock_info:
                 mock_post.return_value.status_code = 200
                 mock_post.return_value.json.return_value = 'response'
-
-                # Setup realm and user
-                self.setUp_user_realms()
 
                 init_token({"serial": "SPASS01", "type": "spass"},
                            User("cornelius", self.realm1))

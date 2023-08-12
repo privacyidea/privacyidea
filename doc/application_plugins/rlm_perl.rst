@@ -242,5 +242,5 @@ secret "test" with your clients secret.
 
 .. rubric:: Footnotes
 
-.. [#netknights_dict] https://github.com/privacyidea/privacyidea/blob/master/authmodules/FreeRADIUS/dictionary.netknights
+.. [#netknights_dict] https://github.com/privacyidea/FreeRADIUS/blob/master/dictionary.netknights
 .. [#rlmPerl] https://github.com/privacyidea/freeradius

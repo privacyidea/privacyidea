@@ -6,11 +6,9 @@ import unittest
 
 import OpenSSL.crypto
 
-import privacyidea.lib.caconnectors.msca
 from .base import MyTestCase
 import os
 import glob
-import six
 import shutil
 import mock
 from io import StringIO
@@ -29,8 +27,7 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_types,
                                          save_caconnector, delete_caconnector)
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
-from .mscamock import (MyTemplateReply, MyCAReply, MyCSRReply,
-                       MyCertReply, MyCertificateReply, MyCSRStatusReply, CAServiceMock)
+from .mscamock import CAServiceMock
 
 
 
@@ -214,7 +211,7 @@ class LocalCATestCase(MyTestCase):
     @classmethod
     def setUpClass(cls):
         # call parent
-        super(MyTestCase, cls).setUpClass()
+        super().setUpClass()
 
         # Backup the original index and serial
         shutil.copyfile("{0!s}/serial".format(WORKINGDIR),
@@ -252,7 +249,7 @@ class LocalCATestCase(MyTestCase):
         os.remove("{0!s}/serial.orig".format(WORKINGDIR))
         os.remove("{0!s}/index.txt.orig".format(WORKINGDIR))
         # call parent
-        super(MyTestCase, cls).tearDownClass()
+        super().tearDownClass()
 
     def test_01_create_ca_connector(self):
         # cakey missing
@@ -289,6 +286,9 @@ class LocalCATestCase(MyTestCase):
                          "<X509Name object "
                          "'/C=DE/ST=Hessen/O=privacyidea/CN=requester"
                          ".localdomain'>")
+
+        # Fail to revoke certificate due to non-existing-reasing
+        self.assertRaises(CAError, cacon.revoke_cert, cert, reason="$(rm -fr)")
 
         # Revoke certificate
         r = cacon.revoke_cert(cert)
@@ -470,10 +470,10 @@ class MSCATestCase(MyTestCase):
             self.assertEqual(description[key], "string")
 
         # Check, if an error is raised if a required attribute is missing:
-        self.assertRaisesRegexp(CAError, "required argument 'port' is missing.",
-                                MSCAConnector, "billsCA", {MS_ATTR.HOSTNAME: "hans"})
-        self.assertRaisesRegexp(CAError, "required argument 'hostname' is missing.",
-                                MSCAConnector, "billsCA", {MS_ATTR.PORT: "shanghai"})
+        self.assertRaisesRegex(CAError, "required argument 'port' is missing.",
+                               MSCAConnector, "billsCA", {MS_ATTR.HOSTNAME: "hans"})
+        self.assertRaisesRegex(CAError, "required argument 'hostname' is missing.",
+                               MSCAConnector, "billsCA", {MS_ATTR.PORT: "shanghai"})
 
     def test_02_test_get_templates(self):
         # Mock the connection to the worker
@@ -504,16 +504,16 @@ class MSCATestCase(MyTestCase):
                                                                "ca_templates": MOCK_CA_TEMPLATES,
                                                                "csr_disposition": 5})
             cacon = MSCAConnector("billsCA", CONF)
-            self.assertRaisesRegexp(CSRPending, "ERR505: CSR pending",
-                                    cacon.sign_request, REQUEST, {"template": "ApprovalRequired"})
+            self.assertRaisesRegex(CSRPending, "ERR505: CSR pending",
+                                   cacon.sign_request, REQUEST, {"template": "ApprovalRequired"})
             # Mock the CA to simulate a failed Request - dispoisition -1
             mock_conncect_worker.return_value = CAServiceMock(CONF,
                                                               {"available_cas": MOCK_AVAILABLE_CAS,
                                                                "ca_templates": MOCK_CA_TEMPLATES,
                                                                "csr_disposition": -1})
             cacon = MSCAConnector("billsCA", CONF)
-            self.assertRaisesRegexp(CSRError, "ERR504: CSR invalid",
-                                    cacon.sign_request, REQUEST, {"template": "NonExisting"})
+            self.assertRaisesRegex(CSRError, "ERR504: CSR invalid",
+                                   cacon.sign_request, REQUEST, {"template": "NonExisting"})
             # Mock the CA to simulate a signed request - disposition 3
             mock_conncect_worker.return_value = CAServiceMock(CONF,
                                                               {"available_cas": MOCK_AVAILABLE_CAS,
@@ -607,12 +607,24 @@ class CreateLocalCATestCase(MyTestCase):
     """
     test creating a new CA using the local caconnector
     """
+
+    @classmethod
+    def tearDownClass(cls):
+        filelist = glob.glob("{0!s}2/*".format(WORKINGDIR))
+        for f in filelist:
+            try:
+                os.remove(f)
+            except OSError:
+                print("Error deleting file {0!s}.".format(f))
+        os.rmdir("{0!s}2".format(WORKINGDIR))
+        super().tearDownClass()
+
     def test_01_create_ca(self):
         cwd = os.getcwd()
         workdir = os.path.join(cwd, WORKINGDIR + '2')
         if os.path.exists(workdir):
             shutil.rmtree(workdir)
-        inputstr = six.text_type(workdir + '\n\n\n\n\n\ny\n')
+        inputstr = str(workdir + '\n\n\n\n\n\ny\n')
         with patch('sys.stdin', StringIO(inputstr)):
             caconfig = LocalCAConnector.create_ca('localCA2')
             self.assertEqual(caconfig.get("WorkingDir"), workdir)
@@ -621,12 +633,3 @@ class CreateLocalCATestCase(MyTestCase):
             self.assertEqual(cacon.workingdir, workdir)
             # check if the generated files exist
             self.assertTrue(os.path.exists(os.path.join(workdir, 'cacert.pem')))
-
-    def test_02_cleanup(self):
-        filelist = glob.glob("{0!s}2/*".format(WORKINGDIR))
-        for f in filelist:
-            try:
-                os.remove(f)
-            except OSError:
-                print("Error deleting file {0!s}.".format(f))
-        os.rmdir("{0!s}2".format(WORKINGDIR))

@@ -20,8 +20,7 @@
                     id="tokentype"
                     ng-change="changeTokenType()"
                     ng-model="form.type"
-                    ng-options="type as desc for (type, desc) in formInit.tokenTypes"
-            >
+                    ng-options="type as desc for (type, desc) in formInit.tokenTypes">
             </select>
         </div>
         <!-- This is the token data section. It differs for every token type-->
@@ -36,7 +35,8 @@
             <input type="text" class="form-control" id="description"
                    autocomplete="new-password"
                    placeholder="{{ 'Some nice words...'|translate }}"
-                   ng-model="form.description" />
+                   ng-model="form.description"
+                   ng-required="require_description.includes(form.type)" />
         </div>
 
         <!-- User Assignment -->
@@ -53,18 +53,18 @@
         </div>
         <!-- Token PIN -->
         <div class="form-group"
-             ng-if="loggedInUser.role == 'user' && !hidePin &&
+             ng-if="loggedInUser.role == 'user' && !hidePin && !$state.includes('token.rollover') &&
                     (!$state.includes('token.wizard') || getRightsValue('otp_pin_minlength'))&&
                     checkRight('enrollpin')">
-            <label for="otppin" translate>PIN</label>
+            <label for="otppin" translate>PIN/Password</label>
             <input name="otppin" ng-model="newUser.pin"
                    type=password class="form-control"
                    equals="{{ pin2 }}"
-                   placeholder="{{ 'Type a password'|translate }}">
+                   placeholder="{{ 'Type a PIN or password'|translate }}">
             <input name="otppin2" ng-model="pin2"
                    type=password class="form-control"
                    equals="{{ newUser.pin }}"
-                   placeholder="{{ 'Repeat password'|translate }}">
+                   placeholder="{{ 'Repeat PIN or password'|translate }}">
         </div>
 
         <!-- Extended attributes -->
@@ -186,8 +186,9 @@
     <div ng-show="enrolledToken.rollout_state === 'verify'">
         <p translate>The token was enrolled, but you still need to verify it before you can use it!</p>
         <div class="form-group">
-            <label for="verifyResponse" translate>{{ enrolledToken.verify.message }}</label>
+            <label for="verifyResponse">{{ enrolledToken.verify.message }}</label>
             <input type="text" ng-model="verifyResponse"
+                   id="verifyResponse"
                    autofocus
                    class="form-control"
                    name="verifyResponse">

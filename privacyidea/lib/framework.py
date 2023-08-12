@@ -27,8 +27,6 @@ def get_app_local_store():
     but shared among all threads.
     :return: a Python dict
     """
-    # We can use ``setdefault`` here because starting from
-    # Python 2.7.3 and 3.2.3, it is guaranteed to be atomic.
     return current_app.config.setdefault('_app_local_store', {})
 
 

@@ -14,6 +14,8 @@ Some token require prior configuration as described in :ref:`tokentypes_details`
   `Two Man Rule <https://en.wikipedia.org/wiki/Two-man_rule>`_.
 * :ref:`certificate_token` - A token that represents a client
   certificate.
+* :ref:`daypassword_token` - The DayPassword Token is a time based password
+  loosely based on the TOTP algorithm which can be used multiple times.
 * :ref:`email_token` - A token that sends the OTP value to the EMail address of
   the user.
 * :ref:`hotp_token` - event based One Time Password tokens based on
@@ -30,6 +32,9 @@ Some token require prior configuration as described in :ref:`tokentypes_details`
   challenge to the user's smartphone and the user simply accepts the
   request to login.
 * :ref:`pw_token` - A password token used for :ref:`lost_token` scenario.
+* :ref:`application_specific_token` - This is an application specific password token based on the :ref:`pw_token`.
+  It can be used to provide static password for specific services or applications, where e.g. one time passwords
+  are not suitable.
 * :ref:`questionnaire_token` - A token that contains a list of answered
   questions. During authentication a random question is presented as
   challenge from the list of answered questions is presented. The user must

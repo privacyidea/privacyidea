@@ -225,8 +225,7 @@ class OcraTokenClass(TokenClass):
             elif options.get("hashchallenge", "").lower() == "sha512":
                 challenge = hexlify_and_unicode(hashlib.sha512(to_bytes(challenge)).digest())
             elif options.get("hashchallenge"):
-                challenge = hexlify_and_unicode(hashlib.sha1(to_bytes(challenge)).digest())
-
+                challenge = hexlify_and_unicode(hashlib.sha1(to_bytes(challenge)).digest())  # nosec B324 # ocra definition
 
         # Create the challenge in the database
         db_challenge = Challenge(self.token.serial,

@@ -71,6 +71,12 @@ class MyTestCase(unittest.TestCase):
         # Create an admin for tests.
         create_db_admin(cls.app, cls.testadmin, cls.testadminmail, cls.testadminpw)
 
+    def tearDown(self):
+        # Commit all changes to the DB and close the session to avoid breaking
+        # following tests due to unfinished transactions
+        db.session.commit()
+        db.session.close()
+
     def setUp_user_realms(self):
         # create user realm
         rid = save_resolver({"resolver": self.resolvername1,

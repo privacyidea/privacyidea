@@ -171,7 +171,6 @@ from .log import log_with
 from configobj import ConfigObj
 
 from operator import itemgetter
-import six
 import logging
 from ..models import (Policy, db, save_config_timestamp, Token)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
@@ -195,7 +194,6 @@ import datetime
 import re
 import ast
 import traceback
-from six import string_types
 
 log = logging.getLogger(__name__)
 
@@ -204,7 +202,7 @@ required = False
 
 DEFAULT_ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=it.netknights.piauthenticator"
 DEFAULT_IOS_APP_URL = "https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301"
-DEFAULT_PREFERRED_CLIENT_MODE = ['interactive', 'webauthn', 'poll', 'u2f']
+DEFAULT_PREFERRED_CLIENT_MODE_LIST = ['interactive', 'webauthn', 'poll', 'u2f']
 
 
 class SCOPE(object):
@@ -296,8 +294,8 @@ class ACTION(object):
     REALM = "realm"
     REGISTRATIONCODE_LENGTH = "registration.length"
     REGISTRATIONCODE_CONTENTS = "registration.contents"
-    PASSWORD_LENGTH = "pw.length"
-    PASSWORD_CONTENTS = "pw.contents"
+    PASSWORD_LENGTH = "pw.length"  # nosec B105 # policy name
+    PASSWORD_CONTENTS = "pw.contents"  # nosec B105 # policy name
     REMOTE_USER = "remote_user"
     REQUIREDEMAIL = "requiredemail"
     RESET = "reset"
@@ -376,7 +374,7 @@ class ACTION(object):
     STATISTICSREAD = "statistics_read"
     STATISTICSDELETE = "statistics_delete"
     LOGIN_TEXT = "login_text"
-    DIALOG_NO_TOKEN = "dialog_no_token"
+    DIALOG_NO_TOKEN = "dialog_no_token"  # nosec B105 # policy name
     SHOW_ANDROID_AUTHENTICATOR = "show_android_privacyidea_authenticator"
     SHOW_IOS_AUTHENTICATOR = "show_ios_privacyidea_authenticator"
     SHOW_CUSTOM_AUTHENTICATOR = "show_custom_authenticator"
@@ -389,7 +387,11 @@ class ACTION(object):
     TOKENGROUP_LIST = "tokengroup_list"
     TOKENGROUP_ADD = "tokengroup_add"
     TOKENGROUP_DELETE = "tokengroup_delete"
+    SERVICEID_LIST = "serviceid_list"
+    SERVICEID_ADD = "serviceid_add"
+    SERVICEID_DELETE = "serviceid_delete"
     PREFERREDCLIENTMODE = "preferred_client_mode"
+    REQUIRE_DESCRIPTION = "require_description"
 
 
 class TYPE(object):
@@ -408,7 +410,7 @@ class GROUP(object):
     will be grouped in the UI."""
     TOOLS = "tools"
     SYSTEM = "system"
-    TOKEN = "token"
+    TOKEN = "token"  # nosec B105 # group name
     ENROLLMENT = "enrollment"
     GENERAL = "general"
     MACHINE = "machine"
@@ -417,7 +419,8 @@ class GROUP(object):
     MODIFYING_RESPONSE = "modifying response"
     CONDITIONS = "conditions"
     SETTING_ACTIONS = "setting actions"
-    TOKENGROUP= "tokengroup"
+    TOKENGROUP = "tokengroup"
+    SERVICEID = "service ID"
 
 
 class MAIN_MENU(object):
@@ -471,7 +474,7 @@ class CONDITION_SECTION(object):
     __doc__ = """This is a list of available sections for conditions of policies """
     USERINFO = "userinfo"
     TOKENINFO = "tokeninfo"
-    TOKEN = "token"
+    TOKEN = "token"  # nosec B105 # section name
     HTTP_REQUEST_HEADER = "HTTP Request header"
     HTTP_ENVIRONMENT = "HTTP Environment"
 
@@ -1198,7 +1201,7 @@ class PolicyClass(object):
                 if action_value:
                     rights.add(action)
                     # if the action has an actual non-boolean value, return it
-                    if isinstance(action_value, string_types):
+                    if isinstance(action_value, str):
                         rights.add("{}={}".format(action, action_value))
         # check if we have policies at all:
         pols = self.list_policies(scope=scope, active=True)
@@ -1577,6 +1580,10 @@ def get_static_policy_definitions(scope=None):
                              'Admin is allowed to set token properties.'),
                          'mainmenu': [MAIN_MENU.TOKENS],
                          'group': GROUP.TOKEN},
+            ACTION.SETDESCRIPTION: {'type': 'bool',
+                                    'desc': _('The admin is allowed to set the token description.'),
+                                    'mainmenu': [MAIN_MENU.TOKENS],
+                                    'group': GROUP.TOKEN},
             ACTION.SETPIN: {'type': 'bool',
                             'desc': _(
                                 'Admin is allowed to set the OTP PIN of '
@@ -1606,7 +1613,7 @@ def get_static_policy_definitions(scope=None):
                                'a token.'),
                            'mainmenu': [MAIN_MENU.TOKENS],
                            'group': GROUP.TOKEN},
-            ACTION.REVOKE: {'tpye': 'bool',
+            ACTION.REVOKE: {'type': 'bool',
                             'desc': _("Admin is allowed to revoke a token"),
                             'mainmenu': [MAIN_MENU.TOKENS],
                             'group': GROUP.TOKEN},
@@ -1972,6 +1979,21 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("The Admin is allowed delete a tokengroup."),
                 'mainmenu': [MAIN_MENU.CONFIG],
                 'group': GROUP.TOKENGROUP},
+            ACTION.SERVICEID_LIST: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed list the available service ID definitions."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.SERVICEID},
+            ACTION.SERVICEID_ADD: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed to add a new service ID definition."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.SERVICEID},
+            ACTION.SERVICEID_DELETE: {
+                'type': 'bool',
+                'desc': _("The Admin is allowed delete a service ID definition."),
+                'mainmenu': [MAIN_MENU.CONFIG],
+                'group': GROUP.SERVICEID},
             ACTION.TOKENGROUPS: {
                 'type': 'bool',
                 'desc': _("The Admin is allowed to manage the tokengroups of a token."),
@@ -2118,6 +2140,14 @@ def get_static_policy_definitions(scope=None):
                 'type': 'int',
                 'desc': _('Limit the number of allowed tokens in a realm.'),
                 'group': GROUP.TOKEN},
+            ACTION.REQUIRE_DESCRIPTION: {
+                'type': 'str',
+                'desc': _('During the rollout process, this policy makes the '
+                          'description required for all selected tokentypes.'),
+                'group': GROUP.ENROLLMENT,
+                'multiple': True,
+                'value': get_token_types()},
+
             ACTION.MAXTOKENUSER: {
                 'type': 'int',
                 'desc': _('Limit the number of tokens a user may have '
@@ -2238,7 +2268,9 @@ def get_static_policy_definitions(scope=None):
             ACTION.CHALLENGERESPONSE: {
                 'type': 'str',
                 'desc': _('This is a whitespace separated list of tokentypes, '
-                          'that can be used with challenge response.')
+                          'that can be used with challenge response.'),
+                'multiple': True,
+                'value': [token_obj.get_class_type() for token_obj in get_token_classes() if "challenge" in token_obj.mode and len(token_obj.mode) > 1]
             },
             ACTION.CHALLENGETEXT: {
                 'type': 'str',
@@ -2322,8 +2354,8 @@ def get_static_policy_definitions(scope=None):
             ACTION.PREFERREDCLIENTMODE: {
                 'type': 'str',
                 'desc': _('You can set the client modes in the order that you prefer. '
-                          'For example: "interactive webauthn poll u2f". Accepted'
-                          ' values are:"interactive, webauthn, poll, u2f"')
+                          'For example: "interactive webauthn poll u2f". Accepted '
+                          'values are: <code>interactive webauthn poll u2f</code>')
             }
         },
         SCOPE.AUTHZ: {

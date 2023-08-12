@@ -7,7 +7,6 @@ lib/task/base.py
 
 from privacyidea.lib.task.base import BaseTask
 from .base import MyTestCase
-import six
 
 
 class BaseTaskTestCase(MyTestCase):

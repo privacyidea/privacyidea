@@ -56,10 +56,10 @@ class CONDITION(object):
     """
     Possible conditions
     """
-    TOKEN_HAS_OWNER = "token_has_owner"
-    TOKEN_IS_ORPHANED = "token_is_orphaned"
-    TOKEN_VALIDITY_PERIOD = "token_validity_period"
-    USER_TOKEN_NUMBER = "user_token_number"
+    TOKEN_HAS_OWNER = "token_has_owner"  # nosec B105 # condition name
+    TOKEN_IS_ORPHANED = "token_is_orphaned"  # nosec B105 # condition name
+    TOKEN_VALIDITY_PERIOD = "token_validity_period"  # nosec B105 # condition name
+    USER_TOKEN_NUMBER = "user_token_number"  # nosec B105 # condition name
     OTP_COUNTER = "otp_counter"
     TOKENTYPE = "tokentype"
     LAST_AUTH = "last_auth"
@@ -86,7 +86,7 @@ class GROUP(object):
     These are the event handler groups. The conditions
     will be grouped in the UI.
     """
-    TOKEN = "token"
+    TOKEN = "token"  # nosec B105 # group name
     GENERAL = "general"
     USER = "user"
     COUNTER = "counter"

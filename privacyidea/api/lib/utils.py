@@ -35,10 +35,9 @@ import logging
 import json
 import jwt
 import threading
-import six
 import re
 from copy import copy
-from six.moves.urllib.parse import unquote
+from urllib.parse import unquote
 from flask import (jsonify,
                    current_app)
 
@@ -64,7 +63,7 @@ required = False
 def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_values=None):
     """
     returns a parameter from the request parameters.
-    
+
     :param param: the dictionary of parameters
     :type param: dict
     :param key: the name of the parameter
@@ -79,7 +78,7 @@ def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_
     :param allowed_values: A list of allowed values. If another value is given,
         then the default value is returned
     :type allow_empty: bool
-    
+
     :return: the value (literal) of the parameter if exists or nothing
              in case the parameter is optional, otherwise throw an exception
     """
@@ -96,14 +95,14 @@ def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_
         raise ParameterError("Parameter {0!r} must not be empty".format(key), id=905)
 
     if allowed_values and ret not in allowed_values:
-            ret = default
+        ret = default
 
     return ret
 
 
 def send_result(obj, rid=1, details=None):
-    '''
-    sendResult - return an json result document
+    """
+    sendResult - return a json result document
 
     :param obj: simple result object like dict, sting or list
     :type obj: dict or list or string/unicode
@@ -114,7 +113,7 @@ def send_result(obj, rid=1, details=None):
 
     :return: json rendered sting result
     :rtype: string
-    '''
+    """
     return jsonify(prepare_result(obj, rid, details))
 
 
@@ -164,7 +163,7 @@ def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
 
 def send_html(output):
     """
-    Send the ouput as HTML to the client with the correct mimetype.
+    Send the output as HTML to the client with the correct mimetype.
 
     :param output: The HTML to send to the client
     :type output: str
@@ -178,7 +177,8 @@ def send_file(output, filename, content_type='text/csv'):
     """
     Send the output to the client with the "Content-disposition" header to
     declare it as a downloadable file.
-    :param output: The data that should be send as a file
+
+    :param output: The data that should be sent as a file
     :type output: str
     :param filename: The proposed filename
     :type filename: str
@@ -197,7 +197,7 @@ def send_csv_result(obj, data_key="tokens",
     """
     returns a CSV document of the input data (like in /token/list)
 
-    It takes a obj as a dict like:
+    It takes an obj as a dict like:
     { "tokens": [ { ...token1... }, { ...token2....}, ... ],
       "count": 100,
       "....": .... }
@@ -254,7 +254,7 @@ def check_unquote(request, data):
     https://httpwg.org/specs/rfc9110.html#field.user-agent
 
     :param request: The Flask request context
-    :type request: flask.Request
+    :type request: Flask.Request
     :param data: The dictionary containing the requested data
     :type data: dict
     :return: New dictionary with the possibly unquoted values
@@ -284,13 +284,13 @@ def get_all_params(request):
     return_param = {}
     if param:
         log.debug("Update params in request {0!s} {1!s} with values.".format(request.method,
-                                                                              request.base_url))
+                                                                             request.base_url))
         # Add the unquoted HTML and form parameters
         return_param = check_unquote(request, request.values)
 
     if request.is_json:
         log.debug("Update params in request {0!s} {1!s} with JSON data.".format(request.method,
-                                                                                 request.base_url))
+                                                                                request.base_url))
         # Add the original JSON data
         return_param.update(request.json)
     elif body:
@@ -304,7 +304,7 @@ def get_all_params(request):
 
     if request.view_args:
         log.debug("Update params in request {0!s} {1!s} with view_args.".format(request.method,
-                                                                                 request.base_url))
+                                                                                request.base_url))
         # We add the unquoted view_args
         return_param.update(check_unquote(request, request.view_args))
 
@@ -336,6 +336,7 @@ def verify_auth_token(auth_token, required_role=None):
     :param auth_token: The Auth Token
     :param required_role: list of "user" and "admin"
     :return: dict with authtype, realm, rights, role, username, exp, nonce
+    :rtype: dict
     """
     r = None
     if required_role is None:
@@ -344,11 +345,15 @@ def verify_auth_token(auth_token, required_role=None):
         raise AuthError(_("Authentication failure. Missing Authorization header."),
                         id=ERROR.AUTHENTICATE_AUTH_HEADER)
 
-    headers = jwt.get_unverified_header(auth_token)
+    try:
+        headers = jwt.get_unverified_header(auth_token)
+    except jwt.DecodeError as err:
+        raise AuthError(_("Authentication failure. Error during decoding your token: {0!s}").format(err),
+                        id=ERROR.AUTHENTICATE_DECODING_ERROR)
     algorithm = headers.get("alg")
     wrong_username = None
     if algorithm in TRUSTED_JWT_ALGOS:
-        # The trusted JWTs are RSA, PSS or eliptic curve signed
+        # The trusted JWTs are RSA, PSS or elliptic curve signed
         trusted_jwts = current_app.config.get("PI_TRUSTED_JWT", [])
         for trusted_jwt in trusted_jwts:
             try:
@@ -365,7 +370,7 @@ def verify_auth_token(auth_token, required_role=None):
                             r = wrong_username = j.get("username")
                 else:
                     log.warning("Unsupported JWT algorithm in PI_TRUSTED_JWT.")
-            except jwt.DecodeError as err:
+            except jwt.DecodeError as _e:
                 log.info("A given JWT definition does not match.")
             except jwt.ExpiredSignatureError as err:
                 # We have the correct token. It expired, so we raise an error
@@ -388,8 +393,8 @@ def verify_auth_token(auth_token, required_role=None):
         # If we require a certain role like "admin", but the users role does
         # not match
         raise AuthError(_("Authentication failure. "
-                        "You do not have the necessary role ({0!s}) to access "
-                        "this resource!").format(required_role),
+                          "You do not have the necessary role ({0!s}) to access "
+                          "this resource!").format(required_role),
                         id=ERROR.AUTHENTICATE_MISSING_RIGHT)
     return r
 

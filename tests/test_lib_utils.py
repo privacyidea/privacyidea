@@ -541,7 +541,7 @@ class UtilsTestCase(MyTestCase):
                          "psql+odbc://pi@localhost/pi")
         self.assertEqual(censor_connect_string("psql+odbc://pi:MySecretPassword123466$@localhost/pi"),
                          "psql+odbc://pi:***@localhost/pi")
-        self.assertEqual(censor_connect_string("mysql://pi:kW44s@@qqWtGYX@localhost/pi"),
+        self.assertEqual(censor_connect_string("mysql://pi:kW44s%40%40qqWtGYX@localhost/pi"),
                          "mysql://pi:***@localhost/pi")
         self.assertEqual(censor_connect_string("mysql://knöbel:föö@localhost/pi"),
                          "mysql://knöbel:***@localhost/pi")
@@ -748,10 +748,10 @@ class UtilsTestCase(MyTestCase):
 
     def test_24_sanity_name_check(self):
         self.assertTrue(sanity_name_check('Hello_World'))
-        with self.assertRaisesRegexp(Exception, "non conformant characters in the name"):
+        with self.assertRaisesRegex(Exception, "non conformant characters in the name"):
             sanity_name_check('Hello World!')
         self.assertTrue(sanity_name_check('Hello World', name_exp='^[A-Za-z\\ ]+$'))
-        with self.assertRaisesRegexp(Exception, "non conformant characters in the name"):
+        with self.assertRaisesRegex(Exception, "non conformant characters in the name"):
             sanity_name_check('Hello_World', name_exp='^[A-Za-z]+$')
 
     def test_25_encodings(self):

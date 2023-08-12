@@ -23,7 +23,6 @@ from privacyidea.lib.security.default import (SecurityModule,
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
 
 from flask import current_app
-from six import text_type
 import PyKCS11
 from PyKCS11 import PyKCS11Error
 import string
@@ -171,7 +170,7 @@ class CryptoTestCase(MyTestCase):
     def test_01_encrypt_decrypt_pass(self):
         r = encryptPassword("passwörd".encode('utf8'))
         # encryptPassword returns unicode
-        self.assertTrue(isinstance(r, text_type))
+        self.assertTrue(isinstance(r, str))
         pin = decryptPassword(r)
         # decryptPassword always returns unicode
         self.assertEqual(pin, "passwörd")

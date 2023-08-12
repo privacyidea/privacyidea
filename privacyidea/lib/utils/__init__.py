@@ -28,7 +28,6 @@ This module is tested in tests/test_lib_utils.py
 """
 import os
 
-import six
 import logging
 from importlib import import_module
 import binascii
@@ -81,8 +80,8 @@ def check_time_in_range(time_range, check_time=None):
 
     :param time_range: The timerange
     :type time_range: basestring
-    :param time: The time to check
-    :type time: datetime
+    :param check_time: The time to check
+    :type check_time: datetime
     :return: True, if time is within time_range.
     """
     time_match = False
@@ -96,7 +95,7 @@ def check_time_in_range(time_range, check_time=None):
 
     check_time = check_time or datetime.now()
     check_day = check_time.isoweekday()
-    check_hour =dt_time(check_time.hour, check_time.minute)
+    check_hour = dt_time(check_time.hour, check_time.minute)
     # remove whitespaces
     time_range = ''.join(time_range.split())
     # split into list of time ranges
@@ -114,13 +113,13 @@ def check_time_in_range(time_range, check_time=None):
             ts = [int(x) for x in t_start.split(":")]
             te = [int(x) for x in t_end.split(":")]
             if len(ts) == 2:
-                time_start =dt_time(ts[0], ts[1])
+                time_start = dt_time(ts[0], ts[1])
             else:
-                time_start =dt_time(ts[0])
+                time_start = dt_time(ts[0])
             if len(te) == 2:
-                time_end =dt_time(te[0], te[1])
+                time_end = dt_time(te[0], te[1])
             else:
-                time_end =dt_time(te[0])
+                time_end = dt_time(te[0])
 
             # check the day and the time
             if (dow_index.get(dow_start) <= check_day <= dow_index.get(dow_end)
@@ -137,6 +136,7 @@ def check_time_in_range(time_range, check_time=None):
 def to_utf8(password):
     """
     Convert a password to utf8
+
     :param password: A password that should be converted to utf8
     :type password: str or bytes
     :return: a utf8 encoded password
@@ -156,7 +156,7 @@ def to_utf8(password):
 def to_unicode(s, encoding="utf-8"):
     """
     Converts the string s to unicode if it is of type bytes.
-    
+
     :param s: the string to convert
     :type s: bytes or str
     :param encoding: the encoding to use (default utf8)
@@ -164,7 +164,7 @@ def to_unicode(s, encoding="utf-8"):
     :return: unicode string
     :rtype: str
     """
-    if isinstance(s, six.text_type):
+    if isinstance(s, str):
         return s
     elif isinstance(s, bytes):
         return s.decode(encoding)
@@ -183,7 +183,7 @@ def to_bytes(s):
     """
     if isinstance(s, bytes):
         return s
-    elif isinstance(s, six.text_type):
+    elif isinstance(s, str):
         return s.encode('utf8')
     # TODO: warning? Exception?
     return s
@@ -214,7 +214,7 @@ def hexlify_and_unicode(s):
     :rtype: str
     """
 
-    res = to_unicode(binascii.hexlify(to_bytes(s)))
+    res = binascii.hexlify(to_bytes(s)).decode('utf-8')
     return res
 
 
@@ -222,12 +222,13 @@ def b32encode_and_unicode(s):
     """
     Base32-encode a str (which is first encoded to UTF-8)
     or a byte string and return the result as a str.
+
     :param s: str or bytes to base32-encode
     :type s: str or bytes
     :return: base32-encoded string converted to unicode
     :rtype: str
     """
-    res = to_unicode(base64.b32encode(to_bytes(s)))
+    res = base64.b32encode(to_bytes(s)).decode('utf-8')
     return res
 
 
@@ -235,12 +236,13 @@ def b64encode_and_unicode(s):
     """
     Base64-encode a str (which is first encoded to UTF-8)
     or a byte string and return the result as a str.
+
     :param s: str or bytes to base32-encode
     :type s: str or bytes
     :return: base64-encoded string converted to unicode
     :rtype: str
     """
-    res = to_unicode(base64.b64encode(to_bytes(s)))
+    res = base64.b64encode(to_bytes(s)).decode('utf-8')
     return res
 
 
@@ -248,12 +250,13 @@ def urlsafe_b64encode_and_unicode(s):
     """
     Base64-urlsafe-encode a str (which is first encoded to UTF-8)
     or a byte string and return the result as a str.
+
     :param s: str or bytes to base32-encode
     :type s: str or bytes
     :return: base64-encoded string converted to unicode
     :rtype: str
     """
-    res = to_unicode(base64.urlsafe_b64encode(to_bytes(s)))
+    res = base64.urlsafe_b64encode(to_bytes(s)).decode('utf-8')
     return res
 
 
@@ -314,7 +317,7 @@ def checksum(msg):
     :rtype: int
     """
     crc = 0xffff
-    for b in six.iterbytes(msg):
+    for b in msg:
         crc = crc ^ (b & 0xff)
         for _j in range(0, 8):
             n = crc & 1
@@ -331,6 +334,7 @@ def decode_base32check(encoded_data, always_upper=True):
         strip_padding(base32(sha1(payload)[:4] + payload))
 
     Raise a ParameterError if the encoded payload is malformed.
+
     :param encoded_data: The base32 encoded data.
     :type encoded_data: str
     :param always_upper: If we should convert lowercase to uppercase
@@ -344,7 +348,6 @@ def decode_base32check(encoded_data, always_upper=True):
     encoded_length = len(encoded_data)
     if encoded_length % 8 != 0:
         encoded_data += "=" * (8 - (encoded_length % 8))
-    assert len(encoded_data) % 8 == 0
     # Decode as base32
     try:
         decoded_data = base64.b32decode(encoded_data)
@@ -356,7 +359,7 @@ def decode_base32check(encoded_data, always_upper=True):
     if len(decoded_data) < 4:
         raise ParameterError("Malformed base32check data: Too short")
     checksum, payload = decoded_data[:4], decoded_data[4:]
-    payload_hash = hashlib.sha1(payload).digest()
+    payload_hash = hashlib.sha1(payload).digest()  # nosec B324 # used as checksum for 2step enrollment
     if payload_hash[:4] != checksum:
         raise ParameterError("Malformed base32check data: Incorrect checksum")
     return hexlify_and_unicode(payload)
@@ -443,6 +446,7 @@ def parse_timelimit(limit):
     one in three hours.
 
     It returns a tuple the number and the timedelta.
+
     :param limit: a timelimit
     :type limit: basestring
     :return: tuple of number and timedelta
@@ -476,7 +480,7 @@ def parse_date(date_string):
     in the future.
 
     It can also parse fixed date_strings like
-    
+
       23.12.2016 23:30
       23.12.2016
       2016/12/23 11:30pm
@@ -680,6 +684,7 @@ def get_client_ip(request, proxy_settings):
         # If no proxy settings are defined, we do not map any IPs anyway.
         return request.remote_addr
 
+
 def check_ip_in_policy(client_ip, policy):
     """
     This checks, if the given client IP is contained in a list like
@@ -744,7 +749,7 @@ def reduce_realms(all_realms, policies):
     """
     This function reduces the realm list based on the policies
     If there is a policy, that acts for all realms, all realms are returned.
-    Otherwise only realms are returned, that are contained in the policies.
+    Otherwise, only realms are returned, that are contained in the policies.
     """
     realms = {}
     if not policies:
@@ -769,6 +774,7 @@ def reduce_realms(all_realms, policies):
 def is_true(value):
     """
     Returns True is the value is 1, "1", True or "true"
+
     :param value: string or integer
     :return: Boolean
     """
@@ -812,14 +818,14 @@ def compare_value_value(value1, comparator, value2):
     """
     This function compares value1 and value2 with the comparator.
     The comparator may be "==", "=", "!=", ">", "<", ">=", "=>", "<=" or "=<".
-    
+
     If the values can be converted to integers or dates, they are compared as such,
     otherwise as strings.
 
     In case of dates make sure they can be parsed by 'parse_date()', otherwise
     they will be compared as strings.
 
-    :param value1: First value 
+    :param value1: First value
     :param value2: Second value
     :param comparator: The comparator
     :return: True or False
@@ -908,15 +914,16 @@ def parse_legacy_time(ts, return_date=False):
     """
     The new timestrings are of the format YYYY-MM-DDThh:mm+oooo.
     They contain the timezone offset!
-    
+
     Old legacy time strings are of format DD/MM/YY hh:mm without time zone 
     offset.
-    
+
     This function parses string and returns the new formatted time string 
     including the timezone offset.
-    :param timestring: 
+
+    :param ts:
     :param return_date: If set to True a date is returned instead of a string
-    :return: 
+    :return:
     """
     from privacyidea.lib.tokenclass import DATE_FORMAT
     d = parse_date_string(ts)
@@ -935,9 +942,9 @@ def parse_timedelta(s):
     """
     parses a string like +5d or -30m and returns a timedelta.
     Allowed identifiers are s, m, h, d, y.
-    
+
     :param s: a string like +30m or -5d
-    :return: timedelta 
+    :return: timedelta
     """
     seconds = 0
     minutes = 0
@@ -946,7 +953,7 @@ def parse_timedelta(s):
     m = re.match(r"\s*([+-]?)\s*(\d+)\s*([smhdy])\s*$", s)
     if not m:
         log.warning("Unsupported timedelta: {0!r}".format(s))
-        raise Exception("Unsupported timedelta")
+        raise TypeError(f"Unsupported timedelta {s!r}")
     count = int(m.group(2))
     if m.group(1) == "-":
         count = - count
@@ -965,19 +972,37 @@ def parse_timedelta(s):
     return td
 
 
+def parse_time_sec_int(s):
+    """
+    parses a string like 5d or 24h into an int with gives the time in sec. You can use y, d, h, m and s.
+
+    :param s: time string like 5d or 24h
+    :type s: str or int
+    :return: time in seconds as an integer value
+    :rtype: int
+    """
+    try:
+        td = parse_timedelta(s)
+        ret = abs(td).total_seconds()
+    except TypeError as _e:
+        # parse_timedelta() does not accept int values
+        ret = s
+    return int(ret)
+
+
 def parse_time_offset_from_now(s):
     """
     Parses a string as used in the token event handler
         "New date {now}+5d. Some {other} {tags}" or
         "New date {now}-30m! Some {other} {tags}".
-    This returns the string "New date {now}. Some {other} {tags}" and the 
+    This returns the string "New date {now}. Some {other} {tags}" and the
     timedelta of 5 days.
     Allowed tags are {now} and {current_time}. Only one tag of {now} or {
     current_time} is allowed.
     Allowed offsets are "s": seconds, "m": minutes, "h": hours, "d": days.
-        
+
     :param s: The string to be parsed.
-    :return: tuple of modified string and timedelta 
+    :return: tuple of modified string and timedelta
     """
     td = timedelta()
     m1 = re.search(r"(^.*{current_time})([+-]\d+[smhd])(.*$)", s)
@@ -1021,21 +1046,23 @@ def convert_column_to_unicode(value):
     """
     Helper function for models. If ``value`` is None or a unicode object, do nothing.
     Otherwise, convert it to a unicode object.
+
     :param value: the string to convert
     :type value: str
     :return: a unicode object or None
     """
-    if value is None or isinstance(value, six.text_type):
+    if value is None or isinstance(value, str):
         return value
     elif isinstance(value, bytes):
         return value.decode('utf8')
     else:
-        return six.text_type(value)
+        return str(value)
 
 
 def convert_timestamp_to_utc(timestamp):
     """
     Convert a timezone-aware datetime object to a naive UTC datetime.
+
     :param timestamp: datetime object that should be converted
     :type timestamp: timezone-aware datetime object
     :return: timezone-naive datetime object
@@ -1190,11 +1217,7 @@ def get_module_class(package_name, class_name, check_method=None):
     helper method to load the Module class from a given
     package in literal.
 
-    :param package_name: literal of the Module
-    :param class_name: Name of the class in the module
-    :param check_method: Name of the method to check, if this would be the right class
-
-    example:
+    example::
 
         get_module_class("privacyidea.lib.auditmodules.sqlaudit", "Audit", "log")
 
@@ -1204,6 +1227,9 @@ def get_module_class(package_name, class_name, check_method=None):
         checks, if the method exists
         if not an error is thrown
 
+    :param package_name: literal of the Module
+    :param class_name: Name of the class in the module
+    :param check_method: Name of the method to check, if this would be the right class
     """
     mod = import_module(package_name)
     if not hasattr(mod, class_name):
@@ -1231,7 +1257,7 @@ def get_version_number():
 def get_version():
     """
     This returns the version, that is displayed in the WebUI and
-    self service portal.
+    self-service portal.
     """
     version = get_version_number()
     return "privacyIDEA {0!s}".format(version)
@@ -1272,6 +1298,8 @@ def prepare_result(obj, rid=1, details=None):
         elif not obj and details.get("multi_challenge"):
             # We have a challenge authentication
             r_authentication = "CHALLENGE"
+        elif not obj and (details.get("challenge_status") == "declined"):
+            r_authentication = "DECLINED"
         else:
             r_authentication = "REJECT"
         res["result"]["authentication"] = r_authentication
@@ -1282,8 +1310,9 @@ def prepare_result(obj, rid=1, details=None):
 def split_pin_pass(passw, otplen, prependpin):
     """
     Split a given password based on the otp length and prepend pin
+
     :param passw: The password like test123456 or 123456test
-    :type pass: str
+    :type passw: str
     :param otplen: The length of the otp value
     :param prependpin: The password is either in front or after the otp value
     :return:
@@ -1476,7 +1505,7 @@ def replace_function_event_handler(text, token_serial=None, tokenowner=None, log
     if token_serial is not None:
         token_serial = token_serial
     else:
-        token_serial = ""
+        token_serial = ""  # nosec B105 # Reset serial
 
     try:
         attributes = {

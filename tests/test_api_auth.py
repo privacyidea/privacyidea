@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """ Test for the '/auth' API-endpoint """
+import logging
+
+from testfixtures import log_capture
 from .base import MyApiTestCase, OverrideConfigTestCase
 import mock
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
@@ -203,11 +206,23 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertIn('token', result.get("value"), result)
             self.assertEqual('realm1', result['value']['realm'], result)
 
-        # test failed auth
+        # test failed auth wrong password
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "cornelius",
                                                  "password": "false"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            self.assertEqual(4031, result['error']['code'], result)
+            self.assertEqual('Authentication failure. Wrong credentials',
+                             result['error']['message'], result)
+
+        # test failed auth no password
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(401, res.status_code, res)
             result = res.json.get("result")
@@ -623,6 +638,54 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertIn('token', result.get("value"), result)
             self.assertEqual('realm1', result['value']['realm'], result)
 
+    def test_07_user_not_in_userstore(self):
+        # If a user can not be found in the userstore we always get the response "Wrong Credentials"
+        # Setup realm
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
+        self.assertTrue(rid > 0, rid)
+
+        (added, failed) = set_realm(self.realm1,
+                                    [self.resolvername1])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+        set_default_realm(self.realm1)
+
+        # user authenticates against userstore but user does not exist
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "user-really-does-not-exist",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            error = result.get("error")
+            self.assertEqual(4031, error.get("code"))
+            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"))
+
+        # set a policy to authenticate against privacyIDEA
+        set_policy("piLogin", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(ACTION.LOGINMODE))
+
+        # user authenticates against privacyidea but user does not exist
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "user-really-does-not-exist",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            error = result.get("error")
+            self.assertEqual(4031, error.get("code"))
+            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"))
+
+        # cleanup
+        delete_policy("piLogin")
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
+
 
 class AdminFromUserstore(OverrideConfigTestCase):
     class Config(TestingConfig):
@@ -729,9 +792,9 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             mock_log.assert_called_with("user uid 1004 failed to authenticate")
 
 
-class PreEventHandlerTest(MyApiTestCase):
+class EventHandlerTest(MyApiTestCase):
 
-    def test_01_setup_eventhandlers(self):
+    def test_01_pre_eventhandlers(self):
         # This test create an HOTP token with C/R with a pre-event handler
         # and the user uses this HOTP token to directly login to /auth
 
@@ -762,7 +825,7 @@ class PreEventHandlerTest(MyApiTestCase):
                         options={"tokentype": "hotp", "user": "1",
                                  "additional_params": {
                                      'otpkey': self.otpkey,
-                                     # We need to set gekey=0, otherwise the Tokenhandler will
+                                     # We need to set genkey=0, otherwise the Tokenhandler will
                                      # generate a random otpkey
                                      'genkey': 0}})
         # cleanup tokens
@@ -774,9 +837,9 @@ class PreEventHandlerTest(MyApiTestCase):
                                            data={"username": "someuser",
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(401, res.status_code, res)
+            self.assertEqual(200, res.status_code, res)
             result = res.json.get("result")
-            self.assertFalse(result.get("status"), result)
+            self.assertTrue(result.get("status"), result)
             detail = res.json.get("detail")
             self.assertEqual("please enter otp: ", detail.get("message"))
             transaction_id = detail.get("transaction_id")
@@ -815,3 +878,28 @@ class PreEventHandlerTest(MyApiTestCase):
         delete_policy("crhotp")
         delete_event(eid)
         remove_token(hotptoken.token.serial)
+
+    @log_capture
+    def test_02_post_eventhandler(self, capture):
+        self.setUp_user_realms()
+        # Create an event handler, that creates HOTP token on /auth with default OTP key
+        eid = set_event("post_event_log", event=["auth"], handlermodule="Logging",
+                        action="logging", position="post",
+                        options={"level": logging.INFO,
+                                 "message": "User: {user} Event: {action}"})
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "someuser",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+
+        capture.check_present(
+            ('pi-eventlogger', 'INFO',
+             'User: someuser Event: /auth')
+        )
+
+        delete_event(eid)

@@ -46,6 +46,10 @@ user. The administrator can see all the details of the token.
 The administrator can click on one token, to show more details of this token
 and to perform actions on this token. Read on in :ref:`token_details`.
 
+In the *Token Applications* the administrator can check for all SSH Keys attached to
+services and for HOTP tokens attached to machines for offline authentication.
+Also see :ref:`machines`.
+
 .. _usersview:
 
 Users

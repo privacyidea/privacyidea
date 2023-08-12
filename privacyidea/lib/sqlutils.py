@@ -17,9 +17,9 @@
 #
 #
 
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql import ClauseElement, Delete
+from sqlalchemy.sql.expression import ClauseElement, Delete
 
 
 class DeleteLimit(Delete, ClauseElement):
@@ -36,6 +36,8 @@ class DeleteLimit(Delete, ClauseElement):
     A dedicated clause element is needed because different
     databases use different notation for limits on DELETE statements.
     """
+    inherit_cache = False
+
     def __init__(self, table, filter, limit=1000):
         Delete.__init__(self, table)
         self.table = table
@@ -73,8 +75,8 @@ def visit_delete_limit_mysql(element, compiler, **kw):
 
         DELETE FROM pidea_audit WHERE ... LIMIT ...
     """
-    return 'DELETE FROM {} WHERE {} LIMIT {:d}'.format(
-        compiler.process(element.table, asfrom=True),
+    return 'DELETE FROM {} WHERE {} LIMIT {:d}'.format(  # nosec B608 # no user input used in query construction
+        compiler.process(element.table, asfrom=True, **kw),
         compiler.process(element.filter), element.limit)
 
 

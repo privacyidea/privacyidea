@@ -69,7 +69,7 @@ def _check_firebase_params(request):
                       padding.PKCS1v15(),
                       hashes.SHA256())
     headers = {'request-id': '728d329e-0e86-11e4-a748-0c84dc037c13'}
-    return (200, headers, json.dumps({}))
+    return 200, headers, json.dumps({})
 
 
 class PushTokenTestCase(MyTestCase):
@@ -594,9 +594,11 @@ class PushTokenTestCase(MyTestCase):
             mySA.from_json_keyfile_name.return_value = _create_credential_mock()
 
             # add responses, to simulate the communication to firebase
-            responses.add_callback(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
-                          callback=_check_firebase_params,
-                          content_type="application/json")
+            responses.add_callback(
+                responses.POST,
+                'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
+                callback=_check_firebase_params,
+                content_type="application/json")
 
             # Send the first authentication request to trigger the challenge
             with self.app.test_request_context('/validate/check',
@@ -739,6 +741,7 @@ class PushTokenTestCase(MyTestCase):
             # Result-Value is True
             self.assertTrue(jsonresp.get("result").get("value"))
 
+
     def test_04_decline_auth_request(self):
         # get enrolled push token
         toks = get_tokens(tokentype="push")
@@ -806,7 +809,6 @@ class PushTokenTestCase(MyTestCase):
             rj = res.json
             self.assertTrue(rj['result']['status'])
             self.assertFalse(rj['result']['value'])
-
         # Now decline the auth request for real
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
@@ -818,10 +820,21 @@ class PushTokenTestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(res.json['result']['status'])
             self.assertTrue(res.json['result']['value'])
-        # check, that the challenge does not exist anymore.
+
         challengeobject_list = get_challenges(serial=tokenobj.token.serial,
                                               transaction_id=transaction_id)
-        self.assertEqual(0, len(challengeobject_list))
+        self.assertEqual(1, len(challengeobject_list))
+
+        with self.app.test_request_context('/validate/polltransaction', method='GET',
+                                           data={'transaction_id': transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+            self.assertEqual(res.json["detail"]["challenge_status"], "declined", res.json["detail"]["challenge_status"])
+
+
+
 
     def test_05_strip_key(self):
         stripped_pubkey = strip_key(self.smartphone_public_key_pem)
@@ -867,10 +880,10 @@ class PushTokenTestCase(MyTestCase):
                                                      PUSH_ACTION.WAIT: "10",
                                                      "password": "pushpin"}):
                 res = self.app.full_dispatch_request()
-                self.assertEqual(res.status_code, 401)
+                self.assertEqual(res.status_code, 200)
                 jsonresp = res.json
-                self.assertFalse(jsonresp.get("result").get("value"))
-                self.assertFalse(jsonresp.get("result").get("status"))
+                self.assertTrue(jsonresp.get("result").get("value"))
+                self.assertTrue(jsonresp.get("result").get("status"))
                 self.assertEqual(jsonresp.get("detail").get("serial"), tokenobj.token.serial)
                 self.assertIn("transaction_id", jsonresp.get("detail"))
                 transaction_id = jsonresp.get("detail").get("transaction_id")
@@ -893,7 +906,7 @@ class PushTokenTestCase(MyTestCase):
                                            method='POST',
                                            data={"username": "cornelius",
                                                  "realm": self.realm1,
-                                                 "pass": "",
+                                                 "password": "",
                                                  "transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 401)
@@ -915,21 +928,22 @@ class PushTokenTestCase(MyTestCase):
                                            method='POST',
                                            data={"username": "cornelius",
                                                  "realm": self.realm1,
-                                                 "pass": "",
+                                                 "password": "",
                                                  "transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             self.assertTrue(res.json['result']['status'])
 
+        remove_token(tokenobj.get_serial())
         delete_policy("push1")
         delete_policy("webui")
 
     def test_07_check_timestamp(self):
         timestamp_fmt = 'broken_timestamp_010203'
-        self.assertRaisesRegexp(privacyIDEAError,
-                                r'Could not parse timestamp {0!s}. ISO-Format '
-                                r'required.'.format(timestamp_fmt),
-                                PushTokenClass._check_timestamp_in_range, timestamp_fmt, 10)
+        self.assertRaisesRegex(privacyIDEAError,
+                               r'Could not parse timestamp {0!s}. ISO-Format '
+                               r'required.'.format(timestamp_fmt),
+                               PushTokenClass._check_timestamp_in_range, timestamp_fmt, 10)
         timestamp = datetime(2020, 11, 13, 13, 27, tzinfo=utc)
         with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
             mock_dt.now.return_value = timestamp + timedelta(minutes=9)
@@ -939,18 +953,18 @@ class PushTokenTestCase(MyTestCase):
             PushTokenClass._check_timestamp_in_range(timestamp.isoformat(), 10)
         with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
             mock_dt.now.return_value = timestamp + timedelta(minutes=9)
-            self.assertRaisesRegexp(privacyIDEAError,
-                                    r'Timestamp {0!s} not in valid '
-                                    r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
-                                    PushTokenClass._check_timestamp_in_range,
-                                    timestamp.isoformat(), 8)
+            self.assertRaisesRegex(privacyIDEAError,
+                                   r'Timestamp {0!s} not in valid '
+                                   r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
+                                   PushTokenClass._check_timestamp_in_range,
+                                   timestamp.isoformat(), 8)
         with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
             mock_dt.now.return_value = timestamp - timedelta(minutes=9)
-            self.assertRaisesRegexp(privacyIDEAError,
-                                    r'Timestamp {0!s} not in valid '
-                                    r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
-                                    PushTokenClass._check_timestamp_in_range,
-                                    timestamp.isoformat(), 8)
+            self.assertRaisesRegex(privacyIDEAError,
+                                   r'Timestamp {0!s} not in valid '
+                                   r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
+                                   PushTokenClass._check_timestamp_in_range,
+                                   timestamp.isoformat(), 8)
 
     def test_10_api_endpoint(self):
         # first check for unused request methods
@@ -961,10 +975,10 @@ class PushTokenTestCase(MyTestCase):
 
         req = Request(builder.get_environ())
         req.all_data = {'serial': 'SPASS01'}
-        self.assertRaisesRegexp(privacyIDEAError,
-                                'Method PUT not allowed in \'api_endpoint\' '
-                                'for push token.',
-                                PushTokenClass.api_endpoint, req, g)
+        self.assertRaisesRegex(privacyIDEAError,
+                               'Method PUT not allowed in \'api_endpoint\' '
+                               'for push token.',
+                               PushTokenClass.api_endpoint, req, g)
 
         # check for parameter error in POST request
         builder = EnvironBuilder(method='POST',
@@ -972,8 +986,8 @@ class PushTokenTestCase(MyTestCase):
 
         req = Request(builder.get_environ())
         req.all_data = {'serial': 'SPASS01'}
-        self.assertRaisesRegexp(ParameterError, 'Missing parameters!',
-                                PushTokenClass.api_endpoint, req, g)
+        self.assertRaisesRegex(ParameterError, 'Missing parameters!',
+                               PushTokenClass.api_endpoint, req, g)
 
         # check for missing parameter in GET request
         builder = EnvironBuilder(method='GET',
@@ -981,17 +995,17 @@ class PushTokenTestCase(MyTestCase):
 
         req = Request(builder.get_environ())
         req.all_data = {'serial': 'SPASS01', 'timestamp': '2019-10-05T22:13:23+0100'}
-        self.assertRaisesRegexp(ParameterError, 'Missing parameter: \'signature\'',
-                                PushTokenClass.api_endpoint, req, g)
+        self.assertRaisesRegex(ParameterError, 'Missing parameter: \'signature\'',
+                               PushTokenClass.api_endpoint, req, g)
 
         # check for invalid timestamp (very old)
         req = Request(builder.get_environ())
         req.all_data = {'serial': 'SPASS01',
                         'timestamp': '2019-10-05T22:13:23+0100',
                         'signature': 'unknown'}
-        self.assertRaisesRegexp(privacyIDEAError,
-                                r'Timestamp 2019-10-05T22:13:23\+0100 not in valid range.',
-                                PushTokenClass.api_endpoint, req, g)
+        self.assertRaisesRegex(privacyIDEAError,
+                               r'Timestamp 2019-10-05T22:13:23\+0100 not in valid range.',
+                               PushTokenClass.api_endpoint, req, g)
 
         # check for invalid timestamp (recent but too early)
         req = Request(builder.get_environ())
@@ -999,9 +1013,9 @@ class PushTokenTestCase(MyTestCase):
                         'timestamp': (datetime.now(utc)
                                       - timedelta(minutes=2)).isoformat(),
                         'signature': 'unknown'}
-        self.assertRaisesRegexp(privacyIDEAError,
-                                r'Timestamp .* not in valid range.',
-                                PushTokenClass.api_endpoint, req, g)
+        self.assertRaisesRegex(privacyIDEAError,
+                               r'Timestamp .* not in valid range.',
+                               PushTokenClass.api_endpoint, req, g)
 
         # check for invalid timestamp (recent but too late)
         req = Request(builder.get_environ())
@@ -1009,36 +1023,36 @@ class PushTokenTestCase(MyTestCase):
                         'timestamp': (datetime.now(utc)
                                       + timedelta(minutes=2)).isoformat(),
                         'signature': 'unknown'}
-        self.assertRaisesRegexp(privacyIDEAError,
-                                r'Timestamp .* not in valid range.',
-                                PushTokenClass.api_endpoint, req, g)
+        self.assertRaisesRegex(privacyIDEAError,
+                               r'Timestamp .* not in valid range.',
+                               PushTokenClass.api_endpoint, req, g)
 
         # check for broken timestamp
         req = Request(builder.get_environ())
         req.all_data = {'serial': 'SPASS01',
                         'timestamp': '2019-broken-timestamp',
                         'signature': 'unknown'}
-        self.assertRaisesRegexp(privacyIDEAError,
-                                r'Could not parse timestamp .*\. ISO-Format required.',
-                                PushTokenClass.api_endpoint, req, g)
+        self.assertRaisesRegex(privacyIDEAError,
+                               r'Could not parse timestamp .*\. ISO-Format required.',
+                               PushTokenClass.api_endpoint, req, g)
 
         # check for timestamp of wrong type
         req = Request(builder.get_environ())
         req.all_data = {'serial': 'SPASS01',
                         'timestamp': datetime.utcnow(),
                         'signature': 'unknown'}
-        self.assertRaisesRegexp(privacyIDEAError,
-                                r'Could not parse timestamp .*\. ISO-Format required.',
-                                PushTokenClass.api_endpoint, req, g)
+        self.assertRaisesRegex(privacyIDEAError,
+                               r'Could not parse timestamp .*\. ISO-Format required.',
+                               PushTokenClass.api_endpoint, req, g)
 
         # check for timezone unaware timestamp (we assume UTC then)
         req = Request(builder.get_environ())
         req.all_data = {'serial': 'SPASS01',
                         'timestamp': datetime.utcnow().isoformat(),
                         'signature': 'unknown'}
-        self.assertRaisesRegexp(privacyIDEAError,
-                                r'Could not verify signature!',
-                                PushTokenClass.api_endpoint, req, g)
+        self.assertRaisesRegex(privacyIDEAError,
+                               r'Could not verify signature!',
+                               PushTokenClass.api_endpoint, req, g)
 
         # create a push token
         tparams = {'type': 'push', 'genkey': 1}
@@ -1087,8 +1101,8 @@ class PushTokenTestCase(MyTestCase):
         req = Request(builder.get_environ())
         req.all_data = req_data
         req.all_data.update({'signature': 'bad-signature'})
-        self.assertRaisesRegexp(privacyIDEAError, 'Could not verify signature!',
-                                PushTokenClass.api_endpoint, req, g)
+        self.assertRaisesRegex(privacyIDEAError, 'Could not verify signature!',
+                               PushTokenClass.api_endpoint, req, g)
 
         # Create a correct signature
         sign_string = "{new_fb_token}|{serial}|{timestamp}".format(**req_data)
@@ -1208,9 +1222,9 @@ class PushTokenTestCase(MyTestCase):
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
-            self.assertRaisesRegexp(PolicyError,
-                                    r'Polling not allowed!',
-                                    PushTokenClass.api_endpoint, req, g)
+            self.assertRaisesRegex(PolicyError,
+                                   r'Polling not allowed!',
+                                   PushTokenClass.api_endpoint, req, g)
 
         # disallow polling based on a per token configuration
         set_policy('push_poll', SCOPE.AUTH,
@@ -1231,9 +1245,9 @@ class PushTokenTestCase(MyTestCase):
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
-            self.assertRaisesRegexp(PolicyError,
-                                    r'Polling not allowed!',
-                                    PushTokenClass.api_endpoint, req, g)
+            self.assertRaisesRegex(PolicyError,
+                                   r'Polling not allowed!',
+                                   PushTokenClass.api_endpoint, req, g)
 
         # Explicitly allow polling for this token
         tok.add_tokeninfo(POLLING_ALLOWED, 'True')
@@ -1280,9 +1294,9 @@ class PushTokenTestCase(MyTestCase):
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
-            self.assertRaisesRegexp(privacyIDEAError,
-                                    r'Could not verify signature!',
-                                    PushTokenClass.api_endpoint, req, g)
+            self.assertRaisesRegex(privacyIDEAError,
+                                   r'Could not verify signature!',
+                                   PushTokenClass.api_endpoint, req, g)
 
         # serial exists but signature is wrong
         sig_fail = bytearray(sig)
@@ -1295,9 +1309,9 @@ class PushTokenTestCase(MyTestCase):
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
-            self.assertRaisesRegexp(privacyIDEAError,
-                                    r'Could not verify signature!',
-                                    PushTokenClass.api_endpoint, req, g)
+            self.assertRaisesRegex(privacyIDEAError,
+                                   r'Could not verify signature!',
+                                   PushTokenClass.api_endpoint, req, g)
 
         # check for a wrongly created signature (inverted timestamp, serial)
         sign_string2 = "{timestamp}|{serial}".format(serial=serial, timestamp=ts)
@@ -1312,9 +1326,9 @@ class PushTokenTestCase(MyTestCase):
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
-            self.assertRaisesRegexp(privacyIDEAError,
-                                    r'Could not verify signature!',
-                                    PushTokenClass.api_endpoint, req, g)
+            self.assertRaisesRegex(privacyIDEAError,
+                                   r'Could not verify signature!',
+                                   PushTokenClass.api_endpoint, req, g)
 
         # the serial exists but does not belong to a push token
         tok2 = init_token(param={'type': 'hotp', 'genkey': 1})
@@ -1324,9 +1338,9 @@ class PushTokenTestCase(MyTestCase):
                         'timestamp': datetime.utcnow().isoformat(),
                         'signature': b32encode(b"signature not needed")}
         # poll for challenges
-        self.assertRaisesRegexp(privacyIDEAError,
-                                r'Could not verify signature!',
-                                PushTokenClass.api_endpoint, req, g)
+        self.assertRaisesRegex(privacyIDEAError,
+                               r'Could not verify signature!',
+                               PushTokenClass.api_endpoint, req, g)
 
         # wrongly configured push token (no firebase config)
         tok.del_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
@@ -1340,9 +1354,9 @@ class PushTokenTestCase(MyTestCase):
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
-            self.assertRaisesRegexp(privacyIDEAError,
-                                    r'Could not verify signature!',
-                                    PushTokenClass.api_endpoint, req, g)
+            self.assertRaisesRegex(privacyIDEAError,
+                                   r'Could not verify signature!',
+                                   PushTokenClass.api_endpoint, req, g)
 
         # unknown firebase configuration
         tok.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, 'my unknown firebase config')
@@ -1354,9 +1368,9 @@ class PushTokenTestCase(MyTestCase):
                 mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
-            self.assertRaisesRegexp(privacyIDEAError,
-                                    r'Could not verify signature!',
-                                    PushTokenClass.api_endpoint, req, g)
+            self.assertRaisesRegex(privacyIDEAError,
+                                   r'Could not verify signature!',
+                                   PushTokenClass.api_endpoint, req, g)
 
         # cleanup
         tok.delete_token()

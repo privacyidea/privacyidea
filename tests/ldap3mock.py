@@ -38,10 +38,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from __future__ import (
-    absolute_import, division, unicode_literals
-)
-
 from passlib.hash import ldap_salted_sha1
 from ast import literal_eval
 import uuid
@@ -53,11 +49,7 @@ import pyparsing
 from .smtpmock import get_wrapped
 
 from collections import namedtuple
-
-try:
-    from collections import Sequence, Sized
-except ImportError:
-    from collections.abc import Sequence, Sized
+from collections.abc import Sequence, Sized
 
 from privacyidea.lib.utils import to_bytes, to_unicode
 
@@ -640,7 +632,7 @@ class Connection(object):
         try:
             if isinstance(search_filter, bytes):
                 # We need to convert to unicode otherwise pyparsing will not
-                # find the u"ö"
+                # find the "ö"
                 search_filter = to_unicode(search_filter)
             expr = Connection._parse_filter()
             s_filter = expr.parseString(search_filter).asList()[0]

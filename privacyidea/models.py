@@ -36,7 +36,6 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import binascii
-import six
 import logging
 import traceback
 from datetime import datetime, timedelta
@@ -87,12 +86,12 @@ class MethodsMixin(object):
     This class mixes in some common Class table functions like
     delete and save
     """
-    
+
     def save(self):
         db.session.add(self)
         db.session.commit()
         return self.id
-    
+
     def delete(self):
         ret = self.id
         db.session.delete(self)
@@ -373,11 +372,12 @@ class Token(MethodsMixin, db.Model):
                     Tr = TokenRealm(token_id=self.id, realm_id=r.id)
                     db.session.add(Tr)
         db.session.commit()
-        
+
     def get_realms(self):
         """
         return a list of the assigned realms
-        :return: realms
+
+        :return: the realms of the token
         :rtype: list
         """
         realms = []
@@ -489,23 +489,6 @@ class Token(MethodsMixin, db.Model):
                     res = True
         return res
 
-#    def split_pin_pass(self, passwd, prepend=True):
-#        """
-#        The password is split into the PIN and the OTP component.
-#        THe token knows its length, so it can split accordingly.##
-#
-#        :param passwd: The password that is to be split
-#        :param prepend: The PIN is put in front of the OTP value
-#        :return: tuple of (res, pin, otpval)
-#        """
-#        if prepend:
-#            pin = passwd[:-self.otplen]
-#            otp = passwd[-self.otplen:]
-#        else:
-#            otp = passwd[:self.otplen]
-#            pin = passwd[self.otplen:]
-#        return True, pin, otp
-
     def is_pin_encrypted(self, pin=None):
         ret = False
         if pin is None:
@@ -524,16 +507,13 @@ class Token(MethodsMixin, db.Model):
     def set_so_pin(self, soPin):
         """
         For smartcards this sets the security officer pin of the token
-        
+
         :rtype : None
         """
         iv = geturandom(16)
         self.so_pin = encrypt(soPin, iv)
         self.so_pin_iv = hexlify_and_unicode(iv)
         return self.so_pin, self.so_pin_iv
-
-    def __unicode__(self):
-        return self.serial
 
     @log_with(log)
     def get(self, key=None, fallback=None, save=False):
@@ -592,15 +572,16 @@ class Token(MethodsMixin, db.Model):
         ret['tokengroup'] = tokengroup_list
         return ret
 
-    __str__ = __unicode__
+    def __str__(self):
+        return self.serial
 
     def __repr__(self):
-        '''
+        """
         return the token state as text
 
         :return: token state as string representation
-        :rtype:  string
-        '''
+        :rtype:  str
+        """
         ldict = {}
         for attr in self.__dict__:
             key = "{0!r}".format(attr)
@@ -885,7 +866,6 @@ class Admin(db.Model):
         db.session.commit()
 
 
-@six.python_2_unicode_compatible
 class Config(TimestampMethodsMixin, db.Model):
     """
     The config table holds all the system configuration in key value pairs.
@@ -942,8 +922,8 @@ class Realm(TimestampMethodsMixin, db.Model):
     option = db.Column(db.Unicode(40), default='')
     resolver_list = db.relationship('ResolverRealm',
                                     lazy='select',
-                                    foreign_keys='ResolverRealm.realm_id')
-    
+                                    back_populates='realm')
+
     @log_with(log)
     def __init__(self, realm):
         self.name = realm
@@ -1077,11 +1057,10 @@ class Resolver(TimestampMethodsMixin, db.Model):
                       nullable=False)
     # This creates an attribute "resolver" in the ResolverConfig object
     config_list = db.relationship('ResolverConfig',
-                                  lazy='select',
-                                  backref='resolver')
+                                  lazy='select')
     realm_list = db.relationship('ResolverRealm',
                                  lazy='select',
-                                 foreign_keys='ResolverRealm.resolver_id')
+                                 back_populates='resolver')
     
     def __init__(self, name, rtype):
         self.name = name
@@ -1175,10 +1154,10 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
     priority = db.Column(db.Integer)
     resolver = db.relationship(Resolver,
                                lazy="joined",
-                               foreign_keys="ResolverRealm.resolver_id")
+                               back_populates="realm_list")
     realm = db.relationship(Realm,
                             lazy="joined",
-                            foreign_keys="ResolverRealm.realm_id")
+                            back_populates="resolver_list")
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'realm_id',
                                           name='rrix_2'),
@@ -1370,7 +1349,6 @@ class PasswordReset(MethodsMixin, db.Model):
                                         timedelta(seconds=expiration_seconds)
 
 
-@six.python_2_unicode_compatible
 class Challenge(MethodsMixin, db.Model):
     """
     Table for handling of the generic challenges.
@@ -3153,6 +3131,37 @@ class MonitoringStats(MethodsMixin, db.Model):
         self.stats_key = key
         self.stats_value = value
         #self.save()
+
+
+class Serviceid(TimestampMethodsMixin, db.Model):
+    """
+    The serviceid table contains the defined service IDs. These service ID
+    describe services like "webservers" or "dbservers" which e.g. request SSH keys
+    from the privacyIDEA system.
+    """
+    __tablename__ = 'serviceid'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    id = db.Column(db.Integer, Sequence("serviceid_seq"), primary_key=True,
+                   nullable=False)
+    name = db.Column(db.Unicode(255), default='',
+                     unique=True, nullable=False)
+    Description = db.Column(db.Unicode(2000), default='')
+
+    @log_with(log)
+    def __init__(self, servicename, description=None):
+        self.name = servicename
+        self.Description = description
+
+    def save(self):
+        si = Serviceid.query.filter_by(name=self.name).first()
+        if si is None:
+            return TimestampMethodsMixin.save(self)
+        else:
+            # update
+            Serviceid.query.filter_by(id=si.id).update({'Description': self.Description})
+            ret = si.id
+            db.session.commit()
+        return ret
 
 
 class Tokengroup(TimestampMethodsMixin, db.Model):

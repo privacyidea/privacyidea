@@ -23,22 +23,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from __future__ import (
-    absolute_import, print_function, division, unicode_literals
-)
-
-import six
 import smtplib
 
-try:
-    from inspect import formatargspec, getfullargspec as getargspec
-except ImportError:
-    from inspect import formatargspec, getargspec
-
-try:
-    from collections import Sequence, Sized
-except ImportError:
-    from collections.abc import Sequence, Sized
+from inspect import formatargspec, getfullargspec as getargspec
+from collections.abc import Sequence, Sized
 
 from collections import namedtuple
 from functools import update_wrapper
@@ -67,7 +55,7 @@ def get_wrapped(func, wrapper_template, evaldict):
     callargs = formatargspec(*args, formatvalue=lambda v: '=' + v)
 
     ctx = {'signature': signature, 'funcargs': callargs}
-    six.exec_(wrapper_template % ctx, evaldict)
+    exec(wrapper_template % ctx, evaldict, evaldict)
 
     wrapper = evaldict['wrapper']
 

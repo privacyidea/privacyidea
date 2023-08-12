@@ -206,19 +206,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         $scope.resolversLoaded = true;
         check_all_loaded();
     });
-    $scope.params = {
-            action: "",
-            scope: "",
-            realm: "",
-            resolver: "",
-            user: "",
-            active: true,
-            check_all_resolvers: false,
-            client: "",
-            time: "",
-            priority: 1,
-            conditions: []
-        };
+
     $scope.existingPolicyname = $stateParams.policyname;
     if ($scope.existingPolicyname) {
         $scope.policyname = $scope.existingPolicyname;
@@ -305,6 +293,21 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                 }
             });
         }
+    };
+
+    $scope.params = {
+        action: "",
+        scope: "",
+        realm: "",
+        resolver: "",
+        user: "",
+        active: true,
+        check_all_resolvers: false,
+        client: "",
+        time: "",
+        priority: 1,
+        conditions: [],
+        pinode: []
     };
 
     $scope.createPolicy = function () {
@@ -406,7 +409,6 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             $scope.params.client = policy.client;
             $scope.params.time = policy.time;
             $scope.params.priority = policy.priority;
-            $scope.params.pinodes = policy.pinode;
             // we need to deep-copy the policy conditions to ensure that we're working on our own copy
             $scope.params.conditions = angular.copy(policy.conditions);
             // tick the realms and the resolvers
@@ -1020,6 +1022,7 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         TLS_VERSION: "2",
         START_TLS: true,
         SERVERPOOL_ROUNDS: 2,
+        SERVERPOOL_STRATEGY: "ROUND_ROBIN",
         SERVERPOOL_SKIP: 30
     };
     $scope.result = {};
@@ -1029,6 +1032,7 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
                                   {value: "4", name: "TLS v1.1"},
                                   {value: "5", name: "TLS v1.2"},
                                   {value: "2", name: "TLS v1.3"}];
+    $scope.ldap_pooling_strategy_options = ["ROUND_ROBIN", "FIRST", "RANDOM"];
 
     $('html,body').scrollTop(0);
 

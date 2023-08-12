@@ -5,7 +5,8 @@ __version__ = '0.1'
 import sys
 from getopt import getopt, GetoptError
 from subprocess import call
-from six.moves import shlex_quote
+from shlex import quote as shlex_quote
+
 
 def usage():
     print('''

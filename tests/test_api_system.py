@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-
 import os
 
 import json
@@ -17,7 +15,7 @@ from privacyidea.lib.radiusserver import add_radius, delete_radius
 from privacyidea.lib.resolver import save_resolver, delete_resolver, CENSORED
 from .test_lib_resolver import LDAPDirectory, ldap3mock
 from .test_lib_caconnector import CACERT, CAKEY, WORKINGDIR, OPENSSLCNF
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 
 PWFILE = "tests/testdata/passwords"
 POLICYFILE = "tests/testdata/policy.cfg"

@@ -1222,11 +1222,11 @@ class PolicyTestCase(MyTestCase):
         user3.info = {"type": "notverysecure", "groups": ["b", "c"]}
 
         # no user => policy error
-        with self.assertRaisesRegexp(PolicyError, ".* an according object is not available.*"):
+        with self.assertRaisesRegex(PolicyError, ".* an according object is not available.*"):
             P.match_policies(user_object=None)
 
         # empty user => policy error
-        with self.assertRaisesRegexp(PolicyError, ".*Unknown key.*"):
+        with self.assertRaisesRegex(PolicyError, ".*Unknown key.*"):
             P.match_policies(user_object=empty_user)
 
         # user1 => verysecure matches
@@ -1242,7 +1242,7 @@ class PolicyTestCase(MyTestCase):
         # an unforeseen error in the comparison function => policy error
         with mock.patch("privacyidea.lib.policy.compare_values") as mock_function:
             mock_function.side_effect = ValueError
-            with self.assertRaisesRegexp(PolicyError, r".*Invalid comparison.*"):
+            with self.assertRaisesRegex(PolicyError, r".*Invalid comparison.*"):
                 P.match_policies(user_object=user1)
 
         for policy in ["verysecure", "notverysecure"]:
@@ -1281,7 +1281,7 @@ class PolicyTestCase(MyTestCase):
         # an unknown section in the condition
         set_policy("unknownsection", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
                     conditions=[("somesection", "bla", "equals", "verysecure", True)])
-        with self.assertRaisesRegexp(PolicyError, r".*unknown section.*"):
+        with self.assertRaisesRegex(PolicyError, r".*unknown section.*"):
             P.match_policies(user_object=user1)
         delete_policy("unknownsection")
 
@@ -1295,7 +1295,7 @@ class PolicyTestCase(MyTestCase):
         # an unknown key in the condition
         set_policy("unknownkey", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
                     conditions=[("userinfo", "bla", "equals", "verysecure", True)])
-        with self.assertRaisesRegexp(PolicyError, r".*Unknown key.*"):
+        with self.assertRaisesRegex(PolicyError, r".*Unknown key.*"):
             P.match_policies(user_object=user1)
         delete_policy("unknownkey")
 
@@ -1305,7 +1305,7 @@ class PolicyTestCase(MyTestCase):
 
         set_policy("error", scope=SCOPE.AUTH, action="{0!s}=userstore".format(ACTION.OTPPIN),
                    conditions=[("userinfo", "number", "contains", "b", True)])
-        with self.assertRaisesRegexp(PolicyError, r".*Invalid comparison.*"):
+        with self.assertRaisesRegex(PolicyError, r".*Invalid comparison.*"):
             P.match_policies(user_object=user4)
         delete_policy("error")
 

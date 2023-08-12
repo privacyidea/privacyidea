@@ -68,7 +68,7 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 import logging
 
 from OpenSSL import crypto
-
+from privacyidea.lib import _
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
@@ -320,10 +320,14 @@ def check_otp_pin(request=None, action=None):
     raised.
     """
     params = request.all_data
-    realm = params.get("realm")
     pin = params.get("otppin", "") or params.get("pin", "")
     serial = params.get("serial")
     tokentype = params.get("type")
+    rollover = params.get("rollover")
+    verify = params.get("verify")
+    if rollover or verify:
+        log.debug(f"Disable PIN checking due to rollover ({rollover}) or verify ({verify})")
+        return True
     if not serial and action == ACTION.SETPIN:
         path_elems = request.path.split("/")
         serial = path_elems[-1]
@@ -1435,7 +1439,7 @@ def save_client_application_type(request, action):
     :return:
     """
     # retrieve the IP. This will also be the mapped IP!
-    client_ip = g.client_ip or "0.0.0.0"
+    client_ip = g.client_ip or "0.0.0.0"  # nosec B104 # default IP if no IP in request
     # ...and the user agent.
     ua = request.user_agent
     save_clientapplication(client_ip, "{0!s}".format(ua) or "unknown")
@@ -1525,12 +1529,12 @@ def u2ftoken_allowed(request, action):
      action=U2FACTION.REQ it checks, if the assertion certificate is an
      allowed U2F token type.
 
-     If the token, which is enrolled contains a non allowed attestation 
+     If the token, which is enrolled contains a non allowed attestation
      certificate, we bail out.
 
-    :param request: 
-    :param action: 
-    :return: 
+    :param request:
+    :param action:
+    :return:
     """
 
     ttype = request.all_data.get("type")
@@ -1568,7 +1572,7 @@ def u2ftoken_allowed(request, action):
 
 def allowed_audit_realm(request=None, action=None):
     """
-    This decorator function takes the request and adds additional parameters 
+    This decorator function takes the request and adds additional parameters
     to the request according to the policy
     for the SCOPE.ADMIN or ACTION.AUDIT
     :param request:
@@ -2198,3 +2202,37 @@ def increase_failcounter_on_challenge(request=None, action=None):
     inc_fail_counter = Match.user(g, scope=SCOPE.AUTH, action=ACTION.INCREASE_FAILCOUNTER_ON_CHALLENGE,
                                   user_object=request.User if hasattr(request, 'User') else None).any()
     request.all_data["increase_failcounter_on_challenge"] = inc_fail_counter
+
+
+def require_description(request=None, action=None):
+    """
+    Pre Policy
+    This checks if a description is required to roll out a specific token.
+    scope=SCOPE.ENROLL, action=REQUIRE_DESCRIPTION
+
+    An exception is raised, if the tokentypes specified in the
+    REQUIRE_DESCRIPTION policy match the token to be rolled out,
+    but no description is given.
+
+    :param request:
+    :param action:
+    :return:
+    """
+    params = request.all_data
+    user_object = request.User
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+
+    action_values = Match.generic(g, action=ACTION.REQUIRE_DESCRIPTION,
+                             scope=SCOPE.ENROLL,
+                             adminrealm=adminrealm,
+                             adminuser=adminuser,
+                             user=username,
+                             realm=realm,
+                             user_object=user_object).action_values(unique=False)
+
+    token_types = list(action_values.keys())
+    type_value = request.all_data.get("type") or 'hotp'
+    if type_value in token_types:
+        if not request.all_data.get("description"):
+            log.warning(_("Missing description for {} token.".format(type_value)))
+            raise PolicyError(_("Description required for {} token.".format(type_value)))

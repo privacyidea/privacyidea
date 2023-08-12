@@ -17,6 +17,8 @@ Now you can take a look at the several REST endpoints.
    api/auth
    api/validate
    api/system
+   api/tokengroup
+   api/serviceid
    api/resolver
    api/realm
    api/defaultrealm

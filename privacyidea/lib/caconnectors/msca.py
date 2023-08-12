@@ -27,7 +27,6 @@ from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConn
 from OpenSSL import crypto
 import logging
 import traceback
-from six.moves import input
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.error import CSRError, CSRPending
 from privacyidea.lib.utils import to_bytes
@@ -91,7 +90,7 @@ class ATTR(object):
     SSL_CA_CERT = "ssl_ca_cert"
     SSL_CLIENT_CERT = "ssl_client_cert"
     SSL_CLIENT_KEY = "ssl_client_key"
-    SSL_CLIENT_KEY_PASSWORD = "ssl_client_key_password"
+    SSL_CLIENT_KEY_PASSWORD = "ssl_client_key_password"  # nosec B105 # key name
 
 
 class MSCAConnector(BaseCAConnector):
