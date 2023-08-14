@@ -282,6 +282,7 @@ class SYSCONF(object):
     SPLITATSIGN = "splitAtSign"
     INCFAILCOUNTER = "IncFailCountOnFalsePin"
     RETURNSAML = "ReturnSamlAttributes"
+    RETURNSAMLONFAIL = "ReturnSamlAttributesOnFail"
     RESET_FAILCOUNTER_ON_PIN_ONLY = "ResetFailcounterOnPIN"
 
 
@@ -608,7 +609,7 @@ def get_resolver_class_dict():
     """
     get a dictionary of the resolver classes and a dictionary
     of the resolver types:
-    
+
     ({'privacyidea.lib.resolvers.PasswdIdResolver.IdResolver':
       <class 'privacyidea.lib.resolvers.PasswdIdResolver.IdResolver'>,
       'privacyidea.lib.resolvers.PasswdIdResolver.UserIdResolver':
@@ -971,13 +972,13 @@ def set_prepend_pin(prepend=True):
 
 
 def return_saml_attributes():
-    r = get_from_config(key="ReturnSamlAttributes", default= False,
+    r = get_from_config(key=SYSCONF.RETURNSAML, default=False,
                         return_bool=True)
     return r
 
 
 def return_saml_attributes_on_fail():
-    r = get_from_config(key="ReturnSamlAttributesOnFail", default=False,
+    r = get_from_config(key=SYSCONF.RETURNSAMLONFAIL, default=False,
                         return_bool=True)
     return r
 
