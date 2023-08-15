@@ -50,7 +50,7 @@ You can also encrypt the encryption key with a passphrase. To do this do::
 
 and pipe the encrypted *enckey* to a new file.
 
-Read more about the database encryption and the enckey in :ref:`securitymodule`.
+Read more about the database encryption and the *enckey* in :ref:`securitymodule`.
 
 Backup and Restore
 ------------------
@@ -74,7 +74,7 @@ Rotate Audit Log
 ----------------
 
 Audit logs are written to the database. You can use pi-manage to perform a
-log rotation.
+log rotation::
 
    pi-manage rotate_audit
 
@@ -89,7 +89,7 @@ You can use ``pi-manage`` to create API keys. API keys can be used to
 1. secure the access to the ``/validate/check`` API or
 2. to access administrative tasks via the REST API.
 
-You can create API keys for ``/validate/check`` using the command
+You can create API keys for ``/validate/check`` using the command::
 
    pi-manage api createtoken -r validate
 
@@ -97,7 +97,7 @@ If you want to secure the access to ``/validate/check`` you also need to
 define a policy in scope ``authorizaion``. See :ref:`policy_api_key`.
 
 If you wan to use the API key to automate administrative REST API calls, you
-can use the command:
+can use the command::
 
    pi-manage api createtoken -r admin
 

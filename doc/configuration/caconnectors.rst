@@ -38,7 +38,7 @@ Local CA Connector
 
 .. index:: openssl
 
-The local CA connector calls a local openssl configuration.
+The local CA connector calls a local openSSL configuration.
 
 Starting with privacyIDEA version 2.12 an example *openssl.cnf* is provided in
 */etc/privacyidea/CA/openssl.cnf*.
@@ -72,7 +72,7 @@ Easy Setup
 
 Starting with privacyIDEA version 2.18 it gets easier to setup local CAs.
 
-You can use the :ref:`pimanage` tool to setup a new CA like this:
+You can use the :ref:`pimanage` tool to setup a new CA like this::
 
    pi-manage ca create myCA
 
@@ -94,14 +94,14 @@ revoked and a CRL is created.
    basis. You can use openssl to do so or the pi-manage command.
 
 Starting with version 2.18 the pi-manage command has an additional
-sub-command ``ca``:
+sub-command ``ca``::
 
     pi-manage ca list
 
-lists all configured *CA connectors*. You can use the *-v* switch to get more
+It lists all configured *CA connectors*. You can use the ``-v`` switch to get more
 information.
 
-You can create a new CRL with the command:
+You can create a new CRL with the command::
 
     pi-manage ca create_crl <CA name>
 
@@ -118,7 +118,7 @@ Templates
 
 The *local CA* supports a kind of certificate templates. These "templates"
 are predefined combinations of *extensions* and *validity days*, as they are
-passed to openssl via the parameters ``-extensions`` and ``-days``.
+passed to openSSL via the parameters ``-extensions`` and ``-days``.
 
 This way the administrator can define certificate templates with certain
 X.509 extensions like keyUsage, extendedKeyUsage, CDPs or AIAs and
@@ -128,7 +128,7 @@ The extensions are defined in YAML file and the location of this file is
 added to the CA connector definition.
 
 The file can look like this, defining three templates "user", "webserver" and
-"template3":
+"template3"::
 
     user:
         days: 365
@@ -205,8 +205,8 @@ It is in PEM format and can either be password protected (encrypted) or not.
 
 The key can be provided in PKCS1 or PKCS8 format.
 
-.. note:: The PCKCS1 format will start with "-----BEGIN RSA PRIVATE KEY-----", the PKCS8 format
-   will start with "-----BEGIN PRIVATE KEY-----".
+.. note:: The PCKCS1 format will start with ``-----BEGIN RSA PRIVATE KEY-----``, the PKCS8 format
+   will start with ``-----BEGIN PRIVATE KEY-----``.
 
 To convert between PKCS1 and PKCS8 format you can use::
 
@@ -225,9 +225,9 @@ This is the password of the encrypted client private key.
 
 
 Basic setup from the command line
----------------------------------
+.................................
 
-Of cours the MS CA Connector can be configured in the privacyIDEA Web UI.
+Of course the MS CA Connector can be configured in the privacyIDEA Web UI.
 For quick setup, you can also configure a connector at the command line using
 :ref:`pimange` like this::
 

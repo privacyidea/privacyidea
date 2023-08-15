@@ -6,14 +6,11 @@ WebUI Policies
 WebUI policies define the behaviour of the WebUI.
 After activating WebUI policies, the UI must be reloaded once for the change to take effect
 
-.. index:: WebUI Login, WebUI Policy, Login Policy
-
+.. index:: WebUI Login, WebUI Policy, Login Policy, login mode
 .. _policy_login_mode:
 
 login_mode
 ~~~~~~~~~~
-
-.. index:: login mode
 
 type: ``string``
 
@@ -48,10 +45,10 @@ realms can not login to the UI anymore.
    certain realms.
 
 
+.. index:: remote user
+
 remote_user
 ~~~~~~~~~~~
-
-.. index:: remote_user
 
 type: ``string``
 
@@ -75,7 +72,7 @@ can only login with the REMOTE_USER from the browser.
 
 .. note:: The policy *login_mode* and *remote_user* work independent of each
    other. I.e. you can disable *login_mode* and allow *remote_user*.
-   
+
 You can use this policy to enable Single-Sign-On and integration into Kerberos
 or Active Directory. Add the following template into you apache configuration
 in /etc/apache2/sites-available/privacyidea.conf::
@@ -107,10 +104,10 @@ in /etc/apache2/sites-available/privacyidea.conf::
         </Directory>
 
 
+.. index:: logout time
+
 logout_time
 ~~~~~~~~~~~
-
-.. index:: logout time
 
 type: ``int``
 
@@ -119,19 +116,19 @@ The default timeout is 120 seconds.
 
 Being a policy this time can be set based on clients, realms and users.
 
+.. index:: logout time, timeout
+
 timeout_action
 ~~~~~~~~~~~~~~
-
-.. index:: logout time, timeout, timeout action
 
 type: ``str``
 
 The action taken when a user is idle beyond the ``logout_time`` limit. Defaults to `lockscreen`.
 
+.. index:: Audit view page size
+
 audit_page_size
 ~~~~~~~~~~~~~~~
-
-.. index:: Audit view page size
 
 type: ``int``
 
@@ -139,10 +136,10 @@ By default 10 entries are displayed on one page in the audit view.
 On big screens you might want to display more entries. Thus you can define in
 this policy how many audit entries should be displayed.
 
+.. index:: Token view page size
+
 token_page_size
 ~~~~~~~~~~~~~~~
-
-.. index:: Token view page size
 
 type: ``int``
 
@@ -151,10 +148,10 @@ On big screens you might want to display more tokens. Thus you can define in
 this
 policy how many tokens should be displayed.
 
+.. index:: User view page size
+
 user_page_size
 ~~~~~~~~~~~~~~
-
-.. index:: User view page size
 
 type: ``int``
 
@@ -162,15 +159,11 @@ By default 15 users are displayed on one page in the user view.
 On big screens you might want to display more users. Thus you can define in
 this policy how many users should be displayed.
 
-
-
-
+.. index:: policy template URL
 .. _policy_template_url:
 
 policy_template_url
 ~~~~~~~~~~~~~~~~~~~
-
-.. index:: policy template URL
 
 type: ``string``
 
@@ -183,12 +176,11 @@ default URL is a Github repository [#defaulturl]_.
 .. [#defaulturl] https://github.com/privacyidea/policy-templates/.
 
 
+.. index:: Default tokentype
 .. _policy_default_tokentype:
 
 default_tokentype
 ~~~~~~~~~~~~~~~~~
-
-.. index:: Default tokentype
 
 type: ``string``
 
@@ -196,13 +188,11 @@ You can define which is the default tokentype when enrolling a new token in
 the Web UI. This is the token, which will be selected, when entering the
 enrollment dialog.
 
-
+.. index:: Wizard, Token wizard
 .. _policy_token_wizard:
 
 tokenwizard
 ~~~~~~~~~~~
-
-.. index:: Wizard, Token wizard
 
 type: ``bool``
 
@@ -234,19 +224,19 @@ to display the contents in the first step (pre) or in the second step (post).
 
 If you want to adapt the privacyIDEA look and feel even more, read :ref:`customize`.
 
+.. index:: Wizard, Token wizard
+
 tokenwizard_2nd_token
 ~~~~~~~~~~~~~~~~~~~~~
-
-.. index:: Wizard, Token wizard
 
 type: ``bool``
 
 The tokenwizard will be displayed in the token menu, even if the user already has a token.
 
+.. index:: Realm-box, Realm dropdown
+
 realm_dropdown
 ~~~~~~~~~~~~~~
-
-.. index:: Realmbox
 
 type: ``string``
 
@@ -260,10 +250,10 @@ the dropdown box.
 
 .. note:: The realm names in the policy are not checked, if they really exist!
 
+.. index:: Search on Enter
+
 search_on_enter
 ~~~~~~~~~~~~~~~
-
-.. index:: Search on Enter
 
 type: ``bool``
 
@@ -283,12 +273,11 @@ type: ``bool``
 
 This action adds the user ID and the resolver name to the token list.
 
+.. index:: Customize baseline, customize footer
 .. _webui_custom_baseline:
 
 custom_baseline
 ~~~~~~~~~~~~~~~
-
-.. index:: Customize baseline, customize footer
 
 type: ``string``
 
@@ -305,12 +294,11 @@ If you want to adapt the privacyIDEA look and feel even more, read :ref:`customi
 
 (Since privacyIDEA 2.21)
 
+.. index:: Customize menu
 .. _webui_custom_menu:
 
 custom_menu
 ~~~~~~~~~~~
-
-.. index:: Customize menu
 
 type: ``string``
 
