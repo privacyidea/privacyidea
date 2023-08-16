@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2023-08-15 17:33+0200\n"
-"PO-Revision-Date: 2023-08-01 14:01+0000\n"
+"PO-Revision-Date: 2023-08-16 12:44+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -722,6 +722,9 @@ msgid ""
 "</code>, <code>{realm}</code>, <code>{serial}</code>, <code>{givenname}</"
 "code> and <code>{surname}</code>."
 msgstr ""
+"Die Bezeichnung für ein neu ausgerolltes Smartphone-Token. Mögliche "
+"Platzhalter sind <code>{user}</code>, <code>{realm}</code>, <code>{serial}</"
+"code>, <code>{givenname}</code> und <code>{surname}</code>."
 
 #: lib/policy.py:2198
 msgid ""
@@ -729,6 +732,9 @@ msgid ""
 "<code>{user}</code>, <code>{realm}</code>, <code>{serial}</code>, "
 "<code>{givenname}</code> and <code>{surname}</code>."
 msgstr ""
+"Die Bezeichnung des Ausstellers für neu ausgerollte Smartphone-Token. "
+"Mögliche Platzhalter sind <code>{user}</code>, <code>{realm}</code>, "
+"<code>{serial}</code>, <code>{givenname}</code> und <code>{surname}</code>."
 
 #: lib/policy.py:2205
 msgid ""
@@ -1011,16 +1017,13 @@ msgstr ""
 "diesen regulären Ausdruck passt."
 
 #: lib/policy.py:2416
-#, fuzzy
-#| msgid ""
-#| "The user will only be authenticated if the tokeninfo field matches the "
-#| "regexp. key/&lt;regexp&gt;/"
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
 "regexp (key/&lt;regexp&gt;/)."
 msgstr ""
-"Die Autorisierung des Benutzers ist nur erfolgreich, wenn das Tokeninfo Feld "
-"auf den regulären Ausdruck passt. key/&lt;regexp&gt;/"
+"Die Autorisierung des Benutzers ist nur erfolgreich, wenn das Token-Info "
+"Feld <code>key</code> auf den regulären Ausdruck passt: (<code>key/"
+"<regexp>/</code>)."
 
 #: lib/policy.py:2423
 msgid ""
