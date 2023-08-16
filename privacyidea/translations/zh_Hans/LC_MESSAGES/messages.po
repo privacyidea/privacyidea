@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-07-27 15:28+0200\n"
+"POT-Creation-Date: 2023-08-15 17:33+0200\n"
 "PO-Revision-Date: 2022-12-10 13:47+0000\n"
 "Last-Translator: Eric <hamburger1024@duck.com>\n"
 "Language-Team: Chinese (Simplified) <https://hosted.weblate.org/projects/"
@@ -640,46 +640,48 @@ msgstr "可以对OTP PIN进行哈希处理或加密。散列PIN是默认行为�
 
 #: lib/policy.py:2192
 msgid ""
-"Set label for a new enrolled Google Authenticator. Possible tags are &lt;"
-"u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
+"The label for a new enrolled Smartphone token. Possible tags are <code>{user}"
+"</code>, <code>{realm}</code>, <code>{serial}</code>, <code>{givenname}</"
+"code> and <code>{surname}</code>."
 msgstr ""
-"为新注册的Google身份验证器设置标签。可能的标签是&lt;u&gt;（用户）、&lt;u&gt;"
-"（领域）、&lt;u&gt;（序列）。"
 
 #: lib/policy.py:2198
-msgid "This is the issuer label for new enrolled Google Authenticators."
-msgstr "这是新注册的Google身份验证器的发行者标签。"
+msgid ""
+"The issuer label for new enrolled Smartphone token.Possible tags are "
+"<code>{user}</code>, <code>{realm}</code>, <code>{serial}</code>, "
+"<code>{givenname}</code> and <code>{surname}</code>."
+msgstr ""
 
-#: lib/policy.py:2204
+#: lib/policy.py:2205
 msgid ""
 "This is the URL to the token image for the privacyIDEA Authenticator and "
 "some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."
 msgstr ""
 
-#: lib/policy.py:2211
+#: lib/policy.py:2212
 msgid ""
 "Users can assign a token just by using the unassigned token to authenticate."
 msgstr "用户可以仅使用未分配的令牌进行身份验证来分配令牌。"
 
-#: lib/policy.py:2217
+#: lib/policy.py:2218
 msgid "The length of the password in case of temporary token (lost token)."
 msgstr "临时令牌（丢失令牌）时密码的长度。"
 
-#: lib/policy.py:2221
+#: lib/policy.py:2222
 msgid ""
 "The contents of the temporary password, described by the characters C, c, n, "
 "s, 8."
 msgstr "临时密码的内容，由字符C，c，n，s，8表示。"
 
-#: lib/policy.py:2226
+#: lib/policy.py:2227
 msgid "The length of the validity for the temporary token (in days)."
 msgstr "临时令牌的有效期限（以天为单位）。"
 
-#: lib/policy.py:2231
+#: lib/policy.py:2232
 msgid "Set the length of registration codes."
 msgstr ""
 
-#: lib/policy.py:2235
+#: lib/policy.py:2236
 msgid ""
 "Specify the required contents of the registration code. (c)haracters, "
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
@@ -688,11 +690,11 @@ msgstr ""
 "请指定注册码需要填写的内容。(c) 字符、 (n) 数字、(s) 特殊符号。使用修饰符 "
 "+/- 或允许的字符列表 [1234567890]"
 
-#: lib/policy.py:2244
+#: lib/policy.py:2245
 msgid "Set the length of the password of generated password tokens."
 msgstr "设定生成的密码令牌的密码的长度。"
 
-#: lib/policy.py:2248
+#: lib/policy.py:2249
 msgid ""
 "Specify the required contents of the password of a password token. "
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of allowed "
@@ -701,61 +703,61 @@ msgstr ""
 "指定密码令牌的密码的需要的内容。(c)字符、 (n)数字、 (s)特殊符号。使用修饰符 "
 "+/- 或允许字符[1234567890] 的列表"
 
-#: lib/policy.py:2256
+#: lib/policy.py:2257
 msgid ""
 "Specify a white space separated list of token types, that should be verified "
 "during enrollment."
 msgstr "指定由空格分隔的令牌类型列表， 应该在注册时对它们进行核实。"
 
-#: lib/policy.py:2265
+#: lib/policy.py:2266
 msgid ""
 "Either use the Token PIN , use the Userstore Password or use no fixed "
 "password component."
 msgstr "使用令牌PIN，使用用户存储密码或不使用固定的密码组件。"
 
-#: lib/policy.py:2270
+#: lib/policy.py:2271
 msgid ""
 "This is a whitespace separated list of tokentypes, that can be used with "
 "challenge response."
 msgstr "这是由空格分隔的令牌类型列表，可以与质询响应一起使用。"
 
-#: lib/policy.py:2277
+#: lib/policy.py:2278
 msgid ""
 "Use an alternate challenge text for telling the user to enter an OTP value."
 msgstr "使用备用质询文本告诉用户输入OTP值。"
 
-#: lib/policy.py:2282
+#: lib/policy.py:2283
 msgid ""
 "If there are several different challenges, this text precedes the list of "
 "the challenge texts."
 msgstr "使用令牌PIN，使用用户存储密码或不使用固定的密码组件。"
 
-#: lib/policy.py:2287
+#: lib/policy.py:2288
 msgid ""
 "If there are several different challenges, this text follows the list of the "
 "challenge texts."
 msgstr "如果存在多个不同的挑战，则该文本紧随挑战文本列表之后。"
 
-#: lib/policy.py:2292
+#: lib/policy.py:2293
 msgid ""
 "If the PIN of a token is to be changed, this will allow the user to change "
 "the PIN during a validate/check request via challenge / response."
 msgstr ""
 "如果要更改令牌的PIN，这将允许用户通过质询/响应在验证/检查请求期间更改PIN。"
 
-#: lib/policy.py:2297
+#: lib/policy.py:2298
 msgid ""
 "The autoresync of a token can be done via a challenge response message.You "
 "need to activate 'Automatic resync' in the general settings!"
 msgstr ""
 
-#: lib/policy.py:2302
+#: lib/policy.py:2303
 msgid ""
 "In case of a successful authentication the following tokentype is enrolled. "
 "The maximum number of tokens for a user is checked."
 msgstr ""
 
-#: lib/policy.py:2309
+#: lib/policy.py:2310
 msgid ""
 "If set, the user in this realm will be authenticated against the userstore "
 "or against the given RADIUS config, if the user has no tokens assigned."
@@ -763,7 +765,7 @@ msgstr ""
 "如果设置，则将根据用户存储或给定的RADIUS配置对该领域的用户进行身份验证（如果"
 "未分配令牌）。"
 
-#: lib/policy.py:2316
+#: lib/policy.py:2317
 msgid ""
 "This allows to automatically assign a Token within privacyIDEA, if the user "
 "was authenticated via passthru against a RADIUS server. The OTP value is "
@@ -774,38 +776,38 @@ msgstr ""
 "动分配令牌。OTP值用于在privacyIDEA中查找未分配的令牌。输入OTP值的长度以及PIN"
 "的设置位置，例如8：pin或pin：6。"
 
-#: lib/policy.py:2323
+#: lib/policy.py:2324
 msgid ""
 "If the user has no token, the authentication request for this user will "
 "always be true."
 msgstr "如果用户没有令牌，则对此用户的身份验证请求将始终为true。"
 
-#: lib/policy.py:2328
+#: lib/policy.py:2329
 msgid ""
 "If the user user does not exist, the authentication request for this non-"
 "existing user will always be true."
 msgstr "如果用户用户不存在，则此不存在的用户的身份验证请求将始终为true。"
 
-#: lib/policy.py:2334
+#: lib/policy.py:2335
 msgid ""
 "Can be used to modify the parameters pass, user and realm in an "
 "authentication request. See the documentation for an example."
 msgstr ""
 "可用于修改身份验证请求中的参数pass，user和realm。有关示例，请参见文档。"
 
-#: lib/policy.py:2340
+#: lib/policy.py:2341
 msgid ""
 "If a user authenticates successfully reset the failcounter of all of his "
 "tokens."
 msgstr "如果用户成功进行身份验证，则重置其所有令牌的故障计数器。"
 
-#: lib/policy.py:2345
+#: lib/policy.py:2346
 msgid ""
 "Increase the failcounter for all the tokens, for which a challenge has been "
 "triggered."
 msgstr ""
 
-#: lib/policy.py:2349
+#: lib/policy.py:2350
 msgid ""
 "Cache the password used for authentication and allow authentication with the "
 "same credentials for a certain amount of time. Specify timeout like 4h or "
@@ -814,21 +816,21 @@ msgstr ""
 "缓存用于身份验证的密码，并允许在一定时间内使用相同的凭据进行身份验证。指定超"
 "时时间，例如4h或4h / 5m。"
 
-#: lib/policy.py:2356
+#: lib/policy.py:2357
 msgid ""
 "You can set the client modes in the order that you prefer. For example: "
 "\"interactive webauthn poll u2f\". Accepted values are: <code>interactive "
 "webauthn poll u2f</code>"
 msgstr ""
 
-#: lib/policy.py:2364
+#: lib/policy.py:2365
 msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
 msgstr ""
 "允许用户进行身份验证（默认）。如果设置为“ {0！s}”，则将拒绝用户的身份验证。"
 
-#: lib/policy.py:2371
+#: lib/policy.py:2372
 msgid ""
 "Allow the application to choose which token types should be used for "
 "authentication. Application may set the parameter 'type' in the request. "
@@ -837,7 +839,7 @@ msgstr ""
 "允许应用程序选择应使用哪些令牌类型进行身份验证。应用程序可以在请求中设置参"
 "数“类型”。与验证/检查，验证/ samlcheck和验证/触发挑战一起使用。"
 
-#: lib/policy.py:2378
+#: lib/policy.py:2379
 msgid ""
 "You can specify how many successful authentication requests a user is "
 "allowed to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h "
@@ -846,7 +848,7 @@ msgstr ""
 "您可以指定在给定时间内允许用户执行多少次成功的身份验证请求。指定为1 / 5s，"
 "2 / 10m，10 / 1h-s，m，h为秒，分钟和小时。"
 
-#: lib/policy.py:2386
+#: lib/policy.py:2387
 msgid ""
 "You can specify how many failed authentication requests a user is allowed to "
 "do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h being second, "
@@ -855,7 +857,7 @@ msgstr ""
 "您可以指定在给定时间内允许用户执行多少次失败的身份验证请求。指定为1 / 5s，"
 "2 / 10m，10 / 1h-s，m，h为秒，分钟和小时。"
 
-#: lib/policy.py:2394
+#: lib/policy.py:2395
 msgid ""
 "You can specify in which time frame the user needs to authenticate again "
 "with this token. If the user authenticates later, authentication will fail. "
@@ -864,24 +866,28 @@ msgstr ""
 "您可以指定用户需要在哪个时间范围内使用此令牌再次进行身份验证。如果用户稍后进"
 "行身份验证，则身份验证将失败。指定为30h，7d或1y。"
 
-#: lib/policy.py:2402
+#: lib/policy.py:2403
 msgid "The user will only be authenticated with this very tokentype."
 msgstr "将仅使用此令牌类型对用户进行身份验证。"
 
-#: lib/policy.py:2409
+#: lib/policy.py:2410
 msgid ""
 "The user will only be authenticated if the serial number of the token "
 "matches this regexp."
 msgstr "仅当令牌的序列号与此正则表达式匹配时，用户才会通过身份验证。"
 
-#: lib/policy.py:2415
+#: lib/policy.py:2416
+#, fuzzy
+#| msgid ""
+#| "The user will only be authenticated if the tokeninfo field matches the "
+#| "regexp. key/&lt;regexp&gt;/"
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
-"regexp. key/&lt;regexp&gt;/"
+"regexp (key/&lt;regexp&gt;/)."
 msgstr ""
 "仅当tokeninfo字段与regexp匹配时，才会对用户进行身份验证。key/&lt;regexp&gt;/"
 
-#: lib/policy.py:2422
+#: lib/policy.py:2423
 msgid ""
 "The Realm of the user is set to this very realm. This is important if the "
 "user is not contained in the default realm and can not pass his realm."
@@ -889,31 +895,31 @@ msgstr ""
 "用户的领域已设置为该领域。如果用户未包含在默认领域中并且无法通过其领域，则这"
 "一点很重要。"
 
-#: lib/policy.py:2429
+#: lib/policy.py:2430
 msgid ""
 "In case of successful authentication additional no detail information will "
 "be returned."
 msgstr "如果认证成功，则不会返回任何详细信息。"
 
-#: lib/policy.py:2435
+#: lib/policy.py:2436
 msgid ""
 "In case of failed authentication additional no detail information will be "
 "returned."
 msgstr "如果认证失败，则不会返回任何详细信息。"
 
-#: lib/policy.py:2441
+#: lib/policy.py:2442
 msgid ""
 "In case of successful authentication user data will be added in the detail "
 "branch of the authentication response."
 msgstr "如果认证成功，则将用户数据添加到认证响应的详细分支中。"
 
-#: lib/policy.py:2448
+#: lib/policy.py:2449
 msgid ""
 "In case of successful authentication the user resolver and realm will be "
 "added in the detail branch of the authentication response."
 msgstr "如果认证成功，则用户解析器和领域将添加到认证响应的详细分支中。"
 
-#: lib/policy.py:2455
+#: lib/policy.py:2456
 msgid ""
 "The sending of an API Auth Key is required duringauthentication. This avoids "
 "rogue authenticate requests against the /validate/check interface."
@@ -921,14 +927,14 @@ msgstr ""
 "身份验证期间需要发送API身份验证密钥。这样可以避免针对/ validate / check接口的"
 "流氓身份验证请求。"
 
-#: lib/policy.py:2465
+#: lib/policy.py:2466
 msgid ""
 "If set, administrators will see a dashboard as start screen when logging in "
 "to privacyIDEA WebUI."
 msgstr ""
 "如果设置了该选项，则管理员在登录privacyIDEA WebUI时会将仪表板作为开始屏幕。"
 
-#: lib/policy.py:2470
+#: lib/policy.py:2471
 msgid ""
 "If set to \"privacyIDEA\" the users and admins need to authenticate against "
 "privacyIDEA when they log in to the Web UI. Defaults to \"userstore\"."
@@ -936,25 +942,25 @@ msgstr ""
 "如果设置为“ privacyIDEA”，则用户和管理员在登录Web UI时需要针对privacyIDEA进行"
 "身份验证。默认为“用户存储”。"
 
-#: lib/policy.py:2479
+#: lib/policy.py:2480
 msgid ""
 "An alternative text to display on the WebUI login dialog instead of \"Please "
 "sign in\"."
 msgstr "在WebUI登录对话框上显示的替代文本，而不是“请登录”。"
 
-#: lib/policy.py:2483
+#: lib/policy.py:2484
 msgid ""
 "When searching in the user list, the search will only performed when "
 "pressing enter."
 msgstr "在用户列表中搜索时，仅在按Enter键时才执行搜索。"
 
-#: lib/policy.py:2488
+#: lib/policy.py:2489
 msgid ""
 "The action taken when a user is idle beyond the logout_time limit. Defaults "
 "to \"lockscreen\"."
 msgstr "用户闲置超过logout_time限制时采取的操作。默认为“锁屏”。"
 
-#: lib/policy.py:2496
+#: lib/policy.py:2497
 msgid ""
 "The REMOTE_USER set by the webserver can be used to login to privacyIDEA or "
 "it will be ignored. Defaults to \"disable\"."
@@ -962,43 +968,43 @@ msgstr ""
 "网络服务器设置的REMOTE_USER可用于登录privacyIDEA，否则将被忽略。默认为“禁"
 "用”。"
 
-#: lib/policy.py:2502
+#: lib/policy.py:2503
 msgid ""
 "Set the time in seconds after which the user will be logged out from the "
 "WebUI. Default: 120"
 msgstr "设置以秒为单位的时间，在该时间之后，用户将从WebUI注销。默认值：120"
 
-#: lib/policy.py:2507
+#: lib/policy.py:2508
 msgid "Set how many tokens should be displayed in the token view on one page."
 msgstr "设置应在一页的令牌视图中显示多少个令牌。"
 
-#: lib/policy.py:2512
+#: lib/policy.py:2513
 msgid "Set how many users should be displayed in the user view on one page."
 msgstr "设置应在一页的用户视图中显示多少个用户。"
 
-#: lib/policy.py:2517
+#: lib/policy.py:2518
 msgid ""
 "Set how many audit entries should be displayed in the audit view on one page."
 msgstr "设置应在审计视图的一页中显示多少审计条目。"
 
-#: lib/policy.py:2522
+#: lib/policy.py:2523
 msgid "Use your own html template for the web UI menu."
 msgstr "将您自己的html模板用于Web UI菜单。"
 
-#: lib/policy.py:2526
+#: lib/policy.py:2527
 msgid "Use your own html template for the web UI baseline/footer."
 msgstr "将您自己的html模板用于Web UI基线/页脚。"
 
-#: lib/policy.py:2530
+#: lib/policy.py:2531
 msgid "Link your privacy statement to be displayed in the baseline/footer."
 msgstr ""
 
-#: lib/policy.py:2534
+#: lib/policy.py:2535
 msgid ""
 "Whether the user ID and the resolver should be displayed in the token list."
 msgstr "用户标识和解析器是否应显示在令牌列表中。"
 
-#: lib/policy.py:2539
+#: lib/policy.py:2540
 msgid ""
 "The URL of a repository, where the policy templates can be found.  (Default "
 "https: //raw.githubusercontent.com/ privacyidea/policy-templates /master/"
@@ -1007,74 +1013,74 @@ msgstr ""
 "可以在其中找到策略模板的存储库的URL。  （默认https：//raw.githubusercontent."
 "com/ privacyidea / policy-templates / master / templates /）"
 
-#: lib/policy.py:2546
+#: lib/policy.py:2547
 msgid ""
 "The URL of an SSO provider for redirect at logout.(The URL must start with "
 "http:// or https://)"
 msgstr ""
 
-#: lib/policy.py:2551
+#: lib/policy.py:2552
 msgid ""
 "As long as a user has no token, he will only see a token wizard in the UI."
 msgstr "只要用户没有令牌，他将仅在UI中看到令牌向导。"
 
-#: lib/policy.py:2556
+#: lib/policy.py:2557
 msgid ""
 "The tokenwizard will be displayed in the token menu, even if the user "
 "already has a token."
 msgstr "即使用户已经拥有令牌，令牌向导也会显示在令牌菜单中。"
 
-#: lib/policy.py:2561
+#: lib/policy.py:2562
 msgid ""
 "This is a whitespace separated list of tokentypes, for which a rollover "
 "button is displayed in the token details."
 msgstr ""
 
-#: lib/policy.py:2568
+#: lib/policy.py:2569
 msgid ""
 "The welcome dialog will be displayed if the user has no tokens assigned."
 msgstr "如果用户未分配令牌，将显示欢迎对话框。"
 
-#: lib/policy.py:2572
+#: lib/policy.py:2573
 msgid "This is the default token type in the token enrollment dialog."
 msgstr "这是令牌注册对话框中的默认令牌类型。"
 
-#: lib/policy.py:2578
+#: lib/policy.py:2579
 msgid ""
 "A list of realm names, which are displayed in a drop down menu in the WebUI "
 "login screen. Realms are separated by white spaces."
 msgstr "领域名称列表，显示在WebUI登录屏幕的下拉菜单中。领域之间用空格隔开。"
 
-#: lib/policy.py:2584
+#: lib/policy.py:2585
 msgid ""
 "If this checked, the administrator will not see the welcome dialog anymore."
 msgstr "如果选中此选项，则管理员将不再看到“欢迎”对话框。"
 
-#: lib/policy.py:2589
+#: lib/policy.py:2590
 msgid ""
 "Per default disabled actions result in disabled buttons. When checking this "
 "action, buttons of disabled actions are hidden."
 msgstr ""
 "默认情况下，禁用操作会导致禁用按钮。检查此操作时，禁用操作的按钮将被隐藏。"
 
-#: lib/policy.py:2594
+#: lib/policy.py:2595
 msgid ""
 "If this is checked, there will be a confirmation prompt when deleting "
 "policies, events, mresolver, resolver or periodic tasks!"
 msgstr ""
 
-#: lib/policy.py:2599
+#: lib/policy.py:2600
 msgid ""
 "If this is checked, the seed will be displayed as text during enrollment."
 msgstr "如果选中此选项，则种子将在注册过程中显示为文本。"
 
-#: lib/policy.py:2604
+#: lib/policy.py:2605
 msgid ""
 "If this is checked, the privacyIDEA Node name will be displayed in the menu "
 "bar."
 msgstr "如果选中此选项，则 privacyIDEA 节点名称将显示在菜单栏中。"
 
-#: lib/policy.py:2609
+#: lib/policy.py:2610
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens will "
 "contain a QR code that leads to the privacyIDEA Authenticator in the Google "
@@ -1083,7 +1089,7 @@ msgstr ""
 "如果选中此选项，则HOTP，TOTP和Push令牌的注册页面将包含一个QR码，可转到Google "
 "Play商店中的privacyIDEA身份验证器。"
 
-#: lib/policy.py:2616
+#: lib/policy.py:2617
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens will "
 "contain a QR code that leads to the privacyIDEA Authenticator in the iOS App "
@@ -1092,37 +1098,37 @@ msgstr ""
 "如果选中此选项，那么HOTP，TOTP和Push令牌的注册页面将包含一个QR码，可通往iOS "
 "App Store中的privacyIDEA Authenticator。"
 
-#: lib/policy.py:2623
+#: lib/policy.py:2624
 msgid ""
 "This action adds a QR code in the enrollment page for HOTP, TOTP and Push "
 "tokens, that lead to this given URL."
 msgstr ""
 "此操作会在注册页面中为HOTP，TOTP和Push令牌添加QR码，该QR码会导致该给定URL。"
 
-#: lib/policy.py:2668
+#: lib/policy.py:2669
 msgid ""
 "The policy only matches if certain conditions on the user info are fulfilled."
 msgstr "该策略仅在满足用户信息的某些条件时匹配。"
 
-#: lib/policy.py:2671
+#: lib/policy.py:2672
 msgid ""
 "The policy only matches if certain conditions of the token attributes are "
 "fulfilled."
 msgstr ""
 
-#: lib/policy.py:2674
+#: lib/policy.py:2675
 msgid ""
 "The policy only matches if certain conditions on the token info are "
 "fulfilled."
 msgstr "该策略只在令牌信息的某些条件得到满足时才匹配。"
 
-#: lib/policy.py:2677
+#: lib/policy.py:2678
 msgid ""
 "The policy only matches if certain conditions on the HTTP Request header are "
 "fulfilled."
 msgstr "该策略仅在满足HTTP Request标头上的某些条件时匹配。"
 
-#: lib/policy.py:2680
+#: lib/policy.py:2681
 msgid ""
 "The policy only matches if certain conditions on the HTTP Environment are "
 "fulfilled."
@@ -2863,6 +2869,16 @@ msgid ""
 "true if the integer value of the left attribute is bigger than the right "
 "integer value"
 msgstr ""
+
+#~ msgid ""
+#~ "Set label for a new enrolled Google Authenticator. Possible tags are &lt;"
+#~ "u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
+#~ msgstr ""
+#~ "为新注册的Google身份验证器设置标签。可能的标签是&lt;u&gt;（用户）、&lt;"
+#~ "u&gt;（领域）、&lt;u&gt;（序列）。"
+
+#~ msgid "This is the issuer label for new enrolled Google Authenticators."
+#~ msgstr "这是新注册的Google身份验证器的发行者标签。"
 
 #~ msgid "This is the URL to the token image for smartphone apps like FreeOTP."
 #~ msgstr "这是智能手机应用程序（如FreeOTP）的令牌图像的URL。"

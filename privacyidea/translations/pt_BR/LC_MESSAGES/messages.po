@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-07-27 15:28+0200\n"
+"POT-Creation-Date: 2023-08-15 17:33+0200\n"
 "PO-Revision-Date: 2022-03-10 23:07+0000\n"
 "Last-Translator: Thiago Augusto Koroll <thiagok@cloudbasis.com.br>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
@@ -702,50 +702,51 @@ msgstr ""
 
 #: lib/policy.py:2192
 msgid ""
-"Set label for a new enrolled Google Authenticator. Possible tags are &lt;"
-"u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
+"The label for a new enrolled Smartphone token. Possible tags are <code>{user}"
+"</code>, <code>{realm}</code>, <code>{serial}</code>, <code>{givenname}</"
+"code> and <code>{surname}</code>."
 msgstr ""
-"Defina etiqueta para um novo registro do Google Autenticador. As etiquetas "
-"possíveis são &lt;u&gt; (usuário), &lt;r&gt; ( domínio), &lt;s&gt; (série)."
 
 #: lib/policy.py:2198
-msgid "This is the issuer label for new enrolled Google Authenticators."
+msgid ""
+"The issuer label for new enrolled Smartphone token.Possible tags are "
+"<code>{user}</code>, <code>{realm}</code>, <code>{serial}</code>, "
+"<code>{givenname}</code> and <code>{surname}</code>."
 msgstr ""
-"Esta é a etiqueta do emissor para os novos inscritos no Google Autenticador."
 
-#: lib/policy.py:2204
+#: lib/policy.py:2205
 msgid ""
 "This is the URL to the token image for the privacyIDEA Authenticator and "
 "some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."
 msgstr ""
 
-#: lib/policy.py:2211
+#: lib/policy.py:2212
 msgid ""
 "Users can assign a token just by using the unassigned token to authenticate."
 msgstr ""
 "Usuários podem atribuir um token apenas usando o token não atribuído para "
 "autenticar."
 
-#: lib/policy.py:2217
+#: lib/policy.py:2218
 msgid "The length of the password in case of temporary token (lost token)."
 msgstr "O comprimento da senha em caso de token temporário (token perdido)."
 
-#: lib/policy.py:2221
+#: lib/policy.py:2222
 msgid ""
 "The contents of the temporary password, described by the characters C, c, n, "
 "s, 8."
 msgstr ""
 "O conteúdo da senha temporária, descrita pelos caracteres C, c, n, s, 8."
 
-#: lib/policy.py:2226
+#: lib/policy.py:2227
 msgid "The length of the validity for the temporary token (in days)."
 msgstr "A duração da validade do token temporário (em dias)."
 
-#: lib/policy.py:2231
+#: lib/policy.py:2232
 msgid "Set the length of registration codes."
 msgstr "Defina o período de duração dos códigos de registro."
 
-#: lib/policy.py:2235
+#: lib/policy.py:2236
 msgid ""
 "Specify the required contents of the registration code. (c)haracters, "
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
@@ -755,24 +756,24 @@ msgstr ""
 "(n)umeric, (s)pecial. Use modificadores +/- ou uma lista de caracteres "
 "permitidos [1234567890]"
 
-#: lib/policy.py:2244
+#: lib/policy.py:2245
 msgid "Set the length of the password of generated password tokens."
 msgstr ""
 
-#: lib/policy.py:2248
+#: lib/policy.py:2249
 msgid ""
 "Specify the required contents of the password of a password token. "
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of allowed "
 "characters [1234567890]"
 msgstr ""
 
-#: lib/policy.py:2256
+#: lib/policy.py:2257
 msgid ""
 "Specify a white space separated list of token types, that should be verified "
 "during enrollment."
 msgstr ""
 
-#: lib/policy.py:2265
+#: lib/policy.py:2266
 msgid ""
 "Either use the Token PIN , use the Userstore Password or use no fixed "
 "password component."
@@ -780,7 +781,7 @@ msgstr ""
 "Use o PIN do token, a senha da loja do usuário ou um componente sem uma "
 "senha fixa."
 
-#: lib/policy.py:2270
+#: lib/policy.py:2271
 msgid ""
 "This is a whitespace separated list of tokentypes, that can be used with "
 "challenge response."
@@ -788,14 +789,14 @@ msgstr ""
 "Esta é uma lista de tipos de tokens separados por espaços em branco, que "
 "podem ser usados com a resposta ao desafio."
 
-#: lib/policy.py:2277
+#: lib/policy.py:2278
 msgid ""
 "Use an alternate challenge text for telling the user to enter an OTP value."
 msgstr ""
 "Use um texto de desafio alternativo para dizer ao usuário para inserir um "
 "valor OTP."
 
-#: lib/policy.py:2282
+#: lib/policy.py:2283
 msgid ""
 "If there are several different challenges, this text precedes the list of "
 "the challenge texts."
@@ -803,7 +804,7 @@ msgstr ""
 "Se houver vários desafios diferentes, este texto precede a lista dos textos "
 "dos desafios."
 
-#: lib/policy.py:2287
+#: lib/policy.py:2288
 msgid ""
 "If there are several different challenges, this text follows the list of the "
 "challenge texts."
@@ -811,7 +812,7 @@ msgstr ""
 "Se houver vários desafios diferentes, este texto segue a lista dos textos de "
 "desafio."
 
-#: lib/policy.py:2292
+#: lib/policy.py:2293
 msgid ""
 "If the PIN of a token is to be changed, this will allow the user to change "
 "the PIN during a validate/check request via challenge / response."
@@ -819,7 +820,7 @@ msgstr ""
 "Se o PIN de um token for alterado, isto permitirá ao usuário alterar o PIN "
 "durante um pedido de validação/verificação via desafio/resposta."
 
-#: lib/policy.py:2297
+#: lib/policy.py:2298
 msgid ""
 "The autoresync of a token can be done via a challenge response message.You "
 "need to activate 'Automatic resync' in the general settings!"
@@ -828,13 +829,13 @@ msgstr ""
 "resposta a um desafio, você precisa ativar a 'auto sincronização' nas "
 "configurações gerais!"
 
-#: lib/policy.py:2302
+#: lib/policy.py:2303
 msgid ""
 "In case of a successful authentication the following tokentype is enrolled. "
 "The maximum number of tokens for a user is checked."
 msgstr ""
 
-#: lib/policy.py:2309
+#: lib/policy.py:2310
 msgid ""
 "If set, the user in this realm will be authenticated against the userstore "
 "or against the given RADIUS config, if the user has no tokens assigned."
@@ -843,7 +844,7 @@ msgstr ""
 "usuário ou contra a configuração fornecida RADIUS , se o usuário não tiver "
 "nenhum token atribuído."
 
-#: lib/policy.py:2316
+#: lib/policy.py:2317
 msgid ""
 "This allows to automatically assign a Token within privacyIDEA, if the user "
 "was authenticated via passthru against a RADIUS server. The OTP value is "
@@ -855,7 +856,7 @@ msgstr ""
 "é usado para encontrar o token não atribuído em privacyIDEA. Digite o valor "
 "do OTP e onde o PIN é definido como 8:pin ou pin:6."
 
-#: lib/policy.py:2323
+#: lib/policy.py:2324
 msgid ""
 "If the user has no token, the authentication request for this user will "
 "always be true."
@@ -863,7 +864,7 @@ msgstr ""
 "Se o usuário não tiver um token, o pedido de autenticação para este usuário "
 "será sempre verdadeiro."
 
-#: lib/policy.py:2328
+#: lib/policy.py:2329
 msgid ""
 "If the user user does not exist, the authentication request for this non-"
 "existing user will always be true."
@@ -871,7 +872,7 @@ msgstr ""
 "Se o usuário não existir, o pedido de autenticação para este usuário "
 "inexistente será sempre verdadeiro."
 
-#: lib/policy.py:2334
+#: lib/policy.py:2335
 msgid ""
 "Can be used to modify the parameters pass, user and realm in an "
 "authentication request. See the documentation for an example."
@@ -879,7 +880,7 @@ msgstr ""
 "Pode ser usado para modificar a passagem do parâmetro, o usuário e o domínio "
 "em um pedido de autenticação. Veja a documentação para um exemplo."
 
-#: lib/policy.py:2340
+#: lib/policy.py:2341
 msgid ""
 "If a user authenticates successfully reset the failcounter of all of his "
 "tokens."
@@ -887,13 +888,13 @@ msgstr ""
 "Se um usuário autenticar com sucesso o contador de falhas de todos os seus "
 "tokens."
 
-#: lib/policy.py:2345
+#: lib/policy.py:2346
 msgid ""
 "Increase the failcounter for all the tokens, for which a challenge has been "
 "triggered."
 msgstr ""
 
-#: lib/policy.py:2349
+#: lib/policy.py:2350
 msgid ""
 "Cache the password used for authentication and allow authentication with the "
 "same credentials for a certain amount of time. Specify timeout like 4h or "
@@ -903,14 +904,14 @@ msgstr ""
 "as mesmas credenciais por um período de tempo especificado. Especifique um "
 "tempo limite, como 4h ou 4h / 5m."
 
-#: lib/policy.py:2356
+#: lib/policy.py:2357
 msgid ""
 "You can set the client modes in the order that you prefer. For example: "
 "\"interactive webauthn poll u2f\". Accepted values are: <code>interactive "
 "webauthn poll u2f</code>"
 msgstr ""
 
-#: lib/policy.py:2364
+#: lib/policy.py:2365
 msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
 "authentication of the user will be denied."
@@ -918,7 +919,7 @@ msgstr ""
 "Permite que o usuário se autentique (padrão). Se definido como '{0!s}', a "
 "autenticação do usuário será negada."
 
-#: lib/policy.py:2371
+#: lib/policy.py:2372
 msgid ""
 "Allow the application to choose which token types should be used for "
 "authentication. Application may set the parameter 'type' in the request. "
@@ -928,7 +929,7 @@ msgstr ""
 "autenticação. O aplicativo pode definir o parâmetro 'type' na solicitação. "
 "Funciona com validate/check, validate/samlcheck e validate/triggerchallenge."
 
-#: lib/policy.py:2378
+#: lib/policy.py:2379
 msgid ""
 "You can specify how many successful authentication requests a user is "
 "allowed to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h "
@@ -938,7 +939,7 @@ msgstr ""
 "usuário tem permissão para fazer em um determinado tempo. Especifique como "
 "1/5s, 2/10m, 10/1h - s, m, h sendo segundo, minuto e hora."
 
-#: lib/policy.py:2386
+#: lib/policy.py:2387
 msgid ""
 "You can specify how many failed authentication requests a user is allowed to "
 "do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h being second, "
@@ -948,7 +949,7 @@ msgstr ""
 "tem permissão para fazer em um determinado tempo. Especifique como 1/5s, "
 "2/10m, 10/1h - s, m, h sendo segundo, minuto e hora."
 
-#: lib/policy.py:2394
+#: lib/policy.py:2395
 msgid ""
 "You can specify in which time frame the user needs to authenticate again "
 "with this token. If the user authenticates later, authentication will fail. "
@@ -958,11 +959,11 @@ msgstr ""
 "autenticar novamente com este token. Se o usuário se autenticar mais tarde, "
 "a autenticação falhará. Especifique como 30h, 7d ou 1y."
 
-#: lib/policy.py:2402
+#: lib/policy.py:2403
 msgid "The user will only be authenticated with this very tokentype."
 msgstr "O usuário só será autenticado com este mesmo tokentype."
 
-#: lib/policy.py:2409
+#: lib/policy.py:2410
 msgid ""
 "The user will only be authenticated if the serial number of the token "
 "matches this regexp."
@@ -970,15 +971,19 @@ msgstr ""
 "O usuário só será autenticado se o número de série do token corresponder a "
 "este regexp."
 
-#: lib/policy.py:2415
+#: lib/policy.py:2416
+#, fuzzy
+#| msgid ""
+#| "The user will only be authenticated if the tokeninfo field matches the "
+#| "regexp. key/&lt;regexp&gt;/"
 msgid ""
 "The user will only be authenticated if the tokeninfo field matches the "
-"regexp. key/&lt;regexp&gt;/"
+"regexp (key/&lt;regexp&gt;/)."
 msgstr ""
 "O usuário só será autenticado se o campo tokeninfo corresponder à regexp. "
 "key/&lt;regexp&gt;/"
 
-#: lib/policy.py:2422
+#: lib/policy.py:2423
 msgid ""
 "The Realm of the user is set to this very realm. This is important if the "
 "user is not contained in the default realm and can not pass his realm."
@@ -987,7 +992,7 @@ msgstr ""
 "importante se o usuário não estiver contido no domínio padrão e não puder "
 "passar seu domínio."
 
-#: lib/policy.py:2429
+#: lib/policy.py:2430
 msgid ""
 "In case of successful authentication additional no detail information will "
 "be returned."
@@ -995,7 +1000,7 @@ msgstr ""
 "Em caso de autenticação bem sucedida, nenhuma informação adicional de "
 "detalhes será devolvida."
 
-#: lib/policy.py:2435
+#: lib/policy.py:2436
 msgid ""
 "In case of failed authentication additional no detail information will be "
 "returned."
@@ -1003,7 +1008,7 @@ msgstr ""
 "Em caso de falha na autenticação, nenhuma informação adicional detalhada "
 "será devolvida."
 
-#: lib/policy.py:2441
+#: lib/policy.py:2442
 msgid ""
 "In case of successful authentication user data will be added in the detail "
 "branch of the authentication response."
@@ -1011,7 +1016,7 @@ msgstr ""
 "Em caso de autenticação bem sucedida, os dados do usuário serão adicionados "
 "no campo de detalhes da resposta de autenticação."
 
-#: lib/policy.py:2448
+#: lib/policy.py:2449
 msgid ""
 "In case of successful authentication the user resolver and realm will be "
 "added in the detail branch of the authentication response."
@@ -1019,7 +1024,7 @@ msgstr ""
 "Em caso de autenticação bem sucedida, o resolver e o domínio do usuário "
 "serão adicionados no campo de detalhes da resposta de autenticação."
 
-#: lib/policy.py:2455
+#: lib/policy.py:2456
 msgid ""
 "The sending of an API Auth Key is required duringauthentication. This avoids "
 "rogue authenticate requests against the /validate/check interface."
@@ -1027,7 +1032,7 @@ msgstr ""
 "O envio de uma chave API Auth é necessário durante a autenticação. Isto "
 "evita pedidos de autenticação desonestos contra a interface /validar/checar."
 
-#: lib/policy.py:2465
+#: lib/policy.py:2466
 msgid ""
 "If set, administrators will see a dashboard as start screen when logging in "
 "to privacyIDEA WebUI."
@@ -1035,7 +1040,7 @@ msgstr ""
 "Se definido, os administradores verão um painel de controle como tela "
 "inicial ao fazer o login na privacyIDEA WebUI."
 
-#: lib/policy.py:2470
+#: lib/policy.py:2471
 msgid ""
 "If set to \"privacyIDEA\" the users and admins need to authenticate against "
 "privacyIDEA when they log in to the Web UI. Defaults to \"userstore\"."
@@ -1044,7 +1049,7 @@ msgstr ""
 "autenticar com privacyIDEA quando fazem o login na interface Web. A "
 "configuração padrão é \"userstore\"."
 
-#: lib/policy.py:2479
+#: lib/policy.py:2480
 msgid ""
 "An alternative text to display on the WebUI login dialog instead of \"Please "
 "sign in\"."
@@ -1052,14 +1057,14 @@ msgstr ""
 "Um texto alternativo para exibir no diálogo de login da WebUI em vez de "
 "\"Por favor, faça o login\"."
 
-#: lib/policy.py:2483
+#: lib/policy.py:2484
 msgid ""
 "When searching in the user list, the search will only performed when "
 "pressing enter."
 msgstr ""
 "Ao pesquisar na lista de usuários, a busca só será feita ao pressionar Enter."
 
-#: lib/policy.py:2488
+#: lib/policy.py:2489
 msgid ""
 "The action taken when a user is idle beyond the logout_time limit. Defaults "
 "to \"lockscreen\"."
@@ -1067,7 +1072,7 @@ msgstr ""
 "A ação tomada quando um usuário está ocioso além do limite de \"logout_time"
 "\". O padrão é \"tela de bloqueio\"."
 
-#: lib/policy.py:2496
+#: lib/policy.py:2497
 msgid ""
 "The REMOTE_USER set by the webserver can be used to login to privacyIDEA or "
 "it will be ignored. Defaults to \"disable\"."
@@ -1075,7 +1080,7 @@ msgstr ""
 "O valor \"REMOTE_USER\" definido pelo webserver pode ser usado para login na "
 "privacyIDEA ou ele será ignorado. O padrão é \"desativar\"."
 
-#: lib/policy.py:2502
+#: lib/policy.py:2503
 msgid ""
 "Set the time in seconds after which the user will be logged out from the "
 "WebUI. Default: 120"
@@ -1083,45 +1088,45 @@ msgstr ""
 "Defina o tempo em segundos após o qual o usuário será deslogado da WebUI. "
 "Padrão: 120"
 
-#: lib/policy.py:2507
+#: lib/policy.py:2508
 msgid "Set how many tokens should be displayed in the token view on one page."
 msgstr ""
 "Defina quantos tokens devem ser exibidos na visualização de tokens em uma "
 "página."
 
-#: lib/policy.py:2512
+#: lib/policy.py:2513
 msgid "Set how many users should be displayed in the user view on one page."
 msgstr ""
 "Defina quantos usuários devem ser exibidos na visualização do usuário em uma "
 "página."
 
-#: lib/policy.py:2517
+#: lib/policy.py:2518
 msgid ""
 "Set how many audit entries should be displayed in the audit view on one page."
 msgstr ""
 
-#: lib/policy.py:2522
+#: lib/policy.py:2523
 msgid "Use your own html template for the web UI menu."
 msgstr "Use seu próprio modelo html para o menu UI da web."
 
-#: lib/policy.py:2526
+#: lib/policy.py:2527
 msgid "Use your own html template for the web UI baseline/footer."
 msgstr ""
 "Use seu próprio modelo html para a linha de base/rodapé da interface web."
 
-#: lib/policy.py:2530
+#: lib/policy.py:2531
 msgid "Link your privacy statement to be displayed in the baseline/footer."
 msgstr ""
 "Vincule sua declaração de privacidade a ser exibida na linha de base/rodapé."
 
-#: lib/policy.py:2534
+#: lib/policy.py:2535
 msgid ""
 "Whether the user ID and the resolver should be displayed in the token list."
 msgstr ""
 "A identificação do usuário e o resolvedor devem ser exibidos na lista de "
 "tokens."
 
-#: lib/policy.py:2539
+#: lib/policy.py:2540
 msgid ""
 "The URL of a repository, where the policy templates can be found.  (Default "
 "https: //raw.githubusercontent.com/ privacyidea/policy-templates /master/"
@@ -1131,20 +1136,20 @@ msgstr ""
 "encontrados.  (https predefinidos: //raw.githubusercontent.com/ privacyidea/"
 "policy-templates /master/templates/)"
 
-#: lib/policy.py:2546
+#: lib/policy.py:2547
 msgid ""
 "The URL of an SSO provider for redirect at logout.(The URL must start with "
 "http:// or https://)"
 msgstr ""
 
-#: lib/policy.py:2551
+#: lib/policy.py:2552
 msgid ""
 "As long as a user has no token, he will only see a token wizard in the UI."
 msgstr ""
 "Enquanto um usuário não tiver um token, ele só verá um assistente de token "
 "na interface do usuário."
 
-#: lib/policy.py:2556
+#: lib/policy.py:2557
 msgid ""
 "The tokenwizard will be displayed in the token menu, even if the user "
 "already has a token."
@@ -1152,7 +1157,7 @@ msgstr ""
 "O assistente de token será exibido no menu token, mesmo que o usuário já "
 "tenha um token."
 
-#: lib/policy.py:2561
+#: lib/policy.py:2562
 msgid ""
 "This is a whitespace separated list of tokentypes, for which a rollover "
 "button is displayed in the token details."
@@ -1160,18 +1165,18 @@ msgstr ""
 "Esta é uma lista de tipos de tokens separadas por espaços em branco, para a "
 "qual um botão de rolagem é exibido nos detalhes do token."
 
-#: lib/policy.py:2568
+#: lib/policy.py:2569
 msgid ""
 "The welcome dialog will be displayed if the user has no tokens assigned."
 msgstr ""
 "O diálogo de boas-vindas será exibido se o usuário não tiver nenhum token "
 "atribuído."
 
-#: lib/policy.py:2572
+#: lib/policy.py:2573
 msgid "This is the default token type in the token enrollment dialog."
 msgstr "Este é o tipo de token padrão no diálogo de inscrição de token."
 
-#: lib/policy.py:2578
+#: lib/policy.py:2579
 msgid ""
 "A list of realm names, which are displayed in a drop down menu in the WebUI "
 "login screen. Realms are separated by white spaces."
@@ -1179,14 +1184,14 @@ msgstr ""
 "Uma lista de nomes do domínio, que são exibidos em um menu suspenso na tela "
 "de login da WebUI. Os domínios são separados por espaços em branco."
 
-#: lib/policy.py:2584
+#: lib/policy.py:2585
 msgid ""
 "If this checked, the administrator will not see the welcome dialog anymore."
 msgstr ""
 "Se isto for verificado, o administrador não verá mais o diálogo de boas-"
 "vindas."
 
-#: lib/policy.py:2589
+#: lib/policy.py:2590
 msgid ""
 "Per default disabled actions result in disabled buttons. When checking this "
 "action, buttons of disabled actions are hidden."
@@ -1194,20 +1199,20 @@ msgstr ""
 "Por padrão, as ações desativadas resultam em botões desativados. Ao "
 "verificar esta ação, botões de ações desabilitadas são ocultados."
 
-#: lib/policy.py:2594
+#: lib/policy.py:2595
 msgid ""
 "If this is checked, there will be a confirmation prompt when deleting "
 "policies, events, mresolver, resolver or periodic tasks!"
 msgstr ""
 
-#: lib/policy.py:2599
+#: lib/policy.py:2600
 msgid ""
 "If this is checked, the seed will be displayed as text during enrollment."
 msgstr ""
 "Se esta opção for marcada, a semente será exibida como texto durante a "
 "inscrição."
 
-#: lib/policy.py:2604
+#: lib/policy.py:2605
 msgid ""
 "If this is checked, the privacyIDEA Node name will be displayed in the menu "
 "bar."
@@ -1215,7 +1220,7 @@ msgstr ""
 "Se isto for verificado, o nome do nó de privacyIDEA será exibido na barra de "
 "menu."
 
-#: lib/policy.py:2609
+#: lib/policy.py:2610
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens will "
 "contain a QR code that leads to the privacyIDEA Authenticator in the Google "
@@ -1225,7 +1230,7 @@ msgstr ""
 "Push conterá um código QR que leva ao PrivacyIDEA Authenticator no Google "
 "Play Store."
 
-#: lib/policy.py:2616
+#: lib/policy.py:2617
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens will "
 "contain a QR code that leads to the privacyIDEA Authenticator in the iOS App "
@@ -1235,7 +1240,7 @@ msgstr ""
 "Push conterá um código QR que leva ao PrivacyIDEA Authenticator na App Store "
 "do iOS."
 
-#: lib/policy.py:2623
+#: lib/policy.py:2624
 msgid ""
 "This action adds a QR code in the enrollment page for HOTP, TOTP and Push "
 "tokens, that lead to this given URL."
@@ -1243,14 +1248,14 @@ msgstr ""
 "Esta ação adiciona um código QR na página de inscrição para os tokens HOTP, "
 "TOTP e Push, que levam a esta URL."
 
-#: lib/policy.py:2668
+#: lib/policy.py:2669
 msgid ""
 "The policy only matches if certain conditions on the user info are fulfilled."
 msgstr ""
 "A política só corresponde se certas condições sobre as informações do "
 "usuário forem cumpridas."
 
-#: lib/policy.py:2671
+#: lib/policy.py:2672
 msgid ""
 "The policy only matches if certain conditions of the token attributes are "
 "fulfilled."
@@ -1258,7 +1263,7 @@ msgstr ""
 "A política só corresponde se certas condições dos atributos de token forem "
 "cumpridas."
 
-#: lib/policy.py:2674
+#: lib/policy.py:2675
 msgid ""
 "The policy only matches if certain conditions on the token info are "
 "fulfilled."
@@ -1266,7 +1271,7 @@ msgstr ""
 "A política só corresponde se certas condições nas informações de token forem "
 "cumpridas."
 
-#: lib/policy.py:2677
+#: lib/policy.py:2678
 msgid ""
 "The policy only matches if certain conditions on the HTTP Request header are "
 "fulfilled."
@@ -1274,7 +1279,7 @@ msgstr ""
 "A política só corresponde se certas condições no cabeçalho solicitação HTTP "
 "forem cumpridas."
 
-#: lib/policy.py:2680
+#: lib/policy.py:2681
 msgid ""
 "The policy only matches if certain conditions on the HTTP Environment are "
 "fulfilled."
@@ -3192,6 +3197,19 @@ msgid ""
 msgstr ""
 "verdadeiro se o valor inteiro do atributo esquerdo for maior do que o valor "
 "inteiro direito"
+
+#~ msgid ""
+#~ "Set label for a new enrolled Google Authenticator. Possible tags are &lt;"
+#~ "u&gt; (user), &lt;r&gt; (realm), &lt;s&gt; (serial)."
+#~ msgstr ""
+#~ "Defina etiqueta para um novo registro do Google Autenticador. As "
+#~ "etiquetas possíveis são &lt;u&gt; (usuário), &lt;r&gt; ( domínio), &lt;"
+#~ "s&gt; (série)."
+
+#~ msgid "This is the issuer label for new enrolled Google Authenticators."
+#~ msgstr ""
+#~ "Esta é a etiqueta do emissor para os novos inscritos no Google "
+#~ "Autenticador."
 
 #~ msgid "This is the URL to the token image for smartphone apps like FreeOTP."
 #~ msgstr ""
