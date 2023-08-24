@@ -239,7 +239,7 @@ class TotpTokenClass(HotpTokenClass):
         checks if the given OTP value is/are values of this very token at all.
         This is used to autoassign and to determine the serial number of
         a token.
-        In fact it is a check_otp with an enhanced window.
+        In fact, it is a check_otp with an enhanced window.
 
         :param otp: the to be verified otp value
         :type otp: string
@@ -262,42 +262,37 @@ class TotpTokenClass(HotpTokenClass):
 
     @staticmethod
     def _time2counter(T0, timeStepping=60):
-        rnd = 0.5
-        counter = int((T0 / timeStepping) + rnd)
+        counter = int(T0 / timeStepping)
         return counter
 
     @staticmethod
     def _counter2time(counter, timeStepping=60):
-        rnd = 0.5
-        T0 = (float(counter) - rnd) * int(timeStepping)
+        T0 = float(counter * int(timeStepping))
         return T0
-
-    @staticmethod
-    def _getTimeFromCounter(counter, timeStepping=30, rnd=1):
-        idate = int(counter - rnd) * timeStepping
-        ddate = datetime.datetime.fromtimestamp(idate / 1.0)
-        return ddate
 
     @staticmethod
     @log_with(log)
     def _time2float(curtime):
         """
-        convert a datetime object into a float (POSIX timestamp).
-
-        TODO: handle timezone-aware datetime objects
+        Convert a datetime object into a float (POSIX timestamp).
+        Timezone-naive datetime objects will be interpreted as UTC.
+        To determine if a datetime object is timezone-aware see:
+        https://docs.python.org/3.10/library/datetime.html#determining-if-an-object-is-aware-or-naive
 
         :param curtime: time in datetime format
         :type curtime: datetime.datetime
         :return: seconds since 1.1.1970
         :rtype: float
         """
-        if type(curtime) == datetime.datetime:
-            dt = curtime
-        else:
-            dt = datetime.datetime.now()
-
-        td = (dt - datetime.datetime(1970, 1, 1))
-        return td.total_seconds()
+        if curtime:
+            if curtime.tzinfo and curtime.tzinfo.utcoffset(curtime):
+                # curtime is timezone aware
+                return curtime.timestamp()
+            else:
+                # curtime is naive
+                return curtime.replace(tzinfo=datetime.timezone.utc).timestamp()
+        # return the current timestamp
+        return datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
 
     @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
@@ -570,7 +565,7 @@ class TotpTokenClass(HotpTokenClass):
         combined = "{0!s}{1!s}".format(otpval, pin)
         if get_from_config("PrependPin") == "True":
             combined = "{0!s}{1!s}".format(pin, otpval)
-            
+
         return 1, pin, otpval, combined
 
     @log_with(log)
@@ -623,13 +618,13 @@ class TotpTokenClass(HotpTokenClass):
                 otpval = hmac2Otp.generate(counter=counter + i,
                                            inc_counter=False)
                 timeCounter = ((counter + i) * self.timestep) + self.timeshift
-                
+
                 val_time = datetime.datetime.\
                     fromtimestamp(timeCounter).strftime("%Y-%m-%d %H:%M:%S")
                 otp_dict["otp"][counter + i] = {'otpval': otpval,
                                                 'time': val_time}
             ret = True
-            
+
         return ret, error, otp_dict
 
     @staticmethod
