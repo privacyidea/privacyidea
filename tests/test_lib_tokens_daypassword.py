@@ -3,6 +3,7 @@ This test file tests the lib.tokens.daypasswordtoken.py
 """
 import datetime
 import binascii
+import logging
 import time
 from unittest import mock
 from .base import MyTestCase, FakeAudit, FakeFlaskG
@@ -199,14 +200,6 @@ class DayPasswordTokenTestCase(MyTestCase):
         realms = token.get_realms()
         self.assertTrue(len(realms) == 2, realms)
 
-    def test_99_delete_token(self):
-        db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = DayPasswordTokenClass(db_token)
-        token.delete_token()
-
-        db_token = Token.query.filter_by(serial=self.serial1).first()
-        self.assertTrue(db_token is None, db_token)
-
     def test_08_info(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
@@ -277,19 +270,6 @@ class DayPasswordTokenTestCase(MyTestCase):
         token.inc_otp_counter(counter=20)
         self.assertTrue(token.token.count == 21, token.token.count)
 
-    def test_98_get_otp(self):
-        db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = DayPasswordTokenClass(db_token)
-        token.update({"otpkey": self.otpkey,
-                      "pin": "test",
-                      "otplen": 6})
-        counter = token._time2counter(time.time(), timeStepping=30)
-        otp_now = token._calc_otp(counter)
-        otp = token.get_otp()
-        res = token.check_otp_exist(otp[2])
-        self.assertEqual(res, counter)
-        self.assertEqual(otp[2], otp_now)
-
     def test_13_check_otp(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
@@ -297,14 +277,18 @@ class DayPasswordTokenTestCase(MyTestCase):
                       "pin": "test",
                       "otplen": 6,
                       "timeStep": "1h"})
-        token.set_otp_count(47251644)
+        token.set_otp_count(470184)  # 2023-08-22T00:05:23+00:00
         self.assertEqual(token.get_tokeninfo("timeStep"), "1h", token.get_tokeninfo())
-        # OTP does not exist
-        self.assertEqual(token.check_otp_exist("222333"), -1)
-        # OTP does exist
-        res = token.check_otp_exist('063321', options={"initTime": 47251645 * 3600})
-        # Found the counter 47251645
-        self.assertEqual(47251645, res)
+        with mock.patch('time.time') as MockTime:
+            MockTime.return_value = 1692662723.0  # 2023-08-22T00:55:23+00:00
+            # The previous OTP does not work
+            self.assertEqual(token.check_otp_exist("819480"), -1)
+            # The next OTP does not work
+            self.assertEqual(token.check_otp_exist("795010"), -1)
+            # Current OTP works
+            res = token.check_otp_exist("079551")
+            # Found the counter 47251645
+            self.assertEqual(res, 470184)
 
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -414,96 +398,81 @@ class DayPasswordTokenTestCase(MyTestCase):
         self.assertTrue(resp, resp)
 
         # test if challenge is valid
-        chal.is_valid()
+        self.assertTrue(chal.is_valid())
+        chal.delete()
 
-    @mock.patch('time.time', mock.MagicMock(return_value=1686902767))
     def test_19_pin_otp_functions(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
-        db_token.set_pin("test")
         token = DayPasswordTokenClass(db_token)
-        # check OTP according to RFC 4226
-        token.update({"otpkey": self.otpkey})
-        self.assertTrue(db_token.otplen == 6, 6)
+        token.update({"otpkey": self.otpkey,
+                      "pin": "test",
+                      "otplen": 6,
+                      "timeStep": "1h"})
         set_prepend_pin()
-        res, pin, otp = token.split_pin_pass("test123456")
-        self.assertTrue(pin == "test", pin)
-        self.assertTrue(otp == "123456", otp)
-        self.assertTrue(token.check_pin(pin), pin)
-        # get the OTP value for counter 1417549521
-        res = token.get_otp(time_seconds=1417549521)
-        self.assertTrue(res[0] == 1, res)
-#        self.assertTrue(res[2] == "128352", res)
+        self.assertTrue(token.check_pin('test'))
+        # get the OTP value for time at 1692785442 (2023-08-23T10:10:42+00:00)
+        with mock.patch('time.time') as MockTime:
+            MockTime.return_value = 1692785442.0
+            res = token.get_otp()
+            self.assertEqual(res[2], "165753", res)
 
-        check = token.check_otp("722053", counter=47251647)
-        # The OTP 722053 is of counter 47251647
-        self.assertTrue(check == 47251647, check)
-        # The tokenclass saves the counter to the database
-        self.assertTrue(token.token.count == 47251647, token.token.count)
+        # Check that we get the same OTP during the hour
+        with mock.patch('time.time') as MockTime:
+            MockTime.return_value = 1692784902.0  # 2023-08-23T10:01:42+00:00
+            res = token.get_otp()
+            self.assertEqual(res[2], "165753", res)
+
+        with mock.patch('time.time') as MockTime:
+            MockTime.return_value = 1692788382.0  # 2023-08-23T10:59:42+00:00
+            res = token.get_otp()
+            self.assertEqual(res[2], "165753", res)
+
+        # Previous OTP
+        with mock.patch('time.time') as MockTime:
+            MockTime.return_value = 1692784782.0  # 2023-08-23T09:59:42+00:00
+            res = token.get_otp()
+            self.assertEqual(res[2], "403777", res)
+
+        # Next OTP
+        with mock.patch('time.time') as MockTime:
+            MockTime.return_value = 1692788502.0  # 2023-08-23T11:01:42+00:00
+            res = token.get_otp()
+            self.assertEqual(res[2], "708916", res)
+
+        token.set_otp_count(470219)
+        self.assertEqual(token.token.count, 470219, token.token)
 
         # successful authentication
-        res = token.authenticate("test864141")
-        # This is the OTP value of the counter=47251650
-        self.assertEqual((True, 56230092, None), res)
+        with mock.patch('time.time') as MockTime:
+            MockTime.return_value = 1692792000.0  # 2023-08-23T14:00:00+00:00
+            res = token.authenticate("test758203")
+            # This is the OTP value of the counter=470220
+            self.assertEqual((True, 470220, None), res)
 
-        # try the same OTP value again will not fail!
-        res = token.authenticate("test864141")
-        # This is the OTP value of the counter=47251650
-        self.assertEqual((True, 56230092, None), res)
+        # try the same OTP value again some time later, and it should not fail!
+        with mock.patch('time.time') as MockTime:
+            MockTime.return_value = 1692793000.0  # 2023-08-23T14:16:40+00:00
+            res = token.authenticate("test758203")
+            # This is the OTP value of the counter=47251650
+            self.assertEqual((True, 470220, None), res)
 
+        # Fail since no amount was given
         res = token.get_multi_otp()
-        self.assertTrue(res[0] is False, res)
-        token.update({"otpkey": self.otpkey,
-                      "otplen": 6})
-        token.token.count = 0
-        res = token.get_multi_otp(count=5)
-        self.assertTrue(res[0], res)
-        self.assertTrue(res[1] == "OK", res)
-        self.assertTrue(len(res[2].get("otp")) == 5, res[2].get("otp"))
+        self.assertFalse(res[0], res)
 
-        # Simulate the server time
-        res = token.get_multi_otp(count=5, timestamp=47251644 * 30)
-        self.assertTrue(res[0], res)
-        self.assertTrue(res[1] == "OK", res)
-        self.assertTrue(len(res[2].get("otp")) == 5, res[2].get("otp"))
-        self.assertTrue(47251648 in res[2].get("otp"), res[2].get("otp"))
-        self.assertTrue(47251647 in res[2].get("otp"), res[2].get("otp"))
-        self.assertTrue(47251646 in res[2].get("otp"), res[2].get("otp"))
-        self.assertTrue(47251645 in res[2].get("otp"), res[2].get("otp"))
-        self.assertTrue(47251644 in res[2].get("otp"), res[2].get("otp"))
-
-        # Simulate the server time
-        res = token.get_multi_otp(count=5, curTime=datetime.datetime(2014, 12, 12))
-        self.assertTrue(res[0], res)
-        self.assertTrue(res[1] == "OK", res)
-        self.assertTrue(len(res[2].get("otp")) == 5, res[2].get("otp"))
-        self.assertTrue(47278080 in res[2].get("otp"), res[2].get("otp"))
-        self.assertTrue(47278081 in res[2].get("otp"), res[2].get("otp"))
-        self.assertTrue(47278082 in res[2].get("otp"), res[2].get("otp"))
-        self.assertTrue(47278083 in res[2].get("otp"), res[2].get("otp"))
-        self.assertTrue(47278084 in res[2].get("otp"), res[2].get("otp"))
+        with mock.patch('time.time') as MockTime:
+            MockTime.return_value = 1692799300.0  # 2023-08-23T16:01:40+00:00
+            res = token.get_multi_otp(count=5)
+            self.assertTrue(res[0], res)
+            self.assertEqual(res[1], "OK", res)
+            for count, value in [(470222, '001659'), (470223, '006788'),
+                                 (470224, '506071'), (470225, '554912'), (470226, '756301')]:
+                self.assertEqual(res[2].get("otp").get(count).get('otpval'), value, res[2].get("otp"))
 
         # do some failing otp checks
         token.token.otplen = "invalid otp counter"
         self.assertRaises(Exception, token.check_otp, "123456")
         token.token.otplen = 0
-
-        # Previous OTP value used again
-        token.token.otplen = 6
-        # token.token.count = 47251640
-        # The OTP for this counter was already presented to the server
-        token.token.count = 47251648
-        # 47251647 -> 722053
-        res = token.check_otp('705493', options={"initTime": 47251649 * 30})
-        # self.assertTrue(res == 47251647, res)
-        self.assertEqual(47251649, res)
-
-        # simple OTPs of current time
-        ret, _, dct = token.get_multi_otp(1)
-        self.assertTrue(ret)
-        self.assertGreater(list(dct["otp"].keys())[0], 47251648)
-        ret, _, dct = token.get_multi_otp(1, curTime=datetime.datetime.now())
-        self.assertTrue(ret)
-        self.assertGreater(list(dct["otp"].keys())[0], 47251648)
 
     def test_20_check_challenge_response(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -687,3 +656,11 @@ class DayPasswordTokenTestCase(MyTestCase):
         p = DayPasswordTokenClass.get_default_settings(g, params)
         self.assertEqual(p, {})
         delete_policy("pol1")
+
+    def test_99_delete_token(self):
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = DayPasswordTokenClass(db_token)
+        token.delete_token()
+
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        self.assertTrue(db_token is None, db_token)

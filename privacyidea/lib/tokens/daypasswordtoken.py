@@ -290,8 +290,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         if current_time:
             time_seconds = self._time2float(current_time)
 
-        # we don't need to round here as we have already float
-        counter = int((time_seconds / self.timestep) + 0.5)
+        counter = int(time_seconds / self.timestep)
         otpval = hmac2Otp.generate(counter=counter,
                                    inc_counter=False,
                                    do_truncation=do_truncation,
@@ -316,7 +315,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         :param epoch_start: not implemented
         :param epoch_end: not implemented
         :param curTime: Simulate the servertime
-        :type curTime: datetime
+        :type curTime: datetime.datetime
         :param timestamp: Simulate the servertime
         :type timestamp: epoch time
         :return: tuple of status: boolean, error: text and the OTP dictionary
@@ -340,10 +339,9 @@ class DayPasswordTokenClass(TotpTokenClass):
             tCounter = int(timestamp)
         else:
             # use the current server time
-            tCounter = self._time2float(datetime.datetime.now())
+            tCounter = int(time.time())
 
-        # we don't need to round here as we have already float
-        counter = int((tCounter / self.timestep))
+        counter = int(tCounter / self.timestep)
 
         if count > 0:
             error = "OK"
