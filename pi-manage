@@ -67,7 +67,10 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 import flask
 from shlex import quote as shlex_quote
-import importlib_metadata
+try:
+    from importlib import metadata
+except ImportError:
+    import importlib_metadata as metadata  # for Python 3.7
 
 from urllib.parse import urlparse
 from privacyidea.lib.sqlutils import delete_matching_rows
@@ -581,7 +584,7 @@ def createdb(stamp=False):
 
 @manager.option('--stamp', '-s', help='Stamp database to current head revision.',
                 default=False, action='store_true')
-def create_tables(stamp=False):
+def create_tables(stamp=True):
     """
     Initially create the tables in the database. The database must exist
     (an SQLite database will be created).
@@ -590,7 +593,7 @@ def create_tables(stamp=False):
     db.create_all()
     if stamp:
         # get the path to the migration directory from the distribution
-        p = [x.locate() for x in importlib_metadata.files('privacyidea') if
+        p = [x.locate() for x in metadata.files('privacyidea') if
              'migrations/env.py' in str(x)]
         migration_dir = os.path.dirname(os.path.abspath(p[0]))
         fm_stamp(directory=migration_dir)
@@ -1726,7 +1729,8 @@ config_import_manager.add_command('policy', Command(p_import))
 config_import_manager.add_command('resolver', Command(r_import))
 config_import_manager.add_command('event', Command(e_import))
 
-if __name__ == '__main__':
+
+def main():
     # We add one blank line, to separate the messages from the initialization
     print("""
              _                    _______  _______
@@ -1737,3 +1741,7 @@ if __name__ == '__main__':
 {0!s:>51}
     """.format('v{0!s}'.format(get_version_number())), file=sys.stderr)
     manager.run()
+
+
+if __name__ == '__main__':
+    main()
