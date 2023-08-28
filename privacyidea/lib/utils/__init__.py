@@ -48,7 +48,7 @@ from privacyidea.lib.framework import get_app_config_value
 try:
     from importlib import metadata
 except ImportError:
-    import importlib_metadata as metadata
+    import importlib_metadata as metadata  # for Python 3.7
 import time
 import html
 import segno
