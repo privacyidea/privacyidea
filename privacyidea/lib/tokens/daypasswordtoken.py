@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 class DayPasswordTokenClass(TotpTokenClass):
     previous_otp_offset = 0
 
-    desc_timestep = _('Specify the time step of the DayPassword token.')
+    desc_timestep = _('Specify the time step of the DayPassword token. For example: "24h"')
 
     @log_with(log)
     def __init__(self, db_token):
