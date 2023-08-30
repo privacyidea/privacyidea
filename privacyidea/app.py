@@ -25,7 +25,9 @@ import logging
 import logging.config
 import sys
 import yaml
+import click
 from flask import Flask, request, Response
+from flask.cli import FlaskGroup
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flaskext.versioned import Versioned
@@ -91,7 +93,8 @@ class PiResponseClass(Response):
 
 def create_app(config_name="development",
                config_file='/etc/privacyidea/pi.cfg',
-               silent=False, init_hsm=False):
+               silent=False, init_hsm=False,
+               script_info=None):
     """
     First the configuration from the config.py is loaded depending on the
     config type like "production" or "development" or "testing".
@@ -119,6 +122,7 @@ def create_app(config_name="development",
     if not silent:
         print("Additional configuration will be read "
               "from the file {0!s}".format(config_file))
+    print("Script Info: {0!s}".format(script_info))
     app = Flask(__name__, static_folder="static",
                 template_folder="static/templates")
     if config_name:

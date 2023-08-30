@@ -17,7 +17,42 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from privacyidea.cli.privacyideatokenjanitor.main import cli as pi_token_janitor
-from privacyidea.cli.pimanage.main import cli as pi_manage
+from flask.cli import AppGroup
 
-__all__ = ['pi_token_janitor', 'pi_manage']
+config_cli = AppGroup("config", help="privacyIDEA server configuration")
+
+ca_cli = AppGroup("ca", help="Manage Certificate Authorities")
+
+
+@ca_cli.command("list")
+def list_ca():
+    pass
+
+
+@ca_cli.command("create")
+def create_ca():
+    pass
+
+
+@ca_cli.command("create_crl")
+def create_crl_ca():
+    pass
+
+
+config_cli.add_command(ca_cli)
+
+realm_cli = AppGroup("realm", help="Manage realms")
+
+config_cli.add_command(realm_cli)
+
+resolver_cli = AppGroup("resolver", help="Manage user resolver")
+
+config_cli.add_command(resolver_cli)
+
+event_cli = AppGroup("event", help="Manage events")
+
+config_cli.add_command(event_cli)
+
+policy_cli = AppGroup("policy", help="Manage policies")
+
+config_cli.add_command(policy_cli)
