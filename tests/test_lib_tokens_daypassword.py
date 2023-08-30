@@ -75,7 +75,7 @@ class DayPasswordTokenTestCase(MyTestCase):
         self.assertTrue(token.token.tokentype == "daypassword", token.token.tokentype)
         self.assertTrue(token.type == "daypassword", token)
         class_prefix = token.get_class_prefix()
-        self.assertTrue(class_prefix == "DayPassword", class_prefix)
+        self.assertTrue(class_prefix == "DYPW", class_prefix)
         self.assertTrue(token.get_class_type() == "daypassword", token)
 
     def test_02_set_user(self):

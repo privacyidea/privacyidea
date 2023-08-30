@@ -64,7 +64,7 @@ class DayPasswordTokenClass(TotpTokenClass):
 
         :return: DayPasswordToken
         """
-        return "DayPassword"
+        return "DYPW"
 
     @staticmethod
     @log_with(log)
