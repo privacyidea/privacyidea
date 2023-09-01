@@ -98,7 +98,7 @@ sub-command ``ca``::
 
     pi-manage ca list
 
-It lists all configured *CA connectors*. You can use the ``-v`` switch to get more
+which lists all configured *CA connectors*. You can use the ``-v`` switch to get more
 information.
 
 You can create a new CRL with the command::

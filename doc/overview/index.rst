@@ -47,6 +47,6 @@ We will take a look at common ways to setup privacyIDEA
 in the section :ref:`installation`
 but there are still many others.
 
-.. _flask micro framework: http://flask.pocoo.org/
-.. _SQLAlchemy: http://www.sqlalchemy.org/
-.. _werkzeug: http://werkzeug.pocoo.org/
+.. _flask micro framework: https://flask.palletsprojects.com/
+.. _SQLAlchemy: https://www.sqlalchemy.org/
+.. _werkzeug: https://werkzeug.palletsprojects.com/

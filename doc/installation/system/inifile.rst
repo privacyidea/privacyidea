@@ -52,8 +52,8 @@ The file should contain the following contents::
    set the path and you need to take care of the indentation.
 
 ``SQLALCHEMY_DATABASE_URI`` defines the location of your database.
-You may want to use the MySQL database or Maria DB. There are two possible
-drivers, to connect to this database. Please read :ref:`mysqldb`.
+For more information about the database connect string, supported databases and
+drivers please read :ref:`database_connect`.
 
 ``SQLALCHEMY_ENGINE_OPTIONS`` is a dictionary of keyword args to send
 to `create_engine() <https://docs.sqlalchemy.org/en/14/core/engines.html#sqlalchemy

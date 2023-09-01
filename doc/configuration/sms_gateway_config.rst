@@ -206,6 +206,11 @@ It takes not options.
 If you activate debug log level you will see the submitted SMS and the response
 content from the Sipgate gateway.
 
+.. rubric:: Footnotes
+
+.. [#twilio] https://www.twilio.com/docs/api/rest/sending-messages
+.. [#gtxapi] https://www.gtx-messaging.com/de/api-docs/http/
+
 SMPP Provider
 ~~~~~~~~~~~~~
 
@@ -218,9 +223,6 @@ privacyIDEA need to authenticate against the SMS center. For this you can add th
 receiving an SMS.
 For the other parameters contact your SMS center operator.
 
-
-.. [#twilio] https://www.twilio.com/docs/api/rest/sending-messages
-.. [#gtxapi] https://www.gtx-messaging.com/de/api-docs/http/
 
 SMTP provider
 ~~~~~~~~~~~~~

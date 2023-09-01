@@ -127,7 +127,8 @@ Some example configuration can be found in the NetKnights GitHub
 repositories [#nkgh]_. More on the WSGI setup for privacyIDEA can be found in
 :ref:`wsgiscript`.
 
+
 .. rubric:: Footnotes
 
-.. [#sqlaDialects] https://docs.sqlalchemy.org/en/13/dialects/index.html
+.. [#sqlaDialects] https://docs.sqlalchemy.org/en/14/dialects/index.html
 .. [#nkgh] https://github.com/NetKnights-GmbH/ubuntu/tree/master/deploy
