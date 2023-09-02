@@ -229,7 +229,7 @@ Basic setup from the command line
 
 Of course the MS CA Connector can be configured in the privacyIDEA Web UI.
 For quick setup, you can also configure a connector at the command line using
-:ref:`pimange` like this::
+:ref:`pimanage` like this::
 
     pi-manage ca create -t microsoft <name-of-connector>
 

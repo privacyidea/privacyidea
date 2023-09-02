@@ -464,7 +464,6 @@ verification during authentication, see :ref:`policy_push_ssl_verify_auth`.
 
 .. _policy_verify_enrollment:
 
-
 verify_enrollment
 ~~~~~~~~~~~~~~~~~
 

@@ -17,7 +17,7 @@ to the :ref:`rest_validate` and are checked
 using :ref:`code_policy` and
 :ref:`policy_decorators`.
 
-The following actions are available in the scope 
+The following actions are available in the scope
 *authorization*:
 
 .. _authorized_policy:
@@ -63,7 +63,7 @@ is wasted, so that it can not be used, even if the user was not authorized at
 this request
 
 .. note:: Combining this with the client IP
-   you can use this to allow remote access to 
+   you can use this to allow remote access to
    sensitive areas only with one special token type
    while allowing access to less sensitive areas
    with other token types.
@@ -100,7 +100,7 @@ is wasted, so that it can not be used, even if the user was not authorized at
 this request
 
 .. note:: Combining this with the client IP
-   you can use this to allow remote access to 
+   you can use this to allow remote access to
    sensitive areas only with hardware tokens
    like the Yubikey, while allowing access
    to less secure areas also with a Google
@@ -136,7 +136,7 @@ type: string
 
 This policy is checked before the user authenticates.
 The realm of the user matching this policy will be set to
-the realm in this action. 
+the realm in this action.
 
 .. note:: This can be used if the user can not pass his
    realm when authenticating at a certain client, but
@@ -234,7 +234,7 @@ If this value is exceeded, authentication is not possible anymore. The user
 will have to wait.
 
 If this policy is not defined, the normal behaviour of the failcounter
-applies. (see :ref:`failcounter`)
+applies. (see :term:`failcount`)
 
 Specify the value like ``2/1m`` meaning 2 successful authentication requests
 per minute. If during the last 5 minutes 2 successful authentications were

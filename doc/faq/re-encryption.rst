@@ -20,7 +20,7 @@ user assignments.
 Export tokens
 ~~~~~~~~~~~~~
 
-Use the :ref:`token-janitor` to export the tokens to a YAML file. This file contains the **unencrypted** secret keys
+Use the :ref:`token_janitor` to export the tokens to a YAML file. This file contains the **unencrypted** secret keys
 of the tokens and also the tokeninfos of the tokens.
 
 You need to handle this file with care!

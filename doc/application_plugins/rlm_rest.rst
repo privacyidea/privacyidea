@@ -1,3 +1,5 @@
+:orphan:
+
 .. _rlm_rest:
 
 Configuration of rlm_rest

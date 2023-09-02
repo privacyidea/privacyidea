@@ -1,3 +1,5 @@
+:orphan:
+
 .. _plugin_guide:
 
 Plugin Guide

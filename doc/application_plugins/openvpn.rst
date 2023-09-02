@@ -1,3 +1,5 @@
+:orphan:
+
 .. _openvpn:
 
 OTP with OpenVPN
