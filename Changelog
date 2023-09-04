@@ -38,6 +38,7 @@ Version 3.9dev1, 2023-07-28
   * UI: Multiselect policies in WebUI (#3493)
   * UI: Make the whole header of an accordion clickable (#3425)
   * UI: Improved grouping in the system menu (#3419)
+    Moved the CA menu to config->system
   * UI: Add italian translation (#3508)
   * UI: Add user information in selfservice/user context (#3688)
   * Docs: Improve documentation for /validate/check-enrollment (#3507)
