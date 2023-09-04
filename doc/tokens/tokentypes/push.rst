@@ -155,8 +155,7 @@ For a more detailed insight see the code documentation for the :ref:`code_push_t
 
 For an in depth view of the protocol see
 `the github issue <https://github.com/privacyidea/privacyidea/issues/1342>`_ and
-`the wiki page <https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken).
-https://www.privacyidea.org/tag/push-token/>`_.
+`the wiki page <https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken>`_.
 
 Information on the polling mechanism can be found in the `corresponding wiki page <https://github
 .com/privacyidea/privacyidea/wiki/concept%3A-pushtoken-poll>`_.

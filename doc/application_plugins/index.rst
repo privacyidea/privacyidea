@@ -18,44 +18,15 @@ to privacyIDEA. To do so, please check the :ref:`plugin_guide`.
 Pluggable Authentication Module
 -------------------------------
 
-.. todo:: Note: The underlying pam_python module is outdated. So privacyidea-pam should not be used anymore.
-   Use :ref:`pam_radius` instead until we provide a new explicit privacyIDEA PAM component.
-
 .. index:: offline, PAM
 
-The `PAM module of privacyIDEA <https://github.com/privacyidea/pam_python>`_ directly
+The `PAM module of privacyIDEA <https://github.com/privacyidea/privacyidea-pam>`_ directly
 communicates with the privacyIDEA server via the API. The PAM module also supports offline
-authentication. In this case you need to configure an offline machine application. (See
-:ref:`application_offline`)
+authentication. In this case you need to configure an offline token (See
+:ref:`application_offline`).
 
-You can install the PAM module by using the source code files. It is a python module, that
-requires python-pam::
-
-  git clone https://github.com/privacyidea/pam_python.git
-  cd pam_python
-  pip install -r requirements.txt
-  python ./setup.py install
-
-The configuration could look like this::
-
- ... pam_python.so /path/to/privacyidea_pam.py
- url=https://localhost prompt=privacyIDEA_Authentication
-
-The URL parameter defaults to ``https://localhost``. You can also add the
-parameters ``realm=`` and ``debug``.
-
-If you want to disable certificate validation, which you should **not** do in a
-productive environment, you can use the parameter ``nosslverify``.
-
-A new parameter ``cacerts=`` lets you define a CA Cert-Bundle file, that
-contains the trusted certificate authorities in PEM format.
-
-The default behaviour is to trigger an online authentication request.
-If the request was successful, the user is logged in.
-If the request was done with a token defined for offline authentication, then
-in addition all offline information is passed to the client and cached on the
-client so that the token can be used to authenticate without the privacyIDEA
-server available.
+For more information about building and configuring the PAM module see the
+`README <https://github.com/privacyidea/privacyidea-pam/blob/main/README.md>`.
 
 try_first_pass
 ~~~~~~~~~~~~~~

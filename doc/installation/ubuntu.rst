@@ -69,13 +69,9 @@ or::
 
    add-apt-repository http://lancelot.netknights.it/community/jammy/stable
 
-As an alternative you can add the repo in a dedicated file. Create a new 
+As an alternative you can add the repo in a dedicated file. Create a new
 file ``/etc/apt/sources.list.d/privacyidea-community.list`` with the
 following contents::
-
-   deb http://lancelot.netknights.it/community/xenial/stable xenial main
-
-or::
 
    deb http://lancelot.netknights.it/community/bionic/stable bionic main
 
@@ -83,14 +79,9 @@ or::
 
    deb http://lancelot.netknights.it/community/focal/stable focal main
 
-.. note:: While the link http://lancelot.netknights.it/community/ and its
-   subdirectories are browsable, it is only available via http! Most browsers
-   will automatically redirect you to https, which will result in a 404 error,
-   since the link http**s**://lancelot.netknights.it/community/ does not
-   exist. So if you want to browse the repository, take care to do this via http.
-   This is OK. The apt program fetches all packages via http.
-   If you still fail to fetch packages, you might most probably need to check
-   your firewall and proxy settings.
+or::
+
+   deb http://lancelot.netknights.it/community/jammy/stable jammy main
 
 Installation of privacyIDEA 3.x
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -130,6 +121,3 @@ For further details see :ref:`rlm_perl`.
    are provided, Ubuntu 14.04 packages are dropped.
    Starting with privacyIDEA 3.5 Ubuntu 20.04 packages are available.
    Starting with privacyIDEA 3.8 Ubuntu 22.04 packages are available, Ubuntu 16.04 packages are dropped.
-.. [#simpleSAML] https://github.com/privacyidea/simplesamlphp-module-privacyidea
-.. [#otrs] http://www.otrs.com/
-

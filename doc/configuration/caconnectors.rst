@@ -98,7 +98,7 @@ sub-command ``ca``::
 
     pi-manage ca list
 
-It lists all configured *CA connectors*. You can use the ``-v`` switch to get more
+which lists all configured *CA connectors*. You can use the ``-v`` switch to get more
 information.
 
 You can create a new CRL with the command::
@@ -229,7 +229,7 @@ Basic setup from the command line
 
 Of course the MS CA Connector can be configured in the privacyIDEA Web UI.
 For quick setup, you can also configure a connector at the command line using
-:ref:`pimange` like this::
+:ref:`pimanage` like this::
 
     pi-manage ca create -t microsoft <name-of-connector>
 

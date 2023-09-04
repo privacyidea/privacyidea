@@ -1,9 +1,9 @@
+.. index:: Event Handler, events
+
 .. _eventhandler:
 
 Event Handler
 =============
-
-.. index:: Event Handler, events
 
 Added in version 2.12.
 
@@ -152,7 +152,7 @@ This can be '>100', '<99', or '=100', to trigger the action, if the tokeninfo fi
 
 This is the ``failcount`` of the token. It is increased on failed authentication
 attempts. If it reaches ``max_failcount`` increasing will stop and the token is locked.
-See :ref:`failcounter`.
+See :term:`failcount`.
 
 The condition can be set to '>9', '=10', or '<5' and it will trigger the action accordingly.
 
@@ -387,3 +387,4 @@ Available Handler Modules
    responsemangler
    logginghandler
    customuserattributehandler
+   webhookhandler

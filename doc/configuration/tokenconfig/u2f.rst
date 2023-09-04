@@ -9,7 +9,7 @@ AppId
 ~~~~~
 
 You need to configure the AppId of the privacyIDEA server. The AppId is
-defined in the FIDO specification [#fido]_.
+defined in the FIDO specification [#fido-u2f]_.
 
 The AppId is the URL of your privacyIDEA and used to find or create the right
 key pair on the U2F device. The AppId must correspond to the URL that is
@@ -42,7 +42,7 @@ Trusted facets are other hosts in the domain *example.com*. You need to
 define a policy that contains a list of the other hosts
 (:ref:`policy_u2f_facets`).
 
-For more information on AppId and trusted facets see [#fido]_.
+For more information on AppId and trusted facets see [#fido-u2f-appid]_.
 
 For further details and information on how to add U2F to your application you
 can see the code documentation at
@@ -79,4 +79,5 @@ do so you need to do the following steps:
 
 .. rubric:: Footnotes
 
-.. [#fido] https://fidoalliance.org/specs/fido-u2f-v1.0-nfc-bt-amendment-20150514/fido-appid-and-facets.html
+.. [#fido-u2f] https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-overview-v1.2-ps-20170411.html
+.. [#fido-u2f-appid] https://fidoalliance.org/specs/fido-u2f-v1.0-nfc-bt-amendment-20150514/fido-appid-and-facets.html

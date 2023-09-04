@@ -9,10 +9,10 @@ Each organisation or company usually has its users managed at a central location
 This is why privacyIDEA does not provide its own user management but rather
 connects to existing user stores.
 
-UserIdResolvers are connectors to those user stores, the locations, 
+UserIdResolvers are connectors to those user stores, the locations,
 where the users are managed. Nowadays this can be LDAP directories or
 especially Active Directory, some times FreeIPA or the Redhat 389 service.
-But classically users are also located in files like /etc/passwd on 
+But classically users are also located in files like /etc/passwd on
 standalone unix systems. Web services often use SQL databases as
 user store.
 
@@ -52,7 +52,7 @@ Flatfile resolver
 
 .. index:: flatfile resolver
 
-Flatfile resolvers read files like ``/etc/passwd``. 
+Flatfile resolvers read files like ``/etc/passwd``.
 
 .. note:: The file ``/etc/passwd`` does not contain the unix password.
    Thus, if you create a flatfile resolver from this file the functionality
@@ -61,7 +61,7 @@ Flatfile resolvers read files like ``/etc/passwd``.
    usually found in ``/opt/privacyidea/bin/``.
 
 Create a flat file like this::
-   
+
    privacyidea-create-pwidresolver-user -u user2 -i 1002 >> /your/flat/file
 
 
@@ -239,7 +239,7 @@ The ``MULTIVALUEATTRIBUTES`` can be well used with the ``samlcheck`` endpoint (s
 or with the policy
 :ref:`policy_add_user_in_response`.
 
-  
+
 The ``UID Type`` is the unique identifier for the LDAP object. If it is left
 blank, the distinguished name will be used. In case of OpenLDAP this can be
 *entryUUID* and in case of Active Directory *objectGUID*. For FreeIPA you
@@ -281,7 +281,7 @@ SQL resolver
 
 .. index:: SQL resolver, MySQL, PostgreSQL, Oracle, DB2, sqlite
 
-The SQL resolver can be used to retrieve users from any kind of 
+The SQL resolver can be used to retrieve users from any kind of
 SQL database like MySQL, PostgreSQL, Oracle, DB2 or sqlite.
 
 .. figure:: images/sql-resolver.png
@@ -295,15 +295,15 @@ In the field ``Driver`` you need to set a driver name as defined by the
 `SQLAlchemy  dialects <http://docs.sqlalchemy.org/en/rel_0_9/dialects/>`_
 like "mysql" or "postgres".
 
-In the ``SQL attributes`` frame you can specify how the users are 
+In the ``SQL attributes`` frame you can specify how the users are
 identified.
 
-The ``Database table`` contains the users. 
+The ``Database table`` contains the users.
 
 .. note:: At the moment, only one table
    is supported, i.e. if some of the user data like email address or telephone
    number is located in a second table, those data can not be retrieved.
-  
+
 The ``Limit`` is the SQL limit for a userlist request. This can be important
 if you have several thousand user entries in the table.
 
@@ -360,13 +360,13 @@ SCIM resolver
 
 .. index:: SCIM resolver
 
-SCIM is a "System for Cross-domain Identity Management". SCIM is a REST-based 
+SCIM is a "System for Cross-domain Identity Management". SCIM is a REST-based
 protocol that can be used to ease identity management in the cloud.
 
 The SCIM resolver is tested in basic functions with OSIAM [#osiam]_,
 the "Open Source Identity & Access Management".
 
-To connect to a SCIM service you need to provide a URL to an authentication 
+To connect to a SCIM service you need to provide a URL to an authentication
 server and a URL to the resource server. The authentication server is used to
 authenticate the privacyIDEA server. The authentication is based on a ``Client``
 name and the ``Secret`` for this client.
@@ -484,7 +484,7 @@ However, cache entries are removed at some defined events:
 
 .. rubric:: Footnotes
 
-.. [#serverpool] https://github.com/cannatag/ldap3/blob/master/docs/manual/source/server.rst#server-pool
+.. [#serverpool] https://ldap3.readthedocs.io/en/latest/server.html#server-pool
 .. [#adreferrals] https://techcommunity.microsoft.com/t5/azure-active-directory-identity/referral-chasing/ba-p/243177
 .. [#osiam] http://osiam.github.io
 .. [#ldapschema] https://ldap3.readthedocs.io/en/latest/schema.html

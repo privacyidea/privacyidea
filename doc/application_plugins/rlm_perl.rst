@@ -1,3 +1,5 @@
+:orphan:
+
 .. _rlm_perl:
 
 RADIUS plugin

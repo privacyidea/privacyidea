@@ -22,7 +22,7 @@ Default Security Module
 
 The ``default`` security module is implemented with the operating systems
 capabilities. The encryption key is located in a file *enckey* specified via
-``PI_ENCFILE`` in the configuration file (:ref:`cfgfile`).
+``PI_ENCFILE`` in (:ref:`cfgfile`).
 
 This *enckey* contains three 32byte keys and is thus 96 bytes. This file
 has to be protected. So the access rights to this file are set
@@ -116,8 +116,7 @@ used to decrypt an encrypted file like `/etc/privacyidea/enckey.enc`.
 With the first request to each process of the privacyIDEA server, the HSM is used
 to decrypt the encryption key. After that the encryption key is kept in memory during run time.
 
-To activate this module add the following to the configuration file
-(:ref:`cfgfile`)
+To activate this module add the following to :ref:`cfgfile`::
 
     PI_HSM_MODULE = "privacyidea.lib.security.encryptkey.EncryptKeyHardwareSecurityModule"
 
@@ -168,8 +167,8 @@ Preloading of encryption keys
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This security module allows you to preload the encryption keys. I.e. privacyIDEA can use the HSM to decrypt
-the keys before the first request is sent to privacyIDEA. To do so, you need to modify the wsgi script
-(See :ref:`wsgiscript`) and add the parameter `init_hsm`::
+the keys before the first request is sent to privacyIDEA. To do so, you need to modify :ref:`wsgiscript`
+and add the parameter `init_hsm`::
 
     application = create_app(config_name="production",
                              config_file="/etc/privacyidea/pi.cfg", init_hsm=True)

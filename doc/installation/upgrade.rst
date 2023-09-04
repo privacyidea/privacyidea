@@ -4,7 +4,7 @@ Upgrading
 ---------
 
 In any case before upgrading a major version read the document
-`READ_BEFORE_UPDATE <https://github.com/privacyidea/privacyidea/blob/master/READ_BEFORE_UPDATE.md>`_
+`READ_BEFORE_UPDATE`_
 which is continuously updated in the Github repository.
 Note, that when you are upgrading over several major versions, read all the comments
 for all versions.
@@ -87,7 +87,7 @@ Upgrading a packaged installation
 
 In general, the upgrade of a packaged version of privacyIDEA should be done using the
 default tools (e.g. apt and yum). In any case, read the
-`READ_BEFORE_UPDATE <https://github.com/privacyidea/privacyidea/blob/master/READ_BEFORE_UPDATE.md>`_
+`READ_BEFORE_UPDATE`_
 file. It is also a good idea to backup your system before upgrading.
 
 Ubuntu upgrade
@@ -127,3 +127,5 @@ For a Red Hat Enterprise Linux (RHEL) installation run::
  yum update
 
 to upgrade.
+
+.. _READ_BEFORE_UPDATE: https://github.com/privacyidea/privacyidea/blob/master/READ_BEFORE_UPDATE.md

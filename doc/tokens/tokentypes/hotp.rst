@@ -1,14 +1,14 @@
 .. _hotp_token:
 
 HOTP Token
-----
+----------
 
 The HOTP token is - together with the :ref:`totp_token` - the most common token.
 The HOTP Algorithm is defined in
 `RFC4225 <https://tools.ietf.org/html/rfc4226>`_. The HOTP token is an event
 base token.
 The HOTP algorithm offers two parameters:
-* The length of the generated :term:`OTP` value (6 or 8 digits)
+* The length of the generated :term:`OTP Value` (6 or 8 digits)
 * The hashing algorithm to use (`SHA1`, `SHA256` or `SHA512`).
 
 The HOTP token implements the :ref:`authenticate mode <authentication_mode_authenticate>`.
