@@ -1,3 +1,11 @@
+Version 3.9dev3, 2023-09-04
+
+  Enhancements:
+  * Docs: Update documentation (#3728)
+
+  Fixes:
+  * Correct ID and help-text for Daypassword (#3742, #3744)
+
 Version 3.9dev2, 2023-08-29
 
   Enhancements:
