@@ -1,21 +1,4 @@
-Version 3.9dev3, 2023-09-04
-
-  Enhancements:
-  * Docs: Update documentation (#3728)
-
-  Fixes:
-  * Correct ID and help-text for Daypassword (#3742, #3744)
-
-Version 3.9dev2, 2023-08-29
-
-  Enhancements:
-  * Update translations
-  * Update documentation (#3712, #3728)
-
-  Fixes:
-  * Fix calculation of TOTP values (#3734)
-
-Version 3.9dev1, 2023-07-28
+Version 3.9, 2023-09-12
 
   Features:
   * Tokentype: Application Specific password (#3260, #3585)
@@ -53,6 +36,8 @@ Version 3.9dev1, 2023-07-28
   * Docs: Improve policy mangle documentation (#3565)
   * Docs: Add a detailed plugin guide how to write fully functional plugins (#3650)
   * Docs: Fix description of preferred_client_mode (#3661)
+  * Docs: Update documentation (#3728, #3712, #3728)
+  * Update translations
   * Infrastructure: Add Bandit and GraphQL runs for pull requests
 
   Fixes:
@@ -83,6 +68,8 @@ Version 3.9dev1, 2023-07-28
   * Fixing response data of /auth endpoint to make the handling
     more consistent (#3436)
   * Fix parameter error in Webhook event handler (#3676)
+  * Fix calculation of TOTP values (#3734)
+  * Correct ID and help-text for Daypassword (#3742, #3744)
 
 Version 3.8.1, 2023-02-06
 
