@@ -89,7 +89,7 @@ from privacyidea.lib.auth import ROLE
 from flask_script import Manager, Command, Option
 from privacyidea.app import db
 from flask_migrate import MigrateCommand, stamp as fm_stamp
-# Wee need to import something, so that the models will be created.
+# We need to import something, so that the models will be created.
 from privacyidea.models import Audit
 from sqlalchemy import create_engine, desc, MetaData
 from sqlalchemy.orm import sessionmaker
@@ -627,11 +627,11 @@ def drop_tables(dropit=None):
         db.drop_all()
         table_name = "alembic_version"
         db.reflect()
-        table = db.Model.metadata.tables.get(table_name, None)
-        if table:
-            db.Model.metadata.drop_all(bind=db.engine,
-                                       tables=[table],
-                                       checkfirst=True)
+        table = db.metadata.tables.get(table_name, None)
+        if table is not None:
+            db.metadata.drop_all(bind=db.engine,
+                                 tables=[table],
+                                 checkfirst=True)
     else:
         print("Not dropping anything!")
 
