@@ -20,8 +20,11 @@
   ```
   Unless you are using this API call directly, this is not relevant for normal operation.
 
-The database table `serviceid` is added, there is no data migration
-necessary.
+* The database table `serviceid` is added, there is no data migration
+  necessary.
+
+* The SQL ORM SQLAlchemy is updated to version 1.4 which makes some changes
+  under the hood (i.e. Sequences are now supported with MariaDB > 10.3).
 
 Be sure to run the schema update script!
 

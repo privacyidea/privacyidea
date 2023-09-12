@@ -2836,7 +2836,7 @@ class UserCache(MethodsMixin, db.Model):
 class AuthCache(MethodsMixin, db.Model):
     __tablename__ = 'authcache'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
-    id = db.Column(db.Integer, Sequence("usercache_seq"), primary_key=True)
+    id = db.Column(db.Integer, Sequence("authcache_seq"), primary_key=True)
     first_auth = db.Column(db.DateTime, index=True)
     last_auth = db.Column(db.DateTime, index=True)
     username = db.Column(db.Unicode(64), default="", index=True)
