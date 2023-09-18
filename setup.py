@@ -1,6 +1,11 @@
-# -*- coding: utf-8 -*-
+# SPDX-FileCopyrightText: (C) 2023 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#
+# SPDX-License-Identifier: CC0-1.0
+
 from setuptools import setup
 
+# The pyproject.toml format does not (yet) provide a way to install stand-alone
+# scripts so we (mis)use the setup.py
 setup(
     scripts=[
         "pi-manage",
