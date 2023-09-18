@@ -529,6 +529,8 @@ during the login process with a :ref:`push_token`.
 You can choose different texts for different users or IP addresses.
 This way you could customize push notifications for different applications.
 
+You can also use certain tags in the text, just like in :ref:`emailtext`.
+
 .. _policy_push_title_on_mobile:
 
 push_title_on_mobile

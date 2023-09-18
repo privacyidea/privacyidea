@@ -38,7 +38,7 @@ import traceback
 from privacyidea.api.lib.utils import getParam
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config
 from privacyidea.lib.token import get_one_token, init_token
-from privacyidea.lib.utils import prepare_result, to_bytes, is_true
+from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
                                    privacyIDEAError, ConfigAdminError, PolicyError)
 
@@ -171,7 +171,7 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
 
 def _build_smartphone_data(serial, challenge, registration_url, pem_privkey, options):
     """
-    Create the dictionary to be send to the smartphone as challenge
+    Create the dictionary to be sent to the smartphone as challenge
 
     :param challenge: base32 encoded random data string
     :type challenge: str
@@ -189,6 +189,16 @@ def _build_smartphone_data(serial, challenge, registration_url, pem_privkey, opt
     message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
                                                        PUSH_ACTION.MOBILE_TEXT,
                                                        options) or DEFAULT_MOBILE_TEXT
+    user_object = options.get("user")
+    tags = create_tag_dict(serial=serial,
+                           client_ip=options.get("clientip"),
+                           tokenowner=user_object,
+                           tokentype="push",
+                           recipient={"givenname": user_object.info.get("givenname") if User else "",
+                                      "surname": user_object.info.get("surname") if User else ""},
+                           challenge=options.get("challenge"))
+    message_on_mobile = message_on_mobile.format(**tags)
+
     title = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.MOBILE_TITLE,
                                            options) or "privacyIDEA"
     smartphone_data = {"nonce": challenge,
@@ -348,7 +358,8 @@ class PushTokenClass(TokenClass):
                    SCOPE.AUTH: {
                        PUSH_ACTION.MOBILE_TEXT: {
                            'type': 'str',
-                           'desc': _('The question the user sees on his mobile phone.'),
+                           'desc': _('The question the user sees on his mobile phone. Several tags like {serial} and '
+                                     '{client_ip} can be used as parameters.'),
                            'group': 'PUSH'
                        },
                        PUSH_ACTION.MOBILE_TITLE: {
