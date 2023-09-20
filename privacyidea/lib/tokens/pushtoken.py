@@ -190,7 +190,7 @@ def _build_smartphone_data(serial, challenge, registration_url, pem_privkey, opt
                                                        PUSH_ACTION.MOBILE_TEXT,
                                                        options) or DEFAULT_MOBILE_TEXT
     user_object = options.get("user")
-    request = options.get("g", {}).get("request_headers", {}).get("werkzeug.request")
+    request = options.get("g", {}).get("request_headers", {}).get("environ", {}).get("werkzeug.request")
     tags = create_tag_dict(serial=serial,
                            request=request,
                            client_ip=options.get("clientip"),
