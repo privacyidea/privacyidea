@@ -710,10 +710,10 @@ class PushTokenClass(TokenClass):
 
             pubkey_obj = _build_verify_object(tok.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
             sign_data = "{serial}|{timestamp}".format(**request_data)
-            #pubkey_obj.verify(b32decode(signature),
-            #                  sign_data.encode("utf8"),
-            #                  padding.PKCS1v15(),
-            #                  hashes.SHA256())
+            pubkey_obj.verify(b32decode(signature),
+                              sign_data.encode("utf8"),
+                              padding.PKCS1v15(),
+                              hashes.SHA256())
             # The signature was valid now check for an open challenge
             # we need the private server key to sign the smartphone data
             pem_privkey = tok.get_tokeninfo(PRIVATE_KEY_SERVER)
