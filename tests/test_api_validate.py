@@ -4067,7 +4067,7 @@ class PushChallengeTags(MyApiTestCase):
                        PUSH_ACTION.TTL, TTL))
 
         set_policy("push1", scope=SCOPE.AUTH,
-                   action=PUSH_ACTION.MOBILE_TEXT + "=Login von UserAgent: {ua_browser} via {client_ip}/{tokentype}.")
+                   action=PUSH_ACTION.MOBILE_TEXT + "=Login von UserAgent: {ua_string} via {client_ip}/{tokentype}.")
 
         # create push token for user with PIN
         # 1st step

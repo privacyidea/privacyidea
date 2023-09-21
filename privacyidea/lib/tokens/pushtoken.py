@@ -189,8 +189,20 @@ def _build_smartphone_data(serial, challenge, registration_url, pem_privkey, opt
     message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
                                                        PUSH_ACTION.MOBILE_TEXT,
                                                        options) or DEFAULT_MOBILE_TEXT
-    user_object = options.get("user")
-    request = options.get("g", {}).get("request_headers", {}).get("environ", {}).get("werkzeug.request")
+    # Get the request object
+    req_headers = options.get("g", {}).get("request_headers", {})
+    req_environment = req_headers.environ
+    request = req_environment.get("werkzeug.request")
+    if request:
+        user_object = request.User
+    else:
+        # Get owner from token object
+        try:
+            tok = get_one_token(serial=serial)
+            user_object = tok.user
+        except Exception:
+            user_object = None
+
     tags = create_tag_dict(serial=serial,
                            request=request,
                            client_ip=options.get("clientip"),
@@ -200,6 +212,7 @@ def _build_smartphone_data(serial, challenge, registration_url, pem_privkey, opt
                                       "surname": user_object.info.get("surname") if user_object else ""},
                            challenge=options.get("challenge"))
     message_on_mobile = message_on_mobile.format(**tags)
+    log.debug("Sending to mobile: {0!s}".format(message_on_mobile))
 
     title = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.MOBILE_TITLE,
                                            options) or "privacyIDEA"
