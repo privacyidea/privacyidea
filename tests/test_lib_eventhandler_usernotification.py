@@ -108,8 +108,8 @@ class UserNotificationTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"emailconfig": "myserver"}
+                   "handler_def": {"options": {"body": "token description: {tokendescription}",
+                                               "emailconfig": "myserver"}
                                    }
                    }
 
@@ -515,7 +515,7 @@ class UserNotificationTestCase(MyTestCase):
 
         tok = init_token({"serial": serial,
                           "type": "spass"},
-                          user=User("cornelius", "realm1"))
+                         user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
         req = Request(env)
