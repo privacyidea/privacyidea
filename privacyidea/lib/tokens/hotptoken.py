@@ -298,6 +298,11 @@ class HotpTokenClass(TokenClass):
                                                   "value": oath_url,
                                                   "img": create_img(oath_url)
                                                   }
+                except KeyError as ex:
+                    audit_entry = self.find_most_recent_audit_entry(action= "POST /auth")
+                    log.error("{0!s}".format((traceback.format_exc())))
+                    log.error('Unknown Tag {0!r} in one of your policy definition: {1!r}'
+                              .format(ex, audit_entry['policies']))
                 except Exception as ex:  # pragma: no cover
                     log.error("{0!s}".format((traceback.format_exc())))
                     log.error('failed to set oath or google url: {0!r}'.format(ex))
