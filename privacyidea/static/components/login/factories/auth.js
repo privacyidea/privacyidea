@@ -46,6 +46,7 @@ angular.module("privacyideaAuth", ['privacyideaApp.errorMessage'])
                 if (typeof (error) === "string") {
                     inform.add(gettextCatalog.getString("Failed to get a valid JSON response from the privacyIDEA server."),
                         {type: "danger", ttl: 10000});
+                    console.warn(error);
                 } else {
                     inform.add(error.result.error.message, {type: "danger", ttl: 10000});
                     if (authErrorCodes.indexOf(error.result.error.code) >= 0) {
