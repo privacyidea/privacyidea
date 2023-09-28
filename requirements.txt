@@ -52,7 +52,7 @@ pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycparser==2.21
 pydash==5.1.2; python_version == '3.6'
-pydash==6.0.2; python_version > '3.6'
+pydash==6.0.0; python_version > '3.6'
 PyJWT==2.4.0; python_version == '3.6'
 PyJWT==2.6.0; python_version > '3.6'
 PyMySQL==1.0.2; python_version == '3.6'
