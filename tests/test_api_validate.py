@@ -558,6 +558,24 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self.assertEqual(data.get("result").get("error").get("message"),
                              "ERR905: Token is not an offline token or refill token is incorrect")
 
+        # Disable token. Refill should fail.
+        enable_token(self.serials[0], False)
+        with self.app.test_request_context('/validate/offlinerefill',
+                                           method='POST',
+                                           data={"serial": self.serials[0],
+                                                 "pass": "pin520489",
+                                                 "refilltoken": refilltoken_2},
+                                           environ_base={'REMOTE_ADDR': '192.168.0.2'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"))
+            error = result.get("error")
+            self.assertEqual(905, error.get("code"))
+            self.assertEqual("ERR905: The token is not valid.", error.get("message"))
+        # Enable token again
+        enable_token(self.serials[0], True)
+
         # 2nd refill with 10th value
         with self.app.test_request_context('/validate/offlinerefill',
                                            method='POST',
