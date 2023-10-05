@@ -185,5 +185,8 @@ class MachineApplication(MachineApplicationBase):
         """
         returns a dictionary with a list of required and optional options
         """
-        return {'count': {'type': TYPE.STRING},
-                'rounds': {'type': TYPE.STRING}}
+        options = {"hotp":
+                       {'count': {'type': TYPE.STRING},
+                        'rounds': {'type': TYPE.STRING}},
+                   "webauthn": {}}
+        return options

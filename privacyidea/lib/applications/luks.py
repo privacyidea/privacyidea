@@ -87,6 +87,9 @@ class MachineApplication(MachineApplicationBase):
         """
         returns a dictionary with a list of required and optional options
         """
-        return {'slot': {'type': TYPE.INT,
-                         'value': [0, 1, 2, 3, 4, 5, 6, 7]},
-                'partition': {'type': TYPE.STRING}}
+        options = {"totp":
+                       {'slot': {'type': TYPE.INT,
+                                 'value': [0, 1, 2, 3, 4, 5, 6, 7]},
+                        'partition': {'type': TYPE.STRING}}
+                   }
+        return options

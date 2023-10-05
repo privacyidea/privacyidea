@@ -43,11 +43,13 @@ class SSHApplicationTestCase(MyTestCase):
 
     def test_01_get_options(self):
         # Can run as class
-        options = SSHApplication.get_options()
-        self.assertIn("user", options)
-        self.assertIn("service_id", options)
-        self.assertEqual("str", options.get("user").get("type"))
-        self.assertEqual("str", options.get("service_id").get("type"))
+        tokenoptions = SSHApplication.get_options()
+        self.assertIn("sshkey", tokenoptions)
+        sshkeyoptions = tokenoptions.get("sshkey")
+        self.assertIn("user", sshkeyoptions)
+        self.assertIn("service_id", sshkeyoptions)
+        self.assertEqual("str", sshkeyoptions.get("user").get("type"))
+        self.assertEqual("str", sshkeyoptions.get("service_id").get("type"))
 
     def test_02_get_auth_item(self):
         serial = "ssh1"
@@ -79,11 +81,13 @@ class LUKSApplicationTestCase(MyTestCase):
 
     def test_01_get_options(self):
         # Can run as class
-        options = LUKSApplication.get_options()
-        self.assertIn("slot", options)
-        self.assertIn("partition", options)
-        self.assertEqual("int", options.get("slot").get("type"))
-        self.assertEqual("str", options.get("partition").get("type"))
+        tokenoptions = LUKSApplication.get_options()
+        self.assertIn("totp", tokenoptions)
+        totpoptions = tokenoptions.get("totp")
+        self.assertIn("slot", totpoptions)
+        self.assertIn("partition", totpoptions)
+        self.assertEqual("int", totpoptions.get("slot").get("type"))
+        self.assertEqual("str", totpoptions.get("partition").get("type"))
 
     def test_02_get_auth_item(self):
         serial = "UBOM12345"
@@ -115,11 +119,14 @@ class OfflineApplicationTestCase(MyTestCase):
 
     def test_01_get_options(self):
         # Can run as class
-        options = OfflineApplication.get_options()
-        self.assertIn("count", options)
-        self.assertIn("rounds", options)
-        self.assertEqual("str", options.get("count").get("type"))
-        self.assertEqual("str", options.get("rounds").get("type"))
+        tokenoptions = OfflineApplication.get_options()
+        self.assertIn("hotp", tokenoptions)
+        self.assertIn("webauthn", tokenoptions)
+        hotpoptions = tokenoptions.get("hotp")
+        self.assertIn("count", hotpoptions)
+        self.assertIn("rounds", hotpoptions)
+        self.assertEqual("str", hotpoptions.get("count").get("type"))
+        self.assertEqual("str", hotpoptions.get("rounds").get("type"))
 
     def test_02_get_auth_item(self):
         serial = "OATH1"
@@ -180,7 +187,8 @@ class BaseApplicationTestCase(MyTestCase):
         self.assertEqual(base_app.get_name(), "base")
         self.assertEqual(base_app.get_authentication_item("hotp", "serial"),
                          "nothing")
-        options = base_app.get_options()
+        tokens = base_app.get_options()
+        options = tokens.get("tokentype")
         self.assertEqual(options["optionA"].get("type"), "bool")
         self.assertTrue(options["optionA"].get("required"))
 
@@ -197,9 +205,15 @@ class BaseApplicationTestCase(MyTestCase):
         apps = get_application_types()
         self.assertTrue("luks" in apps)
         self.assertTrue("ssh" in apps)
-        self.assertIn("service_id", apps["ssh"]["options"])
-        self.assertIn("user", apps["ssh"]["options"])
-        self.assertIn("slot", apps["luks"]["options"])
-        self.assertIn("partition", apps["luks"]["options"])
+        sshoptions = apps["ssh"]["options"]
+        offlineoptions = apps["offline"]["options"]
+        luksoptions = apps["luks"]["options"]
+        self.assertIn("service_id", sshoptions["sshkey"])
+        self.assertIn("user", sshoptions["sshkey"])
+        self.assertIn("slot", luksoptions["totp"])
+        self.assertIn("partition", luksoptions["totp"])
+        self.assertIn("count", offlineoptions["hotp"])
+        self.assertIn("rounds", offlineoptions["hotp"])
+        self.assertEqual({}, offlineoptions["webauthn"])
 
 
