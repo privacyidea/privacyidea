@@ -299,7 +299,7 @@ class HotpTokenClass(TokenClass):
                                                   "img": create_img(oath_url)
                                                   }
                 except KeyError as ex:
-                    audit_entry = self.find_most_recent_audit_entry(action= "POST /auth")
+                    audit_entry = self.find_most_recent_audit_entry(action="POST /auth")
                     log.error("{0!s}".format((traceback.format_exc())))
                     log.error('Unknown Tag {0!r} in one of your policy definition: {1!r}'
                               .format(ex, audit_entry['policies']))
