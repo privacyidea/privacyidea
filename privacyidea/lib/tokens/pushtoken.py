@@ -190,9 +190,11 @@ def _build_smartphone_data(serial, challenge, registration_url, pem_privkey, opt
                                                        PUSH_ACTION.MOBILE_TEXT,
                                                        options) or DEFAULT_MOBILE_TEXT
     # Get the request object
-    req_headers = options.get("g", {}).get("request_headers", {})
-    req_environment = req_headers.environ
-    request = req_environment.get("werkzeug.request")
+    req_headers = options.get("g", {}).get("request_headers")
+    request = None
+    if req_headers:
+        req_environment = req_headers.environ
+        request = req_environment.get("werkzeug.request")
     if request:
         user_object = request.User
     else:
