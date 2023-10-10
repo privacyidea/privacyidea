@@ -319,7 +319,7 @@ def create(directory="/var/lib/privacyidea/backup/",
         if parsed_sqluri.port:
             cmd.extend(['-P', str(parsed_sqluri.port)])
         cmd.extend(['-B', shlex_quote(database), '-r', shlex_quote(sqlfile)])
-        call(cmd, shell=True)
+        call(cmd, shell=False)
     else:
         print("unsupported SQL syntax: %s" % sqltype)
         sys.exit(2)
