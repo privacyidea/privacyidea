@@ -107,6 +107,7 @@ class BaseEventHandler(object):
 
     def __init__(self):
         pass
+        self.run_details = None
 
     @property
     def allowed_positions(cls):

@@ -439,6 +439,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                                 mimetype=mimetype)
                 except Exception as exx:
                     log.error("Failed to send email: {0!s}".format(exx))
+                    self.run_details = "{0!s}".format(exx)
                     ret = False
                 if ret:
                     log.info("Sent a notification email to user {0}".format(
@@ -446,6 +447,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 else:
                     log.warning("Failed to send a notification email to user "
                                 "{0}".format(recipient))
+                    self.run_details = "Failed: {0!s}.".format(useremail)
 
             elif action.lower() == "savefile":
                 spooldir = get_app_config_value("PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY",

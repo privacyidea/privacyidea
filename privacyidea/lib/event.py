@@ -93,6 +93,9 @@ class event(object):
 
                     result = event_handler.do(e_handler_def.get("action"),
                                                options=options)
+                    if not result and event_handler.run_details:
+                        event_audit_data["info"] += " ({!s})".format(event_handler.run_details)
+                        event_audit.log(event_audit_data)
                     # set audit object to success
                     event_audit.log({"success": result})
                     event_audit.finalize_log()
@@ -133,6 +136,9 @@ class event(object):
 
                     result = event_handler.do(e_handler_def.get("action"),
                                                options=options)
+                    if not result and event_handler.run_details:
+                        event_audit_data["info"] += " ({!s})".format(event_handler.run_details)
+                        event_audit.log(event_audit_data)
                     # In case the handler has modified the response
                     f_result = options.get("response")
                     # set audit object to success
