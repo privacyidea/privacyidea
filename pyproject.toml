@@ -4,7 +4,7 @@
 
 [project]
 name = "privacyIDEA"
-version = "3.9"
+version = "3.10dev1"
 description="privacyIDEA: multifactor authentication management system"
 readme = "README.rst"
 requires-python = ">=3.7"
@@ -54,6 +54,7 @@ dependencies = [
     "huey[redis]>=1.11.0",
     "importlib_metadata>=2.1.1; python_version=='3.7'",
     "ldap3>=2.8,<2.9",
+    "MarkupSafe<2.1",
     "netaddr>=0.7.12",
     "passlib[bcrypt]>=1.7.0",
     "protobuf>=3.20",
@@ -98,13 +99,11 @@ kerberos = [
 ]
 
 [project.urls]
-homepage = "https://privacyidea.org"
-documentation = "https://privacyidea.readthedocs.io"
-repository = "https://github.com/privacyidea/privacyidea"
-changelog = "https://github.com/privacyidea/privacyidea/blob/master/Changelog"
-
-[project.scripts]
-pi-manage = "privacyidea.cli:main"
+"Homepage" = "https://privacyidea.org"
+"Documentation" = "https://privacyidea.readthedocs.io"
+"Source Code" = "https://github.com/privacyidea/privacyidea"
+"Changelog" = "https://github.com/privacyidea/privacyidea/blob/master/Changelog"
+"Forum" = "https://community.privacyidea.org"
 
 [build-system]
 requires = ["setuptools>=61.0"]
@@ -112,4 +111,4 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-exclude = ["tests*"]
+exclude = ["tests*", "doc*", "deploy*"]
