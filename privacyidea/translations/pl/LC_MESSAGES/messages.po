@@ -2,54 +2,56 @@
 # Copyright (C) 2020 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
-#
+# Polon <polonize@proton.me>, 2023.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2023-08-15 17:33+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2023-09-29 09:02+0000\n"
+"Last-Translator: Polon <polonize@proton.me>\n"
+"Language-Team: Polish <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-server/pl/>\n"
 "Language: pl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
-"|| n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
+"|| n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 5.1-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:225
 msgid "Authentication failure. Unknown realm: {0!s}."
-msgstr ""
+msgstr "Błąd uwierzytelniania. Nieznana domena: {0!s}."
 
 #: api/auth.py:229
 msgid "Authentication failure. Missing Username"
-msgstr ""
+msgstr "Błąd uwierzytelniania. Brak nazwy użytkownika"
 
 #: api/auth.py:350
 msgid "Authentication failure. Wrong credentials"
-msgstr ""
+msgstr "Błąd uwierzytelniania. Błędne dane logowania"
 
 #: api/lib/prepolicy.py:2237
 msgid "Missing description for {} token."
-msgstr ""
+msgstr "Brakujący opis dla tokenu {}."
 
 #: api/lib/prepolicy.py:2238
 msgid "Description required for {} token."
-msgstr ""
+msgstr "Opis jest wymagany dla tokenu {}."
 
 #: api/lib/utils.py:345
 msgid "Authentication failure. Missing Authorization header."
-msgstr ""
+msgstr "Błąd uwierzytelniania. Brak nagłówka Authorization."
 
 #: api/lib/utils.py:351 api/lib/utils.py:384
 msgid "Authentication failure. Error during decoding your token: {0!s}"
-msgstr ""
+msgstr "Błąd uwierzytelniania. Błąd podczas dekodowania tokena: {0!s}"
 
 #: api/lib/utils.py:377 api/lib/utils.py:387
 msgid "Authentication failure. Your token has expired: {0!s}"
-msgstr ""
+msgstr "Błąd uwierzytelniania. Twój token utracił ważność: {0!s}"
 
 #: api/lib/utils.py:391
 msgid ""
@@ -62,10 +64,12 @@ msgid ""
 "Authentication failure. You do not have the necessary role ({0!s}) to access "
 "this resource!"
 msgstr ""
+"Błąd uwierzytelniania. Nie masz wymaganej roli ({0!s}), aby uzyskać dostęp "
+"do tego zasobu!"
 
 #: api/lib/utils.py:413
 msgid "'{0!s}' is an invalid policy name."
-msgstr ""
+msgstr "'{0!s}' jest niepoprawną nazwą polityki."
 
 #: api/lib/utils.py:416
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
