@@ -3,6 +3,7 @@
 import unittest
 import mock
 from sqlalchemy.orm.session import close_all_sessions
+from flask.ctx import _AppCtxGlobals
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
@@ -26,6 +27,9 @@ class FakeFlaskG(object):
     client_ip = None
     request_headers = None
     serial = None
+
+    def get(self, name, default=None):
+        return self.__dict__.get(name, default)
 
 
 class FakeAudit(Audit):
@@ -57,7 +61,7 @@ class MyTestCase(unittest.TestCase):
                         "399871",
                         "520489"]
 
-    
+
     @classmethod
     def setUpClass(cls):
         cls.app = create_app('testing', "")

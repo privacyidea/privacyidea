@@ -38,7 +38,7 @@ import traceback
 from privacyidea.api.lib.utils import getParam
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config
 from privacyidea.lib.token import get_one_token, init_token
-from privacyidea.lib.utils import prepare_result, to_bytes, is_true
+from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
                                    privacyIDEAError, ConfigAdminError, PolicyError)
 
@@ -169,10 +169,12 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
                                        extra=_construct_extra_parameters(extra_data)))
 
 
-def _build_smartphone_data(serial, challenge, registration_url, pem_privkey, options):
+def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, options):
     """
-    Create the dictionary to be send to the smartphone as challenge
+    Create the dictionary to be sent to the smartphone as challenge
 
+    :param token_obj: The token object for which to create the smartphone data
+    :type token_obj: A tokenclass object
     :param challenge: base32 encoded random data string
     :type challenge: str
     :param registration_url: The privacyIDEA URL, to which the Push token communicates
@@ -189,11 +191,40 @@ def _build_smartphone_data(serial, challenge, registration_url, pem_privkey, opt
     message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
                                                        PUSH_ACTION.MOBILE_TEXT,
                                                        options) or DEFAULT_MOBILE_TEXT
+    # Get the request object
+    _g = options.get("g", {})
+    req_headers = None
+    request = None
+    if hasattr(_g, "request_headers"):
+        req_headers = _g.request_headers
+    if req_headers:
+        req_environment = req_headers.environ
+        request = req_environment.get("werkzeug.request")
+    if request:
+        user_object = request.User
+    else:
+        # Get owner from token object
+        try:
+            user_object = token_obj.user
+        except Exception:
+            user_object = None
+
+    tags = create_tag_dict(serial=token_obj.token.serial,
+                           request=request,
+                           client_ip=options.get("clientip"),
+                           tokenowner=user_object,
+                           tokentype="push",
+                           recipient={"givenname": user_object.info.get("givenname") if user_object else "",
+                                      "surname": user_object.info.get("surname") if user_object else ""},
+                           challenge=options.get("challenge"))
+    message_on_mobile = message_on_mobile.format(**tags)
+    log.debug("Sending to mobile: {0!s}".format(message_on_mobile))
+
     title = get_action_values_from_options(SCOPE.AUTH, PUSH_ACTION.MOBILE_TITLE,
                                            options) or "privacyIDEA"
     smartphone_data = {"nonce": challenge,
                        "question": message_on_mobile,
-                       "serial": serial,
+                       "serial": token_obj.token.serial,
                        "title": title,
                        "sslverify": sslverify,
                        "url": registration_url}
@@ -348,7 +379,8 @@ class PushTokenClass(TokenClass):
                    SCOPE.AUTH: {
                        PUSH_ACTION.MOBILE_TEXT: {
                            'type': 'str',
-                           'desc': _('The question the user sees on his mobile phone.'),
+                           'desc': _('The question the user sees on his mobile phone. Several tags like {serial} and '
+                                     '{client_ip} can be used as parameters.'),
                            'group': 'PUSH'
                        },
                        PUSH_ACTION.MOBILE_TITLE: {
@@ -707,7 +739,7 @@ class PushTokenClass(TokenClass):
                 if not answered and chal.is_valid():
                     # then return the necessary smartphone data to answer
                     # the challenge
-                    sp_data = _build_smartphone_data(serial, chal.challenge,
+                    sp_data = _build_smartphone_data(tok, chal.challenge,
                                                      registration_url, pem_privkey, options)
                     challenges.append(sp_data)
             # return the challenges as a list in the result value
@@ -870,7 +902,7 @@ class PushTokenClass(TokenClass):
                     registration_url = get_action_values_from_options(
                         SCOPE.ENROLL, PUSH_ACTION.REGISTRATION_URL, options=options)
                     pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
-                    smartphone_data = _build_smartphone_data(self.token.serial,
+                    smartphone_data = _build_smartphone_data(self,
                                                              challenge, registration_url,
                                                              pem_privkey, options)
                     res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
