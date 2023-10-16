@@ -3524,7 +3524,7 @@ class WebAuthn(MyApiTestCase):
         self.assertEqual(get_tokens(serial=self.serial)[0].token.description, "Yubico U2F EE Serial 61730834")
 
     def test_10_validate_check(self):
-        # Run challenge request agsint /validate/check
+        # Run challenge request against /validate/check
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": self.username,
@@ -3540,7 +3540,7 @@ class WebAuthn(MyApiTestCase):
                              data.get("detail").get("message"))
 
     def test_11_trigger_challenge(self):
-        # Run challenge request agsint /validate/triggerchallenge
+        # Run challenge request against /validate/triggerchallenge
         with self.app.test_request_context('/validate/triggerchallenge',
                                            method='POST',
                                            data={"user": self.username},

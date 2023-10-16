@@ -106,28 +106,32 @@ class MachineApplication(MachineApplicationBase):
         :return: a dictionary of auth items
         """
         options = options or {}
-        count = int(options.get("count", 100))
-        rounds = int(options.get("rounds", ROUNDS))
-        _r, otppin, otpval = token_obj.split_pin_pass(password)
-        if not _r:
-            raise ParameterError("Could not split password")
-        current_token_counter = token_obj.token.count
-        first_offline_counter = current_token_counter - count
-        if first_offline_counter < 0:
-            first_offline_counter = 0
-        # find the value in the offline OTP values! This resets the token.count!
-        matching_count = token_obj.check_otp(otpval, first_offline_counter, count)
-        token_obj.set_otp_count(current_token_counter)
-        # Raise an exception *after* we reset the token counter
-        if matching_count < 0:
-            raise ValidateError("You provided a wrong OTP value.")
-        # We have to add 1 here: Assume *first_offline_counter* is the counter value of the first offline OTP
-        # we sent to the client. Assume the client then requests a refill with that exact OTP value.
-        # Then, we need to respond with a refill of one OTP value, as the client has consumed one OTP value.
-        counter_diff = matching_count - first_offline_counter + 1
-        otps = MachineApplication.get_offline_otps(token_obj, otppin, counter_diff, rounds)
-        token_obj.add_tokeninfo(key="offline_counter",
-                                value=count)
+        otps = {}
+        if token_obj.type.lower() == "hotp":
+            count = int(options.get("count", 100))
+            rounds = int(options.get("rounds", ROUNDS))
+            _r, otppin, otpval = token_obj.split_pin_pass(password)
+            if not _r:
+                raise ParameterError("Could not split password")
+            current_token_counter = token_obj.token.count
+            first_offline_counter = current_token_counter - count
+            if first_offline_counter < 0:
+                first_offline_counter = 0
+            # find the value in the offline OTP values! This resets the token.count!
+            matching_count = token_obj.check_otp(otpval, first_offline_counter, count)
+            token_obj.set_otp_count(current_token_counter)
+            # Raise an exception *after* we reset the token counter
+            if matching_count < 0:
+                raise ValidateError("You provided a wrong OTP value.")
+            # We have to add 1 here: Assume *first_offline_counter* is the counter value of the first offline OTP
+            # we sent to the client. Assume the client then requests a refill with that exact OTP value.
+            # Then, we need to respond with a refill of one OTP value, as the client has consumed one OTP value.
+            counter_diff = matching_count - first_offline_counter + 1
+            otps = MachineApplication.get_offline_otps(token_obj, otppin, counter_diff, rounds)
+            token_obj.add_tokeninfo(key="offline_counter",
+                                    value=count)
+        elif token_obj.type.lower() == "webauthn":
+            pass
         return otps
 
     @staticmethod
@@ -137,43 +141,48 @@ class MachineApplication(MachineApplicationBase):
                                 filter_param=None):
         """
         :param token_type: the type of the token. At the moment
-                           we only support "HOTP" token. Supporting time
-                           based tokens is difficult, since we would have to
+                           we support "HOTP" tokens and "WebAuthn" tokens.
+                           Supporting time based tokens (TOTP) is difficult, since we would have to
                            return a looooong list of OTP values.
-                           Supporting "yubikey" token (AES) would be
-                           possible, too.
         :param serial:     the serial number of the token.
-        :param challenge:  This can contain the password (otp pin + otp
-        value) so that we can put the OTP PIN into the hashed response.
+        :param challenge:  This can contain the password (otp pin + otp value)
+                           so that we can put the OTP PIN into the hashed response.
         :type challenge: basestring
         :return auth_item: A list of hashed OTP values
         """
         ret = {}
         options = options or {}
         password = challenge
-        if token_type.lower() == "hotp":
+        if token_type.lower() in ["hotp", "webauthn"]:
             tokens = get_tokens(serial=serial)
             if len(tokens) == 1:
+                # Generic data
                 token_obj = tokens[0]
-                if password:
-                    _r, otppin, _ = token_obj.split_pin_pass(password)
-                    if not _r:
-                        raise ParameterError("Could not split password")
-                else:
-                    otppin = ""
-                otps = MachineApplication.get_offline_otps(token_obj,
-                                                           otppin,
-                                                           int(options.get("count", 100)),
-                                                           int(options.get("rounds", ROUNDS)))
-                refilltoken = MachineApplication.generate_new_refilltoken(token_obj)
-                ret["response"] = otps
-                ret["refilltoken"] = refilltoken
                 user_object = token_obj.user
                 if user_object:
                     uInfo = user_object.info
                     if "username" in uInfo:
                         ret["user"] = ret["username"] = uInfo.get("username")
-
+                refilltoken = MachineApplication.generate_new_refilltoken(token_obj)
+                ret["refilltoken"] = refilltoken
+                # token specific data
+                if token_type.lower() == "webauthn":
+                    # return the pubkey and the credential_id (contained in the otpkey)
+                    ret["repsonse"] = {
+                            "pubkey": token_obj.get_tokeninfo("pubKey"),
+                            "credential_id": token_obj.decrypt_otpkey() }
+                elif token_type.lower() == "hotp":
+                    if password:
+                        _r, otppin, _ = token_obj.split_pin_pass(password)
+                        if not _r:
+                            raise ParameterError("Could not split password")
+                    else:
+                        otppin = ""
+                    otps = MachineApplication.get_offline_otps(token_obj,
+                                                               otppin,
+                                                               int(options.get("count", 100)),
+                                                               int(options.get("rounds", ROUNDS)))
+                    ret["response"] = otps
         else:
             log.info("Token %r, type %r is not supported by "
                      "OFFLINE application module" % (serial, token_type))
