@@ -300,7 +300,7 @@ class HotpTokenClass(TokenClass):
                                                   }
                 except KeyError as ex:
                     log.debug("{0!s}".format((traceback.format_exc())))
-                    log.error('Unknown Tag {0!r} in one of your policy definition'
+                    log.error('Unknown Tag {0!s} in one of your policy definition'
                               .format(ex))
                 except Exception as ex:  # pragma: no cover
                     log.debug("{0!s}".format((traceback.format_exc())))

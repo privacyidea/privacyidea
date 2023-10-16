@@ -843,6 +843,6 @@ class HOTPTokenTestCase(MyTestCase):
             token = HotpTokenClass(db_token)
             token.add_init_details("otpkey", "11223344556677889900")
             params = {"tokenlabel": "{real}"}
-            detail = token.get_init_detail(user=User("cornelius",
-                                                     self.realm1), params=params)
-            mock_log.assert_any_call("Unknown Tag KeyError('real') in one of your policy definition")
+            _detail = token.get_init_detail(user=User("cornelius",
+                                                      self.realm1), params=params)
+            mock_log.assert_any_call("Unknown Tag 'real' in one of your policy definition")
