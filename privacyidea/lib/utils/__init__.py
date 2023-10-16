@@ -58,9 +58,9 @@ BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 ALLOWED_SERIAL = r"^[0-9a-zA-Z\-_]+$"
 
 # character lists for the identifiers in the pin content policy
-CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters, # characters
-                          "n": string.digits,        # numbers
-                          "s": string.punctuation}   # special
+CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters,  # characters
+                          "n": string.digits,         # numbers
+                          "s": string.punctuation}    # special
 
 
 def check_time_in_range(time_range, check_time=None):
@@ -905,7 +905,7 @@ def int_to_hex(serial):
     """
     serial_hex = hex(int(serial)).upper()
     serial_hex = serial_hex.split("X")[1]
-    if len(serial_hex)%2 != 0:
+    if len(serial_hex) % 2 != 0:
         serial_hex = "0" + serial_hex
     return serial_hex
 
@@ -931,7 +931,7 @@ def parse_legacy_time(ts, return_date=False):
         # we need to reparse the string
         d = parse_date_string(ts,
                               dayfirst=re.match(r"^\d\d[/\.]", ts)).replace(
-                                  tzinfo=tzlocal())
+            tzinfo=tzlocal())
     if return_date:
         return d
     else:
@@ -1335,6 +1335,7 @@ def create_tag_dict(logged_in_user=None,
                     serial=None,
                     tokenowner=None,
                     tokentype=None,
+                    tokendescription=None,
                     recipient=None,
                     registrationcode=None,
                     googleurl_value=None,
@@ -1355,6 +1356,7 @@ def create_tag_dict(logged_in_user=None,
     :param recipient: The recipient
     :type recipient: dictionary with "givenname" and "surname"
     :param registrationcode: The registration code of a token
+    :param tokendescription: The description of the token
     :param googleurl_value: The URL for the QR code during token enrollemnt
     :param client_ip: The IP of the client
     :param pin: The PIN of a token
@@ -1376,6 +1378,7 @@ def create_tag_dict(logged_in_user=None,
                 username=tokenowner.login if tokenowner else "",
                 userrealm=tokenowner.realm if tokenowner else "",
                 tokentype=tokentype,
+                tokendescription=tokendescription,
                 registrationcode=registrationcode,
                 recipient_givenname=recipient.get("givenname"),
                 recipient_surname=recipient.get("surname"),
