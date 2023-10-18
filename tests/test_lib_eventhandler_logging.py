@@ -5,7 +5,7 @@ This file tests:
 
 lib/eventhandler/logging.py
 """
-from mock import mock
+from unittest import mock
 from datetime import datetime
 from werkzeug.test import EnvironBuilder
 from flask import Request

@@ -9,7 +9,7 @@ import email
 import os
 from datetime import datetime, timedelta
 
-import mock
+from unittest import mock
 from dateutil.tz import tzlocal
 from flask import Request
 from werkzeug.test import EnvironBuilder
@@ -108,8 +108,7 @@ class UserNotificationTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"emailconfig": "myserver"}
+                   "handler_def": {"options": {"emailconfig": "myserver"}
                                    }
                    }
 
@@ -160,8 +159,7 @@ class UserNotificationTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"smsconfig": "myGW"}
+                   "handler_def": {"options": {"smsconfig": "myGW"}
                                    }
                    }
 
@@ -226,10 +224,6 @@ class UserNotificationTestCase(MyTestCase):
         self.assertEqual(r, True)
 
         # check a locked token with maxfail = failcount
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
-                                 headers={})
-
         req.all_data = {"user": "cornelius"}
         resp.data = """{"result": {"value": false},
             "detail": {"serial": "lockedtoken"}
@@ -390,8 +384,8 @@ class UserNotificationTestCase(MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=User("cornelius", "realm1"))
+        init_token({"serial": "oath1234", "type": "spass"},
+                   user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
         req = Request(env)
@@ -436,8 +430,8 @@ class UserNotificationTestCase(MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=User("cornelius", "realm1"))
+        init_token({"serial": "oath1234", "type": "spass"},
+                   user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
         req = Request(env)
@@ -463,8 +457,8 @@ class UserNotificationTestCase(MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=User("cornelius", "realm1"))
+        init_token({"serial": "oath1234", "type": "spass"},
+                   user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
         req = Request(env)
@@ -515,7 +509,7 @@ class UserNotificationTestCase(MyTestCase):
 
         tok = init_token({"serial": serial,
                           "type": "spass"},
-                          user=User("cornelius", "realm1"))
+                         user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
         req = Request(env)

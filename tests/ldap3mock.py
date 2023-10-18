@@ -747,7 +747,7 @@ class Ldap3Mock(object):
         return self.con_obj
 
     def start(self):
-        import mock
+        from unittest import mock
 
         def unbound_on_Server(host, port,
                               use_ssl,

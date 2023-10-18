@@ -6,7 +6,7 @@ The lib.usercache.py only depends on the database model
 """
 from contextlib import contextmanager
 
-from mock import patch
+from unittest.mock import patch
 
 from privacyidea.lib.error import UserError
 from tests import ldap3mock

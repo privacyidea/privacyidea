@@ -15,7 +15,7 @@ from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 from privacyidea.lib import _
 import datetime
-import mock
+from unittest import mock
 import responses
 from testfixtures import log_capture
 

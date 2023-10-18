@@ -2,7 +2,7 @@
 This tests the files
   lib/counter.py
 """
-import mock
+from unittest import mock
 from contextlib import contextmanager
 
 from .base import MyTestCase

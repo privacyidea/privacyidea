@@ -14,7 +14,7 @@ from .base import MyTestCase
 from . import ldap3mock
 from ldap3.core.exceptions import LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
-import mock
+from unittest import mock
 import ldap3
 import responses
 import datetime
@@ -321,7 +321,7 @@ class SQLResolverTestCase(MyTestCase):
         self.assertFalse(uid)
         uid = y.getUserId("achmed")
         self.assertFalse(uid)
-        
+
     def test_06_append_where_filter(self):
         y = SQLResolver()
         d = self.parameters.copy()
@@ -329,7 +329,7 @@ class SQLResolverTestCase(MyTestCase):
         y.loadConfig(d)
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 1, userlist)
-        
+
         y = SQLResolver()
         d = self.parameters.copy()
         d.update({"Where": "givenname == hans AND name == dampf"})
@@ -345,14 +345,14 @@ class SQLResolverTestCase(MyTestCase):
         y.loadConfig(d)
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 1, userlist)
-        
+
         y = SQLResolver()
         d = self.parameters.copy()
         d.update({"Where": "givenname == hans and name == test"})
         y.loadConfig(d)
         userlist = y.getUserList()
         self.assertTrue(len(userlist) == 0, userlist)
-        
+
         y = SQLResolver()
         d = self.parameters.copy()
         d.update({"Where": "givenname == chandler"})
@@ -552,7 +552,7 @@ class SQLResolverTestCase(MyTestCase):
 
         # rid1 != rid4, because the pool size has changed
         self.assertNotEqual(rid1, rid4)
-    
+
     def test_08_noninteger_userid(self):
         y = SQLResolver()
         y.loadConfig(self.parameters)

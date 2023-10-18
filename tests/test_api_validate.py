@@ -44,7 +44,7 @@ from testfixtures import Replace, test_datetime
 import datetime
 import time
 import responses
-import mock
+from unittest import mock
 from . import smtpmock, ldap3mock, radiusmock
 
 

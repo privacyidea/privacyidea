@@ -5,7 +5,7 @@ This tests api/periodictask.py
 """
 import jwt
 from contextlib import contextmanager
-import mock
+from unittest import mock
 from dateutil.parser import parse as parse_timestamp
 
 from privacyidea.lib.periodictask import TASK_MODULES

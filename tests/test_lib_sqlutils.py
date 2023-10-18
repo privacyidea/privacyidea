@@ -5,7 +5,7 @@ This file contains the tests for lib/sqlutils.py
 """
 from datetime import datetime
 
-from mock import MagicMock
+from unittest.mock import MagicMock
 import warnings
 from sqlalchemy.testing import AssertsCompiledSQL
 from privacyidea.lib.sqlutils import DeleteLimit, delete_matching_rows
@@ -66,6 +66,7 @@ class SQLUtilsCompilationTestCase(MyTestCase, AssertsCompiledSQL):
         session = MagicMock()
 
         fake_results = [1000, 1000, 500]
+
         def fake_execute_delete1(stmt):
             result = MagicMock()
             result.rowcount = fake_results.pop(0)
@@ -79,6 +80,7 @@ class SQLUtilsCompilationTestCase(MyTestCase, AssertsCompiledSQL):
         self.assertEqual(result, 2500)
 
         session.execute.reset_mock()
+
         def fake_execute_delete2(stmt):
             result = MagicMock()
             result.rowcount = 2500

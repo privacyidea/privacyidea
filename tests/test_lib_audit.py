@@ -8,8 +8,7 @@ import datetime
 import os
 import types
 
-import sqlalchemy.engine
-from mock import mock
+from unittest import mock
 
 from privacyidea.config import TestingConfig
 from privacyidea.lib.audit import getAudit, search

@@ -32,7 +32,7 @@ from responses import json_params_matcher
 import os
 from . import smtpmock
 from . import smppmock
-import mock
+from unittest import mock
 
 
 class SMSTestCase(MyTestCase):
@@ -58,7 +58,7 @@ class SMSTestCase(MyTestCase):
         _provider =get_sms_provider_class(
             "privacyidea.lib.smsprovider.SmtpSMSProvider",
             "SmtpSMSProvider")
-        
+
         _provider =get_sms_provider_class(
             "privacyidea.lib.smsprovider.SmppSMSProvider",
             "SmppSMSProvider")
@@ -379,7 +379,7 @@ class ScriptSMSTestCase(MyTestCase):
         sms = ScriptSMSProvider(smsgateway=get_smsgateway(identifier)[0], directory=self.directory)
         self.assertRaises(SMSError, sms.submit_message, "123456", "Hello")
         delete_smsgateway(identifier)
-        
+
         # We bail out, if no smsgateway definition is given!
         sms = ScriptSMSProvider(directory=self.directory)
         self.assertRaises(SMSError, sms.submit_message, "123456", "Hello")

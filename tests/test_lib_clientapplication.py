@@ -1,7 +1,7 @@
 """
 This test file tests the lib.clientapplicaton.py
 """
-import mock
+from unittest import mock
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 
@@ -123,5 +123,3 @@ class ClientApplicationTestCase(MyTestCase):
         self.assertIn({"clienttype": "PAM", "hostname": None, "lastseen": t2}, apps["1.2.3.4"])
         self.assertIn({"clienttype": "RADIUS", "hostname": None, "lastseen": t2}, apps["1.2.3.4"])
         self.assertEqual(apps["2.3.4.5"], [{"clienttype": "PAM", "hostname": None, "lastseen": t1}])
-
-

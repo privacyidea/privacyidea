@@ -61,7 +61,7 @@ import os
 import struct
 import unittest
 from copy import copy
-from mock import patch
+from unittest.mock import patch
 from testfixtures import log_capture
 from privacyidea.lib.user import User
 

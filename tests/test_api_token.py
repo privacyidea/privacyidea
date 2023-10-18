@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 from .base import MyApiTestCase, PWFILE2
 import json
-import os
 import datetime
 import codecs
-from mock import mock
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, ACTION,
                                     enable_policy,
                                     PolicyClass)
@@ -26,7 +24,7 @@ from dateutil.tz import tzlocal
 from privacyidea.lib import _
 import os
 import unittest
-import mock
+from unittest import mock
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from privacyidea.lib.caconnectors.msca import MSCAConnector
 from .mscamock import CAServiceMock
@@ -3441,4 +3439,3 @@ class APITokengroupTestCase(MyApiTestCase):
             self.assertEqual(result.get("error").get("message"), "The tokengroup does not exist.")
 
         remove_token(serial)
-

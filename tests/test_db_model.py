@@ -1,5 +1,5 @@
 # coding: utf-8
-from mock import mock
+from unittest import mock
 import os
 from sqlalchemy import func
 
@@ -114,11 +114,11 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(t is None)
 
     def test_01_create_a_token_with_a_realm(self):
-        '''
+        """
         Create a token with a user and a tokenrealm in the database
         When we create a token with a user, the tokenrealm is filled in
         automatically.
-        '''
+        """
         self.create_resolver_realm()
         # Now we have a user cornelius@realm1
         # userid=1009
@@ -127,11 +127,11 @@ class TokenModelTestCase(MyTestCase):
         otpkey = "123456"
 
         # create token and also assign the user and realm
-        tneu = Token(serial="serial2",
-                     otpkey=otpkey,
-                     userid=1009,
-                     resolver="resolver1",
-                     realm="realm1")
+        Token(serial="serial2",
+              otpkey=otpkey,
+              userid=1009,
+              resolver="resolver1",
+              realm="realm1")
         t2 = Token.query\
                   .filter_by(serial="serial2")\
                   .first()
@@ -178,7 +178,7 @@ class TokenModelTestCase(MyTestCase):
 
         # get token information
         token_dict = t2.get()
-        self.assertTrue(type(token_dict) == dict)
+        self.assertIsInstance(token_dict, dict)
         self.assertTrue(token_dict.get("resolver") == "resolver1")
         # THe realm list is contained in realms
         self.assertTrue("realm1" in token_dict.get("realms"))
@@ -203,7 +203,6 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(t3.otplen == 8)
         self.assertTrue(t3.description == "De scription")
         self.assertTrue(t3.info_list[0].Value == "value")
-        t3info = t3.get_info()
         self.assertTrue(t3.get_info().get("info") == "value")
 
         # test the string represenative
@@ -508,7 +507,7 @@ class TokenModelTestCase(MyTestCase):
                               Value="new value").save()
         # check if the value is updated.
         new_config = MachineResolverConfig.query.filter(
-            MachineResolverConfig.Key=="key2").first()
+            MachineResolverConfig.Key == "key2").first()
         self.assertTrue(new_config.Value == "new value", new_config.Value)
 
         # Connect a machine to a token
@@ -519,8 +518,8 @@ class TokenModelTestCase(MyTestCase):
         # Connect another machine to a token
         token_id = Token.query.filter_by(serial="serial1123").first().id
         mt_id2 = MachineToken(machineresolver="mr1", machine_id="client2",
-                             token_id=token_id,
-                             application="LUKS").save()
+                              token_id=token_id,
+                              application="LUKS").save()
         self.assertTrue(mt_id2 > mt_id, (mt_id2, mt_id))
         # get the token that contains the machines
         db_token = Token.query.filter_by(serial="serial1123").first()
@@ -606,8 +605,7 @@ class TokenModelTestCase(MyTestCase):
 
     def test_18_add_and_delete_password_reset(self):
         p1 = PasswordReset("recoverycode", "cornelius",
-                           "realm", expiration=datetime.now() + timedelta(
-                seconds=120))
+                           "realm", expiration=datetime.now() + timedelta(seconds=120))
         p1.save()
         p2 = PasswordReset.query.filter_by(username="cornelius",
                                            realm="realm").first()
@@ -639,29 +637,29 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(eh1.conditions[0].Key, "user_type")
         self.assertEqual(eh1.conditions[0].Value, "admin")
 
-        id = eh1.id
+        eh_id = eh1.id
 
         # update eventhandler
         eh2 = EventHandler("ev1", event_update, handlermodule=handlermodule,
                            action=action, condition=condition,
-                           options=options, ordering=0, id=id)
+                           options=options, ordering=0, id=eh_id)
         self.assertEqual(eh1.event, event_update)
 
         # Update option value
-        EventHandlerOption(id, Key="mailserver", Value="mailserver")
+        EventHandlerOption(eh_id, Key="mailserver", Value="mailserver")
         self.assertEqual(eh1.options[0].Value, "mailserver")
 
         # Add Option
-        EventHandlerOption(id, Key="option3", Value="value3")
+        EventHandlerOption(eh_id, Key="option3", Value="value3")
         self.assertEqual(eh1.options[2].Key, "option3")
         self.assertEqual(eh1.options[2].Value, "value3")
 
         # Update condition value
-        EventHandlerCondition(id, Key="user_type", Value="user")
+        EventHandlerCondition(eh_id, Key="user_type", Value="user")
         self.assertEqual(eh1.conditions[0].Value, "user")
 
         # Add condition
-        EventHandlerCondition(id, Key="result_value", Value="True")
+        EventHandlerCondition(eh_id, Key="result_value", Value="True")
         self.assertEqual(eh1.conditions[0].Key, "result_value")
         self.assertEqual(eh1.conditions[0].Value, "True")
         self.assertEqual(eh1.conditions[1].Key, "user_type")
@@ -872,7 +870,6 @@ class TokenModelTestCase(MyTestCase):
                 "foo": "bar"
             })
 
-
         self.assertEqual(PeriodicTask.query.filter_by(name="task1").one(), task1)
         self.assertEqual(PeriodicTask.query.filter_by(name="some other task").one(), task2)
         self.assertEqual(PeriodicTaskOption.query.filter_by(periodictask_id=task1.id, key="KEY2").one().value,
@@ -964,7 +961,7 @@ class TokenModelTestCase(MyTestCase):
 
         # remove the tasks, everything is removed
         task1.delete()
-        self.assertEqual(PeriodicTaskOption.query.count(), 1) # from task2
+        self.assertEqual(PeriodicTaskOption.query.count(), 1)  # from task2
         self.assertEqual(PeriodicTaskLastRun.query.count(), 0)
         task2.delete()
         self.assertEqual(PeriodicTaskOption.query.count(), 0)
@@ -1056,13 +1053,13 @@ class TokengroupTestCase(MyTestCase):
         self.assertEqual(tok2.serial, "tok2")
 
         # assign tokens to token groups
-        t = TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe1").save()
-        t = TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe2").save()
-        t = TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
+        TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe1").save()
+        TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe2").save()
+        TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
         ttg = TokenTokengroup.query.all()
         self.assertEqual(len(ttg), 3)
         # It does not change anything, if we try to save the same assignment!
-        t = TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
+        TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
         ttg = TokenTokengroup.query.all()
         self.assertEqual(len(ttg), 3)
 

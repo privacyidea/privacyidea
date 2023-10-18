@@ -176,7 +176,7 @@ class SmtpMock(object):
         return None
 
     def start(self):
-        import mock
+        from unittest import mock
 
         def unbound_on_send(SMTP, sender, recipient, msg, *a, **kwargs):
             self.sent_message = msg

@@ -18,7 +18,7 @@ from privacyidea.lib import _
 import datetime
 from dateutil.tz import tzlocal
 from . import smtpmock
-import mock
+from unittest import mock
 
 PWFILE = "tests/testdata/passwords"
 TEMPLATE_FILE = "tests/testdata/emailtemplate.html"

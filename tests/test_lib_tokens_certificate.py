@@ -13,7 +13,7 @@ from privacyidea.lib.tokens.certificatetoken import (parse_chainfile, verify_cer
 from privacyidea.lib.policy import set_policy, delete_policy, PolicyClass, SCOPE
 import os
 import unittest
-import mock
+from unittest import mock
 from OpenSSL import crypto
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from privacyidea.lib.caconnectors.msca import MSCAConnector

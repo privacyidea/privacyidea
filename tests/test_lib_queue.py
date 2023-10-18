@@ -5,7 +5,7 @@ In particular, this tests
 lib/queue/*.py
 """
 from huey import RedisHuey
-import mock
+from unittest import mock
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig

@@ -9,9 +9,9 @@ lib/event.py (the decorator)
 import requests.exceptions
 import responses
 import os
-import mock
+from unittest import mock
 
-from mock import patch, MagicMock
+from unittest.mock import patch
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import USER_TYPE
@@ -254,8 +254,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNT_AUTH_SUCCESS:
-                                                ">45"}},
+             "handler_def": {"conditions": {CONDITION.COUNT_AUTH_SUCCESS: ">45"}},
              "request": req,
              "response": resp
              }
@@ -264,8 +263,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNT_AUTH_FAIL:
-                                                ">45"}},
+             "handler_def": {"conditions": {CONDITION.COUNT_AUTH_FAIL: ">45"}},
              "request": req,
              "response": resp
              }
@@ -274,8 +272,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNT_AUTH_FAIL:
-                                                "<45"}},
+             "handler_def": {"conditions": {CONDITION.COUNT_AUTH_FAIL: "<45"}},
              "request": req,
              "response": resp
              }
@@ -340,8 +337,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         tok.add_tokeninfo("myValue", "99")
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKENINFO:
-                                                "myValue<100"}},
+             "handler_def": {"conditions": {CONDITION.TOKENINFO: "myValue<100"}},
              "request": req,
              "response": resp
              }
@@ -350,8 +346,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKENINFO:
-                                                "myValue<98"}},
+             "handler_def": {"conditions": {CONDITION.TOKENINFO: "myValue<98"}},
              "request": req,
              "response": resp
              }
@@ -361,8 +356,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         tok.add_tokeninfo("myValue", "Hallo")
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKENINFO:
-                                                "myValue== Hallo"}},
+             "handler_def": {"conditions": {CONDITION.TOKENINFO: "myValue== Hallo"}},
              "request": req,
              "response": resp
              }
@@ -370,8 +364,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertEqual(r, True)
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKENINFO:
-                                                "myValue==hallo"}},
+             "handler_def": {"conditions": {CONDITION.TOKENINFO: "myValue==hallo"}},
              "request": req,
              "response": resp
              }
@@ -382,8 +375,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         tok.add_tokeninfo("myDate", "2017-01-01T10:00+0200")
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKENINFO:
-                                                "myDate < {now}"}},
+             "handler_def": {"conditions": {CONDITION.TOKENINFO: "myDate < {now}"}},
              "request": req,
              "response": resp
              }
@@ -397,8 +389,7 @@ class BaseEventHandlerTestCase(MyTestCase):
                            ).strftime(DATE_FORMAT))
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.TOKENINFO:
-                                                "myDate > {now}-2h"}},
+             "handler_def": {"conditions": {CONDITION.TOKENINFO: "myDate > {now}-2h"}},
              "request": req,
              "response": resp
              }
@@ -429,8 +420,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE:
-                                                "special"}},
+             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE: "special"}},
              "request": req,
              "response": resp
              }
@@ -439,8 +429,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE:
-                                                "^special"}},
+             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE: "^special"}},
              "request": req,
              "response": resp
              }
@@ -456,8 +445,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE:
-                                                "special"}},
+             "handler_def": {"conditions": {CONDITION.DETAIL_MESSAGE: "special"}},
              "request": req,
              "response": resp
              }
@@ -473,8 +461,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.DETAIL_ERROR_MESSAGE:
-                                                "does not exist$"}},
+             "handler_def": {"conditions": {CONDITION.DETAIL_ERROR_MESSAGE: "does not exist$"}},
              "request": req,
              "response": resp
              }
@@ -483,8 +470,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.DETAIL_ERROR_MESSAGE:
-                                                "^does not exist"}},
+             "handler_def": {"conditions": {CONDITION.DETAIL_ERROR_MESSAGE: "^does not exist"}},
              "request": req,
              "response": resp
              }
@@ -600,8 +586,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNTER:
-                                                "myCounter<4"}},
+             "handler_def": {"conditions": {CONDITION.COUNTER: "myCounter<4"}},
              "request": req,
              "response": resp
              }
@@ -610,8 +595,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNTER:
-                                                "myCounter==4"}},
+             "handler_def": {"conditions": {CONDITION.COUNTER: "myCounter==4"}},
              "request": req,
              "response": resp
              }
@@ -620,8 +604,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNTER:
-                                                "myCounter>3"}},
+             "handler_def": {"conditions": {CONDITION.COUNTER: "myCounter>3"}},
              "request": req,
              "response": resp
              }
@@ -631,8 +614,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         # If we have a nonexisting counter this should be treated as zero
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNTER:
-                                                "myNonExistingCounter>3"}},
+             "handler_def": {"conditions": {CONDITION.COUNTER: "myNonExistingCounter>3"}},
              "request": req,
              "response": resp
              }
@@ -641,8 +623,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         r = uhandler.check_condition(
             {"g": {},
-             "handler_def": {"conditions": {CONDITION.COUNTER:
-                                                "myNonExistingCounter<3"}},
+             "handler_def": {"conditions": {CONDITION.COUNTER: "myNonExistingCounter<3"}},
              "request": req,
              "response": resp
              }

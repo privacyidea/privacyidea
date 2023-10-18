@@ -19,7 +19,7 @@ from privacyidea.lib.utils import b32encode_and_unicode
 from datetime import datetime, timedelta
 from pytz import utc
 from base64 import b32decode, b32encode
-import mock
+from unittest import mock
 import responses
 from google.oauth2 import service_account
 from .test_lib_tokens_push import _create_credential_mock

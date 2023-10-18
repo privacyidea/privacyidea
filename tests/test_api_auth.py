@@ -4,7 +4,7 @@ import logging
 
 from testfixtures import log_capture
 from .base import MyApiTestCase, OverrideConfigTestCase
-import mock
+from unittest import mock
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.lib.policy import (set_policy, SCOPE, ACTION, REMOTE_USER,
                                     delete_policy)

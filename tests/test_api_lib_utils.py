@@ -12,7 +12,7 @@ from privacyidea.lib.policy import ACTION, SCOPE, set_policy, delete_policy
 from privacyidea.lib.user import User
 from privacyidea.lib.error import ParameterError
 import jwt
-import mock
+from unittest import mock
 import datetime
 import warnings
 from urllib.parse import quote

@@ -2,7 +2,7 @@
 """
 This test file tests the lib.crypto and lib.security.default
 """
-from mock import call
+from unittest.mock import call
 import binascii
 
 from privacyidea.config import TestingConfig

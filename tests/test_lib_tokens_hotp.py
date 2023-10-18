@@ -24,7 +24,7 @@ from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
 import binascii
 import datetime
 import hashlib
-import mock
+from unittest import mock
 from dateutil.tz import tzlocal
 
 from passlib.crypto.digest import pbkdf2_hmac

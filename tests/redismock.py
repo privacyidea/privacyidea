@@ -99,7 +99,7 @@ class RedisMock(object):
         self.data = data
 
     def start(self):
-        import mock
+        from unittest import mock
 
         def unbound_on_Redis(hostname):
             self.redis_obj = Redis()

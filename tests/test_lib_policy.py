@@ -5,7 +5,7 @@ This test file tests the lib.policy.py
 The lib.policy.py only depends on the database model.
 """
 import dateutil
-import mock
+from unittest import mock
 
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 

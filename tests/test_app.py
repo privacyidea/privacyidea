@@ -7,7 +7,7 @@ import unittest
 import flask
 import inspect
 import logging
-import mock
+from unittest import mock
 from testfixtures import Comparison, compare
 from privacyidea.app import create_app, PiResponseClass
 from privacyidea.config import config, TestingConfig

@@ -10,9 +10,8 @@ from .base import MyTestCase
 import os
 import glob
 import shutil
-import mock
+from unittest import mock
 from io import StringIO
-from mock import patch
 from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
 from privacyidea.lib.caconnectors.msca import MSCAConnector, ATTR as MS_ATTR
 from OpenSSL import crypto
@@ -28,7 +27,6 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          save_caconnector, delete_caconnector)
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from .mscamock import CAServiceMock
-
 
 
 CAKEY = "cakey.pem"
@@ -535,7 +533,7 @@ class MSCATestCase(MyTestCase):
                                                                "certificate": CERTIFICATE})
             cacon = MSCAConnector("billsCA", CONF_LAB)
             try:
-                r = cacon.sign_request(REQUEST, {"template": "ApprovalRequired"})
+                cacon.sign_request(REQUEST, {"template": "ApprovalRequired"})
             except CSRPending as e:
                 request_id = e.requestId
 
@@ -625,7 +623,7 @@ class CreateLocalCATestCase(MyTestCase):
         if os.path.exists(workdir):
             shutil.rmtree(workdir)
         inputstr = str(workdir + '\n\n\n\n\n\ny\n')
-        with patch('sys.stdin', StringIO(inputstr)):
+        with mock.patch('sys.stdin', StringIO(inputstr)):
             caconfig = LocalCAConnector.create_ca('localCA2')
             self.assertEqual(caconfig.get("WorkingDir"), workdir)
             cacon = LocalCAConnector('localCA2', caconfig)

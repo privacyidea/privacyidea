@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-import mock
+from unittest import mock
 from sqlalchemy.orm.session import close_all_sessions
 from flask.ctx import _AppCtxGlobals
 

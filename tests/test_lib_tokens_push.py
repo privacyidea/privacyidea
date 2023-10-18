@@ -26,7 +26,7 @@ from privacyidea.lib.error import ConfigAdminError
 from base64 import b32decode, b32encode
 import json
 import responses
-import mock
+from unittest import mock
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey, RSAPrivateKey
 from cryptography.hazmat.backends import default_backend

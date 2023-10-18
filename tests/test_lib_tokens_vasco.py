@@ -5,7 +5,7 @@ This depends on lib.tokenclass
 import functools
 from binascii import hexlify
 
-import mock
+from unittest import mock
 
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import check_serial_pass

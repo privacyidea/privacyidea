@@ -23,7 +23,7 @@
 Mock module for testing the handling of hardware security modules
 """
 import sys
-import mock
+from unittest import mock
 
 try:
     import PyKCS11
