@@ -51,7 +51,8 @@ TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
 # TODO: we should probably switch this when we do not do the extra unquote anymore
 NO_UNQUOTE_USER_AGENTS = {
     'privacyIDEA-LDAP-Proxy': None,
-    'simpleSAMLphp': None
+    'simpleSAMLphp': None,
+    'privacyidea-cp': None
 }
 
 SESSION_KEY_LENGTH = 32
