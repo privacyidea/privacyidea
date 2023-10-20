@@ -104,7 +104,6 @@ class UserNotificationTestCase(MyTestCase):
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
         req.all_data = {"serial": "SomeSerial",
-                        "description": "It works",
                         "user": "cornelius"}
         req.User = User("cornelius", self.realm1)
         resp = Response()
@@ -112,7 +111,8 @@ class UserNotificationTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options": {"subject": "token description: {tokendescription} token serial: {serial}",
+                   "handler_def": {"options": {"subject": "token description: {tokendescription}"
+                                                          " token serial: {serial}",
                                                "emailconfig": "myserver"}
                                    }
                    }
