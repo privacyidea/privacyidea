@@ -1,10 +1,10 @@
 # Polon <polonize@proton.me>, 2023, 2024.
-# Eryk Michalak <gnu.ewm@protonmail.com>, 2023.
+# Eryk Michalak <gnu.ewm@protonmail.com>, 2023, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Polon <polonize@proton.me>\n"
+"Last-Translator: Eryk Michalak <gnu.ewm@protonmail.com>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/pl/>\n"
 "Language: pl\n"
