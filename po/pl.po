@@ -1,9 +1,10 @@
 # Polon <polonize@proton.me>, 2023.
+# Eryk Michalak <gnu.ewm@protonmail.com>, 2023.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"PO-Revision-Date: 2023-09-29 12:03+0000\n"
-"Last-Translator: Polon <polonize@proton.me>\n"
+"PO-Revision-Date: 2023-10-23 04:03+0000\n"
+"Last-Translator: Eryk Michalak <gnu.ewm@protonmail.com>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/pl/>\n"
 "Language: pl\n"
@@ -11,7 +12,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 5.1-dev\n"
+"X-Generator: Weblate 5.1\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -339,7 +340,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:598
 #: privacyidea/static/components/token/views/token.details.html:679
 msgid "Application"
-msgstr ""
+msgstr "Aplikacja"
 
 #: privacyidea/static/components/components/views/component.clienttype.html:7
 msgid "Application Type"
@@ -420,7 +421,7 @@ msgstr ""
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:46
 msgid "Authentications"
-msgstr ""
+msgstr "Uwierzytelnianie"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:48
 msgid "Authentications in the last 24 hours"
@@ -517,7 +518,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.getserial.html:83
 #: privacyidea/static/components/user/views/user.details.html:56
 msgid "Cancel"
-msgstr ""
+msgstr "Anuluj"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:45
 msgid "Certificate (PEM)"
@@ -629,7 +630,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.list.html:26
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:51
 msgid "Client"
-msgstr ""
+msgstr "Klient"
 
 #: privacyidea/static/components/components/views/component.html:20
 msgid "Client Application Type"
@@ -660,11 +661,11 @@ msgstr ""
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:36
 msgid "Clients"
-msgstr ""
+msgstr "Klienci"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:48
 msgid "Close"
-msgstr ""
+msgstr "Zamknij"
 
 #: privacyidea/static/components/config/views/config.events.details.html:146
 #: privacyidea/static/components/config/views/config.policies.details.html:304
@@ -673,7 +674,7 @@ msgstr ""
 
 #: privacyidea/static/templates/menu.html:140
 msgid "Community"
-msgstr ""
+msgstr "Społeczność"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:8
 msgid "Comparator"
@@ -681,7 +682,7 @@ msgstr ""
 
 #: privacyidea/static/templates/menu.html:93
 msgid "Components"
-msgstr ""
+msgstr "Komponenty"
 
 #: privacyidea/static/components/config/views/config.events.details.html:110
 #: privacyidea/static/components/config/views/config.events.details.html:122
@@ -696,7 +697,7 @@ msgstr ""
 
 #: privacyidea/static/templates/menu.html:77
 msgid "Config"
-msgstr ""
+msgstr "Konfiguracja"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:196
 msgid "Connection Parameters"
@@ -710,7 +711,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.applications.offline.html:33
 #: privacyidea/static/components/token/views/token.details.html:119
 msgid "Count"
-msgstr ""
+msgstr "Liczba"
 
 #: privacyidea/static/components/token/views/token.details.html:124
 #: privacyidea/static/components/token/views/token.getserial.html:52
@@ -844,11 +845,11 @@ msgstr ""
 
 #: privacyidea/static/templates/menu.html:38
 msgid "Dashboard"
-msgstr ""
+msgstr "Panel"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:59
 msgid "Database"
-msgstr ""
+msgstr "Baza danych"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:186
 msgid "Database Encoding"
@@ -856,7 +857,7 @@ msgstr ""
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:89
 msgid "Date"
-msgstr ""
+msgstr "Data"
 
 #: privacyidea/static/components/config/views/config.token.daypassword.html:1
 msgid "DayPassword Token settings"
@@ -864,7 +865,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.realms.list.html:5
 msgid "Default"
-msgstr ""
+msgstr "Domyślne"
 
 #: privacyidea/static/components/config/views/config.token.daypassword.html:21
 #: privacyidea/static/components/config/views/config.token.hotp.html:12
@@ -912,7 +913,7 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:66
 #: privacyidea/static/components/token/views/token.details.html:18
 msgid "Delete"
-msgstr ""
+msgstr "Usuń"
 
 #: privacyidea/static/components/config/views/dialog.confirm_delete.html:12
 msgid "Delete Configuration"
@@ -963,7 +964,7 @@ msgstr ""
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:92
 msgid "Detail"
-msgstr ""
+msgstr "Szczegół"
 
 #: privacyidea/static/components/machine/views/machine.details.html:2
 msgid ""
@@ -978,14 +979,14 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/components/config/views/config.radius.list.html:7
 msgid "Dictionary"
-msgstr ""
+msgstr "Słownik"
 
 #: privacyidea/static/components/config/views/config.events.details.html:6
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:6
 #: privacyidea/static/components/config/views/config.policies.details.html:5
 #: privacyidea/static/components/token/views/token.details.html:46
 msgid "Disable"
-msgstr ""
+msgstr "Wyłącz"
 
 #: privacyidea/static/components/token/views/token.list.html:98
 msgid "Disable token"
@@ -1052,7 +1053,7 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:3
 msgid "Download"
-msgstr ""
+msgstr "Pobierz"
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:25
 msgid "Download the PKCS12 file"
@@ -1080,7 +1081,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:331
 #: privacyidea/static/components/token/views/token.details.html:376
 msgid "Edit"
-msgstr ""
+msgstr "Edytuj"
 
 #: privacyidea/static/components/config/views/config.system.html:191
 msgid "Edit CA Connector {{ connectorname }}"
@@ -1199,7 +1200,7 @@ msgstr ""
 #: privacyidea/static/components/register/views/register.html:52
 #: privacyidea/static/components/user/views/user.password.html:28
 msgid "Email"
-msgstr ""
+msgstr "Adres e-mail"
 
 #: privacyidea/static/components/token/views/token.enroll.email.html:18
 msgid "Email Address"
@@ -1210,7 +1211,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.details.html:10
 #: privacyidea/static/components/token/views/token.details.html:54
 msgid "Enable"
-msgstr ""
+msgstr "Włącz"
 
 #: privacyidea/static/components/token/views/token.list.html:103
 msgid "Enable token"
@@ -1317,7 +1318,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.html:36
 #: privacyidea/static/components/dashboard/views/dashboard.html:155
 msgid "Events"
-msgstr ""
+msgstr "Wydarzenia"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:59
 msgid "Examples"
