@@ -160,6 +160,7 @@ The body may contain the following tags
   * {username} the loginname of the token owner.
   * {userrealm} the realm of the token owner.
   * {tokentype} the type of the token.
+  *{tokendescription} the description of the token.
   * {registrationcode} the registration code in the detail response.
   * {recipient_givenname} the given name of the recipient.
   * {recipient_surname} the surname of the recipient.
