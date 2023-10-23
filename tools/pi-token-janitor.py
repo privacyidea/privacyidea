@@ -423,10 +423,10 @@ def privacyidea_token_janitor(ctx, chunksize):
 
 @privacyidea_token_janitor.group
 @click.pass_context
-@click.option('--tokeninfo', help='The tokeninfo value to match')
+@click.option('--tokeninfo', help='The tokeninfo value to match. For example: tokeninfo_key >= tokeninfo_value.'
+                                  ' You can use "==", ">=" and "<="')
 @click.option('--has-not-tokeninfo-key', help='filters for tokens that have not given the specified tokeninfo-key')
 @click.option('--has-tokeninfo-key', help='filters for tokens that have given the specified tokeninfo-key.')
-@click.option('--tokenattribute-value', help='The value of the token attribute which should match.')
 @click.option('--tokenattribute', help='Match for a certain token attribute from the database.')
 @click.option('--tokentype', help='The tokentype to search.')
 @click.option('--serial', help='A regular expression on the serial')
@@ -579,7 +579,6 @@ def export(ctx, export_format, b32):
             print("{0!s}".format(soup))
 
 
-
 @action.group
 @click.pass_context
 def tokenrealms(ctx):
@@ -659,10 +658,11 @@ def set_description(ctx, description):
                 token_obj.set_description(description)
                 token_obj.save()
 
+
 @action.group
 @click.pass_context
 @click.option('--tokeninfo', help='set a new tokeninfos')
-def set_description(ctx, tokeninfo):
+def set_tokeninfo(ctx, tokeninfo):
     """"""
     generator = ctx.get("generator")
     tokeninfos = tokeninfo.split(",")
@@ -678,6 +678,22 @@ def set_description(ctx, tokeninfo):
                     token_obj.add_tokeninfo(tokeninfo_key, tokeninfo_value)
                     token_obj.save()
 
+
+@action.group
+@click.pass_context
+@click.option('--tokeninfo', help='set a new tokeninfos')
+def delete_tokeninfo(ctx, tokeninfo):
+    """"""
+    generator = ctx.get("generator")
+    tokeninfos = tokeninfo.split(",")
+    for tlist in generator:
+        for tokeninfo in tokeninfos:
+            for token_obj in tlist:
+                if tokeninfo:
+                    print("Deleting tokeninfo for token {0!s}: {1!s}".format(
+                        token_obj.token.serial, tokeninfo))
+                    token_obj.del_tokeninfo(tokeninfo)
+                    token_obj.save()
 
 
 @privacyidea_token_janitor.group
@@ -701,7 +717,6 @@ def updatetokens(yaml):
                 tok_objects[0].update(tok)
             except Exception as e:
                 sys.stderr.write("\nFailed to update token {0!s}.".format(tok.get("serial")))
-
 
 
 @privacyidea_token_janitor.group
