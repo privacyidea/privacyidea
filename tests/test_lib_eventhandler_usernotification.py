@@ -82,13 +82,16 @@ class UserNotificationTestCase(MyTestCase):
         smtpmock.setdata(response={"recp@example.com": (200, "OK")},
                          support_tls=False)
 
+        tok = init_token({"serial": "SomeSerial", "description": "It works", "type": "spass"},
+                         user=User("cornelius", "realm1"))
+
         g = FakeFlaskG()
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "123456"
 
-        g.logged_in_user = {"username": "admin",
+        g.logged_in_user = {"username": "cornelius",
                             "role": "admin",
-                            "realm": ""}
+                            "realm": "realm1"}
         g.audit_object = audit_object
 
         builder = EnvironBuilder(method='POST',
@@ -108,8 +111,9 @@ class UserNotificationTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"emailconfig": "myserver"}
+                   "handler_def": {"options": {"subject": "token description: {tokendescription}"
+                                                          " token serial: {serial}",
+                                               "emailconfig": "myserver"}
                                    }
                    }
 
@@ -117,6 +121,7 @@ class UserNotificationTestCase(MyTestCase):
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
         msg = smtpmock.get_sent_message()
+        self.assertIn("token description: It works token serial: SomeSerial", msg, msg)
         assert 'To: user@localhost.localdomain' in msg
 
     @smtpmock.activate
@@ -515,7 +520,7 @@ class UserNotificationTestCase(MyTestCase):
 
         tok = init_token({"serial": serial,
                           "type": "spass"},
-                          user=User("cornelius", "realm1"))
+                         user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
         req = Request(env)
