@@ -1985,13 +1985,10 @@ class TokenEventTestCase(MyTestCase):
         self.assertEqual(uid, "1000")
 
         g = FakeFlaskG()
-        audit_object = FakeAudit()
-        audit_object.audit_data["serial"] = "SPASS01"
-
         g.logged_in_user = {"username": "admin",
                             "role": "admin",
                             "realm": ""}
-        g.audit_object = audit_object
+        g.audit_object = FakeAudit()
 
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "SPASS01"},
@@ -2016,17 +2013,22 @@ class TokenEventTestCase(MyTestCase):
                    }
 
         t_handler = TokenEventHandler()
-        res = t_handler.do(ACTION_TYPE.SET_VALIDITY, options=options)
-        self.assertTrue(res)
-        # Check if the token has the correct validity period
-        t = get_tokens(serial="SPASS01")
-        end = t[0].get_validity_period_end()
-        start = t[0].get_validity_period_start()
-        d_end = parse_date_string(end)
-        d_start = parse_date_string(start)
-        self.assertTrue(datetime.now(tzlocal()) + timedelta(minutes=9) < d_start)
-        self.assertTrue(datetime.now(tzlocal()) + timedelta(days=9) < d_end)
-        self.assertTrue(datetime.now(tzlocal()) + timedelta(days=11) > d_end)
+        base_time = datetime.now(tz=tzlocal())
+        with mock.patch('privacyidea.lib.utils.datetime') as mock_dt:
+            mock_dt.now.return_value = base_time
+            res = t_handler.do(ACTION_TYPE.SET_VALIDITY, options=options)
+            self.assertTrue(res)
+            # Check if the token has the correct validity period
+            t = get_tokens(serial="SPASS01")
+            end = t[0].get_validity_period_end()
+            start = t[0].get_validity_period_start()
+            self.assertEqual(start, (base_time + timedelta(minutes=10)).strftime(DATE_FORMAT))
+            self.assertEqual(end, (base_time + timedelta(days=10)).strftime(DATE_FORMAT))
+            d_end = parse_date_string(end)
+            d_start = parse_date_string(start)
+            self.assertLess(base_time + timedelta(minutes=9), d_start)
+            self.assertLess(base_time + timedelta(days=9), d_end)
+            self.assertGreater(base_time + timedelta(days=11), d_end)
 
         remove_token("SPASS01")
 

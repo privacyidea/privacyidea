@@ -497,7 +497,7 @@ def parse_date(date_string):
         # We are using an offset
         delta_specifier = date_string[-1].lower()
         if delta_specifier not in 'mhd':
-            return datetime.now(tzlocal()) + timedelta()
+            return datetime.now(tzlocal())
         delta_amount = int(date_string[1:-1])
         if delta_specifier == "m":
             td = timedelta(minutes=delta_amount)
@@ -915,10 +915,10 @@ def parse_legacy_time(ts, return_date=False):
     The new timestrings are of the format YYYY-MM-DDThh:mm+oooo.
     They contain the timezone offset!
 
-    Old legacy time strings are of format DD/MM/YY hh:mm without time zone 
+    Old legacy time strings are of format DD/MM/YY hh:mm without time zone
     offset.
 
-    This function parses string and returns the new formatted time string 
+    This function parses string and returns the new formatted time string
     including the timezone offset.
 
     :param ts:

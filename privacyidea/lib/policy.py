@@ -734,7 +734,7 @@ class PolicyClass(object):
         :type user_object: User or None
         :param time: return only policies that are valid at the specified time.
             Defaults to the current time.
-        :type time: datetime or None
+        :type time: datetime.datetime or None
         :param audit_data: A dictionary with audit data collected during a request. This
             method will add found policies to the dictionary.
         :type audit_data: dict or None
@@ -765,7 +765,7 @@ class PolicyClass(object):
                                               adminrealm=adminrealm, adminuser=adminuser, pinode=pinode,
                                               sort_by_priority=sort_by_priority)
 
-        # filter policy for time. If no time is set or is a time is set and
+        # filter policy for time. If no time is set or is a time is set, and
         # it matches the time_range, then we add this policy
         reduced_policies = [policy for policy in reduced_policies if
                             (policy.get("time") and

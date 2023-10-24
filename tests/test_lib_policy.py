@@ -4,7 +4,7 @@ This test file tests the lib.policy.py
 
 The lib.policy.py only depends on the database model.
 """
-import dateutil
+from dateutil import parser
 from unittest import mock
 
 from .base import MyTestCase, FakeFlaskG, FakeAudit
@@ -25,7 +25,6 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.user import User
 from .base import PWFILE as FILE_PASSWORDS
 from .base import PWFILE2 as FILE_PASSWD
-
 
 
 def _check_policy_name(polname, policies):
@@ -664,8 +663,8 @@ class PolicyTestCase(MyTestCase):
                    action="tokentype=hotp totp, enroll",
                    time="Mon-Wed: 0-23:59")
 
-        wednesday = dateutil.parser.parse("Jul 03 2019 13:00")
-        thursday = dateutil.parser.parse("Jul 04 2019 14:34")
+        wednesday = parser.parse("Jul 03 2019 13:00")
+        thursday = parser.parse("Jul 04 2019 14:34")
 
         # Simulate a Wednesday
         with mock.patch('privacyidea.lib.utils.datetime') as mock_dt:
