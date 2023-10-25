@@ -720,3 +720,50 @@ class CustomUserAttributeHandlerTestCase(MyApiTestCase):
 
         delete_event(eid)
         user.delete_attribute('foo')
+
+
+from privacyidea.lib.smtpserver import add_smtpserver
+from . import smtpmock
+
+
+class EventWrapperTestCase(MyApiTestCase):
+    # Test the wrapper/decorator in lib/event.py
+    # In other cases we test specific event handlers, but not the calling of the event handler
+    # We do this here via an API call.
+    serial = "myToken"
+
+    def test_00_setup(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        r = set_event("send email", "token_init", "UserNotification", "sendmail",
+                      conditions={},
+                      options={"emailconfig": "myserver",
+                               "To": "email",
+                               "To email": "pretzel@example.com"})
+        self.assertTrue(r > 0)
+
+    @smtpmock.activate
+    def test_01_sendmail(self):
+
+        smtpmock.setdata(response={"pretzel@example.com": (450, "Mailbox not available")},
+                         support_tls=False)
+
+        with self.app.test_request_context('/token/init',
+                                           data={"genkey": 1,
+                                                 "serial": self.serial},
+                                           headers={'Authorization': self.at},
+                                           method='POST'):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"), result)
+
+        msg = smtpmock.get_sent_message()
+        # TODO Assert Audit log!
+        self.assertIn('To: pretzel@example.com', msg)
+
+
