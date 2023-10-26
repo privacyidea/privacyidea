@@ -5,7 +5,7 @@ import stat
 import sys
 
 #VERSION = "2.1dev4"
-VERSION = "3.9"
+VERSION = "3.10dev1"
 
 # Taken from kennethreitz/requests/setup.py
 package_directory = os.path.realpath(os.path.dirname(__file__))
@@ -29,38 +29,42 @@ def get_file_list(file_path):
     return [file_path + f for f in file_list]
 
 
-install_requires = ["beautifulsoup4[lxml]>=4.3.2",
-                    "cbor2>=5.0.1",
-                    "configobj>=5.0.6",
-                    "croniter>=0.3.8",
-                    "cryptography>=2.4.2",
-                    "defusedxml>=0.4.1",
-                    "Flask>=0.10.1,<2.0",
-                    "Flask-Babel>=0.9",
-                    "Flask-Migrate>=1.2.0,<3.0",
-                    "Flask-Script>=2.0.5",
-                    "Flask-SQLAlchemy>=2.0",
-                    "Flask-Versioned>=0.9.4",
-                    "google-auth>=1.23.0",
-                    "huey[redis]>=1.11.0",
-                    "importlib_metadata>=2.1.1",
-                    "ldap3>=2.6",
-                    "netaddr>=0.7.12",
-                    "passlib[bcrypt]>=1.7.0",
-                    "argon2_cffi>=20.1.0",
-                    "pydash>=4.7.4",
-                    "PyJWT>=1.3.0",
-                    "PyMySQL>=0.6.6",
-                    "pyOpenSSL>=17.5",
-                    "pyrad>=2.0",
-                    "python-dateutil>=2.7.3",
-                    "python-gnupg>=0.4.4",
-                    "PyYAML>=5.1",
-                    "requests>=2.7.0",
-                    "segno>=1.5",
-                    "smpplib>=2.0",
-                    "SQLAlchemy>=1.4.0,<2.0",
-                    "MarkupSafe<2.1"]
+install_requires = [
+    "argon2_cffi>=20.1.0",
+    "beautifulsoup4[lxml]>=4.3.2",
+    "cbor2>=5.0.1",
+    "configobj>=5.0.6",
+    "croniter>=0.3.8",
+    "cryptography>=2.4.2",
+    "defusedxml>=0.4.1",
+    "Flask>=0.10.1,<2.0",
+    "Flask-Babel>=0.9,<3.0",
+    "Flask-Migrate>=1.2.0,<3.0",
+    "Flask-Script>=2.0.5",
+    "Flask-SQLAlchemy>=2.0,<3.0",
+    "Flask-Versioned>=0.9.4",
+    "google-auth>=1.23.0",
+    "grpcio>=1.46",
+    "huey[redis]>=1.11.0",
+    "importlib_metadata>=2.1.1; python_version=='3.7'",
+    "ldap3>=2.8,<2.9",
+    "MarkupSafe<2.1",
+    "netaddr>=0.7.12",
+    "passlib[bcrypt]>=1.7.0",
+    "protobuf>=3.20",
+    "pydash>=4.7.4",
+    "PyJWT>=1.3.0",
+    "PyMySQL>=0.6.6",
+    "pyOpenSSL>=17.5",
+    "pyrad>=2.0",
+    "python-dateutil>=2.7.3",
+    "python-gnupg>=0.4.4",
+    "PyYAML>=5.1",
+    "requests>=2.7.0",
+    "segno>=1.5",
+    "smpplib>=2.0",
+    "SQLAlchemy>=1.4.0,<2.0"
+]
 
 
 def get_man_pages(dir):
@@ -94,14 +98,13 @@ def get_scripts(dir):
 setup(
     name='privacyIDEA',
     version=VERSION,
-    description='privacyIDEA: identity, multifactor authentication (OTP), '
-                'authorization, audit',
+    description='privacyIDEA: multifactor authentication management system',
     author='privacyidea.org',
     license='AGPLv3',
     author_email='cornelius@privacyidea.org',
-    url='http://www.privacyidea.org',
+    url='https://www.privacyidea.org',
     keywords='OTP, two factor authentication, management, security',
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     packages=find_packages(),
     scripts=["pi-manage"] + get_scripts("tools"),
     extras_require={
@@ -111,6 +114,7 @@ setup(
                 "sphinxcontrib-plantuml>=0.18",
                 "sphinxcontrib-spelling>=7.0.0"],
         'test': ["mock>=2.0.0",
+                 "pyparsing>=3.0",
                  "pytest>=3.6.0",
                  "pytest-cov>=2.5.1",
                  "responses>=0.9.0",
@@ -145,7 +149,6 @@ setup(
                  " Systems Administration :: Authentication/Directory",
                  'Programming Language :: Python',
                  'Programming Language :: Python :: 3',
-                 'Programming Language :: Python :: 3.6',
                  'Programming Language :: Python :: 3.7',
                  'Programming Language :: Python :: 3.8',
                  'Programming Language :: Python :: 3.9',
