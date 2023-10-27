@@ -147,15 +147,15 @@ class BaseEventHandler(object):
                 "group": GROUP.TOKEN
             },
             CONDITION.REALM: {
-                "type": "str",
+                "type": "multi",
                 "desc": _("The realm of the user, for which this event should apply."),
-                "value": list(realms),
+                "value": [{"name": r} for r in realms],
                 "group": GROUP.USER
             },
             CONDITION.RESOLVER: {
-                "type": "str",
+                "type": "multi",
                 "desc": _("The resolver of the user, for which this event should apply."),
-                "value": list(resolvers),
+                "value": [{"name": r} for r in resolvers],
                 "group": GROUP.USER
             },
             CONDITION.TOKENREALM: {
@@ -364,7 +364,7 @@ class BaseEventHandler(object):
     def check_condition(self, options):
         """
         Check if all conditions are met and if the action should be executed.
-        The the conditions are met, we return "True"
+        If the conditions are met, we return "True"
         :return: True
         """
         g = options.get("g")
@@ -414,11 +414,11 @@ class BaseEventHandler(object):
                     return False
 
         if CONDITION.REALM in conditions:
-            if user.realm != conditions.get(CONDITION.REALM):
+            if user.realm not in conditions.get(CONDITION.REALM).split(","):
                 return False
 
         if CONDITION.RESOLVER in conditions:
-            if user.resolver != conditions.get(CONDITION.RESOLVER):
+            if user.resolver not in conditions.get(CONDITION.RESOLVER).split(","):
                 return False
 
         if "logged_in_user" in conditions:

@@ -649,6 +649,83 @@ class BaseEventHandlerTestCase(MyTestCase):
         )
         self.assertTrue(r)
 
+    def test_09_check_conditions_realm_and_resolver_value(self):
+        # prepare
+        # setup realms
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        serial = "pw01"
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        tok = init_token({"serial": serial,
+                          "type": "pw", "otppin": "test", "otpkey": "secret"},
+                         user=user)
+        self.assertEqual(tok.type, "pw")
+
+        uhandler = BaseEventHandler()
+
+        # Checking values of the conditions
+        realm_value = uhandler.conditions.get("realm").get("value")
+        resolver_value = uhandler.conditions.get("resolver").get("value")
+        self.assertEqual([{'name': 'realm1'}, {'name': 'realm2'}], realm_value, realm_value)
+        self.assertEqual([{'name': 'resolver1'}], resolver_value, resolver_value)
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "cornelius@realm1",
+                                       "pass": "wrongvalue"},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        # This is a kind of authentication request
+        req.all_data = {"user": "cornelius@realm1",
+                        "pass": "wrongvalue"}
+        req.User = User("cornelius", "realm1")
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.REALM: "realm1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # Works if the realm is correct
+        self.assertEqual(r, True)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.REALM: "realm3"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # False if the realm is incorrect
+        self.assertEqual(r, False)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.RESOLVER: "resolver1"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # Works if the resolver is correct
+        self.assertEqual(r, True)
+
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {CONDITION.REALM: "resolver3"}},
+             "request": req,
+             "response": resp
+             }
+        )
+        # False if the resolver is incorrect
+        self.assertEqual(r, False)
+
+        remove_token(serial)
+
 
 class CounterEventTestCase(MyTestCase):
 
@@ -2457,12 +2534,11 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def":{
+                   "handler_def": {
                        "options": {
-                                   "application": "offline",
-                                   "count": "12"}}
+                           "application": "offline",
+                           "count": "12"}}
                    }
-
 
         t_handler = TokenEventHandler()
         res = t_handler.do("attach application", options=options)
