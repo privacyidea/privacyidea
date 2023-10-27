@@ -60,7 +60,7 @@ import sys
 from yaml import safe_dump as yaml_safe_dump
 from yaml import safe_load as yaml_safe_load
 
-ALLOWED_ACTIONS = ["disable", "delete", "unassign", "mark", "export", "listuser", "tokenrealms"]
+# ToDo: Update the doc
 
 __doc__ = """
 This script can be used to clean up the token database.
@@ -100,7 +100,6 @@ Actions:
         --serial=<regexp>
         --description=<regexp>
 
-        --action={0!s}
 
         --set-description="new description"
         --set-tokeninfo-key=<key>
@@ -113,7 +112,7 @@ Actions:
    Here is a good read about it:
    https://stackoverflow.com/questions/4545661/unicodedecodeerror-when-redirecting-to-file
 
-""".format("|".join(ALLOWED_ACTIONS))
+"""
 
 app = create_app(config_name='production', silent=True)
 
@@ -427,7 +426,8 @@ def privacyidea_token_janitor(ctx, chunksize):
                                   ' You can use "==", ">=" and "<="')
 @click.option('--has-not-tokeninfo-key', help='filters for tokens that have not given the specified tokeninfo-key')
 @click.option('--has-tokeninfo-key', help='filters for tokens that have given the specified tokeninfo-key.')
-@click.option('--tokenattribute', help='Match for a certain token attribute from the database.')
+@click.option('--tokenattribute', help='Match for a certain token attribute from the database.  For example:'
+                                       ' tokenattribute_key >= tokenattribute_value. You can use "==", ">=" and "<="')
 @click.option('--tokentype', help='The tokentype to search.')
 @click.option('--serial', help='A regular expression on the serial')
 @click.option('--description', help='A regular expression on the description')
@@ -435,7 +435,7 @@ def privacyidea_token_janitor(ctx, chunksize):
 @click.option('--assigned', help='True|False|None')
 @click.option('--active', help='True|False|None')
 @click.option('--orphaned', help='Whether the token is an orphaned token. Set to 1')
-def find(ctx, last_auth, tokeninfo, assigned,  active, orphaned, tokentype, serial, description, tokenattribute,
+def find(ctx, last_auth, tokeninfo, assigned, active, orphaned, tokentype, serial, description, tokenattribute,
          has_not_tokeninfo_key, has_tokeninfo_key):
     """finds all tokens which match the conditions"""
 
@@ -445,15 +445,10 @@ def find(ctx, last_auth, tokeninfo, assigned,  active, orphaned, tokentype, seri
             ", ".join(tokenattributes)
         ))
         sys.exit(1)
-    if action and action not in ALLOWED_ACTIONS:
-        sys.stderr.write("Unknown action. Allowed actions are {0!s}\n".format(
-            ", ".join(["'{0!s}'".format(x) for x in ALLOWED_ACTIONS])
-        ))
-        sys.exit(1)
+
     chunksize = ctx.get('chunksize')
     if chunksize is not None:
         chunksize = int(chunksize)
-
 
     # filter for tokeninfo values
     m = re.match(r"\s*[a-z][A-Z][0-9]\s*([<>=])\s*$", tokeninfo)
@@ -513,9 +508,9 @@ def action(ctx):
 @action.group
 @click.pass_context
 @click.option('--sum', help='In case of the action "listuser", this switch specifies if '
-                              'the output should only contain the number of tokens owned '
-                              'by the user.',
-                dest='sum_tokens', action='store_true')
+                            'the output should only contain the number of tokens owned '
+                            'by the user.',
+              dest='sum_tokens', action='store_true')
 @click.option('--attributes', help='Extends the "listuser" function to display additional user attributes')
 def listuser(ctx, sum_tokens, attributes):
     """"""
@@ -534,8 +529,8 @@ def listuser(ctx, sum_tokens, attributes):
 @action.group
 @click.pass_context
 @click.option('--format', type=click.Choice(['csv', 'yaml', 'pskc']), default='pskc',
-                help='In case of a simple find, the output is written as CSV instead of the '
-                     'formatted output.')
+              help='In case of a simple find, the output is written as CSV instead of the '
+                   'formatted output.')
 @click.option('--b32', help='In case of exporting found tokens '
                             'to CSV the seed is written base32 encoded instead of hex.')
 def export(ctx, export_format, b32):
@@ -654,7 +649,7 @@ def set_description(ctx, description):
         for token_obj in tlist:
             if description:
                 print("Setting description for token {0!s}: {1!s}".format(
-                    token_obj.token.serial,description))
+                    token_obj.token.serial, description))
                 token_obj.set_description(description)
                 token_obj.save()
 
@@ -698,7 +693,7 @@ def delete_tokeninfo(ctx, tokeninfo):
 
 @privacyidea_token_janitor.group
 @click.option('--yaml', dest='yaml',
-                help='Specify the YAML file with the previously exported tokens.')
+              help='Specify the YAML file with the previously exported tokens.')
 def updatetokens(yaml):
     """
     This can update existing tokens in the privacyIDEA system. You can specify a yaml file with the tokendata.
@@ -707,7 +702,7 @@ def updatetokens(yaml):
     print("Loading YAML data. This may take a while.")
     token_list = yaml_safe_load(open(yaml, 'r').read())
     for tok in token_list:
-        del(tok["owner"])
+        del (tok["owner"])
         tok_objects = get_tokens(serial=tok.get("serial"))
         if len(tok_objects) == 0:
             sys.stderr.write("\nCan not find token {0!s}. Not updating.\n".format(tok.get("serial")))
@@ -721,14 +716,14 @@ def updatetokens(yaml):
 
 @privacyidea_token_janitor.group
 @click.option('--pskc', dest='pskc',
-                help='Import this PSKC file.')
+              help='Import this PSKC file.')
 @click.option('--preshared_key_hex', dest='preshared_key_hex',
-                help='The AES encryption key.')
+              help='The AES encryption key.')
 @click.option('--validate_mac', dest='validate_mac', default='check_fail_hard',
-                help="How the file should be validated.\n"
-                     "'no_check' : Every token is parsed, ignoring HMAC\n"
-                     "'check_fail_soft' : Skip tokens with invalid HMAC\n"
-                     "'check_fail_hard' : Only import tokens if all HMAC are valid.")
+              help="How the file should be validated.\n"
+                   "'no_check' : Every token is parsed, ignoring HMAC\n"
+                   "'check_fail_soft' : Skip tokens with invalid HMAC\n"
+                   "'check_fail_hard' : Only import tokens if all HMAC are valid.")
 def loadtokens(pskc, preshared_key_hex, validate_mac):
     """
     Loads token data from a PSKC file.
