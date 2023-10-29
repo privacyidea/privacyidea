@@ -127,7 +127,7 @@ class UserNotificationTestCase(MyTestCase):
         r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
         self.assertTrue(r > 0)
 
-        smtpmock.setdata(response={"user@localhost.localdomain": (450, "Mailbox not abailable")},
+        smtpmock.setdata(response={"user@localhost.localdomain": (450, "Mailbox not available")},
                          support_tls=False)
 
         g = FakeFlaskG()
