@@ -7,6 +7,7 @@ from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from .base import MyApiTestCase
 from . import smtpmock
+import mock
 from privacyidea.lib.config import set_privacyidea_config
 
 # TODO: this should be imported from lib.event when available
@@ -739,31 +740,68 @@ class EventWrapperTestCase(MyApiTestCase):
         r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
         self.assertTrue(r > 0)
 
+    @smtpmock.activate
+    def test_01_sendmail_post(self):
+
         r = set_event("send email", "token_init", "UserNotification", "sendmail",
                       conditions={},
                       options={"emailconfig": "myserver",
                                "To": "email",
-                               "To email": "pretzel@example.com"})
+                               "To email": "pretzel@example.com",
+                               "reply_to": "email",
+                               "reply_to email": "privacyidea@example.com"})
         self.assertTrue(r > 0)
-
-    @smtpmock.activate
-    def test_01_sendmail(self):
 
         smtpmock.setdata(response={"pretzel@example.com": (450, "Mailbox not available")},
                          support_tls=False)
 
-        with self.app.test_request_context('/token/init',
-                                           data={"genkey": 1,
-                                                 "serial": self.serial},
-                                           headers={'Authorization': self.at},
-                                           method='POST'):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("value"), result)
+        with mock.patch("logging.Logger.warning") as mock_log:
+            with self.app.test_request_context('/token/init',
+                                               data={"genkey": 1,
+                                                     "serial": self.serial},
+                                               headers={'Authorization': self.at},
+                                               method='POST'):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("value"), result)
+            # Check warning in log
+            expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
+            mock_log.assert_called_once_with(expected)
+            msg = smtpmock.get_sent_message()
+            self.assertIn('To: pretzel@example.com', msg)
+        delete_event(r)
 
-        msg = smtpmock.get_sent_message()
-        # TODO Assert Audit log!
-        self.assertIn('To: pretzel@example.com', msg)
+    @smtpmock.activate
+    def test_02_sendmail_pre(self):
 
+        r = set_event("send email", "token_init", "UserNotification", "sendmail",
+                      conditions={},
+                      position="pre",
+                      options={"emailconfig": "myserver",
+                               "To": "email",
+                               "To email": "donut@example.com",
+                               "reply_to": "email",
+                               "reply_to email": "privacyidea@example.com"})
+        self.assertTrue(r > 0)
 
+        smtpmock.setdata(response={"donut@example.com": (450, "Mailbox not available")},
+                         support_tls=False)
+
+        with mock.patch("logging.Logger.warning") as mock_log:
+            with self.app.test_request_context('/token/init',
+                                               data={"genkey": 1,
+                                                     "serial": self.serial},
+                                               headers={'Authorization': self.at},
+                                               method='POST'):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("value"), result)
+            # Check warning in log
+            expected = "Failed to send a notification email to user {'email': ['donut@example.com']}"
+            mock_log.assert_called_once_with(expected)
+
+            msg = smtpmock.get_sent_message()
+            self.assertIn('To: donut@example.com', msg)
+        delete_event(r)
