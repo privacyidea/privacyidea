@@ -60,12 +60,11 @@ import sys
 from yaml import safe_dump as yaml_safe_dump
 from yaml import safe_load as yaml_safe_load
 
-# ToDo: Update the doc
 
 __doc__ = """
 This script can be used to clean up the token database.
 
-It can list, disable, delete or mark tokens based on
+It can list, disable, delete or edit tokens based on
 
 Conditions:
 
@@ -86,24 +85,16 @@ Actions:
 
     privacyidea-token-janitor find 
         --last_auth=10h|7d|2y
-        --tokeninfo-key=<key>
+        --tokeninfo= 'token_info_key == token_info_value' or 'token_info_key >= token_info_value' 
+                        or 'token_info_key <= token_info_value'
         --has-not-tokeninfo-key<key>
         --has-tokeninfo-key<key>
-        --tokeninfo-value=<value>
-        --tokeninfo-value-greater-than=<value>
-        --tokeninfo-value-less-than=<value>
-        --tokeninfo-value-after=<value>
-        --tokeninfo-value-before=<value>
         --assigned false
         --orphaned true
         --tokentype=<type>
         --serial=<regexp>
         --description=<regexp>
 
-
-        --set-description="new description"
-        --set-tokeninfo-key=<key>
-        --set-tokeninfo-value=<value>    
 
 .. note:: If you fail to redirect the output of this command at the commandline
    to e.g. a file with a UnicodeEncodeError, you need to set the environment
@@ -184,11 +175,9 @@ def _compare_after(key, given_value_string):
     :return: a function which returns True if its parameter (converted to a datetime) occurs after
              *given_value_string* (converted to a datetime).
     """
-    given_value = _try_convert_to_datetime(given_value_string)
-
     def comparator(value):
         try:
-            return _parse_datetime(key, value) > given_value
+            return _parse_datetime(key, value) > given_value_string
         except ValueError:
             return False
 
@@ -200,11 +189,9 @@ def _compare_before(key, given_value_string):
     :return: a function which returns True if its parameter (converted to a datetime) occurs before
              *given_value_string* (converted to a datetime).
     """
-    given_value = _try_convert_to_datetime(given_value_string)
-
     def comparator(value):
         try:
-            return _parse_datetime(key, value) < given_value
+            return _parse_datetime(key, value) < given_value_string
         except ValueError:
             return False
 
@@ -457,10 +444,11 @@ def find(ctx, last_auth, tokeninfo, assigned, active, orphaned, tokentype, seria
         tokeninfo_value = m.group(2)
     else:
         try:
+            tiv = _try_convert_to_datetime(m.group(2))
             if m.group(1) == '>=':
-                tokeninfo_value_after = m.group(2)
+                tokeninfo_value_after = tiv
             elif m.group(1) == '<=':
-                tokeninfo_value_before = m.group(2)
+                tokeninfo_value_before = tiv
         except:
             if m.group(1) == '<=':
                 tokeninfo_value_greater_than = m.group(2)
