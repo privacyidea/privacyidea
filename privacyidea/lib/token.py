@@ -554,16 +554,21 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     return ret
 
 
-def get_one_token(*args, **kwargs):
+def get_one_token(*args, silent_fail=False, **kwargs):
     """
     Fetch exactly one token according to the given filter arguments, which are passed to
     ``get_tokens``. Raise ``ResourceNotFoundError`` if no token was found. Raise
     ``ParameterError`` if more than one token was found.
+
+    :param silent_fail: Instead of raising an exception we return None silently
+    :returns: Token object
     """
     result = get_tokens(*args, **kwargs)
     if not result:
+        if silent_fail: return
         raise ResourceNotFoundError(_("The requested token could not be found."))
     elif len(result) > 1:
+        if silent_fail: return
         raise ParameterError(_("More than one matching token were found."))
     else:
         return result[0]
