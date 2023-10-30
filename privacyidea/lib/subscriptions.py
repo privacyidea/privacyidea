@@ -353,10 +353,11 @@ class CheckSubscription(object):
             request = self.request
             ua = request.user_agent
             ua_str = "{0!s}".format(ua) or "unknown"
-            application = ua_str.split()[0]
+            plugin_with_version = ua_str.split()[0]
+            plugin_name = plugin_with_version.split("/")[0]
             # check and raise if fails
             #check_subscription("privacyidea")
-            check_subscription(application)
+            check_subscription(plugin_name)
             f_result = func(*args, **kwds)
             return f_result
 
