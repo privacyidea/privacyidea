@@ -196,14 +196,19 @@ Based on the realm there is the library ``lib/user.py`` which provides functions
 for users. There is no database table user, since users are dynamically read 
 from the user sources like SQL, LDAP, SCIM or flat files.
 
+Subscriptions and limitations of community edition
+==================================================
+
+Using privacyIDEA Server and the privacyIDEA FreeRADIUS plugin there is technically no
+limitation of the community edition or the code in this repository.
+Admins will receive a welcome message about possible support, if more than 50 users
+are enrolled.
+
 Plugins
-=======
+-------
 
 The privacyIDEA project also provides several plugins for 3rd party applications like SSO Identity Providers
 or Windows Login.
-
-Subscriptions
--------------
 
 Plugins can be limited in the number of users. I.e. the plugin will complain, if the total number of users
 in privacyIDEA with an active token exceeds a certain limit. There is a certain base number of users, with which
@@ -219,10 +224,11 @@ Name                  contained       in demo subscription
 ====================  ==============  ========================
 Keycloak              10000           N/A
 SimpleSAMLphp         10000           N/A
-privacyIDEA PAM       10000           N/A
+Shibboleth            10000           N/A
 ADFS                  50              50
+privacyIDEA PAM       10000           N/A
 Credential Provider   50              50
-OwnCloud              50              N/A
+ownCloud              50              N/A
 LDAP proxy            50              N/A
 ====================  ==============  ========================
 
