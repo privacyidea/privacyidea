@@ -565,11 +565,14 @@ def get_one_token(*args, silent_fail=False, **kwargs):
     """
     result = get_tokens(*args, **kwargs)
     if not result:
-        if silent_fail: return
+        if silent_fail:
+            return None
         raise ResourceNotFoundError(_("The requested token could not be found."))
     elif len(result) > 1:
-        if silent_fail: return
-        raise ParameterError(_("More than one matching token were found."))
+        if silent_fail:
+            log.warning("More than one matching token was found.")
+            return None
+        raise ParameterError(_("More than one matching token was found."))
     else:
         return result[0]
 

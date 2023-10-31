@@ -87,7 +87,6 @@ from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
-from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.token import get_one_token
 import functools
 import jwt
