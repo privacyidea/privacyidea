@@ -69,7 +69,7 @@ import logging
 
 from OpenSSL import crypto
 from privacyidea.lib import _
-from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError
+from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError, ParameterError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
@@ -87,6 +87,7 @@ from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
+from privacyidea.lib.token import get_one_token
 import functools
 import jwt
 import re
@@ -2233,6 +2234,12 @@ def require_description(request=None, action=None):
     token_types = list(action_values.keys())
     type_value = request.all_data.get("type") or 'hotp'
     if type_value in token_types:
-        if not request.all_data.get("description"):
+        tok = None
+        serial = getParam(params, "serial")
+        if serial:
+            tok = get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True) or \
+                  get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True)
+        # only if no token exists, yet, we need to check the description
+        if not tok and not request.all_data.get("description"):
             log.warning(_("Missing description for {} token.".format(type_value)))
             raise PolicyError(_("Description required for {} token.".format(type_value)))

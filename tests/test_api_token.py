@@ -2552,10 +2552,22 @@ class APITokenTestCase(MyApiTestCase):
     def test_40_init_verify_hotp_token(self):
         set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=hotp top".format(ACTION.VERIFY_ENROLLMENT))
         set_policy("verify_toks2", scope=SCOPE.ENROLL, action="{0!s}=HOTP email".format(ACTION.VERIFY_ENROLLMENT))
+        set_policy("require_description", scope=SCOPE.ENROLL, action="{0!s}=hotp".format(ACTION.REQUIRE_DESCRIPTION))
         # Enroll an HOTP token
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"otpkey": self.otpkey},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"))
+            self.assertEqual("Description required for hotp token.", result.get("error").get("message"))
+
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"otpkey": self.otpkey,
+                                                 "description": "something"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -2577,7 +2589,7 @@ class APITokenTestCase(MyApiTestCase):
                                                  'pass': self.valid_otp_values[0]}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            # we fail to authenticate with a token, that in in state verify_pending
+            # we fail to authenticate with a token, that is in state verify_pending
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
@@ -2590,7 +2602,7 @@ class APITokenTestCase(MyApiTestCase):
                                                  "verify": "111111"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 400)
+            self.assertEqual(400, res.status_code)
             result = res.json.get("result")
             self.assertFalse(result.get("status"))
             self.assertEqual(result.get("error").get("code"), 905)
@@ -2614,6 +2626,7 @@ class APITokenTestCase(MyApiTestCase):
 
         delete_policy("verify_toks1")
         delete_policy("verify_toks2")
+        delete_policy("require_description")
 
     def test_41_init_verify_email_token(self):
         set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=email".format(ACTION.VERIFY_ENROLLMENT))
