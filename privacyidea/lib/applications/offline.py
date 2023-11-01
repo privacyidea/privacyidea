@@ -28,7 +28,7 @@ from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ValidateError, ParameterError
 import logging
 from passlib.hash import pbkdf2_sha512
-from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token import get_one_token
 from privacyidea.lib.policy import TYPE
 log = logging.getLogger(__name__)
 ROUNDS = 6549
@@ -154,35 +154,32 @@ class MachineApplication(MachineApplicationBase):
         options = options or {}
         password = challenge
         if token_type.lower() in ["hotp", "webauthn"]:
-            tokens = get_tokens(serial=serial)
-            if len(tokens) == 1:
-                # Generic data
-                token_obj = tokens[0]
-                user_object = token_obj.user
-                if user_object:
-                    uInfo = user_object.info
-                    if "username" in uInfo:
-                        ret["user"] = ret["username"] = uInfo.get("username")
-                refilltoken = MachineApplication.generate_new_refilltoken(token_obj)
-                ret["refilltoken"] = refilltoken
-                # token specific data
-                if token_type.lower() == "webauthn":
-                    # return the pubkey and the credential_id (contained in the otpkey)
-                    ret["repsonse"] = {
-                            "pubkey": token_obj.get_tokeninfo("pubKey"),
-                            "credential_id": token_obj.decrypt_otpkey() }
-                elif token_type.lower() == "hotp":
-                    if password:
-                        _r, otppin, _ = token_obj.split_pin_pass(password)
-                        if not _r:
-                            raise ParameterError("Could not split password")
-                    else:
-                        otppin = ""
-                    otps = MachineApplication.get_offline_otps(token_obj,
-                                                               otppin,
-                                                               int(options.get("count", 100)),
-                                                               int(options.get("rounds", ROUNDS)))
-                    ret["response"] = otps
+            token_obj = get_one_token(serial=serial)
+            user_object = token_obj.user
+            if user_object:
+                uInfo = user_object.info
+                if "username" in uInfo:
+                    ret["user"] = ret["username"] = uInfo.get("username")
+            refilltoken = MachineApplication.generate_new_refilltoken(token_obj)
+            ret["refilltoken"] = refilltoken
+            # token specific data
+            if token_type.lower() == "webauthn":
+                # return the pubkey and the credential_id (contained in the otpkey)
+                ret["repsonse"] = {
+                        "pubkey": token_obj.get_tokeninfo("pubKey"),
+                        "credential_id": token_obj.decrypt_otpkey() }
+            elif token_type.lower() == "hotp":
+                if password:
+                    _r, otppin, _ = token_obj.split_pin_pass(password)
+                    if not _r:
+                        raise ParameterError("Could not split password")
+                else:
+                    otppin = ""
+                otps = MachineApplication.get_offline_otps(token_obj,
+                                                           otppin,
+                                                           int(options.get("count", 100)),
+                                                           int(options.get("rounds", ROUNDS)))
+                ret["response"] = otps
         else:
             log.info("Token %r, type %r is not supported by "
                      "OFFLINE application module" % (serial, token_type))
