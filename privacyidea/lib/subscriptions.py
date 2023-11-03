@@ -29,6 +29,7 @@ import logging
 import datetime
 import random
 from .log import log_with
+from .utils import get_plugin_info_from_useragent
 from ..models import Subscription
 from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.token import get_tokens
@@ -353,8 +354,7 @@ class CheckSubscription(object):
             request = self.request
             ua = request.user_agent
             ua_str = "{0!s}".format(ua) or "unknown"
-            plugin_with_version = ua_str.split()[0]
-            plugin_name = plugin_with_version.split("/")[0]
+            plugin_name = get_plugin_info_from_useragent(ua_str)[0]
             # check and raise if fails
             #check_subscription("privacyidea")
             check_subscription(plugin_name)
