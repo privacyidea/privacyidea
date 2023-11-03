@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+# 2023-11-03 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
+#            Migrate to click
 # 2020-11-11 Timo Sturm <timo.sturm@netknights.it>
 #            Select how to validate PSKC imports
 # 2018-02-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -402,12 +404,12 @@ def export_user_data(token_list, attributes=None):
 
 @click.pass_context
 @click.option('--chunksize')
-def privacyidea_token_janitor(ctx, chunksize):
+def cli(ctx, chunksize):
     """"""
     ctx.add(chunksize)
 
 
-@privacyidea_token_janitor.group
+@cli.group
 @click.pass_context
 @click.option('--tokeninfo', help='The tokeninfo value to match. For example: tokeninfo_key >= tokeninfo_value.'
                                   ' You can use "==", ">=" and "<="')
@@ -679,7 +681,7 @@ def delete_tokeninfo(ctx, tokeninfo):
                     token_obj.save()
 
 
-@privacyidea_token_janitor.group
+@cli.group
 @click.option('--yaml', dest='yaml',
               help='Specify the YAML file with the previously exported tokens.')
 def updatetokens(yaml):
@@ -702,7 +704,7 @@ def updatetokens(yaml):
                 sys.stderr.write("\nFailed to update token {0!s}.".format(tok.get("serial")))
 
 
-@privacyidea_token_janitor.group
+@cli.group
 @click.option('--pskc', dest='pskc',
               help='Import this PSKC file.')
 @click.option('--preshared_key_hex', dest='preshared_key_hex',
@@ -745,4 +747,4 @@ def loadtokens(pskc, preshared_key_hex, validate_mac):
 
 
 if __name__ == '__main__':
-    privacyidea_token_janitor.run()
+    cli.run()
