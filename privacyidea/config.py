@@ -82,6 +82,8 @@ class TestingConfig(Config):
     PI_LOGLEVEL = logging.INFO
     PI_GNUPG_HOME = "tests/testdata/gpg"
     PI_AUDIT_SQL_TRUNCATE = True
+    PI_AUDIT_NO_SIGN = True
+    PI_NO_RESPONSE_SIGN = True
     CACHE_TYPE = "None"
     PI_SCRIPT_HANDLER_DIRECTORY = "tests/testdata/scripts/"
     PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY = "tests/testdata/"

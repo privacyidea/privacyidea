@@ -3,7 +3,6 @@
 import unittest
 import mock
 from sqlalchemy.orm.session import close_all_sessions
-from flask.ctx import _AppCtxGlobals
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
@@ -61,7 +60,6 @@ class MyTestCase(unittest.TestCase):
                         "399871",
                         "520489"]
 
-
     @classmethod
     def setUpClass(cls):
         cls.app = create_app('testing', "")
@@ -73,7 +71,7 @@ class MyTestCase(unittest.TestCase):
         save_config_timestamp()
         db.session.commit()
         # Create an admin for tests.
-        create_db_admin(cls.app, cls.testadmin, cls.testadminmail, cls.testadminpw)
+        create_db_admin(cls.testadmin, cls.testadminmail, cls.testadminpw)
 
     def tearDown(self):
         # Commit all changes to the DB and close the session to avoid breaking
@@ -205,8 +203,7 @@ class MyTestCase(unittest.TestCase):
     def authenticate_selfservice_user(self):
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username":
-                                                     "selfservice@realm1",
+                                           data={"username": "selfservice@realm1",
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)

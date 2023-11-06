@@ -24,7 +24,8 @@ from privacyidea.lib.utils import get_version_number
 from .admin import admin_cli
 from .audit import audit_cli, rotate_audit as audit_rotate_audit
 from .backup import backup_cli
-from .pi_setup import setup_cli
+from .pi_setup import (setup_cli, encrypt_enckey, create_enckey, create_tables,
+                       create_pgp_keys, create_audit_keys, drop_tables)
 from .pi_config import config_cli, ca_cli
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -34,7 +35,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
              epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
 def cli():
     """Management script for the privacyIDEA application."""
-    click.echo("""
+    click.echo(r"""
              _                    _______  _______
    ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
   / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
@@ -45,6 +46,14 @@ def cli():
 
 
 cli.add_command(audit_rotate_audit, "rotate_audit")
+cli.add_command(create_enckey)
+cli.add_command(encrypt_enckey)
+cli.add_command(create_audit_keys)
+cli.add_command(create_tables)
+cli.add_command(create_pgp_keys)
+cli.add_command(create_tables, "createdb")
+cli.add_command(drop_tables)
+cli.add_command(drop_tables, "dropdb")
 
 cli.add_command(admin_cli)
 cli.add_command(audit_cli)

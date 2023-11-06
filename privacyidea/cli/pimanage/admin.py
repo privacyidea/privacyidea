@@ -44,7 +44,7 @@ def list_admin():
     """
     admins = list_db_admin()
     click.echo("Name \t email")
-    click.echo(30*"=")
+    click.echo(30 * "=")
     for admin in admins:
         click.echo(f"{admin.username} \t {admin.email}")
 
