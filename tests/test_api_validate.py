@@ -36,6 +36,9 @@ from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH as DEFAULT_L
 from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_PW
 from privacyidea.lib.tokenclass import ROLLOUTSTATE, CLIENTMODE
 from privacyidea.lib import _
+from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
+from privacyidea.lib.machine import attach_token, detach_token
+from privacyidea.lib.machineresolver import save_resolver, delete_resolver
 from passlib.hash import argon2
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 
@@ -476,9 +479,6 @@ class AValidateOfflineTestCase(MyApiTestCase):
         pass
         # create offline app
         #tokenobj = get_tokens(self.serials[0])[0]
-        from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
-        from privacyidea.lib.machine import attach_token, detach_token
-        from privacyidea.lib.machineresolver import save_resolver, delete_resolver
         mr_obj = save_resolver({"name": "testresolver",
                                 "type": "hosts",
                                 "filename": HOSTSFILE,
@@ -5834,3 +5834,170 @@ class ValidateShortPasswordTestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
+
+
+class WebAuthnOfflineTestCase(MyApiTestCase):
+
+    """
+    This Testcase simulates the enrollment and full authentication with a WebAuthn token.
+    """
+
+    username = "cornelius"
+    pin = "webauthnpin"
+    serial = "WAN0001D434"
+    clientdata = "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiMGZueEhXNVIybWFPclZydUxK\r\nR3JFR0ZwRm1KSFI0alBFbWVkSjlQdDNoayIsIm9yaWdpbiI6Imh0dHBzOi8vcHVjay5vZmZpY2Uu\r\nbmV0a25pZ2h0cy5pdCIsImNyb3NzT3JpZ2luIjpmYWxzZX0"
+    regdata = "o2NmbXRmcGFja2VkZ2F0dFN0bXSjY2FsZyZjc2lnWEcwRQIhAMjdckoGnrQ7mI4afrFD9Gf1eYKX\r\n1nij_v7PsyGb1RXBAiB1XH98HGptKlcdtZtPxbL4WZKVOa5Enb09ZZQxycsCOGN4NWOBWQLAMIIC\r\nvDCCAaSgAwIBAgIEA63wEjANBgkqhkiG9w0BAQsFADAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJv\r\nb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwMDAwMFow\r\nbTELMAkGA1UEBhMCU0UxEjAQBgNVBAoMCVl1YmljbyBBQjEiMCAGA1UECwwZQXV0aGVudGljYXRv\r\nciBBdHRlc3RhdGlvbjEmMCQGA1UEAwwdWXViaWNvIFUyRiBFRSBTZXJpYWwgNjE3MzA4MzQwWTAT\r\nBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQZnoecFi233DnuSkKgRhalswn-ygkvdr4JSPltbpXK5Mxl\r\nzVSgWc-9x8mzGysdbBhEecLAYfQYqpVLWWosHPoXo2wwajAiBgkrBgEEAYLECgIEFTEuMy42LjEu\r\nNC4xLjQxNDgyLjEuNzATBgsrBgEEAYLlHAIBAQQEAwIEMDAhBgsrBgEEAYLlHAEBBAQSBBD6K5nc\r\nnjlCV4-SSjDSPEEYMAwGA1UdEwEB_wQCMAAwDQYJKoZIhvcNAQELBQADggEBACjrs2f-0djw4onr\r\nyp_22AdXxg6a5XyxcoybHDjKu72E2SN9qDGsIZSfDy38DDFr_bF1s25joiu7WA6tylKA0HmEDloe\r\nJXJiWjv7h2Az2_siqWnJOLic4XE1lAChJS2XAqkSk9VFGelg3SLOiifrBet-ebdQwAL-2QFrcR7J\r\nrXRQG9kUy76O2VcSgbdPROsHfOYeywarhalyVSZ-6OOYK_Q_DLIaOC0jXrnkzm2ymMQFQlBAIysr\r\nYeEM1wxiFbwDt-lAcbcOEtHEf5ZlWi75nUzlWn8bSx_5FO4TbZ5hIEcUiGRpiIBEMRZlOIm4ZIbZ\r\nycn_vJOFRTVps0V0S4ygtDdoYXV0aERhdGFYxFLyPscdaSzo-TkwLG7jxyp-Etk6ein0C_VjHUvB\r\nUOENQQAAAWP6K5ncnjlCV4-SSjDSPEEYAEBG4GUQidTvJywgtJPu7oChPut2o1iNJ_iOXPfzHXTf\r\njjEzZIeW3Bu0HACkVidtBc7yDluCtviQWHU0SufOxPrEpQECAyYgASFYID-YUA3c7cOqFtNK6bfB\r\nL3H6BNN7ivKOfFnU5zOIA3X7IlggaKqMkh_8X6Vim6wj6GSq9_zeCvDUgJKeTuo-Nxk_jz0"
+
+    def setUp(self):
+        # Set up the WebAuthn Token from the lib test case
+        super(MyApiTestCase, self).setUp()
+        self.setUp_user_realms()
+
+        set_policy("wan1", scope=SCOPE.ENROLL,
+                   action="webauthn_relying_party_id=netknights.it")
+        set_policy("wan2", scope=SCOPE.ENROLL,
+                   action="webauthn_relying_party_name=privacyIDEA")
+
+    def test_01_token_init(self):
+        payload = {"genkey": 1,
+                   "type": "webauthn",
+                   "pin": self.pin,
+                   "description": "my description",
+                   "serial": self.serial,
+                   "user": self.username}
+
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data=payload,
+                                           headers={"authorization": self.at,
+                                                    "Host": "puck.office.netknights.it",
+                                                    "Origin": "https://puck.office.netknights.it"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            result = data.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            detail = data.get("detail")
+            self.assertEqual(self.serial, detail.get("serial"))
+            webAuthnRequest = data.get("detail").get("webAuthnRegisterRequest")
+            self.assertEqual("Please confirm with your WebAuthn token", webAuthnRequest.get("message"))
+            transaction_id = webAuthnRequest.get("transaction_id")
+            self.assertEqual(webAuthnRequest.get("attestation"), "direct")
+
+        # We need to change the nonce in the challenge database to use our recorded WebAuthN enrollment data
+        recorded_nonce = "0fnxHW5R2maOrVruLJGrEGFpFmJHR4jPEmedJ9Pt3hk"
+        recorded_nonce_hex = hexlify_and_unicode(webauthn_b64_decode(recorded_nonce))
+        # Update the nonce in the challenge database.
+        from privacyidea.lib.challenge import get_challenges
+        chal = get_challenges(serial=self.serial, transaction_id=transaction_id)[0]
+        chal.challenge = recorded_nonce_hex
+        chal.save()
+
+        # 2nd enrollment step
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"user": self.username,
+                                                 "pin": self.pin,
+                                                 "serial": self.serial,
+                                                 "type": "webauthn",
+                                                 "transaction_id": transaction_id,
+                                                 "clientdata": self.clientdata,
+                                                 "regdata": self.regdata},
+                                           headers={"authorization": self.at,
+                                                    "Host": "puck.office.netknights.it",
+                                                    "Origin": "https://puck.office.netknights.it"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertEqual('my description',
+                             data.get("detail").get("webAuthnRegisterResponse").get("subject"))
+
+        # Test, if the token received the automatic description
+        tok = get_one_token(serial=self.serial)
+        self.assertEqual(tok.token.description, "my description")
+
+        # Attach offline to WebAuthn
+        mt = attach_token(self.serial, "offline")
+        self.assertEqual("offline", mt.application)
+        self.assertEqual(1, mt.id)
+
+    def test_02_autenticate(self):
+
+        recorded_allowCredentials = "RuBlEInU7ycsILST7u6AoT7rdqNYjSf4jlz38x10344xM2SHltwbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA"
+        recorded_challenge = "zphA4XzB8ZHkiGnsQAcqDRn8j8e4h9HcSAQ2mlt0o94"
+
+        payload = {"user": self.username,
+                   "pass": self.pin}
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data=payload,
+                                           headers={"Host": "puck.office.netknights.it",
+                                                    "Origin": "https://puck.office.netknights.it"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            data = res.json
+            self.assertTrue("transaction_id" in data.get("detail"))
+            self.assertEqual(self.serial, data.get("detail").get("serial"))
+            self.assertEqual("Please confirm with your WebAuthn token (my description)",
+                             data.get("detail").get("message"))
+            detail = data.get("detail")
+            self.assertEqual("webauthn", detail.get("client_mode"))
+            webAuthnSignRequest = detail.get("attributes").get("webAuthnSignRequest")
+            self.assertEqual("netknights.it", webAuthnSignRequest.get("rpId"))
+            allowCredentials = webAuthnSignRequest.get("allowCredentials")
+            self.assertEqual(1, len(allowCredentials))
+            self.assertEqual(recorded_allowCredentials, allowCredentials[0].get("id"))
+            transaction_id = detail.get("transaction_id")
+
+            # Update the recorded challenge in the DB
+            recorded_challenge_hex = hexlify_and_unicode(webauthn_b64_decode(recorded_challenge))
+            # Update the nonce in the challenge database.
+            from privacyidea.lib.challenge import get_challenges
+            chal = get_challenges(serial=self.serial, transaction_id=transaction_id)[0]
+            chal.challenge = recorded_challenge_hex
+            chal.save()
+
+        # 2nd authentication step
+        payload = {
+            "credentialid": "RuBlEInU7ycsILST7u6AoT7rdqNYjSf4jlz38x10344xM2SHltwbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA",
+            "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoienBoQTRYekI4WkhraUduc1FBY3FE\r\nUm44ajhlNGg5SGNTQVEybWx0MG85NCIsIm9yaWdpbiI6Imh0dHBzOi8vcHVjay5vZmZpY2UubmV0\r\na25pZ2h0cy5pdCIsImNyb3NzT3JpZ2luIjpmYWxzZX0",
+            "signaturedata": "MEYCIQCo7auEWVB0QitS6Hr2GnM9QU3R3ZFdnjVhSKgrbD52lAIhANmt2evYe9JP3MLMeIc1WXpG\r\n2NlUT2MHQTQATDoyMdM3",
+            "authenticatordata": "UvI-xx1pLOj5OTAsbuPHKn4S2Tp6KfQL9WMdS8FQ4Q0BAAABZQ",
+            "user": self.username,
+            "pass": "",
+            "transaction_id": transaction_id,
+            "client": "127.0.0.1"
+        }
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data=payload,
+                                           headers={"Host": "puck.office.netknights.it",
+                                                    "Origin": "https://puck.office.netknights.it"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            data = res.json
+            detail = data.get("detail")
+            result = data.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertEqual("Found matching challenge", detail.get("message"))
+            auth_items = data.get("auth_items")
+            """
+            auth_itmes looks like this:
+            
+            {'offline': [
+                {'user': 'cornelius',
+                 'username': 'cornelius',
+                 'refilltoken': '79906cc20567c6ca1e4b452500bb0662e107ce0fa14742c95b7e5c6a1417a519f829318622c1d569',
+                 'repsonse': {
+                     'pubkey': 'a50102032620012158203f98500ddcedc3aa16d34ae9b7c12...ea3e37193f8f3d', 
+                     'credential_id': 'RuBlEInU7ycsILST7u6AoT7rdqN...4xM2SHltwbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA'}, 
+                 'serial': 'WAN0001D434'}]}
+            """
+            response = auth_items.get("offline")[0].get("response")
+            _refill_token = auth_items.get("offline")[0].get("refilltoken")
+            # Offline returns the credential ID and the pub key
+            self.assertEqual(recorded_allowCredentials, response.get("credential_id"))
+            self.assertIn("pubkey", response)
