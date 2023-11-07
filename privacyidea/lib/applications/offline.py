@@ -165,9 +165,8 @@ class MachineApplication(MachineApplicationBase):
             # token specific data
             if token_type.lower() == "webauthn":
                 # return the pubkey and the credential_id (contained in the otpkey)
-                ret["response"] = {
-                        "pubkey": token_obj.get_tokeninfo("pubKey"),
-                        "credential_id": token_obj.decrypt_otpkey() }
+                ret["response"] = {"pubkey": token_obj.get_tokeninfo("pubKey"),
+                                   "credential_id": token_obj.decrypt_otpkey()}
             elif token_type.lower() == "hotp":
                 if password:
                     _r, otppin, _ = token_obj.split_pin_pass(password)
