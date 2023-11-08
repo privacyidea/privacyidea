@@ -55,7 +55,10 @@ angular
                             .then(callback)
                             .catch(function(e) {
                                 inform.add(
-                                    domExceptionErrorMessage[e.name] + " / " + e.message,
+                                    domExceptionErrorMessage[e.name] + " / " +
+                                    gettextCatalog.getString(
+                                        "Error when enrolling - you are probably trying to enroll the same token twice!"
+                                    ),
                                     {
                                         type: "danger",
                                         ttl: 10000
