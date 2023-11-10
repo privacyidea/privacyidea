@@ -44,24 +44,44 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# SPDX-FileCopyrightText: (C) 2023 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Info: https://privacyidea.org
+#
+# This code is free software: you can redistribute it and/or
+# modify it under the terms of the GNU Affero General Public License
+# as published by the Free Software Foundation, either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import click
+from flask.cli import AppGroup
 from click import ClickException
 from dateutil import parser
 from dateutil.tz import tzlocal, tzutc
 
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.utils import parse_legacy_time, to_unicode
+from privacyidea.lib.utils import parse_legacy_time
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
-                                   unassign_token, import_token,
+                                   unassign_token,
                                    get_tokens_paginated_generator)
 from privacyidea.models import Token
 from privacyidea.app import create_app
 import re
 import sys
 from yaml import safe_dump as yaml_safe_dump
-from yaml import safe_load as yaml_safe_load
 
+findtokens_cli = AppGroup("find", help="finds tokens and give the option to export, change or delete them.")
 
 __doc__ = """
 This script can be used to clean up the token database.
@@ -402,15 +422,9 @@ def export_user_data(token_list, attributes=None):
     return users
 
 
+@findtokens_cli.command("find")
 @click.pass_context
-@click.option('--chunksize')
-def cli(ctx, chunksize):
-    """"""
-    ctx.add(chunksize)
-
-
-@cli.group
-@click.pass_context
+@click.option('--chunksize', help='Read tokens from the database in smaller chunks to perform operations.')
 @click.option('--tokeninfo', help='The tokeninfo value to match. For example: tokeninfo_key >= tokeninfo_value.'
                                   ' You can use "==", ">=" and "<="')
 @click.option('--has-not-tokeninfo-key', help='filters for tokens that have not given the specified tokeninfo-key')
@@ -424,8 +438,8 @@ def cli(ctx, chunksize):
 @click.option('--assigned', help='True|False|None')
 @click.option('--active', help='True|False|None')
 @click.option('--orphaned', help='Whether the token is an orphaned token. Set to 1')
-def find(ctx, last_auth, tokeninfo, assigned, active, orphaned, tokentype, serial, description, tokenattribute,
-         has_not_tokeninfo_key, has_tokeninfo_key):
+def find(ctx, chunksize, last_auth, tokeninfo, assigned, active, orphaned, tokentype, serial, description,
+         tokenattribute, has_not_tokeninfo_key, has_tokeninfo_key):
     """finds all tokens which match the conditions"""
 
     tokenattributes = [col.key for col in Token.__table__.columns]
@@ -435,7 +449,7 @@ def find(ctx, last_auth, tokeninfo, assigned, active, orphaned, tokentype, seria
         ))
         sys.exit(1)
 
-    chunksize = ctx.get('chunksize')
+    chunksize = ctx.add(chunksize)
     if chunksize is not None:
         chunksize = int(chunksize)
 
@@ -679,72 +693,3 @@ def delete_tokeninfo(ctx, tokeninfo):
                         token_obj.token.serial, tokeninfo))
                     token_obj.del_tokeninfo(tokeninfo)
                     token_obj.save()
-
-
-@cli.group
-@click.option('--yaml', dest='yaml',
-              help='Specify the YAML file with the previously exported tokens.')
-def updatetokens(yaml):
-    """
-    This can update existing tokens in the privacyIDEA system. You can specify a yaml file with the tokendata.
-    Can be used to reencrypt data, when changing the encryption key.
-    """
-    print("Loading YAML data. This may take a while.")
-    token_list = yaml_safe_load(open(yaml, 'r').read())
-    for tok in token_list:
-        del (tok["owner"])
-        tok_objects = get_tokens(serial=tok.get("serial"))
-        if len(tok_objects) == 0:
-            sys.stderr.write("\nCan not find token {0!s}. Not updating.\n".format(tok.get("serial")))
-        else:
-            print("Updating token {0!s}.".format(tok.get("serial")))
-            try:
-                tok_objects[0].update(tok)
-            except Exception as e:
-                sys.stderr.write("\nFailed to update token {0!s}.".format(tok.get("serial")))
-
-
-@cli.group
-@click.option('--pskc', dest='pskc',
-              help='Import this PSKC file.')
-@click.option('--preshared_key_hex', dest='preshared_key_hex',
-              help='The AES encryption key.')
-@click.option('--validate_mac', dest='validate_mac', default='check_fail_hard',
-              help="How the file should be validated.\n"
-                   "'no_check' : Every token is parsed, ignoring HMAC\n"
-                   "'check_fail_soft' : Skip tokens with invalid HMAC\n"
-                   "'check_fail_hard' : Only import tokens if all HMAC are valid.")
-def loadtokens(pskc, preshared_key_hex, validate_mac):
-    """
-    Loads token data from a PSKC file.
-    """
-    from privacyidea.lib.importotp import parsePSKCdata
-
-    with open(pskc, 'r') as pskcfile:
-        file_contents = pskcfile.read()
-
-    tokens, not_parsed_tokens = parsePSKCdata(file_contents,
-                                              preshared_key_hex=preshared_key_hex,
-                                              validate_mac=validate_mac)
-    success = 0
-    failed = 0
-    failed_tokens = []
-    for serial in tokens:
-        try:
-            print("Importing token {0!s}".format(serial))
-            import_token(serial, tokens[serial])
-            success = success + 1
-        except Exception as e:
-            failed = failed + 1
-            failed_tokens.append(serial)
-            print("--- Failed to import token. {0!s}".format(e))
-
-    if not_parsed_tokens:
-        print("The following tokens were not read from the PSKC file"
-              " because they could not be validated: {0!s}".format(not_parsed_tokens))
-    print("Successfully imported {0!s} tokens.".format(success))
-    print("Failed to import {0!s} tokens: {1!s}".format(failed, failed_tokens))
-
-
-if __name__ == '__main__':
-    cli.run()
