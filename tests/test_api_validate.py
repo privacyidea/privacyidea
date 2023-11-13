@@ -38,7 +38,7 @@ from privacyidea.lib.tokenclass import ROLLOUTSTATE, CLIENTMODE
 from privacyidea.lib import _
 from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
 from privacyidea.lib.machine import attach_token, detach_token
-from privacyidea.lib.machineresolver import save_resolver, delete_resolver
+from privacyidea.lib.machineresolver import save_resolver as save_machine_resolver
 from passlib.hash import argon2
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 
@@ -476,10 +476,9 @@ class AValidateOfflineTestCase(MyApiTestCase):
         self.assertEqual(token.token.first_owner.user_id, "1000")
 
     def test_01_validate_offline(self):
-        pass
         # create offline app
         #tokenobj = get_tokens(self.serials[0])[0]
-        mr_obj = save_resolver({"name": "testresolver",
+        mr_obj = save_machine_resolver({"name": "testresolver",
                                 "type": "hosts",
                                 "filename": HOSTSFILE,
                                 "type.filename": "string",
