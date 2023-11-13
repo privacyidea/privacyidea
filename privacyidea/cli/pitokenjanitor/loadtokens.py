@@ -4,13 +4,15 @@ import click
 
 from privacyidea.lib.token import import_token
 
-loadtokens_cli = AppGroup("lode", help="Loads token data from a PSKC file.")
+loadtokens_cli = AppGroup("load", help="Loads token data from a PSKC file.")
+
+
 @loadtokens_cli.command("load")
-@click.option('--pskc', dest='pskc',
+@click.option('--pskc',
               help='Import this PSKC file.')
-@click.option('--preshared_key_hex', dest='preshared_key_hex',
+@click.option('--preshared_key_hex',
               help='The AES encryption key.')
-@click.option('--validate_mac', dest='validate_mac', default='check_fail_hard',
+@click.option('--validate_mac', default='check_fail_hard',
               help="How the file should be validated.\n"
                    "'no_check' : Every token is parsed, ignoring HMAC\n"
                    "'check_fail_soft' : Skip tokens with invalid HMAC\n"

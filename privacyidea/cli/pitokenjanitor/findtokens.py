@@ -422,6 +422,7 @@ def export_user_data(token_list, attributes=None):
     return users
 
 
+@click.group()
 @findtokens_cli.command("find")
 @click.pass_context
 @click.option('--chunksize', help='Read tokens from the database in smaller chunks to perform operations.')
@@ -503,7 +504,7 @@ def find(ctx, chunksize, last_auth, tokeninfo, assigned, active, orphaned, token
     ctx["generator"] = generator
 
 
-@find.group
+@find.command("action")
 @click.pass_context
 def action(ctx):
     """"""
