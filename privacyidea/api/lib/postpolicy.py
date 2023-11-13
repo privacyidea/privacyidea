@@ -507,8 +507,6 @@ def offline_info(request, response):
     """
     content = response.json
     # check if the authentication was successful
-    if not g.client_ip:
-        g.client_ip = "127.0.0.1"
     if content.get("result").get("value") is True and g.client_ip:
         # check if there is a MachineToken definition
         serial = content.get("detail", {}).get("serial")

@@ -5948,6 +5948,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
+                                           environ_base={'REMOTE_ADDR': '10.0.0.17'},
                                            data=payload,
                                            headers={"Host": "puck.office.netknights.it",
                                                     "Origin": "https://puck.office.netknights.it"}):
@@ -5986,10 +5987,12 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             "authenticatordata": "UvI-xx1pLOj5OTAsbuPHKn4S2Tp6KfQL9WMdS8FQ4Q0BAAABZQ",
             "user": self.username,
             "pass": "",
-            "transaction_id": transaction_id,
-            "client": "127.0.0.1"
+            "transaction_id": transaction_id
         }
+
+        # We need the client IP (REMOTE_ADDR) to set the authitems in postpolicy.py:offline_info()
         with self.app.test_request_context('/validate/check',
+                                           environ_base={'REMOTE_ADDR': '10.0.0.17'},
                                            method='POST',
                                            data=payload,
                                            headers={"Host": "puck.office.netknights.it",
