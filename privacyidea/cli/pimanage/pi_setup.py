@@ -29,7 +29,10 @@ from flask.cli import AppGroup
 from flask import current_app
 from flask_migrate import stamp as fm_stamp
 import gnupg
-import importlib_metadata
+try:
+    from importlib import metadata
+except ImportError:  # Python 3.7
+    import importlib_metadata as metadata
 
 from privacyidea.models import db
 from privacyidea.lib.security.default import DefaultSecurityModule
@@ -192,7 +195,7 @@ def create_tables(stamp=False):
     db.create_all()
     if stamp:
         # get the path to the migration directory from the distribution
-        p = [x.locate() for x in importlib_metadata.files('privacyidea') if
+        p = [x.locate() for x in metadata.files('privacyidea') if
              'migrations/env.py' in str(x)]
         migration_dir = os.path.dirname(os.path.abspath(p[0]))
         fm_stamp(directory=migration_dir)

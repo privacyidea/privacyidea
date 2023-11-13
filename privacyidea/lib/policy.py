@@ -1327,7 +1327,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :type check_all_resolvers: bool
     :param conditions: A list of 5-tuples (section, key, comparator, value, active) of policy conditions
     :param pinode: A privacyIDEA node or a list of privacyIDEA nodes.
-    :return: The database ID od the the policy
+    :return: The database ID of the policy
     :rtype: int
     """
     active = is_true(active)
@@ -1425,9 +1425,14 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
 @log_with(log)
 def enable_policy(name, enable=True):
     """
-    Enable or disable the policy with the given name
-    :param name:
+    Enable or disable the policy with the given name.
+
+    :param name: Name of the policy
+    :type name: str
+    :param enable: Set to True to enable the policy
+    :type enable: bool
     :return: ID of the policy
+    :rtype: int
     """
     if not Policy.query.filter(Policy.name == name).first():
         raise ResourceNotFoundError("The policy with name '{0!s}' does not exist".format(name))

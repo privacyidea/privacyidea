@@ -31,7 +31,6 @@ import logging
 log = logging.getLogger(__name__)
 
 
-
 class ROLE(object):
     ADMIN = "admin"
     USER = "user"

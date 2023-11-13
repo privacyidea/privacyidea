@@ -26,7 +26,9 @@ from .audit import audit_cli, rotate_audit as audit_rotate_audit
 from .backup import backup_cli
 from .pi_setup import (setup_cli, encrypt_enckey, create_enckey, create_tables,
                        create_pgp_keys, create_audit_keys, drop_tables)
-from .pi_config import config_cli, ca_cli
+from .pi_config import (config_cli, ca_cli, realm_cli, resolver_cli, event_cli,
+                        policy_cli, authcache_cli, hsm_cli)
+from .api import api_cli
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -54,12 +56,20 @@ cli.add_command(create_pgp_keys)
 cli.add_command(create_tables, "createdb")
 cli.add_command(drop_tables)
 cli.add_command(drop_tables, "dropdb")
+cli.add_command(realm_cli)
+cli.add_command(resolver_cli)
+cli.add_command(policy_cli)
+cli.add_command(event_cli)
 
 cli.add_command(admin_cli)
 cli.add_command(audit_cli)
 cli.add_command(setup_cli)
 cli.add_command(config_cli)
 cli.add_command(backup_cli)
+cli.add_command(api_cli)
+cli.add_command(ca_cli)
+cli.add_command(authcache_cli)
+cli.add_command(hsm_cli)
 
 if __name__ == '__main__':
     cli()

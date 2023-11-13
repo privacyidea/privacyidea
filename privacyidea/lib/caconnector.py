@@ -235,7 +235,7 @@ def get_caconnector_class(connector_type):
     :return: CA Connector Class
     """
     ret = None
-    
+
     (connector_classes, connector_types) = get_caconnector_class_dict()
 
     if connector_type in connector_types.values():
@@ -250,7 +250,7 @@ def get_caconnector_class(connector_type):
 def get_caconnector_type(connector_name):
     """
     return the type of a CA connector
-    
+
     :param connector_name: The name of the CA connector
     :return: The type of the CA connector
     :rtype: string
@@ -267,7 +267,6 @@ def get_caconnector_object(connector_name):
     create a CA Connector object from a connector_name
 
     :param connector_name: the name of the CA connector
-    :param connector_type: optional connector_type
     :return: instance of the CA Connector with the loaded config
     """
     c_obj = None
@@ -327,4 +326,3 @@ def get_all_caconnectors():
     """
     conf = get_config_object()
     return conf.caconnectors
-
