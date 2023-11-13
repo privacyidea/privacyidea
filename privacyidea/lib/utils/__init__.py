@@ -43,7 +43,10 @@ from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
 import traceback
 import threading
-import importlib_metadata
+try:
+    from importlib import metadata
+except ImportError:
+    import importlib_metadata as metadata
 import time
 import html
 import segno
@@ -915,10 +918,10 @@ def parse_legacy_time(ts, return_date=False):
     The new timestrings are of the format YYYY-MM-DDThh:mm+oooo.
     They contain the timezone offset!
 
-    Old legacy time strings are of format DD/MM/YY hh:mm without time zone 
+    Old legacy time strings are of format DD/MM/YY hh:mm without time zone
     offset.
 
-    This function parses string and returns the new formatted time string 
+    This function parses string and returns the new formatted time string
     including the timezone offset.
 
     :param ts:
@@ -1248,9 +1251,9 @@ def get_version_number():
     """
     version = "unknown"
     try:
-        version = importlib_metadata.version("privacyidea")
-    except:
-        log.info("We are not able to determine the privacyidea version number.")
+        version = metadata.version("privacyidea")
+    except metadata.PackageNotFoundError as e:
+        log.info(f"We are not able to determine the privacyidea version number: {e}")
     return version
 
 
