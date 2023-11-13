@@ -1552,7 +1552,7 @@ def get_plugin_info_from_useragent(useragent):
     """
     This gives you the plugin name and version from an useragent string.
 
-    :parm useragent: useragent string like 'NameOfPlugin/VersionOfPlugin NameOfApplication/VersionOfApplication'
+    :param useragent: useragent string like 'NameOfPlugin/VersionOfPlugin NameOfApplication/VersionOfApplication'
     :return: a list with [NameOfPlugin, VersionOfPlugin]. For example: ['ExamplePlugin', 1.0]
     """
     plugin_string = useragent.split()[0]
