@@ -21,7 +21,7 @@ import click
 from flask.cli import FlaskGroup
 from privacyidea.app import create_app
 from privacyidea.lib.utils import get_version_number
-#from .findtokens import findtokens_cli
+from .findtokens import findtokens_cli
 from .loadtokens import loadtokens_cli
 from .updatetokens import updatetokens_cli
 
@@ -43,7 +43,7 @@ def cli():
     """.format('v{0!s}'.format(get_version_number())))
 
 
-#cli.add_command(findtokens_cli)
+cli.add_command(findtokens_cli)
 cli.add_command(loadtokens_cli)
 cli.add_command(updatetokens_cli)
 
