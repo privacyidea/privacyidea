@@ -100,9 +100,12 @@ class MachineApplication(MachineApplicationBase):
         returns a dictionary with a list of options
         """
         sids = [s.name for s in get_serviceids()]
-        return {'user': {'type': TYPE.STRING,
-                         'description': _('The username on the SSH server.')},
-                'service_id': {'type': TYPE.STRING,
-                               'description': _('The service ID of the SSH server. '
-                                                'Several servers can have the same service ID.'),
-                               'value': sids}}
+        options = {"sshkey":
+                       {'user': {'type': TYPE.STRING,
+                                 'description': _('The username on the SSH server.')},
+                        'service_id': {'type': TYPE.STRING,
+                                       'description': _('The service ID of the SSH server. '
+                                                        'Several servers can have the same service ID.'),
+                                       'value': sids}}
+                   }
+        return options
