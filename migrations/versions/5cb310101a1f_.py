@@ -48,7 +48,7 @@ def upgrade():
                     continue
 
                 # Create the sequence with the correct next_id!
-                current_id = session.query(func.max(tbl.c.id)).one()[0] or 1
+                current_id = session.query(func.max(tbl.c.id)).one()[0] or 0
                 print(f"CurrentID in Table {tbl.name}: {current_id}")
                 try:
                     seq = Sequence(seq_name, start=(current_id + 1), increment=inc_value)
