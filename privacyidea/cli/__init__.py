@@ -17,6 +17,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from privacyidea.cli.pitokenjanitor.main import cli as pi_token_janitor
+from privacyidea.cli.privacyideatokenjanitor.main import cli as pi_token_janitor
 
 __all__ = ['pi_token_janitor']

@@ -105,9 +105,9 @@ Actions:
 * delete
 
 
-    privacyidea-token-janitor find 
+    privacyidea-token-janitor find
         --last_auth=10h|7d|2y
-        --tokeninfo= 'token_info_key == token_info_value' or 'token_info_key >= token_info_value' 
+        --tokeninfo= 'token_info_key == token_info_value' or 'token_info_key >= token_info_value'
                         or 'token_info_key <= token_info_value'
         --has-not-tokeninfo-key<key>
         --has-tokeninfo-key<key>
@@ -199,6 +199,7 @@ def _compare_after(key, given_value_string):
     :return: a function which returns True if its parameter (converted to a datetime) occurs after
              *given_value_string* (converted to a datetime).
     """
+
     def comparator(value):
         try:
             return _parse_datetime(key, value) > given_value_string
@@ -213,6 +214,7 @@ def _compare_before(key, given_value_string):
     :return: a function which returns True if its parameter (converted to a datetime) occurs before
              *given_value_string* (converted to a datetime).
     """
+
     def comparator(value):
         try:
             return _parse_datetime(key, value) < given_value_string
@@ -429,52 +431,54 @@ def export_user_data(token_list, attributes=None):
 @click.option('--set-tokeninfo-key', help='set a new tokeninfo-key')
 @click.option('--set-tokeninfo-value', help='set a new tokeninfo-value')
 @click.option('--tokeninfo-value-before', metavar='DATETIME',
-                help='Interpret tokeninfo values as datetimes, match only if they occur before the given ISO 8601 datetime')
+              help='Interpret tokeninfo values as datetimes,'
+                   ' match only if they occur before the given ISO 8601 datetime')
 @click.option('--tokeninfo-value-after', metavar='DATETIME',
-                help='Interpret tokeninfo values as datetimes, match only if they occur after the given ISO 8601 datetime')
+              help='Interpret tokeninfo values as datetimes,'
+                   ' match only if they occur after the given ISO 8601 datetime')
 @click.option('--tokeninfo-value-greater-than', metavar='INTEGER',
-                help='Interpret tokeninfo values as integers and match only if they are '
-                     'greater than the given integer')
+              help='Interpret tokeninfo values as integers and match only if they are '
+                   'greater than the given integer')
 @click.option('--tokeninfo-value-less-than', metavar='INTEGER',
-                help='Interpret tokeninfo values as integers and match only if they are '
-                     'smaller than the given integer')
+              help='Interpret tokeninfo values as integers and match only if they are '
+                   'smaller than the given integer')
 @click.option('--tokeninfo-value', metavar='REGEX|INTEGER', help='The tokeninfo value to match')
 @click.option('--has-not-tokeninfo-key', help='filters for tokens that have not given the specified tokeninfo-key')
 @click.option('--has-tokeninfo-key', help='filters for tokens that have given the specified tokeninfo-key.')
 @click.option('--tokeninfo-key', help='The tokeninfo key to match. ')
 @click.option('--tokenattribute-value-greater-than', metavar='INTEGER',
-                help="Match if the value of the token attribute is greater than the given value.")
+              help="Match if the value of the token attribute is greater than the given value.")
 @click.option('--tokenattribute-value-less-than', metavar='INTEGER',
-                help="Match if the value of the token attribute is less than the given value.")
+              help="Match if the value of the token attribute is less than the given value.")
 @click.option('--tokenattribute-value', metavar='REGEX|INTEGER',
-                help='The value of the token attribute which should match.')
+              help='The value of the token attribute which should match.')
 @click.option('--tokenattribute', help='Match for a certain token attribute from the database.')
 @click.option('--tokentype', help='The tokentype to search.')
 @click.option('--serial', help='A regular expression on the serial')
 @click.option('--description', help='A regular expression on the description')
 @click.option('--attributes', help='Extends the "listuser" function to display additional user attributes')
 @click.option('--tokenrealms', help='A comma separated list of realms, to which the tokens should be assigned.')
-@click.option('--sum', help='In case of the action "listuser", this switch specifies if '
-                              'the output should only contain the number of tokens owned '
-                              'by the user.')
+@click.option('--sum', 'sum_tokens', is_flag=True,
+              help='In case of the action "listuser", this switch specifies if'
+                   ' the output should only contain the number of tokens owned by the user.')
 @click.option('--action', help='Which action should be performed on the '
-                                 'found tokens. {0!s}. Exporting to PSKC only supports '
-                                 'HOTP, TOTP and PW tokens!'.format("|".join(ALLOWED_ACTIONS)))
-@click.option('--csv',
-                help='In case of a simple find, the output is written as CSV instead of the '
-                     'formatted output.')
-@click.option('--yaml',
-                help='In case of a simple find, the output is written as YAML instead of the '
-                     'formatted output.')
+                               'found tokens. {0!s}. Exporting to PSKC only supports '
+                               'HOTP, TOTP and PW tokens!'.format("|".join(ALLOWED_ACTIONS)))
+@click.option('--csv', is_flag=True,
+              help='In case of a simple find, the output is written as CSV instead of the '
+                   'formatted output.')
+@click.option('--yaml', is_flag=True,
+              help='In case of a simple find, the output is written as YAML instead of the '
+                   'formatted output.')
 @click.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
 @click.option('--assigned', help='True|False|None')
 @click.option('--active', help='True|False|None')
 @click.option('--orphaned',
-                help='Whether the token is an orphaned token. Set to 1')
-@click.option('--b32',
-                help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.')
+              help='Whether the token is an orphaned token. Set to 1')
+@click.option('--b32', is_flag=True,
+              help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.')
 @click.option('--chunksize', default=None,
-                help='Read tokens from the database in smaller chunks to perform operations.')
+              help='Read tokens from the database in smaller chunks to perform operations.')
 def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
          tokeninfo_value_greater_than, tokeninfo_value_less_than,
          tokeninfo_value_after, tokeninfo_value_before,
@@ -559,7 +563,7 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                     if tokenobj.type.lower() not in ["totp", "hotp"]:
                         continue
                     token_dict = tokenobj._to_dict(b32=b32)
-                    owner = "{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm) if tokenobj.user else "n/a"
+                    owner = "{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm)if tokenobj.user else "n/a"
                     if type == "totp":
                         print("{!s}, {!s}, {!s}, {!s}, {!s}, {!s}".format(owner, token_dict.get("serial"),
                                                                           token_dict.get("otpkey"),
@@ -576,7 +580,8 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 for tokenobj in tlist:
                     try:
                         token_dict = tokenobj._to_dict(b32=b32)
-                        token_dict["owner"] = "{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm) if tokenobj.user else "n/a"
+                        token_dict["owner"] = "{!s}@{!s}".format(tokenobj.user.login,
+                                                                 tokenobj.user.realm) if tokenobj.user else "n/a"
                         token_list.append(token_dict)
                     except Exception as e:
                         sys.stderr.write("\nFailed to export token {0!s}.\n".format(token_dict.get("serial")))

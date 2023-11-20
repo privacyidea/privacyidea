@@ -7,6 +7,7 @@ import sys
 
 updatetokens_cli = AppGroup("update", help="This can update existing tokens in the privacyIDEA system.")
 
+
 @updatetokens_cli.command("update")
 @click.option('--yaml',
               help='Specify the YAML file with the previously exported tokens.')

@@ -33,7 +33,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
              epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
 def cli():
     """Management script for tokens of privacyIDEA."""
-    click.echo("""
+    click.echo(r"""
              _                    _______  _______
    ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
   / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
