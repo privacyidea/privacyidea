@@ -915,10 +915,10 @@ def parse_legacy_time(ts, return_date=False):
     The new timestrings are of the format YYYY-MM-DDThh:mm+oooo.
     They contain the timezone offset!
 
-    Old legacy time strings are of format DD/MM/YY hh:mm without time zone 
+    Old legacy time strings are of format DD/MM/YY hh:mm without time zone
     offset.
 
-    This function parses string and returns the new formatted time string 
+    This function parses string and returns the new formatted time string
     including the timezone offset.
 
     :param ts:
@@ -1548,13 +1548,26 @@ def convert_imagefile_to_dataimage(imagepath):
         return ""
 
 
+ua_re = re.compile(r'^(?P<agent>[a-zA-Z0-9_-]+)(/(?P<version>\d+[\d.]*))?(\s(?P<comment>.*))?')
+
+
 def get_plugin_info_from_useragent(useragent):
     """
     This gives you the plugin name and version from an useragent string.
+    See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent for
+    more information on the user-agent string
 
     :param useragent: useragent string like 'NameOfPlugin/VersionOfPlugin NameOfApplication/VersionOfApplication'
-    :return: a list with [NameOfPlugin, VersionOfPlugin]. For example: ['ExamplePlugin', 1.0]
+    :type useragent: str
+    :return: a tuple with (NameOfPlugin, VersionOfPlugin, Comment). For example: ('ExamplePlugin', 1.0, '')
+    :rtype: tuple
     """
-    plugin_string = useragent.split()[0]
-    plugin_list = plugin_string.split("/")
-    return plugin_list
+    if not useragent:
+        log.info(f"No user-agent string given")
+        return "", None, None
+    ua_match = ua_re.match(useragent)
+    if ua_match:
+        return ua_match.group('agent'), ua_match.group('version'), ua_match.group('comment')
+    else:
+        log.info(f"Could not match user-agent string: {useragent}")
+        return "", None, None

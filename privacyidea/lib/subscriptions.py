@@ -352,11 +352,9 @@ class CheckSubscription(object):
         @functools.wraps(func)
         def check_subscription_wrapper(*args, **kwds):
             request = self.request
-            ua = request.user_agent
-            ua_str = "{0!s}".format(ua) or "unknown"
+            ua_str = str(request.user_agent.string)
             plugin_name = get_plugin_info_from_useragent(ua_str)[0]
             # check and raise if fails
-            #check_subscription("privacyidea")
             check_subscription(plugin_name)
             f_result = func(*args, **kwds)
             return f_result
