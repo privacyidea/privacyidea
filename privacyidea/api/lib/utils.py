@@ -29,7 +29,8 @@ from ...lib.error import (ParameterError,
                           AuthError, ERROR)
 from ...lib.log import log_with
 from privacyidea.lib import _
-from privacyidea.lib.utils import prepare_result, get_version, to_unicode
+from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
+                                   get_plugin_info_from_useragent)
 import time
 import logging
 import json
@@ -50,8 +51,8 @@ TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
 # The following user-agents (with versions) do not need extra unquoting
 # TODO: we should probably switch this when we do not do the extra unquote anymore
 NO_UNQUOTE_USER_AGENTS = {
-    'privacyIDEA-LDAP-Proxy': None,
-    'simpleSAMLphp': None
+    'privacyidea-ldap-proxy': None,
+    'simplesamlphp': None
 }
 
 SESSION_KEY_LENGTH = 32
@@ -260,13 +261,12 @@ def check_unquote(request, data):
     :return: New dictionary with the possibly unquoted values
     :rtype: dict
     """
+    ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     # if no user agent is available, we assume that we must unquote the data
-    if not request.user_agent.string:
+    if not ua_name:
         return {key: unquote(value) for (key, value) in data.items()}
 
-    ua_match = re.match(r'^(?P<agent>[a-zA-Z0-9_-]+)(/(?P<version>\d+[\d.]*)(\s.*)?)?',
-                        request.user_agent.string)
-    if ua_match and not ua_match.group('agent') in NO_UNQUOTE_USER_AGENTS:
+    if ua_name.lower() not in NO_UNQUOTE_USER_AGENTS:
         return {key: unquote(value) for (key, value) in data.items()}
     else:
         return copy(data)
