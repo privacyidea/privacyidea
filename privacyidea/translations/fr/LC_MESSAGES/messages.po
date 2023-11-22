@@ -2,21 +2,22 @@
 # Copyright (C) 2020 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
-#
+# sebastien C <sebastien.netknights@outlook.com>, 2023.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2023-08-15 17:33+0200\n"
-"PO-Revision-Date: 2021-11-30 16:39+0000\n"
-"Last-Translator: nicolas hahang <nicolas.hahang@gmail.com>\n"
+"PO-Revision-Date: 2023-11-23 16:05+0000\n"
+"Last-Translator: sebastien C <sebastien.netknights@outlook.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-ui/fr/>\n"
+"privacyidea-server/fr/>\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 5.2.1-rc\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:225
@@ -32,14 +33,12 @@ msgid "Authentication failure. Wrong credentials"
 msgstr "Échec de l'authentification. Identifiants invalides"
 
 #: api/lib/prepolicy.py:2237
-#, fuzzy
 msgid "Missing description for {} token."
-msgstr "La nouvelle description du jeton."
+msgstr "Description manquante pour le jeton {}."
 
 #: api/lib/prepolicy.py:2238
-#, fuzzy
 msgid "Description required for {} token."
-msgstr "La nouvelle description du jeton."
+msgstr "Description requise pour le jeton {}."
 
 #: api/lib/utils.py:345
 msgid "Authentication failure. Missing Authorization header."
@@ -90,6 +89,7 @@ msgstr "Veuillez entrer un nouveau code PIN"
 #: lib/challengeresponsedecorators.py:203
 msgid "To resync your token, please enter the next OTP value"
 msgstr ""
+"Pour resynchroniser votre jeton, veuillez entrer la prochaine valeur OTP"
 
 #: lib/decorators.py:43 lib/token.py:2193
 msgid "This action is not possible, since the token is locked"
@@ -113,7 +113,7 @@ msgstr "Vous devez fournir soit un utilisateur soit un numéro de série"
 
 #: lib/policy.py:1367
 msgid "Invalid client definition!"
-msgstr ""
+msgstr "Définition du client invalide !"
 
 #: lib/policy.py:1548
 msgid "Define in which resolver the user should be registered."
@@ -160,9 +160,8 @@ msgid "Admin is allowed to set token properties."
 msgstr "L'administrateur est autorisé à définir les propriétés d'un jeton."
 
 #: lib/policy.py:1584
-#, fuzzy
 msgid "The admin is allowed to set the token description."
-msgstr "L'utilisateur est autorisé à définir la description du jeton."
+msgstr "L'administrateur est autorisé à définir la description du jeton."
 
 #: lib/policy.py:1588
 msgid "Admin is allowed to set the OTP PIN of tokens."
@@ -560,26 +559,25 @@ msgstr ""
 #: lib/policy.py:1969
 msgid "The Admin is allowed list the available tokengroups."
 msgstr ""
+"L'administrateur est autorisé à lister les groupes de jetons disponibles."
 
 #: lib/policy.py:1974
 msgid "The Admin is allowed to add a new tokengroup."
-msgstr ""
+msgstr "L'administrateur est autorisé à ajouter un nouveau groupe de jetons."
 
 #: lib/policy.py:1979
 msgid "The Admin is allowed delete a tokengroup."
-msgstr ""
+msgstr "L'administrateur est autorisé à supprimer un groupe de jetons."
 
 #: lib/policy.py:1984
-#, fuzzy
 msgid "The Admin is allowed list the available service ID definitions."
 msgstr ""
-"L'administrateur est autorisé à lire les définitions du serveur RADIUS."
+"L'administrateur est autorisé à lister les définitions des services ID "
+"disponibles."
 
 #: lib/policy.py:1989
-#, fuzzy
 msgid "The Admin is allowed to add a new service ID definition."
-msgstr ""
-"L'administrateur est autorisé à lire les définitions du serveur RADIUS."
+msgstr "L'administrateur est autorisé à ajouter un nouveau service ID."
 
 #: lib/policy.py:1994
 #, fuzzy
