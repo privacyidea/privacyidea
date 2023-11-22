@@ -108,10 +108,13 @@ class MachineApplication(object):
         """
         returns a dictionary with a list of required and optional options
         """
-        return {'optionA': {'type': TYPE.BOOL,
-                            'required': True},
-                'optionB': {'type': TYPE.STRING,
-                            'value': ["val1", "val2"]}}
+        return {"tokentype":
+                    {
+                        'optionA': {'type': TYPE.BOOL,
+                                    'required': True},
+                        'optionB': {'type': TYPE.STRING,
+                                    'value': ["val1", "val2"]}}
+                    }
 
 
 @log_with(log)
@@ -144,9 +147,9 @@ def get_application_types():
     This function returns a dictionary of application types with the
     corresponding available attributes.
 
-    {"luks": {"options": {"slot": {"type": "int"},
-                          "partition": {"type": "str"}},
-     "ssh": {"options": {"user": {"type": "str"}}
+    {"luks": {"options": {"totp": {"slot": {"type": "int"},
+                          "partition": {"type": "str"}}},
+     "ssh": {"options": {"sshkey": {"user": {"type": "str"}}}
     }
 
     :return: dictionary describing the applications
@@ -163,8 +166,8 @@ def get_application_types():
             try:
                 mod = import_module("privacyidea.lib.applications.{0!s}".format(f))
                 name = mod.MachineApplication.application_name
-                options = mod.MachineApplication.get_options()
-                ret[name] = {"options": options}
+                tokenoptions = mod.MachineApplication.get_options()
+                ret[name] = {"options": tokenoptions}
             except Exception as exx:
                 log.info("Can not get application type: {0!s}".format(exx))
 

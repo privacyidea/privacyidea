@@ -180,6 +180,11 @@ def offlinerefill():
         raise ParameterError("The token does not exist")
     else:
         tokenobj = tokenobj_list[0]
+        # check if token is disabled or otherwise not fit for auth
+        message_list = []
+        if not tokenobj.check_all(message_list):
+            log.info("Failed to offline refill: {0!s}".format(message_list))
+            raise ParameterError("The token is not valid.")
         tokenattachments = list_machine_tokens(serial=serial, application="offline")
         if tokenattachments:
             # TODO: Currently we do not distinguish, if a token had more than one offline attachment

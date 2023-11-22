@@ -1549,3 +1549,28 @@ def convert_imagefile_to_dataimage(imagepath):
     except FileNotFoundError:
         log.warning("The file {0!s} could not be found.".format(imagepath))
         return ""
+
+
+ua_re = re.compile(r'^(?P<agent>[a-zA-Z0-9_-]+)(/(?P<version>\d+[\d.]*))?(\s(?P<comment>.*))?')
+
+
+def get_plugin_info_from_useragent(useragent):
+    """
+    This gives you the plugin name and version from an useragent string.
+    See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent for
+    more information on the user-agent string
+
+    :param useragent: useragent string like 'NameOfPlugin/VersionOfPlugin NameOfApplication/VersionOfApplication'
+    :type useragent: str
+    :return: a tuple with (NameOfPlugin, VersionOfPlugin, Comment). For example: ('ExamplePlugin', 1.0, '')
+    :rtype: tuple
+    """
+    if not useragent:
+        log.info(f"No user-agent string given")
+        return "", None, None
+    ua_match = ua_re.match(useragent)
+    if ua_match:
+        return ua_match.group('agent'), ua_match.group('version'), ua_match.group('comment')
+    else:
+        log.info(f"Could not match user-agent string: {useragent}")
+        return "", None, None
