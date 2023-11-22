@@ -55,6 +55,7 @@ from passlib.utils import to_unicode
 import passlib.utils.handlers as uh
 import passlib.exc as exc
 from passlib.registry import register_crypt_handler
+from passlib.handlers.ldap_digests import _SaltedBase64DigestHelper
 
 
 class phpass_drupal(uh.HasRounds, uh.HasSalt, uh.GenericHandler):  # pragma: no cover
@@ -108,13 +109,29 @@ class phpass_drupal(uh.HasRounds, uh.HasSalt, uh.GenericHandler):  # pragma: no 
         return h64.encode_bytes(result).decode("ascii")[:self.checksum_size]
 
 
+class ldap_salted_sha256_pi(_SaltedBase64DigestHelper):
+    name = 'ldap_salted_sha256_pi'
+    ident = '{SSHA256}'
+    checksum_size = 32
+    # passlib sets the max_salt_size for SSHA256 to 16:
+    # <https://foss.heptapod.net/python-libs/passlib/-/blob/branch/stable/passlib/handlers/ldap_digests.py#L71>
+    # But we have encountered hashes with longer salt sizes. Since we set this
+    # password hashing function when we create an internal db resolver,
+    # we should be able to verify these hashes as well.
+    max_salt_size = 32
+    _hash_func = hashlib.sha256
+    _hash_regex = re.compile(r"^\{SSHA256\}(?P<tmp>[+/a-zA-Z0-9]{48,}={0,2})$")
+
+
 register_crypt_handler(phpass_drupal)
+register_crypt_handler(ldap_salted_sha256_pi)
+
 
 # The list of supported password hash types for verification (passlib handler)
 pw_ctx = CryptContext(schemes=['phpass',
                                'phpass_drupal',
                                'ldap_salted_sha1',
-                               'ldap_salted_sha256',
+                               'ldap_salted_sha256_pi',
                                'ldap_salted_sha512',
                                'ldap_sha1',
                                'md5_crypt',
@@ -128,7 +145,7 @@ pw_ctx = CryptContext(schemes=['phpass',
 hash_type_dict = {"PHPASS": 'phpass',
                   "SHA": 'ldap_sha1',
                   "SSHA": 'ldap_salted_sha1',
-                  "SSHA256": 'ldap_salted_sha256',
+                  "SSHA256": 'ldap_salted_sha256_pi',
                   "SSHA512": 'ldap_salted_sha512',
                   "OTRS": 'hex_sha256',
                   "SHA256CRYPT": 'sha256_crypt',
@@ -279,7 +296,7 @@ class IdResolver (UserIdResolver):
             log.error("Could not get the user information: {0!r}".format(exx))
 
         return userinfo
-    
+
     def _get_userid_filter(self, userId):
         column = self.TABLE.columns[self.map.get("userid")]
         if isinstance(column.type, String):

@@ -51,6 +51,7 @@ TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
 # The following user-agents (with versions) do not need extra unquoting
 # TODO: we should probably switch this when we do not do the extra unquote anymore
 NO_UNQUOTE_USER_AGENTS = {
+    'privacyidea-cp': None,
     'privacyidea-ldap-proxy': None,
     'simplesamlphp': None
 }
