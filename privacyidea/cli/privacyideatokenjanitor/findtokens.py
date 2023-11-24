@@ -403,7 +403,6 @@ def export_user_data(token_list, attributes=None):
     return users
 
 
-@findtokens_cli.command("find")
 @click.option('--set-description', help='set a new description')
 @click.option('--set-tokeninfo-key', help='set a new tokeninfo-key')
 @click.option('--set-tokeninfo-value', help='set a new tokeninfo-value')
