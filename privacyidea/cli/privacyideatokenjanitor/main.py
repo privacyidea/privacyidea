@@ -30,6 +30,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 @click.group(cls=FlaskGroup, create_app=create_app, context_settings=CONTEXT_SETTINGS,
+             add_default_commands=False,
              epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
 def cli():
     """Management script for tokens of privacyIDEA."""

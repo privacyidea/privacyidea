@@ -49,7 +49,10 @@ import click
 from privacyidea.lib.token import import_token
 
 
-@click.command("load")
+loadtokens_cli = AppGroup("load")
+
+
+@loadtokens_cli.command("load")
 @click.option('--pskc',
               help='Import this PSKC file.')
 @click.option('--preshared_key_hex',

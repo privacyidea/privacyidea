@@ -50,7 +50,10 @@ from privacyidea.lib.token import get_tokens
 import sys
 
 
-@click.command("update")
+updatetokens_cli = AppGroup("update")
+
+
+@updatetokens_cli.command("update")
 @click.option('--yaml',
               help='Specify the YAML file with the previously exported tokens.')
 def updatetokens(yaml):

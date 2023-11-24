@@ -46,6 +46,7 @@
 
 import click
 from click import ClickException
+from flask.cli import AppGroup
 from dateutil import parser
 from dateutil.tz import tzlocal, tzutc
 
@@ -59,6 +60,8 @@ from privacyidea.models import Token
 import re
 import sys
 from yaml import safe_dump as yaml_safe_dump
+
+find_cli = AppGroup("find")
 
 __doc__ = """
 This script can be used to clean up the token database.
@@ -401,7 +404,7 @@ def export_user_data(token_list, attributes=None):
     return users
 
 
-@click.command("find", help='Finds all tokens which match the conditions.')
+@find_cli.command("find")
 @click.option('--set-description', help='set a new description')
 @click.option('--set-tokeninfo-key', help='set a new tokeninfo-key')
 @click.option('--set-tokeninfo-value', help='set a new tokeninfo-value')
