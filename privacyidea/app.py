@@ -19,16 +19,20 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import datetime
 import os
 import os.path
 import logging
 import logging.config
 import sys
+import uuid
+
 import yaml
 from flask import Flask, request, Response
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flaskext.versioned import Versioned
+import sqlalchemy as sa
 
 # we need this import to add the before/after request function to the blueprints
 import privacyidea.api.before_after
@@ -65,7 +69,7 @@ from privacyidea.api.serviceid import serviceid_blueprint
 from privacyidea.lib import queue
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
-from privacyidea.models import db
+from privacyidea.models import db, NodeName
 from privacyidea.lib.crypto import init_hsm
 
 
@@ -91,7 +95,7 @@ class PiResponseClass(Response):
 
 def create_app(config_name="development",
                config_file='/etc/privacyidea/pi.cfg',
-               silent=False, init_hsm=False):
+               silent=False, initialize_hsm=False):
     """
     First the configuration from the config.py is loaded depending on the
     config type like "production" or "development" or "testing".
@@ -107,8 +111,8 @@ def create_app(config_name="development",
     :param silent: If set to True the additional information are not printed
         to stdout
     :type silent: bool
-    :param init_hsm: Whether the HSM should be initialized on app startup
-    :type init_hsm: bool
+    :param initialize_hsm: Whether the HSM should be initialized on app startup
+    :type initialize_hsm: bool
     :return: The flask application
     :rtype: App object
     """
@@ -123,9 +127,6 @@ def create_app(config_name="development",
                 template_folder="static/templates")
     if config_name:
         app.config.from_object(config[config_name])
-
-    # Set up flask-versioned
-    versioned = Versioned(app, format='%(path)s?v=%(version)s')
 
     try:
         # Try to load the given config_file.
@@ -178,8 +179,21 @@ def create_app(config_name="development",
     app.register_blueprint(monitoring_blueprint, url_prefix='/monitoring')
     app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
     app.register_blueprint(serviceid_blueprint, url_prefix='/serviceid')
+
+    # Set up Plug-Ins
     db.init_app(app)
-    migrate = Migrate(app, db)
+
+    migrate = Migrate()
+    migrate.init_app(app, db)
+
+    Versioned(app, format='%(path)s?v=%(version)s')
+
+    babel = Babel()
+    babel.init_app(app)
+
+    @babel.localeselector
+    def get_locale():
+        return get_accepted_language(request)
 
     app.response_class = PiResponseClass
 
@@ -218,17 +232,35 @@ def create_app(config_name="development",
         DEFAULT_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = level
         logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
 
-    babel = Babel(app)
-
-    @babel.localeselector
-    def get_locale():
-        return get_accepted_language(request)
-
     queue.register_app(app)
 
-    if init_hsm:
+    if initialize_hsm:
         with app.app_context():
             init_hsm()
+
+    # check that we have a correct node_name -> UUID relation
+    with app.app_context():
+        pi_uuid = app.config.get("PI_UUID")
+        if not pi_uuid:
+            pi_uuid = uuid.uuid4()
+            app.config["PI_UUID"] = str(pi_uuid)
+            # safe UUID to config file
+            try:
+                with open(config_file, 'a') as f:
+                    f.write(f"PI_UUID = \"{str(pi_uuid)}\"\n")
+            except IOError as exx:
+                logging.getLogger(__name__).warning(f"Could not add UUID to config "
+                                                    f" file '{config_file}': {exx}")
+
+        pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME", "localnode")
+        insp = sa.inspect(db.get_engine())
+        if insp.has_table(NodeName.__tablename__):
+            db.session.merge(NodeName(id=str(pi_uuid), name=pi_node_name,
+                                      lastseen=datetime.datetime.now(tz=datetime.timezone.utc)))
+            db.session.commit()
+        else:
+            logging.getLogger(__name__).warning(f"Could not update node names in "
+                                                f"db. Check that table '{NodeName.__tablename__}' exists.")
 
     logging.getLogger(__name__).debug("Reading application from the static "
                                       "folder {0!s} and the template folder "

@@ -42,7 +42,8 @@ import traceback
 
 from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
-                      save_config_timestamp, Policy, EventHandler, CAConnector)
+                      save_config_timestamp, Policy, EventHandler, CAConnector,
+                      NodeName)
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
 from privacyidea.lib.utils import to_list
 from privacyidea.lib.utils.export import (register_import, register_export)
@@ -997,13 +998,19 @@ def get_privacyidea_node(default='localnode'):
 def get_privacyidea_nodes():
     """
     This returns the list of the nodes, including the own local node name
+
     :return: list of nodes
+    :rtype: list
     """
-    own_node_name = get_privacyidea_node()
-    nodes = get_app_config_value("PI_NODES", [])[:]
-    if own_node_name not in nodes:
-        nodes.append(own_node_name)
-    return nodes
+    node_names = []
+    nodes = db.session.query(NodeName).all()
+    for node in nodes:
+        node_names.append(node.name)
+    # if there are no nodes in the database we add at least the local node to the list
+    if not node_names:
+        node_names.append(get_privacyidea_node())
+
+    return node_names
 
 
 @register_export()
