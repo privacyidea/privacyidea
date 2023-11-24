@@ -45,7 +45,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import click
-from flask.cli import AppGroup, FlaskGroup
 from click import ClickException
 from dateutil import parser
 from dateutil.tz import tzlocal, tzutc
@@ -57,7 +56,6 @@ from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    unassign_token,
                                    get_tokens_paginated_generator)
 from privacyidea.models import Token
-from privacyidea.app import create_app
 import re
 import sys
 from yaml import safe_dump as yaml_safe_dump
@@ -403,6 +401,7 @@ def export_user_data(token_list, attributes=None):
     return users
 
 
+@click.command("find", help='Finds all tokens which match the conditions.')
 @click.option('--set-description', help='set a new description')
 @click.option('--set-tokeninfo-key', help='set a new tokeninfo-key')
 @click.option('--set-tokeninfo-value', help='set a new tokeninfo-value')
@@ -455,16 +454,16 @@ def export_user_data(token_list, attributes=None):
               help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.')
 @click.option('--chunksize', default=None,
               help='Read tokens from the database in smaller chunks to perform operations.')
-def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
-         tokeninfo_value_greater_than, tokeninfo_value_less_than,
-         tokeninfo_value_after, tokeninfo_value_before,
-         orphaned, tokentype, serial, description, action, set_description,
-         set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv,
-         chunksize, attributes, b32, has_not_tokeninfo_key, has_tokeninfo_key,
-         tokenattribute, tokenattribute_value, tokenattribute_value_greater_than,
-         tokenattribute_value_less_than, yaml):
+def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
+               tokeninfo_value_greater_than, tokeninfo_value_less_than,
+               tokeninfo_value_after, tokeninfo_value_before,
+               orphaned, tokentype, serial, description, action, set_description,
+               set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv,
+               chunksize, attributes, b32, has_not_tokeninfo_key, has_tokeninfo_key,
+               tokenattribute, tokenattribute_value, tokenattribute_value_greater_than,
+               tokenattribute_value_less_than, yaml):
     """
-    finds all tokens which match the conditions
+    Finds all tokens which match the conditions.
     """
     tokenattributes = [col.key for col in Token.__table__.columns]
     if tokenattribute and tokenattribute not in tokenattributes:
