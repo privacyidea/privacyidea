@@ -62,8 +62,6 @@ import re
 import sys
 from yaml import safe_dump as yaml_safe_dump
 
-findtokens_cli = AppGroup("find", help="finds tokens and give the option to export, change or delete them.")
-
 __doc__ = """
 This script can be used to clean up the token database.
 
@@ -109,8 +107,6 @@ Actions:
 """
 
 ALLOWED_ACTIONS = ["disable", "delete", "unassign", "mark", "export", "listuser", "tokenrealms"]
-
-app = create_app(config_name='production', silent=True)
 
 
 def _try_convert_to_integer(given_value_string):
