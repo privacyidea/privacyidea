@@ -107,6 +107,10 @@ setup(
     python_requires='>=3.7',
     packages=find_packages(),
     scripts=["pi-manage"] + get_scripts("tools"),
+    entry_points={
+        'console_scripts': [
+            'privacyidea-token-janitor = privacyidea.cli:pi_token_janitor',
+        ]},
     extras_require={
         'doc': ["Pallets-Sphinx-Themes>=1.2.3",
                 "Sphinx>=1.3.1",
