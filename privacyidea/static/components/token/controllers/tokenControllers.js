@@ -525,7 +525,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
         };
         TokenFactory.enroll($scope.newUser, params, function (data) {
             if (data.result.value === true) {
-                inform.add(gettextCatalog.getString("Token successfully validated"),
+                inform.add(gettextCatalog.getString("Token successfully verified"),
                     {type: "success", ttl: 10000});
             }
             $scope.verifyResponse = "";

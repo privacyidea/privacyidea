@@ -2899,6 +2899,8 @@ class APITokenTestCase(MyApiTestCase):
 
         delete_policy("verify_tan_toks")
 
+    # TODO: Add verify enrollment tests for DayPassword, TOTP and Daplug Token
+
     def test_50_init_token_with_required_description(self):
         # set require_description policy with value = 'hotp'
         set_policy(name="require_description",
