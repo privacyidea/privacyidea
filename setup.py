@@ -106,10 +106,11 @@ setup(
     keywords='OTP, two factor authentication, management, security',
     python_requires='>=3.7',
     packages=find_packages(),
-    scripts=["pi-manage"] + get_scripts("tools"),
+    scripts=get_scripts("tools"),
     entry_points={
         'console_scripts': [
             'privacyidea-token-janitor = privacyidea.cli:pi_token_janitor',
+            'pi-manage = privacyidea.cli:pi_manage'
         ]},
     extras_require={
         'doc': ["Pallets-Sphinx-Themes>=1.2.3",
