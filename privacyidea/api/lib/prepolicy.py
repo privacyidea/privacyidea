@@ -763,6 +763,8 @@ def verify_enrollment(request=None, action=None):
                 r = tokenobj.verify_enrollment(verify)
                 log.info("Result of enrollment verification for token {0!s}: {1!s}".format(serial, r))
                 if r:
+                    # TODO: we need to add the tokentype here or the second init_token() call fails
+                    request.all_data.update(type=tokenobj.get_tokentype())
                     tokenobj.token.rollout_state = ROLLOUTSTATE.ENROLLED
                 else:
                     from privacyidea.lib.error import ParameterError

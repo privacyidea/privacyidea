@@ -2759,7 +2759,147 @@ class APITokenTestCase(MyApiTestCase):
 
         delete_policy("verify_toks1")
 
-    def test_44_init_token_with_required_description(self):
+    def test_44_init_verify_paper_token(self):
+        set_policy("verify_paper_toks", scope=SCOPE.ENROLL,
+                   action="{0!s}=paper".format(ACTION.VERIFY_ENROLLMENT))
+        # Enroll a PAPER token
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "otpkey": self.otpkey,
+                                               "type": "paper"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            detail = res.json.get("detail")
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING, detail)
+            self.assertEqual(detail.get("verify").get("message"), VERIFY_ENROLLMENT_MESSAGE, detail)
+            otps = detail.get("otps")
+            serial = detail.get("serial")
+            tokenobj_list = get_tokens(serial=serial)
+            # Check the token rollout state
+            self.assertEqual(tokenobj_list[0].token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
+
+        # Try to authenticate with this not readily enrolled token and fail
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={'serial': serial,
+                                                 'pass': otps['0']}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            # we fail to authenticate with a token, that is in state verify_pending
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"), result)
+            self.assertEqual(detail.get("message"),
+                             "matching 1 tokens, Token is not yet enrolled", detail)
+
+        # Now run the second step: verify enrollment, but fail with a wrong OTP value
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "verify": "111111"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            self.assertEqual(result.get("error").get("code"), 905, result)
+            self.assertEqual(result.get("error").get("message"),
+                             "ERR905: Verification of the new token failed.", result)
+
+        # Now run the second step: verify enrollment and test again
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "verify": otps['1']},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            tokenobj_list = get_tokens(serial=serial)
+            # Check the token rollout state, it is empty now.
+            self.assertEqual(ROLLOUTSTATE.ENROLLED, tokenobj_list[0].token.rollout_state)
+
+        delete_policy("verify_paper_toks")
+
+    def test_45_init_verify_tan_token(self):
+        set_policy("verify_tan_toks", scope=SCOPE.ENROLL,
+                   action="{0!s}=tan".format(ACTION.VERIFY_ENROLLMENT))
+        # Enroll a PAPER token
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "otpkey": self.otpkey,
+                                               "type": "tan"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            detail = res.json.get("detail")
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING, detail)
+            self.assertEqual(detail.get("verify").get("message"), VERIFY_ENROLLMENT_MESSAGE, detail)
+            otps = detail.get("otps")
+            serial = detail.get("serial")
+            tokenobj_list = get_tokens(serial=serial)
+            # Check the token rollout state
+            self.assertEqual(tokenobj_list[0].token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
+
+        # Try to authenticate with this not readily enrolled token and fail
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={'serial': serial,
+                                                 'pass': otps['0']}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            # we fail to authenticate with a token, that is in state verify_pending
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"), result)
+            self.assertEqual(detail.get("message"),
+                             "matching 1 tokens, Token is not yet enrolled", detail)
+
+        # Now run the second step: verify enrollment, but fail with a wrong OTP value
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "verify": "111111"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+            self.assertEqual(result.get("error").get("code"), 905, result)
+            self.assertEqual(result.get("error").get("message"),
+                             "ERR905: Verification of the new token failed.", result)
+
+        # Now run the second step: verify enrollment and test again
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"serial": serial,
+                                                 "verify": otps['1']},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            tokenobj_list = get_tokens(serial=serial)
+            # Check the token rollout state, it is empty now.
+            self.assertEqual(ROLLOUTSTATE.ENROLLED, tokenobj_list[0].token.rollout_state)
+
+        delete_policy("verify_tan_toks")
+
+    def test_50_init_token_with_required_description(self):
         # set require_description policy with value = 'hotp'
         set_policy(name="require_description",
                    scope=SCOPE.ENROLL,
@@ -3454,4 +3594,3 @@ class APITokengroupTestCase(MyApiTestCase):
             self.assertEqual(result.get("error").get("message"), "The tokengroup does not exist.")
 
         remove_token(serial)
-

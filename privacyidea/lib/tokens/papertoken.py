@@ -132,11 +132,15 @@ class PaperTokenClass(HotpTokenClass):
         return ret
 
     def update(self, param, reset_failcount=True):
-        if "otpkey" not in param:
+        if "otpkey" not in param and "verify" not in param:
             param["genkey"] = 1
         HotpTokenClass.update(self, param, reset_failcount=reset_failcount)
         papertoken_count = int(param.get("papertoken_count", DEFAULT_COUNT))
         # Now we calculate all the OTP values and add them to the
-        # init_details. Thus they will be returned by token/init.
-        otps = self.get_multi_otp(count=papertoken_count)
-        self.add_init_details("otps", otps[2].get("otp", {}))
+        # init_details. Thus, they will be returned by token/init.
+        # But only if this is not in verify state.
+        # TODO: check if can finish the request after verifying the token in the
+        #  prepolicy. Thus we would not need to go through all the token updates
+        if "verify" not in param:
+            otps = self.get_multi_otp(count=papertoken_count)
+            self.add_init_details("otps", otps[2].get("otp", {}))

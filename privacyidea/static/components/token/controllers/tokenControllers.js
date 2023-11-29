@@ -90,7 +90,7 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
     if ($scope.pin_change) {
         $location.path("/pinchange");
     }
-    
+
     // listen to the reload broadcast
     $scope.$on("piReload", function() {
         /* Due to the parameter "live_search" in the get function
@@ -436,6 +436,8 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             var otps_count = Object.keys($scope.enrolledToken.otps).length;
             $scope.otp_row_count = parseInt(otps_count/5 + 0.5);
             $scope.otp_rows = Object.keys($scope.enrolledToken.otps).slice(0, $scope.otp_row_count);
+        } else {
+            $scope.otp_rows = null;
         }
         if ($scope.enrolledToken.certificate) {
             var blob = new Blob([ $scope.enrolledToken.certificate ],
@@ -522,6 +524,10 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
 
         };
         TokenFactory.enroll($scope.newUser, params, function (data) {
+            if (data.result.value === true) {
+                inform.add(gettextCatalog.getString("Token successfully validated"),
+                    {type: "success", ttl: 10000});
+            }
             $scope.verifyResponse = "";
             $scope.callback(data);
         });
