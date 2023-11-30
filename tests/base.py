@@ -3,7 +3,6 @@
 import unittest
 import mock
 from sqlalchemy.orm.session import close_all_sessions
-from flask.ctx import _AppCtxGlobals
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
@@ -35,10 +34,13 @@ class FakeFlaskG(object):
 class FakeAudit(Audit):
 
     def __init__(self):
+        super(FakeAudit).__init__()
         self.audit_data = {}
 
 
 class MyTestCase(unittest.TestCase):
+    app = None
+    app_context = None
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
     resolvername3 = "reso3"
@@ -61,15 +63,12 @@ class MyTestCase(unittest.TestCase):
                         "399871",
                         "520489"]
 
-
     @classmethod
     def setUpClass(cls):
         cls.app = create_app('testing', "")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
-        db.create_all()
-        # save the current timestamp to the database to avoid hanging cached
-        # data
+        # save the current timestamp to the database to avoid hanging cached data
         save_config_timestamp()
         db.session.commit()
         # Create an admin for tests.
@@ -205,8 +204,7 @@ class MyTestCase(unittest.TestCase):
     def authenticate_selfservice_user(self):
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username":
-                                                     "selfservice@realm1",
+                                           data={"username": "selfservice@realm1",
                                                  "password": "test"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
