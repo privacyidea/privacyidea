@@ -9,6 +9,7 @@ import mock
 from dateutil.parser import parse as parse_timestamp
 
 from privacyidea.lib.periodictask import TASK_MODULES
+from privacyidea.models import NodeName, db
 from tests.base import MyApiTestCase
 
 
@@ -19,7 +20,9 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         Mock a UnitTest task module, use as ``with self.mock_task_module() as module:``
         """
         taskmodule = mock.MagicMock()
-        cls = lambda config: taskmodule
+
+        def cls(config):
+            return taskmodule
         with mock.patch.dict(TASK_MODULES, {"UnitTest": cls}, clear=True):
             yield taskmodule
 
@@ -45,7 +48,8 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
 
         # need authorization
         fake_auth_token = jwt.encode({"role": "admin"}, key="313233343536", algorithm="HS256")
-        status_code, data = self.simulate_request('/periodictask/', method='GET', headers={'Authorization': fake_auth_token})
+        status_code, data = self.simulate_request('/periodictask/', method='GET',
+                                                  headers={'Authorization': fake_auth_token})
         self.assertEqual(status_code, 401)
         self.assertFalse(data['result']['status'])
 
@@ -171,7 +175,6 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         self.assertIsNotNone(last_update)
         self.assertEqual(result_dict['options'], {'something': '123', 'else': 'True'})
 
-
         # get one
         status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='GET')
         self.assertEqual(status_code, 200)
@@ -292,7 +295,11 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
             self.assertEqual(data['result']['value'], options)
 
     def test_03_nodes(self):
+        node2_name = "Node2"
+        node2_uuid = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
+        db.session.add(NodeName(id=node2_uuid, name=node2_name))
+        db.session.commit()
         status_code, data = self.simulate_request('/periodictask/nodes/', method='GET')
         self.assertEqual(status_code, 200)
         self.assertTrue(data['result']['status'])
-        self.assertEqual(set(data['result']['value']), set(['Node2', 'Node1']))
+        self.assertEqual({'Node2', 'Node1'}, set(data['result']['value']), data)

@@ -3,7 +3,7 @@ This test file tests the lib.config
 
 The lib.config only depends on the database model.
 """
-from privacyidea.models import Config, PRIVACYIDEA_TIMESTAMP, save_config_timestamp, db
+from privacyidea.models import Config, save_config_timestamp, db, NodeName
 from .base import MyTestCase
 from privacyidea.lib.config import (get_resolver_list,
                                     get_resolver_classes,
@@ -26,7 +26,6 @@ from privacyidea.lib.config import (get_resolver_list,
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
-from flask import current_app
 import importlib
 
 
@@ -224,6 +223,11 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual(a, None)
 
     def test_07_node_names(self):
+        node2_name = "Node2"
+        node2_uuid = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
+        db.session.add(NodeName(id=node2_uuid, name=node2_name))
+        db.session.commit()
+
         node = get_privacyidea_node()
         self.assertEqual(node, "Node1")
         nodes = get_privacyidea_nodes()

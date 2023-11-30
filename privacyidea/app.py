@@ -75,6 +75,8 @@ from privacyidea.lib.crypto import init_hsm
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 
+migrate = Migrate()
+
 
 class PiResponseClass(Response):
     """Custom Response class overwriting the flask.Response.
@@ -182,8 +184,6 @@ def create_app(config_name="development",
 
     # Set up Plug-Ins
     db.init_app(app)
-
-    migrate = Migrate()
     migrate.init_app(app, db)
 
     Versioned(app, format='%(path)s?v=%(version)s')
@@ -238,15 +238,32 @@ def create_app(config_name="development",
         with app.app_context():
             init_hsm()
 
+    if config_name == "testing":
+        # we are running the tests, create the database
+        with app.app_context():
+            db.create_all()
+
     # check that we have a correct node_name -> UUID relation
     with app.app_context():
+        # first check if we have a UUID in the config file which takes precedence
         pi_uuid = app.config.get("PI_UUID")
         if not pi_uuid:
-            pi_uuid = uuid.uuid4()
+            # we try to get the unique machine id
+            try:
+                with open('/etc/machine-id', 'r') as f:
+                    pi_uuid = uuid.UUID(f.read().strip())
+            except Exception as e:  # pragma: no cover
+                logging.getLogger(__name__).info(f"Could not determine the machine id: {e}")
+            else:
+                # we generate a random UUID which will change on every startup
+                pi_uuid = uuid.uuid4()
+                logging.getLogger(__name__).warning("Generating a random UUID! "
+                                                    "If persisting the UUID fails, "
+                                                    "it will change on every application start")
             app.config["PI_UUID"] = str(pi_uuid)
             # safe UUID to config file
             try:
-                with open(config_file, 'a') as f:
+                with open(config_file, 'a') as f:  # pragma: no cover
                     f.write(f"PI_UUID = \"{str(pi_uuid)}\"\n")
             except IOError as exx:
                 logging.getLogger(__name__).warning(f"Could not add UUID to config "
