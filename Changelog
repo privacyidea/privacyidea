@@ -1,7 +1,17 @@
+Version 3.10dev1, 2023-11-29
+
+  Enhancements:
+  * Enable user-agent version in subscription checks (#3800)
+  * token-janitor now uses the click framework (#3769)
+  * Enhance offline token to allow refill for WebAuthn tokens (#3764)
+
+  Fixes:
+  * Use uppercase hash name for google-authenticator URLs (#3812)
+
 Version 3.9.1, 2023-11-06
 
   Fixes:
-  * Set correct start sequence for empty tables 
+  * Set correct start sequence for empty tables
   * Fix pi-manage backup
   * Add privacyIDEA CP to list of clients, that do not
     need to be unquoted. (#3770)
