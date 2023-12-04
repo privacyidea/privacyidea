@@ -226,13 +226,17 @@ privacyIDEA Nodes
 -----------------
 
 privacyIDEA can run in a redundant setup. For statistics and monitoring purposes you
-can give these different nodes, dedicated names.
+can give these different nodes dedicated names.
 
-``PI_NODE`` is a string with the name of this very node. ``PI_NODES`` is a list of
-all available nodes in the cluster.
+``PI_NODE`` is a string with the name of this very node. At the startup of
+the application, an installation specific unique ID will be used to tie the
+node name to an installation. A distinct ID can be given to an application with
+the ``PI_UUID`` value (should conform to
+`RFC 4122 <https://datatracker.ietf.org/doc/html/rfc4122.html>`_).
+The names of all nodes in a redundant setup will be available through the database.
 
 If ``PI_NODE`` is not set, then ``PI_AUDIT_SERVERNAME`` is used as node name.
-If this is also not set, the node name is returned as "localnode".
+If this is not set as well, the node name is returned as "localnode".
 
 .. _trusted_jwt:
 
