@@ -248,7 +248,7 @@ def create_app(config_name="development",
         # first check if we have a UUID in the config file which takes precedence
         pi_uuid = app.config.get("PI_UUID")
         if not pi_uuid:
-            # we try to get the unique machine id
+            # we try to get the unique installation id (See <https://0pointer.de/blog/projects/ids.html>)
             try:
                 with open('/etc/machine-id', 'r') as f:
                     pi_uuid = uuid.UUID(f.read().strip())
