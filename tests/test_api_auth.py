@@ -387,7 +387,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual('admin', result['value']['role'], result)
 
         # add an admin with an '@' in the login name
-        create_db_admin(self.app, 'super@intern', password='testing')
+        create_db_admin('super@intern', password='testing')
         # as long as the part after the '@' does not resemble an existing realm,
         # this should work with 'spltAtSign' set to True
         with self.app.test_request_context('/auth',
@@ -565,11 +565,11 @@ class AuthApiTestCase(MyApiTestCase):
                   'LOGINNAMEATTRIBUTE': 'cn',
                   'LDAPSEARCHFILTER': '(cn=*)',
                   'USERINFO': '{ "username": "cn",'
-                                  '"phone" : "telephoneNumber", '
-                                  '"mobile" : "mobile"'
-                                  ', "email" : "mail", '
-                                  '"surname" : "sn", '
-                                  '"givenname" : "givenName" }',
+                              '"phone" : "telephoneNumber", '
+                              '"mobile" : "mobile"'
+                              ', "email" : "mail", '
+                              '"surname" : "sn", '
+                              '"givenname" : "givenName" }',
                   'UIDTYPE': 'DN',
                   "resolver": "ldap1",
                   "type": "ldapresolver"}
@@ -590,7 +590,8 @@ class AuthApiTestCase(MyApiTestCase):
                 self.assertIn('token', result.get("value"), result)
                 # role should be 'admin'
                 self.assertEqual('admin', result['value']['role'], result)
-                mock_log.assert_called_once_with("Problem resolving user testadmin in realm ldap1: LDAP request failed.")
+                mock_log.assert_called_once_with("Problem resolving user testadmin in "
+                                                 "realm ldap1: LDAP request failed.")
 
         delete_realm("ldap1")
         delete_resolver("ldap1")

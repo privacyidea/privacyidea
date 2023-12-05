@@ -197,8 +197,12 @@ def get_handler_object(handlername):
 
 def enable_event(event_id, enable=True):
     """
-    Enable or disable the and event
+    Enable or disable the event
+
     :param event_id: ID of the event
+    :type event_id: int
+    :param enable: enable or disable the event
+    :type enable: bool
     :return:
     """
     ev = fetch_one_resource(EventHandler, id=event_id)
@@ -234,7 +238,7 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
         action
     :type options: dict
     :param id: The DB id of the event. If the id is given, the event is
-        updated. Otherwise a new entry is generated.
+        updated. Otherwise, a new entry is generated.
     :type id: int
     :param position: The position of the event handler being "post" or "pre"
     :type position: basestring

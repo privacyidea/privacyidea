@@ -18,5 +18,6 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from privacyidea.cli.privacyideatokenjanitor.main import cli as pi_token_janitor
+from privacyidea.cli.pimanage.main import cli as pi_manage
 
-__all__ = ['pi_token_janitor']
+__all__ = ['pi_token_janitor', 'pi_manage']

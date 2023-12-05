@@ -27,7 +27,7 @@ class SharedPoolingTestCase(MyTestCase):
         save_config_timestamp()
         db.session.commit()
         # Create an admin for tests.
-        create_db_admin(cls.app, "testadmin", "admin@test.tld", "testpw")
+        create_db_admin("testadmin", "admin@test.tld", "testpw")
 
     def _create_engine(self):
         return create_engine('sqlite://')
@@ -68,5 +68,3 @@ class NullPoolingTestCase(MyTestCase):
         self.assertIsNot(engine1, engine2)
         self.assertIsNot(engine1, engine3)
         self.assertIsNot(engine2, engine3)
-
-
