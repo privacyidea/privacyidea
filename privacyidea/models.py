@@ -1156,12 +1156,16 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
     # If there are several resolvers in a realm, the priority is used the
     # find a user first in a resolver with a higher priority (i.e. lower number)
     priority = db.Column(db.Integer)
+    # TODO: with SQLAlchemy 2.0 db.UUID will be generally available
+    node_uuid = db.Column(db.Unicode(36), db.ForeignKey("nodename.id"))
     resolver = db.relationship(Resolver,
                                lazy="joined",
                                back_populates="realm_list")
     realm = db.relationship(Realm,
                             lazy="joined",
                             back_populates="resolver_list")
+    node = db.relationship(NodeName,
+                           lazy="joined")
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'realm_id',
                                           name='rrix_2'),
