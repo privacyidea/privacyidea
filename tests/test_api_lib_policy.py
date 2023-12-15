@@ -3914,8 +3914,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.setUp_user_realms()
         serial = "offline01"
         tokenobject = init_token({"serial": serial, "type": "hotp",
-                                  "otpkey": "3132333435363738393031"
-                                            "323334353637383930",
+                                  "otpkey": "3132333435363738393031323334353637383930",
                                   "pin": "offline",
                                   "user": "cornelius"})
 
@@ -3972,6 +3971,56 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # check that we can authenticate online with the correct value
         res = tokenobject.check_otp("295165")  # count = 100
         self.assertEqual(res, 100)
+
+    def test_06a_offline_auth_postpend_ping(self):
+        serial = "offline01"
+        # Do prepend_pin == False
+        set_privacyidea_config(SYSCONF.PREPENDPIN, False)
+        # The request with an OTP value and a PIN of a user, who has not
+        # token assigned
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        # Use: % oathtool -c 101 3132333435363738393031323334353637383930
+        # 329376
+        # Send the PIN behind the OTP value
+        req.all_data = {"user": "cornelius",
+                        "pass": "329376offline"}
+
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "detail": {"serial": serial},
+               "id": 1}
+        resp = jsonify(res)
+        new_response = offline_info(req, resp)
+        jresult = new_response.json
+        self.assertTrue(jresult.get("result").get("value"), jresult)
+        self.assertEqual(jresult.get("detail").get("serial"), serial)
+
+        # Check the hashvalues in the offline tree
+        auth_items = jresult.get("auth_items")
+        self.assertEqual(len(auth_items), 1)
+        response = auth_items.get("offline")[0].get("response")
+        self.assertEqual(len(response), 100)
+        # Check that the token counter has now increased to 201
+        tokenobject = get_tokens(serial=serial)[0]
+        self.assertEqual(tokenobject.token.count, 201)
+        # check that we cannot authenticate with an offline value
+        self.assertTrue(pbkdf2_sha512.verify("629694offline", response.get('102')))
+        self.assertTrue(pbkdf2_sha512.verify("492354offline", response.get('199')))
+        res = tokenobject.check_otp("492354") # count = 199
+        self.assertEqual(res, -1)
+        # check that we can authenticate online with the correct value
+        res = tokenobject.check_otp("462985")  # count = 201
+        self.assertEqual(res, 201)
+        # Revert
+        set_privacyidea_config(SYSCONF.PREPENDPIN, True)
 
     def test_07_sign_response(self):
         builder = EnvironBuilder(method='POST',
