@@ -3972,7 +3972,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         res = tokenobject.check_otp("295165")  # count = 100
         self.assertEqual(res, 100)
 
-    def test_06a_offline_auth_postpend_ping(self):
+    def test_06a_offline_auth_postpend_pin(self):
         serial = "offline01"
         # Do prepend_pin == False
         set_privacyidea_config(SYSCONF.PREPENDPIN, False)
@@ -4014,7 +4014,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # check that we cannot authenticate with an offline value
         self.assertTrue(pbkdf2_sha512.verify("629694offline", response.get('102')))
         self.assertTrue(pbkdf2_sha512.verify("492354offline", response.get('199')))
-        res = tokenobject.check_otp("492354") # count = 199
+        res = tokenobject.check_otp("492354")  # count = 199
         self.assertEqual(res, -1)
         # check that we can authenticate online with the correct value
         res = tokenobject.check_otp("462985")  # count = 201
