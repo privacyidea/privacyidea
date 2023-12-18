@@ -29,6 +29,7 @@ from privacyidea.lib.error import ValidateError, ParameterError
 import logging
 from passlib.hash import pbkdf2_sha512
 from privacyidea.lib.token import get_tokens
+from privacyidea.lib.config import get_prepend_pin
 from privacyidea.lib.policy import TYPE
 log = logging.getLogger(__name__)
 ROUNDS = 6549
@@ -80,10 +81,12 @@ class MachineApplication(MachineApplicationBase):
             raise ParameterError("Invalid refill amount: {!r}".format(amount))
         (res, err, otp_dict) = token_obj.get_multi_otp(count=amount, counter_index=True)
         otps = otp_dict.get("otp")
-        for key in otps.keys():
+        prepend_pin = get_prepend_pin()
+        for key, otp in otps.items():
             # Return the hash of OTP PIN and OTP values
+            otppw = otppin + otp if prepend_pin else otp + otppin
             otps[key] = pbkdf2_sha512.using(
-                rounds=rounds, salt_size=10).hash(otppin + otps.get(key))
+                rounds=rounds, salt_size=10).hash(otppw)
         # We do not disable the token, so if all offline OTP values
         # are used, the token can be used the authenticate online again.
         # token_obj.enable(False)
