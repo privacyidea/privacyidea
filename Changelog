@@ -1,4 +1,4 @@
-Version 3.9.2, 2023-12-xx
+Version 3.9.2, 2023-12-20
 
   Fixes:
   * Allow verify-enroll for paper token and TAN token (#3809)
@@ -7,7 +7,7 @@ Version 3.9.2, 2023-12-xx
 Version 3.9.1, 2023-11-06
 
   Fixes:
-  * Set correct start sequence for empty tables 
+  * Set correct start sequence for empty tables
   * Fix pi-manage backup
   * Add privacyIDEA CP to list of clients, that do not
     need to be unquoted. (#3770)
