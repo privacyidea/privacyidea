@@ -1609,6 +1609,29 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(weigh_token_type(dummy_token("push")) > weigh_token_type(dummy_token("HOTP")))
         self.assertTrue(weigh_token_type(dummy_token("PUSH")) > weigh_token_type(dummy_token("hotp")))
 
+    def test_60_token_export_yaml(self):
+        from privacyidea.lib.token import token_dump
+        self.setUp_user_realms()
+        key = b"1234567890123456"
+        tokenobject = init_token({"serial": "s2",
+                                  "otpkey": key},
+                                 user=User("hans", self.realm1))
+        d = token_dump(tokenobject)
+        self.assertEqual(True, d.get("active"))
+        self.assertEqual("", d.get("description"))
+        self.assertEqual("tokenkind", d.get("info_list")[0].get("Key"))
+        self.assertEqual("software", d.get("info_list")[0].get("Value"))
+        self.assertEqual(key, d.get("key"))
+        self.assertNotIn("key_inc", d)
+        self.assertNotIn("key_iv", d)
+        self.assertNotIn("id", d)
+        tokenowner = d.get("owners")[0]
+        self.assertEqual("1118", tokenowner.get("uid"))
+        self.assertEqual("hans", tokenowner.get("login"))
+        self.assertEqual("resolver1", tokenowner.get("resolver"))
+        self.assertEqual("realm1", tokenowner.get("realm"))
+
+
 
 class TokenOutOfBandTestCase(MyTestCase):
 

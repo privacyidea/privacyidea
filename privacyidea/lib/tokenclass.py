@@ -271,6 +271,26 @@ class TokenClass(object):
         return r > 0
 
     @property
+    def owners(self):
+        """
+        return all the owners of a token
+        If the token has no owner assigned, we return an empty list
+
+        :return: The owners of the token
+        :rtype: A list of user object
+        """
+        user_objects = []
+        tokenowners = self.token.all_owners
+        if tokenowners:
+            for tokenowner in tokenowners:
+                username = get_username(tokenowner.user_id, tokenowner.resolver)
+                user_object = User(login=username,
+                                   resolver=tokenowner.resolver,
+                                   realm=tokenowner.realm.name)
+                user_objects.append(user_object)
+        return user_objects
+
+    @property
     def user(self):
         """
         return the user (owner) of a token

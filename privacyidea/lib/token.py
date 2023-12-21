@@ -2597,3 +2597,40 @@ def list_tokengroups(tokengroup=None):
         tgs = TokenTokengroup.query.all()
 
     return tgs
+
+
+def token_dump(token):
+    """
+    Store the database columns of the token into a dict.
+    Also store the tokeninfo into a list of dicts.
+
+    :param token: A token object
+    :return: a dict, containing the token and the tokeninfo
+    """
+    dbtoken = token.token
+    columns = dbtoken.__table__.c
+    key = dbtoken.get_otpkey().getKey()
+    # handle the secret key, needs to be decrypted
+    token_dict = {"key": key}
+    for column in columns:
+        value = getattr(dbtoken, column.key)
+        if column.key not in ('id', 'key_enc', 'key_iv'):
+            token_dict[column.key] = value
+    # Now add the tokeninfo
+    info_list = []
+    for ti in dbtoken.info_list:
+        tokeninfo = {"Description": ti.Description,
+                     "Key": ti.Key,
+                     "Type": ti.Type,
+                     "Value": ti.Value}
+        info_list.append(tokeninfo)
+    token_dict["info_list"] = info_list
+    # handle all assigned users
+    owners = []
+    for owner in token.owners:
+        owners.append({"uid": owner.uid,
+                       "login": owner.login,
+                       "resolver": owner.resolver,
+                       "realm": owner.realm})
+    token_dict["owners"] = owners
+    return token_dict
