@@ -29,6 +29,7 @@ from privacyidea.lib.error import ValidateError, ParameterError
 import logging
 from passlib.hash import pbkdf2_sha512
 from privacyidea.lib.token import get_one_token
+from privacyidea.lib.config import get_prepend_pin
 from privacyidea.lib.policy import TYPE
 log = logging.getLogger(__name__)
 ROUNDS = 6549
@@ -80,10 +81,12 @@ class MachineApplication(MachineApplicationBase):
             raise ParameterError("Invalid refill amount: {!r}".format(amount))
         (res, err, otp_dict) = token_obj.get_multi_otp(count=amount, counter_index=True)
         otps = otp_dict.get("otp")
-        for key in otps.keys():
+        prepend_pin = get_prepend_pin()
+        for key, otp in otps.items():
             # Return the hash of OTP PIN and OTP values
+            otppw = otppin + otp if prepend_pin else otp + otppin
             otps[key] = pbkdf2_sha512.using(
-                rounds=rounds, salt_size=10).hash(otppin + otps.get(key))
+                rounds=rounds, salt_size=10).hash(otppw)
         # We do not disable the token, so if all offline OTP values
         # are used, the token can be used the authenticate online again.
         # token_obj.enable(False)
@@ -144,6 +147,8 @@ class MachineApplication(MachineApplicationBase):
                            we support "HOTP" tokens and "WebAuthn" tokens.
                            Supporting time based tokens (TOTP) is difficult, since we would have to
                            return a looooong list of OTP values.
+                           Supporting "yubikey" token (AES) would be
+                           possible, too.
         :param serial:     the serial number of the token.
         :param challenge:  This can contain the password (otp pin + otp value)
                            so that we can put the OTP PIN into the hashed response.
@@ -178,7 +183,15 @@ class MachineApplication(MachineApplicationBase):
                                                            otppin,
                                                            int(options.get("count", 100)),
                                                            int(options.get("rounds", ROUNDS)))
+                refilltoken = MachineApplication.generate_new_refilltoken(token_obj)
                 ret["response"] = otps
+                ret["refilltoken"] = refilltoken
+                user_object = token_obj.user
+                if user_object:
+                    uInfo = user_object.info
+                    if "username" in uInfo:
+                        ret["user"] = ret["username"] = uInfo.get("username")
+
         else:
             log.info("Token %r, type %r is not supported by "
                      "OFFLINE application module" % (serial, token_type))
