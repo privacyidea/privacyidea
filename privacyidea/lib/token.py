@@ -2599,38 +2599,59 @@ def list_tokengroups(tokengroup=None):
     return tgs
 
 
-def token_dump(token):
+def token_dump(token, tokenowner=True):
     """
     Store the database columns of the token into a dict.
     Also store the tokeninfo into a list of dicts.
 
     :param token: A token object
+    :param tokenowner: Also dump the tokenowners
+    :type tokenowner: bool
     :return: a dict, containing the token and the tokeninfo
     """
-    dbtoken = token.token
-    columns = dbtoken.__table__.c
-    key = dbtoken.get_otpkey().getKey()
-    # handle the secret key, needs to be decrypted
-    token_dict = {"key": key}
-    for column in columns:
-        value = getattr(dbtoken, column.key)
-        if column.key not in ('id', 'key_enc', 'key_iv'):
-            token_dict[column.key] = value
-    # Now add the tokeninfo
-    info_list = []
-    for ti in dbtoken.info_list:
-        tokeninfo = {"Description": ti.Description,
-                     "Key": ti.Key,
-                     "Type": ti.Type,
-                     "Value": ti.Value}
-        info_list.append(tokeninfo)
-    token_dict["info_list"] = info_list
-    # handle all assigned users
-    owners = []
-    for owner in token.owners:
-        owners.append({"uid": owner.uid,
-                       "login": owner.login,
-                       "resolver": owner.resolver,
-                       "realm": owner.realm})
-    token_dict["owners"] = owners
+    token_dict = token._to_dict()
+    if tokenowner:
+        # handle all assigned users
+        owners = []
+        for owner in token.owners:
+            owners.append({"uid": owner.uid,
+                           "login": owner.login,
+                           "resolver": owner.resolver,
+                           "realm": owner.realm})
+        token_dict["owners"] = owners
+    # TODO: We must handle the PIN!
     return token_dict
+
+
+def token_load(token_dict, tokenowner=True, overwrite=False):
+    """
+    Load the token that has previously been dumped with the function token_dump.
+
+    :param token_dict: The token in a dict
+    :param tokenowner: The tokenowner should also be assigned. If the tokenowner can not be found or
+        identified, an exception is raised.
+    :type tokenowner: bool
+    :param overwrite: If a token with the given serial number already exist, it should be overwritten. If the token
+        should not be overwritten but already exists, an exception is raised.
+    :type overwrite: bool
+    :return:
+    """
+    serial = token_dict.get("serial")
+    old_token_obj = get_one_token(serial=serial, silent_fail=True)
+    if not overwrite and old_token_obj:
+        # We shall not overwrite, but an old token exists!
+        raise TokenAdminError("Token already exists!")
+    tokeninfos = token_dict.get("info_list")
+    tokenowners = token_dict.get("owners")
+    stripped_token = dict(token_dict)
+    del stripped_token["info_list"]
+    del stripped_token["owners"]
+    # init_token also updates an existing one!
+    t = init_token(stripped_token)
+    # Add tokeninfos
+    for ti in tokeninfos:
+        #t.add_token
+        pass
+    # Add owners
+    # TODO: We must handle the PIN
+

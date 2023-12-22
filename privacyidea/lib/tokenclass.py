@@ -1978,5 +1978,7 @@ class TokenClass(object):
         if b32:
             token_dict["otpkey"] = b32encode(unhexlify(token_dict.get("otpkey")))
         token_dict["otpkey"] = to_unicode(token_dict.get("otpkey"))
-        token_dict.update(self.get_tokeninfo())
+        # FIXME: I am not quite sure, if the tokeninfo should be saved top level or in an extry subdict.
+        # If it is saved top level, some entries can simply be used in the token.update() mechanism. But not all tokeninfo!
+        token_dict["info_list"] = self.get_tokeninfo()
         return token_dict
