@@ -2213,4 +2213,16 @@ class ExportAndReencryptTestCase(MyTestCase):
         tok = get_one_token(serial="s3")
         self.assertTrue(tok.check_pin(pin))
 
-        # TODO: check the user assignment of token s3.
+        # Check the onwer of the token
+        self.assertEqual("hans", tok.user.login)
+        self.assertEqual(self.realm1, tok.user.realm)
+
+        # Now we load the 3rd token, with a user, that does not exist
+        d["serial"] = "s4"
+        # Set an invalid uid, so that the user can not be assigned.
+        d["owners"][0]["uid"] = "987654321"
+        token_load(d)
+        tok = get_one_token(serial="s4")
+        user_obj = tok.user
+        # A user was not assigned
+        self.assertEqual(None, user_obj)

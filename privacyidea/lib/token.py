@@ -2654,6 +2654,24 @@ def token_load(token_dict, tokenowner=True, overwrite=False):
     if hashed_pin:
         token.token.pin_hash = hashed_pin
         token.token.save()
+
+    # Add the tokenowners
+    if tokenowner:
+        for owner in token_dict.get("owners"):
+            # uid, login, resolver, realm
+            # We might need to create the user object
+            # Now we add the user as tokenowner
+            try:
+                u = User(login=owner.get("loing"),
+                         resolver=owner.get("resolver"),
+                         realm=owner.get("realm"),
+                         uid=owner.get("uid"))
+                if u.login == owner.get("login"):
+                    token.add_user(u)
+            except Exception as ex:
+                log.warning("Failed to add user {0!s} to token {1!s}: {2!s}".format(owner, token, ex))
+                log.debug(traceback.format_exc())
+
     return token
 
 
