@@ -2637,27 +2637,23 @@ def token_load(token_dict, tokenowner=True, overwrite=False):
     """
     serial = token_dict.get("serial")
     old_token_obj = get_one_token(serial=serial, silent_fail=True)
+    # Check if overwriting is not allowed and the token already exists
     if not overwrite and old_token_obj:
-        # We shall not overwrite, but an old token exists!
         raise TokenAdminError("Token already exists!")
-    tokeninfos = token_dict.get("info_list")
-    tokenowners = token_dict.get("owners")
-    hashed_pin = token_dict.get("_hashed_pin")
-    stripped_token = dict(token_dict)
-    del stripped_token["info_list"]
-    del stripped_token["owners"]
-    del stripped_token["_hashed_pin"]
-    # init_token also updates an existing one!
-    t = init_token(stripped_token)
-    # Add tokeninfos
-    for ti_k, ti_v in tokeninfos.items():
-        # check if there is a specific type:
-        t.add_tokeninfo(ti_k, ti_v)
-        pass
-    # TODO: Add owners
 
-    # Set PIN
+    tokeninfos = token_dict.get("info_list")
+    hashed_pin = token_dict.get("_hashed_pin")  # Uncomment if needed
+    # Creating a new dictionary without special keys
+    stripped_token = {k: v for k, v in token_dict.items() if k not in ["info_list", "owners", "_hashed_pin"]}
+    # Initialize or update token
+    token = init_token(stripped_token)
+    # Add token information
+    for key, value in tokeninfos.items():
+        token.add_tokeninfo(key, value)
+    # Set PIN if hashed_pin is available
     if hashed_pin:
-        t.token.pin_hash = hashed_pin
-        t.token.save()
+        token.token.pin_hash = hashed_pin
+        token.token.save()
+    return token
+
 
