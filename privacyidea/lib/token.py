@@ -2619,7 +2619,6 @@ def token_dump(token, tokenowner=True):
                            "resolver": owner.resolver,
                            "realm": owner.realm})
         token_dict["owners"] = owners
-    # TODO: We must handle the PIN!
     return token_dict
 
 
@@ -2643,15 +2642,22 @@ def token_load(token_dict, tokenowner=True, overwrite=False):
         raise TokenAdminError("Token already exists!")
     tokeninfos = token_dict.get("info_list")
     tokenowners = token_dict.get("owners")
+    hashed_pin = token_dict.get("_hashed_pin")
     stripped_token = dict(token_dict)
     del stripped_token["info_list"]
     del stripped_token["owners"]
+    del stripped_token["_hashed_pin"]
     # init_token also updates an existing one!
     t = init_token(stripped_token)
     # Add tokeninfos
-    for ti in tokeninfos:
-        #t.add_token
+    for ti_k, ti_v in tokeninfos.items():
+        # check if there is a specific type:
+        t.add_tokeninfo(ti_k, ti_v)
         pass
-    # Add owners
-    # TODO: We must handle the PIN
+    # TODO: Add owners
+
+    # Set PIN
+    if hashed_pin:
+        t.token.pin_hash = hashed_pin
+        t.token.save()
 

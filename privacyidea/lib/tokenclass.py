@@ -973,7 +973,7 @@ class TokenClass(object):
         else:
             return hashlib.sha1
 
-    def get_tokeninfo(self, key=None, default=None):
+    def get_tokeninfo(self, key=None, default=None, decrypted=False):
         """
         return the complete token info or a single key of the tokeninfo.
         When returning the complete token info dictionary encrypted entries
@@ -985,17 +985,23 @@ class TokenClass(object):
         :type key: string
         :param default: the default value, if the key does not exist
         :type default: string
+        :param decrypted: Indicates that passwords should be decrypted when fetching the whole dict
+        :type decrypted: bool
         :return: the value for the key
         :rtype: int or str or dict
         """
         tokeninfo = self.token.get_info()
+        ret = tokeninfo
+
         if key:
             ret = tokeninfo.get(key, default)
-            if tokeninfo.get(key + ".type") == "password":
-                # we need to decrypt the return value
+            key_type = tokeninfo.get(key + ".type")
+            if key_type == "password":
                 ret = decryptPassword(ret)
-        else:
-            ret = tokeninfo
+        elif decrypted:
+            ret = {x: (decryptPassword(y) if tokeninfo.get(x + ".type") == "password" else y)
+                   for x, y in tokeninfo.items()}
+
         return ret
 
     def del_tokeninfo(self, key=None):
@@ -1973,12 +1979,11 @@ class TokenClass(object):
             "active": self.is_active(),
             "revoked": self.token.revoked,
             "locked": self.token.locked,
-            "rollout_state": self.token.rollout_state
+            "rollout_state": self.token.rollout_state,
+            "_hashed_pin": self.token.pin_hash
         }
         if b32:
             token_dict["otpkey"] = b32encode(unhexlify(token_dict.get("otpkey")))
         token_dict["otpkey"] = to_unicode(token_dict.get("otpkey"))
-        # FIXME: I am not quite sure, if the tokeninfo should be saved top level or in an extry subdict.
-        # If it is saved top level, some entries can simply be used in the token.update() mechanism. But not all tokeninfo!
-        token_dict["info_list"] = self.get_tokeninfo()
+        token_dict["info_list"] = self.get_tokeninfo(decrypted=True)
         return token_dict

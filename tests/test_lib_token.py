@@ -2175,9 +2175,12 @@ class ExportAndReencryptTestCase(MyTestCase):
         from privacyidea.lib.token import token_dump, token_load
         self.setUp_user_realms()
         key = "1234567890123456"
+        pin = "1234"
         tokenobject = init_token({"serial": "s2",
+                                  "pin": pin,
                                   "otpkey": key},
                                  user=User("hans", self.realm1))
+        tokenobject.add_tokeninfo("secretkey", "secretvalue", value_type="password")
         d = token_dump(tokenobject)
         self.assertEqual(True, d.get("active"))
         self.assertEqual("", d.get("description"))
@@ -2187,6 +2190,10 @@ class ExportAndReencryptTestCase(MyTestCase):
         self.assertNotIn("key_inc", d)
         self.assertNotIn("key_iv", d)
         self.assertNotIn("id", d)
+        tokeninfo = d.get("info_list")
+        # Check the encrypted values
+        self.assertEqual("secretvalue", tokeninfo.get("secretkey"))
+        self.assertEqual("password", tokeninfo.get("secretkey.type"))
         tokenowner = d.get("owners")[0]
         self.assertEqual("1118", tokenowner.get("uid"))
         self.assertEqual("hans", tokenowner.get("login"))
@@ -2202,3 +2209,8 @@ class ExportAndReencryptTestCase(MyTestCase):
         # We load a new token.
         d["serial"] = "s3"
         token_load(d)
+        # Read the token s3 from the database and check the PIN, that has been copied from token s2 to token s3
+        tok = get_one_token(serial="s3")
+        self.assertTrue(tok.check_pin(pin))
+
+        # TODO: check the user assignment of token s3.

@@ -405,6 +405,13 @@ class TokenBaseTestCase(MyTestCase):
         info1 = token.get_tokeninfo()
         self.assertTrue("radius.secret" in info1, info1)
         self.assertTrue("radius.secret.type" in info1, info1)
+        # We get the encrypted value
+        self.assertEqual(65, len(info1.get("radius.secret")))
+        # Now we get the tokenvalues, decrypted
+        info2 = token.get_tokeninfo(decrypted=True)
+        # and we can see the plain text value
+        self.assertEqual("secret", info2.get("radius.secret"))
+        self.assertEqual("password", info2.get("radius.secret.type"))
 
         info = token.get_tokeninfo("radius.secret")
         self.assertEqual(info, "secret", info)
