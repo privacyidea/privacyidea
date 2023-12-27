@@ -2213,7 +2213,7 @@ class ExportAndReencryptTestCase(MyTestCase):
         tok = get_one_token(serial="s3")
         self.assertTrue(tok.check_pin(pin))
 
-        # Check the onwer of the token
+        # Check the owner of the token
         self.assertEqual("hans", tok.user.login)
         self.assertEqual(self.realm1, tok.user.realm)
 

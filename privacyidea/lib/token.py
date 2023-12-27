@@ -2673,5 +2673,3 @@ def token_load(token_dict, tokenowner=True, overwrite=False):
                 log.debug(traceback.format_exc())
 
     return token
-
-
