@@ -2223,6 +2223,5 @@ class ExportAndReencryptTestCase(MyTestCase):
         d["owners"][0]["uid"] = "987654321"
         token_load(d)
         tok = get_one_token(serial="s4")
-        user_obj = tok.user
         # A user was not assigned
-        self.assertEqual(None, user_obj)
+        self.assertEqual(None, tok.user)

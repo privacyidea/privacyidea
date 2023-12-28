@@ -100,6 +100,7 @@ from privacyidea.lib.challengeresponsedecorators import (generic_challenge_respo
                                                          generic_challenge_response_resync)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenclass import TOKENKIND
+from privacyidea.lib.user import get_username
 from dateutil.tz import tzlocal
 
 log = logging.getLogger(__name__)
@@ -2641,7 +2642,7 @@ def token_load(token_dict, tokenowner=True, overwrite=False):
     if not overwrite and old_token_obj:
         raise TokenAdminError("Token already exists!")
 
-    tokeninfos = token_dict.get("info_list")
+    tokeninfos = token_dict.get("info_list", {})
     hashed_pin = token_dict.get("_hashed_pin")  # Uncomment if needed
     # Creating a new dictionary without special keys
     stripped_token = {k: v for k, v in token_dict.items() if k not in ["info_list", "owners", "_hashed_pin"]}
@@ -2657,16 +2658,17 @@ def token_load(token_dict, tokenowner=True, overwrite=False):
 
     # Add the tokenowners
     if tokenowner:
-        for owner in token_dict.get("owners"):
+        for owner in token_dict.get("owners", []):
             # uid, login, resolver, realm
             # We might need to create the user object
             # Now we add the user as tokenowner
             try:
-                u = User(login=owner.get("loing"),
-                         resolver=owner.get("resolver"),
-                         realm=owner.get("realm"),
-                         uid=owner.get("uid"))
-                if u.login == owner.get("login"):
+                loginname = get_username(owner.get("uid"), owner.get("resolver"))
+                if loginname == owner.get("login"):
+                    u = User(login=owner.get("login"),
+                             resolver=owner.get("resolver"),
+                             realm=owner.get("realm"),
+                             uid=owner.get("uid"))
                     token.add_user(u)
             except Exception as ex:
                 log.warning("Failed to add user {0!s} to token {1!s}: {2!s}".format(owner, token, ex))
