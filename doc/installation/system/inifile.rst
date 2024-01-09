@@ -229,11 +229,21 @@ privacyIDEA can run in a redundant setup. For statistics and monitoring purposes
 can give these different nodes dedicated names.
 
 ``PI_NODE`` is a string with the name of this very node. At the startup of
-the application, an installation specific unique ID will be used to tie the
-node name to an installation. A distinct ID can be given to an application with
-the ``PI_UUID`` value (should conform to
+privacyIDEA, an installation specific unique ID will be used to tie the
+node name to an installation. The administrator can set a unique ID for this
+installation as well with the ``PI_UUID`` configuration value (it must conform to
 `RFC 4122 <https://datatracker.ietf.org/doc/html/rfc4122.html>`_).
-The names of all nodes in a redundant setup will be available through the database.
+
+If no ``PI_UUID`` is configured, privacyIDEA tries to read the ID from a file.
+The administrator can specify the file with ``PI_UUID_FILE``. The default value
+is ``/etc/privacyidea/uuid.txt``. If this file does not provide an ID, the
+``/etc/machine-id``  will be used. And if all fails, a unique ID will be generated
+and made persistent in the ``PI_UUID_FILE``.
+
+Before version 3.10, the available nodes of the setup were defined with the
+``PI_NODES`` configuration value. Since version 3.10, this configuration value
+is not used anymore. The names of all nodes
+in a redundant setup will be made available through the database.
 
 If ``PI_NODE`` is not set, then ``PI_AUDIT_SERVERNAME`` is used as node name.
 If this is not set as well, the node name is returned as "localnode".

@@ -75,6 +75,8 @@ from privacyidea.lib.crypto import init_hsm
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 
+DEFAULT_UUID_FILE = "/etc/privacyidea/uuid.txt"
+
 migrate = Migrate()
 
 
@@ -238,7 +240,7 @@ def create_app(config_name="development",
         with app.app_context():
             init_hsm()
 
-    if config_name == "testing":
+    if config_name in ["testing"]:
         # we are running the tests, create the database
         with app.app_context():
             db.create_all()
@@ -248,32 +250,46 @@ def create_app(config_name="development",
         # first check if we have a UUID in the config file which takes precedence
         pi_uuid = app.config.get("PI_UUID")
         if not pi_uuid:
-            # we try to get the unique installation id (See <https://0pointer.de/blog/projects/ids.html>)
+            # check if we can get the UUID from an external file
+            pi_uuid_file = app.config.get('PI_UUID_FILE', DEFAULT_UUID_FILE)
             try:
-                with open('/etc/machine-id', 'r') as f:
+                with open(pi_uuid_file, 'r') as f:
                     pi_uuid = uuid.UUID(f.read().strip())
             except Exception as e:  # pragma: no cover
-                logging.getLogger(__name__).info(f"Could not determine the machine id: {e}")
-            else:
-                # we generate a random UUID which will change on every startup
-                pi_uuid = uuid.uuid4()
-                logging.getLogger(__name__).warning("Generating a random UUID! "
-                                                    "If persisting the UUID fails, "
-                                                    "it will change on every application start")
+                logging.getLogger(__name__).debug(f"Could not determine UUID "
+                                                  f"from file '{pi_uuid_file}': {e}")
+
+                # we try to get the unique installation id (See <https://0pointer.de/blog/projects/ids.html>)
+                try:
+                    with open("/etc/machine-id", 'r') as f:
+                        pi_uuid = uuid.UUID(f.read().strip())
+                except Exception as e:  # pragma: no cover
+                    logging.getLogger(__name__).debug(f"Could not determine the machine "
+                                                      f"id: {e}")
+                    # we generate a random UUID which will change on every startup
+                    pi_uuid = uuid.uuid4()
+                    logging.getLogger(__name__).warning(f"Generating a random UUID: {pi_uuid}! "
+                                                        f"If persisting the UUID fails, "
+                                                        f"it will change on every application start")
+                    # only in case of a generated UUID we save it to the uuid file
+                    try:
+                        with open(pi_uuid_file, 'a') as f:  # pragma: no cover
+                            f.write(f"{str(pi_uuid)}\n")
+                            logging.getLogger(__name__).info(f"Successfully wrote current UUID"
+                                                             f" to file '{pi_uuid_file}'")
+                    except IOError as exx:
+                        logging.getLogger(__name__).warning(f"Could not write UUID to "
+                                                            f"file '{pi_uuid_file}': {exx}")
+
             app.config["PI_UUID"] = str(pi_uuid)
-            # safe UUID to config file
-            try:
-                with open(config_file, 'a') as f:  # pragma: no cover
-                    f.write(f"PI_UUID = \"{str(pi_uuid)}\"\n")
-            except IOError as exx:
-                logging.getLogger(__name__).warning(f"Could not add UUID to config "
-                                                    f" file '{config_file}': {exx}")
+            logging.getLogger(__name__).debug(f"Current UUID: '{pi_uuid}'")
 
         pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME", "localnode")
+
         insp = sa.inspect(db.get_engine())
         if insp.has_table(NodeName.__tablename__):
             db.session.merge(NodeName(id=str(pi_uuid), name=pi_node_name,
-                                      lastseen=datetime.datetime.now(tz=datetime.timezone.utc)))
+                                      lastseen=datetime.datetime.utcnow()))
             db.session.commit()
         else:
             logging.getLogger(__name__).warning(f"Could not update node names in "

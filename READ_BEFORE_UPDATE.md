@@ -1,5 +1,10 @@
 # Update Notes
 
+## Update from 3.9 to 3.10
+
+* The `PI_NODES` configuration option is not used anymore. The nodes will be added
+  to the database with a unique identifier for each installation
+
 ## Update from 3.8 to 3.9
 
 * The response of the API `POST /auth` has changed if the WebUI policy action

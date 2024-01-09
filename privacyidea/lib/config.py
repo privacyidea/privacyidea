@@ -989,7 +989,9 @@ def get_privacyidea_node(default='localnode'):
     This returns the node name of the privacyIDEA node as found in the pi.cfg
     file in PI_NODE.
     If it does not exist, the PI_AUDIT_SERVERNAME is used.
+
     :return: the distinct node name
+    :rtype: str
     """
     node_name = get_app_config_value("PI_NODE", get_app_config_value("PI_AUDIT_SERVERNAME", default))
     return node_name
@@ -1006,9 +1008,6 @@ def get_privacyidea_nodes():
     nodes = db.session.query(NodeName).all()
     for node in nodes:
         node_names.append(node.name)
-    # if there are no nodes in the database we add at least the local node to the list
-    if not node_names:
-        node_names.append(get_privacyidea_node())
 
     return node_names
 
