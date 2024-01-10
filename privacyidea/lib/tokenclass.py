@@ -280,14 +280,12 @@ class TokenClass(object):
         :rtype: A list of user object
         """
         user_objects = []
-        tokenowners = self.token.all_owners
-        if tokenowners:
-            for tokenowner in tokenowners:
-                username = get_username(tokenowner.user_id, tokenowner.resolver)
-                user_object = User(login=username,
-                                   resolver=tokenowner.resolver,
-                                   realm=tokenowner.realm.name)
-                user_objects.append(user_object)
+        for tokenowner in self.token.all_owners:
+            username = get_username(tokenowner.user_id, tokenowner.resolver)
+            user_object = User(login=username,
+                               resolver=tokenowner.resolver,
+                               realm=tokenowner.realm.name)
+            user_objects.append(user_object)
         return user_objects
 
     @property

@@ -2643,7 +2643,7 @@ def token_load(token_dict, tokenowner=True, overwrite=False):
         raise TokenAdminError("Token already exists!")
 
     tokeninfos = token_dict.get("info_list", {})
-    hashed_pin = token_dict.get("_hashed_pin")  # Uncomment if needed
+    hashed_pin = token_dict.get("_hashed_pin")
     # Creating a new dictionary without special keys
     stripped_token = {k: v for k, v in token_dict.items() if k not in ["info_list", "owners", "_hashed_pin"]}
     # Initialize or update token
