@@ -240,11 +240,6 @@ def create_app(config_name="development",
         with app.app_context():
             init_hsm()
 
-    if config_name in ["testing"]:
-        # we are running the tests, create the database
-        with app.app_context():
-            db.create_all()
-
     # check that we have a correct node_name -> UUID relation
     with app.app_context():
         # first check if we have a UUID in the config file which takes precedence

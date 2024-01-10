@@ -68,6 +68,8 @@ class MyTestCase(unittest.TestCase):
         cls.app = create_app('testing', "")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
+        db.create_all()
+
         # save the current timestamp to the database to avoid hanging cached data
         save_config_timestamp()
         db.session.commit()
