@@ -35,7 +35,7 @@ import os
 from pathlib import Path
 import shutil
 import string
-import subprocess
+import subprocess  # nosec B404 # only trusted input is used
 from tempfile import NamedTemporaryFile
 
 from privacyidea.app import create_app
@@ -71,11 +71,13 @@ def invoke_pi_manage(commandline, pi_cfg):
     Invoke ``pi-manage`` with arguments, setting PRIVACYIDEA_CONFIGFILE TO ``pi_cfg``.
 
     :param commandline: arguments to pass as a list
+    :type commandline: list
     :param pi_cfg: location of the privacyIDEA config file
+    :type pi_cfg: str or pathlib.Path
     """
     environment = os.environ.copy()
-    environment['PRIVACYIDEA_CONFIGFILE'] = pi_cfg
-    subprocess.check_call(['pi-manage'] + commandline, env=environment)
+    environment['PRIVACYIDEA_CONFIGFILE'] = str(pi_cfg)
+    subprocess.check_call(['pi-manage'] + commandline, env=environment)  # nosec B603 # only trusted input is used
 
 
 def instance_option(f):
@@ -93,12 +95,12 @@ def cli():
     """
 \b
              _                    _______  _______
-   ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
-  / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
- / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|  Standalone
+   ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
+  / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
+ / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|  Standalone
 /_/                       /___/
 
-    Management script for the privacyIDEA application."""
+  Management script for creating local privacyIDEA instances."""
     click.echo(r"""
              _                    _______  _______
    ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
