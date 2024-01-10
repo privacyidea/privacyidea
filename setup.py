@@ -109,7 +109,8 @@ setup(
     entry_points={
         'console_scripts': [
             'privacyidea-token-janitor = privacyidea.cli.privacyideatokenjanitor:cli',
-            'pi-manage = privacyidea.cli.pimanage:cli'
+            'pi-manage = privacyidea.cli.pimanage:cli',
+            'privacyidea-standalone = privacyidea.cli.tools.standalone:cli'
         ]},
     extras_require={
         'doc': ["Pallets-Sphinx-Themes>=1.2.3",

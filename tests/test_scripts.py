@@ -21,7 +21,6 @@ SCRIPTS = [
     'privacyidea-migrate-linotp.py',
     'privacyidea-pip-update',
     'privacyidea-queue-huey',
-    'privacyidea-standalone',
     'privacyidea-sync-owncloud.py',
 #    'privacyidea-token-janitor',
     'privacyidea-update-counter.py',
