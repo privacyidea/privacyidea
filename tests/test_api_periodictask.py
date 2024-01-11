@@ -295,9 +295,8 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
             self.assertEqual(data['result']['value'], options)
 
     def test_03_nodes(self):
-        node2_name = "Node2"
-        node2_uuid = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
-        db.session.add(NodeName(id=node2_uuid, name=node2_name))
+        db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1"))
+        db.session.add(NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2"))
         db.session.commit()
         status_code, data = self.simulate_request('/periodictask/nodes/', method='GET')
         self.assertEqual(status_code, 200)
