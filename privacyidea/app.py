@@ -243,7 +243,7 @@ def create_app(config_name="development",
     # check that we have a correct node_name -> UUID relation
     with app.app_context():
         # first check if we have a UUID in the config file which takes precedence
-        pi_uuid = app.config.get("PI_UUID")
+        pi_uuid = uuid.UUID(app.config.get("PI_UUID"))
         if not pi_uuid:
             # check if we can get the UUID from an external file
             pi_uuid_file = app.config.get('PI_UUID_FILE', DEFAULT_UUID_FILE)
@@ -262,6 +262,7 @@ def create_app(config_name="development",
                     logging.getLogger(__name__).debug(f"Could not determine the machine "
                                                       f"id: {e}")
                     # we generate a random UUID which will change on every startup
+                    # unless it is persisted to the pi_uuid_file
                     pi_uuid = uuid.uuid4()
                     logging.getLogger(__name__).warning(f"Generating a random UUID: {pi_uuid}! "
                                                         f"If persisting the UUID fails, "
