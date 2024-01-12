@@ -243,8 +243,10 @@ def create_app(config_name="development",
     # check that we have a correct node_name -> UUID relation
     with app.app_context():
         # first check if we have a UUID in the config file which takes precedence
-        pi_uuid = uuid.UUID(app.config.get("PI_UUID"))
-        if not pi_uuid:
+        try:
+            pi_uuid = uuid.UUID(app.config.get("PI_UUID", ""))
+        except ValueError as e:
+            logging.getLogger(__name__).debug(f"Could not determine UUID from config: {e}")
             # check if we can get the UUID from an external file
             pi_uuid_file = app.config.get('PI_UUID_FILE', DEFAULT_UUID_FILE)
             try:
