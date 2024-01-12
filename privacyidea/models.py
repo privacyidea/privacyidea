@@ -250,6 +250,10 @@ class Token(MethodsMixin, db.Model):
     @property
     def first_owner(self):
         return self.owners.first()
+
+    @property
+    def all_owners(self):
+        return self.owners.all()
             
     @log_with(log)
     def delete(self):
