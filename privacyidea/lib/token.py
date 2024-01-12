@@ -2629,7 +2629,7 @@ def token_load(token_dict, tokenowner=True, overwrite=False):
 
     :param token_dict: The token in a dict
     :param tokenowner: The tokenowner should also be assigned. If the tokenowner can not be found or
-        identified, an exception is raised.
+        identified, the token is created anyways, but not assigned to a user; an exception is raised.
     :type tokenowner: bool
     :param overwrite: If a token with the given serial number already exist, it should be overwritten. If the token
         should not be overwritten but already exists, an exception is raised.
@@ -2673,5 +2673,6 @@ def token_load(token_dict, tokenowner=True, overwrite=False):
             except Exception as ex:
                 log.warning("Failed to add user {0!s} to token {1!s}: {2!s}".format(owner, token, ex))
                 log.debug(traceback.format_exc())
+                raise TokenAdminError("Token can not be assiend to the specified user!")
 
     return token

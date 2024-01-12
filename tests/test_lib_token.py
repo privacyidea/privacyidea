@@ -2221,7 +2221,7 @@ class ExportAndReencryptTestCase(MyTestCase):
         d["serial"] = "s4"
         # Set an invalid uid, so that the user can not be assigned.
         d["owners"][0]["uid"] = "987654321"
-        token_load(d)
+        self.assertRaises(TokenAdminError, token_load, d)
         tok = get_one_token(serial="s4")
         # A user was not assigned
         self.assertEqual(None, tok.user)
