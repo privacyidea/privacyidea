@@ -281,10 +281,9 @@ class TokenClass(object):
         """
         user_objects = []
         for tokenowner in self.token.all_owners:
-            username = get_username(tokenowner.user_id, tokenowner.resolver)
-            user_object = User(login=username,
-                               resolver=tokenowner.resolver,
-                               realm=tokenowner.realm.name)
+            user_object = User(resolver=tokenowner.resolver,
+                               realm=tokenowner.realm.name,
+                               uid=tokenowner.user_id)
             user_objects.append(user_object)
         return user_objects
 
