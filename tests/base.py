@@ -34,10 +34,13 @@ class FakeFlaskG(object):
 class FakeAudit(Audit):
 
     def __init__(self):
+        super(FakeAudit).__init__()
         self.audit_data = {}
 
 
 class MyTestCase(unittest.TestCase):
+    app = None
+    app_context = None
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
     resolvername3 = "reso3"
@@ -66,8 +69,8 @@ class MyTestCase(unittest.TestCase):
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
         db.create_all()
-        # save the current timestamp to the database to avoid hanging cached
-        # data
+
+        # save the current timestamp to the database to avoid hanging cached data
         save_config_timestamp()
         db.session.commit()
         # Create an admin for tests.

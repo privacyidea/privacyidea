@@ -931,7 +931,7 @@ class Realm(TimestampMethodsMixin, db.Model):
     @log_with(log)
     def __init__(self, realm):
         self.name = realm
-        
+
     def delete(self):
         ret = self.id
         # delete all TokenRealm
@@ -1065,11 +1065,11 @@ class Resolver(TimestampMethodsMixin, db.Model):
     realm_list = db.relationship('ResolverRealm',
                                  lazy='select',
                                  back_populates='resolver')
-    
+
     def __init__(self, name, rtype):
         self.name = name
         self.rtype = rtype
-        
+
     def delete(self):
         ret = self.id
         # delete all ResolverConfig
@@ -1429,7 +1429,7 @@ class Challenge(MethodsMixin, db.Model):
 
     def set_challenge(self, challenge):
         self.challenge = convert_column_to_unicode(challenge)
-    
+
     def get_challenge(self):
         return self.challenge
 
@@ -1537,7 +1537,7 @@ class Policy(TimestampMethodsMixin, db.Model):
                                  # Likewise, whenever a Policy object is deleted, its conditions are also
                                  # deleted (delete). Conditions without a policy are deleted (delete-orphan).
                                  cascade="save-update, merge, delete, delete-orphan")
-    
+
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="", adminuser="",
                  resolver="", user="", client="", time="", pinode="", priority=1,
@@ -1732,15 +1732,15 @@ class MachineUser(db.Model):
     resolver = db.Column(db.Unicode(120), default=u'', index=True)
     resclass = db.Column(db.Unicode(120),  default=u'')
     user_id = db.Column(db.Unicode(120), default=u'', index=True)
-    machine_id = db.Column(db.Integer(), 
+    machine_id = db.Column(db.Integer(),
                            db.ForeignKey('clientmachine.id'))
     application = db.Column(db.Unicode(64))
-    
+
     __table_args__ = (db.UniqueConstraint('resolver', 'resclass',
                                           'user_id', 'machine_id',
                                           'application', name='uixu_1'),
                       {})
-    
+
     @log_with(log)
     def __init__(self, machine_id,
                  resolver,
@@ -1753,13 +1753,13 @@ class MachineUser(db.Model):
         self.resclass = resclass
         self.user_id = user_id
         self.application = application
-        
+
     @log_with(log)
     def store(self):
         db.session.add(self)
         db.session.commit()
         return True
-    
+
     def to_json(self):
         machinename = ""
         ip = ""
@@ -1835,7 +1835,7 @@ class MachineUserOptions(db.Model):
     machineuser_id = db.Column(db.Integer(), db.ForeignKey('machineuser.id'))
     mu_key = db.Column(db.Unicode(64), nullable=False)
     mu_value = db.Column(db.Unicode(64), nullable=False)
-    
+
     def __init__(self, machineuser_id, key, value):
         log.debug("setting %r to %r for MachineUser %s" % (key,
                                                            value,
@@ -3271,3 +3271,12 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
         else:
             ret = self.id
         return ret
+
+
+class NodeName(db.Model, TimestampMethodsMixin):
+    __tablename__ = "nodename"
+    # TODO: we can use the UUID type here when switching to SQLAlchemy 2.0
+    #  <https://docs.sqlalchemy.org/en/20/core/custom_types.html#backend-agnostic-guid-type>
+    id = db.Column(db.Unicode(36), primary_key=True)
+    name = db.Column(db.Unicode(100), index=True)
+    lastseen = db.Column(db.DateTime(False), index=True, default=datetime.now(tz=tzutc()))

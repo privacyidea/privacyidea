@@ -19,16 +19,20 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import datetime
 import os
 import os.path
 import logging
 import logging.config
 import sys
+import uuid
+
 import yaml
 from flask import Flask, request, Response
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flaskext.versioned import Versioned
+import sqlalchemy as sa
 
 # we need this import to add the before/after request function to the blueprints
 import privacyidea.api.before_after
@@ -65,11 +69,15 @@ from privacyidea.api.serviceid import serviceid_blueprint
 from privacyidea.lib import queue
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG
 from privacyidea.config import config
-from privacyidea.models import db
+from privacyidea.models import db, NodeName
 from privacyidea.lib.crypto import init_hsm
 
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
+
+DEFAULT_UUID_FILE = "/etc/privacyidea/uuid.txt"
+
+migrate = Migrate()
 
 
 class PiResponseClass(Response):
@@ -91,7 +99,7 @@ class PiResponseClass(Response):
 
 def create_app(config_name="development",
                config_file='/etc/privacyidea/pi.cfg',
-               silent=False, init_hsm=False):
+               silent=False, initialize_hsm=False):
     """
     First the configuration from the config.py is loaded depending on the
     config type like "production" or "development" or "testing".
@@ -107,8 +115,8 @@ def create_app(config_name="development",
     :param silent: If set to True the additional information are not printed
         to stdout
     :type silent: bool
-    :param init_hsm: Whether the HSM should be initialized on app startup
-    :type init_hsm: bool
+    :param initialize_hsm: Whether the HSM should be initialized on app startup
+    :type initialize_hsm: bool
     :return: The flask application
     :rtype: App object
     """
@@ -123,9 +131,6 @@ def create_app(config_name="development",
                 template_folder="static/templates")
     if config_name:
         app.config.from_object(config[config_name])
-
-    # Set up flask-versioned
-    versioned = Versioned(app, format='%(path)s?v=%(version)s')
 
     try:
         # Try to load the given config_file.
@@ -178,8 +183,19 @@ def create_app(config_name="development",
     app.register_blueprint(monitoring_blueprint, url_prefix='/monitoring')
     app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
     app.register_blueprint(serviceid_blueprint, url_prefix='/serviceid')
+
+    # Set up Plug-Ins
     db.init_app(app)
-    migrate = Migrate(app, db)
+    migrate.init_app(app, db)
+
+    Versioned(app, format='%(path)s?v=%(version)s')
+
+    babel = Babel()
+    babel.init_app(app)
+
+    @babel.localeselector
+    def get_locale():
+        return get_accepted_language(request)
 
     app.response_class = PiResponseClass
 
@@ -218,17 +234,64 @@ def create_app(config_name="development",
         DEFAULT_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = level
         logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
 
-    babel = Babel(app)
-
-    @babel.localeselector
-    def get_locale():
-        return get_accepted_language(request)
-
     queue.register_app(app)
 
-    if init_hsm:
+    if initialize_hsm:
         with app.app_context():
             init_hsm()
+
+    # check that we have a correct node_name -> UUID relation
+    with app.app_context():
+        # first check if we have a UUID in the config file which takes precedence
+        try:
+            pi_uuid = uuid.UUID(app.config.get("PI_UUID", ""))
+        except ValueError as e:
+            logging.getLogger(__name__).debug(f"Could not determine UUID from config: {e}")
+            # check if we can get the UUID from an external file
+            pi_uuid_file = app.config.get('PI_UUID_FILE', DEFAULT_UUID_FILE)
+            try:
+                with open(pi_uuid_file, 'r') as f:
+                    pi_uuid = uuid.UUID(f.read().strip())
+            except Exception as e:  # pragma: no cover
+                logging.getLogger(__name__).debug(f"Could not determine UUID "
+                                                  f"from file '{pi_uuid_file}': {e}")
+
+                # we try to get the unique installation id (See <https://0pointer.de/blog/projects/ids.html>)
+                try:
+                    with open("/etc/machine-id", 'r') as f:
+                        pi_uuid = uuid.UUID(f.read().strip())
+                except Exception as e:  # pragma: no cover
+                    logging.getLogger(__name__).debug(f"Could not determine the machine "
+                                                      f"id: {e}")
+                    # we generate a random UUID which will change on every startup
+                    # unless it is persisted to the pi_uuid_file
+                    pi_uuid = uuid.uuid4()
+                    logging.getLogger(__name__).warning(f"Generating a random UUID: {pi_uuid}! "
+                                                        f"If persisting the UUID fails, "
+                                                        f"it will change on every application start")
+                    # only in case of a generated UUID we save it to the uuid file
+                    try:
+                        with open(pi_uuid_file, 'a') as f:  # pragma: no cover
+                            f.write(f"{str(pi_uuid)}\n")
+                            logging.getLogger(__name__).info(f"Successfully wrote current UUID"
+                                                             f" to file '{pi_uuid_file}'")
+                    except IOError as exx:
+                        logging.getLogger(__name__).warning(f"Could not write UUID to "
+                                                            f"file '{pi_uuid_file}': {exx}")
+
+            app.config["PI_UUID"] = str(pi_uuid)
+            logging.getLogger(__name__).debug(f"Current UUID: '{pi_uuid}'")
+
+        pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME", "localnode")
+
+        insp = sa.inspect(db.get_engine())
+        if insp.has_table(NodeName.__tablename__):
+            db.session.merge(NodeName(id=str(pi_uuid), name=pi_node_name,
+                                      lastseen=datetime.datetime.utcnow()))
+            db.session.commit()
+        else:
+            logging.getLogger(__name__).warning(f"Could not update node names in "
+                                                f"db. Check that table '{NodeName.__tablename__}' exists.")
 
     logging.getLogger(__name__).debug("Reading application from the static "
                                       "folder {0!s} and the template folder "
