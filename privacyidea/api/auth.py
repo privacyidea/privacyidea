@@ -222,7 +222,7 @@ def get_auth_token():
 
     # the realm parameter has precedence! Check if it exists
     if realm_param and not realm_is_defined(realm_param):
-        raise AuthError(_("Authentication failure. Unknown realm: {0!s}.".format(realm_param)),
+        raise AuthError(_("Authentication failure. Unknown realm: {0!s}.").format(realm_param),
                         id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
 
     if username is None:
