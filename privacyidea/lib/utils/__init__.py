@@ -374,6 +374,9 @@ def sanity_name_check(name, name_exp=r"^[A-Za-z0-9_\-\.]+$"):
     ca connector or realm.
 
     :param name: THe name of the resolver or ca connector
+    :type name: str
+    :param name_exp: Regular expression describing the sane name
+    :type name_exp: str
     :return: True, otherwise raises an exception
     """
     if re.match(name_exp, name) is None:

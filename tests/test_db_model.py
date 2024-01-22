@@ -1,11 +1,30 @@
-# coding: utf-8
+# SPDX-FileCopyrightText: (C) 2024 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-FileCopyrightText: (C) 2015 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Info: https://privacyidea.org
+#
+# This code is free software: you can redistribute it and/or
+# modify it under the terms of the GNU Affero General Public License
+# as published by the Free Software Foundation, either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 from mock import mock
 import os
 from sqlalchemy import func
 
 from privacyidea.models import (Token,
                                 Resolver,
-                                ResolverRealm,
+                                ResolverRealm, NodeName,
                                 TokenRealm,
                                 ResolverConfig,
                                 Realm,
@@ -15,7 +34,7 @@ from privacyidea.models import (Token,
                                 MachineResolverConfig, MachineToken, Admin,
                                 CAConnector, CAConnectorConfig, SMTPServer,
                                 PasswordReset, EventHandlerOption,
-                                EventHandler, SMSGatewayOption, SMSGateway,
+                                EventHandler, SMSGateway,
                                 EventHandlerCondition, PrivacyIDEAServer,
                                 ClientApplication, Subscription, UserCache,
                                 EventCounter, PeriodicTask, PeriodicTaskLastRun,
@@ -1122,3 +1141,27 @@ class ServiceidTestCase(MyTestCase):
         # Test, if it is gone
         r = Serviceid.query.filter_by(name="webserver").all()
         self.assertEqual(len(r), 0)
+
+
+class ResolverRealmTestCase(MyTestCase):
+
+    def test_01_resolver_realm_with_nodes(self):
+        NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1").save()
+        NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2").save()
+
+        res = Resolver("resolver1", "passwdresolver")
+        res.save()
+        # Add configuration to the resolver
+        ResolverConfig(res.id, "fileName", "tests/testdata/passwd").save()
+
+        re = Realm("realm1")
+        re.save()
+
+        # Put the resolver into the realm by name
+        ResolverRealm(resolver_name="resolver1",
+                      realm_name="realm1").save()
+
+        self.assertIn(res.id, [x.resolver.id for x in re.resolver_list])
+
+    # TODO: add resolver realm config with ids and different nodes
+    # TODO: same nodes with different timestamps
