@@ -24,7 +24,7 @@ A device or item used to authenticate is still called a
 "token". All token information is stored in an SQL database,
 while you may choose, which database you want to use.
 privacyIDEA uses `SQLAlchemy`_ to map the database to internal objects.
-Datebases that are known to work well are MySQL, MariaDB, Galera Cluser
+Datebases that are known to work well are MySQL, MariaDB, Galera Cluster
 and PostgreSQL.
 
 The code is divided into three layers, the API, the library and the
@@ -57,7 +57,7 @@ to consider the following aspects:
 * Configure your DNS and ensure to use **FQDN**.
   Avoid static IP addresses.
 
-* Setup a reliable **database**. If you are planning a redundent setup
+* Setup a reliable **database**. If you are planning a redundant setup
   the redundancy is done via the database cluster.  Manage your database
   and think about sizing - especially when it comes to collecting
   audit data.
