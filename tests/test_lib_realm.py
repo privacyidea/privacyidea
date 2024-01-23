@@ -181,7 +181,29 @@ class RealmTestCase(MyTestCase):
         resolver_list = realms_dict["realm1"]["resolver"]
         self.assertEqual(len(resolver_list), 2, realms_dict)
         self.assertIn(uuid1, [x.get('node') for x in resolver_list], resolver_list)
+        delete_realm('realm1')
+        NodeName.query.filter_by(id=uuid1).delete()
+        NodeName.query.filter_by(id=uuid2).delete()
 
+    def test_30_realm_import_export(self):
+        uuid1 = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
+        uuid2 = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
+        NodeName(id=uuid1, name="Node1").save()
+        NodeName(id=uuid2, name="Node2").save()
+
+        save_resolver({"resolver": self.resolvername1,
+                       "type": "passwdresolver",
+                       "fileName": "/etc/passwd"})
+
+        save_resolver({"resolver": self.resolvername2,
+                       "type": "passwdresolver",
+                       "fileName": "/etc/secrets"})
+
+        set_realm("realm1",
+                  [
+                      {'name': self.resolvername1,
+                       'node': uuid.UUID(uuid1)},
+                      {'name': self.resolvername1}])
         realm_exp = export_realms("realm1")
         self.assertIn("realm1", realm_exp, realm_exp)
         self.assertTrue(realm_exp["realm1"]["default"], realm_exp)
@@ -190,15 +212,22 @@ class RealmTestCase(MyTestCase):
 
         import_dict = {
             'realm2': {'id': 2, 'option': '', 'default': False, 'resolver': [
-                {'priority': None, 'name': 'resolver2', 'type': 'passwdresolver',
+                {'priority': None, 'name': 'Resolver2', 'type': 'passwdresolver',
                  'node': uuid2},
                 {'priority': None, 'name': 'resolver1', 'type': 'passwdresolver',
                  'node': ''}]}}
 
         import_realms(import_dict)
         realms_dict = get_realms()
+        self.assertEqual(len(realms_dict), 2, realms_dict)
         self.assertIn("realm2", realms_dict, realms_dict)
         resolver_list = realms_dict["realm2"]["resolver"]
         self.assertEqual(len(resolver_list), 2, realms_dict)
         self.assertIn(uuid2, [x.get('node') for x in resolver_list], resolver_list)
         self.assertIn(self.resolvername2, [x.get('name') for x in resolver_list], resolver_list)
+
+        delete_realm('realm1')
+        delete_realm('realm2')
+
+        NodeName.query.filter_by(id=uuid1).delete()
+        NodeName.query.filter_by(id=uuid2).delete()

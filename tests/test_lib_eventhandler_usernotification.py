@@ -1077,7 +1077,7 @@ class UserNotificationTestCase(MyTestCase):
         r = save_resolver(parameters)
         self.assertTrue(r)
 
-        success, fail = set_realm("notify_realm", ["notify_resolver"])
+        success, fail = set_realm("notify_realm", [{'name': "notify_resolver"}])
         self.assertEqual(len(success), 1)
         self.assertEqual(len(fail), 0)
 

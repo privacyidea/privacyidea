@@ -158,8 +158,13 @@ def realm_create(name, resolvers):
     An existing realm with the same name will be replaced.
     """
     from privacyidea.lib.realm import set_realm
-    set_realm(name, resolvers)
-    click.secho(f"Successfully created realm '{name}.", fg="green")
+    (added, failed) = set_realm(name, [{'name': res} for res in resolvers])
+    if failed:
+        click.secho(f"Realm '{name}' created. Following resolvers could not be "
+                    f"assigned: {failed}", fg="yellow")
+    else:
+        click.secho(f"Successfully created realm '{name} with resolver {added}.",
+                    fg="green")
 
 
 @realm_cli.command("delete")
@@ -171,9 +176,9 @@ def realm_delete(realm):
     try:
         delete_realm(realm)
     except ResourceNotFoundError as e:
-        click.secho(f"Could not delete realm {realm}: {e}", fg="red")
+        click.secho(f"Could not delete realm '{realm}': {e}", fg="red")
     else:
-        click.secho(f"Realm {realm} successfully deleted.", fg="green")
+        click.secho(f"Realm '{realm}' successfully deleted.", fg="green")
 
 
 @realm_cli.command("set_default")

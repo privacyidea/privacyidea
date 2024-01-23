@@ -245,6 +245,8 @@ def export_realms(name=None):
 def import_realms(data, name=None):
     """
     Import given realm configurations
+
+    Ignores realm id and realm options
     """
     # TODO: the set_realm() function always creates the realm in the DB even if
     #  the associated resolver are not available. So the realms must be imported
@@ -253,9 +255,7 @@ def import_realms(data, name=None):
     for realm, r_config in data.items():
         if name and name != realm:
             continue
-        added, failed = set_realm(
-            realm, resolvers=[r['name'] for r in r_config['resolver']],
-            priority={r['name']: r['priority'] for r in r_config['resolver']})
+        added, failed = set_realm(realm, resolvers=r_config.get('resolver', []))
         if is_true(r_config['default']):
             set_default_realm(realm)
         log.info('realm: {0!s:<15} resolver added: {1!s} '

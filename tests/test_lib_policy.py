@@ -635,7 +635,9 @@ class PolicyTestCase(MyTestCase):
 
         # create user realm
         (added, failed) = set_realm("realm4",
-                                    ["passwd", "passwords"])
+                                    [
+                                        {'name': "passwd"},
+                                        {'name': "passwords"}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 2)
 
@@ -814,10 +816,10 @@ class PolicyTestCase(MyTestCase):
 
         # create a realm with reso1 being the resolver with the highest priority
         (added, failed) = set_realm("realm1",
-                                    ["reso1", "resoX", "resoA"],
-                                    priority={"reso1": 1,
-                                              "resoX": 2,
-                                              "resoA": 3})
+                                    [
+                                        {'name': "reso1", 'priority': 1},
+                                        {'name': "resoX", 'priority': 2},
+                                        {'name': "resoA", 'priority': 3}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 3)
 
@@ -1028,11 +1030,11 @@ class PolicyTestCase(MyTestCase):
                              "fileName": FILE_PASSWD})
         self.assertGreater(rid, 0)
 
-        (added, failed) = set_realm("realm1", ["reso1"])
+        (added, failed) = set_realm("realm1", [{'name': "reso1"}])
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 1)
 
-        (added, failed) = set_realm("realm2", ["reso2"])
+        (added, failed) = set_realm("realm2", [{'name': "reso2"}])
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 1)
 
@@ -1167,7 +1169,7 @@ class PolicyTestCase(MyTestCase):
                              "fileName": FILE_PASSWORDS})
         self.assertGreater(rid, 0)
 
-        (added, failed) = set_realm("realm1", ["reso1"])
+        (added, failed) = set_realm("realm1", [{'name': "reso1"}])
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 1)
 
