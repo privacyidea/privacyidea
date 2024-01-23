@@ -172,7 +172,7 @@ class MachineApplication(MachineApplicationBase):
                 # return the pubkey and the credential_id (contained in the otpkey)
                 ret["response"] = {"pubkey": token_obj.get_tokeninfo("pubKey"),
                                    "credential_id": token_obj.decrypt_otpkey(),
-                                   "rpId": token_obj.get_tokeninfo("rp_id")}
+                                   "rpId": token_obj.get_tokeninfo("relying_party_id")}
 
             elif token_type.lower() == "hotp":
                 if password:
