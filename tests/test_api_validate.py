@@ -5980,13 +5980,15 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
               "W3Bu0HACkVidtBc7yDluCtviQWHU0SufOxPrEpQECAyYgASFYID-YUA3c7cOqFtNK6bfB\r\nL3H6BNN7ivKOfFnU5zOIA3X7Il" \
               "ggaKqMkh_8X6Vim6wj6GSq9_zeCvDUgJKeTuo-Nxk_jz0"
 
+    rpid = "netknights.it"
+
     def setUp(self):
         # Set up the WebAuthn Token from the lib test case
         super(MyApiTestCase, self).setUp()
         self.setUp_user_realms()
 
         set_policy("wan1", scope=SCOPE.ENROLL,
-                   action="webauthn_relying_party_id=netknights.it")
+                   action=("webauthn_relying_party_id={0!s}".format(self.rpid)))
         set_policy("wan2", scope=SCOPE.ENROLL,
                    action="webauthn_relying_party_name=privacyIDEA")
 
@@ -6140,3 +6142,4 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             # Offline returns the credential ID and the pub key
             self.assertEqual(recorded_allowCredentials, response.get("credential_id"))
             self.assertIn("pubkey", response)
+            self.assertEqual(self.rpid, response.get("rpId"))
