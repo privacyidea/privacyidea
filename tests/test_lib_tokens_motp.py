@@ -12,6 +12,7 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
 PWFILE = "tests/testdata/passwords"
 
+
 class MotpTokenTestCase(MyTestCase):
 
     otppin = "topsecret"
@@ -130,7 +131,6 @@ class MotpTokenTestCase(MyTestCase):
         self.assertTrue("detail1" in token.get_init_details(),
                         token.get_init_details())
 
-
     def test_04_class_methods(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = MotpTokenClass(db_token)
@@ -147,7 +147,7 @@ class MotpTokenTestCase(MyTestCase):
         # https://github.com/neush/otpn900/blob/master/src/test_motp.c
 
         key = "0123456789abcdef"
-        epoch = [ 129612120, 129612130, 0, 4, 129612244, 129612253]
+        epoch = [129612120, 129612130, 0, 4, 129612244, 129612253]
         pins = ["6666", "6666", "1", "1", "77777777", "77777777"]
         otps = ["6ed4e4", "502a59", "bd94a4", "fb596e", "7abf75", "4d4ac4"]
 

@@ -181,8 +181,8 @@ class APIAuditTestCase(MyApiTestCase):
         delete_policy("audit01")
 
     def test_03_get_allowed_audit_realm(self):
-        # Check than an internal admin is allowed to see all realms
-        # A helpdesk user in "adminrealm" is only allowerd to see realm1A
+        # Check that an internal admin is allowed to see all realms
+        # A helpdesk user in "adminrealm" is only allowed to see realm1A
         Audit(action="enroll", success=1, realm=self.realm1a).save()
         Audit(action="enroll", success=1, realm=self.realm1a).save()
         Audit(action="enroll", success=1, realm=self.realm2b).save()
@@ -231,7 +231,6 @@ class APIAuditTestCase(MyApiTestCase):
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
-        helpdesk_authorization = None
         with self.app.test_request_context('/auth',
                                            method='POST', data={'username': 'selfservice@adminrealm',
                                                                 'password': 'test'}):
@@ -311,7 +310,6 @@ class APIAuditTestCase(MyApiTestCase):
         # set policy: normal users in realm1a are allowed to view audit log
         set_policy("audit01", scope=SCOPE.USER, action=ACTION.AUDIT, realm=self.realm1a)
 
-        user_authorization = None
         with self.app.test_request_context('/auth',
                                            method='POST', data={'username': 'selfservice@{0!s}'.format(self.realm1a),
                                                                 'password': 'test'}):

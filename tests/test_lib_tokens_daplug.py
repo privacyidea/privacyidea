@@ -3,8 +3,6 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-PWFILE = "tests/testdata/passwords"
-
 from .base import MyTestCase
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
@@ -17,6 +15,8 @@ from privacyidea.models import (Token,
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 import datetime
 from dateutil.tz import tzlocal
+
+PWFILE = "tests/testdata/passwords"
 
 
 class DaplugTokenTestCase(MyTestCase):

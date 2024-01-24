@@ -9,8 +9,7 @@ from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT)
-from privacyidea.lib.config import (set_privacyidea_config,
-                                    delete_privacyidea_config)
+from privacyidea.lib.config import (set_privacyidea_config)
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
 from privacyidea.lib.error import TokenAdminError
@@ -22,10 +21,11 @@ from dateutil.tz import tzlocal
 
 PWFILE = "tests/testdata/passwords"
 
+
 class TokenBaseTestCase(MyTestCase):
-    '''
+    """
     Test the token on the database level
-    '''
+    """
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
     resolvername3 = "reso3"
@@ -132,7 +132,7 @@ class TokenBaseTestCase(MyTestCase):
 
         # Now there should be two entries with the same transaction_id
         r = Challenge.query.filter(
-            Challenge.transaction_id==transaction_id).all()
+            Challenge.transaction_id == transaction_id).all()
         self.assertEqual(len(r), 2)
 
         # set the description

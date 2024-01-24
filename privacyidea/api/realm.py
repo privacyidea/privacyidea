@@ -59,7 +59,6 @@ from ..lib.utils import reduce_realms
 from flask import g
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.policy import CONDITION_CHECK
-from flask_babel import gettext as _
 import logging
 
 log = logging.getLogger(__name__)
@@ -181,9 +180,12 @@ def get_realms_api():
             "value": {
               "realm1_with_resolver": {
                 "default": true,
+                "id": 1,
+                "option": "",
                 "resolver": [
                   {
                     "name": "reso1_with_realm",
+                    "priority": null,
                     "type": "passwdresolver"
                   }
                 ]
@@ -195,7 +197,7 @@ def get_realms_api():
     """
     all_realms = get_realms()
     g.audit_object.log({"success": True})
-    # This endpoint is called by admins anyways
+    # This endpoint is called by admins anyway
     luser = g.logged_in_user
     policies = Match.generic(g, scope=luser.get("role", ROLE.ADMIN),
                              adminrealm=luser.get("realm"),
@@ -342,7 +344,6 @@ def get_default_realm_api():
 
 @realm_blueprint.route('/<realm>', methods=['DELETE'])
 @log_with(log)
-#@system_blueprint.route('/delRealm', methods=['POST', 'DELETE'])
 @prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
 def delete_realm_api(realm=None):
     """
@@ -383,4 +384,3 @@ def delete_realm_api(realm=None):
                         "info": realm})
 
     return send_result(ret)
-

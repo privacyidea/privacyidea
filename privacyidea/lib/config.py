@@ -524,8 +524,8 @@ def get_token_classes():
     [<class 'privacyidea.lib.tokens.totptoken.TotpTokenClass'>,
     <class 'privacyidea.lib.tokens.hotptoken.HotpTokenClass'>]
 
-    :return: array of token classes
-    :rtype: array
+    :return: list of token classes
+    :rtype: list
     """
     if "pi_token_classes" not in this.config:
         (t_classes, t_types) = get_token_class_dict()

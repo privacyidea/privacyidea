@@ -178,13 +178,13 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.setUp_user_realms()
         # setup realm2
         self.setUp_user_realm2()
-        tokenobject = init_token({"serial": "POL001", "type": "hotp",
-                                  "otpkey": "1234567890123456"})
-        r = set_realms("POL001", [self.realm1])
+        init_token({"serial": "POL001", "type": "hotp",
+                    "otpkey": "1234567890123456"})
+        set_realms("POL001", [self.realm1])
 
-        tokenobject = init_token({"serial": "POL002", "type": "hotp",
-                                  "otpkey": "1234567890123456"})
-        r = set_realms("POL002", [self.realm2])
+        init_token({"serial": "POL002", "type": "hotp",
+                    "otpkey": "1234567890123456"})
+        set_realms("POL002", [self.realm2])
 
         # Token in realm1 can not be deleted
         req.all_data = {"serial": "POL001"}
@@ -346,10 +346,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
         self.setUp_user_realms()
-        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
-                                  "otpkey": "1234567890123456"},
-                                 user=User(login="cornelius",
-                                           realm=self.realm1))
+        init_token({"serial": "NEW001", "type": "hotp",
+                    "otpkey": "1234567890123456"},
+                   user=User(login="cornelius",
+                             realm=self.realm1))
         tokenobject_list = get_tokens(user=User(login="cornelius",
                                                 realm=self.realm1))
         self.assertTrue(len(tokenobject_list) == 1)
@@ -448,22 +448,22 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
         self.setUp_user_realms()
-        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
-                                  "otpkey": "1234567890123456"},
-                                  user=User(login="cornelius",
-                                            realm=self.realm1))
+        init_token({"serial": "NEW001", "type": "hotp",
+                    "otpkey": "1234567890123456"},
+                   user=User(login="cornelius",
+                             realm=self.realm1))
         tokenobject_list = get_tokens(user=User(login="cornelius",
-                                           realm=self.realm1))
+                                                realm=self.realm1))
         self.assertTrue(len(tokenobject_list) == 1)
         self.assertTrue(check_max_token_user(req))
 
         # Now the user gets his second token
-        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
-                                  "otpkey": "1234567890123456"},
-                                  user=User(login="cornelius",
-                                            realm=self.realm1))
+        init_token({"serial": "NEW002", "type": "hotp",
+                    "otpkey": "1234567890123456"},
+                   user=User(login="cornelius",
+                             realm=self.realm1))
         tokenobject_list = get_tokens(user=User(login="cornelius",
-                                           realm=self.realm1))
+                                                realm=self.realm1))
         self.assertTrue(len(tokenobject_list) == 2)
 
         # The user has two tokens. The check that will run in this case,
@@ -562,8 +562,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         self.setUp_user_realms()
         # Add the first token into the realm
-        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
-                                  "otpkey": "1234567890123456"})
+        init_token({"serial": "NEW001", "type": "hotp",
+                    "otpkey": "1234567890123456"})
         set_realms("NEW001", [self.realm1])
         # check the realm, only one token is in it the policy condition will
         # pass
@@ -572,8 +572,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(check_max_token_realm(req))
 
         # add a second token to the realm
-        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
-                                  "otpkey": "1234567890123456"})
+        init_token({"serial": "NEW002", "type": "hotp",
+                    "otpkey": "1234567890123456"})
         set_realms("NEW002", [self.realm1])
         tokenobject_list = get_tokens(realm=self.realm1)
         self.assertTrue(len(tokenobject_list) == 2)
@@ -818,7 +818,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         policies = ["+cn", "+c", "+cs"]
         for policy in policies:
-            required = ["".join([CHARLIST_CONTENTPOLICY[str] for str in policy[1:]])]
+            required = ["".join([CHARLIST_CONTENTPOLICY[s] for s in policy[1:]])]
             charlists_dict = generate_charlists_from_pin_policy(policy)
             self.assertEqual(charlists_dict,
                              {"base": default_chars,
@@ -838,7 +838,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         policies = ["cn", "c", "sc"]
         for policy in policies:
-            required = [CHARLIST_CONTENTPOLICY[str] for str in policy[:]]
+            required = [CHARLIST_CONTENTPOLICY[s] for s in policy[:]]
             charlists_dict = generate_charlists_from_pin_policy(policy)
             self.assertEqual(charlists_dict,
                              {"base": default_chars,
@@ -966,8 +966,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pol1",
                    scope=SCOPE.USER,
                    action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(ACTION.OTPPINMAXLEN, "10",
-                                                 ACTION.OTPPINMINLEN, "4",
-                                                 ACTION.OTPPINCONTENTS, "cn"))
+                                                                       ACTION.OTPPINMINLEN, "4",
+                                                                       ACTION.OTPPINCONTENTS, "cn"))
         g.policy_object = PolicyClass()
 
         req.all_data = {
@@ -1059,8 +1059,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
                    action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(ACTION.OTPPINMAXLEN, "10",
-                                                 ACTION.OTPPINMINLEN, "4",
-                                                 ACTION.OTPPINCONTENTS, "cn"),
+                                                                       ACTION.OTPPINMINLEN, "4",
+                                                                       ACTION.OTPPINCONTENTS, "cn"),
                    realm="home")
         g.policy_object = PolicyClass()
 

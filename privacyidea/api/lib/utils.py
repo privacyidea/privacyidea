@@ -324,7 +324,7 @@ def get_priority_from_param(param):
     priority = {}
     for k, v in param.items():
         if k.startswith("priority.") and isinstance(v, int):
-            priority[k[len("priority."):]] = int(v)
+            priority[k[9:]] = int(v)
     return priority
 
 

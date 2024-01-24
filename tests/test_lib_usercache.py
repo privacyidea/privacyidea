@@ -56,10 +56,10 @@ class UserCacheTestCase(MyTestCase):
     def _create_realm(self):
 
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": self.PWFILE,
-                               "type.fileName": "string",
-                               "desc.fileName": "The name of the file"})
+                             "type": "passwdresolver",
+                             "fileName": self.PWFILE,
+                             "type.fileName": "string",
+                             "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
         added, failed = set_realm(realm=self.realm1, resolvers=[self.resolvername1])
         self.assertTrue(len(added) > 0, added)

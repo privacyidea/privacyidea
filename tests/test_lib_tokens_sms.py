@@ -10,11 +10,10 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.tokens.smstoken import SmsTokenClass, SMSACTION
-from privacyidea.models import (Token, Config, Challenge)
+from privacyidea.models import (Token, Config)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 from privacyidea.lib import _
-import datetime
 import mock
 import responses
 from testfixtures import log_capture
@@ -51,13 +50,10 @@ class SMSTokenTestCase(MyTestCase):
     }'''
     success_body = "ID 12345"
 
-
-    # add_user, get_user, reset, set_user_identifiers
-
     def test_00_create_user_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": PWFILE})
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(self.realm1,
