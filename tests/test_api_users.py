@@ -26,7 +26,7 @@ class APIUsersTestCase(MyApiTestCase):
                     "password" : "password", \
                     "phone": "phone", \
                     "mobile": "mobile"}'
-                  }
+    }
 
     def _create_user_wordy(self):
         """
@@ -92,8 +92,8 @@ class APIUsersTestCase(MyApiTestCase):
         # create resolver
         with self.app.test_request_context('/resolver/r1',
                                            data=json.dumps({"resolver": "r1",
-                                                            "type": "passwdresolver",
-                                                            "fileName": PWFILE}),
+                                                 "type": "passwdresolver",
+                                                 "fileName": PWFILE}),
                                            method='POST',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
@@ -117,7 +117,8 @@ class APIUsersTestCase(MyApiTestCase):
 
         # get user list
         with self.app.test_request_context('/user/',
-                                           query_string=urlencode({"realm": realm}),
+                                           query_string=urlencode({"realm":
+                                                                       realm}),
                                            method='GET',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
@@ -130,7 +131,8 @@ class APIUsersTestCase(MyApiTestCase):
 
         # get user list with search dict
         with self.app.test_request_context('/user/',
-                                           query_string=urlencode({"username": "cornelius"}),
+                                           query_string=urlencode({"username":
+                                                                       "cornelius"}),
                                            method='GET',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
@@ -143,7 +145,8 @@ class APIUsersTestCase(MyApiTestCase):
 
         # get user with a non existing realm
         with self.app.test_request_context('/user/',
-                                           query_string=urlencode({"realm": "non_existing"}),
+                                           query_string=urlencode({"realm":
+                                                            "non_existing"}),
                                            method='GET',
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
@@ -208,7 +211,8 @@ class APIUsersTestCase(MyApiTestCase):
                                                {"user": "wordy2",
                                                 "resolver": resolver,
                                                 "password": "newPassword"}),
-                                           headers={'Authorization': wordy_auth_token}):
+                                           headers={'Authorization':
+                                                        wordy_auth_token}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -224,6 +228,8 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("status"), res.data)
+            # In self.at_user we store the user token
+            wordy_auth_token = result.get("value").get("token")
             # check that this is a user
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
@@ -337,7 +343,8 @@ class APIUsersTestCase(MyApiTestCase):
                                                {"user": "wördy2".encode('utf-8'),
                                                 "resolver": resolver,
                                                 "password": "newPassword"}),
-                                           headers={'Authorization': wordy_auth_token}):
+                                           headers={'Authorization':
+                                                        wordy_auth_token}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -353,6 +360,8 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("status"), res.data)
+            # In self.at_user we store the user token
+            wordy_auth_token = result.get("value").get("token")
             # check that this is a user
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
@@ -367,6 +376,7 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"))
 
     def test_10_additional_attributes(self):
+        from privacyidea.lib.policy import set_policy, ACTION, SCOPE, delete_policy
         with self.app.test_request_context('/user/attribute',
                                            method='POST',
                                            data={"user": "cornelius@realm1",
@@ -473,6 +483,7 @@ class APIUsersTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
             details = res.json.get("detail")
             user_data = details.get("user")
             self.assertIn("newattribute", user_data)

@@ -65,7 +65,7 @@ class MyTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.app = create_app('testing', "", silent=True)
+        cls.app = create_app('testing', "")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
         db.create_all()

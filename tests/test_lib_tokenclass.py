@@ -37,16 +37,7 @@ class TokenBaseTestCase(MyTestCase):
     # add_user, get_user, reset, set_user_identifiers
 
     def test_00_create_user_realm(self):
-        rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": PWFILE})
-        self.assertTrue(rid > 0, rid)
-
-        (added, failed) = set_realm(self.realm1,
-                                    [self.resolvername1])
-        self.assertTrue(len(failed) == 0)
-        self.assertTrue(len(added) == 1)
-
+        self.setUp_user_realms()
         user = User(login="root",
                     realm=self.realm1,
                     resolver=self.resolvername1)
@@ -748,8 +739,7 @@ class TokenBaseTestCase(MyTestCase):
                              "type": "passwdresolver",
                              "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
-        (added, failed) = set_realm(realm,
-                                    [resolver])
+        (added, failed) = set_realm(realm, [{'name': resolver}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 

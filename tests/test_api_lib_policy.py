@@ -949,7 +949,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     @log_capture(level=logging.DEBUG)
     def test_09_pin_policies(self, capture):
-        create_realm("home", [self.resolvername1])
+        create_realm("home", [{'name': self.resolvername1}])
         g.logged_in_user = {"username": "user1",
                             "realm": "",
                             "role": "user"}
@@ -1042,7 +1042,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     @log_capture(level=logging.DEBUG)
     def test_09_pin_policies_admin(self, capture):
-        create_realm("home", [self.resolvername1])
+        create_realm("home", [{'name': self.resolvername1}])
         g.logged_in_user = {"username": "super",
                             "realm": "",
                             "role": "admin"}
@@ -1132,7 +1132,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_realm("home")
 
     def test_01b_token_specific_pin_policy(self):
-        create_realm("home", [self.resolvername1])
+        create_realm("home", [{'name': self.resolvername1}])
         g.logged_in_user = {"username": "super",
                             "realm": "",
                             "role": "admin"}
@@ -1923,7 +1923,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # We need this, to create the resolver3
         self.setUp_user_realm3()
         (added, failed) = create_realm(realm,
-                                       [self.resolvername1, self.resolvername3])
+                                       [
+                                           {'name': self.resolvername1},
+                                           {'name': self.resolvername3}])
         self.assertEqual(0, len(failed))
         self.assertEqual(2, len(added))
         # We have cornelius@myRealm in self.resolvername1
