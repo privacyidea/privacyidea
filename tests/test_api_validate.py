@@ -5980,13 +5980,15 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
               "W3Bu0HACkVidtBc7yDluCtviQWHU0SufOxPrEpQECAyYgASFYID-YUA3c7cOqFtNK6bfB\r\nL3H6BNN7ivKOfFnU5zOIA3X7Il" \
               "ggaKqMkh_8X6Vim6wj6GSq9_zeCvDUgJKeTuo-Nxk_jz0"
 
+    rpid = "netknights.it"
+
     def setUp(self):
         # Set up the WebAuthn Token from the lib test case
         super(MyApiTestCase, self).setUp()
         self.setUp_user_realms()
 
         set_policy("wan1", scope=SCOPE.ENROLL,
-                   action="webauthn_relying_party_id=netknights.it")
+                   action=("webauthn_relying_party_id={0!s}".format(self.rpid)))
         set_policy("wan2", scope=SCOPE.ENROLL,
                    action="webauthn_relying_party_name=privacyIDEA")
 
@@ -6124,7 +6126,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             self.assertEqual("Found matching challenge", detail.get("message"))
             auth_items = data.get("auth_items")
             """
-            auth_itmes looks like this:
+            auth_items looks like this:
 
             {'offline': [
                 {'user': 'cornelius',
@@ -6132,7 +6134,8 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
                  'refilltoken': '79906cc20567c6ca1e4b452500bb0662e107ce0fa14742c95b7e5c6a1417a519f829318622c1d569',
                  'repsonse': {
                      'pubkey': 'a50102032620012158203f98500ddcedc3aa16d34ae9b7c12...ea3e37193f8f3d', 
-                     'credential_id': 'RuBlEInU7ycsILST7u6AoT7rdqN...4xM2SHltwbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA'}, 
+                     'credential_id': 'RuBlEInU7ycsILST7u6AoT7rdqN...4xM2SHltwbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA',
+                     'rpId': 'netknights.it'}, 
                  'serial': 'WAN0001D434'}]}
             """
             response = auth_items.get("offline")[0].get("response")
@@ -6140,3 +6143,4 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             # Offline returns the credential ID and the pub key
             self.assertEqual(recorded_allowCredentials, response.get("credential_id"))
             self.assertIn("pubkey", response)
+            self.assertEqual(self.rpid, response.get("rpId"))
