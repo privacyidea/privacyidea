@@ -163,7 +163,7 @@ def realm_create(name, resolvers):
         click.secho(f"Realm '{name}' created. Following resolvers could not be "
                     f"assigned: {failed}", fg="yellow")
     else:
-        click.secho(f"Successfully created realm '{name} with resolver {added}.",
+        click.secho(f"Successfully created realm '{name}' with resolver: {added}.",
                     fg="green")
 
 

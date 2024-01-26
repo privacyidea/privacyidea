@@ -18,7 +18,9 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from privacyidea.cli import pi_manage
+from privacyidea.lib.resolver import save_resolver, delete_resolver
 from .base import CliTestCase
+from ..base import PWFILE
 
 
 class PIManageAdminTestCase(CliTestCase):
@@ -73,11 +75,24 @@ class PIManageRealmTestCase(CliTestCase):
         self.assertIn("clear_default", result.output, result)
 
     def test_02_pimanage_realm_crud(self):
+        save_resolver({"resolver": "resolver1",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
         runner = self.app.test_cli_runner()
-        result = runner.invoke(pi_manage, ["config", "realm", "create", "realm1", "reso1", "reso2"])
-        self.assertIn("Realm 'realm1' created. Following resolvers could not be "
-                      "assigned: ['reso1', 'reso2']", result.output, result)
+        # create a realm with an existing resolver
+        result = runner.invoke(pi_manage, ["config", "realm", "create", "realm1", "resolver1"])
+        self.assertIn("Successfully created realm 'realm1' with resolver: ['resolver1'].",
+                      result.output, result)
+        # create a realm with an existing and non-existing resolver
+        result = runner.invoke(pi_manage, ["config", "realm", "create", "realm2", "resolver1", "reso2"])
+        self.assertIn("Realm 'realm2' created. Following resolvers could not be "
+                      "assigned: ['reso2']", result.output, result)
         result = runner.invoke(pi_manage, ["config", "realm", "list"])
         self.assertIn("realm1", result.output)
+        self.assertIn("resolver1", result.output)
+        self.assertIn("realm2", result.output)
         result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm1"])
         self.assertIn("Realm 'realm1' successfully deleted.", result.output, result)
+        result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm2"])
+        self.assertIn("Realm 'realm2' successfully deleted.", result.output, result)
+        delete_resolver("resolver1")

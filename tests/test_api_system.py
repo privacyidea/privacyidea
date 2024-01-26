@@ -31,7 +31,7 @@ class APIConfigTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(res.json['result']['status'], res.json)
-            
+
     def test_00_failed_auth(self):
         with self.app.test_request_context('/system/',
                                            method='GET'):
@@ -80,7 +80,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"]["DefaultOtpLen"] == "insert",
                             result)
-            
+
         with self.app.test_request_context('/system/DefaultMaxFailCount',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
@@ -89,7 +89,7 @@ class APIConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"] == 1,result)
-        
+
         with self.app.test_request_context('/system/DefaultMaxFailCount',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -191,7 +191,7 @@ class APIConfigTestCase(MyApiTestCase):
             body = res.data
             self.assertTrue(b'name = pol1' in body, res.data)
             self.assertTrue(b"[pol1]" in body, res.data)
-            
+
     def test_07_update_and_delete_policy(self):
         with self.app.test_request_context('/policy/pol_update_del',
                                            data={'action': "enroll",
@@ -210,7 +210,7 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(result["status"] is True, result)
             self.assertTrue(result["value"]["setPolicy pol_update_del"] > 0,
                             res.data)
-        
+
         # update policy
         with self.app.test_request_context('/policy/pol_update_del',
                                            data={'action': "enroll",
@@ -224,7 +224,7 @@ class APIConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result["value"]["setPolicy pol_update_del"] > 0,
                             res.data)
-            
+
         # get policy
         with self.app.test_request_context('/policy/pol_update_del',
                                            method='GET',
@@ -240,7 +240,7 @@ class APIConfigTestCase(MyApiTestCase):
                     break
             self.assertTrue("1.1.1.1" in policy.get("client"),
                             res.data)
-            
+
         # delete policy again does not do anything
         with self.app.test_request_context('/policy/pol_update_del',
                                            method='DELETE',
@@ -272,7 +272,7 @@ class APIConfigTestCase(MyApiTestCase):
     # Resolvers
     """
     We should move this to LDAP resolver tests and mock this.
-    
+
     def test_08_pretestresolver(self):
         # This test fails, as there is no server at localhost.
         param = {'LDAPURI': 'ldap://localhost',
@@ -483,6 +483,19 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(len(result["value"].get("added")) == 1, result)
             self.assertTrue(len(result["value"].get("failed")) == 0, result)
 
+        # create a realm with multiple resolvers
+        with self.app.test_request_context('/realm/realm2',
+                                           method='POST',
+                                           json={"resolvers": [resolvername, "resolver2"]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
+            # The resolver was created
+            self.assertEqual(len(result["value"].get("added")), 1, result)
+            self.assertEqual(len(result["value"].get("failed")), 1, result)
+
         # display the realm
         with self.app.test_request_context('/realm/',
                                            method='GET',
@@ -524,6 +537,19 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result["status"] is True, result)
+            # The realm is successfully deleted: value is the id in
+            # the db, should be >= 1
+            self.assertGreaterEqual(result["value"], 1, result)
+
+        # delete the second realm
+        with self.app.test_request_context('/realm/realm2',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            # The realm gets deleted
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result["status"], result)
             # The realm is successfully deleted: value is the id in
             # the db, should be >= 1
             self.assertGreaterEqual(result["value"], 1, result)
