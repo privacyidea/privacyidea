@@ -1351,6 +1351,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param check_all_resolvers: If all the resolvers of a user should be
         checked with this policy
     :type check_all_resolvers: bool
+    :param user_case_insensitive: The username should be case-insensitive.
+    :type user_case_insensitive: bool
     :param conditions: A list of 5-tuples (section, key, comparator, value, active) of policy conditions
     :param pinode: A privacyIDEA node or a list of privacyIDEA nodes.
     :return: The database ID of the policy
@@ -1433,7 +1435,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             p1.pinode = pinode
         p1.active = active
         p1.check_all_resolvers = check_all_resolvers
-        p1.user_case_insensitive =user_case_insensitive
+        p1.user_case_insensitive = user_case_insensitive
         if conditions is not None:
             p1.set_conditions(conditions)
         save_config_timestamp()

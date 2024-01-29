@@ -124,7 +124,7 @@ class PolicyTestCase(MyTestCase):
                        action="enroll, init, disable , enable",
                        scope="admin",
                        realm="realm2",
-                       user_case_insensitive = False,
+                       user_case_insensitive=False,
                        adminuser=["Admin", "superroot"])
         self.assertTrue(p > 0)
 

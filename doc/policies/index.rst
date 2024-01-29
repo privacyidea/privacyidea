@@ -78,6 +78,9 @@ Each policy can contain the following attributes:
 
   If this field is left blank, this policy is valid for all users.
 
+  .. note:: Starting with version 3.10 you can chooses if the username and the
+    adminname has to match case-sensitive or not.
+
 .. _check_all_resolvers:
 
 **resolver**

@@ -303,6 +303,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         user: "",
         active: true,
         check_all_resolvers: false,
+        user_case_insensitive: true,
         client: "",
         time: "",
         priority: 1,
@@ -406,6 +407,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             $scope.params.adminuser = policy.adminuser;
             $scope.params.active = policy.active;
             $scope.params.check_all_resolvers = policy.check_all_resolvers;
+            $scope.params.user_case_insensitive = policy.user_case_insensitive;
             $scope.params.client = policy.client;
             $scope.params.time = policy.time;
             $scope.params.priority = policy.priority;
