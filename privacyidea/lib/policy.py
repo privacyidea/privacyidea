@@ -631,7 +631,6 @@ class PolicyClass(object):
                         # about the request value
                         new_policies.append(policy)
                     elif policy.get("user_case_insensitive"):
-                        a = policy.get(searchkey)
                         value_found, value_excluded = self._search_value(
                             [x.lower() for x in policy.get(searchkey)], searchvalue.lower())
                         if value_found and not value_excluded:
@@ -1325,7 +1324,7 @@ class PolicyClass(object):
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
                adminrealm=None, adminuser=None, priority=None, check_all_resolvers=False,
-               conditions=None, pinode=None):
+               conditions=None, pinode=None, user_case_insensitive=True):
     """
     Function to set a policy.
 
@@ -1363,6 +1362,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     if priority is not None and priority <= 0:
         raise ParameterError("Priority must be at least 1")
     check_all_resolvers = is_true(check_all_resolvers)
+    user_case_insensitive = is_true(user_case_insensitive)
     if type(action) == dict:
         action_list = []
         for k, v in action.items():
@@ -1433,6 +1433,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             p1.pinode = pinode
         p1.active = active
         p1.check_all_resolvers = check_all_resolvers
+        p1.user_case_insensitive =user_case_insensitive
         if conditions is not None:
             p1.set_conditions(conditions)
         save_config_timestamp()
@@ -1445,7 +1446,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                      resolver=resolver, adminrealm=adminrealm,
                      adminuser=adminuser, priority=priority,
                      check_all_resolvers=check_all_resolvers,
-                     conditions=conditions, pinode=pinode).save()
+                     conditions=conditions, pinode=pinode, user_case_insensitive=user_case_insensitive).save()
     return ret
 
 

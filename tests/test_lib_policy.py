@@ -120,6 +120,14 @@ class PolicyTestCase(MyTestCase):
                        adminuser=["admin", "superroot"])
         self.assertTrue(p > 0)
 
+        p = set_policy(name="pol5",
+                       action="enroll, init, disable , enable",
+                       scope="admin",
+                       realm="realm2",
+                       user_case_insensitive = False,
+                       adminuser=["Admin", "superroot"])
+        self.assertTrue(p > 0)
+
         # enable and disable policies
         policies = PolicyClass().match_policies(active=False)
         num_old = len(policies)
@@ -151,6 +159,9 @@ class PolicyTestCase(MyTestCase):
         # find policies with user admin
         policies = P.match_policies(scope="admin", adminuser="admin")
         self.assertTrue(len(policies) == 1, "{0!s}".format(len(policies)))
+        # find policies with user admin and just as case-sensitive police with Admin
+        policies = P.match_policies(scope="admin", adminuser="Admin")
+        self.assertTrue(len(policies) == 2, "{0!s}".format(len(policies)))
         # find policies with resolver2 and authorization. THe result should
         # be pol2 and pol2a
         policies = P.match_policies(resolver="resolver2", scope=SCOPE.AUTHZ)
@@ -167,6 +178,8 @@ class PolicyTestCase(MyTestCase):
         # have no destinct information about resolvers
         policies = P.match_policies(resolver="resolver1", scope=SCOPE.AUTHZ)
         self.assertTrue(len(policies) == 3, policies)
+
+        delete_policy(name="pol5")
 
     def test_04_delete_policy(self):
         delete_policy(name="pol4")
