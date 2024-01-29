@@ -593,11 +593,12 @@ class PolicyClass(object):
                 log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
                     reduced_policies, searchkey, searchvalue))
 
-        p = [("action", action), ("user", user), ("realm", realm)]
+        p = [("action", action), ("realm", realm)]
+        q = [("user", user)]
         # If this is an admin-policy, we also do check the adminrealm
         if scope == SCOPE.ADMIN:
             p.append(("adminrealm", adminrealm))
-            p.append(("adminuser", adminuser))
+            q.append(("adminuser", adminuser))
         for searchkey, searchvalue in p:
             if searchvalue is not None:
                 new_policies = []
@@ -609,6 +610,31 @@ class PolicyClass(object):
                         # We also find the policies with no distinct information
                         # about the request value
                         new_policies.append(policy)
+                    else:
+                        value_found, value_excluded = self._search_value(
+                            policy.get(searchkey), searchvalue)
+                        if value_found and not value_excluded:
+                            new_policies.append(policy)
+                reduced_policies = new_policies
+                log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
+                    reduced_policies, searchkey, searchvalue))
+
+        for searchkey, searchvalue in q:
+            if searchvalue is not None:
+                new_policies = []
+                # first we find policies, that really match!
+                # Either with the real value or with a "*"
+                # values can be excluded by a leading "!" or "-"
+                for policy in reduced_policies:
+                    if not policy.get(searchkey):
+                        # We also find the policies with no distinct information
+                        # about the request value
+                        new_policies.append(policy)
+                    elif policy.get("user_case_insensitive"):
+                        value_found, value_excluded = self._search_value(
+                            policy.get(searchkey).lower(), searchvalue.lower())
+                        if value_found and not value_excluded:
+                            new_policies.append(policy)
                     else:
                         value_found, value_excluded = self._search_value(
                             policy.get(searchkey), searchvalue)
