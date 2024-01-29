@@ -17,25 +17,13 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import unittest
-from flask.testing import CliRunner
 from privacyidea.cli import pi_manage
-from privacyidea.app import create_app
+from privacyidea.lib.resolver import save_resolver, delete_resolver
+from .base import CliTestCase
+from ..base import PWFILE
 
 
-class CLITestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.app = create_app(config_name="testing", config_file="")
-        cls.app_context = cls.app.app_context()
-        cls.app_context.push()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.app_context.pop()
-
-
-class PIManageAdminTestCase(CLITestCase):
+class PIManageAdminTestCase(CliTestCase):
     # TODO: test admin create/delete/change/list with a given test config
     def test_01_pimanage_admin_help(self):
         runner = self.app.test_cli_runner()
@@ -50,18 +38,18 @@ class PIManageAdminTestCase(CLITestCase):
                       result.output, result)
 
 
-class PIManageAuditTestCase(CLITestCase):
+class PIManageAuditTestCase(CliTestCase):
     # TODO: test audit rotate/dump with a given test config
     def test_01_pimanage_audit_help(self):
-        runner = CliRunner()
+        runner = self.app.test_cli_runner()
         result = runner.invoke(pi_manage, ["audit"])
         self.assertIn("Dump the audit log in csv format.", result.output, result)
         self.assertIn("Clean the SQL audit log.", result.output, result)
 
 
-class PIManageBackupTestCase(CLITestCase):
+class PIManageBackupTestCase(CliTestCase):
     def test_01_pimanage_backup_help(self):
-        runner = CliRunner()
+        runner = self.app.test_cli_runner()
         result = runner.invoke(pi_manage, ["backup", "create", "-h"])
         self.assertIn("-d, --directory DIRECTORY", result.output, result)
         self.assertIn("-c, --config_dir DIRECTORY", result.output, result)
@@ -80,8 +68,31 @@ class PIManageBackupTestCase(CLITestCase):
         pass
 
 
-class PIManageRealmTestCase(CLITestCase):
+class PIManageRealmTestCase(CliTestCase):
     def test_01_pimanage_realm_help(self):
-        runner = CliRunner()
+        runner = self.app.test_cli_runner()
         result = runner.invoke(pi_manage, ["config", "realm", "-h"])
         self.assertIn("clear_default", result.output, result)
+
+    def test_02_pimanage_realm_crud(self):
+        save_resolver({"resolver": "resolver1",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        runner = self.app.test_cli_runner()
+        # create a realm with an existing resolver
+        result = runner.invoke(pi_manage, ["config", "realm", "create", "realm1", "resolver1"])
+        self.assertIn("Successfully created realm 'realm1' with resolver: ['resolver1'].",
+                      result.output, result)
+        # create a realm with an existing and non-existing resolver
+        result = runner.invoke(pi_manage, ["config", "realm", "create", "realm2", "resolver1", "reso2"])
+        self.assertIn("Realm 'realm2' created. Following resolvers could not be "
+                      "assigned: ['reso2']", result.output, result)
+        result = runner.invoke(pi_manage, ["config", "realm", "list"])
+        self.assertIn("realm1", result.output)
+        self.assertIn("resolver1", result.output)
+        self.assertIn("realm2", result.output)
+        result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm1"])
+        self.assertIn("Realm 'realm1' successfully deleted.", result.output, result)
+        result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm2"])
+        self.assertIn("Realm 'realm2' successfully deleted.", result.output, result)
+        delete_resolver("resolver1")

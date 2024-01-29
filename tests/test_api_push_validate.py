@@ -375,7 +375,7 @@ class PushAPITestCase(MyApiTestCase):
         self.assertTrue(r > 0)
 
         # create realm
-        r = set_realm("ldaprealm", resolvers=["catchall"])
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
         set_default_realm("ldaprealm")
 
         # 1. set policies.

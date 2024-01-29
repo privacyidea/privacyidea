@@ -136,14 +136,15 @@ def set_realm_api(realm=None):
     resolvers = getParam(param, "resolvers", required)
     priority = get_priority_from_param(param)
 
-    if type(resolvers) == "list":
-        Resolvers = resolvers
+    if isinstance(resolvers, list):
+        resolver_list = resolvers
     else:
-        Resolvers = resolvers.split(',')
-    (added, failed) = set_realm(realm, Resolvers, priority=priority)
-    g.audit_object.log({'success': len(added) == len(Resolvers),
+        resolver_list = resolvers.split(',')
+    resolvers = [{'name': res, 'priority': priority.get(res, None)} for res in resolver_list]
+    (added, failed) = set_realm(realm, resolvers=resolvers)
+    g.audit_object.log({'success': not failed,
                         'info':  "realm: {0!r}, resolvers: {1!r}".format(realm,
-                                                               resolvers)})
+                                                                         resolvers)})
     return send_result({"added": added,
                         "failed": failed})
 
@@ -383,4 +384,3 @@ def delete_realm_api(realm=None):
                         "info": realm})
 
     return send_result(ret)
-

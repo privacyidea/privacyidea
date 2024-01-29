@@ -78,9 +78,9 @@ class RecoveryTestCase(MyTestCase):
         r = save_resolver(param)
         self. assertTrue(r > 0)
 
-        added, failed = set_realm("register", resolvers=["register"])
-        self.assertTrue(len(added )> 0)
-        self.assertEqual(len(failed), 0)
+        added, failed = set_realm("register", resolvers=[{'name': "register"}])
+        self.assertGreater(len(added), 0, added)
+        self.assertEqual(len(failed), 0, failed)
 
         g = FakeFlaskG()
         g.client_ip = "127.0.0.1"

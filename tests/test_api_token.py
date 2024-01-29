@@ -239,7 +239,9 @@ class API000TokenAdminRealmList(MyApiTestCase):
                        "type": "passwdresolver",
                        "fileName": PWFILE2})
         added, failed = set_realm(self.realm1,
-                                  [self.resolvername1, self.resolvername2])
+                                  [
+                                      {'name': self.resolvername1},
+                                      {'name': self.resolvername2}])
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 2)
 

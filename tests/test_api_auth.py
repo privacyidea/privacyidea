@@ -574,7 +574,7 @@ class AuthApiTestCase(MyApiTestCase):
                   "resolver": "ldap1",
                   "type": "ldapresolver"}
         save_resolver(params)
-        set_realm("ldap1", ["ldap1"])
+        set_realm("ldap1", [{'name': "ldap1"}])
         set_default_realm("ldap1")
 
         # Try to log in as internal admin with a failing LDAP resolver
@@ -640,17 +640,9 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual('realm1', result['value']['realm'], result)
 
     def test_07_user_not_in_userstore(self):
-        # If a user can not be found in the userstore we always get the response "Wrong Credentials"
-        # Setup realm
-        rid = save_resolver({"resolver": self.resolvername1,
-                             "type": "passwdresolver",
-                             "fileName": PWFILE})
-        self.assertTrue(rid > 0, rid)
-
-        (added, failed) = set_realm(self.realm1,
-                                    [self.resolvername1])
-        self.assertTrue(len(failed) == 0)
-        self.assertTrue(len(added) == 1)
+        # If a user can not be found in the userstore we always get the response
+        # "Wrong Credentials"
+        self.setUp_user_realms()
         set_default_realm(self.realm1)
 
         # user authenticates against userstore but user does not exist
@@ -738,7 +730,7 @@ class DuplicateUserApiTestCase(MyApiTestCase):
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(self.realm1,
-                                    [self.resolvername1])
+                                    [{'name': self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
@@ -806,7 +798,7 @@ class EventHandlerTest(MyApiTestCase):
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(self.realm1,
-                                    [self.resolvername1])
+                                    [{'name': self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 

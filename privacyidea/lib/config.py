@@ -145,7 +145,8 @@ class SharedConfigClass(object):
                     for x in realm.resolver_list:
                         realmdef["resolver"].append({"priority": x.priority,
                                                      "name": x.resolver.name,
-                                                     "type": x.resolver.rtype})
+                                                     "type": x.resolver.rtype,
+                                                     "node": x.node_uuid})
                     realmconfig[realm.name] = realmdef
                 # Load all policies
                 for pol in Policy.query.all():

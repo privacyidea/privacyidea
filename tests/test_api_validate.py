@@ -180,8 +180,10 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         # create realm
         # If the sales resolver comes first, frank is found in sales!
-        r = set_realm("ldaprealm", resolvers=["catchall", "sales"],
-                      priority={"catchall": 2, "sales": 1})
+        r = set_realm("ldaprealm",
+                      resolvers=[
+                          {'name': "catchall", 'priority': 2},
+                          {'name': "sales", 'priority': 1}])
         set_default_realm("ldaprealm")
         self.assertEqual(r, (["catchall", "sales"], []))
 
@@ -194,8 +196,10 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
 
         # Catch all has the lower priority and contains all users
         # ldap2 only contains sales
-        r = set_realm("ldaprealm", resolvers=["catchall", "sales"],
-                      priority={"catchall": 1, "sales": 2})
+        r = set_realm("ldaprealm",
+                      resolvers=[
+                          {'name': "catchall", 'priority': 1},
+                          {'name': "sales", 'priority': 2}])
         self.assertEqual(r, (["catchall", "sales"], []))
 
         # Both users are found in the resolver "catchall
@@ -2752,7 +2756,7 @@ class ValidateAPITestCase(MyApiTestCase):
                              'CACHE_TIMEOUT': 0
                              })
         self.assertTrue(rid)
-        added, failed = set_realm("tr", ["myLDAPres"])
+        added, failed = set_realm("tr", [{'name': "myLDAPres"}])
         self.assertEqual(added, ["myLDAPres"])
         self.assertEqual(failed, [])
 
@@ -5544,7 +5548,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         logging.getLogger('privacyidea').setLevel(logging.DEBUG)
         # create realm
-        r = set_realm("ldaprealm", resolvers=["catchall"])
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
         set_default_realm("ldaprealm")
 
         # 1. set policies.
@@ -5630,7 +5634,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # Init LDAP
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         # create realm
-        r = set_realm("ldaprealm", resolvers=["catchall"])
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
         set_default_realm("ldaprealm")
 
         # 1. set policies.
@@ -5717,7 +5721,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # mock email sending
         smtpmock.setdata(response={"alice@example.com": (200, 'OK')})
         # create realm
-        r = set_realm("ldaprealm", resolvers=["catchall"])
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
         set_default_realm("ldaprealm")
 
         # 1. set policies.
@@ -5805,7 +5809,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         setup_sms_gateway()
 
         # create realm
-        r = set_realm("ldaprealm", resolvers=["catchall"])
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
         set_default_realm("ldaprealm")
 
         # 1. set policies.

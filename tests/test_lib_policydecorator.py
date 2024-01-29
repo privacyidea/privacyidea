@@ -115,7 +115,7 @@ class LibPolicyTestCase(MyTestCase):
                              "fileName": PWFILE2})
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm("r1", ["myreso"])
+        (added, failed) = set_realm("r1", [{'name': "myreso"}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
@@ -501,7 +501,10 @@ class LibPolicyTestCase(MyTestCase):
                            "fileName": "tests/testdata/pw-2nd-resolver"})
         # user "userresolver2" is in resolver reso002
         self.assertTrue(r > 0)
-        (added, failed) = set_realm("myrealm", ["reso001", "reso002"])
+        (added, failed) = set_realm("myrealm",
+                                    [
+                                        {'name': "reso001"},
+                                        {'name': "reso002"}])
         self.assertEqual(len(added), 2)
         self.assertEqual(len(failed), 0)
         my_user_1 = User("cornelius", realm="myrealm")
@@ -552,7 +555,7 @@ class LibPolicyTestCase(MyTestCase):
         r = save_resolver({"resolver": resolver,
                            "type": "passwdresolver",
                            "fileName": "tests/testdata/passwords"})
-        (added, failed) = set_realm(realm, [resolver])
+        set_realm(realm, [{'name': resolver}])
 
         def fake_check_user_pass(user, passw, options=None):
             return True, {"message": "Fake Authentication"}

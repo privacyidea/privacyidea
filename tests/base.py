@@ -89,8 +89,7 @@ class MyTestCase(unittest.TestCase):
                              "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(self.realm1,
-                                    [self.resolvername1])
+        (added, failed) = set_realm(self.realm1, [{'name': self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
@@ -116,7 +115,7 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(self.realm2,
-                                    [self.resolvername1])
+                                    [{'name': self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
@@ -142,7 +141,7 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(self.realm3,
-                                    [self.resolvername3])
+                                    [{'name': self.resolvername3}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
@@ -180,7 +179,7 @@ class MyTestCase(unittest.TestCase):
                       }
         r = save_resolver(parameters)
         self.assertTrue(r)
-        success, fail = set_realm(realm, ["sqlite_resolver"])
+        success, fail = set_realm(realm, [{'name': "sqlite_resolver"}])
         self.assertEqual(len(success), 1)
         self.assertEqual(len(fail), 0)
 
