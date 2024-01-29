@@ -179,7 +179,16 @@ def delete_realm(realmname):
 @log_with(log)
 def set_realm(realm, resolvers=None):
     """
-    It takes a list of resolvers and adds these to the realm.
+    It takes a list of dictionaries describing the resolvers.
+    The list looks like this:
+
+      [ {'name': <resolvername1>,
+         'node': <uuid of the node/optional>,
+         'priority': <priority of the resolver/optional> },
+        {'name': <resolvername2>
+        }
+      ]
+
     If the realm does not exist, it is created.
     If the realm exists, the old resolvers are removed and the new ones
     are added.
@@ -187,7 +196,7 @@ def set_realm(realm, resolvers=None):
     :param realm: name of an existing or a new realm
     :type realm: str
     :param resolvers: list with names and options of resolvers
-    :type resolvers: list
+    :type resolvers: list of dicts
     :return: tuple of lists of added resolvers and resolvers, that could
              not be added
     :rtype: tuple
