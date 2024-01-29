@@ -631,8 +631,9 @@ class PolicyClass(object):
                         # about the request value
                         new_policies.append(policy)
                     elif policy.get("user_case_insensitive"):
+                        a = policy.get(searchkey)
                         value_found, value_excluded = self._search_value(
-                            policy.get(searchkey).lower(), searchvalue.lower())
+                            [x.lower() for x in policy.get(searchkey)], searchvalue.lower())
                         if value_found and not value_excluded:
                             new_policies.append(policy)
                     else:
