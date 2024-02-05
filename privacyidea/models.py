@@ -1515,7 +1515,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     active = db.Column(db.Boolean, default=True)
     check_all_resolvers = db.Column(db.Boolean, default=False)
     name = db.Column(db.Unicode(64), unique=True, nullable=False)
-    user_case_insensitive = db.Column(db.Boolean, default=True)
+    user_case_insensitive = db.Column(db.Boolean, default=False)
     scope = db.Column(db.Unicode(32), nullable=False)
     action = db.Column(db.Unicode(2000), default="")
     realm = db.Column(db.Unicode(256), default="")
@@ -1542,7 +1542,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="", adminuser="",
                  resolver="", user="", client="", time="", pinode="", priority=1,
-                 check_all_resolvers=False, conditions=None, user_case_insensitive=True):
+                 check_all_resolvers=False, conditions=None, user_case_insensitive=False):
         if isinstance(active, str):
             active = is_true(active.lower())
         self.name = name

@@ -1324,7 +1324,7 @@ class PolicyClass(object):
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
                adminrealm=None, adminuser=None, priority=None, check_all_resolvers=False,
-               conditions=None, pinode=None, user_case_insensitive=True):
+               conditions=None, pinode=None, user_case_insensitive=False):
     """
     Function to set a policy.
 

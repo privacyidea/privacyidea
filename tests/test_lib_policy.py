@@ -124,7 +124,7 @@ class PolicyTestCase(MyTestCase):
                        action="enroll, init, disable , enable",
                        scope="admin",
                        realm="realm2",
-                       user_case_insensitive=False,
+                       user_case_insensitive=True,
                        adminuser=["Admin", "superroot"])
         self.assertTrue(p > 0)
 
@@ -156,12 +156,12 @@ class PolicyTestCase(MyTestCase):
         # find policies authorization and realm2
         policies = P.match_policies(action="tokentype", scope=SCOPE.AUTHZ)
         self.assertTrue(len(policies) == 2, policies)
-        # find policies with user admin
+        # find policies with user admin and just as case-insensitive police with Admin
         policies = P.match_policies(scope="admin", adminuser="admin")
-        self.assertTrue(len(policies) == 1, "{0!s}".format(len(policies)))
-        # find policies with user admin and just as case-sensitive police with Admin
-        policies = P.match_policies(scope="admin", adminuser="Admin")
         self.assertTrue(len(policies) == 2, "{0!s}".format(len(policies)))
+        # find policies with user Admin and no case-sensitive police with admin
+        policies = P.match_policies(scope="admin", adminuser="Admin")
+        self.assertTrue(len(policies) == 1, "{0!s}".format(len(policies)))
         # find policies with resolver2 and authorization. THe result should
         # be pol2 and pol2a
         policies = P.match_policies(resolver="resolver2", scope=SCOPE.AUTHZ)

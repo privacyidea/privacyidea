@@ -1,4 +1,4 @@
-"""empty message
+"""v3.10: Add case-insensitive usernames in policies
 
 Revision ID: db6b2ef8100f
 Revises: d0e7144947d0
@@ -21,11 +21,11 @@ def upgrade():
         # ### end Alembic commands ###
     except (OperationalError, ProgrammingError) as exx:
         if "already exists" in str(exx.orig).lower():
-            print("Ok, Table 'nodename' already exists.")
+            print("Ok, Table 'user_case_insensitive' already exists.")
         else:
             print(exx)
     except Exception as exx:
-        print("Could not add table 'nodename' to database")
+        print("Could not add table 'user_case_insensitive' to database")
         print(exx)
 
 
