@@ -52,6 +52,9 @@ Each policy can contain the following attributes:
      On a library level or during migration scripts policies with
      other characters could be created.
 
+**description**
+    Use this to describe your policy in more detail
+
 **scope**
 
   The scope of the policy as described above.

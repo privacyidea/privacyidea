@@ -1490,6 +1490,56 @@ def cleanup_challenges():
     c_now = datetime.utcnow()
     Challenge.query.filter(Challenge.expiration < c_now).delete()
     db.session.commit()
+#-----------------------------------------------------------------------------
+#
+#DESCRIPTION
+#
+
+
+class Desciption(db.Model):
+    """
+
+    """
+    __tablename__ = 'desciption'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    objecttyp = db.Column(db.Integer)
+    id =db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    user = db.Column(db.Unicode(64), unique=True, nullable=False)
+    text = db.Column(db.Unicode(1024), nullable=False)
+
+    def __init__(self, objecttyp="", id="", user="", text=""):
+        self.objecttyp = objecttyp
+        self.id = id
+        self.timestamp = datetime
+        self.user = user
+        self.text = text
+
+        def get(self, key=None):
+            """
+            Either returns the complete policy entry or a single value
+            :param key: return the value for this key
+            :type key: string
+            :return: complete dict or single value
+            :rytpe: dict or value
+            """
+            d = {"name": self.name,
+                 }
+            action_list = [x.strip().split("=", 1) for x in (self.action or "").split(
+                ",")]
+            action_dict = {}
+            for a in action_list:
+                if len(a) > 1:
+                    action_dict[a[0]] = a[1]
+                else:
+                    action_dict[a[0]] = True
+            d["action"] = action_dict
+            if key:
+                ret = d.get(key)
+            else:
+                ret = d
+            return ret
+
 
 # -----------------------------------------------------------------------------
 #
