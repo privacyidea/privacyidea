@@ -21,11 +21,11 @@ def upgrade():
         # ### end Alembic commands ###
     except (OperationalError, ProgrammingError) as exx:
         if "already exists" in str(exx.orig).lower():
-            print("Ok, Table 'user_case_insensitive' already exists.")
+            print("Ok, column 'user_case_insensitive' already exists.")
         else:
             print(exx)
     except Exception as exx:
-        print("Could not add table 'user_case_insensitive' to database")
+        print("Could not add column 'user_case_insensitive' to database")
         print(exx)
 
 
