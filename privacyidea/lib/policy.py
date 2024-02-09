@@ -630,14 +630,13 @@ class PolicyClass(object):
                         # We also find the policies with no distinct information
                         # about the request value
                         new_policies.append(policy)
-                    elif policy.get("user_case_insensitive"):
-                        value_found, value_excluded = self._search_value(
-                            [x.lower() for x in policy.get(searchkey)], searchvalue.lower())
-                        if value_found and not value_excluded:
-                            new_policies.append(policy)
                     else:
-                        value_found, value_excluded = self._search_value(
-                            policy.get(searchkey), searchvalue)
+                        searchkeys = policy.get(searchkey)
+                        current_searchvalue = searchvalue
+                        if policy.get("user_case_insensitive"):
+                            current_searchvalue = current_searchvalue.lower()
+                            searchkeys = [x.lower() for x in searchkeys]
+                        value_found, value_excluded = self._search_value(searchkeys, current_searchvalue)
                         if value_found and not value_excluded:
                             new_policies.append(policy)
                 reduced_policies = new_policies
