@@ -21,6 +21,11 @@ Usually it is set to::
 Advanced Logging
 ~~~~~~~~~~~~~~~~
 
+In the advanced logging you can use the Python logging configuration to
+define in a fine graded way which information should be logged where.
+For more details see `python logging config <https://docs.python.org/3/library/logging.config.html#module-logging.config>`_.
+
+
 You can also define a more detailed logging by specifying a
 log configuration file. By default the file is ``/etc/privacyidea/logging.cfg``.
 
