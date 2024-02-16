@@ -48,7 +48,7 @@ class MachineApplication(MachineApplicationBase):
 
     The server stores the information, which OTP values were issued.
 
-    options options:
+    options:
       * user: a username.
       * count: is the number of OTP values returned
 
@@ -88,7 +88,7 @@ class MachineApplication(MachineApplicationBase):
             otps[key] = pbkdf2_sha512.using(
                 rounds=rounds, salt_size=10).hash(otppw)
         # We do not disable the token, so if all offline OTP values
-        # are used, the token can be used the authenticate online again.
+        # are used, the token can be used to authenticate online again.
         # token_obj.enable(False)
         # increase the counter by the consumed values and
         # also store it in tokeninfo.
@@ -170,8 +170,8 @@ class MachineApplication(MachineApplicationBase):
             # token specific data
             if token_type.lower() == "webauthn":
                 # return the pubkey and the credential_id (contained in the otpkey)
-                ret["response"] = {"pubkey": token_obj.get_tokeninfo("pubKey"),
-                                   "credential_id": token_obj.decrypt_otpkey(),
+                ret["response"] = {"pubKey": token_obj.get_tokeninfo("pubKey"),
+                                   "credentialId": token_obj.decrypt_otpkey(),
                                    "rpId": token_obj.get_tokeninfo("relying_party_id")}
 
             elif token_type.lower() == "hotp":
