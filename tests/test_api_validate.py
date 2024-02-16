@@ -6137,9 +6137,9 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
                  'username': 'cornelius',
                  'refilltoken': '79906cc20567c6ca1e4b452500bb0662e107ce0fa14742c95b7e5c6a1417a519f829318622c1d569',
                  'repsonse': {
-                     'pubKey': 'a50102032620012158203f98500ddcedc3aa16d34ae9b7c12...ea3e37193f8f3d', 
+                     'pubKey': 'a50102032620012158203f98500ddcedc3aa16d34ae9b7c12...ea3e37193f8f3d',
                      'credentialId': 'RuBlEInU7ycsILST7u6AoT7rdqN...4xM2SHltwbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA',
-                     'rpId': 'netknights.it'}, 
+                     'rpId': 'netknights.it'},
                  'serial': 'WAN0001D434'}]}
             """
             response = auth_items.get("offline")[0].get("response")
