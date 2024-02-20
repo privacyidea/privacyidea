@@ -6018,10 +6018,10 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"))
             detail = data.get("detail")
             self.assertEqual(self.serial, detail.get("serial"))
-            webAuthnRequest = data.get("detail").get("webAuthnRegisterRequest")
-            self.assertEqual("Please confirm with your WebAuthn token", webAuthnRequest.get("message"))
-            transaction_id = webAuthnRequest.get("transaction_id")
-            self.assertEqual(webAuthnRequest.get("attestation"), "direct")
+            web_authn_request = data.get("detail").get("webAuthnRegisterRequest")
+            self.assertEqual("Please confirm with your WebAuthn token", web_authn_request.get("message"))
+            transaction_id = web_authn_request.get("transaction_id")
+            self.assertEqual(web_authn_request.get("attestation"), "direct")
 
         # We need to change the nonce in the challenge database to use our recorded WebAuthN enrollment data
         recorded_nonce = "0fnxHW5R2maOrVruLJGrEGFpFmJHR4jPEmedJ9Pt3hk"
@@ -6062,7 +6062,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
 
     def test_02_autenticate(self):
 
-        recorded_allowCredentials = "RuBlEInU7ycsILST7u6AoT7rdqNYjSf4jlz38x10344xM2SHl" \
+        recorded_allow_credentials = "RuBlEInU7ycsILST7u6AoT7rdqNYjSf4jlz38x10344xM2SHl" \
                                     "twbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA"
         recorded_challenge = "zphA4XzB8ZHkiGnsQAcqDRn8j8e4h9HcSAQ2mlt0o94"
 
@@ -6084,11 +6084,11 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
                              data.get("detail").get("message"))
             detail = data.get("detail")
             self.assertEqual("webauthn", detail.get("client_mode"))
-            webAuthnSignRequest = detail.get("attributes").get("webAuthnSignRequest")
-            self.assertEqual("netknights.it", webAuthnSignRequest.get("rpId"))
-            allowCredentials = webAuthnSignRequest.get("allowCredentials")
-            self.assertEqual(1, len(allowCredentials))
-            self.assertEqual(recorded_allowCredentials, allowCredentials[0].get("id"))
+            web_authn_sign_request = detail.get("attributes").get("webAuthnSignRequest")
+            self.assertEqual("netknights.it", web_authn_sign_request.get("rpId"))
+            allow_credentials = web_authn_sign_request.get("allowCredentials")
+            self.assertEqual(1, len(allow_credentials))
+            self.assertEqual(recorded_allow_credentials, allow_credentials[0].get("id"))
             transaction_id = detail.get("transaction_id")
 
             # Update the recorded challenge in the DB
@@ -6145,6 +6145,6 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             response = auth_items.get("offline")[0].get("response")
             _refill_token = auth_items.get("offline")[0].get("refilltoken")
             # Offline returns the credential ID and the pub key
-            self.assertEqual(recorded_allowCredentials, response.get("credentialId"))
+            self.assertEqual(recorded_allow_credentials, response.get("credentialId"))
             self.assertIn("pubKey", response)
             self.assertEqual(self.rpid, response.get("rpId"))
