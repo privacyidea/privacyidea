@@ -126,7 +126,7 @@ pyjwt==2.8.0
     # via privacyIDEA (setup.py)
 pymysql==1.1.0
     # via privacyIDEA (setup.py)
-pyopenssl==23.3.0
+pyopenssl==24.0.0
     # via privacyIDEA (setup.py)
 pyrad==2.4
     # via privacyIDEA (setup.py)
