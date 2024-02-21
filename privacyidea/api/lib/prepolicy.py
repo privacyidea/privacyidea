@@ -67,7 +67,6 @@ import logging
 from dataclasses import replace
 from typing import Union
 
-from OpenSSL import crypto
 from privacyidea.lib import _
 from privacyidea.lib.container import find_container_by_serial
 from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError, ParameterError
@@ -115,7 +114,6 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_PUBLIC_KEY_CREDENTIAL_
                                                   is_webauthn_assertion_response)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
-from privacyidea.lib.tokens.u2f import x509name_to_string
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 
@@ -2284,9 +2282,10 @@ def webauthntoken_allowed(request, action):
         ) = WebAuthnRegistrationResponse.verify_attestation_statement(fmt=att_obj.get('fmt'),
                                                                       att_stmt=att_obj.get('attStmt'),
                                                                       auth_data=att_obj.get('authData'))
-
-        attestation_cert = crypto.X509.from_cryptography(trust_path[0]) if trust_path else None
-        allowed_certs_pols = Match \
+        # TODO: trust_path can be a certificate chain. All certificates in the
+        #  path should be considered
+        attestation_cert = trust_path[0] if trust_path else None
+        allowed_certs_pols = Match\
             .user(g,
                   scope=SCOPE.ENROLL,
                   action=FIDO2PolicyAction.REQ,
@@ -2346,7 +2345,7 @@ def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
     from the token info, containing just the issuer, serial and subject.
 
     :param attestation_cert: The attestation certificate.
-    :type attestation_cert: OpenSSL.crypto.X509 or None
+    :type attestation_cert: cryptography.x509.Certificate or None
     :param allowed_certs_pols: The policies restricting enrollment, or authorization.
     :type allowed_certs_pols: dict or None
     :return: Whether the token should be allowed to complete enrollment, or authorization, based on its attestation.
@@ -2354,9 +2353,9 @@ def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
     """
 
     cert_info = {
-        "attestation_issuer": x509name_to_string(attestation_cert.get_issuer()),
-        "attestation_serial": "{!s}".format(attestation_cert.get_serial_number()),
-        "attestation_subject": x509name_to_string(attestation_cert.get_subject())
+        "attestation_issuer": attestation_cert.issuer.rfc4514_string(),
+        "attestation_serial": f"{attestation_cert.serial_number}",
+        "attestation_subject": attestation_cert.subject.rfc4514_string()
     } \
         if attestation_cert \
         else None
