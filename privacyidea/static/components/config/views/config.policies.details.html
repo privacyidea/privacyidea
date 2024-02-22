@@ -221,6 +221,14 @@
                            placeholder="userA, userB"/>
                 </div>
             </div>
+            <div class="col-sm-6">
+                <input name="policydescription" id="policydescription" class="form-control"
+                   ng-model="policydescription" placeholder="please read a description for your policy"
+                   ng-pattern="inputNamePatterns.simple.pattern"
+                   title="{{ inputNamePatterns.simple.title | translate }}"
+                   autofocus required/>
+                </p>
+            </div>
             <hr>
 
             <div class="form-group">

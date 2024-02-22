@@ -7,6 +7,7 @@ The lib.policy.py only depends on the database model.
 import dateutil
 import mock
 
+from privacyidea.models import Description
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 
 from privacyidea.lib.auth import ROLE
@@ -63,7 +64,8 @@ class PolicyTestCase(MyTestCase):
 
         p = set_policy(name="pol4",
                        action="enroll, init, disable , enable",
-                       scope="admin")
+                       scope="admin",
+                       description="test")
         self.assertTrue(p > 0)
 
         P = PolicyClass()
@@ -82,6 +84,9 @@ class PolicyTestCase(MyTestCase):
                                     action="disable")
         self.assertTrue(len(policies) == 1, len(policies))
         self.assertTrue(policies[0].get("name") == "pol4")
+
+        policies = P.match_policies(name="pol4")
+        self.assertEqual(policies[0].get('description'), 'test')
 
     def test_02_update_policies(self):
         p = set_policy(name="pol1",
@@ -117,7 +122,8 @@ class PolicyTestCase(MyTestCase):
                        action="enroll, init, disable , enable",
                        scope="admin",
                        realm="realm2",
-                       adminuser=["admin", "superroot"])
+                       adminuser=["admin", "superroot"],
+                       description="test3")
         self.assertTrue(p > 0)
 
         # enable and disable policies
@@ -168,11 +174,18 @@ class PolicyTestCase(MyTestCase):
         policies = P.match_policies(resolver="resolver1", scope=SCOPE.AUTHZ)
         self.assertTrue(len(policies) == 3, policies)
 
+        policies = P.match_policies(name="pol4")
+        self.assertEqual(policies[0].get('description'), 'test3')
+
     def test_04_delete_policy(self):
+        d1 = Description.query.filter_by().all()
+        self.assertEqual(len(d1), 1)
         delete_policy(name="pol4")
         P = PolicyClass()
         pol4 = P.match_policies(name="pol4")
         self.assertTrue(pol4 == [], pol4)
+        d1 = Description.query.filter_by().all()
+        self.assertEqual(len(d1), 0)
 
     def test_05_export_policies(self):
         P = PolicyClass()

@@ -1496,49 +1496,29 @@ def cleanup_challenges():
 #
 
 
-class Desciption(db.Model):
+class Description(TimestampMethodsMixin, db.Model):
     """
 
     """
-    __tablename__ = 'desciption'
+    __tablename__ = 'description'
+    id = db.Column(db.Integer, Sequence("description_seq"), primary_key=True)
+    object_id = db.Column(db.Integer, db.ForeignKey('policy.id'), nullable=False)
+    name = db.Column(db.Unicode(64), unique=True, nullable=False)
+    object_type = db.Column(db.Unicode(64), unique=False, nullable=False)
+    #timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    #user = db.Column(db.Unicode(64), unique=False, nullable=False)
+    description = db.Column(db.UnicodeText())
+
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
-    objecttyp = db.Column(db.Integer)
-    id =db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    user = db.Column(db.Unicode(64), unique=True, nullable=False)
-    text = db.Column(db.Unicode(1024), nullable=False)
 
-    def __init__(self, objecttyp="", id="", user="", text=""):
-        self.objecttyp = objecttyp
-        self.id = id
-        self.timestamp = datetime
-        self.user = user
-        self.text = text
+    def __init__(self, object_id, name="",  object_type="", description=""):
 
-        def get(self, key=None):
-            """
-            Either returns the complete policy entry or a single value
-            :param key: return the value for this key
-            :type key: string
-            :return: complete dict or single value
-            :rytpe: dict or value
-            """
-            d = {"name": self.name,
-                 }
-            action_list = [x.strip().split("=", 1) for x in (self.action or "").split(
-                ",")]
-            action_dict = {}
-            for a in action_list:
-                if len(a) > 1:
-                    action_dict[a[0]] = a[1]
-                else:
-                    action_dict[a[0]] = True
-            d["action"] = action_dict
-            if key:
-                ret = d.get(key)
-            else:
-                ret = d
-            return ret
+        self.name = name
+        self.object_type = object_type
+        self.object_id = object_id
+        #self.timestamp = datetime
+        #self.user = ''
+        self.description = description
 
 
 # -----------------------------------------------------------------------------
@@ -1587,6 +1567,7 @@ class Policy(TimestampMethodsMixin, db.Model):
                                  # Likewise, whenever a Policy object is deleted, its conditions are also
                                  # deleted (delete). Conditions without a policy are deleted (delete-orphan).
                                  cascade="save-update, merge, delete, delete-orphan")
+    description = db.relationship('Description', backref='policy', cascade="save-update, merge, delete, delete-orphan")
 
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="", adminuser="",
@@ -1631,6 +1612,16 @@ class Policy(TimestampMethodsMixin, db.Model):
         """
         return [condition.as_tuple() for condition in self.conditions]
 
+    def get_policy_description(self):
+        """
+
+        """
+        if self.description:
+            ret = self.description[0].description
+        else:
+            ret = None
+        return ret
+
     @staticmethod
     def _split_string(value):
         """
@@ -1668,7 +1659,8 @@ class Policy(TimestampMethodsMixin, db.Model):
              "client": self._split_string(self.client),
              "time": self.time,
              "conditions": self.get_conditions_tuples(),
-             "priority": self.priority}
+             "priority": self.priority,
+             "description": self.get_policy_description()}
         action_list = [x.strip().split("=", 1) for x in (self.action or "").split(
             ",")]
         action_dict = {}
