@@ -1327,6 +1327,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :type check_all_resolvers: bool
     :param conditions: A list of 5-tuples (section, key, comparator, value, active) of policy conditions
     :param pinode: A privacyIDEA node or a list of privacyIDEA nodes.
+    :param description: A description for the policy
+    :type description: str
     :return: The database ID of the policy
     :rtype: int
     """
@@ -1420,13 +1422,13 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                      check_all_resolvers=check_all_resolvers,
                      conditions=conditions, pinode=pinode).save()
     if description:
-        d1 = Description.query.filter_by(object_id=ret,  object_type="policy").first()
+        d1 = Description.query.filter_by(object_id=ret, object_type="policy").first()
         if d1:
             d1.description = description
             save_config_timestamp()
             db.session.commit()
         else:
-            a = Description(object_id=ret, name=name,  object_type="policy", description=description).save()
+            a = Description(object_id=ret, name=name, object_type="policy", description=description).save()
     return ret
 
 

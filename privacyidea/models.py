@@ -1498,26 +1498,24 @@ def cleanup_challenges():
 
 class Description(TimestampMethodsMixin, db.Model):
     """
-
+    The description table is used to store the description of policy
     """
     __tablename__ = 'description'
     id = db.Column(db.Integer, Sequence("description_seq"), primary_key=True)
     object_id = db.Column(db.Integer, db.ForeignKey('policy.id'), nullable=False)
     name = db.Column(db.Unicode(64), unique=True, nullable=False)
     object_type = db.Column(db.Unicode(64), unique=False, nullable=False)
-    #timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    #user = db.Column(db.Unicode(64), unique=False, nullable=False)
+    last_update = db.Column(db.DateTime, default=datetime.utcnow)
     description = db.Column(db.UnicodeText())
 
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
 
-    def __init__(self, object_id, name="",  object_type="", description=""):
+    def __init__(self, object_id, name="", object_type="", description=""):
 
         self.name = name
         self.object_type = object_type
         self.object_id = object_id
-        #self.timestamp = datetime
-        #self.user = ''
+        self.last_update = datetime.now()
         self.description = description
 
 
