@@ -108,7 +108,7 @@ After creating a local administrative user with::
 
 the development server can be started with::
 
-    pi-manage runserver
+    pi-manage run
 
 .. warning::
     The development server should not be used for a productive environment.
