@@ -50,7 +50,7 @@ from privacyidea.lib.crypto import (encrypt,
                                     hash,
                                     SecretObj,
                                     get_rand_digit_str)
-from sqlalchemy import and_
+from sqlalchemy import and_, desc
 from sqlalchemy.schema import Sequence
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.exc import IntegrityError
@@ -254,7 +254,7 @@ class Token(MethodsMixin, db.Model):
     @property
     def all_owners(self):
         return self.owners.all()
-            
+
     @log_with(log)
     def delete(self):
         # some DBs (e.g. DB2) run in deadlock, if the TokenRealm entry
@@ -1045,6 +1045,15 @@ class CAConnectorConfig(db.Model):
         return ret
 
 
+class NodeName(db.Model, TimestampMethodsMixin):
+    __tablename__ = "nodename"
+    # TODO: we can use the UUID type here when switching to SQLAlchemy 2.0
+    #  <https://docs.sqlalchemy.org/en/20/core/custom_types.html#backend-agnostic-guid-type>
+    id = db.Column(db.Unicode(36), primary_key=True)
+    name = db.Column(db.Unicode(100), index=True)
+    lastseen = db.Column(db.DateTime(False), index=True, default=datetime.now(tz=tzutc()))
+
+
 class Resolver(TimestampMethodsMixin, db.Model):
     """
     The table "resolver" contains the names and types of the defined User
@@ -1156,21 +1165,28 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
     # If there are several resolvers in a realm, the priority is used the
     # find a user first in a resolver with a higher priority (i.e. lower number)
     priority = db.Column(db.Integer)
+    # TODO: with SQLAlchemy 2.0 db.UUID will be generally available
+    node_uuid = db.Column(db.Unicode(36), db.ForeignKey("nodename.id"), default='')
     resolver = db.relationship(Resolver,
                                lazy="joined",
                                back_populates="realm_list")
     realm = db.relationship(Realm,
                             lazy="joined",
                             back_populates="resolver_list")
+    node = db.relationship(NodeName,
+                           lazy="joined")
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'realm_id',
+                                          'node_uuid',
                                           name='rrix_2'),
                       {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, resolver_id=None, realm_id=None,
                  resolver_name=None,
                  realm_name=None,
-                 priority=None):
+                 priority=None,
+                 node_uuid=None,
+                 node_name=None):
         self.resolver_id = None
         self.realm_id = None
         if priority:
@@ -1187,6 +1203,13 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
             self.realm_id = Realm.query\
                                  .filter_by(name=realm_name)\
                                  .first().id
+        if node_uuid:
+            self.node_uuid = node_uuid
+        elif node_name:
+            # We need to get the last seen entry with the corresponding node name
+            self.node_uuid = NodeName.query.filter_by(name=node_name)\
+                .order_by(desc(NodeName.lastseen))\
+                .first().id
 
 
 class TokenOwner(MethodsMixin, db.Model):
@@ -1453,7 +1476,7 @@ class Challenge(MethodsMixin, db.Model):
     def get(self, timestamp=False):
         """
         return a dictionary of all vars in the challenge class
-        
+
         :param timestamp: if true, the timestamp will given in a readable
                           format
                           2014-11-29 21:56:43.057293
@@ -1545,6 +1568,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     active = db.Column(db.Boolean, default=True)
     check_all_resolvers = db.Column(db.Boolean, default=False)
     name = db.Column(db.Unicode(64), unique=True, nullable=False)
+    user_case_insensitive = db.Column(db.Boolean, default=False)
     scope = db.Column(db.Unicode(32), nullable=False)
     action = db.Column(db.Unicode(2000), default="")
     realm = db.Column(db.Unicode(256), default="")
@@ -1572,10 +1596,11 @@ class Policy(TimestampMethodsMixin, db.Model):
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="", adminuser="",
                  resolver="", user="", client="", time="", pinode="", priority=1,
-                 check_all_resolvers=False, conditions=None):
+                 check_all_resolvers=False, conditions=None, user_case_insensitive=False):
         if isinstance(active, str):
             active = is_true(active.lower())
         self.name = name
+        self.user_case_insensitive = user_case_insensitive
         self.action = action
         self.scope = scope
         self.active = active
@@ -1647,6 +1672,7 @@ class Policy(TimestampMethodsMixin, db.Model):
         :rytpe: dict or value
         """
         d = {"name": self.name,
+             "user_case_insensitive": self.user_case_insensitive,
              "active": self.active,
              "scope": self.scope,
              "realm": self._split_string(self.realm),
@@ -1764,9 +1790,9 @@ class MachineUser(db.Model):
     '''
     The MachineUser maps a user to a client and
     an application on this client
-    
+
     The tuple of (machine, USER, application) is unique.
-    
+
     This can be an n:m mapping.
     '''
     __tablename__ = "machineuser"
@@ -3313,12 +3339,3 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
         else:
             ret = self.id
         return ret
-
-
-class NodeName(db.Model, TimestampMethodsMixin):
-    __tablename__ = "nodename"
-    # TODO: we can use the UUID type here when switching to SQLAlchemy 2.0
-    #  <https://docs.sqlalchemy.org/en/20/core/custom_types.html#backend-agnostic-guid-type>
-    id = db.Column(db.Unicode(36), primary_key=True)
-    name = db.Column(db.Unicode(100), index=True)
-    lastseen = db.Column(db.DateTime(False), index=True, default=datetime.now(tz=tzutc()))

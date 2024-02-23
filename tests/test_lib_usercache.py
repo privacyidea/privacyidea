@@ -61,7 +61,8 @@ class UserCacheTestCase(MyTestCase):
                                "type.fileName": "string",
                                "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
-        added, failed = set_realm(realm=self.realm1, resolvers=[self.resolvername1])
+        added, failed = set_realm(realm=self.realm1,
+                                  resolvers=[{'name': self.resolvername1}])
         self.assertTrue(len(added) > 0, added)
         self.assertEqual(len(failed), 0)
 
@@ -323,7 +324,7 @@ class UserCacheTestCase(MyTestCase):
         rid = save_resolver(self.sql_parameters)
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(self.sql_realm, [self.sql_resolver])
+        (added, failed) = set_realm(self.sql_realm, [{'name': self.sql_resolver}])
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 1)
 
@@ -435,10 +436,10 @@ class UserCacheTestCase(MyTestCase):
         self.assertTrue(rid_b > 0, rid_b)
 
         # First ask reso_a, then reso_b
-        (added, failed) = set_realm(self.sql_realm, ['reso_a', 'reso_b'], {
-            'reso_a': 1,
-            'reso_b': 2
-        })
+        (added, failed) = set_realm(self.sql_realm,
+                                    [
+                                        {'name': 'reso_a', 'priority': 1},
+                                        {'name': 'reso_b', 'priority': 2}])
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 2)
 
@@ -534,7 +535,7 @@ class TestUserCacheMultipleLoginAttributes(MyTestCase):
         rid = save_resolver(self.ldap_parameters)
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(self.ldap_realm, [self.ldap_resolver])
+        (added, failed) = set_realm(self.ldap_realm, [{'name': self.ldap_resolver}])
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 1)
 

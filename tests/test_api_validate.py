@@ -180,8 +180,10 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         # create realm
         # If the sales resolver comes first, frank is found in sales!
-        r = set_realm("ldaprealm", resolvers=["catchall", "sales"],
-                      priority={"catchall": 2, "sales": 1})
+        r = set_realm("ldaprealm",
+                      resolvers=[
+                          {'name': "catchall", 'priority': 2},
+                          {'name': "sales", 'priority': 1}])
         set_default_realm("ldaprealm")
         self.assertEqual(r, (["catchall", "sales"], []))
 
@@ -194,8 +196,10 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
 
         # Catch all has the lower priority and contains all users
         # ldap2 only contains sales
-        r = set_realm("ldaprealm", resolvers=["catchall", "sales"],
-                      priority={"catchall": 1, "sales": 2})
+        r = set_realm("ldaprealm",
+                      resolvers=[
+                          {'name': "catchall", 'priority': 1},
+                          {'name': "sales", 'priority': 2}])
         self.assertEqual(r, (["catchall", "sales"], []))
 
         # Both users are found in the resolver "catchall
@@ -2752,7 +2756,7 @@ class ValidateAPITestCase(MyApiTestCase):
                              'CACHE_TIMEOUT': 0
                              })
         self.assertTrue(rid)
-        added, failed = set_realm("tr", ["myLDAPres"])
+        added, failed = set_realm("tr", [{'name': "myLDAPres"}])
         self.assertEqual(added, ["myLDAPres"])
         self.assertEqual(failed, [])
 
@@ -5544,7 +5548,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         logging.getLogger('privacyidea').setLevel(logging.DEBUG)
         # create realm
-        r = set_realm("ldaprealm", resolvers=["catchall"])
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
         set_default_realm("ldaprealm")
 
         # 1. set policies.
@@ -5630,7 +5634,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # Init LDAP
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         # create realm
-        r = set_realm("ldaprealm", resolvers=["catchall"])
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
         set_default_realm("ldaprealm")
 
         # 1. set policies.
@@ -5717,7 +5721,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # mock email sending
         smtpmock.setdata(response={"alice@example.com": (200, 'OK')})
         # create realm
-        r = set_realm("ldaprealm", resolvers=["catchall"])
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
         set_default_realm("ldaprealm")
 
         # 1. set policies.
@@ -5805,7 +5809,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         setup_sms_gateway()
 
         # create realm
-        r = set_realm("ldaprealm", resolvers=["catchall"])
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
         set_default_realm("ldaprealm")
 
         # 1. set policies.
@@ -5980,13 +5984,15 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
               "W3Bu0HACkVidtBc7yDluCtviQWHU0SufOxPrEpQECAyYgASFYID-YUA3c7cOqFtNK6bfB\r\nL3H6BNN7ivKOfFnU5zOIA3X7Il" \
               "ggaKqMkh_8X6Vim6wj6GSq9_zeCvDUgJKeTuo-Nxk_jz0"
 
+    rpid = "netknights.it"
+
     def setUp(self):
         # Set up the WebAuthn Token from the lib test case
         super(MyApiTestCase, self).setUp()
         self.setUp_user_realms()
 
         set_policy("wan1", scope=SCOPE.ENROLL,
-                   action="webauthn_relying_party_id=netknights.it")
+                   action=("webauthn_relying_party_id={0!s}".format(self.rpid)))
         set_policy("wan2", scope=SCOPE.ENROLL,
                    action="webauthn_relying_party_name=privacyIDEA")
 
@@ -6012,10 +6018,10 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"))
             detail = data.get("detail")
             self.assertEqual(self.serial, detail.get("serial"))
-            webAuthnRequest = data.get("detail").get("webAuthnRegisterRequest")
-            self.assertEqual("Please confirm with your WebAuthn token", webAuthnRequest.get("message"))
-            transaction_id = webAuthnRequest.get("transaction_id")
-            self.assertEqual(webAuthnRequest.get("attestation"), "direct")
+            web_authn_request = data.get("detail").get("webAuthnRegisterRequest")
+            self.assertEqual("Please confirm with your WebAuthn token", web_authn_request.get("message"))
+            transaction_id = web_authn_request.get("transaction_id")
+            self.assertEqual(web_authn_request.get("attestation"), "direct")
 
         # We need to change the nonce in the challenge database to use our recorded WebAuthN enrollment data
         recorded_nonce = "0fnxHW5R2maOrVruLJGrEGFpFmJHR4jPEmedJ9Pt3hk"
@@ -6056,7 +6062,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
 
     def test_02_autenticate(self):
 
-        recorded_allowCredentials = "RuBlEInU7ycsILST7u6AoT7rdqNYjSf4jlz38x10344xM2SHl" \
+        recorded_allow_credentials = "RuBlEInU7ycsILST7u6AoT7rdqNYjSf4jlz38x10344xM2SHl" \
                                     "twbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA"
         recorded_challenge = "zphA4XzB8ZHkiGnsQAcqDRn8j8e4h9HcSAQ2mlt0o94"
 
@@ -6078,11 +6084,11 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
                              data.get("detail").get("message"))
             detail = data.get("detail")
             self.assertEqual("webauthn", detail.get("client_mode"))
-            webAuthnSignRequest = detail.get("attributes").get("webAuthnSignRequest")
-            self.assertEqual("netknights.it", webAuthnSignRequest.get("rpId"))
-            allowCredentials = webAuthnSignRequest.get("allowCredentials")
-            self.assertEqual(1, len(allowCredentials))
-            self.assertEqual(recorded_allowCredentials, allowCredentials[0].get("id"))
+            web_authn_sign_request = detail.get("attributes").get("webAuthnSignRequest")
+            self.assertEqual("netknights.it", web_authn_sign_request.get("rpId"))
+            allow_credentials = web_authn_sign_request.get("allowCredentials")
+            self.assertEqual(1, len(allow_credentials))
+            self.assertEqual(recorded_allow_credentials, allow_credentials[0].get("id"))
             transaction_id = detail.get("transaction_id")
 
             # Update the recorded challenge in the DB
@@ -6124,19 +6130,21 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             self.assertEqual("Found matching challenge", detail.get("message"))
             auth_items = data.get("auth_items")
             """
-            auth_itmes looks like this:
+            auth_items looks like this:
 
             {'offline': [
                 {'user': 'cornelius',
                  'username': 'cornelius',
                  'refilltoken': '79906cc20567c6ca1e4b452500bb0662e107ce0fa14742c95b7e5c6a1417a519f829318622c1d569',
                  'repsonse': {
-                     'pubkey': 'a50102032620012158203f98500ddcedc3aa16d34ae9b7c12...ea3e37193f8f3d', 
-                     'credential_id': 'RuBlEInU7ycsILST7u6AoT7rdqN...4xM2SHltwbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA'}, 
+                     'pubKey': 'a50102032620012158203f98500ddcedc3aa16d34ae9b7c12...ea3e37193f8f3d',
+                     'credentialId': 'RuBlEInU7ycsILST7u6AoT7rdqN...4xM2SHltwbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA',
+                     'rpId': 'netknights.it'},
                  'serial': 'WAN0001D434'}]}
             """
             response = auth_items.get("offline")[0].get("response")
             _refill_token = auth_items.get("offline")[0].get("refilltoken")
             # Offline returns the credential ID and the pub key
-            self.assertEqual(recorded_allowCredentials, response.get("credential_id"))
-            self.assertIn("pubkey", response)
+            self.assertEqual(recorded_allow_credentials, response.get("credentialId"))
+            self.assertIn("pubKey", response)
+            self.assertEqual(self.rpid, response.get("rpId"))

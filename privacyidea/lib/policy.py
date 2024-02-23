@@ -593,11 +593,12 @@ class PolicyClass(object):
                 log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
                     reduced_policies, searchkey, searchvalue))
 
-        p = [("action", action), ("user", user), ("realm", realm)]
+        p = [("action", action), ("realm", realm)]
+        q = [("user", user)]
         # If this is an admin-policy, we also do check the adminrealm
         if scope == SCOPE.ADMIN:
             p.append(("adminrealm", adminrealm))
-            p.append(("adminuser", adminuser))
+            q.append(("adminuser", adminuser))
         for searchkey, searchvalue in p:
             if searchvalue is not None:
                 new_policies = []
@@ -612,6 +613,30 @@ class PolicyClass(object):
                     else:
                         value_found, value_excluded = self._search_value(
                             policy.get(searchkey), searchvalue)
+                        if value_found and not value_excluded:
+                            new_policies.append(policy)
+                reduced_policies = new_policies
+                log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
+                    reduced_policies, searchkey, searchvalue))
+
+        for searchkey, searchvalue in q:
+            if searchvalue is not None:
+                new_policies = []
+                # first we find policies, that really match!
+                # Either with the real value or with a "*"
+                # values can be excluded by a leading "!" or "-"
+                for policy in reduced_policies:
+                    if not policy.get(searchkey):
+                        # We also find the policies with no distinct information
+                        # about the request value
+                        new_policies.append(policy)
+                    else:
+                        searchkeys = policy.get(searchkey)
+                        current_searchvalue = searchvalue
+                        if policy.get("user_case_insensitive"):
+                            current_searchvalue = current_searchvalue.lower()
+                            searchkeys = [x.lower() for x in searchkeys]
+                        value_found, value_excluded = self._search_value(searchkeys, current_searchvalue)
                         if value_found and not value_excluded:
                             new_policies.append(policy)
                 reduced_policies = new_policies
@@ -1298,7 +1323,7 @@ class PolicyClass(object):
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
                adminrealm=None, adminuser=None, priority=None, check_all_resolvers=False,
-               conditions=None, pinode=None, description=None):
+               conditions=None, pinode=None, description=None, user_case_insensitive=False):
     """
     Function to set a policy.
 
@@ -1325,6 +1350,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param check_all_resolvers: If all the resolvers of a user should be
         checked with this policy
     :type check_all_resolvers: bool
+    :param user_case_insensitive: The username should be case-insensitive.
+    :type user_case_insensitive: bool
     :param conditions: A list of 5-tuples (section, key, comparator, value, active) of policy conditions
     :param pinode: A privacyIDEA node or a list of privacyIDEA nodes.
     :param description: A description for the policy
@@ -1338,6 +1365,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     if priority is not None and priority <= 0:
         raise ParameterError("Priority must be at least 1")
     check_all_resolvers = is_true(check_all_resolvers)
+    user_case_insensitive = is_true(user_case_insensitive)
     if type(action) == dict:
         action_list = []
         for k, v in action.items():
@@ -1408,6 +1436,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             p1.pinode = pinode
         p1.active = active
         p1.check_all_resolvers = check_all_resolvers
+        p1.user_case_insensitive = user_case_insensitive
         if conditions is not None:
             p1.set_conditions(conditions)
         save_config_timestamp()
@@ -1420,7 +1449,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                      resolver=resolver, adminrealm=adminrealm,
                      adminuser=adminuser, priority=priority,
                      check_all_resolvers=check_all_resolvers,
-                     conditions=conditions, pinode=pinode).save()
+                     conditions=conditions, pinode=pinode, user_case_insensitive=user_case_insensitive).save()
     if description:
         d1 = Description.query.filter_by(object_id=ret, object_type="policy").first()
         if d1:

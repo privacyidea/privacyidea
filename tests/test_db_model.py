@@ -5,7 +5,7 @@ from sqlalchemy import func
 
 from privacyidea.models import (Token,
                                 Resolver,
-                                ResolverRealm,
+                                ResolverRealm, NodeName,
                                 TokenRealm,
                                 ResolverConfig,
                                 Realm,
@@ -1122,3 +1122,27 @@ class ServiceidTestCase(MyTestCase):
         # Test, if it is gone
         r = Serviceid.query.filter_by(name="webserver").all()
         self.assertEqual(len(r), 0)
+
+
+class ResolverRealmTestCase(MyTestCase):
+
+    def test_01_resolver_realm_with_nodes(self):
+        NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1").save()
+        NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2").save()
+
+        res = Resolver("resolver1", "passwdresolver")
+        res.save()
+        # Add configuration to the resolver
+        ResolverConfig(res.id, "fileName", "tests/testdata/passwd").save()
+
+        re = Realm("realm1")
+        re.save()
+
+        # Put the resolver into the realm by name
+        ResolverRealm(resolver_name="resolver1",
+                      realm_name="realm1").save()
+
+        self.assertIn(res.id, [x.resolver.id for x in re.resolver_list])
+
+    # TODO: add resolver realm config with ids and different nodes
+    # TODO: same nodes with different timestamps
