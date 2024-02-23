@@ -1490,6 +1490,8 @@ def cleanup_challenges():
     c_now = datetime.utcnow()
     Challenge.query.filter(Challenge.expiration < c_now).delete()
     db.session.commit()
+
+
 #-----------------------------------------------------------------------------
 #
 #DESCRIPTION

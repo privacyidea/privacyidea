@@ -14,6 +14,7 @@ from alembic import op, context
 import sqlalchemy as sa
 from sqlalchemy.schema import Sequence, CreateSequence
 
+
 def dialect_supports_sequences():
     migration_context = context.get_context()
     return migration_context.dialect.supports_sequences
