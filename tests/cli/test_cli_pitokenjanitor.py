@@ -1,11 +1,10 @@
-import unittest
-from flask.testing import CliRunner
-from privacyidea.cli import pi_token_janitor
+from .base import CliTestCase
+from privacyidea.cli.privacyideatokenjanitor import cli as pi_token_janitor
 
 
-class PITokenJanitorLoadTestCase(unittest.TestCase):
+class PITokenJanitorLoadTestCase(CliTestCase):
     def test_01_pitokenjanitor_help(self):
-        runner = CliRunner()
+        runner = self.app.test_cli_runner()
         result = runner.invoke(pi_token_janitor, ["-h"])
         self.assertIn("Loads token data from a PSKC file.",
                       result.output, result)
