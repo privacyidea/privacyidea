@@ -24,6 +24,7 @@ __doc__ = """This REST API is used to list machines from Machine Resolvers.
 
 The code is tested in tests/test_api_machines
 """
+
 from flask import (Blueprint,
                    request, g)
 from .lib.utils import (getParam, send_result)
@@ -38,9 +39,7 @@ from privacyidea.lib.machine import ANY_MACHINE
 import logging
 import netaddr
 
-
 log = logging.getLogger(__name__)
-
 
 machine_blueprint = Blueprint('machine_blueprint', __name__)
 
@@ -177,7 +176,7 @@ def attach_token_api():
 
     g.audit_object.log({'success': True,
                         'info': "serial: {0!s}, application: {1!s}".format(serial,
-                                                                 application)})
+                                                                           application)})
 
     return send_result(mt_object.id)
 
@@ -217,7 +216,7 @@ def detach_token_api(serial, machineid=None, resolver=None, application=None, mt
 
     g.audit_object.log({'success': True,
                         'info': "serial: {0!s}, application: {1!s}".format(serial,
-                                                                 application)})
+                                                                           application)})
 
     return send_result(r)
 
@@ -289,7 +288,7 @@ def list_machinetokens_api():
 
     g.audit_object.log({'success': True,
                         'info': "serial: {0!s}, hostname: {1!s}".format(serial,
-                                                              hostname)})
+                                                                        hostname)})
     return send_result(res)
 
 
@@ -348,7 +347,7 @@ def set_option_api():
 
     g.audit_object.log({'success': True,
                         'info': "serial: {0!s}, application: {1!s}".format(serial,
-                                                                 application)})
+                                                                           application)})
 
     return send_result({"added": o_add, "deleted": o_del})
 
@@ -404,13 +403,12 @@ def get_auth_items_api(application=None):
     filter_param = request.all_data
     for key in ["challenge", "hostname", "application"]:
         if key in filter_param:
-            del(filter_param[key])
+            del (filter_param[key])
 
     ret = get_auth_items(hostname, ip=g.client_ip,
                          application=application, challenge=challenge,
                          filter_param=filter_param)
     g.audit_object.log({'success': True,
                         'info': "host: {0!s}, application: {1!s}".format(hostname,
-                                                               application)})
+                                                                         application)})
     return send_result(ret)
-

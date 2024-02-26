@@ -2008,7 +2008,6 @@ def check_serial_pass(serial, passw, options=None):
     :return: tuple of result (True, False) and additional dict
     :rtype: tuple
     """
-    reply_dict = {}
     tokenobject = get_one_token(serial=serial)
     res, reply_dict = check_token_list([tokenobject], passw,
                                        user=tokenobject.user,

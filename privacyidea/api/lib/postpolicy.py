@@ -513,7 +513,8 @@ def offline_info(request, response):
         if serial:
             try:
                 auth_items = get_auth_items(serial=serial, application="offline",
-                                            challenge=request.all_data.get("pass"))
+                                            challenge=request.all_data.get("pass"),
+                                            user_agent=request.user_agent.string)
                 if auth_items:
                     content["auth_items"] = auth_items
                     response.set_data(json.dumps(content))

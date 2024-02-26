@@ -191,11 +191,11 @@ def offlinerefill():
             # We need the options to pass the count and the rounds for the next offline OTP values,
             # which could have changed in the meantime.
             options = tokenattachments[0].get("options")
-            # check refill token:
+            # check refill token depending on token type
             if tokenobj.get_tokeninfo("refilltoken") == refilltoken:
                 # refill
                 otps = MachineApplication.get_refill(tokenobj, password, options)
-                refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
+                refilltoken = MachineApplication.generate_new_refilltoken(tokenobj, request.headers.get("User-Agent"))
                 response = send_result(True)
                 content = response.json
                 content["auth_items"] = {"offline": [{"refilltoken": refilltoken,

@@ -25,7 +25,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
                                    check_serial_valid, determine_logged_in_userparams,
                                    to_list, parse_string_to_dict, convert_imagefile_to_dataimage,
-                                   get_plugin_info_from_useragent)
+                                   get_plugin_info_from_useragent, get_computer_name_from_user_agent)
 from privacyidea.lib.crypto import generate_password
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
@@ -1060,3 +1060,17 @@ class UtilsTestCase(MyTestCase):
         for val in user_agents:
             res = get_plugin_info_from_useragent(val[0])
             self.assertEqual(res, val[1:], res)
+
+    def test_38_get_computer_name(self):
+        data = {"privacyidea-cp/1.1.1 Windows/Laptop-1": "Laptop-1",
+                "privacyidea-cp/1.1.1 ComputerName/Laptop-2": "Laptop-2",
+                "privacyidea-pam/2.2.2 Linux/Server-3": "Server-3",
+                "privacyidea-pam/2.2.2 Hostname/Server-4": "Server-4",
+                "privacyidea-mac/3.3.3 Mac/Server-5": "Server-5",
+                "privacyidea-mac/3.3.3": None,
+                "": None,
+                None: None}
+
+        for k, v in data.items():
+            res = get_computer_name_from_user_agent(k)
+            self.assertEqual(v, res)

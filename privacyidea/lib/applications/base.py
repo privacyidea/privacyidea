@@ -119,7 +119,7 @@ class MachineApplication(object):
 
 @log_with(log)
 def get_auth_item(application, token_type,serial,
-                  challenge=None, options=None, filter_param=None):
+                  challenge=None, options=None, filter_param=None, user_agent=None):
 
     options = options or {}
     # application_module from application
@@ -130,7 +130,8 @@ def get_auth_item(application, token_type,serial,
                                                    serial,
                                                    challenge=challenge,
                                                    options=options,
-                                                   filter_param=filter_param)
+                                                   filter_param=filter_param,
+                                                   user_agent=user_agent)
     return auth_item
 
 
