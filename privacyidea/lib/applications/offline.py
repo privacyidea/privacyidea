@@ -71,7 +71,6 @@ class MachineApplication(MachineApplicationBase):
         if token_obj.type.lower() == "webauthn":
             computer_name = get_computer_name_from_user_agent(user_agent)
             if computer_name is None:
-                # TODO Exception?
                 raise ParameterError("Unable to generate refilltoken for a WebAuthn token without a computer name")
             else:
                 key = "refilltoken_" + computer_name
