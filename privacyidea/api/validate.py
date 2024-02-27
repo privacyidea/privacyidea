@@ -195,7 +195,7 @@ def offlinerefill():
             if tokenobj.get_tokeninfo("refilltoken") == refilltoken:
                 # refill
                 otps = MachineApplication.get_refill(tokenobj, password, options)
-                refilltoken = MachineApplication.generate_new_refilltoken(tokenobj, request.headers.get("User-Agent"))
+                refilltoken = MachineApplication.generate_new_refilltoken(tokenobj, request.user_agent.string)
                 response = send_result(True)
                 content = response.json
                 content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
