@@ -92,8 +92,10 @@ class MachineApplication(object):
     @staticmethod
     def get_authentication_item(token_type,
                                 serial,
-                                challenge=None, options=None,
-                                filter_param=None):
+                                challenge=None,
+                                options=None,
+                                filter_param=None,
+                                user_agent=None):
         """
         returns a dictionary of authentication items
         like public keys, challenges, responses...
