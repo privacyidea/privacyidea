@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from privacyidea.cli import pi_manage
+from privacyidea.cli.pimanage import cli as pi_manage
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from .base import CliTestCase
 from ..base import PWFILE
