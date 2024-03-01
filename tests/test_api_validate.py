@@ -6197,7 +6197,28 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
         # There should be no offline auth_items because the computer name is missing
         self.assertIsNone(data.get("auth_items"))
 
-    def test_04_remove_machine(self):
+    def test_04_refill_per_machine(self):
+        headers = {"Host": "puck.office.netknights.it",
+                   "Origin": "https://puck.office.netknights.it",
+                   "User-Agent": self.user_agents[0]}
+
+        for i in range(len(self.user_agents)):
+            payload = {"refilltoken": self.refilltokens[i], "serial": self.serial, "pass": ""}
+            headers.update({"User-Agent": self.user_agents[i]})
+            with self.app.test_request_context('/validate/offlinerefill',
+                                               environ_base={'REMOTE_ADDR': '10.0.0.17'},
+                                               method='POST',
+                                               data=payload,
+                                               headers=headers):
+                res = self.app.full_dispatch_request()
+                data = res.json
+                self.assertEqual(200, res.status_code)
+                self.assertTrue(data.get("result").get("status"))
+                self.assertIsNotNone(data.get("auth_items"))
+                self.assertEqual(self.serial, data.get("auth_items").get("offline")[0].get("serial"))
+                self.refilltokens[i] = data.get("auth_items").get("offline")[0].get("refilltoken")
+
+    def test_05_remove_machine(self):
         deleted_count = detach_token(self.serial, "offline")
         self.assertEqual(1, deleted_count)
 
