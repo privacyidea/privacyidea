@@ -6195,9 +6195,32 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
         self.assertTrue(result.get("value"))
         self.assertEqual("Found matching challenge", detail.get("message"))
         # There should be no offline auth_items because the computer name is missing
+        # but there is no error "blocking" the real result of the authentication
         self.assertIsNone(data.get("auth_items"))
 
-    def test_04_refill_per_machine(self):
+    def _assert_err_905(self, res):
+        self.assertEqual(400, res.status_code)
+        data = res.json
+        self.assertEqual(905, data.get("result").get("error").get("code"))
+        self.assertFalse(data.get("result").get("status"))
+
+    def test_04_refill_no_machine_name(self):
+        headers = {"Host": "puck.office.netknights.it",
+                   "Origin": "https://puck.office.netknights.it"}
+        self.assertTrue(len(self.refilltokens) > 0)
+        payload = {"refilltoken": self.refilltokens[0], "serial": self.serial, "pass": ""}
+        with self.app.test_request_context('/validate/offlinerefill',
+                                           environ_base={'REMOTE_ADDR': '10.0.0.17'},
+                                           method='POST',
+                                           data=payload,
+                                           headers=headers):
+            res = self.app.full_dispatch_request()
+            data = res.json
+            # In case of offlinerefill, the response should be 400, because the requested operation did not succeed,
+            # in contrast to the test above
+            self._assert_err_905(res)
+
+    def test_05_refill_per_machine(self):
         headers = {"Host": "puck.office.netknights.it",
                    "Origin": "https://puck.office.netknights.it",
                    "User-Agent": self.user_agents[0]}
@@ -6218,7 +6241,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
                 self.assertEqual(self.serial, data.get("auth_items").get("offline")[0].get("serial"))
                 self.refilltokens[i] = data.get("auth_items").get("offline")[0].get("refilltoken")
 
-    def test_05_remove_machine(self):
+    def test_06_remove_machine(self):
         deleted_count = detach_token(self.serial, "offline")
         self.assertEqual(1, deleted_count)
 
@@ -6236,7 +6259,4 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
                                                data=payload,
                                                headers=headers):
                 res = self.app.full_dispatch_request()
-                self.assertEqual(400, res.status_code)
-                data = res.json
-                self.assertEqual(905, data.get("result").get("error").get("code"))
-                self.assertFalse(data.get("result").get("status"))
+                self._assert_err_905(res)
