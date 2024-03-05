@@ -477,6 +477,8 @@ h={h}
     @log_with(log)
     def update(self, param, reset_failcount=True):
         update_params = param.copy()
+        if not len(param["otpkey"]) == 32:
+            raise ValueError("The otpkey must be 32 characters long for yubikey token in AES mode")
         # As the secret is usually copy-pasted from the Yubikey personalization GUI,
         # which separates hexlified bytes by spaces, we remove all spaces from the OTP key.
         if "otpkey" in update_params:
