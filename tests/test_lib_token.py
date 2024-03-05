@@ -172,7 +172,7 @@ class TokenTestCase(MyTestCase):
         token = init_token({"type": "yubikey",
                             "serial": "yk1",
                             "yubikey.prefix": "vv123456",
-                            "otpkey": self.otpkey})
+                            "otpkey": "31323334353637383930313233343536"})
         self.assertEqual(token.token.serial, "yk1")
         tokenobject_list = get_tokens(tokeninfo={"yubikey.prefix": "vv123456"})
         self.assertEqual(len(tokenobject_list), 1)
@@ -1175,7 +1175,7 @@ class TokenTestCase(MyTestCase):
                             "otpkey": self.otpkey,
                             "pin": "pin47"}, user)
         token = init_token({"type": "yubikey",
-                            "otpkey": self.otpkey,
+                            "otpkey": "31323334353637383930313233343536",
                             "pin": "pin47"}, user)
         r = check_user_pass(user, "pin47888888")
         self.assertEqual(r[0], False)
@@ -1421,7 +1421,7 @@ class TokenTestCase(MyTestCase):
         tok.delete_token()
 
         # A yubikey and yubicloud tokentype is hardware
-        tok = init_token({"type": "yubikey", "otpkey": self.otpkey})
+        tok = init_token({"type": "yubikey", "otpkey": "31323334353637383930313233343536"})
         kind = tok.get_tokeninfo("tokenkind")
         self.assertEqual(kind, TOKENKIND.HARDWARE)
         tok.delete_token()
