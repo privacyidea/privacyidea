@@ -142,6 +142,18 @@ class TimestampMethodsMixin(object):
         return ret
 
 
+class Container(MethodsMixin, db.Model):
+    """
+    The "Container" table contains the containers and their associated tokens.
+    """
+
+    __tablename__ = 'container'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    id = db.Column(db.Integer, Sequence("container_seq"), primary_key=True)
+    type = db.Column(db.Unicode(30), default='Generic', nullable=False)
+    tokens = db.relationship('Token', lazy='dynamic', back_populates='container')
+
+
 class Token(MethodsMixin, db.Model):
     """
     The "Token" table contains the basic token data.
@@ -210,6 +222,9 @@ class Token(MethodsMixin, db.Model):
     info_list = db.relationship('TokenInfo', lazy='select', backref='token')
     # This creates an attribute "token" in the TokenOwner object
     owners = db.relationship('TokenOwner', lazy='dynamic', backref='token')
+    # Container
+    container_id = db.Column(db.Integer(), db.ForeignKey("container.id"))
+    container = db.relationship("Container", back_populates="tokens")
 
     def __init__(self, serial, tokentype="",
                  isactive=True, otplen=6,
