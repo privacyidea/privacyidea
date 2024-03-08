@@ -53,7 +53,7 @@ Each policy can contain the following attributes:
      other characters could be created.
 
 **description**
-    Use this to describe your policy in more detail
+    Use this to describe your policy in more detail.
 
 **scope**
 
