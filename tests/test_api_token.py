@@ -1909,6 +1909,21 @@ class APITokenTestCase(MyApiTestCase):
         tokens = get_tokens(serial="yk1")
         self.assertEqual(tokens[0].get_tokeninfo("yubikey.prefix"), "vv123456")
 
+    def test_20b_init_yubikey_with_wrong_otp_length(self):
+        # save yubikey.prefix
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "type": "yubikey",
+                                               "serial": "yk1",
+                                               "otpkey": "31323334353637383930313233343536",
+                                               "yubikey.prefix": "vv123456"},
+                                           headers={'Authorization': self.at}):
+            try:
+                res = self.app.full_dispatch_request()
+            except ValueError as exx:
+                self.assertEqual(exx, "The otpkey must be 32 characters long for yubikey token in AES mode")
+
     def test_21_time_policies(self):
         # Here we test, if an admin policy does not match in time,
         # it still used to evaluate, that admin policies are defined at all
