@@ -1916,13 +1916,13 @@ class APITokenTestCase(MyApiTestCase):
                                            data={
                                                "type": "yubikey",
                                                "serial": "yk1",
-                                               "otpkey": "31323334353637383930313233343536",
+                                               "otpkey": "31323334353637383930313233343565436",
                                                "yubikey.prefix": "vv123456"},
                                            headers={'Authorization': self.at}):
             try:
                 res = self.app.full_dispatch_request()
             except ValueError as exx:
-                self.assertEqual(exx, "The otpkey must be 32 characters long for yubikey token in AES mode")
+                self.assertEqual(exx.args[0], "The otpkey must be 32 characters long for yubikey token in AES mode")
 
     def test_21_time_policies(self):
         # Here we test, if an admin policy does not match in time,
