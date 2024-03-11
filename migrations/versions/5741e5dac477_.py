@@ -1,4 +1,4 @@
-"""empty message
+"""Add a table for policy descriptions
 
 Revision ID: 5741e5dac477
 Revises: e3a64b4ca634
@@ -38,6 +38,7 @@ def upgrade():
         sa.Column('object_type', sa.Unicode(length=64), nullable=False),
         sa.Column('last_update', sa.DateTime),
         sa.Column('description', sa.UnicodeText()),
+        sa.Column('object_id', sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(['object_id'], ['policy.id'], ),
         sa.PrimaryKeyConstraint('id'),
         mysql_row_format='DYNAMIC'
