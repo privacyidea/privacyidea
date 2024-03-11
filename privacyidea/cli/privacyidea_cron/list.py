@@ -55,4 +55,3 @@ def list_tasks():
         print_stdout(line_format.format(node_list=', '.join(ptask["nodes"]),
                                         options_json=json.dumps(ptask["options"]),
                                         **ptask))
-
