@@ -12,4 +12,3 @@ class PITokenJanitorLoadTestCase(CliTestCase):
                       result.output, result)
         self.assertIn("Manually run a periodic task",
                       result.output, result)
-
