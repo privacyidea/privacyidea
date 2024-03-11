@@ -89,4 +89,3 @@ def run_task_on_node(ptask, node):
             current_time = datetime.now(dateutil.tz.tzlocal())
             set_periodic_task_last_run(ptask["id"], node, current_time)
     return result
-
