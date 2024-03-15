@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 #  2020-04-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Read tables oc_accounts and oc_users from owncloud
 #

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2021-09-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add extended condition for HTTP environment
 #  2021-02-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>

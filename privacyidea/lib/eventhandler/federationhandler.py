@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2017-08-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Initial federation handler
 #

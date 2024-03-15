@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  2020-09-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Use Argon2
 #  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>

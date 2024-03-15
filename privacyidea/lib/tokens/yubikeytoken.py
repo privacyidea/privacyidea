@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2016-04-04 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Move the API signature static methods to functions.
 #  2016-03-23 Jochen Hein <jochen@jochen.org>

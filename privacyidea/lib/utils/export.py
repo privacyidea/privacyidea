@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 #  2021-22-20 Paul Lettich <paul.lettich@netknights.it>
 #             Initial creation of import/export functionality
 #

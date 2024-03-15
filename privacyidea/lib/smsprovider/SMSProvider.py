@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #   2016-06-14 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #              Enhance the base class according to
 #              https://github.com/privacyidea/privacyidea/wiki/concept:-Delivery-Gateway

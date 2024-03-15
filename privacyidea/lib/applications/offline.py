@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2015-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add options ROUNDS to avoid timeouts during OTP hash calculation
 #  2015-04-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>

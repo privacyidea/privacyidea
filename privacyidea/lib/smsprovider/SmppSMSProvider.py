@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #    2017-12-27 Cornelius Kölbel <cornelius.koelbel@netknights.i>
 #               Restructuring Code.
 #

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2023-01-27 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Create this module for enabling decorators for API calls
 #

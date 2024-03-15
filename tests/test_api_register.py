@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from .base import MyApiTestCase

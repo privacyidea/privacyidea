@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import logging
 from testfixtures import log_capture
 from cryptography.hazmat.backends import default_backend

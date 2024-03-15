@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Use HSM to generate Salt for PasswordHash
 #  2017-07-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # 2022-09-29 Cornelius Kölbel, <cornelius.koelbel@netknights.it>
 #            Add new API for tokengroups
 #

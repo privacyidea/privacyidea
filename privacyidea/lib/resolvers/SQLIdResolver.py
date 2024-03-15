@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  Copyright (C) 2014 Cornelius Kölbel
 #  License:  AGPLv3
 #  contact:  cornelius@privacyidea.org

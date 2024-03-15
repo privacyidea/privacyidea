@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from .base import MyApiTestCase
 import json
 from . import radiusmock

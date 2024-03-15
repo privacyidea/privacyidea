@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  2018-08-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             EventCounter Task
 #

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2020-02-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Initial write. Allow tokens to be initialized with an otpkey
 #

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  2018-06-25 Friedrich Weber <friedrich.weber@netknights.it>
 #             Initial implementation of periodic tasks
 #

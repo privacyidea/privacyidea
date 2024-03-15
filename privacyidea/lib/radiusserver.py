@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2017-10-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add timeout handling
 #  2016-02-19 Cornelius Kölbel <cornelius@privacyidea.org>

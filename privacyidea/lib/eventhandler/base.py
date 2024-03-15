@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add condition for detail->error->message
 #  2017-07-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>

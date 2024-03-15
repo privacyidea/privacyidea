@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2021-10-05 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Allow to set a default slot number
 #  2017-09-25 Cornelius Kölbel <cornelius.koelbel@netknights.it>

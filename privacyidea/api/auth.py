@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # 2020-02-15 Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
 #            Add webAuthn token
 # 2018-06-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>

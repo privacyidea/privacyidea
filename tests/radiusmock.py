@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 2019-08-15 More sophisticated radiusmock
         Cornelius Kölbel <cornelius.koelbel@netknights.it>

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2020-02-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add QR codes for Authenticator Apps
 #  2016-02-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>

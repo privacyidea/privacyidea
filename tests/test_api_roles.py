@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 This file tests the authentication of admin users and normal user (
 selfservice) on the REST API.

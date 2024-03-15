@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  2018-11-14 Friedrich Weber <friedrich.weber@netknights.it>
 #             Add a job queue
 #

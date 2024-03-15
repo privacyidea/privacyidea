@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  Mar, 12 2020 Bruno Cascio
 #  http://www.privacyidea.org
 #

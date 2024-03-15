@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-#
-#
 # 2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Avoid consecutive if-statements
 # 2014-10-03 fix getUsername function
