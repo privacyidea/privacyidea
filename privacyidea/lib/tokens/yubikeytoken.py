@@ -53,6 +53,8 @@ This code is tested in tests/test_lib_tokens_yubikey.py
 """
 
 import logging
+
+from privacyidea.lib.error import EnrollmentError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.tokenclass import TokenClass
@@ -483,6 +485,6 @@ h={h}
         if "otpkey" in update_params:
             update_params["otpkey"] = update_params["otpkey"].replace(" ", "")
         if not len(update_params["otpkey"]) == 32:
-            raise ValueError("The otpkey must be 32 characters long for yubikey token in AES mode")
+            raise EnrollmentError("The otpkey must be 32 characters long for yubikey token in AES mode")
         TokenClass.update(self, update_params, reset_failcount)
         self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)
