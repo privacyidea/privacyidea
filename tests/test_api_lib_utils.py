@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This tests the file api.lib.utils
 """

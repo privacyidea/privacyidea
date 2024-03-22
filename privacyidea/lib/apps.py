@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2017-07-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add period to key uri for TOTP token
 #  2016-05-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>

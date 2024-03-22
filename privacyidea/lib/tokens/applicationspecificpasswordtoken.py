@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2023-02-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             initial write
 #  (c) 2023 Cornelius Kölbel - cornelius.koelbel@netknights.it

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-06-20 Friedrich Weber <friedrich.weber@netknights.it>
 #             Add PeriodicTask, PeriodicTaskOption, PeriodicTaskLastRun
 #  2018-25-09 Paul Lettich <paul.lettich@netknights.it>

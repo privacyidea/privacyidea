@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This test file tests the lib/machine.py and lib/machines/* and all
 the resolvers under it:

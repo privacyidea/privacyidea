@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  http://www.privacyidea.org
 #  2018-04-16 Friedrich Weber <friedrich.weber@netknights.it>
 #             Fix validation of challenge responses

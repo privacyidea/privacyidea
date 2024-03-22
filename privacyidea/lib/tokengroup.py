@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  2022-09-28 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Init
 #

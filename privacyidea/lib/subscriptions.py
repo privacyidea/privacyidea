@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2016-09-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Save and delete subscriptions
 #

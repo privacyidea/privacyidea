@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2015-02-27 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Initial writup
 #

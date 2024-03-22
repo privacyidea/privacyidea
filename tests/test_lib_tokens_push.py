@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from flask import Request
 from werkzeug.test import EnvironBuilder
 from datetime import datetime, timedelta

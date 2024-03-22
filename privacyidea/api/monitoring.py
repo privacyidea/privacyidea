@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # http://www.privacyidea.org
 #
 # 2018-08-01 Cornelius Kölbel, <cornelius.koelbel@netknights.it>

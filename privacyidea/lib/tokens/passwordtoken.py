@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  privacyIDEA is a fork of LinOTP
 #  2014-12-05 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Migration to flask

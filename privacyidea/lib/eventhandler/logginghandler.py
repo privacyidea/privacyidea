@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2020-27-12 Paul Lettich <paul.lettich@netknights.it>
 #             Initial Version of the logging event handler
 #

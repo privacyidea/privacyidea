@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import mock
 from contextlib import contextmanager
 from datetime import datetime, timedelta

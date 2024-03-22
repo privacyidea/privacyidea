@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2022-02-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add verified enrollment
 #  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>

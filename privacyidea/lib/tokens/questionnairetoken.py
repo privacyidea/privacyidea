@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2020-09-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add possibility of multiple questions and answers
 #  http://www.privacyidea.org

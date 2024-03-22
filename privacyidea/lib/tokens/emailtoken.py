@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  2018-10-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Let the client choose to get a HTTP 500 Error code if
 #             SMS fails.

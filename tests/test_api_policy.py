@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from .base import MyApiTestCase
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy, CONDITION_SECTION
 from privacyidea.lib.token import remove_token

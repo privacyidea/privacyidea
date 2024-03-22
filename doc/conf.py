@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # privacyIDEA documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun 13 07:31:01 2014.
 #
