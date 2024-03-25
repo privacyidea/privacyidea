@@ -87,6 +87,7 @@ class MachineApplication(MachineApplicationBase):
         """
         Retrieve the desired number of passwords (= PIN + OTP), hash them
         and return them in a dictionary. Increase the token counter.
+
         :param token_obj: token in question
         :param otppin: The OTP PIN to prepend in the passwords. The PIN is not validated!
         :param amount: Number of OTP values (non-negative!)

@@ -456,7 +456,7 @@ def get_auth_items(hostname=None, ip=None, application=None,
         the return value
     :type filter_param: dict
     :param user_agent: The user agent header of the request
-    :type user_agent: dict
+    :type user_agent: str
     :return: dictionary of lists of the application auth items
 
     **Example response**:
