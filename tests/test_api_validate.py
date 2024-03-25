@@ -5985,6 +5985,14 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
 
     rpid = "netknights.it"
 
+    recorded_allow_credentials = "RuBlEInU7ycsILST7u6AoT7rdqNYjSf4jlz38x10344xM2SHl" \
+                                 "twbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA"
+
+    recorded_challenge = "zphA4XzB8ZHkiGnsQAcqDRn8j8e4h9HcSAQ2mlt0o94"
+
+    refilltokens = []
+    user_agents = ["privacyidea-cp/1.1.1 Windows/Laptop-1231312", "privacyidea-cp/2.2.2 ComputerName/PC-ASDASDS"]
+
     def setUp(self):
         # Set up the WebAuthn Token from the lib test case
         super(MyApiTestCase, self).setUp()
@@ -6059,12 +6067,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
         self.assertEqual("offline", mt.application)
         self.assertEqual(1, mt.id)
 
-    def test_02_autenticate(self):
-
-        recorded_allow_credentials = "RuBlEInU7ycsILST7u6AoT7rdqNYjSf4jlz38x10344xM2SHl" \
-                                    "twbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA"
-        recorded_challenge = "zphA4XzB8ZHkiGnsQAcqDRn8j8e4h9HcSAQ2mlt0o94"
-
+    def _trigger_and_modify_challenge(self, headers):
         payload = {"user": self.username,
                    "pass": self.pin}
 
@@ -6072,9 +6075,9 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
                                            method='POST',
                                            environ_base={'REMOTE_ADDR': '10.0.0.17'},
                                            data=payload,
-                                           headers={"Host": "puck.office.netknights.it",
-                                                    "Origin": "https://puck.office.netknights.it"}):
+                                           headers=headers):
             res = self.app.full_dispatch_request()
+
             self.assertEqual(200, res.status_code)
             data = res.json
             self.assertTrue("transaction_id" in data.get("detail"))
@@ -6087,17 +6090,19 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             self.assertEqual("netknights.it", web_authn_sign_request.get("rpId"))
             allow_credentials = web_authn_sign_request.get("allowCredentials")
             self.assertEqual(1, len(allow_credentials))
-            self.assertEqual(recorded_allow_credentials, allow_credentials[0].get("id"))
+            self.assertEqual(self.recorded_allow_credentials, allow_credentials[0].get("id"))
             transaction_id = detail.get("transaction_id")
 
             # Update the recorded challenge in the DB
-            recorded_challenge_hex = hexlify_and_unicode(webauthn_b64_decode(recorded_challenge))
+            recorded_challenge_hex = hexlify_and_unicode(webauthn_b64_decode(self.recorded_challenge))
             # Update the nonce in the challenge database.
             from privacyidea.lib.challenge import get_challenges
             chal = get_challenges(serial=self.serial, transaction_id=transaction_id)[0]
             chal.challenge = recorded_challenge_hex
             chal.save()
+            return transaction_id
 
+    def _validate_check(self, headers, transaction_id):
         # 2nd authentication step
         payload = {
             "credentialid": "RuBlEInU7ycsILST7u6AoT7rdqNYjSf4jlz38x10344xM2SHltwbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA",
@@ -6117,9 +6122,19 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
                                            environ_base={'REMOTE_ADDR': '10.0.0.17'},
                                            method='POST',
                                            data=payload,
-                                           headers={"Host": "puck.office.netknights.it",
-                                                    "Origin": "https://puck.office.netknights.it"}):
-            res = self.app.full_dispatch_request()
+                                           headers=headers):
+            return self.app.full_dispatch_request()
+
+    def test_02_authenticate(self):
+        headers = {"Host": "puck.office.netknights.it",
+                   "Origin": "https://puck.office.netknights.it",
+                   "User-Agent": self.user_agents[0]}
+
+        for i in range(len(self.user_agents)):
+            headers.update({"User-Agent": self.user_agents[i]})
+            transaction_id = self._trigger_and_modify_challenge(headers)
+            res = self._validate_check(headers, transaction_id)
+
             self.assertEqual(200, res.status_code)
             data = res.json
             detail = data.get("detail")
@@ -6135,7 +6150,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
                 {'user': 'cornelius',
                  'username': 'cornelius',
                  'refilltoken': '79906cc20567c6ca1e4b452500bb0662e107ce0fa14742c95b7e5c6a1417a519f829318622c1d569',
-                 'repsonse': {
+                 'response': {
                      'pubKey': 'a50102032620012158203f98500ddcedc3aa16d34ae9b7c12...ea3e37193f8f3d',
                      'credentialId': 'RuBlEInU7ycsILST7u6AoT7rdqN...4xM2SHltwbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA',
                      'rpId': 'netknights.it'},
@@ -6144,6 +6159,103 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             response = auth_items.get("offline")[0].get("response")
             _refill_token = auth_items.get("offline")[0].get("refilltoken")
             # Offline returns the credential ID and the pub key
-            self.assertEqual(recorded_allow_credentials, response.get("credentialId"))
+            self.assertEqual(self.recorded_allow_credentials, response.get("credentialId"))
             self.assertIn("pubKey", response)
             self.assertEqual(self.rpid, response.get("rpId"))
+            self.refilltokens.append(auth_items.get("offline")[0].get("refilltoken"))
+
+            # Set the sign count back to be able to use the same data for authentication again
+            token = get_one_token(serial=self.serial)
+            if not token:
+                self.fail("No token found for serial {0!s}".format(self.serial))
+            token.set_otp_count(0)
+
+        # Check that the refilltokens are NOT the same
+        self.assertEqual(len(set(self.refilltokens)), len(self.user_agents))
+
+    def test_03_authenticate_no_machine_name(self):
+        token = get_one_token(serial=self.serial)
+        if not token:
+            self.fail("No token found for serial {0!s}".format(self.serial))
+        # Set the sign count back to be able to use the same data for authentication again
+        token.set_otp_count(0)
+
+        headers = {"Host": "puck.office.netknights.it",
+                   "Origin": "https://puck.office.netknights.it",
+                   "User-Agent": "privacyidea-cp/1.1.1"}
+
+        transaction_id = self._trigger_and_modify_challenge(headers)
+        res = self._validate_check(headers, transaction_id)
+        self.assertEqual(200, res.status_code)
+        data = res.json
+        detail = data.get("detail")
+        result = data.get("result")
+        self.assertTrue(result.get("status"))
+        self.assertTrue(result.get("value"))
+        self.assertEqual("Found matching challenge", detail.get("message"))
+        # There should be no offline auth_items because the computer name is missing
+        # but there is no error "blocking" the real result of the authentication
+        self.assertIsNone(data.get("auth_items"))
+
+    def _assert_err_905(self, res):
+        self.assertEqual(400, res.status_code)
+        data = res.json
+        self.assertEqual(905, data.get("result").get("error").get("code"))
+        self.assertFalse(data.get("result").get("status"))
+
+    def test_04_refill_no_machine_name(self):
+        headers = {"Host": "puck.office.netknights.it",
+                   "Origin": "https://puck.office.netknights.it"}
+        self.assertTrue(len(self.refilltokens) > 0)
+        payload = {"refilltoken": self.refilltokens[0], "serial": self.serial, "pass": ""}
+        with self.app.test_request_context('/validate/offlinerefill',
+                                           environ_base={'REMOTE_ADDR': '10.0.0.17'},
+                                           method='POST',
+                                           data=payload,
+                                           headers=headers):
+            res = self.app.full_dispatch_request()
+            data = res.json
+            # In case of offlinerefill, the response should be 400, because the requested operation did not succeed,
+            # in contrast to the test above
+            self._assert_err_905(res)
+
+    def test_05_refill_per_machine(self):
+        headers = {"Host": "puck.office.netknights.it",
+                   "Origin": "https://puck.office.netknights.it",
+                   "User-Agent": self.user_agents[0]}
+
+        for i in range(len(self.user_agents)):
+            payload = {"refilltoken": self.refilltokens[i], "serial": self.serial, "pass": ""}
+            headers.update({"User-Agent": self.user_agents[i]})
+            with self.app.test_request_context('/validate/offlinerefill',
+                                               environ_base={'REMOTE_ADDR': '10.0.0.17'},
+                                               method='POST',
+                                               data=payload,
+                                               headers=headers):
+                res = self.app.full_dispatch_request()
+                data = res.json
+                self.assertEqual(200, res.status_code)
+                self.assertTrue(data.get("result").get("status"))
+                self.assertIsNotNone(data.get("auth_items"))
+                self.assertEqual(self.serial, data.get("auth_items").get("offline")[0].get("serial"))
+                self.refilltokens[i] = data.get("auth_items").get("offline")[0].get("refilltoken")
+
+    def test_06_remove_machine(self):
+        deleted_count = detach_token(self.serial, "offline")
+        self.assertEqual(1, deleted_count)
+
+        # An attempted refill for a detached token should result in an error
+        headers = {"Host": "puck.office.netknights.it",
+                   "Origin": "https://puck.office.netknights.it",
+                   "User-Agent": self.user_agents[0]}
+
+        for i in range(len(self.user_agents)):
+            payload = {"refilltoken": self.refilltokens[i], "serial": self.serial, "pass": ""}
+            headers.update({"User-Agent": self.user_agents[i]})
+            with self.app.test_request_context('/validate/offlinerefill',
+                                               environ_base={'REMOTE_ADDR': '10.0.0.17'},
+                                               method='POST',
+                                               data=payload,
+                                               headers=headers):
+                res = self.app.full_dispatch_request()
+                self._assert_err_905(res)

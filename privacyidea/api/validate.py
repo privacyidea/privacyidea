@@ -75,7 +75,7 @@ from .lib.utils import required
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
-from privacyidea.lib.utils import is_true
+from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
@@ -171,7 +171,7 @@ def offlinerefill():
     :return:
     """
     serial = getParam(request.all_data, "serial", required)
-    refilltoken = getParam(request.all_data, "refilltoken", required)
+    refilltoken_request = getParam(request.all_data, "refilltoken", required)
     password = getParam(request.all_data, "pass", required)
     tokenobj_list = get_tokens(serial=serial)
     if len(tokenobj_list) != 1:
@@ -186,17 +186,25 @@ def offlinerefill():
         tokenattachments = list_machine_tokens(serial=serial, application="offline")
         if tokenattachments:
             # TODO: Currently we do not distinguish, if a token had more than one offline attachment
-            # We need the options to pass the count and the rounds for the next offline OTP values,
-            # which could have changed in the meantime.
-            options = tokenattachments[0].get("options")
-            # check refill token:
-            if tokenobj.get_tokeninfo("refilltoken") == refilltoken:
-                # refill
+            # check refill token depending on token type
+            refilltoken_stored = None
+            if tokenobj.type.lower() == "hotp":
+                refilltoken_stored = tokenobj.get_tokeninfo("refilltoken")
+            elif tokenobj.type.lower() == "webauthn":
+                computer_name = get_computer_name_from_user_agent(request.user_agent.string)
+                if computer_name is None:
+                    raise ParameterError("The computer name is missing.")
+                refilltoken_stored = tokenobj.get_tokeninfo("refilltoken_" + computer_name)
+
+            if refilltoken_stored and refilltoken_stored == refilltoken_request:
+                # We need the options to pass the count and the rounds for the next offline OTP values,
+                # which could have changed in the meantime.
+                options = tokenattachments[0].get("options")
                 otps = MachineApplication.get_refill(tokenobj, password, options)
-                refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
+                refilltoken_new = MachineApplication.generate_new_refilltoken(tokenobj, request.user_agent.string)
                 response = send_result(True)
                 content = response.json
-                content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
+                content["auth_items"] = {"offline": [{"refilltoken": refilltoken_new,
                                                       "response": otps,
                                                       "serial": serial}]}
                 response.set_data(json.dumps(content))

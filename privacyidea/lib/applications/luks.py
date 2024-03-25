@@ -38,8 +38,10 @@ class MachineApplication(MachineApplicationBase):
     @staticmethod
     def get_authentication_item(token_type,
                                 serial,
-                                challenge=None, options=None,
-                                filter_param=None):
+                                challenge=None,
+                                options=None,
+                                filter_param=None,
+                                user_agent=None):
         """
         :param token_type: the type of the token. At the moment
                            we only support yubikeys, tokentype "TOTP".

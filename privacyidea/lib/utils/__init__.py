@@ -1564,7 +1564,7 @@ def get_plugin_info_from_useragent(useragent):
     :rtype: tuple
     """
     if not useragent:
-        log.info(f"No user-agent string given")
+        log.info("No user-agent string given")
         return "", None, None
     ua_match = ua_re.match(useragent)
     if ua_match:
@@ -1572,3 +1572,22 @@ def get_plugin_info_from_useragent(useragent):
     else:
         log.info(f"Could not match user-agent string: {useragent}")
         return "", None, None
+
+
+def get_computer_name_from_user_agent(user_agent):
+    """
+    Searches for entries in the user agent that could identify the machine.
+    It is expected that the string following the key does not contain whitespaces.
+    Example: ComputerName/Laptop-3324231
+
+    :param user_agent: The user agent string
+    :type user_agent: str
+    :return: The computer name or None if nothing is found
+    :rtype: str or None
+    """
+    keys = ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
+    if user_agent:
+        for key in keys:
+            if key in user_agent:
+                return user_agent.split(key + "/")[1].split(" ")[0]
+    return None
