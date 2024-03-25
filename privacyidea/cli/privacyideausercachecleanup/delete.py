@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# 2024-03-22 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
+#            Migrate to click
 # 2017-04-24 Friedrich Weber <friedrich.weber@netknights.it>
 #
 # Copyright (c) 2017, Friedrich Weber
@@ -39,10 +42,11 @@ This script deletes expired entries from the user cache.
 __version__ = "0.1"
 
 from privacyidea.app import create_app
-from flask_script import Manager
+import click
+from flask.cli import AppGroup
 
-app = create_app(config_name='production', silent=True)
-manager = Manager(app)
+delete_cli = AppGroup("delete", help="Delete all cache entries that are considered expired according to the"
+                                     " UserCacheExpiration configuration setting.")
 
 
 def _get_expired_entries():
@@ -56,7 +60,8 @@ def _get_expired_entries():
 LIST_FORMAT = '{:<5} {:<10} {:<10} {:<30} {:<10}'
 
 
-@manager.command
+@delete_cli.command("delete")
+@click.option("--noaction", is_flag=False, default=False)
 def delete(noaction=False):
     """
     Delete all cache entries that are considered expired according to the
@@ -87,7 +92,3 @@ def delete(noaction=False):
             db.session.commit()
         else:
             print("'--noaction' was passed, not doing anything.")
-
-
-if __name__ == '__main__':
-    manager.run()
