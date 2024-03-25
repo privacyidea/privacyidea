@@ -247,6 +247,14 @@ This condition checks the result of an event.
 E.g. the result of the event *validate_check* can be a failed authentication.
 This can be the trigger to notify either the token owner or the administrator.
 
+**result_authentication**
+
+This checks the entry `result->authentication` in the response.
+Possible values are "ACCEPT", "REJECT", "DECLINED" and "CHALLENGE".
+It is an enhancement to `result_value`.
+If `result_value` is *true*, the `result_authentication` will be "ACCEPT".
+If `result_value` is *false*, the `result_authentication` can be "CHALLENGE", "REJECT" or "DELINCED".
+
 **rollout_state**
 
 This is the rollout_state of a token. A token can be rolled out in several steps
