@@ -306,6 +306,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
         user_case_insensitive: false,
         client: "",
         time: "",
+        description: "",
         priority: 1,
         conditions: [],
         pinode: []
@@ -411,6 +412,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             $scope.params.client = policy.client;
             $scope.params.time = policy.time;
             $scope.params.priority = policy.priority;
+            $scope.params.description = policy.description;
             // we need to deep-copy the policy conditions to ensure that we're working on our own copy
             $scope.params.conditions = angular.copy(policy.conditions);
             // tick the realms and the resolvers

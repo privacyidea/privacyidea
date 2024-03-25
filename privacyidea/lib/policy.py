@@ -170,7 +170,7 @@ from configobj import ConfigObj
 
 from operator import itemgetter
 import logging
-from ..models import (Policy, db, save_config_timestamp, Token)
+from ..models import (Policy, db, save_config_timestamp, Token, Description)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
                                     get_multichallenge_enrollable_tokentypes)
@@ -1321,7 +1321,7 @@ class PolicyClass(object):
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
                adminrealm=None, adminuser=None, priority=None, check_all_resolvers=False,
-               conditions=None, pinode=None, user_case_insensitive=False):
+               conditions=None, pinode=None, description=None, user_case_insensitive=False):
     """
     Function to set a policy.
 
@@ -1352,6 +1352,8 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :type user_case_insensitive: bool
     :param conditions: A list of 5-tuples (section, key, comparator, value, active) of policy conditions
     :param pinode: A privacyIDEA node or a list of privacyIDEA nodes.
+    :param description: A description for the policy
+    :type description: str
     :return: The database ID of the policy
     :rtype: int
     """
@@ -1446,6 +1448,14 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                      adminuser=adminuser, priority=priority,
                      check_all_resolvers=check_all_resolvers,
                      conditions=conditions, pinode=pinode, user_case_insensitive=user_case_insensitive).save()
+    if description:
+        d1 = Description.query.filter_by(object_id=ret, object_type="policy").first()
+        if d1:
+            d1.description = description
+            save_config_timestamp()
+            db.session.commit()
+        else:
+            a = Description(object_id=ret, name=name, object_type="policy", description=description).save()
     return ret
 
 
