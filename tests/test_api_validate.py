@@ -5586,7 +5586,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertEqual(result.get("authentication"), "CHALLENGE")
             detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
-            self.assertTrue("Please scan the QR code and enter the OTP value!" in detail.get("message"), detail.get("message"))
+            self.assertTrue("Please scan the QR code and enter the OTP value!" in detail.get("message"),
+                            detail.get("message"))
             # Get image and client_mode
             self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"), detail)
             # Check, that multi_challenge is also contained.
@@ -5619,7 +5620,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         self.assertNotIn('ldappw', log_msg, log_msg)
         self.assertIn('HIDDEN', log_msg, log_msg)
         # Verify that the force_pin enrollment policy worked for validate-check-enrollment
-        self.assertIn('Exiting get_init_tokenlabel_parameters with result {\'force_app_pin\': True}', log_msg, log_msg)
+        self.assertIn('Exiting get_init_tokenlabel_parameters with result {\'force_app_pin\': True}',
+                      log_msg, log_msg)
         logging.getLogger('privacyidea').setLevel(logging.INFO)
 
         # Cleanup
@@ -5668,7 +5670,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertEqual(result.get("authentication"), "CHALLENGE")
             detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
-            self.assertTrue("Please scan the QR code and enter the OTP value!" in detail.get("message"), detail.get("message"))
+            self.assertTrue("Please scan the QR code and enter the OTP value!" in detail.get("message"),
+                            detail.get("message"))
             # Get image and client_mode
             self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"))
             # Check, that multi_challenge is also contained.
