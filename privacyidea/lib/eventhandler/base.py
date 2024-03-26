@@ -454,7 +454,7 @@ class BaseEventHandler(object):
         if CONDITION.RESULT_AUTHENTICATION in conditions:
             condition_value = conditions.get(CONDITION.RESULT_AUTHENTICATION)
             result_auth = content.get("result", {}).get("authentication")
-            if is_true(condition_value) != is_true(result_auth):
+            if condition_value != result_auth:
                 return False
 
         # checking of max-failcounter state of the token

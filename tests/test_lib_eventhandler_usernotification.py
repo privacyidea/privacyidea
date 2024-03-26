@@ -259,7 +259,7 @@ class UserNotificationTestCase(MyTestCase):
              "handler_def": {"conditions": {"result_authentication": AUTH_RESPONSE.ACCEPT}},
              "response": resp,
              "request": req})
-        self.assertTrue(r)
+        self.assertFalse(r)
 
         # We expect the result_value to be True, but it is not.
         r = uhandler.check_condition(
