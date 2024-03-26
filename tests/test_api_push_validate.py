@@ -380,6 +380,8 @@ class PushAPITestCase(MyApiTestCase):
         # 1. set policies.
         set_policy("pol_passthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
 
+        set_policy("pol_tokenlabel", scope=SCOPE.ENROLL, action="{0!s}=Pushy".format(ACTION.TOKENLABEL))
+
         # 2. authenticate user via passthru
         with self.app.test_request_context('/validate/check',
                                            method='POST',

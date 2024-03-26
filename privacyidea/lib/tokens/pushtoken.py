@@ -34,7 +34,7 @@ from dateutil.parser import isoparse
 import traceback
 
 from privacyidea.api.lib.utils import getParam
-from privacyidea.api.lib.policyhelper import get_pushtoken_add_config
+from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
 from privacyidea.lib.token import get_one_token, init_token
 from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
@@ -1068,7 +1068,11 @@ class PushTokenClass(TokenClass):
         # Create a challenge!
         c = token_obj.create_challenge(options={"session": CHALLENGE_SESSION.ENROLLMENT})
         # get details of token
-        init_details = token_obj.get_init_detail(params=params)
+        enroll_params = get_init_tokenlabel_parameters(g, user_object=user_obj,
+                                                       token_type=cls.get_class_type())
+        params.update(enroll_params)
+        init_details = token_obj.get_init_detail(params=params,
+                                                 user=user_obj)
         detail["transaction_ids"] = [c[2]]
         chal = {"transaction_id": c[2],
                 "image": init_details.get("pushurl", {}).get("img"),
