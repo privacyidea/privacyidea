@@ -41,7 +41,7 @@ from privacyidea.lib.counter import read as counter_read
 from privacyidea.lib.utils import (compare_condition, compare_value_value,
                                    compare_generic_condition,
                                    parse_time_offset_from_now, is_true,
-                                   check_ip_in_policy)
+                                   check_ip_in_policy, AUTH_RESPONSE)
 import datetime
 from dateutil.tz import tzlocal
 import re
@@ -72,6 +72,7 @@ class CONDITION(object):
     DETAIL_MESSAGE = "detail_message"
     RESULT_VALUE = "result_value"
     RESULT_STATUS = "result_status"
+    RESULT_AUTHENTICATION = "result_authentication"
     TOKENREALM = "tokenrealm"
     TOKENRESOLVER = "tokenresolver"
     REALM = "realm"
@@ -196,6 +197,12 @@ class BaseEventHandler(object):
                 "desc": _("The result.status within the response is "
                           "True or False."),
                 "value": ("True", "False"),
+                "group": GROUP.GENERAL
+            },
+            CONDITION.RESULT_AUTHENTICATION: {
+                "type": "str",
+                "desc": _("The result.authentication within the response is the given value."),
+                "value": (AUTH_RESPONSE.ACCEPT, AUTH_RESPONSE.REJECT, AUTH_RESPONSE.CHALLENGE, AUTH_RESPONSE.DECLINED),
                 "group": GROUP.GENERAL
             },
             "token_locked": {
@@ -442,6 +449,12 @@ class BaseEventHandler(object):
             condition_value = conditions.get(CONDITION.RESULT_STATUS)
             result_status = content.get("result", {}).get("status")
             if is_true(condition_value) != is_true(result_status):
+                return False
+
+        if CONDITION.RESULT_AUTHENTICATION in conditions:
+            condition_value = conditions.get(CONDITION.RESULT_AUTHENTICATION)
+            result_auth = content.get("result", {}).get("authentication")
+            if condition_value != result_auth:
                 return False
 
         # checking of max-failcounter state of the token

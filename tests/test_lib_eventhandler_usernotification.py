@@ -24,7 +24,7 @@ from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.token import init_token, unassign_token, remove_token
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import User, create_user
-from privacyidea.lib.utils import to_unicode
+from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
 from privacyidea.models import TokenOwner
 from . import smtpmock
 from .base import MyTestCase, FakeFlaskG, FakeAudit
@@ -232,7 +232,7 @@ class UserNotificationTestCase(MyTestCase):
         uhandler = UserNotificationEventHandler()
         resp = Response()
         # The actual result_status is false and the result_value is false.
-        resp.data = """{"result": {"value": false, "status": false}}"""
+        resp.data = """{"result": {"value": false, "authentication": "REJECT", "status": false}}"""
         builder = EnvironBuilder(method='POST')
         env = builder.get_environ()
         req = Request(env)
@@ -244,6 +244,22 @@ class UserNotificationTestCase(MyTestCase):
              "response": resp,
              "request": req})
         self.assertEqual(r, False)
+
+        # We expect the result_authentication to be "REJECT" and it is
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"result_authentication": AUTH_RESPONSE.REJECT}},
+             "response": resp,
+             "request": req})
+        self.assertTrue(r)
+
+        # We expect the result_authentication to be "ACCEPT" and it is not
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"result_authentication": AUTH_RESPONSE.ACCEPT}},
+             "response": resp,
+             "request": req})
+        self.assertFalse(r)
 
         # We expect the result_value to be True, but it is not.
         r = uhandler.check_condition(

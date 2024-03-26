@@ -64,6 +64,18 @@ CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters,  # characters
                           "s": string.punctuation}    # special
 
 
+class AUTH_RESPONSE(object):
+    __doc__ = """The return value in "result->authentication".
+    CHALLENGE indicates the start of a challenge and
+    DECLINED indicates a declined challenge, which e.g. happens with PUSH tokens, if the user declines the
+    authentication request.
+    """
+    ACCEPT = "ACCEPT"
+    REJECT = "REJECT"
+    CHALLENGE = "CHALLENGE"
+    DECLINED = "DECLINED"
+
+
 def check_time_in_range(time_range, check_time=None):
     """
     Check if the given time is contained in the time_range string.
@@ -1290,19 +1302,16 @@ def prepare_result(obj, rid=1, details=None):
         details["threadid"] = threading.current_thread().ident
         res["detail"] = details
 
-    # Fix for sending an information about challenge response
-    # TODO: Make this default, when we move from the binary result->value to
-    #       more states in version 4.0
     if rid > 1:
         if obj:
-            r_authentication = "ACCEPT"
+            r_authentication = AUTH_RESPONSE.ACCEPT
         elif not obj and details.get("multi_challenge"):
             # We have a challenge authentication
-            r_authentication = "CHALLENGE"
+            r_authentication = AUTH_RESPONSE.CHALLENGE
         elif not obj and (details.get("challenge_status") == "declined"):
-            r_authentication = "DECLINED"
+            r_authentication = AUTH_RESPONSE.DECLINED
         else:
-            r_authentication = "REJECT"
+            r_authentication = AUTH_RESPONSE.REJECT
         res["result"]["authentication"] = r_authentication
 
     return res
