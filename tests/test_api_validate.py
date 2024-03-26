@@ -5586,7 +5586,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertEqual(result.get("authentication"), "CHALLENGE")
             detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
-            self.assertTrue("Please scan the QR code!" in detail.get("message"), detail.get("message"))
+            self.assertTrue("Please scan the QR code and enter the OTP value!" in detail.get("message"),
+                            detail.get("message"))
             # Get image and client_mode
             self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"), detail)
             # Check, that multi_challenge is also contained.
@@ -5594,7 +5595,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertEqual(CLIENTMODE.INTERACTIVE, chal.get("client_mode"), detail)
             self.assertIn("image", detail, detail)
             self.assertEqual(1, len(detail.get("messages")))
-            self.assertEqual("Please scan the QR code!", detail.get("messages")[0])
+            self.assertEqual("Please scan the QR code and enter the OTP value!", detail.get("messages")[0])
             serial = detail.get("serial")
 
         # 3. scan the qrcode / Get the OTP value
@@ -5619,7 +5620,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         self.assertNotIn('ldappw', log_msg, log_msg)
         self.assertIn('HIDDEN', log_msg, log_msg)
         # Verify that the force_pin enrollment policy worked for validate-check-enrollment
-        self.assertIn('Exiting get_init_tokenlabel_parameters with result {\'force_app_pin\': True}', log_msg, log_msg)
+        self.assertIn('Exiting get_init_tokenlabel_parameters with result {\'force_app_pin\': True}',
+                      log_msg, log_msg)
         logging.getLogger('privacyidea').setLevel(logging.INFO)
 
         # Cleanup
@@ -5668,7 +5670,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertEqual(result.get("authentication"), "CHALLENGE")
             detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
-            self.assertTrue("Please scan the QR code!" in detail.get("message"), detail.get("message"))
+            self.assertTrue("Please scan the QR code and enter the OTP value!" in detail.get("message"),
+                            detail.get("message"))
             # Get image and client_mode
             self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"))
             # Check, that multi_challenge is also contained.
@@ -5829,6 +5832,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
                    action="{0!s}=sms".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
+        # Set an individual text
+        set_policy("pol_multienroll_text", scope=SCOPE.AUTH,
+                   action="{0!s}='Phone number enter you must!'".format(ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT))
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -5842,7 +5848,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertEqual(result.get("authentication"), "CHALLENGE")
             detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
-            self.assertTrue("Please enter your new phone number!" in detail.get("message"), detail.get("message"))
+            self.assertTrue("Phone number enter you must!" in detail.get("message"), detail.get("message"))
             # Get image and client_mode
             self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"))
             # Check, that multi_challenge is also contained.
