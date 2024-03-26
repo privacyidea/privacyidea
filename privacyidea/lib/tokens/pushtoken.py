@@ -1041,7 +1041,7 @@ class PushTokenClass(TokenClass):
         return otp_counter
 
     @classmethod
-    def enroll_via_validate(cls, g, content, user_obj):
+    def enroll_via_validate(cls, g, content, user_obj, message=None):
         """
         This class method is used in the policy ENROLL_VIA_MULTICHALLENGE.
         It enrolls a new token of this type and returns the necessary information
@@ -1050,6 +1050,7 @@ class PushTokenClass(TokenClass):
         :param g: context object
         :param content: The content of a response
         :param user_obj: A user object
+        :param message: An alternative message displayed to the user during enrollment
         :return: None, the content is modified
         """
         # Get the firebase configuration from the policies
@@ -1079,6 +1080,6 @@ class PushTokenClass(TokenClass):
                 "client_mode": CLIENTMODE.POLL,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
-                "message": _("Please scan the QR code!")}
+                "message": message or _("Please scan the QR code!")}
         detail["multi_challenge"] = [chal]
         detail.update(chal)
