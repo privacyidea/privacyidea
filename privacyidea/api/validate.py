@@ -442,11 +442,13 @@ def check():
                         result["attributes"][k] = v
     serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]]) \
         if 'multi_challenge' in details else details.get('serial')
+    r = send_result(result, rid=2, details=details)
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": success,
+                        "authentication": r.json.get("result").get("authentication") or "",
                         "serial": serials,
                         "token_type": details.get("type")})
-    return send_result(result, rid=2, details=details)
+    return r
 
 
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])
@@ -596,16 +598,18 @@ def trigger_challenge():
     result_obj = len(details.get("multi_challenge"))
 
     challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
+    r = send_result(result_obj, rid=2, details=details)
     g.audit_object.log({
         "user": user.login,
         "resolver": user.resolver,
         "realm": user.realm,
         "success": result_obj > 0,
+        "authentication": r.json.get("result").get("authentication"),
         "info": log_used_user(user, "triggered {0!s} challenges".format(result_obj)),
         "serial": ",".join(challenge_serials),
     })
 
-    return send_result(result_obj, rid=2, details=details)
+    return r
 
 
 @validate_blueprint.route('/polltransaction', methods=['GET'])
