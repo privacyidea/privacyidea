@@ -345,7 +345,7 @@ myApp.directive('equals', function() {
 myApp.directive('statusClass', function() {
     return {
         link: function (scope, element, attrs, ngModel) {
-            if (["OK", "1", 1].indexOf( attrs.statusClass )>-1) {
+            if (["ACCEPT", "OK", "1", 1].indexOf( attrs.statusClass )>-1) {
                 element.addClass("label label-success");
                 element.removeClass("label-danger");
             } else {

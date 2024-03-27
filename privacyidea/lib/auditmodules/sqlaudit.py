@@ -294,6 +294,7 @@ class Audit(AuditBase):
                 duration = None
             le = LogEntry(action=self.audit_data.get("action"),
                           success=int(self.audit_data.get("success", 0)),
+                          authentication=self.audit_data.get("authentication"),
                           serial=self.audit_data.get("serial"),
                           token_type=self.audit_data.get("token_type"),
                           user=self.audit_data.get("user"),
@@ -304,6 +305,8 @@ class Audit(AuditBase):
                           info=self.audit_data.get("info"),
                           privacyidea_server=self.audit_data.get("privacyidea_server"),
                           client=self.audit_data.get("client", ""),
+                          user_agent=self.audit_data.get("user_agent"),
+                          user_agent_version=self.audit_data.get("user_agent_version"),
                           loglevel=self.audit_data.get("log_level"),
                           clearance_level=self.audit_data.get("clearance_level"),
                           policies=self.audit_data.get("policies"),
@@ -577,6 +580,7 @@ class Audit(AuditBase):
         audit_dict['sig_check'] = "OK" if sig else "FAIL"
         audit_dict['missing_line'] = "OK" if is_not_missing else "FAIL"
         audit_dict['action'] = audit_entry.action
+        audit_dict['authentication'] = audit_entry.authentication
         audit_dict['success'] = audit_entry.success
         audit_dict['serial'] = audit_entry.serial
         audit_dict['token_type'] = audit_entry.token_type
@@ -589,6 +593,8 @@ class Audit(AuditBase):
         audit_dict['privacyidea_server'] = audit_entry.privacyidea_server
         audit_dict['policies'] = audit_entry.policies
         audit_dict['client'] = audit_entry.client
+        audit_dict['user_agent'] = audit_entry.user_agent
+        audit_dict['user_agent_version'] = audit_entry.user_agent_version
         audit_dict['log_level'] = audit_entry.loglevel
         audit_dict['clearance_level'] = audit_entry.clearance_level
         audit_dict['startdate'] = audit_entry.startdate.isoformat() if audit_entry.startdate else None

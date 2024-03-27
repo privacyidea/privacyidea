@@ -50,11 +50,14 @@ myApp.controller("auditController", ["AuditFactory", "$scope", "$rootScope",
         $scope.params.tokentype = "*" + ($scope.typeFilter || "") + "*";
         $scope.params.action = "*" + ($scope.actionFilter || "") + "*";
         $scope.params.success = "*" + ($scope.successFilter || "") + "*";
+        $scope.params.authentication = "*" + ($scope.authenticationFilter || "") +"*";
         $scope.params.action_detail = "*" + ($scope.action_detailFilter || "") + "*";
         $scope.params.realm = "*" + ($scope.realmFilter || "") + "*";
         $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
         $scope.params.policies = "*" + ($scope.policiesFilter || "") + "*";
         $scope.params.client = "*" + ($scope.clientFilter || "") + "*";
+        $scope.params.user_agent = "*" + ($scope.user_agentFilter || "") +"*";
+        $scope.params.user_agent_version = "*" + ($scope.user_agent_versionFilter || "") +"*";
         $scope.params.privacyidea_server = "*" + ($scope.serverFilter || "") + "*";
         $scope.params.info = "*" + ($scope.infoFilter || "") + "*";
         $scope.params.date = "*" + ($scope.dateFilter || "") + "*";
