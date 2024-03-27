@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Nathan <bonnemainsnathan@gmail.com>\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
 "Language: fr\n"
@@ -1149,45 +1149,45 @@ msgstr ""
 #, fuzzy
 msgid "Do you really want to delete this event?"
 msgstr ""
-"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des "
-"utilisateurs ?"
+"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des utilisateurs "
+"?"
 
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:25
 #, fuzzy
 msgid "Do you really want to delete this machine resolver?"
 msgstr ""
-"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des "
-"utilisateurs ?"
+"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des utilisateurs "
+"?"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:107
 #, fuzzy
 msgid "Do you really want to delete this object?"
 msgstr ""
-"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des "
-"utilisateurs ?"
+"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des utilisateurs "
+"?"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:18
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:52
 #, fuzzy
 msgid "Do you really want to delete this periodic task?"
 msgstr ""
-"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des "
-"utilisateurs ?"
+"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des utilisateurs "
+"?"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:16
 #: privacyidea/static/components/config/views/config.policies.list.html:76
 #, fuzzy
 msgid "Do you really want to delete this policy?"
 msgstr ""
-"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des "
-"utilisateurs ?"
+"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des utilisateurs "
+"?"
 
 #: privacyidea/static/components/config/views/config.resolvers.list.html:24
 #, fuzzy
 msgid "Do you really want to delete this resolver?"
 msgstr ""
-"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des "
-"utilisateurs ?"
+"Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des utilisateurs "
+"?"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:148
 msgid "Domain CA"
