@@ -2850,6 +2850,7 @@ class Audit(MethodsMixin, db.Model):
     def __init__(self,
                  action="",
                  success=0,
+                 authentication="",
                  serial="",
                  token_type="",
                  user="",
@@ -2860,6 +2861,8 @@ class Audit(MethodsMixin, db.Model):
                  info="",
                  privacyidea_server="",
                  client="",
+                 user_agent="",
+                 user_agent_version="",
                  loglevel="default",
                  clearance_level="default",
                  thread_id="0",
@@ -2873,7 +2876,7 @@ class Audit(MethodsMixin, db.Model):
         self.duration = duration
         self.action = convert_column_to_unicode(action)
         self.success = success
-        self.authentication = ""
+        self.authentication = convert_column_to_unicode(authentication)
         self.serial = convert_column_to_unicode(serial)
         self.token_type = convert_column_to_unicode(token_type)
         self.user = convert_column_to_unicode(user)
@@ -2888,8 +2891,8 @@ class Audit(MethodsMixin, db.Model):
         self.clearance_level = convert_column_to_unicode(clearance_level)
         self.thread_id = convert_column_to_unicode(thread_id)
         self.policies = convert_column_to_unicode(policies)
-        self.user_agent = ""
-        self.user_agent_version = ""
+        self.user_agent = convert_column_to_unicode(user_agent)
+        self.user_agent_version = convert_column_to_unicode(user_agent_version)
 
 
 ### User Cache
