@@ -115,13 +115,13 @@
                 </th>
                 <th ng-show="audit_columns.includes('user_agent')"
                     class="pifilter"><translate>user agent</translate>
-                    <pi-filter ng-model="userAgentFilter"
+                    <pi-filter ng-model="user_agentFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
                 <th ng-show="audit_columns.includes('user_agent_version')"
                     class="pifilter"><translate>user agent version</translate>
-                    <pi-filter ng-model="userAgentVersionFilter"
+                    <pi-filter ng-model="user_agent_versionFilter"
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
