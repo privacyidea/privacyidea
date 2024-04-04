@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: pablo-knight <julio.storch@netknights.it>\n"
+"PO-Revision-Date: 2024-04-05 15:01+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
@@ -1866,7 +1866,7 @@ msgstr ""
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:172
 msgid "Inactive Events"
-msgstr "Inaktive Ereginisse"
+msgstr "Inaktive Ereignisse"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:135
 msgid "Inactive Policies"
