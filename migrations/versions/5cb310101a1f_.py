@@ -26,12 +26,6 @@ Session = sessionmaker()
 def upgrade():
     migration_context = context.get_context()
     if migration_context.dialect.supports_sequences:
-        if migration_context.dialect.name in ['mariadb', 'mysql']:
-            # setting "increment" to 0 works like auto-increment but also supports replication
-            # See <https://mariadb.com/kb/en/sequence-overview/#replication>
-            inc_value = 0
-        else:
-            inc_value = 1
         bind = op.get_bind()
         # We only need a read session, so we do not need a commit
         session = Session(bind=bind)
@@ -51,7 +45,7 @@ def upgrade():
                 current_id = session.query(func.max(tbl.c.id)).one()[0] or 0
                 print(f"CurrentID in Table {tbl.name}: {current_id}")
                 try:
-                    seq = Sequence(seq_name, start=(current_id + 1), increment=inc_value)
+                    seq = Sequence(seq_name, start=(current_id + 1))
                     print(f" +++ Creating Sequence: {seq_name}")
                     op.execute(CreateSequence(seq, if_not_exists=True))
                 except OperationalError as exx:
