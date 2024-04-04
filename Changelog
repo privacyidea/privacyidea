@@ -1,3 +1,8 @@
+Version 3.9.3, 2024-04-04
+
+  Fixes:
+  * Fix creation of database tables with galera cluster (#3863)
+
 Version 3.9.2, 2023-12-20
 
   Fixes:
