@@ -68,7 +68,7 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            webauthntoken_auth, increase_failcounter_on_challenge)
 from privacyidea.api.lib.utils import (send_result, get_all_params,
                                        verify_auth_token, getParam)
-from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode, to_unicode
+from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.event import event, EventConfiguration
 from privacyidea.lib import _
@@ -101,8 +101,8 @@ def before_request():
     g.serial = getParam(request.all_data, "serial", default=None)
     g.audit_object.log({"success": False,
                         "client": g.client_ip,
-                        "user_agent": request.user_agent.browser,
-                        "user_agent_version": request.user_agent.version,
+                        "user_agent": get_plugin_info_from_useragent(request.user_agent.string)[0],
+                        "user_agent_version": get_plugin_info_from_useragent(request.user_agent.string)[1],
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "action_detail": "",

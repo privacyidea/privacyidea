@@ -102,7 +102,7 @@ from privacyidea.lib.event import EventConfiguration
 import logging
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
-from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
 from privacyidea.lib.event import event
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
 from privacyidea.lib.subscriptions import CheckSubscription
@@ -148,8 +148,8 @@ def before_request():
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,
-                        "user_agent": request.user_agent.browser,
-                        "user_agent_version": request.user_agent.version,
+                        "user_agent": get_plugin_info_from_useragent(request.user_agent.string)[0],
+                        "user_agent_version": get_plugin_info_from_useragent(request.user_agent.string)[1],
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "thread_id": "{0!s}".format(threading.current_thread().ident),
