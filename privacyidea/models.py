@@ -1519,7 +1519,7 @@ def cleanup_challenges():
 #
 
 
-class Description(TimestampMethodsMixin, db.Model):
+class PolicyDescription(TimestampMethodsMixin, db.Model):
     """
     The description table is used to store the description of policy
     """
@@ -1589,7 +1589,7 @@ class Policy(TimestampMethodsMixin, db.Model):
                                  # Likewise, whenever a Policy object is deleted, its conditions are also
                                  # deleted (delete). Conditions without a policy are deleted (delete-orphan).
                                  cascade="save-update, merge, delete, delete-orphan")
-    description = db.relationship('Description', backref='policy', cascade="save-update, merge, delete, delete-orphan")
+    description = db.relationship('PolicyDescription', backref='policy', cascade="save-update, merge, delete, delete-orphan")
 
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="", adminuser="",

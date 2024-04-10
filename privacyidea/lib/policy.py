@@ -170,7 +170,7 @@ from configobj import ConfigObj
 
 from operator import itemgetter
 import logging
-from ..models import (Policy, db, save_config_timestamp, Token, Description)
+from ..models import (Policy, db, save_config_timestamp, Token, PolicyDescription)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
                                     get_multichallenge_enrollable_tokentypes)
@@ -1449,13 +1449,13 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                      check_all_resolvers=check_all_resolvers,
                      conditions=conditions, pinode=pinode, user_case_insensitive=user_case_insensitive).save()
     if description:
-        d1 = Description.query.filter_by(object_id=ret, object_type="policy").first()
+        d1 = PolicyDescription.query.filter_by(object_id=ret, object_type="policy").first()
         if d1:
             d1.description = description
             save_config_timestamp()
             db.session.commit()
         else:
-            a = Description(object_id=ret, name=name, object_type="policy", description=description).save()
+            a = PolicyDescription(object_id=ret, name=name, object_type="policy", description=description).save()
     return ret
 
 
