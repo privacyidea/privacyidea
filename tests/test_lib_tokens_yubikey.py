@@ -2,17 +2,18 @@
 This test file tests the lib.tokens.yubikeytoken
 
 """
-PWFILE = "tests/testdata/passwords"
-
 from .base import MyTestCase
 from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass,
                                                  yubico_api_signature,
                                                  yubico_check_api_signature)
 from privacyidea.lib.token import init_token
-from privacyidea.models import (Token)
+from privacyidea.lib.error import EnrollmentError
+from privacyidea.models import Token
 from flask import Request, g
 from werkzeug.test import EnvironBuilder
 from privacyidea.lib.config import set_privacyidea_config
+
+PWFILE = "tests/testdata/passwords"
 
 
 class YubikeyTokenTestCase(MyTestCase):
@@ -148,6 +149,14 @@ class YubikeyTokenTestCase(MyTestCase):
         # check failcounter
         self.assertEqual(db_token.failcount, 5)
         token.set_failcount(old_failcounter)
+
+    def test_06_check_init_update(self):
+        self.assertRaises(EnrollmentError, init_token,
+                          {"type": "yubikey",
+                           "otpkey": '313233343536373839303132333435'})
+        self.assertRaises(EnrollmentError, init_token,
+                          {"type": "yubikey",
+                           "otpkey": '3132333435363738393031323334353637'})
 
     def test_09_api_signature(self):
         api_key = "LqeG/IZscF1f7/oGQBqNnGY7MLk="
