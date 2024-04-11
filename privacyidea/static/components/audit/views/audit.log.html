@@ -53,6 +53,12 @@
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
+                <th ng-show="audit_columns.includes('authentication')"
+                    class="pifilter"><translate>authentication</translate>
+                    <pi-filter ng-model="authenticationFilter"
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
+                </th>
                 <th ng-show="audit_columns.includes('action_detail')"
                     class="pifilter"><translate>action detail</translate>
                     <pi-filter ng-model="action_detailFilter"
@@ -107,6 +113,18 @@
                                ng-change="getAuditList('livesearch')"
                                ng-keypress="($event.which==13)?getAuditList():return">
                 </th>
+                <th ng-show="audit_columns.includes('user_agent')"
+                    class="pifilter"><translate>user agent</translate>
+                    <pi-filter ng-model="user_agentFilter"
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
+                </th>
+                <th ng-show="audit_columns.includes('user_agent_version')"
+                    class="pifilter"><translate>user agent version</translate>
+                    <pi-filter ng-model="user_agent_versionFilter"
+                               ng-change="getAuditList('livesearch')"
+                               ng-keypress="($event.which==13)?getAuditList():return">
+                </th>
                 <th ng-show="audit_columns.includes('info')"
                     class="pifilter"><translate>info</translate>
                     <pi-filter ng-model="infoFilter"
@@ -134,6 +152,7 @@
                 <td ng-if="audit_columns.includes('duration')">{{ audit.duration }}</td>
                 <td ng-if="audit_columns.includes('action')">{{ audit.action }}</td>
                 <td ng-if="audit_columns.includes('success')"><span status-class="{{ audit.success }}">{{ audit.success }}</span>
+                <td ng-if="audit_columns.includes('authentication')"><span status-class="{{ audit.authentication }}">{{ audit.authentication }}</span></td>
                 <td ng-if="audit_columns.includes('action_detail')">{{ audit.action_detail }}</td>
                 <td>
                     <a ng-repeat="serial in audit.serial_list" ui-sref="token.details({tokenSerial:serial})"
@@ -165,6 +184,8 @@
                     </span>
                 </td>
                 <td ng-if="audit_columns.includes('client')">{{ audit.client }}</td>
+                <td ng-if="audit_columns.includes('user_agent')">{{ audit.user_agent }}</td>
+                <td ng-if="audit_columns.includes('user_agent_version')">{{ audit.user_agent_version }}</td>
                 <td ng-if="audit_columns.includes('info')">{{ audit.info }}</td>
                 <td ng-if="audit_columns.includes('sig_check')"><span status-class="{{ audit.sig_check }}">
                 {{ audit.sig_check }}
