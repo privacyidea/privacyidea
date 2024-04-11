@@ -1452,10 +1452,9 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
         d1 = PolicyDescription.query.filter_by(object_id=ret, object_type="policy").first()
         if d1:
             d1.description = description
-            save_config_timestamp()
-            db.session.commit()
         else:
-            a = PolicyDescription(object_id=ret, name=name, object_type="policy", description=description).save()
+            PolicyDescription(object_id=ret, name=name, object_type="policy", description=description).save()
+    db.session.commit()
     return ret
 
 
