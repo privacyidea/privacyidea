@@ -110,6 +110,8 @@ def set_policy_api(name=None):
     :jsonparam basestring name: name of the policy
     :jsonparam scope: the scope of the policy like "admin", "system",
         "authentication" or "selfservice"
+    :jsonparam priority: the priority of the policy
+    :jsonparam description: a description of the policy
     :jsonparam adminrealm: Realm of the administrator. (only for admin scope)
     :jsonparam adminuser: Username of the administrator. (only for admin scope)
     :jsonparam action: which action may be executed
@@ -195,6 +197,7 @@ def set_policy_api(name=None):
     admin_user = getParam(param, "adminuser", optional)
     priority = int(getParam(param, "priority", optional, default=1))
     conditions = getParam(param, "conditions", optional)
+    description = getParam(param, "description", optional)
 
     g.audit_object.log({'action_detail': name,
                         'info': "{0!s}".format(param)})
@@ -203,7 +206,8 @@ def set_policy_api(name=None):
                      active=active or True, adminrealm=admin_realm,
                      adminuser=admin_user, pinode=pinode,
                      check_all_resolvers=check_all_resolvers or False,
-                     priority=priority, conditions=conditions)
+                     priority=priority, conditions=conditions,
+                     description=description)
     log.debug("policy {0!s} successfully saved.".format(name))
     string = "setPolicy " + name
     res[string] = ret

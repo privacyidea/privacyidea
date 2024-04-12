@@ -1519,7 +1519,7 @@ def cleanup_challenges():
 #
 
 
-class Description(TimestampMethodsMixin, db.Model):
+class PolicyDescription(TimestampMethodsMixin, db.Model):
     """
     The description table is used to store the description of policy
     """
@@ -1589,7 +1589,8 @@ class Policy(TimestampMethodsMixin, db.Model):
                                  # Likewise, whenever a Policy object is deleted, its conditions are also
                                  # deleted (delete). Conditions without a policy are deleted (delete-orphan).
                                  cascade="save-update, merge, delete, delete-orphan")
-    description = db.relationship('Description', backref='policy', cascade="save-update, merge, delete, delete-orphan")
+    description = db.relationship('PolicyDescription', backref='policy',
+                                  cascade="save-update, merge, delete, delete-orphan")
 
     def __init__(self, name,
                  active=True, scope="", action="", realm="", adminrealm="", adminuser="",
@@ -2805,6 +2806,9 @@ audit_column_length = {"signature": 620,
                        "loglevel": 12,
                        "clearance_level": 12,
                        "thread_id": 20,
+                       "authentication": 12,
+                       "user_agent": 20,
+                       "user_agent_version": 20,
                        "policies": 255}
 AUDIT_TABLE_NAME = 'pidea_audit'
 
@@ -2822,6 +2826,7 @@ class Audit(MethodsMixin, db.Model):
     signature = db.Column(db.Unicode(audit_column_length.get("signature")))
     action = db.Column(db.Unicode(audit_column_length.get("action")))
     success = db.Column(db.Integer)
+    authentication = db.Column(db.Unicode(audit_column_length.get("authentication")))
     serial = db.Column(db.Unicode(audit_column_length.get("serial")))
     token_type = db.Column(db.Unicode(audit_column_length.get("token_type")))
     user = db.Column(db.Unicode(audit_column_length.get("user")), index=True)
@@ -2835,6 +2840,8 @@ class Audit(MethodsMixin, db.Model):
     privacyidea_server = db.Column(
         db.Unicode(audit_column_length.get("privacyidea_server")))
     client = db.Column(db.Unicode(audit_column_length.get("client")))
+    user_agent = db.Column(db.Unicode(audit_column_length.get("user_agent")))
+    user_agent_version = db.Column(db.Unicode(audit_column_length.get("user_agent_version")))
     loglevel = db.Column(db.Unicode(audit_column_length.get("loglevel")))
     clearance_level = db.Column(db.Unicode(audit_column_length.get(
         "clearance_level")))
@@ -2844,6 +2851,7 @@ class Audit(MethodsMixin, db.Model):
     def __init__(self,
                  action="",
                  success=0,
+                 authentication="",
                  serial="",
                  token_type="",
                  user="",
@@ -2854,6 +2862,8 @@ class Audit(MethodsMixin, db.Model):
                  info="",
                  privacyidea_server="",
                  client="",
+                 user_agent="",
+                 user_agent_version="",
                  loglevel="default",
                  clearance_level="default",
                  thread_id="0",
@@ -2867,6 +2877,7 @@ class Audit(MethodsMixin, db.Model):
         self.duration = duration
         self.action = convert_column_to_unicode(action)
         self.success = success
+        self.authentication = convert_column_to_unicode(authentication)
         self.serial = convert_column_to_unicode(serial)
         self.token_type = convert_column_to_unicode(token_type)
         self.user = convert_column_to_unicode(user)
@@ -2881,6 +2892,8 @@ class Audit(MethodsMixin, db.Model):
         self.clearance_level = convert_column_to_unicode(clearance_level)
         self.thread_id = convert_column_to_unicode(thread_id)
         self.policies = convert_column_to_unicode(policies)
+        self.user_agent = convert_column_to_unicode(user_agent)
+        self.user_agent_version = convert_column_to_unicode(user_agent_version)
 
 
 ### User Cache
