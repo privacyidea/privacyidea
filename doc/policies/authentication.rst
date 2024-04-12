@@ -421,8 +421,8 @@ there is no additional authentication step anymore during enrollment.
 
 .. _policy_enroll_via_multichallenge_text:
 
-enroll_via_multichallenge
-~~~~~~~~~~~~~~~~~~~~~~~~~
+enroll_via_multichallenge_text
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: string
 
