@@ -6,7 +6,7 @@ The lib.policy.py only depends on the database model.
 import dateutil
 import mock
 
-from privacyidea.models import Description
+from privacyidea.models import PolicyDescription
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 
 from privacyidea.lib.auth import ROLE
@@ -190,13 +190,13 @@ class PolicyTestCase(MyTestCase):
         delete_policy(name="pol5")
 
     def test_04_delete_policy(self):
-        d1 = Description.query.filter_by().all()
+        d1 = PolicyDescription.query.filter_by().all()
         self.assertEqual(len(d1), 1)
         delete_policy(name="pol4")
         P = PolicyClass()
         pol4 = P.match_policies(name="pol4")
         self.assertTrue(pol4 == [], pol4)
-        d1 = Description.query.filter_by().all()
+        d1 = PolicyDescription.query.filter_by().all()
         self.assertEqual(len(d1), 0)
 
     def test_05_export_policies(self):

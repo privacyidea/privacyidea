@@ -110,6 +110,19 @@
             </p>
         </div>
     </div>
+    <div class="form-group">
+        <label for="policydescription" class="col-sm-3 control-label"
+               translate>Description</label>
+
+        <div class="col-sm-6">
+            <input name="policydescription" class="form-control"
+                   id="policydescription"
+                   type="text"
+                   ng-model="params.description"
+                   placeholder="{{ 'A description for this policy' | translate }}"/>
+        </div>
+    </div>
+
 
     <div class="text-center"
          ng-show="checkRight('policywrite')">
@@ -185,6 +198,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="form-group">
                 <label for="userresolver" class="col-sm-3
         control-label" translate>User-Resolver</label>
@@ -208,6 +222,7 @@
                     </translate>
                 </label>
             </div>
+
             <div class="form-group">
                 <label for="user" class="col-sm-3 control-label" translate>User
                 </label>
@@ -221,24 +236,18 @@
                            placeholder="userA, userB"/>
                 </div>
             </div>
+
             <div class="form-group">
-                <label for="user_case_insensitive" class="col-sm-6">
-                    <input type="checkbox" name="user_case_insensitive"
-                           ng-model="params.user_case_insensitive"
-                           id="case-sensitive">
-                    <translate>
-                Username case-insensitive.
-                    </translate>
+                <label for="user_case_insensitive" class="col-sm-3 control-label" translate>
+                    Username case-insensitive.
                 </label>
-           </div>
-           <div class="col-sm-6">
-                <input name="policydescription" id="policydescription" class="form-control"
-                   ng-model="policydescription" placeholder="please read a description for your policy"
-                   ng-pattern="inputNamePatterns.simple.pattern"
-                   title="{{ inputNamePatterns.simple.title | translate }}"
-                   autofocus required/>
-                </p>
+                <div class="col-sm-6">
+                    <input type="checkbox" name="user_case_insensitive"
+                           id="user_case_insensitive"
+                           ng-model="params.user_case_insensitive"/>
+                </div>
             </div>
+
             <hr>
 
             <div class="form-group">

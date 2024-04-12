@@ -1,4 +1,4 @@
-"""Add a table for policy descriptions
+"""v3.10: Add a table for policy descriptions
 
 Revision ID: 5741e5dac477
 Revises: e3a64b4ca634
