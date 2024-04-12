@@ -173,7 +173,7 @@ typing-extensions==4.8.0 ; python_version > "3.7"
     #   pydash
 urllib3==2.0.7
     # via requests
-werkzeug==1.0.1
+werkzeug==2.3.8
     # via flask
 zipp==3.15.0 ; python_version == "3.7"
 zipp==3.17.0 ; python_version == "3.8"
