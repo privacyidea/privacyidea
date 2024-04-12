@@ -33,10 +33,24 @@ from .api import api_cli
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
-@click.group(cls=FlaskGroup, create_app=create_app, context_settings=CONTEXT_SETTINGS,
+# Don't show logging information
+def my_create_app():
+    app = create_app(config_name="production", silent=True)
+    return app
+
+
+@click.group(cls=FlaskGroup, create_app=my_create_app, context_settings=CONTEXT_SETTINGS,
              epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
 def cli():
-    """Management script for the privacyIDEA application."""
+    """
+\b
+             _                    _______  _______
+   ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
+  / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
+ / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|
+/_/                       /___/
+
+  Management script for the privacyIDEA application."""
     click.echo(r"""
              _                    _______  _______
    ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
