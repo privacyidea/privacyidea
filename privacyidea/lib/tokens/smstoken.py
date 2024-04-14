@@ -571,7 +571,7 @@ class SmsTokenClass(HotpTokenClass):
         return {"message": VERIFY_ENROLLMENT_MESSAGE}
 
     @classmethod
-    def enroll_via_validate(cls, g, content, user_obj):
+    def enroll_via_validate(cls, g, content, user_obj, message=None):
         """
         This class method is used in the policy ENROLL_VIA_MULTICHALLENGE.
         It enrolls a new token of this type and returns the necessary information
@@ -580,6 +580,7 @@ class SmsTokenClass(HotpTokenClass):
         :param g: context object
         :param content: The content of a response
         :param user_obj: A user object
+        :param message: An alternative message displayed to the user during enrollment
         :return: None, the content is modified
         """
         from privacyidea.lib.token import init_token
@@ -600,7 +601,7 @@ class SmsTokenClass(HotpTokenClass):
                 "client_mode": CLIENTMODE.INTERACTIVE,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
-                "message": _("Please enter your new phone number!")}
+                "message": message or _("Please enter your new phone number!")}
         detail["multi_challenge"] = [chal]
         detail.update(chal)
 

@@ -772,8 +772,16 @@ def multichallenge_enroll_via_validate(request, response):
                 #       Here: If the user has one token of this type.
                 if len(get_tokens(tokentype=tokentype, user=user_obj)) == 0:
                     if tokentype.lower() in get_multichallenge_enrollable_tokentypes():
+                        # Now get the alternative text from the policies
+                        text_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,
+                                              user_object=user_obj).action_values(unique=True,
+                                                                                  write_to_audit_log=False,
+                                                                                  allow_white_space_in_action=True)
+                        message = None
+                        if text_pol:
+                            message = list(text_pol)[0]
                         tclass = get_token_class(tokentype)
-                        tclass.enroll_via_validate(g, content, user_obj)
+                        tclass.enroll_via_validate(g, content, user_obj, message)
                         response.set_data(json.dumps(content))
 
     return response

@@ -353,6 +353,7 @@ class ACTION(object):
     CHANGE_PIN_VIA_VALIDATE = "change_pin_via_validate"
     RESYNC_VIA_MULTICHALLENGE = "resync_via_multichallenge"
     ENROLL_VIA_MULTICHALLENGE = "enroll_via_multichallenge"
+    ENROLL_VIA_MULTICHALLENGE_TEXT = "enroll_via_multichallenge_text"
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
@@ -2344,6 +2345,10 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("In case of a successful authentication the following tokentype is enrolled. The "
                           "maximum number of tokens for a user is checked."),
                 'value': [t.upper() for t in get_multichallenge_enrollable_tokentypes()]
+            },
+            ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT: {
+                'type': 'str',
+                'desc': _("Change the default text that is shown during enrolling a token.")
             },
             ACTION.PASSTHRU: {
                 'type': 'str',
