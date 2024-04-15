@@ -1,5 +1,5 @@
 from .base import CliTestCase
-from privacyidea.cli.privacyideausercachecleanup.main import cli as privacyidea_usercache_cleanup
+from privacyidea.cli.tools.usercache_cleanup import cli as privacyidea_usercache_cleanup
 
 
 class PIUsercacheCleanupTestCase(CliTestCase):
