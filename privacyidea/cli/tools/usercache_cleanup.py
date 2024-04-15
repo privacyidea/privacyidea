@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # 2024-03-22 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
 #            Migrate to click
 # 2017-04-24 Friedrich Weber <friedrich.weber@netknights.it>
