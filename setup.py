@@ -112,7 +112,8 @@ setup(
             'pi-manage = privacyidea.cli.pimanage:cli',
             'privacyidea-standalone = privacyidea.cli.tools.standalone:cli',
             'privacyidea-get-serial = privacyidea.cli.tools.get_serial:byotp_call',
-            'privacyidea-usercache-cleanup = privacyidea.cli.tools.usercache_cleanup:cli'
+            'privacyidea-usercache-cleanup = privacyidea.cli.tools.usercache_cleanup:cli',
+            'privacyidea-cron = privacyidea.cli.privacyidea_cron:cli'
         ]},
     extras_require={
         'doc': ["Pallets-Sphinx-Themes>=1.2.3",
