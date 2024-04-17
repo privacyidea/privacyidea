@@ -162,6 +162,7 @@ def create_google_authenticator_url(key=None, user=None,
     return ("otpauth://{tokentype!s}/{label!s}?secret={secret!s}&"
             "{counter!s}{hash!s}{period!s}"
             "digits={digits!s}&"
+            "creator=privacyidea&"
             "issuer={issuer!s}{extra}".format(tokentype=tokentype,
                                        label=url_label, secret=otpkey,
                                        hash=hash_algo, period=period,
