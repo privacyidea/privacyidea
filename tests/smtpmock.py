@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 2016-01-20 Cornelius Kölbel <cornelius@privacyidea.org>
            Support STARTTLS mock

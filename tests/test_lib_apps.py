@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 This tests the file lib.apps, which contains functions to create
 the URLs for the smartphone enrollment

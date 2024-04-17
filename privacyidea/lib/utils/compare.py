@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2019-07-02 Friedrich Weber <friedrich.weber@netknights.it>
 #             Add a central module for comparing two values
 #

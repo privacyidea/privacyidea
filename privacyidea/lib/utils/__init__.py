@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Use HSM to generate Salt for PasswordHash
 #  2017-07-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -64,6 +62,18 @@ ALLOWED_SERIAL = r"^[0-9a-zA-Z\-_]+$"
 CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters,  # characters
                           "n": string.digits,         # numbers
                           "s": string.punctuation}    # special
+
+
+class AUTH_RESPONSE(object):
+    __doc__ = """The return value in "result->authentication".
+    CHALLENGE indicates the start of a challenge and
+    DECLINED indicates a declined challenge, which e.g. happens with PUSH tokens, if the user declines the
+    authentication request.
+    """
+    ACCEPT = "ACCEPT"
+    REJECT = "REJECT"
+    CHALLENGE = "CHALLENGE"
+    DECLINED = "DECLINED"
 
 
 def check_time_in_range(time_range, check_time=None):
@@ -1292,19 +1302,16 @@ def prepare_result(obj, rid=1, details=None):
         details["threadid"] = threading.current_thread().ident
         res["detail"] = details
 
-    # Fix for sending an information about challenge response
-    # TODO: Make this default, when we move from the binary result->value to
-    #       more states in version 4.0
     if rid > 1:
         if obj:
-            r_authentication = "ACCEPT"
+            r_authentication = AUTH_RESPONSE.ACCEPT
         elif not obj and details.get("multi_challenge"):
             # We have a challenge authentication
-            r_authentication = "CHALLENGE"
+            r_authentication = AUTH_RESPONSE.CHALLENGE
         elif not obj and (details.get("challenge_status") == "declined"):
-            r_authentication = "DECLINED"
+            r_authentication = AUTH_RESPONSE.DECLINED
         else:
-            r_authentication = "REJECT"
+            r_authentication = AUTH_RESPONSE.REJECT
         res["result"]["authentication"] = r_authentication
 
     return res
@@ -1566,7 +1573,7 @@ def get_plugin_info_from_useragent(useragent):
     :rtype: tuple
     """
     if not useragent:
-        log.info(f"No user-agent string given")
+        log.info("No user-agent string given")
         return "", None, None
     ua_match = ua_re.match(useragent)
     if ua_match:
@@ -1574,3 +1581,22 @@ def get_plugin_info_from_useragent(useragent):
     else:
         log.info(f"Could not match user-agent string: {useragent}")
         return "", None, None
+
+
+def get_computer_name_from_user_agent(user_agent):
+    """
+    Searches for entries in the user agent that could identify the machine.
+    It is expected that the string following the key does not contain whitespaces.
+    Example: ComputerName/Laptop-3324231
+
+    :param user_agent: The user agent string
+    :type user_agent: str
+    :return: The computer name or None if nothing is found
+    :rtype: str or None
+    """
+    keys = ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
+    if user_agent:
+        for key in keys:
+            if key in user_agent:
+                return user_agent.split(key + "/")[1].split(" ")[0]
+    return None

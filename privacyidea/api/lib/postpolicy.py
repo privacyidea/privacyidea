@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2020-02-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add QR codes for Authenticator Apps
 #  2016-02-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -513,7 +511,8 @@ def offline_info(request, response):
         if serial:
             try:
                 auth_items = get_auth_items(serial=serial, application="offline",
-                                            challenge=request.all_data.get("pass"))
+                                            challenge=request.all_data.get("pass"),
+                                            user_agent=request.user_agent.string)
                 if auth_items:
                     content["auth_items"] = auth_items
                     response.set_data(json.dumps(content))
@@ -773,8 +772,16 @@ def multichallenge_enroll_via_validate(request, response):
                 #       Here: If the user has one token of this type.
                 if len(get_tokens(tokentype=tokentype, user=user_obj)) == 0:
                     if tokentype.lower() in get_multichallenge_enrollable_tokentypes():
+                        # Now get the alternative text from the policies
+                        text_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,
+                                              user_object=user_obj).action_values(unique=True,
+                                                                                  write_to_audit_log=False,
+                                                                                  allow_white_space_in_action=True)
+                        message = None
+                        if text_pol:
+                            message = list(text_pol)[0]
                         tclass = get_token_class(tokentype)
-                        tclass.enroll_via_validate(g, content, user_obj)
+                        tclass.enroll_via_validate(g, content, user_obj, message)
                         response.set_data(json.dumps(content))
 
     return response

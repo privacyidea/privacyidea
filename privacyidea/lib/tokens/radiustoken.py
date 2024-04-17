@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2019-08-15 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Allow RADIUS challenge / response
 #             Credits to @droobah, who provided the first pull request

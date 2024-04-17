@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from .base import MyApiTestCase, PWFILE2
 import json
 import os
@@ -1897,7 +1896,7 @@ class APITokenTestCase(MyApiTestCase):
                                            data={
                                                "type": "yubikey",
                                                "serial": "yk1",
-                                               "otpkey": self.otpkey,
+                                               "otpkey": "31323334353637383930313233343536",
                                                "yubikey.prefix": "vv123456"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -1908,6 +1907,24 @@ class APITokenTestCase(MyApiTestCase):
 
         tokens = get_tokens(serial="yk1")
         self.assertEqual(tokens[0].get_tokeninfo("yubikey.prefix"), "vv123456")
+
+    def test_20b_init_yubikey_with_wrong_otp_length(self):
+        # save yubikey.prefix
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={
+                                               "type": "yubikey",
+                                               "serial": "yk1",
+                                               "otpkey": "31323334353637383930313233343565436",
+                                               "yubikey.prefix": "vv123456"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res)
+            result = res.json.get("result")
+            self.assertEqual(result['error']['code'], 404, result)
+            self.assertEqual(result['error']['message'],
+                             "ERR404: The otpkey must be 32 characters long for yubikey token in AES mode",
+                             result)
 
     def test_21_time_policies(self):
         # Here we test, if an admin policy does not match in time,

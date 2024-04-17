@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  privacyIDEA is a fork of LinOTP
 #
 #  2018-12-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -2008,7 +2007,6 @@ def check_serial_pass(serial, passw, options=None):
     :return: tuple of result (True, False) and additional dict
     :rtype: tuple
     """
-    reply_dict = {}
     tokenobject = get_one_token(serial=serial)
     res, reply_dict = check_token_list([tokenobject], passw,
                                        user=tokenobject.user,

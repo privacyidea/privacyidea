@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from .base import MyApiTestCase
 from privacyidea.lib.policy import set_policy, SCOPE, ACTION, delete_policy, CONDITION_SECTION
 from privacyidea.lib.token import remove_token
@@ -46,7 +44,8 @@ class APIPolicyTestCase(MyApiTestCase):
                                                  "scope": SCOPE.AUTHZ,
                                                  "check_all_resolvers": "true",
                                                  "realm": "realm1",
-                                                 "priority": 3},
+                                                 "priority": 3,
+                                                 "description": "This is a test policy"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -67,6 +66,7 @@ class APIPolicyTestCase(MyApiTestCase):
             pol1 = value[0]
             self.assertEqual(pol1.get("check_all_resolvers"), True)
             self.assertEqual(pol1.get("priority"), 3)
+            self.assertEqual(pol1.get("description"), "This is a test policy", pol1)
 
         # get active policies
         with self.app.test_request_context('/policy/?active=true',

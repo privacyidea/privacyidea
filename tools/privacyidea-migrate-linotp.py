@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 #  2020-06-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add failsafe for tokeninfo
 #  2019-10-04 Cornelius Kölbel <cornelius.koelbel@netknights.it>

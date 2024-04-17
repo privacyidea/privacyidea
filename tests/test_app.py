@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This testfile tests the basic app functionality of the privacyIDEA app
 """

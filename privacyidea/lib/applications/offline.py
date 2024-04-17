@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2015-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add options ROUNDS to avoid timeouts during OTP hash calculation
 #  2015-04-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -31,6 +29,8 @@ from passlib.hash import pbkdf2_sha512
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.config import get_prepend_pin
 from privacyidea.lib.policy import TYPE
+from privacyidea.lib.utils import get_plugin_info_from_useragent, get_computer_name_from_user_agent
+
 log = logging.getLogger(__name__)
 ROUNDS = 6549
 REFILLTOKEN_LENGTH = 40
@@ -56,14 +56,28 @@ class MachineApplication(MachineApplicationBase):
     application_name = "offline"
 
     @staticmethod
-    def generate_new_refilltoken(token_obj):
+    def generate_new_refilltoken(token_obj, user_agent=None):
         """
         Generate new refill token and store it in the tokeninfo of the token.
         :param token_obj: token in question
+        :param user_agent: name of the machine, taken from the user-agent header
         :return: a string
         """
+
+        # If the token is a WebAuthn token, we need to store the machine name with the refill token, because
+        # the token can be on multiple machines, which need to be managed separately
+        if token_obj.type.lower() == "webauthn":
+            computer_name = get_computer_name_from_user_agent(user_agent)
+            if computer_name is None:
+                raise ParameterError("Unable to generate refilltoken for a WebAuthn token without a computer name")
+            else:
+                key = "refilltoken_" + computer_name
+        else:
+            key = "refilltoken"
+
         new_refilltoken = geturandom(REFILLTOKEN_LENGTH, hex=True)
-        token_obj.add_tokeninfo("refilltoken", new_refilltoken)
+        token_obj.add_tokeninfo(key, new_refilltoken)
+
         return new_refilltoken
 
     @staticmethod
@@ -71,6 +85,7 @@ class MachineApplication(MachineApplicationBase):
         """
         Retrieve the desired number of passwords (= PIN + OTP), hash them
         and return them in a dictionary. Increase the token counter.
+
         :param token_obj: token in question
         :param otppin: The OTP PIN to prepend in the passwords. The PIN is not validated!
         :param amount: Number of OTP values (non-negative!)
@@ -140,8 +155,10 @@ class MachineApplication(MachineApplicationBase):
     @staticmethod
     def get_authentication_item(token_type,
                                 serial,
-                                challenge=None, options=None,
-                                filter_param=None):
+                                challenge=None,
+                                options=None,
+                                filter_param=None,
+                                user_agent=None):
         """
         :param token_type: the type of the token. At the moment
                            we support "HOTP" tokens and "WebAuthn" tokens.
@@ -153,7 +170,10 @@ class MachineApplication(MachineApplicationBase):
         :param challenge:  This can contain the password (otp pin + otp value)
                            so that we can put the OTP PIN into the hashed response.
         :type challenge: basestring
-        :return auth_item: A list of hashed OTP values
+        :param options: options
+        :param filter_param: parameters
+        :param user_agent: The user agent of the request
+        :return auth_item: A list of hashed OTP values or pubKey, rpId and credentialId for WebAuthn token
         """
         ret = {}
         options = options or {}
@@ -162,18 +182,19 @@ class MachineApplication(MachineApplicationBase):
             token_obj = get_one_token(serial=serial)
             user_object = token_obj.user
             if user_object:
-                uInfo = user_object.info
-                if "username" in uInfo:
-                    ret["user"] = ret["username"] = uInfo.get("username")
-            refilltoken = MachineApplication.generate_new_refilltoken(token_obj)
-            ret["refilltoken"] = refilltoken
+                user_info = user_object.info
+                if "username" in user_info:
+                    ret["user"] = ret["username"] = user_info.get("username")
+
+            ret["refilltoken"] = MachineApplication.generate_new_refilltoken(token_obj, user_agent)
+
             # token specific data
             if token_type.lower() == "webauthn":
-                # return the pubkey and the credential_id (contained in the otpkey)
+                # return the pubKey, rpId and the credentialId (contained in the otpkey) to allow the machine to
+                # verify the WebAuthn assertions signed with the token
                 ret["response"] = {"pubKey": token_obj.get_tokeninfo("pubKey"),
                                    "credentialId": token_obj.decrypt_otpkey(),
                                    "rpId": token_obj.get_tokeninfo("relying_party_id")}
-
             elif token_type.lower() == "hotp":
                 if password:
                     _r, otppin, _ = token_obj.split_pin_pass(password)
@@ -181,19 +202,11 @@ class MachineApplication(MachineApplicationBase):
                         raise ParameterError("Could not split password")
                 else:
                     otppin = ""
-                otps = MachineApplication.get_offline_otps(token_obj,
-                                                           otppin,
-                                                           int(options.get("count", 100)),
-                                                           int(options.get("rounds", ROUNDS)))
-                refilltoken = MachineApplication.generate_new_refilltoken(token_obj)
-                ret["response"] = otps
-                ret["refilltoken"] = refilltoken
-                user_object = token_obj.user
-                if user_object:
-                    uInfo = user_object.info
-                    if "username" in uInfo:
-                        ret["user"] = ret["username"] = uInfo.get("username")
 
+                ret["response"] = MachineApplication.get_offline_otps(token_obj,
+                                                                      otppin,
+                                                                      int(options.get("count", 100)),
+                                                                      int(options.get("rounds", ROUNDS)))
         else:
             log.info("Token %r, type %r is not supported by "
                      "OFFLINE application module" % (serial, token_type))

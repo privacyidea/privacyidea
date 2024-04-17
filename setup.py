@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 import os
 import stat
@@ -111,7 +110,9 @@ setup(
         'console_scripts': [
             'privacyidea-token-janitor = privacyidea.cli.privacyideatokenjanitor:cli',
             'privacyidea-cron = privacyidea.cli.privacyidea_cron:cli',
-            'pi-manage = privacyidea.cli.pimanage:cli'
+            'pi-manage = privacyidea.cli.pimanage:cli',
+            'privacyidea-standalone = privacyidea.cli.tools.standalone:cli',
+            'privacyidea-get-serial = privacyidea.cli.tools.get_serial:byotp_call'
         ]},
     extras_require={
         'doc': ["Pallets-Sphinx-Themes>=1.2.3",

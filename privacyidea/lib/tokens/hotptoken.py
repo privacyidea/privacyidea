@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
 #  License: AGPLv3
@@ -817,7 +815,7 @@ class HotpTokenClass(TokenClass):
         return r >= 0
 
     @classmethod
-    def enroll_via_validate(cls, g, content, user_obj):
+    def enroll_via_validate(cls, g, content, user_obj, message=None):
         """
         This class method is used in the policy ENROLL_VIA_MULTICHALLENGE.
         It enrolls a new token of this type and returns the necessary information
@@ -826,9 +824,10 @@ class HotpTokenClass(TokenClass):
         :param g: context object
         :param content: The content of a response
         :param user_obj: A user object
+        :param message: An alternative message displayed to the user during enrollment
         :return: None, the content is modified
         """
-        message = _("Please scan the QR code!")
+        message = message or _("Please scan the QR code and enter the OTP value!")
         token_obj = init_token({"type": cls.get_class_type(),
                                 "genkey": 1}, user=user_obj)
         content.get("result")["value"] = False

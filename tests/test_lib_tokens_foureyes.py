@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 This test file tests the lib.tokens.4eyestoken
 This depends on lib.tokenclass

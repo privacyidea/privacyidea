@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-06-26 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             provide first interface to handle monitoring statistics
 #

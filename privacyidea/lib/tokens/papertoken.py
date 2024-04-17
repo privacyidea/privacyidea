@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2016-12-05 Cornelisu Kölbel <cornelius.koelbel@netknights.it>
 #             Add policy papertoken_count
 #

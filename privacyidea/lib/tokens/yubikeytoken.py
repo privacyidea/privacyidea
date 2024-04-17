@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2016-04-04 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Move the API signature static methods to functions.
 #  2016-03-23 Jochen Hein <jochen@jochen.org>
@@ -53,6 +51,8 @@ This code is tested in tests/test_lib_tokens_yubikey.py
 """
 
 import logging
+
+from privacyidea.lib.error import EnrollmentError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.tokenclass import TokenClass
@@ -477,9 +477,12 @@ h={h}
     @log_with(log)
     def update(self, param, reset_failcount=True):
         update_params = param.copy()
+
         # As the secret is usually copy-pasted from the Yubikey personalization GUI,
         # which separates hexlified bytes by spaces, we remove all spaces from the OTP key.
         if "otpkey" in update_params:
             update_params["otpkey"] = update_params["otpkey"].replace(" ", "")
+        if not len(update_params["otpkey"]) == 32:
+            raise EnrollmentError("The otpkey must be 32 characters long for yubikey token in AES mode")
         TokenClass.update(self, update_params, reset_failcount)
         self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)

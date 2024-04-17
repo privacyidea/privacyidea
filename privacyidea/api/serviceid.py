@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # 2023-03-19 Cornelius Kölbel, <cornelius.koelbel@netknights.it>
 #            Add new API for service IDs
 #

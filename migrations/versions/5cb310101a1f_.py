@@ -13,6 +13,7 @@ revision = '5cb310101a1f'
 down_revision = '4a0aec37e7cf'
 
 from alembic import op, context
+from sqlalchemy import inspect
 from sqlalchemy.schema import Sequence, CreateSequence, DropSequence
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.expression import func
@@ -47,6 +48,11 @@ def upgrade():
                     print(f"Table {tbl.name} has an 'id' column which isn't a sequence!")
                     continue
 
+                # check if the table exists in the database (newer tables might not exist yet)
+                insp = inspect(bind.engine)
+                if not insp.has_table(tbl.name):
+                    print(f"Table {tbl.name} does not exist in the database yet.")
+                    continue
                 # Create the sequence with the correct next_id!
                 current_id = session.query(func.max(tbl.c.id)).one()[0] or 0
                 print(f"CurrentID in Table {tbl.name}: {current_id}")

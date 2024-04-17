@@ -374,7 +374,7 @@ type: string
 
 This policy allows the rollout of tokens during the authentication via `/validate/check`.
 
-The policy action can take one of the followig token types: `hotp`, `totp`, `push`, `email`, `sms`.
+The policy action can take one of the following token types: `hotp`, `totp`, `push`, `email`, `sms`.
 
 The clients and plugins should make use of this policy in a transparent way and using multiple consecutive
 challenges.
@@ -417,6 +417,17 @@ there is no additional authentication step anymore during enrollment.
 
 .. note:: Enrolling multiple token types one after another is not supported. It is currently possible to
    enroll only one token type.
+
+
+.. _policy_enroll_via_multichallenge_text:
+
+enroll_via_multichallenge_text
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+There is a default text that is shown to the user, when a token via
+multichallenge is enrolled. The administrator can change this text using this policy.
 
 
 .. _policy_u2f_facets:

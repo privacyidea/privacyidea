@@ -1,9 +1,11 @@
+# Ishdorj Idree <ishdorjidree@gmail.com>, 2024.
+# "Enrico M. V. Fasanelli" <enrico@infn.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2023-01-16 21:51+0000\n"
-"Last-Translator: Enrico M. V. Fasanelli <enrico@infn.it>\n"
+"PO-Revision-Date: 2024-03-27 09:25+0000\n"
+"Last-Translator: \"Enrico M. V. Fasanelli\" <enrico@infn.it>\n"
 "Language-Team: Mongolian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/mn/>\n"
 "Language: mn\n"
@@ -11,7 +13,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.15.1-dev\n"
+"X-Generator: Weblate 5.5-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -64,8 +66,8 @@ msgid ""
 msgstr ""
 "li><b>\"5 10 * * *\"</b> даалгаврыг өдөр бүр 10:05 цагт гүйцэтгэдэг.</li>\n"
 "<li><b>\"*/10 * * * *\"</b> runs the task every ten minutes.</li>\n"
-"<li><b>\"1 23 * * 7\"</b> даалгаврыг ням гарагийн 23:01 цагт гүйцэтгэдэг.</"
-"li>"
+"<li><b>\"1 23 * * 7\"</b> даалгаврыг ням гарагийн 23:01 цагт "
+"гүйцэтгэдэг.</li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
 msgid ""

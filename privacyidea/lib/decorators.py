@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  (c) Cornelius Kölbel
 #  License:  AGPLv3
 #  contact:  http://www.privacyidea.org

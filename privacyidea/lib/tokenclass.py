@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2022-02-03 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add verified enrollment
 #  2018-01-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -1929,7 +1927,7 @@ class TokenClass(object):
         return False
 
     @classmethod
-    def enroll_via_validate(cls, g, content, user_obj):
+    def enroll_via_validate(cls, g, content, user_obj, message=None):
         """
         This class method is used in the policy ENROLL_VIA_MULTICHALLENGE.
         It enrolls a new token of this type and returns the necessary information
@@ -1938,6 +1936,7 @@ class TokenClass(object):
         :param g: context object
         :param content: The content of a response
         :param user_obj: A user object
+        :param message: An alternative message displayed to the user during enrollment
         :return: None, the content is modified
         """
         return True

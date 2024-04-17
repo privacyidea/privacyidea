@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 #  2018-05-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             init
 

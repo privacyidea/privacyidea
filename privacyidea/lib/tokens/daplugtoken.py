@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  privacyIDEA
 #  Aug 12, 2014 Cornelius Kölbel
 #  License:  AGPLv3

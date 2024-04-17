@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This test file tests the lib.token methods.
 
@@ -79,6 +78,7 @@ class TokenTestCase(MyTestCase):
     """
     Test the lib.token on an interface level
     """
+    yubikey_token_key = '31323334353637383930313233343536'
 
     def test_00_create_realms(self):
         self.setUp_user_realms()
@@ -172,7 +172,7 @@ class TokenTestCase(MyTestCase):
         token = init_token({"type": "yubikey",
                             "serial": "yk1",
                             "yubikey.prefix": "vv123456",
-                            "otpkey": self.otpkey})
+                            "otpkey": self.yubikey_token_key})
         self.assertEqual(token.token.serial, "yk1")
         tokenobject_list = get_tokens(tokeninfo={"yubikey.prefix": "vv123456"})
         self.assertEqual(len(tokenobject_list), 1)
@@ -1171,12 +1171,12 @@ class TokenTestCase(MyTestCase):
     def test_47_use_yubikey_and_hotp(self):
         # fix problem https://github.com/privacyidea/privacyidea/issues/279
         user = User("cornelius", self.realm1)
-        token = init_token({"type": "hotp",
-                            "otpkey": self.otpkey,
-                            "pin": "pin47"}, user)
-        token = init_token({"type": "yubikey",
-                            "otpkey": self.otpkey,
-                            "pin": "pin47"}, user)
+        init_token({"type": "hotp",
+                    "otpkey": self.otpkey,
+                    "pin": "pin47"}, user)
+        init_token({"type": "yubikey",
+                    "otpkey": self.yubikey_token_key,
+                    "pin": "pin47"}, user)
         r = check_user_pass(user, "pin47888888")
         self.assertEqual(r[0], False)
         self.assertEqual(r[1].get('message'), "wrong otp value")
@@ -1421,7 +1421,7 @@ class TokenTestCase(MyTestCase):
         tok.delete_token()
 
         # A yubikey and yubicloud tokentype is hardware
-        tok = init_token({"type": "yubikey", "otpkey": self.otpkey})
+        tok = init_token({"type": "yubikey", "otpkey": self.yubikey_token_key})
         kind = tok.get_tokeninfo("tokenkind")
         self.assertEqual(kind, TOKENKIND.HARDWARE)
         tok.delete_token()

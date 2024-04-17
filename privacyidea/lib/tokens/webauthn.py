@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # 2020-01-14 Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
 #
 # License:  AGPLv3

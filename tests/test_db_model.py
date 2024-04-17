@@ -1,4 +1,3 @@
-# coding: utf-8
 from mock import mock
 import os
 from sqlalchemy import func

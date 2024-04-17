@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-05-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             TAN token with to be randomly used TAN values
 #

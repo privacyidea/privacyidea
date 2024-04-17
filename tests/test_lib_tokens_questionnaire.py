@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 This test file tests the lib.tokens.questionnairetoken
 This depends on lib.tokenclass

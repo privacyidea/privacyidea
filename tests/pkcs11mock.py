@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-05-16 Friedrich Weber <friedrich.weber@netknights.it>
 #             Implement PKCS11 mock
 #

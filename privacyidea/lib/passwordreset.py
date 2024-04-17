@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2022-06-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Fix recovery link
 #  2015-01-06 Cornelius Kölbel <cornelius@privacyidea.org>
