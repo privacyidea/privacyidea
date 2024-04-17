@@ -83,7 +83,7 @@ def cli():
 
 
 @click.command()
-@click.option('-n', "--noaction", is_flag=False, default=False)
+@click.option('-n', "--noaction", is_flag=True, default=False)
 def delete(noaction=False):
     """
     Delete all cache entries that are considered expired according to the
