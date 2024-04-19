@@ -8,17 +8,21 @@ Version 3.10dev1, 2023-11-29
   Fixes:
   * Use uppercase hash name for google-authenticator URLs (#3812)
 
+Version 3.9.3, 2024-04-04
+
+  Fixes:
+  * Fix creation of database tables with galera cluster (#3863)
+
 Version 3.9.2, 2023-12-20
 
   Fixes:
   * Allow verify-enroll for paper token and TAN token (#3809)
   * Fix offline data, when PIN is behind the OTP value (#3831)
 
-
 Version 3.9.1, 2023-11-06
 
   Fixes:
-  * Set correct start sequence for empty tables 
+  * Set correct start sequence for empty tables
   * Fix pi-manage backup
   * Add privacyIDEA CP to list of clients, that do not
     need to be unquoted. (#3770)
