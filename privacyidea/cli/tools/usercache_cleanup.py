@@ -32,7 +32,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-__doc__ = """
+"""
 This script deletes expired entries from the user cache.
 """
 __version__ = "0.1"
@@ -56,9 +56,6 @@ def _get_expired_entries():
 
 
 LIST_FORMAT = '{:<5} {:<10} {:<10} {:<30} {:<10}'
-
-
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 def my_create_app():
@@ -86,10 +83,10 @@ def delete(noaction=False):
             click.echo(LIST_FORMAT.format('id', 'username', 'resolver', 'timestamp', 'user id'))
         for entry in entries:
             click.echo(LIST_FORMAT.format(entry.id,
-                                     entry.username,
-                                     entry.resolver,
-                                     entry.timestamp.isoformat(),
-                                     entry.user_id))
+                                          entry.username,
+                                          entry.resolver,
+                                          entry.timestamp.isoformat(),
+                                          entry.user_id))
         click.echo('{} entries'.format(len(entries)))
         if not noaction:
             for entry in entries:
