@@ -37,6 +37,7 @@ import click
 from flask.cli import with_appcontext, ScriptInfo
 
 from privacyidea.lib.token import get_tokens, get_serial_by_otp
+from privacyidea.lib.utils import get_version_number
 from privacyidea.cli import create_silent_app
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -55,8 +56,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               help="The tokentype like hotp, totp, ...")
 @click.argument('otp')
 @with_appcontext
-def byotp(otp, tokentype=None, serial="", window=10, unassigned=False,
-          assigned=False):
+def byotp(otp, tokentype, serial, window, unassigned, assigned):
     """
     This searches the list of the specified tokens for the given OTP value.
     """
@@ -78,6 +78,15 @@ def byotp(otp, tokentype=None, serial="", window=10, unassigned=False,
 
 def byotp_call():
     """Call the actual function with an initialized app"""
+    click.echo(r"""
+                 _                    _______  _______
+       ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
+      / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
+     / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|  Get Serial
+    /_/                       /___/
+    {0!s:>51}
+        """.format('v{0!s}'.format(get_version_number())))
+
     # Add the ScriptInfo object to create the Flask-App when necessary
     s = ScriptInfo(create_app=create_silent_app)
     byotp(obj=s)

@@ -113,7 +113,8 @@ setup(
             'privacyidea-standalone = privacyidea.cli.tools.standalone:cli',
             'privacyidea-get-serial = privacyidea.cli.tools.get_serial:byotp_call',
             'privacyidea-usercache-cleanup = privacyidea.cli.tools.usercache_cleanup:delete_call',
-            'privacyidea-get-unused-tokens = privacyidea.cli.tools.get_unused_tokens:cli'
+            'privacyidea-get-unused-tokens = privacyidea.cli.tools.get_unused_tokens:cli',
+            'privacyidea-expired-users = privacyidea.cli.tools.expired_users:expire_call'
         ]},
     extras_require={
         'doc': ["Pallets-Sphinx-Themes>=1.2.3",

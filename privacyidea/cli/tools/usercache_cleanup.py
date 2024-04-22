@@ -93,25 +93,17 @@ def delete(noaction=False):
 
 
 def delete_call():
-    # Add the ScriptInfo object to create the Flask-App when necessary
-    """
-    \b
-             _                    _______  _______
-      ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
-     / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
-    / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|
-    /_/                       /___/
-
-    Management script for usercache cleanup of privacyIDEA."""
+    """Management script for usercache cleanup of privacyIDEA."""
     click.echo(r"""
                  _                    _______  _______
        ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
       / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
-     / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
+     / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|  Usercache cleanup
     /_/                       /___/
     {0!s:>51}
         """.format('v{0!s}'.format(get_version_number())))
 
+    # Add the ScriptInfo object to create the Flask-App when necessary
     s = ScriptInfo(create_app=create_silent_app)
     delete(obj=s)
 
