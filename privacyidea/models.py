@@ -49,7 +49,7 @@ from privacyidea.lib.crypto import (encrypt,
                                     SecretObj,
                                     get_rand_digit_str)
 from sqlalchemy import and_, desc
-from sqlalchemy.schema import Sequence
+from sqlalchemy.schema import Sequence, CreateSequence
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.exc import IntegrityError
 from .lib.log import log_with
@@ -77,6 +77,16 @@ db = SQLAlchemy()
 @compiles(db.DateTime, "mysql")
 def compile_datetime_mysql(type_, compiler, **kw):  # pragma: no cover
     return "DATETIME(6)"
+
+
+# Fix creation of sequences on MariaDB (and MySQL, which does not support
+# sequences anyway) with galera by adding INCREMENT BY 0 to CREATE SEQUENCE
+@compiles(CreateSequence, 'mysql')
+@compiles(CreateSequence, 'mariadb')
+def increment_by_zero(element, compiler, **kw):  # pragma: no cover
+    text = compiler.visit_create_sequence(element, **kw)
+    text = text + " INCREMENT BY 0"
+    return text
 
 
 class MethodsMixin(object):
