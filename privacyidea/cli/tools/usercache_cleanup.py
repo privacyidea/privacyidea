@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# 2024-03-22 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
+#            Migrate to click
 # 2017-04-24 Friedrich Weber <friedrich.weber@netknights.it>
 #
 # Copyright (c) 2017, Friedrich Weber
@@ -30,19 +32,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from privacyidea.lib.usercache import create_filter, get_cache_time
-from privacyidea.models import UserCache, db
-
-__doc__ = """
+"""
 This script deletes expired entries from the user cache.
 """
 __version__ = "0.1"
 
+from flask.cli import with_appcontext, ScriptInfo
+from privacyidea.lib.usercache import create_filter, get_cache_time
+from privacyidea.lib.utils import get_version_number
+from privacyidea.models import UserCache, db
 from privacyidea.app import create_app
-from flask_script import Manager
+import click
 
-app = create_app(config_name='production', silent=True)
-manager = Manager(app)
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 def _get_expired_entries():
@@ -56,7 +58,14 @@ def _get_expired_entries():
 LIST_FORMAT = '{:<5} {:<10} {:<10} {:<30} {:<10}'
 
 
-@manager.command
+def my_create_app():
+    app = create_app(config_name="production", silent=True)
+    return app
+
+
+@click.command(context_settings=CONTEXT_SETTINGS)
+@click.option('-n', "--noaction", is_flag=True, default=False)
+@with_appcontext
 def delete(noaction=False):
     """
     Delete all cache entries that are considered expired according to the
@@ -66,28 +75,52 @@ def delete(noaction=False):
     actually deleted.
     """
     if not get_cache_time():
-        print('User cache is disabled, not doing anything.')
+        click.echo('User cache is disabled, not doing anything.')
     else:
-        print('Expired entries:')
+        click.echo('Expired entries:')
         entries = _get_expired_entries()
         if entries:
-            print(LIST_FORMAT.format('id', 'username', 'resolver', 'timestamp', 'user id'))
+            click.echo(LIST_FORMAT.format('id', 'username', 'resolver', 'timestamp', 'user id'))
         for entry in entries:
-            print(LIST_FORMAT.format(entry.id,
-                                     entry.username,
-                                     entry.resolver,
-                                     entry.timestamp.isoformat(),
-                                     entry.user_id))
-        print('{} entries'.format(len(entries)))
+            click.echo(LIST_FORMAT.format(entry.id,
+                                          entry.username,
+                                          entry.resolver,
+                                          entry.timestamp.isoformat(),
+                                          entry.user_id))
+        click.echo('{} entries'.format(len(entries)))
         if not noaction:
             for entry in entries:
-                print('Deleting entry with id={} ...'.format(entry.id))
+                click.echo('Deleting entry with id={} ...'.format(entry.id))
                 entry.delete()
-            print('Deleted {} expired entries.'.format(len(entries)))
+            click.echo('Deleted {} expired entries.'.format(len(entries)))
             db.session.commit()
         else:
-            print("'--noaction' was passed, not doing anything.")
+            click.echo("'--noaction' was passed, not doing anything.")
+
+
+def delete_call():
+    # Add the ScriptInfo object to create the Flask-App when necessary
+    """
+    \b
+             _                    _______  _______
+      ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
+     / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
+    / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|
+    /_/                       /___/
+
+    Management script for usercache cleanup of privacyIDEA."""
+    click.echo(r"""
+                 _                    _______  _______
+       ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
+      / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
+     / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
+    /_/                       /___/
+    {0!s:>51}
+        """.format('v{0!s}'.format(get_version_number())))
+
+    s = ScriptInfo(create_app=my_create_app)
+    delete(obj=s)
 
 
 if __name__ == '__main__':
-    manager.run()
+    delete_call()

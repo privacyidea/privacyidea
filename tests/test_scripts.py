@@ -23,7 +23,6 @@ SCRIPTS = [
     'privacyidea-update-counter.py',
     'privacyidea-update-linotp-counter.py',
     'privacyidea-user-action',
-    'privacyidea-usercache-cleanup',
     'ssha.py',
     '../pi-manage'
 ]
