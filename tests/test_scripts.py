@@ -15,7 +15,6 @@ SCRIPTS = [
     'privacyidea-export-linotp-counter.py',
     'privacyidea-export-privacyidea-counter.py',
     'privacyidea-fix-access-rights',
-    'privacyidea-get-unused-tokens',
     'privacyidea-migrate-linotp.py',
     'privacyidea-pip-update',
     'privacyidea-queue-huey',

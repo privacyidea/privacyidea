@@ -18,7 +18,7 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
-__doc__ = """
+"""
 This script can be used to create a self-contained local privacyIDEA
 instance that does not require a web server to run. Instead,
 authentication requests are validated via the command line.
@@ -26,7 +26,8 @@ authentication requests are validated via the command line.
 The ``create`` command launches a wizard that creates a new instance.
 The ``configure`` command starts a local development server that can
 be used to setup tokens. This server must not be exposed to the network!
-The ``check`` command can then be used to authenticate users."""
+The ``check`` command can then be used to authenticate users.
+"""
 
 import click
 import functools
@@ -81,10 +82,11 @@ def invoke_pi_manage(commandline, pi_cfg):
 
 
 def instance_option(f):
+    """The instance option for all commands"""
     options = [
         click.option('-i', '--instance', default=Path.home() / '.privacyidea',
                      help='Location of the privacyIDEA instance', show_default=True,
-                     type=click.Path(file_okay=False, exists=False, resolve_path=True))
+                     type=click.Path(file_okay=False, resolve_path=True))
     ]
     return functools.reduce(lambda x, opt: opt(x), options, f)
 

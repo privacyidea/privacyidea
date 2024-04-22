@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: (C) 2024 Paul Lettich <paul.lettich@netknights.it>
+#
 # SPDX-FileCopyrightText: (C) 2016 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
@@ -36,14 +37,9 @@ import click
 from flask.cli import with_appcontext, ScriptInfo
 
 from privacyidea.lib.token import get_tokens, get_serial_by_otp
-from privacyidea.app import create_app
+from privacyidea.cli import create_silent_app
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
-
-
-def my_create_app():
-    app = create_app(config_name="production", silent=True)
-    return app
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -81,8 +77,9 @@ def byotp(otp, tokentype=None, serial="", window=10, unassigned=False,
 
 
 def byotp_call():
+    """Call the actual function with an initialized app"""
     # Add the ScriptInfo object to create the Flask-App when necessary
-    s = ScriptInfo(create_app=my_create_app)
+    s = ScriptInfo(create_app=create_silent_app)
     byotp(obj=s)
 
 
