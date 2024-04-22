@@ -37,12 +37,14 @@ This script deletes expired entries from the user cache.
 """
 __version__ = "0.1"
 
+from flask.cli import with_appcontext, ScriptInfo
 from privacyidea.lib.usercache import create_filter, get_cache_time
 from privacyidea.lib.utils import get_version_number
 from privacyidea.models import UserCache, db
 from privacyidea.app import create_app
 import click
-from flask.cli import FlaskGroup
+
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 def _get_expired_entries():
@@ -59,31 +61,14 @@ LIST_FORMAT = '{:<5} {:<10} {:<10} {:<30} {:<10}'
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
-@click.group(cls=FlaskGroup, create_app=create_app, context_settings=CONTEXT_SETTINGS,
-             add_default_commands=False,
-             epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
-def cli():
-    """
-    \b
-             _                    _______  _______
-   ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
-  / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
- / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|
-/_/                       /___/
-
-    Management script for usercache cleanup of privacyIDEA."""
-    click.echo(r"""
-             _                    _______  _______
-   ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
-  / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
- / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
-/_/                       /___/
-{0!s:>51}
-    """.format('v{0!s}'.format(get_version_number())))
+def my_create_app():
+    app = create_app(config_name="production", silent=True)
+    return app
 
 
-@click.command()
+@click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('-n', "--noaction", is_flag=True, default=False)
+@with_appcontext
 def delete(noaction=False):
     """
     Delete all cache entries that are considered expired according to the
@@ -116,8 +101,29 @@ def delete(noaction=False):
             print("'--noaction' was passed, not doing anything.")
 
 
-cli.add_command(delete)
+def delete_call():
+    # Add the ScriptInfo object to create the Flask-App when necessary
+    """
+    \b
+             _                    _______  _______
+      ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
+     / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
+    / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|
+    /_/                       /___/
+
+    Management script for usercache cleanup of privacyIDEA."""
+    click.echo(r"""
+                 _                    _______  _______
+       ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
+      / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
+     / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
+    /_/                       /___/
+    {0!s:>51}
+        """.format('v{0!s}'.format(get_version_number())))
+
+    s = ScriptInfo(create_app=my_create_app)
+    delete(obj=s)
 
 
 if __name__ == '__main__':
-    cli()
+    delete_call()
