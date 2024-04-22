@@ -78,27 +78,27 @@ def delete(noaction=False):
     actually deleted.
     """
     if not get_cache_time():
-        print('User cache is disabled, not doing anything.')
+        click.echo('User cache is disabled, not doing anything.')
     else:
-        print('Expired entries:')
+        click.echo('Expired entries:')
         entries = _get_expired_entries()
         if entries:
-            print(LIST_FORMAT.format('id', 'username', 'resolver', 'timestamp', 'user id'))
+            click.echo(LIST_FORMAT.format('id', 'username', 'resolver', 'timestamp', 'user id'))
         for entry in entries:
-            print(LIST_FORMAT.format(entry.id,
+            click.echo(LIST_FORMAT.format(entry.id,
                                      entry.username,
                                      entry.resolver,
                                      entry.timestamp.isoformat(),
                                      entry.user_id))
-        print('{} entries'.format(len(entries)))
+        click.echo('{} entries'.format(len(entries)))
         if not noaction:
             for entry in entries:
-                print('Deleting entry with id={} ...'.format(entry.id))
+                click.echo('Deleting entry with id={} ...'.format(entry.id))
                 entry.delete()
-            print('Deleted {} expired entries.'.format(len(entries)))
+            click.echo('Deleted {} expired entries.'.format(len(entries)))
             db.session.commit()
         else:
-            print("'--noaction' was passed, not doing anything.")
+            click.echo("'--noaction' was passed, not doing anything.")
 
 
 def delete_call():
