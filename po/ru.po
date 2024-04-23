@@ -1,12 +1,13 @@
 # Konstantin Burov <sad.2.shade@gmail.com>, 2024.
 # yumpo55 <egor.alin@yandex.com>, 2024.
 # Skeeve Aleph <skifalef@gmail.com>, 2024.
+# Alex <zerk1@mail.ru>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: 2024-04-24 14:07+0000\n"
-"Last-Translator: Skeeve Aleph <skifalef@gmail.com>\n"
+"Last-Translator: Alex <zerk1@mail.ru>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/ru/>\n"
 "Language: ru\n"
@@ -1263,7 +1264,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:56
 #: privacyidea/static/components/token/views/token.html:25
 msgid "Enroll Token"
-msgstr ""
+msgstr "Зарегистрировать токен"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:118
 #: privacyidea/static/components/token/controllers/tokenControllers.js:138
