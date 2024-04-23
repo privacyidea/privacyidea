@@ -28,6 +28,7 @@ This module is tested in tests/test_lib_caconnector.py
 from privacyidea.lib.error import CAError
 from privacyidea.lib.utils import int_to_hex, to_unicode
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConnectors
+from cryptography import x509
 from OpenSSL import crypto
 from subprocess import Popen, PIPE  # nosec B404
 import yaml
@@ -188,26 +189,15 @@ AvailableCAConnectors.append("privacyidea.lib.caconnectors.localca.LocalCAConnec
 def _get_crl_next_update(filename):
     """
     Read the CRL file and return the next update as datetime
-    :param filename:
-    :return:
+
+    :param filename: the name of the CRL file
+    :type filename: str
+    :rtype: datetime.datetime
     """
-    dt = None
-    f = open(filename)
-    crl_buff = f.read()
-    f.close()
-    crl_obj = crypto.load_crl(crypto.FILETYPE_PEM, crl_buff)
-    # Get "Next Update" of CRL
-    # Unfortunately pyOpenSSL does not support this. so we dump the
-    # CRL and parse the text :-/
-    # We do not want to add dependency to pyasn1
-    crl_text = to_unicode(crypto.dump_crl(crypto.FILETYPE_TEXT, crl_obj))
-    for line in crl_text.split("\n"):
-        if "Next Update: " in line:
-            key, value = line.split(":", 1)
-            date = value.strip()
-            dt = datetime.datetime.strptime(date, "%b %d %X %Y %Z")
-            break
-    return dt
+    with open(filename, 'r') as f:
+        crl_buff = f.read()
+        crl_obj = x509.load_pem_x509_crl(crl_buff.encode())
+        return crl_obj.next_update
 
 
 class CONFIG(object):
@@ -329,6 +319,7 @@ class LocalCAConnector(BaseCAConnector):
     def _filename_from_x509(x509_name, file_extension="pem"):
         """
         return a filename from the subject from an x509 object
+
         :param x509_name: The X509Name object
         :type x509_name: X509Name object
         :param file_extension:

@@ -1,7 +1,7 @@
 """
 This test file tests the lib.tokens.certificatetoken
 """
-
+from cryptography import x509
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.models import Token
 from privacyidea.lib.caconnector import save_caconnector
@@ -318,12 +318,14 @@ class CertificateTokenTestCase(MyTestCase):
 
     def test_002_verify(self):
         # Verify an attestation certificate against trusted CA chain path.
-        r = verify_certificate_path(YUBIKEY_ATTEST, ["tests/testdata/attestation",
-                                                     "tests/testdata/feitian_non_exist"])
+        r = verify_certificate_path(x509.load_pem_x509_certificate(YUBIKEY_ATTEST.encode()),
+                                    ["tests/testdata/attestation",
+                                     "tests/testdata/feitian_non_exist"])
         self.assertTrue(r)
 
         # Verification against an empty chain, due to misconfiguration fails.
-        r = verify_certificate_path(YUBIKEY_ATTEST, ["tests/testdata/feitian_non_exist"])
+        r = verify_certificate_path(x509.load_pem_x509_certificate(YUBIKEY_ATTEST.encode()),
+                                    ["tests/testdata/feitian_non_exist"])
         self.assertFalse(r)
 
     def test_01_create_token_from_certificate(self):
