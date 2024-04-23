@@ -93,7 +93,7 @@ def list_tokens(age):
     tlist = _get_tokenlist(age)
     if tlist:
         click.echo("Token serial\tLast authentication")
-        click.echo("="*50)
+        click.echo("=" * 50)
         for token_obj in tlist:
             click.echo(f"{token_obj.token.serial}\t{token_obj.get_tokeninfo(ACTION.LASTAUTH)}")
 

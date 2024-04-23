@@ -11,7 +11,6 @@ SCRIPTS = [
     'privacyidea-create-pwidresolver-user',
     'privacyidea-create-sqlidresolver-user',
     'privacyidea-cron',
-    'privacyidea-expired-users',
     'privacyidea-export-linotp-counter.py',
     'privacyidea-export-privacyidea-counter.py',
     'privacyidea-fix-access-rights',
