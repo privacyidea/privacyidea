@@ -1,11 +1,12 @@
 # Konstantin Burov <sad.2.shade@gmail.com>, 2024.
 # yumpo55 <egor.alin@yandex.com>, 2024.
+# Skeeve Aleph <skifalef@gmail.com>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-03-27 09:25+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2024-04-24 14:07+0000\n"
+"Last-Translator: Skeeve Aleph <skifalef@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/ru/>\n"
 "Language: ru\n"
@@ -14,13 +15,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 5.5-dev\n"
+"X-Generator: Weblate 5.5.1-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
 msgctxt "subscription"
 msgid "Level"
-msgstr ""
+msgstr "Уровень"
 
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:22
 #: privacyidea/static/components/token/views/token.enrolled.paper.html:24
@@ -55,9 +56,8 @@ msgstr ""
 "сейчас!</a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
-#, fuzzy
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
-msgstr "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
+msgstr "<b>ПРОГРАММА ПРЕДОСТАВЛЯЕТСЯ БЕЗ ОБЯЗАТЕЛЬСТВ!</b>"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:65
 msgid ""
@@ -192,7 +192,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:36
 msgid "A token specific SMS gateway"
-msgstr "СМС шлюз для Токена"
+msgstr "СМС шлюз для токена"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
@@ -207,7 +207,7 @@ msgstr "ID клиента API"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:683
 msgid "Abort operation on unverifiable token"
-msgstr ""
+msgstr "Прервать операцию с непроверяемым токеном"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
