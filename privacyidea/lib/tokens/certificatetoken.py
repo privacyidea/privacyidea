@@ -32,6 +32,7 @@ The code is tested in test_lib_tokens_certificate.py.
 """
 
 import logging
+import pathlib
 
 from cryptography.hazmat.primitives import serialization
 
@@ -43,7 +44,9 @@ from privacyidea.lib.caconnector import get_caconnector_object, get_caconnector_
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import determine_logged_in_userparams
 from OpenSSL import crypto
-from cryptography.x509 import load_pem_x509_certificate, load_pem_x509_csr
+from cryptography.x509 import (load_pem_x509_certificate, load_pem_x509_csr,
+                               load_pem_x509_certificates, DNSName)
+from cryptography.x509.verification import PolicyBuilder, Store, VerificationError
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
 from privacyidea.lib.decorators import check_token_locked
@@ -84,24 +87,31 @@ def verify_certificate_path(certificate, trusted_ca_paths):
     a certificate chain.
 
     :param certificate: The PEM certificate to verify
+    :type certificate: cryptography.x509.Certificate
     :param trusted_ca_paths: A list of directories
-    :return: True or False
+    :type trusted_ca_paths: list
+    :return: True if the certificate can be verified against the ca chains
+    :rtype: bool
     """
-    from os import listdir
-    from os.path import isfile, join, isdir
 
     for capath in trusted_ca_paths:
-        if isdir(capath):
-            chainfiles = [join(capath, f) for f in listdir(capath) if isfile(join(capath, f))]
+        p = pathlib.Path(capath)
+        if p.is_dir():
+            chainfiles = [f for f in p.iterdir() if f.is_file()]
             for chainfile in chainfiles:
-                chain = parse_chainfile(chainfile)
-                try:
-                    verify_certificate(to_byte_string(certificate), chain)
-                    return True
-                except Exception as exx:
-                    log.debug("Can not verify attestation certificate against chain {0!s}.".format(chain))
+                with open(chainfile, 'rb') as cf:
+                    store = Store(load_pem_x509_certificates(cf.read()))
+                    try:
+                        builder = PolicyBuilder().store(store)
+                        verifier = builder.build_server_verifier(DNSName('privacyidea.org'))
+                        cert_chain = verifier.verify(certificate, [])
+                        log.debug(f"Successfully validated certificate with chain {cert_chain}")
+                        return True
+                    except VerificationError as exx:
+                        log.debug(f"Can not verify attestation certificate against chain in {chainfile}.")
+                        log.debug(exx)
         else:
-            log.warning("The configured attestation CA directory does not exist.")
+            log.warning(f"The configured attestation CA directory {p} does not exist.")
     return False
 
 
@@ -139,8 +149,8 @@ def verify_certificate(certificate, chain):
     The certificate chain starts with the root certificate and contains further
     intermediate certificates
 
-    :param certificate: The certificate
-    :type certificate: PEM encoded string
+    :param certificate: The certificate in PEM encoded format
+    :type certificate: str
     :param chain: A list of PEM encoded certificates
     :type chain: list
     :return: raises an exception
@@ -420,6 +430,7 @@ class CertificateTokenClass(TokenClass):
     def update(self, param):
         """
         This method is called during the initialization process.
+
         :param param: parameters from the token init
         :type param: dict
         :return: None
@@ -464,7 +475,7 @@ class CertificateTokenClass(TokenClass):
                         raise privacyIDEAError("certificate request does not match attestation certificate.")
 
                     try:
-                        verified = verify_certificate_path(attestation,
+                        verified = verify_certificate_path(attestation_cert,
                                                            param.get(ACTION.TRUSTED_CA_PATH))
                     except Exception as exx:
                         # We could have file system errors during verification.
@@ -485,7 +496,7 @@ class CertificateTokenClass(TokenClass):
                                                   x509object)
         elif generate:
             """
-            Create the certificate on behalf of another user. Now we need to create 
+            Create the certificate on behalf of another user. Now we need to create
             * the key pair,
             * the request
             * and the certificate
