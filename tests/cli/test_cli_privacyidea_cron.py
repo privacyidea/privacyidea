@@ -1,5 +1,5 @@
 from .base import CliTestCase
-from privacyidea.cli.privacyidea_cron.main import cli as privacyidea_cron
+from privacyidea.cli.tools.cron import cli as privacyidea_cron
 
 
 class PICronTestCase(CliTestCase):
