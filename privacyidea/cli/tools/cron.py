@@ -23,13 +23,13 @@ It runs periodic tasks that are specified in the database.
 """
 __version__ = "0.1"
 
+import click
 import sys
 import warnings
 import json
 from datetime import datetime
 
 import dateutil
-from flask_script import Manager, Command
 
 from privacyidea.app import create_app
 from privacyidea.lib.config import get_privacyidea_node
@@ -37,11 +37,13 @@ from privacyidea.lib.periodictask import (get_scheduled_periodic_tasks,
                                           execute_task, get_periodic_tasks,
                                           get_periodic_task_by_name,
                                           set_periodic_task_last_run)
+from privacyidea.lib.utils import get_version_number
 
 warnings.simplefilter("ignore")
 
 app = create_app(config_name='production', silent=True)
-manager = Manager(app)
+
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 def print_stdout(*args, **kwargs):
@@ -49,14 +51,14 @@ def print_stdout(*args, **kwargs):
     Print to stdout, except if "cron mode" has been activated.
     """
     if not app.config.get("cron_mode", False):
-        print(*args, **kwargs)
+        click.echo(*args, **kwargs)
 
 
 def print_stderr(*args, **kwargs):
     """
     Print to stderr.
     """
-    print(*args, file=sys.stderr, **kwargs)
+    click.echo(*args, file=sys.stderr, **kwargs)
 
 
 def get_node_name(node):
@@ -99,13 +101,27 @@ def run_task_on_node(ptask, node):
     return result
 
 
-@manager.option("-n", "--node",
-                help="Override the node name (read from privacyIDEA config by default)",
-                dest="node_string")
-@manager.option("-t", "--task",
-                help="Run the specified task",
-                required=True,
-                dest="task_name")
+@click.group(context_settings=CONTEXT_SETTINGS,
+             epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
+def cli():
+    """This script is meant to be invoked periodically by the system cron daemon.
+It runs periodic tasks that are specified in the database."""
+    click.echo(r"""
+             _                    _______  _______
+   ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
+  / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
+ / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
+/_/                       /___/
+{0!s:>51}
+    """.format('v{0!s}'.format(get_version_number())))
+
+
+@click.command()
+@click.option("-n", "--node", "node_string",
+              help="Override the node name (read from privacyIDEA config by default)")
+@click.option("-t", "--task", "task_name",
+              help="Run the specified task",
+              required=True)
 def run_manually(node_string, task_name):
     """
     Manually run a periodic task.
@@ -117,6 +133,7 @@ def run_manually(node_string, task_name):
     run_task_on_node(ptask, node)
 
 
+@click.command()
 def list_tasks():
     """
     Show a list of available tasks that could be run.
@@ -140,20 +157,14 @@ def list_tasks():
                                         **ptask))
 
 
-# add the list_tasks() function as flask command 'list'
-manager.add_command('list', Command(list_tasks))
-
-
-@manager.option("-d", "--dryrun",
-                action="store_true",
-                help="Do not run any tasks, only show what would be done")
-@manager.option("-n", "--node",
-                help="Override the node name (read from privacyIDEA config by default)",
-                dest="node_string")
-@manager.option("-c", "--cron",
-                dest="cron_mode",
-                action="store_true",
-                help="Run in 'cron mode', i.e. do not write to stdout, but write errors to stderr")
+@click.command()
+@click.option("-d", "--dryrun",
+              is_flag=True,
+              help="Do not run any tasks, only show what would be done")
+@click.option("-n", "--node", "node_string",
+              help="Override the node name (read from privacyIDEA config by default)")
+@click.option("-c", "--cron", "cron_mode", is_flag=True,
+              help="Run in 'cron mode', i.e. do not write to stdout, but write errors to stderr")
 def run_scheduled(node_string=None, dryrun=False, cron_mode=False):
     """
     Execute all periodic tasks that are scheduled to run.
@@ -185,5 +196,10 @@ def run_scheduled(node_string=None, dryrun=False, cron_mode=False):
         print_stdout("There are no tasks scheduled on node {!s}.".format(node))
 
 
+cli.add_command(run_scheduled)
+cli.add_command(run_manually)
+cli.add_command(list_tasks)
+
+
 if __name__ == '__main__':
-    manager.run()
+    cli()
