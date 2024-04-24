@@ -109,6 +109,7 @@ setup(
     entry_points={
         'console_scripts': [
             'privacyidea-token-janitor = privacyidea.cli.privacyideatokenjanitor:cli',
+            'privacyidea-cron = privacyidea.cli.privacyidea_cron:cli',
             'pi-manage = privacyidea.cli.pimanage:cli',
             'privacyidea-standalone = privacyidea.cli.tools.standalone:cli',
             'privacyidea-get-serial = privacyidea.cli.tools.get_serial:byotp_call'
