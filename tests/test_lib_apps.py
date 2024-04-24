@@ -17,7 +17,7 @@ class AppsTestCase(MyTestCase):
         self.assertTrue("otpauth://hotp/mylabel?secret=CI2FM6A&counter=1" in
                         r, r)
 
-        r = create_google_authenticator_url(tokentype="totp", key="123456",
+        r = create_google_authenticator_url(tokentype="TOTP", key="123456",
                                             period=60)
         self.assertTrue("otpauth://totp/mylabel?secret=CI2FM&period"
                         "=60&digits=6&creator=privacyidea&issuer=privacyIDEA" in r, r)

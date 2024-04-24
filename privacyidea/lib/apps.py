@@ -98,7 +98,7 @@ def create_google_authenticator_url(key=None, user=None,
                                     serial="mylabel", tokenlabel="<s>",
                                     hash_algo="SHA1", digits="6",
                                     issuer="privacyIDEA", user_obj=None,
-                                    extra_data=None):
+                                    creator="privacyidea", extra_data=None):
     """
     This creates the google authenticator URL.
     This url may only be 119 characters long.
@@ -153,6 +153,7 @@ def create_google_authenticator_url(key=None, user=None,
         hash_algo = ""
 
     if tokentype.lower() == "totp":
+        tokentype = "totp"
         period = "period={0!s}&".format(period)
     elif tokentype.lower() == "daypassword":
         period = "period={0!s}&".format(parse_time_sec_int(period))
@@ -162,12 +163,12 @@ def create_google_authenticator_url(key=None, user=None,
     return ("otpauth://{tokentype!s}/{label!s}?secret={secret!s}&"
             "{counter!s}{hash!s}{period!s}"
             "digits={digits!s}&"
-            "creator=privacyidea&"
+            "creator={creator}&"
             "issuer={issuer!s}{extra}".format(tokentype=tokentype,
                                        label=url_label, secret=otpkey,
                                        hash=hash_algo, period=period,
                                        digits=digits, issuer=url_issuer,
-                                       counter=counter,
+                                       counter=counter, creator=creator,
                                        extra=_construct_extra_parameters(extra_data)))
 
 @log_with(log)
