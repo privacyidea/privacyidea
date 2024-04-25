@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # 2024-03-22 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
 #            Migrate to click
 # 2017-04-24 Friedrich Weber <friedrich.weber@netknights.it>
@@ -41,7 +40,7 @@ from flask.cli import with_appcontext, ScriptInfo
 from privacyidea.lib.usercache import create_filter, get_cache_time
 from privacyidea.lib.utils import get_version_number
 from privacyidea.models import UserCache, db
-from privacyidea.app import create_app
+from privacyidea.cli import create_silent_app
 import click
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -56,11 +55,6 @@ def _get_expired_entries():
 
 
 LIST_FORMAT = '{:<5} {:<10} {:<10} {:<30} {:<10}'
-
-
-def my_create_app():
-    app = create_app(config_name="production", silent=True)
-    return app
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -99,26 +93,18 @@ def delete(noaction=False):
 
 
 def delete_call():
-    # Add the ScriptInfo object to create the Flask-App when necessary
-    """
-    \b
-             _                    _______  _______
-      ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
-     / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
-    / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|
-    /_/                       /___/
-
-    Management script for usercache cleanup of privacyIDEA."""
+    """Management script for usercache cleanup of privacyIDEA."""
     click.echo(r"""
                  _                    _______  _______
        ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
       / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
-     / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
+     / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|  Usercache cleanup
     /_/                       /___/
     {0!s:>51}
         """.format('v{0!s}'.format(get_version_number())))
 
-    s = ScriptInfo(create_app=my_create_app)
+    # Add the ScriptInfo object to create the Flask-App when necessary
+    s = ScriptInfo(create_app=create_silent_app)
     delete(obj=s)
 
 

@@ -18,8 +18,7 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import click
-from flask.cli import FlaskGroup
-from privacyidea.app import create_app
+from privacyidea.cli import create_silent_app, NoPluginsFlaskGroup
 from privacyidea.lib.utils import get_version_number
 from .findtokens import findtokens
 from .loadtokens import loadtokens
@@ -29,19 +28,7 @@ from .updatetokens import updatetokens
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
-# Don't show logging information
-def my_create_app():
-    app = create_app(config_name="production", silent=True)
-    return app
-
-
-# Don't load plugin commands
-class NoPluginsFlaskGroup(FlaskGroup):
-    def _load_plugin_commands(self):
-        pass
-
-
-@click.group(cls=NoPluginsFlaskGroup, create_app=my_create_app, context_settings=CONTEXT_SETTINGS,
+@click.group(cls=NoPluginsFlaskGroup, create_app=create_silent_app, context_settings=CONTEXT_SETTINGS,
              add_default_commands=False,
              epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
 def cli():

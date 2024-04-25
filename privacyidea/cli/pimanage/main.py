@@ -1,6 +1,39 @@
 # SPDX-FileCopyrightText: (C) 2023 Paul Lettich <paul.lettich@netknights.it>
 #
+# SPDX-FileCopyrightText: (C) 2014 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#
 # SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# 2024-04-22 Paul Lettich <paul.lettich@netknights.it>
+#            Refactor using click
+# 2020-11-18 Henning Hollermann <henning.hollermann@netknights.it>
+#            Allow import and export of events, resolvers and policies
+# 2018-08-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Allow creation of HSM keys
+# 2017-10-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Allow cleaning up different actions with different
+#            retention times.
+# 2017-07-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add generation of PGP keys
+# 2017-02-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add CA sub commands
+# 2017-01-27 Diogenes S. Jesus
+#            Cornelius Kölbel <cornelius.koelbel@netknights.it>
+#            Add creation of more detailed policy
+# 2016-04-15 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add backup for pymysql driver
+# 2016-01-29 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add profiling
+# 2015-10-09 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Set file permissions
+# 2015-09-24 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add validate call
+# 2015-06-16 Cornelius Kölbel <cornelius@privacyidea.org>
+#            Add creation of JWT token
+# 2015-03-27 Cornelius Kölbel, cornelius@privacyidea.org
+#            Add sub command for policies
+# 2014-12-15 Cornelius Kölbel, info@privacyidea.org
+#            Initial creation
 #
 # Info: https://privacyidea.org
 #
@@ -16,10 +49,10 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+"""CLI Tool for configuring and managing privacyIDEA"""
 import click
 from flask.cli import FlaskGroup
-from privacyidea.app import create_app
+from privacyidea.cli import create_silent_app
 from privacyidea.lib.utils import get_version_number
 from .admin import admin_cli
 from .audit import audit_cli, rotate_audit as audit_rotate_audit
@@ -33,13 +66,7 @@ from .api import api_cli
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
-# Don't show logging information
-def my_create_app():
-    app = create_app(config_name="production", silent=True)
-    return app
-
-
-@click.group(cls=FlaskGroup, create_app=my_create_app, context_settings=CONTEXT_SETTINGS,
+@click.group(cls=FlaskGroup, create_app=create_silent_app, context_settings=CONTEXT_SETTINGS,
              epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
 def cli():
     """
