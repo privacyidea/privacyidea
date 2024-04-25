@@ -115,6 +115,7 @@ setup(
             'privacyidea-usercache-cleanup = privacyidea.cli.tools.usercache_cleanup:delete_call',
             'privacyidea-get-unused-tokens = privacyidea.cli.tools.get_unused_tokens:cli',
             'privacyidea-expired-users = privacyidea.cli.tools.expired_users:expire_call'
+            'privacyidea-cron = privacyidea.cli.tools.cron:cli'
         ]},
     extras_require={
         'doc': ["Pallets-Sphinx-Themes>=1.2.3",
