@@ -61,7 +61,10 @@ from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import User
 from privacyidea.lib.realm import get_default_realm
-from privacyidea.lib.subscriptions import subscription_status
+from privacyidea.lib.subscriptions import (subscription_status,
+                                           get_subscription,
+                                           check_subscription,
+                                           SubscriptionError)
 from privacyidea.lib.utils import create_img
 from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
@@ -669,6 +672,25 @@ def get_webui_settings(request, response):
         content["result"]["value"]["qr_image_custom"] = qr_image_custom
         content["result"]["value"]["logout_redirect_url"] = logout_redirect_url
         content["result"]["value"]["require_description"] = require_description
+        if role == ROLE.ADMIN:
+            # Add a support mailto, for administrators with systemwrite rights.
+            subscriptions = get_subscription("privacyidea")
+            if len(subscriptions) == 1:
+                subscription = subscriptions[0]
+                try:
+                    check_subscription("privacyidea")
+                    subject = subscription.get("for_name")
+                except SubscriptionError:
+                    subject = "My subscription has expired."
+                # Check policy, if the admin is allowed to save config
+                action_allowed = Match.generic(g, scope=role,
+                                               action=ACTION.SYSTEMWRITE,
+                                               adminuser=loginname,
+                                               adminrealm=realm).allowed()
+                if action_allowed:
+                    content["result"]["value"]["supportmail"] = \
+                        ("mailto:{0!s}?subject={1!s}&body={2!s}").format(
+                            subscription.get("by_email"), subject, subscription)
         response.set_data(json.dumps(content))
     return response
 

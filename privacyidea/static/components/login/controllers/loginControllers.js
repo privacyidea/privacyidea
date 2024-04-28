@@ -417,7 +417,10 @@ angular.module("privacyideaApp")
             $scope.backend_debug_passwords = data.result.value.debug_passwords;
             $scope.privacyideaVersionNumber = data.versionnumber;
             var lang = gettextCatalog.getCurrentLanguage();
-            $scope.privacyideaSupportLink = "https://netknights.it/" + lang + "/support-link-" + data.result.value.role;
+            if (data.result.value.hasOwnProperty("supportmail"))
+                $scope.privacyideaSupportLink = data.result.value.supportmail;
+            else
+                $scope.privacyideaSupportLink = "https://netknights.it/" + lang + "/support-link-" + data.result.value.role;
             $scope.loggedInUser = AuthFactory.getUser();
             $scope.token_wizard = data.result.value.token_wizard;
             $scope.token_wizard_2nd = data.result.value.token_wizard_2nd;
