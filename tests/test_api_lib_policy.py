@@ -22,6 +22,7 @@ from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from .base import (MyApiTestCase)
 
+from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
                                     PolicyClass, SCOPE, ACTION, REMOTE_USER,
                                     AUTOASSIGNVALUE, AUTHORIZED)
@@ -4312,6 +4313,52 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(jresult.get("result").get("value").get(ACTION.ADMIN_DASHBOARD))
 
         delete_policy("pol_dashboard")
+
+    def test_11_get_webui_settings_support_link(self):
+        # Test the link to the support
+        self.setUp_user_realms()
+
+        # The request with an OTP value and a PIN of a user, who has not
+        # token assigned
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {}
+
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": {"role": "admin",
+                                    "username": "cornelius"}},
+               "version": "privacyIDEA test",
+               "id": 1}
+        resp = jsonify(res)
+
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertNotIn("supportmail", jresult.get("result").get("value"))
+
+        # Add a subscription
+        from privacyidea.models import Subscription
+        s = Subscription(application="privacyidea",
+                         for_name="testuser",
+                         for_email="admin@example.com",
+                         for_phone="0",
+                         by_name="privacyIDEA project",
+                         by_email="privacyidea@example.com",
+                         date_from=datetime.utcnow(),
+                         date_till=datetime.utcnow() + timedelta(days=365),
+                         num_users=100,
+                         num_tokens=100,
+                         num_clients=100
+                         ).save()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertIn("privacyidea@example.com", jresult.get("result").get("value").get("supportmail"))
+        self.assertIn(EXPIRE_MESSAGE, jresult.get("result").get("value").get("supportmail"))
 
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",

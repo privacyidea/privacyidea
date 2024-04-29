@@ -64,7 +64,8 @@ from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
                                            check_subscription,
-                                           SubscriptionError)
+                                           SubscriptionError,
+                                           EXPIRE_MESSAGE)
 from privacyidea.lib.utils import create_img
 from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
@@ -678,10 +679,10 @@ def get_webui_settings(request, response):
             if len(subscriptions) == 1:
                 subscription = subscriptions[0]
                 try:
-                    check_subscription("privacyidea")
                     subject = subscription.get("for_name")
+                    check_subscription("privacyidea")
                 except SubscriptionError:
-                    subject = "My subscription has expired."
+                    subject = EXPIRE_MESSAGE
                 # Check policy, if the admin is allowed to save config
                 action_allowed = Match.generic(g, scope=role,
                                                action=ACTION.SYSTEMWRITE,

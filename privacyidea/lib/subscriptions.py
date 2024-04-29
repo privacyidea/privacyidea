@@ -39,6 +39,7 @@ import traceback
 from sqlalchemy import func
 
 
+EXPIRE_MESSAGE = "My subscription has expired."
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
 SIGN_FORMAT = """{application}
 {for_name}
