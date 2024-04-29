@@ -107,12 +107,12 @@ def create_google_authenticator_url(key=None, user=None,
     We expect the key to be hexlified!
     """
     extra_data = extra_data or {}
+    tokentype = tokentype.lower()
 
     # policy depends on some lib.util
 
     user_obj = user_obj or User()
-    if tokentype.lower() == "hotp":
-        tokentype = "hotp"
+    if tokentype == "hotp":
         counter = "counter=1&"
     else:
         counter = ""
@@ -152,10 +152,9 @@ def create_google_authenticator_url(key=None, user=None,
         # the QR code simpler
         hash_algo = ""
 
-    if tokentype.lower() == "totp":
-        tokentype = "totp"
+    if tokentype == "totp":
         period = "period={0!s}&".format(period)
-    elif tokentype.lower() == "daypassword":
+    elif tokentype == "daypassword":
         period = "period={0!s}&".format(parse_time_sec_int(period))
     else:
         period = ""
