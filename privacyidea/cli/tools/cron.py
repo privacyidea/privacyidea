@@ -23,17 +23,15 @@ It runs periodic tasks that are specified in the database.
 """
 
 import click
+from datetime import datetime
+from dateutil import tz
 from flask import current_app
-from flask.cli import FlaskGroup
+import json
 import sys
 import traceback
 import warnings
-import json
-from datetime import datetime
 
-from dateutil import tz
-
-from privacyidea.app import create_app
+from privacyidea.cli import create_silent_app, NoPluginsFlaskGroup
 from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.periodictask import (get_scheduled_periodic_tasks,
                                           execute_task, get_periodic_tasks,
@@ -104,8 +102,8 @@ def run_task_on_node(ptask, node):
     return result
 
 
-@click.group(cls=FlaskGroup, create_app=create_app, context_settings=CONTEXT_SETTINGS,
-             add_default_commands=False,
+@click.group(cls=NoPluginsFlaskGroup, create_app=create_silent_app,
+             context_settings=CONTEXT_SETTINGS, add_default_commands=False,
              epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
 def cli():
     """

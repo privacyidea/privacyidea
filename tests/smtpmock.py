@@ -21,10 +21,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
+import inspect
 import smtplib
 
-from inspect import formatargspec, getfullargspec as getargspec
 from collections.abc import Sequence, Sized
 
 from collections import namedtuple
@@ -44,16 +43,12 @@ def wrapper%(signature)s:
 def get_wrapped(func, wrapper_template, evaldict):
     # Preserve the argspec for the wrapped function so that testing
     # tools such as pytest can continue to use their fixture injection.
-    args = getargspec(func)
-    values = args.args[-len(args.defaults):] if args.defaults else None
 
-    signature = formatargspec(*args)
+    signature = inspect.signature(func, follow_wrapped=False)
     is_bound_method = hasattr(func, '__self__')
-    if is_bound_method:
-        args.args = args.args[1:]     # Omit 'self'
-    callargs = formatargspec(*args, formatvalue=lambda v: '=' + v)
+    callargs = str(signature)
 
-    ctx = {'signature': signature, 'funcargs': callargs}
+    ctx = {'signature': str(signature), 'funcargs': callargs}
     exec(wrapper_template % ctx, evaldict, evaldict)
 
     wrapper = evaldict['wrapper']

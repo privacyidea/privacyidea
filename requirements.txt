@@ -58,8 +58,6 @@ flask-babel==2.0.0
     # via privacyIDEA (setup.py)
 flask-migrate==2.7.0
     # via privacyIDEA (setup.py)
-flask-script==2.0.6
-    # via privacyIDEA (setup.py)
 flask-sqlalchemy==2.5.1
     # via
     #   flask-migrate
