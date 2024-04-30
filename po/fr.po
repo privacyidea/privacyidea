@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-04-24 14:07+0000\n"
+"PO-Revision-Date: 2024-04-25 15:07+0000\n"
 "Last-Translator: Julien Mutterer <Julien_M@users.noreply.hosted.weblate.org>"
 "\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
@@ -307,8 +307,9 @@ msgid "API client ID"
 msgstr "Identifiant client d'API"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:683
+#, fuzzy
 msgid "Abort operation on unverifiable token"
-msgstr ""
+msgstr "Opération abandonnée, jeton invérifiable"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:12
 msgid "About privacyIDEA Web Client"
@@ -462,7 +463,7 @@ msgstr "Type d'application"
 #: privacyidea/static/components/token/views/token.enroll.applspec.html:22
 #, fuzzy
 msgid "Application specific password"
-msgstr "Type d'application"
+msgstr "Mot de passe spécifique à l'application"
 
 #: privacyidea/static/components/token/views/token.applications.html:2
 msgid "Application:"
@@ -610,12 +611,13 @@ msgid "CA Key"
 msgstr "Clé de l'autorité de certification (CA)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:82
+#, fuzzy
 msgid "CA certificate (filename)"
-msgstr ""
+msgstr "Certificat de l'Autorité de Certification (nom de fichier)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:137
 msgid "CA specific options"
-msgstr ""
+msgstr "Options spécifiques de l'Autorité de Certification (CA)"
 
 #: privacyidea/static/components/config/views/config.system.html:178
 msgid "CAs"
