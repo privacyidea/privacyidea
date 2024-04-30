@@ -42,6 +42,7 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 import datetime
 import logging
 import traceback
+from urllib.parse import quote
 from privacyidea.lib.error import PolicyError, ValidateError
 from flask import g, current_app, make_response
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, AUTHORIZED
@@ -61,10 +62,15 @@ from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import User
 from privacyidea.lib.realm import get_default_realm
-from privacyidea.lib.subscriptions import subscription_status
-from privacyidea.lib.utils import create_img
+from privacyidea.lib.subscriptions import (subscription_status,
+                                           get_subscription,
+                                           check_subscription,
+                                           SubscriptionError,
+                                           EXPIRE_MESSAGE)
+from privacyidea.lib.utils import create_img, get_version
 from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib import _
 
 log = logging.getLogger(__name__)
 
@@ -77,6 +83,15 @@ DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_TIMEOUT_ACTION = "lockscreeen"
 DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
                               "policy-templates/master/templates/"
+BODY_TEMPLATE = _("""
+<--- Please describe your Problem in detail --->
+
+<--- Please provide as many additional information as possible --->
+
+privacyIDEA Version: {version}
+Subscriber: {subscriber_name}
+Subscriptions: {subscriptions}
+""")
 
 
 class postpolicy(object):
@@ -669,6 +684,31 @@ def get_webui_settings(request, response):
         content["result"]["value"]["qr_image_custom"] = qr_image_custom
         content["result"]["value"]["logout_redirect_url"] = logout_redirect_url
         content["result"]["value"]["require_description"] = require_description
+        if role == ROLE.ADMIN:
+            # Add a support mailto, for administrators with systemwrite rights.
+            subscriptions = get_subscription("privacyidea")
+            if len(subscriptions) == 1:
+                subscription = subscriptions[0]
+                try:
+                    version = get_version()
+                    subject = "Problem with {0!s}".format(version)
+                    check_subscription("privacyidea")
+                except SubscriptionError:
+                    subject = EXPIRE_MESSAGE
+                # Check policy, if the admin is allowed to save config
+                action_allowed = Match.generic(g, scope=role,
+                                               action=ACTION.SYSTEMWRITE,
+                                               adminuser=loginname,
+                                               adminrealm=realm).allowed()
+                if action_allowed:
+                    body = BODY_TEMPLATE.format(subscriptions=subscriptions,
+                                                version=version,
+                                                subscriber_name=subscription.get("for_name"))
+
+                    body = quote(body)
+                    content["result"]["value"]["supportmail"] = \
+                        ("mailto:{0!s}?subject={1!s}&body={2!s}").format(
+                            subscription.get("by_email"), subject, body)
         response.set_data(json.dumps(content))
     return response
 

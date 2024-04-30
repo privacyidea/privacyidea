@@ -32,6 +32,7 @@ from ..models import Subscription
 from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.crypto import Sign
+from privacyidea.lib import _
 import functools
 from privacyidea.lib.framework import get_app_config_value
 import os
@@ -39,6 +40,7 @@ import traceback
 from sqlalchemy import func
 
 
+EXPIRE_MESSAGE = _("My subscription has expired.")
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
 SIGN_FORMAT = """{application}
 {for_name}
