@@ -701,9 +701,9 @@ def get_webui_settings(request, response):
                                                adminuser=loginname,
                                                adminrealm=realm).allowed()
                 if action_allowed:
-                    body = BODY_TEMPLATE.format(subscriptions = subscriptions,
-                                                version = version,
-                                                subscriber_name = subscription.get("for_name"))
+                    body = BODY_TEMPLATE.format(subscriptions=subscriptions,
+                                                version=version,
+                                                subscriber_name=subscription.get("for_name"))
 
                     body = quote(body)
                     content["result"]["value"]["supportmail"] = \
