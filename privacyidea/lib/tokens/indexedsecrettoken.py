@@ -170,10 +170,14 @@ class IndexedSecretTokenClass(TokenClass):
         :return: nothing
 
         """
-        if 'genkey' not in param and 'otpkey' not in param:
+        if 'verify' not in param and 'genkey' not in param and 'otpkey' not in param:
             param['genkey'] = 1
 
         TokenClass.update(self, param, reset_failcount)
+
+        # finally we set the otplen of the token, no matter if the otpkey was generated or not
+        key = self.token.get_otpkey().getKey()
+        self.set_otplen(len(key))
         return
 
     @log_with(log)
