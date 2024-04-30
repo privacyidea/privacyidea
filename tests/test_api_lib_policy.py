@@ -3804,8 +3804,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         except Exception:
             print("no need to unassign token")
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -3864,8 +3863,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         except Exception as e:
             print("no need to unassign token")
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -3929,8 +3927,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(mt.token.serial, serial)
         self.assertEqual(mt.token.machine_list[0].machine_id, "192.168.0.1")
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -3978,8 +3975,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         serial = "offline01"
         # Do prepend_pin == False
         set_privacyidea_config(SYSCONF.PREPENDPIN, False)
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -4071,8 +4067,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_08_get_webui_settings(self):
         self.setUp_user_realms()
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -4224,8 +4219,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Test that policies like tokenpagesize are also user dependent
         self.setUp_user_realms()
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -4279,8 +4273,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Test admin_dashboard
         self.setUp_user_realms()
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -4318,8 +4311,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Test the link to the support
         self.setUp_user_realms()
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})

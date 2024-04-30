@@ -42,6 +42,7 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 import datetime
 import logging
 import traceback
+from urllib.parse import quote
 from privacyidea.lib.error import PolicyError, ValidateError
 from flask import g, current_app, make_response
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, AUTHORIZED
@@ -66,9 +67,10 @@ from privacyidea.lib.subscriptions import (subscription_status,
                                            check_subscription,
                                            SubscriptionError,
                                            EXPIRE_MESSAGE)
-from privacyidea.lib.utils import create_img
+from privacyidea.lib.utils import create_img, get_version
 from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib import _
 
 log = logging.getLogger(__name__)
 
@@ -81,6 +83,15 @@ DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_TIMEOUT_ACTION = "lockscreeen"
 DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
                               "policy-templates/master/templates/"
+BODY_TEMPLATE = _("""
+<--- Please describe your Problem in detail --->
+
+<--- Please provide as many additional information as possible --->
+
+privacyIDEA Version: {version}
+Subscriber: {subscriber_name}
+Subscriptions: {subscriptions}
+""")
 
 
 class postpolicy(object):
@@ -679,7 +690,8 @@ def get_webui_settings(request, response):
             if len(subscriptions) == 1:
                 subscription = subscriptions[0]
                 try:
-                    subject = subscription.get("for_name")
+                    version = get_version()
+                    subject = "Problem with {0!s}".format(version)
                     check_subscription("privacyidea")
                 except SubscriptionError:
                     subject = EXPIRE_MESSAGE
@@ -689,9 +701,14 @@ def get_webui_settings(request, response):
                                                adminuser=loginname,
                                                adminrealm=realm).allowed()
                 if action_allowed:
+                    body = BODY_TEMPLATE.format(subscriptions = subscriptions,
+                                                version = version,
+                                                subscriber_name = subscription.get("for_name"))
+
+                    body = quote(body)
                     content["result"]["value"]["supportmail"] = \
                         ("mailto:{0!s}?subject={1!s}&body={2!s}").format(
-                            subscription.get("by_email"), subject, subscription)
+                            subscription.get("by_email"), subject, body)
         response.set_data(json.dumps(content))
     return response
 
