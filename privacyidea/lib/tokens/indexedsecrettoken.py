@@ -170,10 +170,11 @@ class IndexedSecretTokenClass(TokenClass):
         :return: nothing
 
         """
-        if 'genkey' not in param and 'otpkey' not in param:
+        if 'verify' not in param and 'genkey' not in param and 'otpkey' not in param:
             param['genkey'] = 1
 
         TokenClass.update(self, param, reset_failcount)
+
         return
 
     @log_with(log)
@@ -291,7 +292,7 @@ class IndexedSecretTokenClass(TokenClass):
                             # increase the received_count
                             challengeobject.set_otp_status()
                     else:
-                        log.debug("Length of password does not match the requested number of positions.")
+                        log.info("Length of password does not match the requested number of positions.")
                         # increase the received_count
                         challengeobject.set_otp_status()
 

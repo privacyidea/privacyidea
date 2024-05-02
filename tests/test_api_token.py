@@ -2746,13 +2746,15 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(SECRET, secret)
-            self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING)
+            self.assertEqual(ROLLOUTSTATE.VERIFYPENDING, detail.get("rollout_state"))
             message = detail.get("verify").get("message")
             self.assertTrue(message.startswith("Please enter the positions"))
             serial = detail.get("serial")
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state
-            self.assertEqual(tokenobj_list[0].token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
+            self.assertEqual(ROLLOUTSTATE.VERIFYPENDING, tokenobj_list[0].token.rollout_state)
+            # Check the default otplen
+            self.assertEqual(6, tokenobj_list[0].token.otplen)
             s_pos = message.strip("Please enter the positions ").strip(" from your secret.")
             positions = [int(x) for x in s_pos.split(",")]
 
@@ -2775,6 +2777,8 @@ class APITokenTestCase(MyApiTestCase):
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state, it is empty now.
             self.assertEqual(ROLLOUTSTATE.ENROLLED, tokenobj_list[0].token.rollout_state)
+            # Check the default otplen of the token
+            self.assertEqual(6, tokenobj_list[0].token.otplen)
 
         delete_policy("verify_toks1")
 
