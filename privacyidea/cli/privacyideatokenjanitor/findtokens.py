@@ -546,7 +546,7 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                                                                           token_dict.get("otpkey"),
                                                                           token_dict.get("type"),
                                                                           token_dict.get("otplen"),
-                                                                          token_dict.get("timestep")))
+                                                                          token_dict.get("info_list", {}).get("timStep")))
                     else:
                         print("{!s}, {!s}, {!s}, {!s}, {!s}".format(owner, token_dict.get("serial"),
                                                                     token_dict.get("otpkey"),
