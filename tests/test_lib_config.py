@@ -3,26 +3,33 @@ This test file tests the lib.config
 
 The lib.config only depends on the database model.
 """
+
 from privacyidea.models import Config, save_config_timestamp, db, NodeName
 from .base import MyTestCase
-from privacyidea.lib.config import (get_resolver_list,
-                                    get_resolver_classes,
-                                    get_resolver_class_dict,
-                                    get_resolver_types,
-                                    get_resolver_module_list,
-                                    get_from_config,
-                                    get_privacyidea_config,
-                                    set_privacyidea_config,
-                                    delete_privacyidea_config,
-                                    get_token_list,
-                                    get_token_module_list,
-                                    get_token_class_dict,
-                                    get_token_types,
-                                    get_token_classes, get_token_prefix,
-                                    get_machine_resolver_class_dict,
-                                    get_privacyidea_node, get_privacyidea_nodes,
-                                    this, get_config_object, invalidate_config_object,
-                                    get_multichallenge_enrollable_tokentypes)
+from privacyidea.lib.config import (
+    get_resolver_list,
+    get_resolver_classes,
+    get_resolver_class_dict,
+    get_resolver_types,
+    get_resolver_module_list,
+    get_from_config,
+    get_privacyidea_config,
+    set_privacyidea_config,
+    delete_privacyidea_config,
+    get_token_list,
+    get_token_module_list,
+    get_token_class_dict,
+    get_token_types,
+    get_token_classes,
+    get_token_prefix,
+    get_machine_resolver_class_dict,
+    get_privacyidea_node,
+    get_privacyidea_nodes,
+    this,
+    get_config_object,
+    invalidate_config_object,
+    get_multichallenge_enrollable_tokentypes,
+)
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
@@ -33,10 +40,12 @@ class ConfigTestCase(MyTestCase):
     """
     Test the config on the database level
     """
+
     def test_00_get_config(self):
         # set the config
-        set_privacyidea_config(key="Hallo", value="What?", typ="string",
-                               desc="Some dumb value")
+        set_privacyidea_config(
+            key="Hallo", value="What?", typ="string", desc="Some dumb value"
+        )
 
         # get the complete config
         conf = get_from_config()
@@ -88,15 +97,23 @@ class ConfigTestCase(MyTestCase):
 
         # Class dict
         (classes, types) = get_resolver_class_dict()
-        self.assertTrue('privacyidea.lib.resolvers.PasswdIdResolver'
-                        '.IdResolver' in classes, classes)
-        self.assertTrue(classes.get(
-            'privacyidea.lib.resolvers.PasswdIdResolver.IdResolver') ==
-                        PWResolver, classes)
-        self.assertTrue('privacyidea.lib.resolvers.PasswdIdResolver'
-                        '.IdResolver' in types, types)
-        self.assertTrue(types.get('privacyidea.lib.resolvers.PasswdIdResolver'
-                        '.IdResolver') == "passwdresolver", types)
+        self.assertTrue(
+            "privacyidea.lib.resolvers.PasswdIdResolver" ".IdResolver" in classes,
+            classes,
+        )
+        self.assertTrue(
+            classes.get("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver")
+            == PWResolver,
+            classes,
+        )
+        self.assertTrue(
+            "privacyidea.lib.resolvers.PasswdIdResolver" ".IdResolver" in types, types
+        )
+        self.assertTrue(
+            types.get("privacyidea.lib.resolvers.PasswdIdResolver" ".IdResolver")
+            == "passwdresolver",
+            types,
+        )
 
         # With calling 'get_resolver_classes()' the resolver types will also be cached
         self.assertTrue("pi_resolver_types" in this.config, this.config)
@@ -115,31 +132,43 @@ class ConfigTestCase(MyTestCase):
         module = importlib.import_module(mod_name)
         self.assertTrue(module in mlist, mlist)
 
-#        r = get_resolver_classes()
-#        self.assertTrue(UserResolver in r, r)
-#        self.assertTrue(PWResolver in r, r)
+        #        r = get_resolver_classes()
+        #        self.assertTrue(UserResolver in r, r)
+        #        self.assertTrue(PWResolver in r, r)
 
         # get_token_class_dict
         (classes, types) = get_token_class_dict()
-        self.assertTrue('privacyidea.lib.tokens.hotptoken.HotpTokenClass'
-                        in classes, classes)
-        self.assertTrue(classes.get(
-            'privacyidea.lib.tokens.hotptoken.HotpTokenClass') ==
-                        HotpTokenClass, classes)
-        self.assertTrue('privacyidea.lib.tokens.totptoken.TotpTokenClass'
-                        in classes, classes)
-        self.assertTrue(classes.get(
-            'privacyidea.lib.tokens.totptoken.TotpTokenClass') ==
-                        TotpTokenClass, classes)
+        self.assertTrue(
+            "privacyidea.lib.tokens.hotptoken.HotpTokenClass" in classes, classes
+        )
+        self.assertTrue(
+            classes.get("privacyidea.lib.tokens.hotptoken.HotpTokenClass")
+            == HotpTokenClass,
+            classes,
+        )
+        self.assertTrue(
+            "privacyidea.lib.tokens.totptoken.TotpTokenClass" in classes, classes
+        )
+        self.assertTrue(
+            classes.get("privacyidea.lib.tokens.totptoken.TotpTokenClass")
+            == TotpTokenClass,
+            classes,
+        )
 
-        self.assertTrue('privacyidea.lib.tokens.hotptoken.HotpTokenClass'
-                        in types, types)
-        self.assertTrue('privacyidea.lib.tokens.totptoken.TotpTokenClass'
-                        in types, types)
-        self.assertTrue(types.get('privacyidea.lib.tokens.hotptoken'
-                                  '.HotpTokenClass') == "hotp", types)
-        self.assertTrue(types.get('privacyidea.lib.tokens.totptoken'
-                                  '.TotpTokenClass') == "totp", types)
+        self.assertTrue(
+            "privacyidea.lib.tokens.hotptoken.HotpTokenClass" in types, types
+        )
+        self.assertTrue(
+            "privacyidea.lib.tokens.totptoken.TotpTokenClass" in types, types
+        )
+        self.assertTrue(
+            types.get("privacyidea.lib.tokens.hotptoken" ".HotpTokenClass") == "hotp",
+            types,
+        )
+        self.assertTrue(
+            types.get("privacyidea.lib.tokens.totptoken" ".TotpTokenClass") == "totp",
+            types,
+        )
 
         types = get_token_types()
         self.assertTrue("totp" in types, types)
@@ -154,17 +183,19 @@ class ConfigTestCase(MyTestCase):
 
         # Test custom token types
         with self.app_context:
-            self.app.config['PI_TOKEN_MODULES'] = 'tests.testdata.fancytoken'
+            self.app.config["PI_TOKEN_MODULES"] = "tests.testdata.fancytoken"
             r = get_token_list()
             self.assertIn("tests.testdata.fancytoken", r, r)
             mlist = get_token_module_list()
-            mod = importlib.import_module('tests.testdata.fancytoken')
+            mod = importlib.import_module("tests.testdata.fancytoken")
             self.assertTrue(mod in mlist, mlist)
             (classes, types) = get_token_class_dict()
-            self.assertIn('tests.testdata.fancytoken.FancyTokenClass', classes, classes)
-            self.assertIn('tests.testdata.fancytoken.FancyTokenClass', types, types)
-            self.assertEqual(types['tests.testdata.fancytoken.FancyTokenClass'], 'fancy', types)
-            self.app.config.pop('PI_TOKEN_MODULES')
+            self.assertIn("tests.testdata.fancytoken.FancyTokenClass", classes, classes)
+            self.assertIn("tests.testdata.fancytoken.FancyTokenClass", types, types)
+            self.assertEqual(
+                types["tests.testdata.fancytoken.FancyTokenClass"], "fancy", types
+            )
+            self.app.config.pop("PI_TOKEN_MODULES")
 
     def test_03_token_prefix(self):
         prefix = get_token_prefix("totp")
@@ -178,22 +209,23 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue(prefix.get("hotp") == "OATH", prefix)
 
     def test_04_store_encrypted_values(self):
-        r = set_privacyidea_config("mySecretData", "soho",
-                                   typ="password", desc="Very important")
+        r = set_privacyidea_config(
+            "mySecretData", "soho", typ="password", desc="Very important"
+        )
         self.assertTrue(r == "insert", r)
 
         r = get_from_config("mySecretData")
         self.assertTrue(r == "soho", r)
 
         r = get_from_config()
-        self.assertTrue(r.get("mySecretData") == "soho",
-                        r.get("mySecretData"))
+        self.assertTrue(r.get("mySecretData") == "soho", r.get("mySecretData"))
 
     def test_05_machine_resolvers(self):
         (classes, types) = get_machine_resolver_class_dict()
         self.assertTrue("hosts" in types.values(), list(types.values()))
-        self.assertTrue("privacyidea.lib.machines.hosts.HostsMachineResolver"
-                        in classes, classes)
+        self.assertTrue(
+            "privacyidea.lib.machines.hosts.HostsMachineResolver" in classes, classes
+        )
 
     def test_06_public_and_admin(self):
         # This tests the new public available config
@@ -223,8 +255,12 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual(a, None)
 
     def test_07_node_names(self):
-        db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1"))
-        db.session.add(NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2"))
+        db.session.add(
+            NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1")
+        )
+        db.session.add(
+            NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2")
+        )
         db.session.commit()
 
         node = get_privacyidea_node()

@@ -9,8 +9,8 @@ Create Date: 2023-09-08 15:59:01.374626
 """
 
 # revision identifiers, used by Alembic.
-revision = '5cb310101a1f'
-down_revision = '4a0aec37e7cf'
+revision = "5cb310101a1f"
+down_revision = "4a0aec37e7cf"
 
 from alembic import op, context
 from sqlalchemy import inspect
@@ -33,13 +33,15 @@ def upgrade():
         # Loop over all tables defined in the current models.py
         for tbl in db.metadata.sorted_tables:
             # we act only on tables with an "id" column
-            if 'id' in tbl.c:
-                seq = tbl.c['id'].default
+            if "id" in tbl.c:
+                seq = tbl.c["id"].default
                 if isinstance(seq, Sequence):
                     seq_name = seq.name
                 else:
                     # do we have tables with "id" columns which isn't a sequence?
-                    print(f"Table {tbl.name} has an 'id' column which isn't a sequence!")
+                    print(
+                        f"Table {tbl.name} has an 'id' column which isn't a sequence!"
+                    )
                     continue
 
                 # check if the table exists in the database (newer tables might not exist yet)
@@ -69,12 +71,14 @@ def upgrade():
 
 
 def downgrade():
-
     migration_context = context.get_context()
-    if migration_context.dialect.supports_sequences and migration_context.dialect.name in ['mysql', 'mariadb']:
+    if (
+        migration_context.dialect.supports_sequences
+        and migration_context.dialect.name in ["mysql", "mariadb"]
+    ):
         # don't remove sequences unless the db is MariaDB
         for tbl in db.metadata.sorted_tables:
-            if 'id' in tbl.c:
+            if "id" in tbl.c:
                 seq = tbl.c.id.default
                 if isinstance(seq, Sequence):
                     try:

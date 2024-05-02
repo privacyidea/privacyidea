@@ -25,8 +25,11 @@ class PIGetUnusedTokensTestCase(CliTestCase):
     def test_01_pi_get_unused_tokens_help(self):
         runner = self.app.test_cli_runner()
         result = runner.invoke(cli, ["-h"])
-        self.assertIn("Search for tokens that have not been used for a while",
-                      result.output, result)
+        self.assertIn(
+            "Search for tokens that have not been used for a while",
+            result.output,
+            result,
+        )
         self.assertIn("delete", result.output, result)
         self.assertIn("disable", result.output, result)
         self.assertIn("list", result.output, result)
@@ -35,12 +38,16 @@ class PIGetUnusedTokensTestCase(CliTestCase):
     def test_02_pi_get_unused_tokens_find_help(self):
         runner = self.app.test_cli_runner()
         result = runner.invoke(cli, ["list"])
-        self.assertIn("Error: Missing argument 'AGE'.",
-                      result.output, result)
-        self.assertNotIn("Find all tokens where the last_auth is greater than AGE.",
-                         result.output, result)
+        self.assertIn("Error: Missing argument 'AGE'.", result.output, result)
+        self.assertNotIn(
+            "Find all tokens where the last_auth is greater than AGE.",
+            result.output,
+            result,
+        )
         result = runner.invoke(cli, ["list", "-h"])
-        self.assertNotIn("Error: Missing argument 'AGE'.",
-                         result.output, result)
-        self.assertIn("Find all tokens where the last_auth is greater than AGE.",
-                      result.output, result)
+        self.assertNotIn("Error: Missing argument 'AGE'.", result.output, result)
+        self.assertIn(
+            "Find all tokens where the last_auth is greater than AGE.",
+            result.output,
+            result,
+        )

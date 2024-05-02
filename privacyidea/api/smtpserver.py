@@ -26,11 +26,8 @@ registration.
 
 The code of this module is tested in tests/test_api_smtpserver.py
 """
-from flask import (Blueprint,
-                   request, current_app)
-from .lib.utils import (getParam,
-                        required,
-                        send_result)
+from flask import Blueprint, request, current_app
+from .lib.utils import getParam, required, send_result
 from ..lib.log import log_with
 from ..lib.crypto import decryptPassword, FAILED_TO_DECRYPT_PASSWORD
 from ..lib.policy import ACTION
@@ -39,15 +36,19 @@ from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
 from flask_babel import gettext as _
 import logging
-from privacyidea.lib.smtpserver import (add_smtpserver, list_smtpservers,
-                                        delete_smtpserver, send_or_enqueue_email)
+from privacyidea.lib.smtpserver import (
+    add_smtpserver,
+    list_smtpservers,
+    delete_smtpserver,
+    send_or_enqueue_email,
+)
 
 log = logging.getLogger(__name__)
 
-smtpserver_blueprint = Blueprint('smtpserver_blueprint', __name__)
+smtpserver_blueprint = Blueprint("smtpserver_blueprint", __name__)
 
 
-@smtpserver_blueprint.route('/<identifier>', methods=['POST'])
+@smtpserver_blueprint.route("/<identifier>", methods=["POST"])
 @prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
 @log_with(log)
 def create(identifier=None):
@@ -73,16 +74,24 @@ def create(identifier=None):
     timeout = int(getParam(param, "timeout") or 10)
     enqueue_job = is_true(getParam(param, "enqueue_job", default=False))
 
-    r = add_smtpserver(identifier, server, port=port, username=username,
-                       password=password, tls=tls, description=description,
-                       sender=sender, timeout=timeout, enqueue_job=enqueue_job)
+    r = add_smtpserver(
+        identifier,
+        server,
+        port=port,
+        username=username,
+        password=password,
+        tls=tls,
+        description=description,
+        sender=sender,
+        timeout=timeout,
+        enqueue_job=enqueue_job,
+    )
 
-    g.audit_object.log({'success': r > 0,
-                        'info':  r})
+    g.audit_object.log({"success": r > 0, "info": r})
     return send_result(r > 0)
 
 
-@smtpserver_blueprint.route('/', methods=['GET'])
+@smtpserver_blueprint.route("/", methods=["GET"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.SMTPSERVERREAD)
 def list_smtpservers_api():
@@ -90,11 +99,11 @@ def list_smtpservers_api():
     This call gets the list of SMTP server definitions
     """
     res = list_smtpservers()
-    g.audit_object.log({'success': True})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
-@smtpserver_blueprint.route('/<identifier>', methods=['DELETE'])
+@smtpserver_blueprint.route("/<identifier>", methods=["DELETE"])
 @prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
 @log_with(log)
 def delete_server(identifier=None):
@@ -105,12 +114,11 @@ def delete_server(identifier=None):
     """
     r = delete_smtpserver(identifier)
 
-    g.audit_object.log({'success': r > 0,
-                        'info':  r})
+    g.audit_object.log({"success": r > 0, "info": r})
     return send_result(r > 0)
 
 
-@smtpserver_blueprint.route('/send_test_email', methods=['POST'])
+@smtpserver_blueprint.route("/send_test_email", methods=["POST"])
 @prepolicy(check_base_action, request, ACTION.SMTPSERVERWRITE)
 @log_with(log)
 def test():
@@ -130,14 +138,24 @@ def test():
     timeout = int(getParam(param, "timeout") or 10)
     enqueue_job = is_true(getParam(param, "enqueue_job", default=False))
 
-    s = dict(identifier=identifier, server=server, port=port,
-             username=username, password=password, sender=sender,
-             tls=tls, timeout=timeout, enqueue_job=enqueue_job)
-    r = send_or_enqueue_email(s, recipient,
-                              "Test Email from privacyIDEA",
-                              "This is a test email from privacyIDEA. "
-                              "The configuration {} is working.".format(identifier))
+    s = dict(
+        identifier=identifier,
+        server=server,
+        port=port,
+        username=username,
+        password=password,
+        sender=sender,
+        tls=tls,
+        timeout=timeout,
+        enqueue_job=enqueue_job,
+    )
+    r = send_or_enqueue_email(
+        s,
+        recipient,
+        "Test Email from privacyIDEA",
+        "This is a test email from privacyIDEA. "
+        "The configuration {} is working.".format(identifier),
+    )
 
-    g.audit_object.log({'success': r > 0,
-                        'info':  r})
+    g.audit_object.log({"success": r > 0, "info": r})
     return send_result(r > 0)

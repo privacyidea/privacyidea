@@ -32,13 +32,20 @@ from privacyidea.api.lib.utils import send_result, getParam
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.log import log_with
-from privacyidea.lib.periodictask import get_periodic_tasks, set_periodic_task, delete_periodic_task, \
-    enable_periodic_task, get_periodic_task_by_id, get_taskmodule, get_available_taskmodules
+from privacyidea.lib.periodictask import (
+    get_periodic_tasks,
+    set_periodic_task,
+    delete_periodic_task,
+    enable_periodic_task,
+    get_periodic_task_by_id,
+    get_taskmodule,
+    get_available_taskmodules,
+)
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
 
-periodictask_blueprint = Blueprint('periodictask_blueprint', __name__)
+periodictask_blueprint = Blueprint("periodictask_blueprint", __name__)
 
 
 def convert_datetimes_to_string(ptask):
@@ -49,13 +56,15 @@ def convert_datetimes_to_string(ptask):
     :return: a new periodic task dictionary
     """
     ptask = ptask.copy()
-    ptask['last_update'] = ptask['last_update'].strftime(AUTH_DATE_FORMAT)
-    ptask['last_runs'] = dict((node, timestamp.strftime(AUTH_DATE_FORMAT))
-                              for node, timestamp in ptask['last_runs'].items())
+    ptask["last_update"] = ptask["last_update"].strftime(AUTH_DATE_FORMAT)
+    ptask["last_runs"] = dict(
+        (node, timestamp.strftime(AUTH_DATE_FORMAT))
+        for node, timestamp in ptask["last_runs"].items()
+    )
     return ptask
 
 
-@periodictask_blueprint.route('/taskmodules/', methods=['GET'])
+@periodictask_blueprint.route("/taskmodules/", methods=["GET"])
 @log_with(log)
 def list_taskmodules():
     """
@@ -66,7 +75,7 @@ def list_taskmodules():
     return send_result(taskmodules)
 
 
-@periodictask_blueprint.route('/nodes/', methods=['GET'])
+@periodictask_blueprint.route("/nodes/", methods=["GET"])
 @log_with(log)
 def list_nodes():
     """
@@ -77,7 +86,7 @@ def list_nodes():
     return send_result(nodes)
 
 
-@periodictask_blueprint.route('/options/<taskmodule>', methods=['GET'])
+@periodictask_blueprint.route("/options/<taskmodule>", methods=["GET"])
 @log_with(log)
 def get_taskmodule_options(taskmodule):
     """
@@ -91,7 +100,7 @@ def get_taskmodule_options(taskmodule):
     return send_result(options)
 
 
-@periodictask_blueprint.route('/', methods=['GET'])
+@periodictask_blueprint.route("/", methods=["GET"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.PERIODICTASKREAD)
 def list_periodic_tasks():
@@ -104,7 +113,7 @@ def list_periodic_tasks():
     return send_result(result)
 
 
-@periodictask_blueprint.route('/<ptaskid>', methods=['GET'])
+@periodictask_blueprint.route("/<ptaskid>", methods=["GET"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.PERIODICTASKREAD)
 def get_periodic_task_api(ptaskid):
@@ -118,7 +127,7 @@ def get_periodic_task_api(ptaskid):
     return send_result(convert_datetimes_to_string(ptask))
 
 
-@periodictask_blueprint.route('/', methods=['POST'])
+@periodictask_blueprint.route("/", methods=["POST"])
 @prepolicy(check_base_action, request, ACTION.PERIODICTASKWRITE)
 @log_with(log)
 def set_periodic_task_api():
@@ -159,14 +168,25 @@ def set_periodic_task_api():
     elif not isinstance(options, dict):
         options = json.loads(options)
         if not isinstance(options, dict):
-            raise ParameterError("options: expected dictionary, got {!r}".format(options))
-    result = set_periodic_task(name, interval, node_list, taskmodule, ordering, options, active, ptask_id,
-                               retry_if_failed)
+            raise ParameterError(
+                "options: expected dictionary, got {!r}".format(options)
+            )
+    result = set_periodic_task(
+        name,
+        interval,
+        node_list,
+        taskmodule,
+        ordering,
+        options,
+        active,
+        ptask_id,
+        retry_if_failed,
+    )
     g.audit_object.log({"success": True, "info": result})
     return send_result(result)
 
 
-@periodictask_blueprint.route('/enable/<ptaskid>', methods=['POST'])
+@periodictask_blueprint.route("/enable/<ptaskid>", methods=["POST"])
 @prepolicy(check_base_action, request, ACTION.PERIODICTASKWRITE)
 @log_with(log)
 def enable_periodic_task_api(ptaskid):
@@ -181,7 +201,7 @@ def enable_periodic_task_api(ptaskid):
     return send_result(result)
 
 
-@periodictask_blueprint.route('/disable/<ptaskid>', methods=['POST'])
+@periodictask_blueprint.route("/disable/<ptaskid>", methods=["POST"])
 @prepolicy(check_base_action, request, ACTION.PERIODICTASKWRITE)
 @log_with(log)
 def disable_periodic_task_api(ptaskid):
@@ -196,7 +216,7 @@ def disable_periodic_task_api(ptaskid):
     return send_result(result)
 
 
-@periodictask_blueprint.route('/<ptaskid>', methods=['DELETE'])
+@periodictask_blueprint.route("/<ptaskid>", methods=["DELETE"])
 @prepolicy(check_base_action, request, ACTION.PERIODICTASKWRITE)
 @log_with(log)
 def delete_periodic_task_api(ptaskid):

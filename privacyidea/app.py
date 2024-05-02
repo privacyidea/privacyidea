@@ -83,6 +83,7 @@ class PiResponseClass(Response):
     To avoid caching problems with the json property in the Response class,
     the property is overwritten using a non-caching approach.
     """
+
     @property
     def json(self):
         """This will contain the parsed JSON data if the mimetype indicates
@@ -92,12 +93,15 @@ class PiResponseClass(Response):
         """
         return self.get_json(cache=False)
 
-    default_mimetype = 'application/json'
+    default_mimetype = "application/json"
 
 
-def create_app(config_name="development",
-               config_file='/etc/privacyidea/pi.cfg',
-               silent=False, initialize_hsm=False):
+def create_app(
+    config_name="development",
+    config_file="/etc/privacyidea/pi.cfg",
+    silent=False,
+    initialize_hsm=False,
+):
     """
     First the configuration from the config.py is loaded depending on the
     config type like "production" or "development" or "testing".
@@ -123,10 +127,12 @@ def create_app(config_name="development",
     if os.environ.get(ENV_KEY):
         config_file = os.environ[ENV_KEY]
     if not silent:
-        print("Additional configuration will be read "
-              "from the file {0!s}".format(config_file))
-    app = Flask(__name__, static_folder="static",
-                template_folder="static/templates")
+        print(
+            "Additional configuration will be read " "from the file {0!s}".format(
+                config_file
+            )
+        )
+    app = Flask(__name__, static_folder="static", template_folder="static/templates")
     if config_name:
         app.config.from_object(config[config_name])
 
@@ -149,44 +155,42 @@ def create_app(config_name="development",
     app.static_folder = app.config.get("PI_STATIC_FOLDER", "static/")
     app.template_folder = app.config.get("PI_TEMPLATE_FOLDER", "static/templates/")
 
-    app.register_blueprint(validate_blueprint, url_prefix='/validate')
-    app.register_blueprint(token_blueprint, url_prefix='/token')
-    app.register_blueprint(system_blueprint, url_prefix='/system')
-    app.register_blueprint(resolver_blueprint, url_prefix='/resolver')
-    app.register_blueprint(realm_blueprint, url_prefix='/realm')
-    app.register_blueprint(defaultrealm_blueprint, url_prefix='/defaultrealm')
-    app.register_blueprint(policy_blueprint, url_prefix='/policy')
-    app.register_blueprint(login_blueprint, url_prefix='/')
-    app.register_blueprint(jwtauth, url_prefix='/auth')
-    app.register_blueprint(user_blueprint, url_prefix='/user')
-    app.register_blueprint(audit_blueprint, url_prefix='/audit')
-    app.register_blueprint(machineresolver_blueprint,
-                           url_prefix='/machineresolver')
-    app.register_blueprint(machine_blueprint, url_prefix='/machine')
-    app.register_blueprint(application_blueprint, url_prefix='/application')
-    app.register_blueprint(caconnector_blueprint, url_prefix='/caconnector')
-    app.register_blueprint(cert_blueprint, url_prefix='/certificate')
-    app.register_blueprint(ttype_blueprint, url_prefix='/ttype')
-    app.register_blueprint(register_blueprint, url_prefix='/register')
-    app.register_blueprint(smtpserver_blueprint, url_prefix='/smtpserver')
-    app.register_blueprint(recover_blueprint, url_prefix='/recover')
-    app.register_blueprint(radiusserver_blueprint, url_prefix='/radiusserver')
-    app.register_blueprint(periodictask_blueprint, url_prefix='/periodictask')
-    app.register_blueprint(privacyideaserver_blueprint,
-                           url_prefix='/privacyideaserver')
-    app.register_blueprint(eventhandling_blueprint, url_prefix='/event')
-    app.register_blueprint(smsgateway_blueprint, url_prefix='/smsgateway')
-    app.register_blueprint(client_blueprint, url_prefix='/client')
-    app.register_blueprint(subscriptions_blueprint, url_prefix='/subscriptions')
-    app.register_blueprint(monitoring_blueprint, url_prefix='/monitoring')
-    app.register_blueprint(tokengroup_blueprint, url_prefix='/tokengroup')
-    app.register_blueprint(serviceid_blueprint, url_prefix='/serviceid')
+    app.register_blueprint(validate_blueprint, url_prefix="/validate")
+    app.register_blueprint(token_blueprint, url_prefix="/token")
+    app.register_blueprint(system_blueprint, url_prefix="/system")
+    app.register_blueprint(resolver_blueprint, url_prefix="/resolver")
+    app.register_blueprint(realm_blueprint, url_prefix="/realm")
+    app.register_blueprint(defaultrealm_blueprint, url_prefix="/defaultrealm")
+    app.register_blueprint(policy_blueprint, url_prefix="/policy")
+    app.register_blueprint(login_blueprint, url_prefix="/")
+    app.register_blueprint(jwtauth, url_prefix="/auth")
+    app.register_blueprint(user_blueprint, url_prefix="/user")
+    app.register_blueprint(audit_blueprint, url_prefix="/audit")
+    app.register_blueprint(machineresolver_blueprint, url_prefix="/machineresolver")
+    app.register_blueprint(machine_blueprint, url_prefix="/machine")
+    app.register_blueprint(application_blueprint, url_prefix="/application")
+    app.register_blueprint(caconnector_blueprint, url_prefix="/caconnector")
+    app.register_blueprint(cert_blueprint, url_prefix="/certificate")
+    app.register_blueprint(ttype_blueprint, url_prefix="/ttype")
+    app.register_blueprint(register_blueprint, url_prefix="/register")
+    app.register_blueprint(smtpserver_blueprint, url_prefix="/smtpserver")
+    app.register_blueprint(recover_blueprint, url_prefix="/recover")
+    app.register_blueprint(radiusserver_blueprint, url_prefix="/radiusserver")
+    app.register_blueprint(periodictask_blueprint, url_prefix="/periodictask")
+    app.register_blueprint(privacyideaserver_blueprint, url_prefix="/privacyideaserver")
+    app.register_blueprint(eventhandling_blueprint, url_prefix="/event")
+    app.register_blueprint(smsgateway_blueprint, url_prefix="/smsgateway")
+    app.register_blueprint(client_blueprint, url_prefix="/client")
+    app.register_blueprint(subscriptions_blueprint, url_prefix="/subscriptions")
+    app.register_blueprint(monitoring_blueprint, url_prefix="/monitoring")
+    app.register_blueprint(tokengroup_blueprint, url_prefix="/tokengroup")
+    app.register_blueprint(serviceid_blueprint, url_prefix="/serviceid")
 
     # Set up Plug-Ins
     db.init_app(app)
     migrate.init_app(app, db)
 
-    Versioned(app, format='%(path)s?v=%(version)s')
+    Versioned(app, format="%(path)s?v=%(version)s")
 
     babel = Babel()
     babel.init_app(app)
@@ -199,18 +203,20 @@ def create_app(config_name="development",
 
     # Setup logging
     log_read_func = {
-        'yaml': lambda x: logging.config.dictConfig(yaml.safe_load(open(x, 'r').read())),
-        'cfg': lambda x: logging.config.fileConfig(x)
+        "yaml": lambda x: logging.config.dictConfig(
+            yaml.safe_load(open(x, "r").read())
+        ),
+        "cfg": lambda x: logging.config.fileConfig(x),
     }
     have_config = False
     log_exx = None
     log_config_file = app.config.get("PI_LOGCONFIG", "/etc/privacyidea/logging.cfg")
     if os.path.isfile(log_config_file):
-        for cnf_type in ['cfg', 'yaml']:
+        for cnf_type in ["cfg", "yaml"]:
             try:
                 log_read_func[cnf_type](log_config_file)
                 if not silent:
-                    print('Read Logging settings from {0!s}'.format(log_config_file))
+                    print("Read Logging settings from {0!s}".format(log_config_file))
                 have_config = True
                 break
             except Exception as exx:
@@ -223,7 +229,7 @@ def create_app(config_name="development",
             sys.stderr.write("Using PI_LOGLEVEL and PI_LOGFILE.\n")
         level = app.config.get("PI_LOGLEVEL", logging.INFO)
         # If there is another logfile in pi.cfg we use this.
-        logfile = app.config.get("PI_LOGFILE", '/var/log/privacyidea/privacyidea.log')
+        logfile = app.config.get("PI_LOGFILE", "/var/log/privacyidea/privacyidea.log")
         if not silent:
             sys.stderr.write("Using PI_LOGLEVEL {0!s}.\n".format(level))
             sys.stderr.write("Using PI_LOGFILE {0!s}.\n".format(logfile))
@@ -244,55 +250,75 @@ def create_app(config_name="development",
         try:
             pi_uuid = uuid.UUID(app.config.get("PI_UUID", ""))
         except ValueError as e:
-            logging.getLogger(__name__).debug(f"Could not determine UUID from config: {e}")
+            logging.getLogger(__name__).debug(
+                f"Could not determine UUID from config: {e}"
+            )
             # check if we can get the UUID from an external file
-            pi_uuid_file = app.config.get('PI_UUID_FILE', DEFAULT_UUID_FILE)
+            pi_uuid_file = app.config.get("PI_UUID_FILE", DEFAULT_UUID_FILE)
             try:
-                with open(pi_uuid_file, 'r') as f:
+                with open(pi_uuid_file, "r") as f:
                     pi_uuid = uuid.UUID(f.read().strip())
             except Exception as e:  # pragma: no cover
-                logging.getLogger(__name__).debug(f"Could not determine UUID "
-                                                  f"from file '{pi_uuid_file}': {e}")
+                logging.getLogger(__name__).debug(
+                    f"Could not determine UUID " f"from file '{pi_uuid_file}': {e}"
+                )
 
                 # we try to get the unique installation id (See <https://0pointer.de/blog/projects/ids.html>)
                 try:
-                    with open("/etc/machine-id", 'r') as f:
+                    with open("/etc/machine-id", "r") as f:
                         pi_uuid = uuid.UUID(f.read().strip())
                 except Exception as e:  # pragma: no cover
-                    logging.getLogger(__name__).debug(f"Could not determine the machine "
-                                                      f"id: {e}")
+                    logging.getLogger(__name__).debug(
+                        f"Could not determine the machine " f"id: {e}"
+                    )
                     # we generate a random UUID which will change on every startup
                     # unless it is persisted to the pi_uuid_file
                     pi_uuid = uuid.uuid4()
-                    logging.getLogger(__name__).warning(f"Generating a random UUID: {pi_uuid}! "
-                                                        f"If persisting the UUID fails, "
-                                                        f"it will change on every application start")
+                    logging.getLogger(__name__).warning(
+                        f"Generating a random UUID: {pi_uuid}! "
+                        f"If persisting the UUID fails, "
+                        f"it will change on every application start"
+                    )
                     # only in case of a generated UUID we save it to the uuid file
                     try:
-                        with open(pi_uuid_file, 'a') as f:  # pragma: no cover
+                        with open(pi_uuid_file, "a") as f:  # pragma: no cover
                             f.write(f"{str(pi_uuid)}\n")
-                            logging.getLogger(__name__).info(f"Successfully wrote current UUID"
-                                                             f" to file '{pi_uuid_file}'")
+                            logging.getLogger(__name__).info(
+                                f"Successfully wrote current UUID"
+                                f" to file '{pi_uuid_file}'"
+                            )
                     except IOError as exx:
-                        logging.getLogger(__name__).warning(f"Could not write UUID to "
-                                                            f"file '{pi_uuid_file}': {exx}")
+                        logging.getLogger(__name__).warning(
+                            f"Could not write UUID to " f"file '{pi_uuid_file}': {exx}"
+                        )
 
             app.config["PI_UUID"] = str(pi_uuid)
             logging.getLogger(__name__).debug(f"Current UUID: '{pi_uuid}'")
 
-        pi_node_name = app.config.get("PI_NODE") or app.config.get("PI_AUDIT_SERVERNAME", "localnode")
+        pi_node_name = app.config.get("PI_NODE") or app.config.get(
+            "PI_AUDIT_SERVERNAME", "localnode"
+        )
 
         insp = sa.inspect(db.get_engine())
         if insp.has_table(NodeName.__tablename__):
-            db.session.merge(NodeName(id=str(pi_uuid), name=pi_node_name,
-                                      lastseen=datetime.datetime.utcnow()))
+            db.session.merge(
+                NodeName(
+                    id=str(pi_uuid),
+                    name=pi_node_name,
+                    lastseen=datetime.datetime.utcnow(),
+                )
+            )
             db.session.commit()
         else:
-            logging.getLogger(__name__).warning(f"Could not update node names in "
-                                                f"db. Check that table '{NodeName.__tablename__}' exists.")
+            logging.getLogger(__name__).warning(
+                f"Could not update node names in "
+                f"db. Check that table '{NodeName.__tablename__}' exists."
+            )
 
-    logging.getLogger(__name__).debug("Reading application from the static "
-                                      "folder {0!s} and the template folder "
-                                      "{1!s}".format(app.static_folder, app.template_folder))
+    logging.getLogger(__name__).debug(
+        "Reading application from the static "
+        "folder {0!s} and the template folder "
+        "{1!s}".format(app.static_folder, app.template_folder)
+    )
 
     return app

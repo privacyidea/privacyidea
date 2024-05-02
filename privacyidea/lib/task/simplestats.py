@@ -23,6 +23,7 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.monitoringstats import write_stats
 from privacyidea.lib.subscriptions import get_users_with_active_tokens
 from privacyidea.lib.task.base import BaseTask
+
 # from privacyidea.lib.user import get_user_list
 from privacyidea.lib import _
 
@@ -43,23 +44,29 @@ class SimpleStatsTask(BaseTask):
         return {
             "total_tokens": {
                 "type": "bool",
-                "description": _("Total number of tokens")},
+                "description": _("Total number of tokens"),
+            },
             "hardware_tokens": {
                 "type": "bool",
-                "description": _("Total number of hardware tokens")},
+                "description": _("Total number of hardware tokens"),
+            },
             "software_tokens": {
                 "type": "bool",
-                "description": _("Total number of software tokens")},
+                "description": _("Total number of software tokens"),
+            },
             "unassigned_hardware_tokens": {
                 "type": "bool",
-                "description": _("Number of hardware tokens not assigned to a user")},
+                "description": _("Number of hardware tokens not assigned to a user"),
+            },
             "assigned_tokens": {
                 "type": "bool",
-                "description": _("Number of tokens assigned to users")},
+                "description": _("Number of tokens assigned to users"),
+            },
             "user_with_token": {
                 "type": "bool",
-                "description": _("Number of users with tokens assigned")}
-            }
+                "description": _("Number of users with tokens assigned"),
+            },
+        }
 
     @property
     def _user_with_token(self):
@@ -71,15 +78,17 @@ class SimpleStatsTask(BaseTask):
 
     @property
     def _hardware_tokens(self):
-        return get_tokens(count=True, tokeninfo={'tokenkind': TOKENKIND.HARDWARE})
+        return get_tokens(count=True, tokeninfo={"tokenkind": TOKENKIND.HARDWARE})
 
     @property
     def _software_tokens(self):
-        return get_tokens(count=True, tokeninfo={'tokenkind': TOKENKIND.SOFTWARE})
+        return get_tokens(count=True, tokeninfo={"tokenkind": TOKENKIND.SOFTWARE})
 
     @property
     def _unassigned_hardware_tokens(self):
-        return get_tokens(count=True, tokeninfo={'tokenkind': 'hardware'}, assigned=False)
+        return get_tokens(
+            count=True, tokeninfo={"tokenkind": "hardware"}, assigned=False
+        )
 
     @property
     def _assigned_tokens(self):
@@ -89,6 +98,6 @@ class SimpleStatsTask(BaseTask):
         for opt in self.options.keys():
             if is_true(params.get(opt)):
                 log.debug("Got param {0}".format(opt))
-                write_stats(opt, getattr(self, '_' + opt))
+                write_stats(opt, getattr(self, "_" + opt))
 
         return True

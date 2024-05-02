@@ -21,14 +21,14 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#  
-'''
-  It generates the URL for smartphone apps like
-                google authenticator
-                oath token
-  Implementation inspired by:
-      https://github.com/neush/otpn900/blob/master/src/test_motp.c
-'''
+#
+"""
+It generates the URL for smartphone apps like
+              google authenticator
+              oath token
+Implementation inspired by:
+    https://github.com/neush/otpn900/blob/master/src/test_motp.c
+"""
 
 import logging
 import time
@@ -44,25 +44,26 @@ log = logging.getLogger(__name__)
 
 
 class mTimeOtp(object):
-    '''
+    """
     implements the motp timebased check_otp
     - s. https://github.com/neush/otpn900/blob/master/src/test_motp.c
-    '''
+    """
 
-    def __init__(self, secObj=None, secPin=None, oldtime=0, digits=6,
-                 key=None, pin=None):
-        '''
+    def __init__(
+        self, secObj=None, secPin=None, oldtime=0, digits=6, key=None, pin=None
+    ):
+        """
         constructor for the mOtp class
-        
+
         :param secObj:    secretObject, which covers the encrypted secret
         :param secPin:    secretObject, which covers the encrypted pin
         :param oldtime:   the previously detected otp counter/time
         :param digits:    length of otp chars to be tested
         :param key:       direct key provider (for selfTest)
         :param pin:       direct pin provider (for selfTest)
-        
+
         :return:          nothing
-        '''
+        """
         self.secretObject = secObj
         self.key = key
 
@@ -74,7 +75,7 @@ class mTimeOtp(object):
 
     @log_with(log)
     def checkOtp(self, anOtpVal, window=10, options=None):
-        '''
+        """
         check a provided otp value
 
         :param anOtpVal: the to be tested otp value
@@ -83,14 +84,14 @@ class mTimeOtp(object):
         :param options: generic container for additional values \
                         here only used for seltest: setting the initTime
 
-        :return: -1 for fail else the identified counter/time 
-        '''
+        :return: -1 for fail else the identified counter/time
+        """
         res = -1
         window = window * 2
 
         initTime = 0
         if options is not None and type(options) == dict:
-            initTime = int(options.get('initTime', 0))
+            initTime = int(options.get("initTime", 0))
 
         if initTime == 0:
             otime = int(time.time() // 10)
@@ -119,30 +120,34 @@ class mTimeOtp(object):
 
         ## prevent access twice with last motp
         if res <= self.oldtime:
-            log.warning("otpvalue {0!s} checked once before ({1!r}<={2!r})".format(anOtpVal, res, self.oldtime))
+            log.warning(
+                "otpvalue {0!s} checked once before ({1!r}<={2!r})".format(
+                    anOtpVal, res, self.oldtime
+                )
+            )
             res = -1
         if res == -1:
-            msg = 'checking motp failed'
+            msg = "checking motp failed"
         else:
-            msg = 'checking motp sucess'
+            msg = "checking motp sucess"
 
         log.debug("end. {0!s} : returning result: {1!r}, ".format(msg, res))
         return res
 
     def calcOtp(self, counter, key=None, pin=None):
-        '''
+        """
         calculate an otp value from counter/time, key and pin
-        
+
         :param counter:    counter/time to be checked
         :type counter:     int
         :param key:        the secret key
         :type key:         str
         :param pin:        the secret pin
         :type pin:         str
-        
+
         :return:           the otp value
         :rtype:            str
-        '''
+        """
         ## ref impl from https://github.com/szimszon/motpy/blob/master/motpy
         if pin is None:
             pin = self.pin
@@ -150,5 +155,5 @@ class mTimeOtp(object):
             key = self.key
 
         vhash = "{0:d}{1!s}{2!s}".format(counter, key, pin)
-        motp = md5(to_bytes(vhash)).hexdigest()[:self.digits]  # nosec B324 # md5 used in mOTP algorithm
+        motp = md5(to_bytes(vhash)).hexdigest()[: self.digits]  # nosec B324 # md5 used in mOTP algorithm
         return to_unicode(motp)

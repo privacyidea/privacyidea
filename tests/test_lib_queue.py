@@ -4,20 +4,29 @@ This file contains the tests for the job queue modules.
 In particular, this tests
 lib/queue/*.py
 """
+
 from huey import RedisHuey
 import mock
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
 from privacyidea.lib.error import ServerError
-from privacyidea.lib.queue import job, JOB_COLLECTOR, JobCollector, get_job_queue, wrap_job, has_job_queue
+from privacyidea.lib.queue import (
+    job,
+    JOB_COLLECTOR,
+    JobCollector,
+    get_job_queue,
+    wrap_job,
+    has_job_queue,
+)
 from privacyidea.lib.queues.huey_queue import HueyQueue
 from privacyidea.lib.queues.base import QueueError
 from .base import OverrideConfigTestCase, MyTestCase
 
 
 class TestSender(object):
-    """ defined in order to be able to mock the ``send_mail`` function in tests """
+    """defined in order to be able to mock the ``send_mail`` function in tests"""
+
     def send_mail(*args, **kwargs):
         pass
 
@@ -47,8 +56,10 @@ class NoQueueTestCase(OverrideConfigTestCase):
 
     def test_02_collector(self):
         self.assertIsInstance(JOB_COLLECTOR, JobCollector)
-        test_dict = {"test.my_add": (my_add, (), {}),
-                     "test.my_send_mail": (my_send_mail, (), {})}
+        test_dict = {
+            "test.my_add": (my_add, (), {}),
+            "test.my_send_mail": (my_send_mail, (), {}),
+        }
         try:
             self.assertTrue(test_dict.viewitems() <= JOB_COLLECTOR.jobs.viewitems())
         except AttributeError:
@@ -61,7 +72,7 @@ class InvalidQueueTestCase(MyTestCase):
             PI_JOB_QUEUE_CLASS = "obviously.invalid"
 
         with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
-            app = create_app("testing", "") # we do not throw an exception
+            app = create_app("testing", "")  # we do not throw an exception
 
 
 class HueyQueueTestCase(OverrideConfigTestCase):
@@ -83,9 +94,9 @@ class HueyQueueTestCase(OverrideConfigTestCase):
 
     def test_03_enqueue_jobs(self):
         queue = get_job_queue()
-        queue.enqueue("test.my_add", (3, 4), {}) # No result is stored
+        queue.enqueue("test.my_add", (3, 4), {})  # No result is stored
 
-        with mock.patch.object(SENDER, 'send_mail') as mock_mail:
+        with mock.patch.object(SENDER, "send_mail") as mock_mail:
             queue.enqueue("test.my_send_mail", ("hi",), {})
             mock_mail.assert_called_once_with("hi")
 
@@ -94,11 +105,11 @@ class HueyQueueTestCase(OverrideConfigTestCase):
 
     def test_04_wrap_jobs(self):
         wrapped = wrap_job("test.my_send_mail", True)
-        with mock.patch.object(SENDER, 'send_mail') as mock_mail:
+        with mock.patch.object(SENDER, "send_mail") as mock_mail:
             result = wrapped("hi")
             mock_mail.assert_called_once_with("hi")
             self.assertTrue(result)
-        with mock.patch.object(SENDER, 'send_mail') as mock_mail:
+        with mock.patch.object(SENDER, "send_mail") as mock_mail:
             result = my_send_mail("hi")
             mock_mail.assert_called_once_with("hi")
             self.assertEqual(result, 1337)

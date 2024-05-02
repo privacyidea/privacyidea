@@ -23,6 +23,7 @@ from privacyidea.lib.log import log_with
 import privacyidea.lib.applications
 from privacyidea.lib.policy import TYPE
 from importlib import import_module
+
 log = logging.getLogger(__name__)
 
 
@@ -38,10 +39,13 @@ def get_machine_application_class_list():
     # We add each python module in this directory to the class list
     path = os.path.dirname(privacyidea.lib.applications.__file__)
     files = os.listdir(path)
-    modules = [f.split(".")[0] for f in files if f.endswith(".py") and f !=
-               "__init__.py"]
+    modules = [
+        f.split(".")[0] for f in files if f.endswith(".py") and f != "__init__.py"
+    ]
     for module in modules:
-        class_list.append("privacyidea.lib.applications.{0!s}.MachineApplication".format(module))
+        class_list.append(
+            "privacyidea.lib.applications.{0!s}.MachineApplication".format(module)
+        )
     return class_list
 
 
@@ -72,12 +76,11 @@ def get_machine_application_class_dict():
 
 
 class MachineApplication(object):
-
     application_name = "base"
-    '''If bulk_call is false, the administrator may
+    """If bulk_call is false, the administrator may
     only retrieve authentication items for the
     very host he is starting the request.
-    '''
+    """
     allow_bulk_call = False
 
     @classmethod
@@ -88,12 +91,14 @@ class MachineApplication(object):
         return cls.application_name
 
     @staticmethod
-    def get_authentication_item(token_type,
-                                serial,
-                                challenge=None,
-                                options=None,
-                                filter_param=None,
-                                user_agent=None):
+    def get_authentication_item(
+        token_type,
+        serial,
+        challenge=None,
+        options=None,
+        filter_param=None,
+        user_agent=None,
+    ):
         """
         returns a dictionary of authentication items
         like public keys, challenges, responses...
@@ -108,30 +113,37 @@ class MachineApplication(object):
         """
         returns a dictionary with a list of required and optional options
         """
-        return {"tokentype":
-                    {
-                        'optionA': {'type': TYPE.BOOL,
-                                    'required': True},
-                        'optionB': {'type': TYPE.STRING,
-                                    'value': ["val1", "val2"]}}
-                    }
+        return {
+            "tokentype": {
+                "optionA": {"type": TYPE.BOOL, "required": True},
+                "optionB": {"type": TYPE.STRING, "value": ["val1", "val2"]},
+            }
+        }
 
 
 @log_with(log)
-def get_auth_item(application, token_type,serial,
-                  challenge=None, options=None, filter_param=None, user_agent=None):
-
+def get_auth_item(
+    application,
+    token_type,
+    serial,
+    challenge=None,
+    options=None,
+    filter_param=None,
+    user_agent=None,
+):
     options = options or {}
     # application_module from application
     class_dict = get_machine_application_class_dict()
     # should be able to run as class or as object
     auth_class = class_dict.get(application)
-    auth_item = auth_class.get_authentication_item(token_type,
-                                                   serial,
-                                                   challenge=challenge,
-                                                   options=options,
-                                                   filter_param=filter_param,
-                                                   user_agent=user_agent)
+    auth_item = auth_class.get_authentication_item(
+        token_type,
+        serial,
+        challenge=challenge,
+        options=options,
+        filter_param=filter_param,
+        user_agent=user_agent,
+    )
     return auth_item
 
 
@@ -160,8 +172,9 @@ def get_application_types():
     module_dir = os.path.dirname(current_module.__file__)
 
     # load all modules and get their application names
-    files = [os.path.basename(f)[:-3] for f in os.listdir(module_dir) if
-             f.endswith(".py")]
+    files = [
+        os.path.basename(f)[:-3] for f in os.listdir(module_dir) if f.endswith(".py")
+    ]
     for f in files:
         if f not in ["base", "__init__"]:
             try:

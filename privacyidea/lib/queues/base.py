@@ -33,6 +33,7 @@ class BaseQueue(object):
     Currently, the queue only supports fire-and-forget jobs, i.e.
     jobs without any return value.
     """
+
     def __init__(self, options):
         self.options = options
 
@@ -55,4 +56,3 @@ class BaseQueue(object):
         :return: None
         """
         raise NotImplementedError()
-

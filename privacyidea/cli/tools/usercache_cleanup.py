@@ -34,6 +34,7 @@
 """
 This script deletes expired entries from the user cache.
 """
+
 __version__ = "0.1"
 
 from flask.cli import with_appcontext, ScriptInfo
@@ -43,7 +44,7 @@ from privacyidea.models import UserCache, db
 from privacyidea.cli import create_silent_app
 import click
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
 def _get_expired_entries():
@@ -51,14 +52,18 @@ def _get_expired_entries():
     Returns a list of all cache entries that are considered expired.
     """
     filter_condition = create_filter(expired=True)
-    return UserCache.query.filter(filter_condition).order_by(UserCache.timestamp.desc()).all()
+    return (
+        UserCache.query.filter(filter_condition)
+        .order_by(UserCache.timestamp.desc())
+        .all()
+    )
 
 
-LIST_FORMAT = '{:<5} {:<10} {:<10} {:<30} {:<10}'
+LIST_FORMAT = "{:<5} {:<10} {:<10} {:<30} {:<10}"
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.option('-n', "--noaction", is_flag=True, default=False)
+@click.option("-n", "--noaction", is_flag=True, default=False)
 @with_appcontext
 def delete(noaction=False):
     """
@@ -69,24 +74,30 @@ def delete(noaction=False):
     actually deleted.
     """
     if not get_cache_time():
-        click.echo('User cache is disabled, not doing anything.')
+        click.echo("User cache is disabled, not doing anything.")
     else:
-        click.echo('Expired entries:')
+        click.echo("Expired entries:")
         entries = _get_expired_entries()
         if entries:
-            click.echo(LIST_FORMAT.format('id', 'username', 'resolver', 'timestamp', 'user id'))
+            click.echo(
+                LIST_FORMAT.format("id", "username", "resolver", "timestamp", "user id")
+            )
         for entry in entries:
-            click.echo(LIST_FORMAT.format(entry.id,
-                                          entry.username,
-                                          entry.resolver,
-                                          entry.timestamp.isoformat(),
-                                          entry.user_id))
-        click.echo('{} entries'.format(len(entries)))
+            click.echo(
+                LIST_FORMAT.format(
+                    entry.id,
+                    entry.username,
+                    entry.resolver,
+                    entry.timestamp.isoformat(),
+                    entry.user_id,
+                )
+            )
+        click.echo("{} entries".format(len(entries)))
         if not noaction:
             for entry in entries:
-                click.echo('Deleting entry with id={} ...'.format(entry.id))
+                click.echo("Deleting entry with id={} ...".format(entry.id))
                 entry.delete()
-            click.echo('Deleted {} expired entries.'.format(len(entries)))
+            click.echo("Deleted {} expired entries.".format(len(entries)))
             db.session.commit()
         else:
             click.echo("'--noaction' was passed, not doing anything.")
@@ -94,19 +105,21 @@ def delete(noaction=False):
 
 def delete_call():
     """Management script for usercache cleanup of privacyIDEA."""
-    click.echo(r"""
+    click.echo(
+        r"""
                  _                    _______  _______
        ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
       / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
      / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|  Usercache cleanup
     /_/                       /___/
     {0!s:>51}
-        """.format('v{0!s}'.format(get_version_number())))
+        """.format("v{0!s}".format(get_version_number()))
+    )
 
     # Add the ScriptInfo object to create the Flask-App when necessary
     s = ScriptInfo(create_app=create_silent_app)
     delete(obj=s)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     delete_call()

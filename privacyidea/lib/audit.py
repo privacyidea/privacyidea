@@ -27,7 +27,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This is the BaseClass for audit trails
+__doc__ = """This is the BaseClass for audit trails
 
 The audit is supposed to work like this. First we need to create an audit
 object. E.g. this can be done in the before_request:
@@ -111,22 +111,31 @@ def search(config, param=None, user=None):
         hidden_columns = param["hidden_columns"]
         del param["hidden_columns"]
 
-    pagination = audit.search(param, sortorder=sortorder, page=page,
-                              page_size=page_size, timelimit=timelimit)
+    pagination = audit.search(
+        param, sortorder=sortorder, page=page, page_size=page_size, timelimit=timelimit
+    )
 
     # delete hidden columns from response
     if hidden_columns:
         for i in range(len(pagination.auditdata)):
-            pagination.auditdata[i] = OrderedDict({audit_col: value for audit_col, value in
-                                                   pagination.auditdata[i].items()
-                                                   if audit_col not in hidden_columns})
-    visible_columns = [col for col in audit.available_audit_columns if col not in hidden_columns]
+            pagination.auditdata[i] = OrderedDict(
+                {
+                    audit_col: value
+                    for audit_col, value in pagination.auditdata[i].items()
+                    if audit_col not in hidden_columns
+                }
+            )
+    visible_columns = [
+        col for col in audit.available_audit_columns if col not in hidden_columns
+    ]
 
-    ret = {"auditdata": pagination.auditdata,
-           "auditcolumns": visible_columns,
-           "prev": pagination.prev,
-           "next": pagination.next,
-           "current": pagination.page,
-           "count": pagination.total}
+    ret = {
+        "auditdata": pagination.auditdata,
+        "auditcolumns": visible_columns,
+        "prev": pagination.prev,
+        "next": pagination.next,
+        "current": pagination.page,
+        "count": pagination.total,
+    }
 
     return ret

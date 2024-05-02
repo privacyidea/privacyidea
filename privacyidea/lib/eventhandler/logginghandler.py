@@ -38,6 +38,7 @@ class LOGGING_LEVEL(object):
     """
     Allowed logging levels
     """
+
     ERROR = logging.getLevelName(logging.ERROR)
     WARNING = logging.getLevelName(logging.WARNING)
     INFO = logging.getLevelName(logging.INFO)
@@ -45,7 +46,7 @@ class LOGGING_LEVEL(object):
 
 
 DEFAULT_LOGMSG = "event={action} triggered"
-DEFAULT_LOGGER_NAME = 'pi-eventlogger'
+DEFAULT_LOGGER_NAME = "pi-eventlogger"
 DEFAULT_LOGLEVEL = LOGGING_LEVEL.INFO
 
 
@@ -55,8 +56,9 @@ class LoggingEventHandler(BaseEventHandler):
     """
 
     identifier = "Logging"
-    description = "This eventhandler logs the event to the specified python " \
-                  "logging facility"
+    description = (
+        "This eventhandler logs the event to the specified python " "logging facility"
+    )
 
     @property
     def allowed_positions(self):
@@ -78,30 +80,30 @@ class LoggingEventHandler(BaseEventHandler):
         """
         actions = {
             "logging": {
-                'name': {
-                    'type': 'str',
-                    'required': False,
-                    'default': DEFAULT_LOGGER_NAME,
-                    'description': _('The name of the logging facility')
+                "name": {
+                    "type": "str",
+                    "required": False,
+                    "default": DEFAULT_LOGGER_NAME,
+                    "description": _("The name of the logging facility"),
                 },
-                'message': {
-                    'type': 'str',
-                    'required': False,
-                    'default': DEFAULT_LOGMSG,
-                    'description': _('The string to write to the log')
+                "message": {
+                    "type": "str",
+                    "required": False,
+                    "default": DEFAULT_LOGMSG,
+                    "description": _("The string to write to the log"),
                 },
-                'level': {
-                    'type': 'str',
-                    'required': False,
-                    'default': DEFAULT_LOGLEVEL,
-                    'description': _('The logging level for this logging notification'),
-                    'value': [
+                "level": {
+                    "type": "str",
+                    "required": False,
+                    "default": DEFAULT_LOGLEVEL,
+                    "description": _("The logging level for this logging notification"),
+                    "value": [
                         LOGGING_LEVEL.ERROR,
                         LOGGING_LEVEL.WARNING,
                         LOGGING_LEVEL.INFO,
-                        LOGGING_LEVEL.DEBUG
-                    ]
-                }
+                        LOGGING_LEVEL.DEBUG,
+                    ],
+                },
             }
         }
         return actions
@@ -119,40 +121,44 @@ class LoggingEventHandler(BaseEventHandler):
         """
         ret = False
 
-        if action.lower() == 'logging':
+        if action.lower() == "logging":
             tokentype = None
             g = options.get("g")
             handler_def = options.get("handler_def")
             handler_options = handler_def.get("options", {})
-            logged_in_user = g.logged_in_user if hasattr(g, 'logged_in_user') else {}
+            logged_in_user = g.logged_in_user if hasattr(g, "logged_in_user") else {}
             request = options.get("request")
             response = options.get("response")
             tokenowner = self._get_tokenowner(request)
             content = self._get_response_content(response)
-            serial = (request.all_data.get("serial")
-                      or content.get("detail", {}).get("serial")
-                      or g.audit_object.audit_data.get("serial"))
+            serial = (
+                request.all_data.get("serial")
+                or content.get("detail", {}).get("serial")
+                or g.audit_object.audit_data.get("serial")
+            )
             if serial:
                 tokens = get_tokens(serial=serial)
                 if tokens:
                     tokentype = tokens[0].get_tokentype()
             else:
                 token_objects = get_tokens(user=tokenowner)
-                serial = ','.join([tok.get_serial() for tok in token_objects])
+                serial = ",".join([tok.get_serial() for tok in token_objects])
 
-            tags = create_tag_dict(logged_in_user=logged_in_user,
-                                   request=request,
-                                   client_ip=g.client_ip,
-                                   tokenowner=tokenowner,
-                                   serial=serial,
-                                   tokentype=tokentype)
+            tags = create_tag_dict(
+                logged_in_user=logged_in_user,
+                request=request,
+                client_ip=g.client_ip,
+                tokenowner=tokenowner,
+                serial=serial,
+                tokentype=tokentype,
+            )
 
-            logger_name = handler_options.get('name', DEFAULT_LOGGER_NAME)
+            logger_name = handler_options.get("name", DEFAULT_LOGGER_NAME)
             log_action = logging.getLogger(logger_name)
-            log_level = getattr(logging,
-                                handler_options.get('level', DEFAULT_LOGLEVEL),
-                                logging.INFO)
-            log_template = handler_options.get('message') or DEFAULT_LOGMSG
+            log_level = getattr(
+                logging, handler_options.get("level", DEFAULT_LOGLEVEL), logging.INFO
+            )
+            log_template = handler_options.get("message") or DEFAULT_LOGMSG
             log_action.log(log_level, to_unicode(log_template).format(**tags))
             ret = True
 

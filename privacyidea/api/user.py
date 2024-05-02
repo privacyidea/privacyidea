@@ -23,19 +23,21 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from flask import (Blueprint,
-                   request)
-from .lib.utils import (getParam,
-                        send_result)
-from ..api.lib.prepolicy import (prepolicy, check_base_action, realmadmin,
-                                 check_custom_user_attributes)
+from flask import Blueprint, request
+from .lib.utils import getParam, send_result
+from ..api.lib.prepolicy import (
+    prepolicy,
+    check_base_action,
+    realmadmin,
+    check_custom_user_attributes,
+)
 from ..lib.policy import ACTION, get_allowed_custom_attributes
 from privacyidea.api.auth import admin_required, user_required
 from privacyidea.lib.user import create_user, User, is_attribute_at_all
 from privacyidea.lib.event import event
 
 
-from flask import (g)
+from flask import g
 from ..lib.user import get_user_list
 import logging
 
@@ -43,10 +45,10 @@ import logging
 log = logging.getLogger(__name__)
 
 
-user_blueprint = Blueprint('user_blueprint', __name__)
+user_blueprint = Blueprint("user_blueprint", __name__)
 
 
-@user_blueprint.route('/', methods=['GET'])
+@user_blueprint.route("/", methods=["GET"])
 @prepolicy(realmadmin, request, ACTION.USERLIST)
 @prepolicy(check_base_action, request, ACTION.USERLIST)
 @user_required
@@ -62,7 +64,7 @@ def get_users():
                   from this realm
     :param resolver: a distinct resolvername
     :param <searchexpr>: a search expression, that depends on the ResolverClass
-    
+
     :return: json result with "result": true and the userlist in "value".
 
     **Example request**:
@@ -106,13 +108,12 @@ def get_users():
     attr = is_attribute_at_all()
     users = get_user_list(request.all_data, custom_attributes=attr)
 
-    g.audit_object.log({'success': True,
-                        'info': "realm: {0!s}".format(realm)})
-    
+    g.audit_object.log({"success": True, "info": "realm: {0!s}".format(realm)})
+
     return send_result(users)
 
 
-@user_blueprint.route('/attribute', methods=['POST'])
+@user_blueprint.route("/attribute", methods=["POST"])
 @prepolicy(check_custom_user_attributes, request, "set")
 @user_required
 @event("set_custom_user_attribute", request, g)
@@ -140,12 +141,11 @@ def set_user_attribute():
     attrvalue = getParam(request.all_data, "value", optional=False)
     attrtype = getParam(request.all_data, "type", optional=True)
     r = request.User.set_attribute(attrkey, attrvalue, attrtype)
-    g.audit_object.log({"success": True,
-                        "info": "{0!s}".format(attrkey)})
+    g.audit_object.log({"success": True, "info": "{0!s}".format(attrkey)})
     return send_result(r)
 
 
-@user_blueprint.route('/attribute', methods=['GET'])
+@user_blueprint.route("/attribute", methods=["GET"])
 @user_required
 @event("get_user_attribute", request, g)
 def get_user_attribute():
@@ -167,12 +167,11 @@ def get_user_attribute():
     r = request.User.attributes
     if attrkey:
         r = r.get(attrkey)
-    g.audit_object.log({"success": True,
-                        "info": "{0!s}".format(attrkey)})
+    g.audit_object.log({"success": True, "info": "{0!s}".format(attrkey)})
     return send_result(r)
 
 
-@user_blueprint.route('/editable_attributes/', methods=['GET'])
+@user_blueprint.route("/editable_attributes/", methods=["GET"])
 @user_required
 @event("get_editable_attributes", request, g)
 def get_editable_attributes():
@@ -194,7 +193,7 @@ def get_editable_attributes():
     return send_result(r)
 
 
-@user_blueprint.route('/attribute/<attrkey>/<username>/<realm>', methods=['DELETE'])
+@user_blueprint.route("/attribute/<attrkey>/<username>/<realm>", methods=["DELETE"])
 @prepolicy(check_custom_user_attributes, request, "delete")
 @user_required
 @event("delete_custom_user_attribute", request, g)
@@ -211,12 +210,11 @@ def delete_user_attribute(attrkey, username, realm=None):
     """
     user = User(username, realm)
     r = user.delete_attribute(attrkey)
-    g.audit_object.log({"success": True,
-                        "info": "{0!s}".format(attrkey)})
+    g.audit_object.log({"success": True, "info": "{0!s}".format(attrkey)})
     return send_result(r)
 
 
-@user_blueprint.route('/<resolvername>/<username>', methods=['DELETE'])
+@user_blueprint.route("/<resolvername>/<username>", methods=["DELETE"])
 @admin_required
 @prepolicy(check_base_action, request, ACTION.DELETEUSER)
 @event("user_delete", request, g)
@@ -239,13 +237,12 @@ def delete_user(resolvername=None, username=None):
     """
     user_obj = request.User
     res = user_obj.delete()
-    g.audit_object.log({"success": res,
-                        "info": "{0!s}".format(user_obj)})
+    g.audit_object.log({"success": res, "info": "{0!s}".format(user_obj)})
     return send_result(res)
 
 
-@user_blueprint.route('', methods=['POST'])
-@user_blueprint.route('/', methods=['POST'])
+@user_blueprint.route("", methods=["POST"])
+@user_blueprint.route("/", methods=["POST"])
 @admin_required
 @prepolicy(check_base_action, request, ACTION.ADDUSER)
 @event("user_add", request, g)
@@ -283,14 +280,17 @@ def create_user_api():
     if "password" in attributes:
         del attributes["password"]
     r = create_user(resolvername, attributes, password=password)
-    g.audit_object.log({"success": True,
-                        "info": "{0!s}: {1!s}/{2!s}".format(r, username,
-                                                            resolvername)})
+    g.audit_object.log(
+        {
+            "success": True,
+            "info": "{0!s}: {1!s}/{2!s}".format(r, username, resolvername),
+        }
+    )
     return send_result(r)
 
 
-@user_blueprint.route('', methods=['PUT'])
-@user_blueprint.route('/', methods=['PUT'])
+@user_blueprint.route("", methods=["PUT"])
+@user_blueprint.route("/", methods=["PUT"])
 @prepolicy(check_base_action, request, ACTION.UPDATEUSER)
 @event("user_update", request, g)
 def update_user():
@@ -337,13 +337,18 @@ def update_user():
     if password:
         del attributes["password"]
     r = user_obj.update_user_info(attributes, password=password)
-    g.audit_object.log({"success": True,
-                        "info": "{0!s}: {1!s}/{2!s}".format(r, username, resolvername)})
+    g.audit_object.log(
+        {
+            "success": True,
+            "info": "{0!s}: {1!s}/{2!s}".format(r, username, resolvername),
+        }
+    )
     return send_result(r)
 
 
 def _get_attributes_from_param(param):
     from privacyidea.lib.resolver import get_resolver_object
+
     map = get_resolver_object(getParam(param, "resolver", optional=False)).map
     username = getParam(param, "user", optional=False)
 

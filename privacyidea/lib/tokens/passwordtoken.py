@@ -34,7 +34,7 @@ required = False
 
 # We use an easier length of 12 for password tokens
 DEFAULT_LENGTH = 12
-DEFAULT_CONTENTS = 'cn'
+DEFAULT_CONTENTS = "cn"
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +51,6 @@ class PasswordTokenClass(TokenClass):
     default_contents = DEFAULT_CONTENTS
 
     class SecretPassword(object):
-
         def __init__(self, secObj):
             self.secretObject = secObj
 
@@ -97,7 +96,7 @@ class PasswordTokenClass(TokenClass):
 
     @staticmethod
     @log_with(log)
-    def get_class_info(key=None, ret='all'):
+    def get_class_info(key=None, ret="all"):
         """
         returns a subtree of the token definition
 
@@ -108,37 +107,44 @@ class PasswordTokenClass(TokenClass):
         :return: subsection if key exists or user defined
         :rtype: dict or scalar
         """
-        res = {'type': 'pw',
-               'title': 'Password Token',
-               'description': _('A token with a fixed password. Can be '
-                                'combined  with the OTP PIN. Is used for the '
-                                'lost token scenario.'),
-               'init': {},
-               'config': {},
-               'user':  [],
-               # This tokentype is enrollable in the UI for...
-               'ui_enroll': [],
-               'policy': {
-                   SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of password tokens assigned."),
-                           'group': GROUP.TOKEN
-                       },
-                       ACTION.MAXACTIVETOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of active password tokens assigned."),
-                           'group': GROUP.TOKEN
-                       }
-                   }
-               },
-               }
+        res = {
+            "type": "pw",
+            "title": "Password Token",
+            "description": _(
+                "A token with a fixed password. Can be "
+                "combined  with the OTP PIN. Is used for the "
+                "lost token scenario."
+            ),
+            "init": {},
+            "config": {},
+            "user": [],
+            # This tokentype is enrollable in the UI for...
+            "ui_enroll": [],
+            "policy": {
+                SCOPE.ENROLL: {
+                    ACTION.MAXTOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum number of password tokens assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                    ACTION.MAXACTIVETOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum number of active password tokens assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                }
+            },
+        }
         # I don't think we need to define the lost token policies here...
 
         if key:
             ret = res.get(key)
         else:
-            if ret == 'all':
+            if ret == "all":
                 ret = res
         return ret
 

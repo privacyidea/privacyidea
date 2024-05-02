@@ -30,22 +30,24 @@ class LinToken(Base):
     __tablename__ = "Token"
 
     LinOtpTokenId = Column(Integer, primary_key=True, nullable=False)
-    LinOtpTokenDesc = Column(Unicode(80), default='')
-    LinOtpTokenSerialnumber = Column(Unicode(40), default='', unique=True, nullable=False, index=True)
-    LinOtpTokenType = Column(Unicode(30), default='HMAC',index=True)
-    LinOtpTokenInfo = Column(Unicode(2000), default='')
-    LinOtpTokenPinUser = Column(Unicode(512), default='')
-    LinOtpTokenPinUserIV =Column(Unicode(32), default='')
-    LinOtpTokenPinSO = Column(Unicode(512), default='')
-    LinOtpTokenPinSOIV = Column(Unicode(32), default='')
-    LinOtpIdResolver = Column(Unicode(120), default='', index=True)
-    LinOtpIdResClass = Column(Unicode(120), default='')
-    LinOtpUserid = Column(Unicode(320), default='', index=True)
-    LinOtpSeed = Column(Unicode(32), default='')
+    LinOtpTokenDesc = Column(Unicode(80), default="")
+    LinOtpTokenSerialnumber = Column(
+        Unicode(40), default="", unique=True, nullable=False, index=True
+    )
+    LinOtpTokenType = Column(Unicode(30), default="HMAC", index=True)
+    LinOtpTokenInfo = Column(Unicode(2000), default="")
+    LinOtpTokenPinUser = Column(Unicode(512), default="")
+    LinOtpTokenPinUserIV = Column(Unicode(32), default="")
+    LinOtpTokenPinSO = Column(Unicode(512), default="")
+    LinOtpTokenPinSOIV = Column(Unicode(32), default="")
+    LinOtpIdResolver = Column(Unicode(120), default="", index=True)
+    LinOtpIdResClass = Column(Unicode(120), default="")
+    LinOtpUserid = Column(Unicode(320), default="", index=True)
+    LinOtpSeed = Column(Unicode(32), default="")
     LinOtpOtpLen = Column(Integer, default=6)
-    LinOtpPinHash = Column(Unicode(512), default='')
-    LinOtpKeyEnc = Column(Unicode(1024), default='')
-    LinOtpKeyIV = Column(Unicode(32), default='')
+    LinOtpPinHash = Column(Unicode(512), default="")
+    LinOtpKeyEnc = Column(Unicode(1024), default="")
+    LinOtpKeyIV = Column(Unicode(32), default="")
     LinOtpMaxFail = Column(Integer, default=10)
     LinOtpIsactive = Column(Boolean(), default=True)
     LinOtpFailCount = Column(Integer, default=0)
@@ -81,14 +83,26 @@ def read_counter_file(import_file):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("-c", "--config", help="privacyIDEA config file. We only need the SQLALCHEMY_DATABASE_URI.",
-                        required=True)
-    parser.add_argument('file', help='The CSV file with the updated counters. The file should contain one serial and '
-                                     'counter per line split by a comma. You can specify "-" to read from stdin.',
-                        type=argparse.FileType())
-    parser.add_argument("-i", "--increase-only", help="Only update the token counter, if the new counter value"
-                                                      "is bigger than the existing in the database.",
-                        action='store_const', const=True)
+    parser.add_argument(
+        "-c",
+        "--config",
+        help="privacyIDEA config file. We only need the SQLALCHEMY_DATABASE_URI.",
+        required=True,
+    )
+    parser.add_argument(
+        "file",
+        help="The CSV file with the updated counters. The file should contain one serial and "
+        'counter per line split by a comma. You can specify "-" to read from stdin.',
+        type=argparse.FileType(),
+    )
+    parser.add_argument(
+        "-i",
+        "--increase-only",
+        help="Only update the token counter, if the new counter value"
+        "is bigger than the existing in the database.",
+        action="store_const",
+        const=True,
+    )
     args = parser.parse_args()
 
     # Parse data
@@ -109,12 +123,20 @@ def main():
     for count in counters:
         processed += 1
         if args.increase_only:
-            r = linotp_session.query(LinToken).filter_by(LinOtpTokenSerialnumber=count[0]).first()
+            r = (
+                linotp_session.query(LinToken)
+                .filter_by(LinOtpTokenSerialnumber=count[0])
+                .first()
+            )
             if r and r.LinOtpCount >= count[1]:
                 # The counter in the database is bigger
                 continue
         sys.stdout.write("\r {0!s}: {1!s}     ".format(processed, count[0]))
-        r = linotp_session.query(LinToken).filter_by(LinOtpTokenSerialnumber=count[0]).update({"LinOtpCount": count[1]})
+        r = (
+            linotp_session.query(LinToken)
+            .filter_by(LinOtpTokenSerialnumber=count[0])
+            .update({"LinOtpCount": count[1]})
+        )
         if r > 0:
             # r==0, if the token was not found!
             updated += 1
@@ -133,5 +155,5 @@ def main():
     print("List of unknown tokens: {0!s}".format(unknown_tokens))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

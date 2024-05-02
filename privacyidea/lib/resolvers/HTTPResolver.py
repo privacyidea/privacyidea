@@ -40,7 +40,6 @@ log = logging.getLogger(__name__)
 
 
 class HTTPResolver(UserIdResolver):
-
     fields = {
         "endpoint": 1,
         "method": 1,
@@ -48,7 +47,7 @@ class HTTPResolver(UserIdResolver):
         "headers": 1,
         "responseMapping": 1,
         "hasSpecialErrorHandler": 0,
-        "errorResponse": 0
+        "errorResponse": 0,
     }
 
     def __init__(self):
@@ -60,7 +59,7 @@ class HTTPResolver(UserIdResolver):
         """
         provide the resolver type for registration
         """
-        return 'httpresolver'
+        return "httpresolver"
 
     @staticmethod
     def getResolverType():
@@ -84,15 +83,15 @@ class HTTPResolver(UserIdResolver):
         """
         descriptor = {}
         typ = cls.getResolverClassType()
-        descriptor['clazz'] = "useridresolver.HTTPResolver.HTTPResolver"
-        descriptor['config'] = {
-            'endpoint': 'string',
-            'method': 'string',
-            'headers': 'string',
-            'requestMapping': 'string',
-            'responseMapping': 'string',
-            'hasSpecialErrorHandler': 'bool',
-            'errorResponse': 'string',
+        descriptor["clazz"] = "useridresolver.HTTPResolver.HTTPResolver"
+        descriptor["config"] = {
+            "endpoint": "string",
+            "method": "string",
+            "headers": "string",
+            "requestMapping": "string",
+            "responseMapping": "string",
+            "hasSpecialErrorHandler": "bool",
+            "errorResponse": "string",
         }
         return {typ: descriptor}
 
@@ -143,7 +142,7 @@ class HTTPResolver(UserIdResolver):
         get resolver specific information
         :return: the resolver identifier string - empty string if not exist
         """
-        return self.config['endpoint'] if 'endpoint' in self.config else ''
+        return self.config["endpoint"] if "endpoint" in self.config else ""
 
     def loadConfig(self, config):
         """
@@ -178,7 +177,7 @@ class HTTPResolver(UserIdResolver):
         try:
             resolver = HTTPResolver()
             resolver.loadConfig(param)
-            response = resolver._getUser(param.get('testUser'))
+            response = resolver._getUser(param.get("testUser"))
             desc = response
             success = True
         except Exception as e:
@@ -191,18 +190,24 @@ class HTTPResolver(UserIdResolver):
     #
     def _getUser(self, userid):
         param = self.config
-        method = param.get('method').lower()
-        endpoint = param.get('endpoint')
-        requestMappingJSON = json.loads(param.get('requestMapping').replace("{userid}", userid))
-        responseMapping = json.loads(param.get('responseMapping'))
-        headers = json.loads(param.get('headers', '{}'))
-        hasSpecialErrorHandler = bool(param.get('hasSpecialErrorHandler'))
-        errorResponse = json.loads(param.get('errorResponse', '{}'))
+        method = param.get("method").lower()
+        endpoint = param.get("endpoint")
+        requestMappingJSON = json.loads(
+            param.get("requestMapping").replace("{userid}", userid)
+        )
+        responseMapping = json.loads(param.get("responseMapping"))
+        headers = json.loads(param.get("headers", "{}"))
+        hasSpecialErrorHandler = bool(param.get("hasSpecialErrorHandler"))
+        errorResponse = json.loads(param.get("errorResponse", "{}"))
 
         if method == "post":
-            httpResponse = requests.post(endpoint, json=requestMappingJSON, headers=headers, timeout=60)
+            httpResponse = requests.post(
+                endpoint, json=requestMappingJSON, headers=headers, timeout=60
+            )
         else:
-            httpResponse = requests.get(endpoint, urlencode(requestMappingJSON), headers=headers, timeout=60)
+            httpResponse = requests.get(
+                endpoint, urlencode(requestMappingJSON), headers=headers, timeout=60
+            )
 
         # Raises HTTPError, if one occurred.
         httpResponse.raise_for_status()
@@ -213,12 +218,14 @@ class HTTPResolver(UserIdResolver):
             # verify if error response mapping is a subset of the json http response
             if all([x in jsonHTTPResponse.items() for x in errorResponse.items()]):
                 log.error(jsonHTTPResponse)
-                raise Exception('Received an error while searching for user: %s' % userid)
+                raise Exception(
+                    "Received an error while searching for user: %s" % userid
+                )
 
         # Create mapped response with response mapping resolver input
         response = {}
         for pi_user_key, value in responseMapping.items():
-            if value.startswith('{') and value.endswith('}'):
+            if value.startswith("{") and value.endswith("}"):
                 response[pi_user_key] = get(jsonHTTPResponse, value[1:-1])
             else:
                 response[pi_user_key] = value

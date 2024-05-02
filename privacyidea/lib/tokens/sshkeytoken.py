@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""The SSHKeyTokenClass provides a TokenClass that stores the public
+__doc__ = """The SSHKeyTokenClass provides a TokenClass that stores the public
 SSH key. This can be used to manage SSH keys and retrieve the public ssh key
 to import it to authorized keys files.
 
@@ -49,6 +49,7 @@ class SSHkeyTokenClass(TokenClass):
     SSH key. This can be used to manage SSH keys and retrieve the public ssh key
     to import it to authorized keys files.
     """
+
     mode = [AUTHENTICATIONMODE.AUTHENTICATE]
     using_pin = False
 
@@ -66,7 +67,7 @@ class SSHkeyTokenClass(TokenClass):
 
     @staticmethod
     @log_with(log)
-    def get_class_info(key=None, ret='all'):
+    def get_class_info(key=None, ret="all"):
         """
         returns a subtree of the token definition
 
@@ -77,33 +78,37 @@ class SSHkeyTokenClass(TokenClass):
         :return: subsection if key exists or user defined
         :rtype: dictionary
         """
-        res = {'type': 'sshkey',
-               'title': 'SSHkey Token',
-               'description': _('SSH Public Key: The public SSH key.'),
-               'config': {},
-               'user': ['enroll'],
-               # This tokentype is enrollable in the UI for...
-               'ui_enroll': ["admin", "user"],
-               'policy': {
-                   SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of SSH keys assigned."),
-                           'group': GROUP.TOKEN
-                       },
-                       ACTION.MAXACTIVETOKENUSER: {
-                           'type': 'int',
-                           'desc': _(
-                               "The user may only have this maximum number of active SSH keys assigned."),
-                           'group': GROUP.TOKEN
-                       }
-                   }
-               },
-               }
+        res = {
+            "type": "sshkey",
+            "title": "SSHkey Token",
+            "description": _("SSH Public Key: The public SSH key."),
+            "config": {},
+            "user": ["enroll"],
+            # This tokentype is enrollable in the UI for...
+            "ui_enroll": ["admin", "user"],
+            "policy": {
+                SCOPE.ENROLL: {
+                    ACTION.MAXTOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum number of SSH keys assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                    ACTION.MAXACTIVETOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum number of active SSH keys assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                }
+            },
+        }
         if key:
             ret = res.get(key, {})
         else:
-            if ret == 'all':
+            if ret == "all":
                 ret = res
 
         return ret
@@ -111,7 +116,7 @@ class SSHkeyTokenClass(TokenClass):
     def update(self, param):
         """
         The key holds the public ssh key and this is required
-        
+
         The key probably is of the form "ssh-rsa BASE64 comment"
         """
         # We need to save the token, so that we can later add the tokeninfo
@@ -122,8 +127,13 @@ class SSHkeyTokenClass(TokenClass):
         getParam(param, "sshkey", required)
 
         key_elem = param.get("sshkey").split(" ", 2)
-        if key_elem[0] not in ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256",
-                               "sk-ecdsa-sha2-nistp256@openssh.com", "sk-ssh-ed25519@openssh.com"]:
+        if key_elem[0] not in [
+            "ssh-rsa",
+            "ssh-ed25519",
+            "ecdsa-sha2-nistp256",
+            "sk-ecdsa-sha2-nistp256@openssh.com",
+            "sk-ssh-ed25519@openssh.com",
+        ]:
             self.token.rollout_state = ROLLOUTSTATE.BROKEN
             self.token.save()
             raise TokenAdminError("The keytype you specified is not supported.")
@@ -139,7 +149,7 @@ class SSHkeyTokenClass(TokenClass):
             key_comment = key_elem[2]
         else:
             key_comment = ""
-        
+
         # convert key to hex
         self.add_tokeninfo("ssh_key", key, value_type="password")
         self.add_tokeninfo("ssh_type", key_type)
@@ -147,12 +157,12 @@ class SSHkeyTokenClass(TokenClass):
 
         # call the parents function
         TokenClass.update(self, param)
-        
+
     @log_with(log)
     def get_sshkey(self):
         """
         returns the public SSH key
-        
+
         :return: SSH pub key
         :rtype: string
         """

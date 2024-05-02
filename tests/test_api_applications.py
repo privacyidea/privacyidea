@@ -8,11 +8,10 @@ from .base import MyApiTestCase
 
 
 class APIApplicationsResolverTestCase(MyApiTestCase):
-
     def test_get_applications(self):
-        with self.app.test_request_context('/application/',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/application/", method="GET", headers={"Authorization": self.at}
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -30,5 +29,9 @@ class APIApplicationsResolverTestCase(MyApiTestCase):
             self.assertIn("webauthn", offlinetokenoptions)
             self.assertIn("service_id", sshtokenoptions.get("sshkey"))
             self.assertIn("user", sshtokenoptions.get("sshkey"))
-            self.assertEqual("str", sshtokenoptions.get("sshkey").get("service_id").get("type"))
-            self.assertEqual("str", sshtokenoptions.get("sshkey").get("user").get("type"))
+            self.assertEqual(
+                "str", sshtokenoptions.get("sshkey").get("service_id").get("type")
+            )
+            self.assertEqual(
+                "str", sshtokenoptions.get("sshkey").get("user").get("type")
+            )

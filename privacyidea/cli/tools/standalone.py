@@ -43,7 +43,7 @@ from privacyidea.app import create_app
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.utils import get_version_number
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 # warnings.simplefilter("ignore", category=sqlalchemy.exc.SAWarning)
 
@@ -64,7 +64,7 @@ PI_PEPPER = '{pi_pepper}'
 """
 
 RSA_KEYSIZE = 2048
-PEPPER_CHARSET = string.ascii_letters + string.digits + '_'
+PEPPER_CHARSET = string.ascii_letters + string.digits + "_"
 
 
 def invoke_pi_manage(commandline, pi_cfg):
@@ -77,40 +77,49 @@ def invoke_pi_manage(commandline, pi_cfg):
     :type pi_cfg: str or pathlib.Path
     """
     environment = os.environ.copy()
-    environment['PRIVACYIDEA_CONFIGFILE'] = str(pi_cfg)
-    subprocess.check_call(['pi-manage'] + commandline, env=environment)  # nosec B603 # only trusted input is used
+    environment["PRIVACYIDEA_CONFIGFILE"] = str(pi_cfg)
+    subprocess.check_call(["pi-manage"] + commandline, env=environment)  # nosec B603 # only trusted input is used
 
 
 def instance_option(f):
     """The instance option for all commands"""
     options = [
-        click.option('-i', '--instance', default=Path.home() / '.privacyidea',
-                     help='Location of the privacyIDEA instance', show_default=True,
-                     type=click.Path(file_okay=False, resolve_path=True))
+        click.option(
+            "-i",
+            "--instance",
+            default=Path.home() / ".privacyidea",
+            help="Location of the privacyIDEA instance",
+            show_default=True,
+            type=click.Path(file_okay=False, resolve_path=True),
+        )
     ]
     return functools.reduce(lambda x, opt: opt(x), options, f)
 
 
-@click.group(context_settings=CONTEXT_SETTINGS,
-             epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
+@click.group(
+    context_settings=CONTEXT_SETTINGS,
+    epilog="Check out our docs at https://privacyidea.readthedocs.io/ for more details",
+)
 def cli():
     """
-\b
-             _                    _______  _______
-   ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
-  / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
- / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|  Standalone
-/_/                       /___/
+    \b
+                 _                    _______  _______
+       ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
+      / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
+     / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|  Standalone
+    /_/                       /___/
 
-  Management script for creating local privacyIDEA instances."""
-    click.echo(r"""
+      Management script for creating local privacyIDEA instances."""
+    click.echo(
+        r"""
              _                    _______  _______
    ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
   / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
  / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|  Standalone
 /_/                       /___/
 {0!s:>51}
-    """.format('v{0!s}'.format(get_version_number())))
+    """.format("v{0!s}".format(get_version_number()))
+    )
 
 
 @click.command()
@@ -119,13 +128,19 @@ def cli():
 def configure(ctx, instance):
     """Run a local webserver to configure the privacyIDEA instance."""
     instance = Path(instance)
-    if instance.exists() and instance.joinpath('pi.cfg').exists():
-        app = create_app(config_name="production", config_file=instance.joinpath('pi.cfg'),
-                         silent=True)
+    if instance.exists() and instance.joinpath("pi.cfg").exists():
+        app = create_app(
+            config_name="production",
+            config_file=instance.joinpath("pi.cfg"),
+            silent=True,
+        )
         app.run()
     else:
-        click.secho(f"Instance configuration at '{instance}/pi.cfg' does "
-                    f"not exist! Aborting.", fg='red')
+        click.secho(
+            f"Instance configuration at '{instance}/pi.cfg' does "
+            f"not exist! Aborting.",
+            fg="red",
+        )
         ctx.exit(1)
 
 
@@ -133,10 +148,10 @@ def configure(ctx, instance):
 @instance_option
 @click.pass_context
 def create(ctx, instance):
-    """ Create a new privacyIDEA instance."""
+    """Create a new privacyIDEA instance."""
     instance = Path(instance)
     if instance.exists():
-        click.secho(f"Instance at '{instance}' already exists! Aborting.", fg='red')
+        click.secho(f"Instance at '{instance}' already exists! Aborting.", fg="red")
         ctx.exit(1)
     try:
         instance.mkdir()
@@ -145,61 +160,83 @@ def create(ctx, instance):
         secret_key = DefaultSecurityModule.random(24)
         pi_pepper = create_pepper()
 
-        secret_key_hex = ''.join('\\x{:02x}'.format(b) for b in secret_key)
+        secret_key_hex = "".join("\\x{:02x}".format(b) for b in secret_key)
         # create a pi.cfg
-        pi_cfg = instance / 'pi.cfg'
-        with open(pi_cfg, 'w') as f:
-            f.write(PI_CFG_TEMPLATE.format(
-                secret_key=secret_key_hex,
-                pi_pepper=pi_pepper
-            ))
+        pi_cfg = instance / "pi.cfg"
+        with open(pi_cfg, "w") as f:
+            f.write(
+                PI_CFG_TEMPLATE.format(secret_key=secret_key_hex, pi_pepper=pi_pepper)
+            )
 
         # create an enckey
-        invoke_pi_manage(['create_enckey'], pi_cfg)
-        invoke_pi_manage(['create_audit_keys'], pi_cfg)
-        invoke_pi_manage(['create_tables'], pi_cfg)
+        invoke_pi_manage(["create_enckey"], pi_cfg)
+        invoke_pi_manage(["create_audit_keys"], pi_cfg)
+        invoke_pi_manage(["create_tables"], pi_cfg)
 
-        click.secho('Please enter a password for the new admin `super`.', fg='blue')
-        invoke_pi_manage(['admin', 'add', 'super'], pi_cfg)
+        click.secho("Please enter a password for the new admin `super`.", fg="blue")
+        invoke_pi_manage(["admin", "add", "super"], pi_cfg)
 
         # create user resolver
-        if click.confirm('Would you like to create a default resolver and realm?', default=True):
+        if click.confirm(
+            "Would you like to create a default resolver and realm?", default=True
+        ):
             click.echo("""
 There are two possibilities to create a resolver:
  1) We can create a table in the privacyIDEA SQLite database to store the users.
     You can add users via the privacyIDEA Web UI.
  2) We can create a resolver that contains the users from /etc/passwd
     """)
-            create_sql_resolver = click.prompt('Please choose (default=1): ',
-                                               default=1, type=click.Choice(['1', '2']),
-                                               show_choices=False, show_default=False)
+            create_sql_resolver = click.prompt(
+                "Please choose (default=1): ",
+                default=1,
+                type=click.Choice(["1", "2"]),
+                show_choices=False,
+                show_default=False,
+            )
             if create_sql_resolver == 1:
-                invoke_pi_manage(['resolver', 'create_internal', 'defresolver'], pi_cfg)
+                invoke_pi_manage(["resolver", "create_internal", "defresolver"], pi_cfg)
             else:
-                with NamedTemporaryFile(mode='w', delete=False) as f:
+                with NamedTemporaryFile(mode="w", delete=False) as f:
                     f.write('{"fileName": "/etc/passwd"}')
-                invoke_pi_manage(['resolver', 'create', 'defresolver', 'passwdresolver',
-                                  f.name], pi_cfg)
+                invoke_pi_manage(
+                    ["resolver", "create", "defresolver", "passwdresolver", f.name],
+                    pi_cfg,
+                )
                 os.unlink(f.name)
-            invoke_pi_manage(['realm', 'create', 'defrealm', 'defresolver'], pi_cfg)
+            invoke_pi_manage(["realm", "create", "defrealm", "defresolver"], pi_cfg)
 
-        click.secho('Configuration is complete. You can now configure privacyIDEA in '
-                    'the web browser by running', fg='blue')
-        click.secho(f"  privacyidea-standalone configure -i '{instance}' ", fg='blue')
+        click.secho(
+            "Configuration is complete. You can now configure privacyIDEA in "
+            "the web browser by running",
+            fg="blue",
+        )
+        click.secho(f"  privacyidea-standalone configure -i '{instance}' ", fg="blue")
     except Exception as _e:
-        click.secho(f'Could not finish creation process! Removing '
-                    f'instance directory {instance}.', fg='red')
+        click.secho(
+            f"Could not finish creation process! Removing "
+            f"instance directory {instance}.",
+            fg="red",
+        )
         shutil.rmtree(instance)
         raise
 
 
 @click.command()
-@click.option('-r', '--response', 'show_response', is_flag=True,
-              help='Print the JSON response of privacyIDEA to standard output')
-@click.option("-u", "--username", prompt=True,
-              help="The username to authenticate")
-@click.option("-p", "--password", prompt=True, hide_input=True,
-              help="The password to authenticate the user")
+@click.option(
+    "-r",
+    "--response",
+    "show_response",
+    is_flag=True,
+    help="Print the JSON response of privacyIDEA to standard output",
+)
+@click.option("-u", "--username", prompt=True, help="The username to authenticate")
+@click.option(
+    "-p",
+    "--password",
+    prompt=True,
+    hide_input=True,
+    help="The password to authenticate the user",
+)
 @instance_option
 @click.pass_context
 def check(ctx, instance, show_response, username, password):
@@ -214,26 +251,41 @@ def check(ctx, instance, show_response, username, password):
     """
     exitcode = -1
     instance = Path(instance)
-    if instance.exists() and instance.joinpath('pi.cfg').exists():
+    if instance.exists() and instance.joinpath("pi.cfg").exists():
         try:
-            app = create_app(config_name="production", config_file=instance.joinpath('pi.cfg'),
-                             silent=True)
-            with app.test_request_context('/validate/check', method='POST',
-                                          data={'user': username, 'pass': password}):
+            app = create_app(
+                config_name="production",
+                config_file=instance.joinpath("pi.cfg"),
+                silent=True,
+            )
+            with app.test_request_context(
+                "/validate/check",
+                method="POST",
+                data={"user": username, "pass": password},
+            ):
                 response = app.full_dispatch_request()
-                if response.status_code == 200 and response.json['result']['value'] is True:
+                if (
+                    response.status_code == 200
+                    and response.json["result"]["value"] is True
+                ):
                     exitcode = 0
                 else:
                     exitcode = 1
                 if show_response:
-                    click.secho(f"Status: {response.status}\n"
-                                f"Data:\n{json.dumps(response.json, indent=2)}", fg='blue')
+                    click.secho(
+                        f"Status: {response.status}\n"
+                        f"Data:\n{json.dumps(response.json, indent=2)}",
+                        fg="blue",
+                    )
         except Exception as e:
-            click.secho(str(e), fg='red')
+            click.secho(str(e), fg="red")
 
     else:
-        click.secho(f"Instance configuration at '{instance}/pi.cfg' does "
-                    f"not exist! Aborting.", fg='red')
+        click.secho(
+            f"Instance configuration at '{instance}/pi.cfg' does "
+            f"not exist! Aborting.",
+            fg="red",
+        )
 
     ctx.exit(exitcode)
 
@@ -254,13 +306,13 @@ def create_pepper(length=24, chunk_size=8, charset=PEPPER_CHARSET):
     :return: a string of the specified length
     :rtype: str
     """
-    pepper = ''
+    pepper = ""
     while len(pepper) < length:
         random_bytes = DefaultSecurityModule.random(chunk_size)
-        printables = ''.join(chr(b) for b in random_bytes if chr(b) in charset)
+        printables = "".join(chr(b) for b in random_bytes if chr(b) in charset)
         pepper += printables
     return pepper[:length]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

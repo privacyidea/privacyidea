@@ -1,30 +1,59 @@
 """
 This tests the package lib.utils
 """
+
 from .base import MyTestCase
 
-from privacyidea.lib.utils import (parse_timelimit,
-                                   check_time_in_range, parse_proxy,
-                                   check_proxy, reduce_realms, is_true,
-                                   parse_date, compare_condition,
-                                   get_data_from_params, parse_legacy_time,
-                                   int_to_hex, compare_value_value,
-                                   compare_generic_condition,
-                                   parse_time_offset_from_now, censor_connect_string,
-                                   parse_timedelta, to_unicode,
-                                   parse_int, convert_column_to_unicode,
-                                   truncate_comma_list, check_pin_contents, CHARLIST_CONTENTPOLICY,
-                                   get_module_class, decode_base32check,
-                                   get_client_ip, sanity_name_check, to_utf8,
-                                   to_byte_string, hexlify_and_unicode,
-                                   b32encode_and_unicode, to_bytes,
-                                   b64encode_and_unicode, create_img,
-                                   convert_timestamp_to_utc, modhex_encode,
-                                   modhex_decode, checksum, urlsafe_b64encode_and_unicode,
-                                   check_ip_in_policy, split_pin_pass, create_tag_dict,
-                                   check_serial_valid, determine_logged_in_userparams,
-                                   to_list, parse_string_to_dict, convert_imagefile_to_dataimage,
-                                   get_plugin_info_from_useragent, get_computer_name_from_user_agent)
+from privacyidea.lib.utils import (
+    parse_timelimit,
+    check_time_in_range,
+    parse_proxy,
+    check_proxy,
+    reduce_realms,
+    is_true,
+    parse_date,
+    compare_condition,
+    get_data_from_params,
+    parse_legacy_time,
+    int_to_hex,
+    compare_value_value,
+    compare_generic_condition,
+    parse_time_offset_from_now,
+    censor_connect_string,
+    parse_timedelta,
+    to_unicode,
+    parse_int,
+    convert_column_to_unicode,
+    truncate_comma_list,
+    check_pin_contents,
+    CHARLIST_CONTENTPOLICY,
+    get_module_class,
+    decode_base32check,
+    get_client_ip,
+    sanity_name_check,
+    to_utf8,
+    to_byte_string,
+    hexlify_and_unicode,
+    b32encode_and_unicode,
+    to_bytes,
+    b64encode_and_unicode,
+    create_img,
+    convert_timestamp_to_utc,
+    modhex_encode,
+    modhex_decode,
+    checksum,
+    urlsafe_b64encode_and_unicode,
+    check_ip_in_policy,
+    split_pin_pass,
+    create_tag_dict,
+    check_serial_valid,
+    determine_logged_in_userparams,
+    to_list,
+    parse_string_to_dict,
+    convert_imagefile_to_dataimage,
+    get_plugin_info_from_useragent,
+    get_computer_name_from_user_agent,
+)
 from privacyidea.lib.crypto import generate_password
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
@@ -35,7 +64,6 @@ import binascii
 
 
 class UtilsTestCase(MyTestCase):
-
     def test_01_timelimit(self):
         c, tdelta = parse_timelimit("1/5s")
         self.assertEqual(c, 1)
@@ -68,7 +96,7 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(tdelta, timedelta(hours=31))
 
         tdelta = parse_timedelta(" 2y")
-        self.assertEqual(tdelta, timedelta(days=2*365))
+        self.assertEqual(tdelta, timedelta(days=2 * 365))
 
         tdelta = parse_timedelta("30 m ")
         self.assertEqual(tdelta, timedelta(minutes=30))
@@ -86,8 +114,7 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(r, True)
         r = check_time_in_range("Mon - Fri : 09:00- 17:30", t)
         self.assertEqual(r, True)
-        r = check_time_in_range("Sat-Sun:10:00-15:00, Mon - Fri : 09:00- "
-                                "17:30", t)
+        r = check_time_in_range("Sat-Sun:10:00-15:00, Mon - Fri : 09:00- " "17:30", t)
         self.assertEqual(r, True)
 
         # Short time description
@@ -115,21 +142,34 @@ class UtilsTestCase(MyTestCase):
     def test_04a_parse_proxy(self):
         self.assertEqual(parse_proxy(""), set())
         # 127.0.0.1 may rewrite to any IP
-        self.assertEqual(parse_proxy("127.0.0.1"),
-                         {(IPNetwork("127.0.0.1/32"), IPNetwork("0.0.0.0/0"))})
+        self.assertEqual(
+            parse_proxy("127.0.0.1"),
+            {(IPNetwork("127.0.0.1/32"), IPNetwork("0.0.0.0/0"))},
+        )
         # 127.0.0.x may rewrite to 10.0.x.x
-        self.assertEqual(parse_proxy("127.0.0.1/24 >  10.0.0.0/16"),
-                         {(IPNetwork("127.0.0.1/24"), IPNetwork("10.0.0.0/16"))})
+        self.assertEqual(
+            parse_proxy("127.0.0.1/24 >  10.0.0.0/16"),
+            {(IPNetwork("127.0.0.1/24"), IPNetwork("10.0.0.0/16"))},
+        )
         # 127.0.0.x may rewrite to 10.0.x.x or 10.1.x.x which may rewrite to 10.2.0.x
-        self.assertEqual(parse_proxy("127.0.0.1/24>10.0.0.0/16, 127.0.0.1/24>10.1.0.0/16>10.2.0.0/24"),
-                         {
-                             (IPNetwork("127.0.0.1/24"), IPNetwork("10.0.0.0/16")),
-                             (IPNetwork("127.0.0.1/24"), IPNetwork("10.1.0.0/16"), IPNetwork("10.2.0.0/24"))
-                         })
+        self.assertEqual(
+            parse_proxy(
+                "127.0.0.1/24>10.0.0.0/16, 127.0.0.1/24>10.1.0.0/16>10.2.0.0/24"
+            ),
+            {
+                (IPNetwork("127.0.0.1/24"), IPNetwork("10.0.0.0/16")),
+                (
+                    IPNetwork("127.0.0.1/24"),
+                    IPNetwork("10.1.0.0/16"),
+                    IPNetwork("10.2.0.0/24"),
+                ),
+            },
+        )
 
     def test_04b_check_overrideclient(self):
-        proxy_def = " 10.0.0.12, 1.2.3.4/16> 192.168.1.0/24, 172.16.0.1 " \
-                    ">10.0.0.0/8   "
+        proxy_def = (
+            " 10.0.0.12, 1.2.3.4/16> 192.168.1.0/24, 172.16.0.1 " ">10.0.0.0/8   "
+        )
         r = parse_proxy(proxy_def)
 
         self.assertEqual(len(r), 3)
@@ -138,121 +178,154 @@ class UtilsTestCase(MyTestCase):
         self.assertIn((IPNetwork("172.16.0.1/32"), IPNetwork("10.0.0.0/8")), r)
 
         # check paths with only a single hop
-        self.assertEqual(check_proxy(list(map(IPAddress, ["10.0.0.12", "1.2.3.4"])), proxy_def),
-                         IPAddress("1.2.3.4"))  # 10.0.0.12 may map to 1.2.3.4
-        self.assertEqual(check_proxy(list(map(IPAddress, ["10.0.0.11", "1.2.3.4"])), proxy_def),
-                         IPAddress("10.0.0.11"))  # 10.0.0.11 may not map to 1.2.3.4
-        self.assertEqual(check_proxy(list(map(IPAddress, ["1.2.3.10", "192.168.1.12"])), proxy_def),
-                         IPAddress("192.168.1.12"))  # 1.2.3.10 may map to 192.168.1.12
-        self.assertEqual(check_proxy(list(map(IPAddress, ["172.16.0.1", "1.2.3.4"])), proxy_def),
-                         IPAddress("172.16.0.1"))  # 172.16.0.1 may not map to 1.2.3.4
-        self.assertEqual(check_proxy(list(map(IPAddress, ["172.16.0.1", "10.1.2.3"])), proxy_def),
-                         IPAddress("10.1.2.3"))  # 172.16.0.1 may map to 10.1.2.3
+        self.assertEqual(
+            check_proxy(list(map(IPAddress, ["10.0.0.12", "1.2.3.4"])), proxy_def),
+            IPAddress("1.2.3.4"),
+        )  # 10.0.0.12 may map to 1.2.3.4
+        self.assertEqual(
+            check_proxy(list(map(IPAddress, ["10.0.0.11", "1.2.3.4"])), proxy_def),
+            IPAddress("10.0.0.11"),
+        )  # 10.0.0.11 may not map to 1.2.3.4
+        self.assertEqual(
+            check_proxy(list(map(IPAddress, ["1.2.3.10", "192.168.1.12"])), proxy_def),
+            IPAddress("192.168.1.12"),
+        )  # 1.2.3.10 may map to 192.168.1.12
+        self.assertEqual(
+            check_proxy(list(map(IPAddress, ["172.16.0.1", "1.2.3.4"])), proxy_def),
+            IPAddress("172.16.0.1"),
+        )  # 172.16.0.1 may not map to 1.2.3.4
+        self.assertEqual(
+            check_proxy(list(map(IPAddress, ["172.16.0.1", "10.1.2.3"])), proxy_def),
+            IPAddress("10.1.2.3"),
+        )  # 172.16.0.1 may map to 10.1.2.3
 
         # Wrong proxy setting. No commas (issue 526)
-        proxy_def = " 10.0.0.12 1.2.3.4/16> 192.168.1.0/24 172.16.0.1 " \
-                    ">10.0.0.0/8   "
+        proxy_def = " 10.0.0.12 1.2.3.4/16> 192.168.1.0/24 172.16.0.1 " ">10.0.0.0/8   "
         self.assertRaises(AddrFormatError, parse_proxy, proxy_def)
         # 10.0.0.12 is not allowed to map because the proxy settings are invalid
-        self.assertEqual(check_proxy(list(map(IPAddress, ["10.0.0.12", "1.2.3.4"])), proxy_def),
-                         IPAddress("10.0.12"))
+        self.assertEqual(
+            check_proxy(list(map(IPAddress, ["10.0.0.12", "1.2.3.4"])), proxy_def),
+            IPAddress("10.0.12"),
+        )
 
         # check paths with several hops
         # 1.2.3.4 -------> 10.0.0.1 -------> 192.168.1.1 --------> privacyIDEA
         #  client           proxy1              proxy2
         path_to_client = list(map(IPAddress, ["192.168.1.1", "10.0.0.1", "1.2.3.4"]))
         # no proxy setting: client IP is proxy2
-        self.assertEqual(check_proxy(path_to_client, ""),
-                         IPAddress("192.168.1.1"))
+        self.assertEqual(check_proxy(path_to_client, ""), IPAddress("192.168.1.1"))
         # proxy2 may map to 10.0.1.x: client IP is proxy2
-        self.assertEqual(check_proxy(path_to_client, "192.168.1.1>10.0.1.0/24"),
-                         IPAddress("192.168.1.1"))
+        self.assertEqual(
+            check_proxy(path_to_client, "192.168.1.1>10.0.1.0/24"),
+            IPAddress("192.168.1.1"),
+        )
         # proxy2 may map to 10.0.0.x: client IP is proxy1
-        self.assertEqual(check_proxy(path_to_client, "192.168.1.1>10.0.0.0/24"),
-                         IPAddress("10.0.0.1"))
+        self.assertEqual(
+            check_proxy(path_to_client, "192.168.1.1>10.0.0.0/24"),
+            IPAddress("10.0.0.1"),
+        )
         # proxy2 may map to 10.0.0.x, which may map to 2.3.4.x but not 1.2.3.4, so
         # the proxy definition does not match and the client IP is proxy2
-        self.assertEqual(check_proxy(path_to_client, "192.168.1.1>10.0.0.0/24>2.3.4.0/24"),
-                         IPAddress("192.168.1.1"))
+        self.assertEqual(
+            check_proxy(path_to_client, "192.168.1.1>10.0.0.0/24>2.3.4.0/24"),
+            IPAddress("192.168.1.1"),
+        )
         # 10.0.0.x may map to 2.3.4.x, but it doesn't matter because there is proxy2 inbetween
-        self.assertEqual(check_proxy(path_to_client, "10.0.0.0/24>2.3.4.0/24"),
-                         IPAddress("192.168.1.1"))
+        self.assertEqual(
+            check_proxy(path_to_client, "10.0.0.0/24>2.3.4.0/24"),
+            IPAddress("192.168.1.1"),
+        )
         # proxy2 may map to 10.0.0.x, which may map to 1.2.x.x or 2.3.4.x, so client IP is 1.2.3.4
-        self.assertEqual(check_proxy(path_to_client,
-                                     "192.168.1.1>10.0.0.0/24>2.3.4.0/24, 192.168.1.1>10.0.0.0/24>1.2.0.0/16"),
-                         IPAddress("1.2.3.4"))
+        self.assertEqual(
+            check_proxy(
+                path_to_client,
+                "192.168.1.1>10.0.0.0/24>2.3.4.0/24, 192.168.1.1>10.0.0.0/24>1.2.0.0/16",
+            ),
+            IPAddress("1.2.3.4"),
+        )
         # the order of proxy definitions is irrelevant
-        self.assertEqual(check_proxy(path_to_client,
-                                     "192.168.1.1>10.0.0.0/24>1.2.0.0/16, 192.168.1.1>10.0.0.0/24>2.3.4.0/24"),
-                         IPAddress("1.2.3.4"))
+        self.assertEqual(
+            check_proxy(
+                path_to_client,
+                "192.168.1.1>10.0.0.0/24>1.2.0.0/16, 192.168.1.1>10.0.0.0/24>2.3.4.0/24",
+            ),
+            IPAddress("1.2.3.4"),
+        )
         # proxy2 may map anywhere, and the next proxy may also map anywhere,
         # so we end up with 1.2.3.4
-        self.assertEqual(check_proxy(path_to_client,
-                                     "192.168.1.1>0.0.0.0/0>0.0.0.0/0"),
-                         IPAddress("1.2.3.4"))
+        self.assertEqual(
+            check_proxy(path_to_client, "192.168.1.1>0.0.0.0/0>0.0.0.0/0"),
+            IPAddress("1.2.3.4"),
+        )
         # but if the next proxy may only map to 2.x.x.x, the proxy path does not match and we end up with proxy2.
-        self.assertEqual(check_proxy(path_to_client,
-                                     "192.168.1.1>0.0.0.0/0>2.0.0.0/8"),
-                         IPAddress("192.168.1.1"))
+        self.assertEqual(
+            check_proxy(path_to_client, "192.168.1.1>0.0.0.0/0>2.0.0.0/8"),
+            IPAddress("192.168.1.1"),
+        )
 
         # another example
         path_to_client = list(map(IPAddress, ["10.1.1.1", "10.2.3.4", "192.168.1.1"]))
-        self.assertEqual(check_proxy(path_to_client,
-                                     "10.1.1.1/32>10.2.3.0/24>192.168.0.0/16"),
-                         IPAddress("192.168.1.1"))
-        self.assertEqual(check_proxy(path_to_client,
-                                     "10.1.1.1/32>192.168.0.0/16"),
-                         IPAddress("10.1.1.1"))
-        self.assertEqual(check_proxy(path_to_client,
-                                     "10.1.1.1/32>10.2.3.0/24>192.168.3.0/24"),
-                         IPAddress("10.1.1.1"))
+        self.assertEqual(
+            check_proxy(path_to_client, "10.1.1.1/32>10.2.3.0/24>192.168.0.0/16"),
+            IPAddress("192.168.1.1"),
+        )
+        self.assertEqual(
+            check_proxy(path_to_client, "10.1.1.1/32>192.168.0.0/16"),
+            IPAddress("10.1.1.1"),
+        )
+        self.assertEqual(
+            check_proxy(path_to_client, "10.1.1.1/32>10.2.3.0/24>192.168.3.0/24"),
+            IPAddress("10.1.1.1"),
+        )
 
     def test_05_reduce_realms(self):
-        realms = {'defrealm': {'default': False,
-                               'option': '',
-                               'resolver': [
-                                    {'priority': None,
-                                     'type': 'passwdresolver',
-                                     'name': 'deflocal'}]},
-                  'localsql': {'default': True,
-                               'option': '',
-                               'resolver': [
-                                    {'priority': None,
-                                     'type': 'sqlresolver',
-                                     'name': 'localusers2'}]}}
+        realms = {
+            "defrealm": {
+                "default": False,
+                "option": "",
+                "resolver": [
+                    {"priority": None, "type": "passwdresolver", "name": "deflocal"}
+                ],
+            },
+            "localsql": {
+                "default": True,
+                "option": "",
+                "resolver": [
+                    {"priority": None, "type": "sqlresolver", "name": "localusers2"}
+                ],
+            },
+        }
         # The policy dictionary contains much more entries, but for us only
         # the realm is relevant
-        policies = [{'realm': []}]
+        policies = [{"realm": []}]
         r = reduce_realms(realms, policies)
         self.assertTrue("defrealm" in r)
         self.assertTrue("localsql" in r)
 
-        policies = [{'realm': []},
-                    {'realm': ["defrealm"]}]
+        policies = [{"realm": []}, {"realm": ["defrealm"]}]
         r = reduce_realms(realms, policies)
         self.assertTrue("defrealm" in r)
         self.assertTrue("localsql" in r)
 
-        policies = [{'realm': ["defrealm"]},
-                    {'realm': []}]
+        policies = [{"realm": ["defrealm"]}, {"realm": []}]
         r = reduce_realms(realms, policies)
         self.assertTrue("defrealm" in r)
         self.assertTrue("localsql" in r)
 
-        policies = [{'realm': ["localsql"]},
-                    {'realm': ["defrealm"]}]
+        policies = [{"realm": ["localsql"]}, {"realm": ["defrealm"]}]
         r = reduce_realms(realms, policies)
         self.assertTrue("defrealm" in r, r)
         self.assertTrue("localsql" in r, r)
 
-        policies = [{'realm': ["localsql"]},
-                    {'realm': ["localsql", "defrealm"]}]
+        policies = [{"realm": ["localsql"]}, {"realm": ["localsql", "defrealm"]}]
         r = reduce_realms(realms, policies)
         self.assertTrue("defrealm" in r)
         self.assertTrue("localsql" in r)
 
-        policies = [{'realm': ["realm1", "localsql", "realm2"]},
-                    {'realm': ["localsql", "realm1"]}]
+        policies = [
+            {"realm": ["realm1", "localsql", "realm2"]},
+            {"realm": ["localsql", "realm1"]},
+        ]
         r = reduce_realms(realms, policies)
         self.assertTrue("defrealm" not in r)
         self.assertTrue("localsql" in r)
@@ -317,8 +390,7 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(d, datetime(2016, 12, 23, 0, 0))
 
         d = parse_date("2017-04-27T12:00+0200")
-        self.assertEqual(d, datetime(2017, 4, 27, 12, 0,
-                                     tzinfo=tzoffset(None, 7200)))
+        self.assertEqual(d, datetime(2017, 4, 27, 12, 0, tzinfo=tzoffset(None, 7200)))
 
         d = parse_date("2016/04/03")
         # April 3rd
@@ -327,14 +399,14 @@ class UtilsTestCase(MyTestCase):
         d = parse_date("03.04.2016")
         # April 3rd
         self.assertEqual(d, datetime(2016, 4, 3, 0, 0))
-        self.assertEqual(parse_date('03/04/2016'), datetime(2016, 4, 3, 0, 0))
-        self.assertEqual(parse_date('01/01/20'), datetime(2020, 1, 1, 0, 0))
-        self.assertEqual(parse_date('01/15/20'), datetime(2020, 1, 15, 0, 0))
-        self.assertEqual(parse_date('15/01/20'), datetime(2020, 1, 15, 0, 0))
+        self.assertEqual(parse_date("03/04/2016"), datetime(2016, 4, 3, 0, 0))
+        self.assertEqual(parse_date("01/01/20"), datetime(2020, 1, 1, 0, 0))
+        self.assertEqual(parse_date("01/15/20"), datetime(2020, 1, 15, 0, 0))
+        self.assertEqual(parse_date("15/01/20"), datetime(2020, 1, 15, 0, 0))
 
         # Non matching date returns None
         self.assertEqual(parse_date("7 Januar 17"), None)
-        self.assertIsNone(parse_date('15/15'))
+        self.assertIsNone(parse_date("15/15"))
 
     def test_08_compare_condition(self):
         self.assertTrue(compare_condition("100", 100))
@@ -359,39 +431,44 @@ class UtilsTestCase(MyTestCase):
         self.assertFalse(compare_condition(">", 100))
 
         # Test new comparators
-        self.assertTrue(compare_condition('>=100', 100))
-        self.assertTrue(compare_condition('=> 100', 200))
-        self.assertFalse(compare_condition('>= 100', 99))
+        self.assertTrue(compare_condition(">=100", 100))
+        self.assertTrue(compare_condition("=> 100", 200))
+        self.assertFalse(compare_condition(">= 100", 99))
 
-        self.assertTrue(compare_condition('<=100', 100))
-        self.assertTrue(compare_condition('=< 100', 99))
-        self.assertFalse(compare_condition('<= 100', 101))
+        self.assertTrue(compare_condition("<=100", 100))
+        self.assertTrue(compare_condition("=< 100", 99))
+        self.assertFalse(compare_condition("<= 100", 101))
 
-        self.assertTrue(compare_condition('!=100', 99))
-        self.assertFalse(compare_condition('!= 100', 100))
+        self.assertTrue(compare_condition("!=100", 99))
+        self.assertFalse(compare_condition("!= 100", 100))
 
-        self.assertTrue(compare_condition('==100', 100))
-        self.assertFalse(compare_condition('== 100', 99))
+        self.assertTrue(compare_condition("==100", 100))
+        self.assertFalse(compare_condition("== 100", 99))
 
     def test_09_get_data_from_params(self):
         config_description = {
-            "local":  {
-                'cakey': 'string',
-                'cacert': 'string',
-                'openssl.cnf': 'string',
-                'WorkingDir': 'string',
-                'CSRDir': 'sting',
-                'CertificateDir': 'string',
-                'CRLDir': 'string',
-                'CRL_Validity_Period': 'int',
-                'CRL_Overlap_Period': 'int'}}
-        params = {"type": "local", "cakey": "key", "cacert": "cert",
-                  "bindpw": "secret", "type.bindpw": "password"}
-        data, types, desc = get_data_from_params(params,
-                                                 ["caconnector", "type"],
-                                                 config_description,
-                                                 "CA connector",
-                                                 "local")
+            "local": {
+                "cakey": "string",
+                "cacert": "string",
+                "openssl.cnf": "string",
+                "WorkingDir": "string",
+                "CSRDir": "sting",
+                "CertificateDir": "string",
+                "CRLDir": "string",
+                "CRL_Validity_Period": "int",
+                "CRL_Overlap_Period": "int",
+            }
+        }
+        params = {
+            "type": "local",
+            "cakey": "key",
+            "cacert": "cert",
+            "bindpw": "secret",
+            "type.bindpw": "password",
+        }
+        data, types, desc = get_data_from_params(
+            params, ["caconnector", "type"], config_description, "CA connector", "local"
+        )
         self.assertEqual(data.get("cakey"), "key")
         self.assertEqual(data.get("bindpw"), "secret")
         self.assertEqual(types.get("bindpw"), "password")
@@ -431,47 +508,70 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(compare_value_value(1000, "==", "1000"))
         self.assertTrue(compare_value_value("99", "<", "1000"))
 
-        self.assertTrue(compare_value_value(100, '>', '10'))
-        self.assertTrue(compare_value_value(100, '>=', '10'))
-        self.assertTrue(compare_value_value("100", '=>', 10))
-        self.assertTrue(compare_value_value(100, '>=', '100'))
-        self.assertFalse(compare_value_value(100, '>=', '101'))
+        self.assertTrue(compare_value_value(100, ">", "10"))
+        self.assertTrue(compare_value_value(100, ">=", "10"))
+        self.assertTrue(compare_value_value("100", "=>", 10))
+        self.assertTrue(compare_value_value(100, ">=", "100"))
+        self.assertFalse(compare_value_value(100, ">=", "101"))
 
-        self.assertTrue(compare_value_value('ABC', '=', 'ABC'))
-        self.assertTrue(compare_value_value('ABC', '!=', 'ABD'))
+        self.assertTrue(compare_value_value("ABC", "=", "ABC"))
+        self.assertTrue(compare_value_value("ABC", "!=", "ABD"))
 
-        self.assertTrue(compare_value_value(10, '<', '100'))
-        self.assertTrue(compare_value_value(10, '<=', '100'))
-        self.assertTrue(compare_value_value("10", '=<', 100))
-        self.assertTrue(compare_value_value(10, '<=', '10'))
-        self.assertFalse(compare_value_value(10, '<=', '9'))
+        self.assertTrue(compare_value_value(10, "<", "100"))
+        self.assertTrue(compare_value_value(10, "<=", "100"))
+        self.assertTrue(compare_value_value("10", "=<", 100))
+        self.assertTrue(compare_value_value(10, "<=", "10"))
+        self.assertFalse(compare_value_value(10, "<=", "9"))
 
         # compare dates
-        self.assertTrue(compare_value_value(
-                        datetime.now(tzlocal()).strftime(DATE_FORMAT), ">",
-                        "2017-01-01T10:00+0200"))
-        self.assertFalse(compare_value_value(
-            datetime.now(tzlocal()).strftime(DATE_FORMAT), "<",
-            "2017-01-01T10:00+0200"))
+        self.assertTrue(
+            compare_value_value(
+                datetime.now(tzlocal()).strftime(DATE_FORMAT),
+                ">",
+                "2017-01-01T10:00+0200",
+            )
+        )
+        self.assertFalse(
+            compare_value_value(
+                datetime.now(tzlocal()).strftime(DATE_FORMAT),
+                "<",
+                "2017-01-01T10:00+0200",
+            )
+        )
         # The timestamp in 10 hours is bigger than the current time
-        self.assertTrue(compare_value_value(
-            (datetime.now(tzlocal()) + timedelta(hours=10)).strftime(DATE_FORMAT),
-            ">", datetime.now(tzlocal()).strftime(DATE_FORMAT)))
+        self.assertTrue(
+            compare_value_value(
+                (datetime.now(tzlocal()) + timedelta(hours=10)).strftime(DATE_FORMAT),
+                ">",
+                datetime.now(tzlocal()).strftime(DATE_FORMAT),
+            )
+        )
 
-        self.assertTrue(compare_value_value('+3h', '>', ''))
-        self.assertFalse(compare_value_value('2017/04/20 11:30+0200', '>',
-                                             datetime.now(tzlocal()).strftime(DATE_FORMAT)))
+        self.assertTrue(compare_value_value("+3h", ">", ""))
+        self.assertFalse(
+            compare_value_value(
+                "2017/04/20 11:30+0200",
+                ">",
+                datetime.now(tzlocal()).strftime(DATE_FORMAT),
+            )
+        )
 
-        self.assertTrue(compare_value_value('2020-01-15T00:00', '==',
-                                            datetime(2020, 1, 15).strftime(DATE_FORMAT)))
+        self.assertTrue(
+            compare_value_value(
+                "2020-01-15T00:00", "==", datetime(2020, 1, 15).strftime(DATE_FORMAT)
+            )
+        )
         # unexpected result: The date string can not be parsed since dateutil.parser
         # does not understand locale dates. So the strings themselves are compared
         # since parse_date() returns 'None'
-        self.assertTrue(compare_value_value('16. März 2020', '<',
-                                            datetime(2020, 3, 15).strftime(DATE_FORMAT)))
+        self.assertTrue(
+            compare_value_value(
+                "16. März 2020", "<", datetime(2020, 3, 15).strftime(DATE_FORMAT)
+            )
+        )
 
         # check for unknown comparator
-        self.assertRaises(Exception, compare_value_value, 5, '~=', 5)
+        self.assertRaises(Exception, compare_value_value, 5, "~=", 5)
 
     def test_13_parse_time_offset_from_now(self):
         td = parse_timedelta("+5s")
@@ -503,7 +603,7 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(td, timedelta(hours=-3))
 
     def test_14_convert_timestamp_to_utc(self):
-        d = datetime.now(tz=gettz('America/New York'))
+        d = datetime.now(tz=gettz("America/New York"))
         d_utc = convert_timestamp_to_utc(d)
         self.assertGreater(d_utc, d.replace(tzinfo=None))
 
@@ -531,22 +631,43 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(convert_column_to_unicode("yes"), "yes")
 
     def test_18_censor_connect_string(self):
-        self.assertEqual(censor_connect_string("sqlite:////home/foo/privacyidea/privacyidea/data.sqlite"),
-                         "sqlite:////home/foo/privacyidea/privacyidea/data.sqlite")
-        self.assertEqual(censor_connect_string("mysql://pi@localhost/pi"),
-                         "mysql://pi@localhost/pi")
-        self.assertEqual(censor_connect_string("mysql://pi:kW44sqqWtGYX@localhost/pi"),
-                         "mysql://pi:***@localhost/pi")
-        self.assertEqual(censor_connect_string("psql+odbc://pi@localhost/pi"),
-                         "psql+odbc://pi@localhost/pi")
-        self.assertEqual(censor_connect_string("psql+odbc://pi:MySecretPassword123466$@localhost/pi"),
-                         "psql+odbc://pi:***@localhost/pi")
-        self.assertEqual(censor_connect_string("mysql://pi:kW44s%40%40qqWtGYX@localhost/pi"),
-                         "mysql://pi:***@localhost/pi")
-        self.assertEqual(censor_connect_string("mysql://knöbel:föö@localhost/pi"),
-                         "mysql://knöbel:***@localhost/pi")
-        self.assertEqual(censor_connect_string("oracle+cx_oracle://pi:MySecretPassword1234@localhost:1521/?service_name=my_database"),
-                         "oracle+cx_oracle://pi:***@localhost:1521/?service_name=my_database")
+        self.assertEqual(
+            censor_connect_string(
+                "sqlite:////home/foo/privacyidea/privacyidea/data.sqlite"
+            ),
+            "sqlite:////home/foo/privacyidea/privacyidea/data.sqlite",
+        )
+        self.assertEqual(
+            censor_connect_string("mysql://pi@localhost/pi"), "mysql://pi@localhost/pi"
+        )
+        self.assertEqual(
+            censor_connect_string("mysql://pi:kW44sqqWtGYX@localhost/pi"),
+            "mysql://pi:***@localhost/pi",
+        )
+        self.assertEqual(
+            censor_connect_string("psql+odbc://pi@localhost/pi"),
+            "psql+odbc://pi@localhost/pi",
+        )
+        self.assertEqual(
+            censor_connect_string(
+                "psql+odbc://pi:MySecretPassword123466$@localhost/pi"
+            ),
+            "psql+odbc://pi:***@localhost/pi",
+        )
+        self.assertEqual(
+            censor_connect_string("mysql://pi:kW44s%40%40qqWtGYX@localhost/pi"),
+            "mysql://pi:***@localhost/pi",
+        )
+        self.assertEqual(
+            censor_connect_string("mysql://knöbel:föö@localhost/pi"),
+            "mysql://knöbel:***@localhost/pi",
+        )
+        self.assertEqual(
+            censor_connect_string(
+                "oracle+cx_oracle://pi:MySecretPassword1234@localhost:1521/?service_name=my_database"
+            ),
+            "oracle+cx_oracle://pi:***@localhost:1521/?service_name=my_database",
+        )
 
     def test_19_truncate_comma_list(self):
         r = truncate_comma_list("123456,234567,345678", 19)
@@ -584,22 +705,30 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(r)
 
         # check the validation of a generated password with square brackets
-        password = generate_password(size=3, requirements=['[', '[', '['])
+        password = generate_password(size=3, requirements=["[", "[", "["])
         r, c = check_pin_contents(password, "s")
         self.assertTrue(r)
 
         r, c = check_pin_contents("abc", "nc")
         self.assertFalse(r)
-        self.assertEqual("Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['n']), c)
+        self.assertEqual(
+            "Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY["n"]), c
+        )
 
         r, c = check_pin_contents("123", "nc")
         self.assertFalse(r)
-        self.assertEqual(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['c']), c)
+        self.assertEqual(
+            r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY["c"]), c
+        )
 
         r, c = check_pin_contents("123", "ncs")
         self.assertFalse(r)
-        self.assertTrue(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['c'] in c), c)
-        self.assertTrue(r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY['s'] in c), c)
+        self.assertTrue(
+            r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY["c"] in c), c
+        )
+        self.assertTrue(
+            r"Missing character in PIN: {}".format(CHARLIST_CONTENTPOLICY["s"] in c), c
+        )
 
         r, c = check_pin_contents("1234", "")
         self.assertFalse(r)
@@ -621,8 +750,12 @@ class UtilsTestCase(MyTestCase):
 
         r, c = check_pin_contents("@@@@", "+cn")
         self.assertFalse(r)
-        self.assertEqual(c, "Missing character in PIN: {}{}".format(CHARLIST_CONTENTPOLICY['c'],
-                                                                    CHARLIST_CONTENTPOLICY['n']))
+        self.assertEqual(
+            c,
+            "Missing character in PIN: {}{}".format(
+                CHARLIST_CONTENTPOLICY["c"], CHARLIST_CONTENTPOLICY["n"]
+            ),
+        )
 
         # check for exclusion
         # No special character
@@ -661,11 +794,17 @@ class UtilsTestCase(MyTestCase):
     def test_21_get_module_class(self):
         r = get_module_class("privacyidea.lib.auditmodules.sqlaudit", "Audit", "log")
         from privacyidea.lib.auditmodules.sqlaudit import Audit
+
         self.assertEqual(r, Audit)
 
         # Fails to return the class, if the method does not exist
-        self.assertRaises(NameError, get_module_class, "privacyidea.lib.auditmodules.sqlaudit", "Audit",
-                          "this_method_does_not_exist")
+        self.assertRaises(
+            NameError,
+            get_module_class,
+            "privacyidea.lib.auditmodules.sqlaudit",
+            "Audit",
+            "this_method_does_not_exist",
+        )
 
         # Fails if the class does not exist
         with self.assertRaises(ImportError):
@@ -694,8 +833,7 @@ class UtilsTestCase(MyTestCase):
         self.assertRaises(Exception, decode_base32check, client_component)
 
     def test_23_get_client_ip(self):
-
-        class RequestMock():
+        class RequestMock:
             blueprint = None
             remote_addr = None
             all_data = {}
@@ -735,7 +873,10 @@ class UtilsTestCase(MyTestCase):
         ip = get_client_ip(r, "10.0.0.1>172.16.1.2>0.0.0.0/0")
         self.assertEqual(ip, client_parameter)
         # ... even if we have multiple proxy settings
-        ip = get_client_ip(r, "10.0.0.1>198.168.1.3, 10.0.0.1>172.16.1.2>1.2.3.4,   10.0.0.1>172.16.1.2>0.0.0.0/0")
+        ip = get_client_ip(
+            r,
+            "10.0.0.1>198.168.1.3, 10.0.0.1>172.16.1.2>1.2.3.4,   10.0.0.1>172.16.1.2>0.0.0.0/0",
+        )
         self.assertEqual(ip, client_parameter)
         # Check situation if there is no X-Forwarded-For header, but a client parameter:
         r.access_route = [direct_client]
@@ -747,81 +888,88 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(ip, direct_client)
 
     def test_24_sanity_name_check(self):
-        self.assertTrue(sanity_name_check('Hello_World'))
+        self.assertTrue(sanity_name_check("Hello_World"))
         with self.assertRaisesRegex(Exception, "non conformant characters in the name"):
-            sanity_name_check('Hello World!')
-        self.assertTrue(sanity_name_check('Hello World', name_exp='^[A-Za-z\\ ]+$'))
+            sanity_name_check("Hello World!")
+        self.assertTrue(sanity_name_check("Hello World", name_exp="^[A-Za-z\\ ]+$"))
         with self.assertRaisesRegex(Exception, "non conformant characters in the name"):
-            sanity_name_check('Hello_World', name_exp='^[A-Za-z]+$')
+            sanity_name_check("Hello_World", name_exp="^[A-Za-z]+$")
 
     def test_25_encodings(self):
-        u = 'Hello Wörld'
-        b = b'Hello World'
+        u = "Hello Wörld"
+        b = b"Hello World"
         self.assertEqual(to_utf8(None), None)
-        self.assertEqual(to_utf8(u), u.encode('utf8'))
+        self.assertEqual(to_utf8(u), u.encode("utf8"))
         self.assertEqual(to_utf8(b), b)
 
         self.assertEqual(to_unicode(u), u)
-        self.assertEqual(to_unicode(b), b.decode('utf8'))
+        self.assertEqual(to_unicode(b), b.decode("utf8"))
         self.assertEqual(to_unicode(None), None)
         self.assertEqual(to_unicode(10), 10)
 
-        self.assertEqual(to_bytes(u), u.encode('utf8'))
+        self.assertEqual(to_bytes(u), u.encode("utf8"))
         self.assertEqual(to_bytes(b), b)
         self.assertEqual(to_bytes(10), 10)
 
-        self.assertEqual(to_byte_string(u), u.encode('utf8'))
+        self.assertEqual(to_byte_string(u), u.encode("utf8"))
         self.assertEqual(to_byte_string(b), b)
-        self.assertEqual(to_byte_string(10), b'10')
+        self.assertEqual(to_byte_string(10), b"10")
 
     def test_26_conversions(self):
-        self.assertEqual(hexlify_and_unicode('Hallo'), '48616c6c6f')
-        self.assertEqual(hexlify_and_unicode(b'Hallo'), '48616c6c6f')
-        self.assertEqual(hexlify_and_unicode(b'\x00\x01\x02\xab'), '000102ab')
+        self.assertEqual(hexlify_and_unicode("Hallo"), "48616c6c6f")
+        self.assertEqual(hexlify_and_unicode(b"Hallo"), "48616c6c6f")
+        self.assertEqual(hexlify_and_unicode(b"\x00\x01\x02\xab"), "000102ab")
 
-        self.assertEqual(b32encode_and_unicode('Hallo'), 'JBQWY3DP')
-        self.assertEqual(b32encode_and_unicode(b'Hallo'), 'JBQWY3DP')
-        self.assertEqual(b32encode_and_unicode(b'\x00\x01\x02\xab'), 'AAAQFKY=')
+        self.assertEqual(b32encode_and_unicode("Hallo"), "JBQWY3DP")
+        self.assertEqual(b32encode_and_unicode(b"Hallo"), "JBQWY3DP")
+        self.assertEqual(b32encode_and_unicode(b"\x00\x01\x02\xab"), "AAAQFKY=")
 
-        self.assertEqual(b64encode_and_unicode('Hallo'), 'SGFsbG8=')
-        self.assertEqual(b64encode_and_unicode(b'Hallo'), 'SGFsbG8=')
-        self.assertEqual(b64encode_and_unicode(b'\x00\x01\x02\xab'), 'AAECqw==')
+        self.assertEqual(b64encode_and_unicode("Hallo"), "SGFsbG8=")
+        self.assertEqual(b64encode_and_unicode(b"Hallo"), "SGFsbG8=")
+        self.assertEqual(b64encode_and_unicode(b"\x00\x01\x02\xab"), "AAECqw==")
 
-        self.assertEqual(urlsafe_b64encode_and_unicode('Hallo'), 'SGFsbG8=')
-        self.assertEqual(urlsafe_b64encode_and_unicode(b'Hallo'), 'SGFsbG8=')
-        self.assertEqual(urlsafe_b64encode_and_unicode(b'\x00\x01\x02\xab'), 'AAECqw==')
-        self.assertEqual(urlsafe_b64encode_and_unicode(b'\xfa\xfb\xfc\xfd\xfe\xff'),
-                          '-vv8_f7_')
+        self.assertEqual(urlsafe_b64encode_and_unicode("Hallo"), "SGFsbG8=")
+        self.assertEqual(urlsafe_b64encode_and_unicode(b"Hallo"), "SGFsbG8=")
+        self.assertEqual(urlsafe_b64encode_and_unicode(b"\x00\x01\x02\xab"), "AAECqw==")
+        self.assertEqual(
+            urlsafe_b64encode_and_unicode(b"\xfa\xfb\xfc\xfd\xfe\xff"), "-vv8_f7_"
+        )
 
     def test_27_images(self):
-        hallo_qr_png = "iVBORw0KGgoAAAANSUhEUgAAASIAAAEiAQAAAAB1xeIbAAABC0lEQV" \
-                       "R42u2aQQ6EIBAEJ7sP8El8nSftA0xYGBiM8eIe6E1McTCofSpnmka1" \
-                       "cmNkQ4UKFSpUj1DZGO86//ghriRXvezOQPWbarB3xBP7mM0bsF/Kvh" \
-                       "V6asRzFL+3AezV7H0GezV7s2036v4/fp8r+94B+L2G/cw5vfgTOUfG" \
-                       "/hgV9n5Jp7Bfyr4nSzf92QGwl6211epLZMwSCy6es7zu83aC3di7+8" \
-                       "BelDFtRpzeAVs4P+zXrrWVc26nx742kTHVOad3QCn4vTzfz1RPztHv" \
-                       "a3u8DAuCve59ToR8fwrsa6Xs4wEM96Hulez9PeaM+7CX+n0P+acFF/" \
-                       "aSnBOfcY26l+d7/i1AhQoVqmeqvi4sW6dMYAvIAAAAAElFTkSuQmCC"
-        self.assertEqual(create_img('Hallo'), 'data:image/png;base64,{0!s}'.format(hallo_qr_png))
+        hallo_qr_png = (
+            "iVBORw0KGgoAAAANSUhEUgAAASIAAAEiAQAAAAB1xeIbAAABC0lEQV"
+            "R42u2aQQ6EIBAEJ7sP8El8nSftA0xYGBiM8eIe6E1McTCofSpnmka1"
+            "cmNkQ4UKFSpUj1DZGO86//ghriRXvezOQPWbarB3xBP7mM0bsF/Kvh"
+            "V6asRzFL+3AezV7H0GezV7s2036v4/fp8r+94B+L2G/cw5vfgTOUfG"
+            "/hgV9n5Jp7Bfyr4nSzf92QGwl6211epLZMwSCy6es7zu83aC3di7+8"
+            "BelDFtRpzeAVs4P+zXrrWVc26nx742kTHVOad3QCn4vTzfz1RPztHv"
+            "a3u8DAuCve59ToR8fwrsa6Xs4wEM96Hulez9PeaM+7CX+n0P+acFF/"
+            "aSnBOfcY26l+d7/i1AhQoVqmeqvi4sW6dMYAvIAAAAAElFTkSuQmCC"
+        )
+        self.assertEqual(
+            create_img("Hallo"), "data:image/png;base64,{0!s}".format(hallo_qr_png)
+        )
 
     def test_28_yubikey_utils(self):
-        self.assertEqual(modhex_encode(b'\x47'), 'fi')
-        self.assertEqual(modhex_encode(b'\xba\xad\xf0\x0d'), 'nlltvcct')
-        self.assertEqual(modhex_encode(binascii.unhexlify('0123456789abcdef')),
-                          'cbdefghijklnrtuv')
-        self.assertEqual(modhex_encode('Hallo'), 'fjhbhrhrhv')
+        self.assertEqual(modhex_encode(b"\x47"), "fi")
+        self.assertEqual(modhex_encode(b"\xba\xad\xf0\x0d"), "nlltvcct")
+        self.assertEqual(
+            modhex_encode(binascii.unhexlify("0123456789abcdef")), "cbdefghijklnrtuv"
+        )
+        self.assertEqual(modhex_encode("Hallo"), "fjhbhrhrhv")
         # and the other way around
-        self.assertEqual(modhex_decode('fi'), b'\x47')
-        self.assertEqual(modhex_decode('nlltvcct'), b'\xba\xad\xf0\x0d')
-        self.assertEqual(modhex_decode('cbdefghijklnrtuv'),
-                          binascii.unhexlify('0123456789abcdef'))
-        self.assertEqual(modhex_decode('fjhbhrhrhv'), b'Hallo')
+        self.assertEqual(modhex_decode("fi"), b"\x47")
+        self.assertEqual(modhex_decode("nlltvcct"), b"\xba\xad\xf0\x0d")
+        self.assertEqual(
+            modhex_decode("cbdefghijklnrtuv"), binascii.unhexlify("0123456789abcdef")
+        )
+        self.assertEqual(modhex_decode("fjhbhrhrhv"), b"Hallo")
         # fail with invalid modhex
-        self.assertRaises((binascii.Error, TypeError), modhex_decode, 'nlltvcc')
+        self.assertRaises((binascii.Error, TypeError), modhex_decode, "nlltvcc")
 
         # now test the crc function
-        self.assertEqual(checksum(b'\x01\x02\x03\x04'), 0xc66e)
-        self.assertEqual(checksum(b'\x01\x02\x03\x04\x919'), 0xf0b8)
+        self.assertEqual(checksum(b"\x01\x02\x03\x04"), 0xC66E)
+        self.assertEqual(checksum(b"\x01\x02\x03\x04\x919"), 0xF0B8)
 
     def test_29_check_ip(self):
         found, excluded = check_ip_in_policy("10.0.1.2", ["10.0.1.0/24", "1.1.1.1"])
@@ -833,7 +981,9 @@ class UtilsTestCase(MyTestCase):
         self.assertTrue(found)
 
         # run a test for empty condition
-        found, excluded = check_ip_in_policy("10.0.1.2", ["10.0.1.0/24", "!10.0.1.2", '', None])
+        found, excluded = check_ip_in_policy(
+            "10.0.1.2", ["10.0.1.0/24", "!10.0.1.2", "", None]
+        )
         self.assertTrue(excluded)
         self.assertTrue(found)
 
@@ -846,11 +996,11 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(otp, "12345678")
 
     def test_31_create_tag_dict(self):
-        class UserAgentMock():
+        class UserAgentMock:
             string = "<b>hello world</b>"
             browser = "browser"
 
-        class RequestMock():
+        class RequestMock:
             user_agent = UserAgentMock()
             path = "/validate/check"
             url_root = ""
@@ -860,7 +1010,9 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(dict1["ua_string"], "<b>hello world</b>")
         self.assertEqual(dict1["action"], "/validate/check")
         self.assertEqual(dict1["recipient_givenname"], "<b>Sömeone</b>")
-        dict2 = create_tag_dict(request=RequestMock(), recipient=recipient, escape_html=True)
+        dict2 = create_tag_dict(
+            request=RequestMock(), recipient=recipient, escape_html=True
+        )
         self.assertEqual(dict2["ua_string"], "&lt;b&gt;hello world&lt;/b&gt;")
         self.assertEqual(dict2["action"], "/validate/check")
         self.assertEqual(dict2["recipient_givenname"], "&lt;b&gt;Sömeone&lt;/b&gt;")
@@ -881,9 +1033,9 @@ class UtilsTestCase(MyTestCase):
         self.assertRaises(Exception, check_serial_valid, "")
 
     def test_33_determine_logged_in_user(self):
-        (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "user",
-                                                                                      "username": "hans",
-                                                                                      "realm": "realm1"}, {})
+        (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams(
+            {"role": "user", "username": "hans", "realm": "realm1"}, {}
+        )
 
         self.assertEqual(role, "user")
         self.assertEqual(user, "hans")
@@ -891,11 +1043,10 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(adminuser, None)
         self.assertEqual(adminrealm, None)
 
-        (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams({"role": "admin",
-                                                                                      "username": "hans",
-                                                                                      "realm": "realm1"},
-                                                                                     {"user": "peter",
-                                                                                      "realm": "domain"})
+        (role, user, realm, adminuser, adminrealm) = determine_logged_in_userparams(
+            {"role": "admin", "username": "hans", "realm": "realm1"},
+            {"user": "peter", "realm": "domain"},
+        )
 
         self.assertEqual(role, "admin")
         self.assertEqual(user, "peter")
@@ -903,60 +1054,63 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(adminuser, "hans")
         self.assertEqual(adminrealm, "realm1")
 
-        self.assertRaises(PolicyError, determine_logged_in_userparams,
-                          {"role": "marshal",
-                           "username": "Wyatt Earp",
-                           "realm": "Wild West"},
-                          {"user": "Dave Rudabaugh",
-                           "realm": "Dodge City"})
+        self.assertRaises(
+            PolicyError,
+            determine_logged_in_userparams,
+            {"role": "marshal", "username": "Wyatt Earp", "realm": "Wild West"},
+            {"user": "Dave Rudabaugh", "realm": "Dodge City"},
+        )
 
     def test_34_compare_generic_condition(self):
-
         def mock_attribute(key):
-            attr = {"a": "10",
-                    "b": "100",
-                    "c": "1000"}
+            attr = {"a": "10", "b": "100", "c": "1000"}
             return attr.get(key)
 
-        self.assertTrue(compare_generic_condition("a<100",
-                                                  mock_attribute,
-                                                  "Error {0!s}"))
+        self.assertTrue(
+            compare_generic_condition("a<100", mock_attribute, "Error {0!s}")
+        )
 
-        self.assertTrue(compare_generic_condition("a <100",
-                                                  mock_attribute,
-                                                  "Error {0!s}"))
+        self.assertTrue(
+            compare_generic_condition("a <100", mock_attribute, "Error {0!s}")
+        )
 
-        self.assertTrue(compare_generic_condition("b==100",
-                                                  mock_attribute,
-                                                  "Error {0!s}"))
-
-        # Wrong condition
-        self.assertFalse(compare_generic_condition("a== 100",
-                                                   mock_attribute,
-                                                   "Error {0!s}"))
+        self.assertTrue(
+            compare_generic_condition("b==100", mock_attribute, "Error {0!s}")
+        )
 
         # Wrong condition
-        self.assertFalse(compare_generic_condition("b>100",
-                                                   mock_attribute,
-                                                   "Error {0!s}"))
+        self.assertFalse(
+            compare_generic_condition("a== 100", mock_attribute, "Error {0!s}")
+        )
 
         # Wrong condition
-        self.assertFalse(compare_generic_condition("c < 500",
-                                                   mock_attribute,
-                                                   "Error {0!s}"))
+        self.assertFalse(
+            compare_generic_condition("b>100", mock_attribute, "Error {0!s}")
+        )
 
         # Wrong condition
-        self.assertFalse(compare_generic_condition("c <500",
-                                                   mock_attribute,
-                                                   "Error {0!s}"))
+        self.assertFalse(
+            compare_generic_condition("c < 500", mock_attribute, "Error {0!s}")
+        )
+
+        # Wrong condition
+        self.assertFalse(
+            compare_generic_condition("c <500", mock_attribute, "Error {0!s}")
+        )
 
         # Wrong entry, that is not processed
-        self.assertRaises(Exception, compare_generic_condition,
-                          "c 500", mock_attribute, "Error {0!s}")
+        self.assertRaises(
+            Exception, compare_generic_condition, "c 500", mock_attribute, "Error {0!s}"
+        )
 
         # Wrong entry, that cannot be processed
-        self.assertRaises(Exception, compare_generic_condition,
-                          "b!~100", mock_attribute, "Error {0!s}")
+        self.assertRaises(
+            Exception,
+            compare_generic_condition,
+            "b!~100",
+            mock_attribute,
+            "Error {0!s}",
+        )
 
     def test_34_to_list(self):
         # Simple string
@@ -1032,9 +1186,13 @@ class UtilsTestCase(MyTestCase):
         user_agents = [
             ("privacyidea-cp", "privacyidea-cp", None, None),
             ("privacyidea-cp/2.0", "privacyidea-cp", "2.0", None),
-            ("Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 "
-             "Firefox/47.0", "Mozilla", "5.0",
-             "(Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"),
+            (
+                "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 "
+                "Firefox/47.0",
+                "Mozilla",
+                "5.0",
+                "(Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
+            ),
             ("privacyIDEA-Keycloak", "privacyIDEA-Keycloak", None, None),
             ("privacyIDEA-Keycloak/20 java/8", "privacyIDEA-Keycloak", "20", "java/8"),
             ("PrivacyIDEA-ADFS", "PrivacyIDEA-ADFS", None, None),
@@ -1053,7 +1211,7 @@ class UtilsTestCase(MyTestCase):
             ("SomePlugin/ Some Comment", "SomePlugin", None, None),
             # no user-agent string given
             ("", "", None, None),
-            (None, "", None, None)
+            (None, "", None, None),
         ]
 
         for val in user_agents:
@@ -1061,14 +1219,16 @@ class UtilsTestCase(MyTestCase):
             self.assertEqual(res, val[1:], res)
 
     def test_38_get_computer_name(self):
-        data = {"privacyidea-cp/1.1.1 Windows/Laptop-1": "Laptop-1",
-                "privacyidea-cp/1.1.1 ComputerName/Laptop-2": "Laptop-2",
-                "privacyidea-pam/2.2.2 Linux/Server-3": "Server-3",
-                "privacyidea-pam/2.2.2 Hostname/Server-4": "Server-4",
-                "privacyidea-mac/3.3.3 Mac/Server-5": "Server-5",
-                "privacyidea-mac/3.3.3": None,
-                "": None,
-                None: None}
+        data = {
+            "privacyidea-cp/1.1.1 Windows/Laptop-1": "Laptop-1",
+            "privacyidea-cp/1.1.1 ComputerName/Laptop-2": "Laptop-2",
+            "privacyidea-pam/2.2.2 Linux/Server-3": "Server-3",
+            "privacyidea-pam/2.2.2 Hostname/Server-4": "Server-4",
+            "privacyidea-mac/3.3.3 Mac/Server-5": "Server-5",
+            "privacyidea-mac/3.3.3": None,
+            "": None,
+            None: None,
+        }
 
         for k, v in data.items():
             res = get_computer_name_from_user_agent(k)

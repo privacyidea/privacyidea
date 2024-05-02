@@ -18,57 +18,40 @@ from sqlalchemy import Integer, Unicode, Boolean
 from sqlalchemy.sql import select
 
 metadata = MetaData()
-linotp_token_table = Table('Token', metadata,
-                           Column('LinOtpTokenId', Integer(), primary_key=True, nullable=False),
-                           Column(
-                               'LinOtpTokenDesc', Unicode(80), default=''),
-                           Column('LinOtpTokenSerialnumber', Unicode(
-                               40), default='', unique=True, nullable=False,
-                                  index=True),
-                           Column(
-                               'LinOtpTokenType', Unicode(30), default='HMAC',
-                               index=True),
-                           Column(
-                               'LinOtpTokenInfo', Unicode(2000), default=''),
-                           Column(
-                               'LinOtpTokenPinUser', Unicode(512), default=''),
-                           Column(
-                               'LinOtpTokenPinUserIV', Unicode(32),
-                               default=''),
-                           Column(
-                               'LinOtpTokenPinSO', Unicode(512), default=''),
-                           Column(
-                               'LinOtpTokenPinSOIV', Unicode(32), default=''),
-                           Column(
-                               'LinOtpIdResolver', Unicode(120), default='',
-                               index=True),
-                           Column(
-                               'LinOtpIdResClass', Unicode(120), default=''),
-                           Column(
-                               'LinOtpUserid', Unicode(320), default='',
-                               index=True),
-                           Column(
-                               'LinOtpSeed', Unicode(32), default=''),
-                           Column(
-                               'LinOtpOtpLen', Integer(), default=6),
-                           Column(
-                               'LinOtpPinHash', Unicode(512), default=''),
-                           Column(
-                               'LinOtpKeyEnc', Unicode(1024), default=''),
-                           Column(
-                               'LinOtpKeyIV', Unicode(32), default=''),
-                           Column(
-                               'LinOtpMaxFail', Integer(), default=10),
-                           Column(
-                               'LinOtpIsactive', Boolean(), default=True),
-                           Column(
-                               'LinOtpFailCount', Integer(), default=0),
-                           Column('LinOtpCount', Integer(), default=0),
-                           Column(
-                               'LinOtpCountWindow', Integer(), default=10),
-                           Column(
-                               'LinOtpSyncWindow', Integer(), default=1000)
-                           )
+linotp_token_table = Table(
+    "Token",
+    metadata,
+    Column("LinOtpTokenId", Integer(), primary_key=True, nullable=False),
+    Column("LinOtpTokenDesc", Unicode(80), default=""),
+    Column(
+        "LinOtpTokenSerialnumber",
+        Unicode(40),
+        default="",
+        unique=True,
+        nullable=False,
+        index=True,
+    ),
+    Column("LinOtpTokenType", Unicode(30), default="HMAC", index=True),
+    Column("LinOtpTokenInfo", Unicode(2000), default=""),
+    Column("LinOtpTokenPinUser", Unicode(512), default=""),
+    Column("LinOtpTokenPinUserIV", Unicode(32), default=""),
+    Column("LinOtpTokenPinSO", Unicode(512), default=""),
+    Column("LinOtpTokenPinSOIV", Unicode(32), default=""),
+    Column("LinOtpIdResolver", Unicode(120), default="", index=True),
+    Column("LinOtpIdResClass", Unicode(120), default=""),
+    Column("LinOtpUserid", Unicode(320), default="", index=True),
+    Column("LinOtpSeed", Unicode(32), default=""),
+    Column("LinOtpOtpLen", Integer(), default=6),
+    Column("LinOtpPinHash", Unicode(512), default=""),
+    Column("LinOtpKeyEnc", Unicode(1024), default=""),
+    Column("LinOtpKeyIV", Unicode(32), default=""),
+    Column("LinOtpMaxFail", Integer(), default=10),
+    Column("LinOtpIsactive", Boolean(), default=True),
+    Column("LinOtpFailCount", Integer(), default=0),
+    Column("LinOtpCount", Integer(), default=0),
+    Column("LinOtpCountWindow", Integer(), default=10),
+    Column("LinOtpSyncWindow", Integer(), default=1000),
+)
 
 
 def get_linotp_uri(config_file):
@@ -85,9 +68,12 @@ def get_linotp_uri(config_file):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("-c", "--config",
-                        help="LinOTP config file. We only need the SQLALCHEMY_DATABASE_URI.",
-                        required=True)
+    parser.add_argument(
+        "-c",
+        "--config",
+        help="LinOTP config file. We only need the SQLALCHEMY_DATABASE_URI.",
+        required=True,
+    )
     args = parser.parse_args()
 
     # Parse data
@@ -99,12 +85,14 @@ def main():
     linotp_engine = create_engine(SQL_URI)
     conn_linotp = linotp_engine.connect()
 
-    s = select([linotp_token_table.c.LinOtpTokenSerialnumber, linotp_token_table.c.LinOtpCount])
+    s = select(
+        [linotp_token_table.c.LinOtpTokenSerialnumber, linotp_token_table.c.LinOtpCount]
+    )
     result = conn_linotp.execute(s)
 
     for r in result:
         print("{0!s}, {1!s}".format(r.LinOtpTokenSerialnumber, r.LinOtpCount))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

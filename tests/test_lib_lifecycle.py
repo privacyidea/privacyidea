@@ -1,6 +1,7 @@
 """
 This file contains the tests for the lifecycle module lib/lifecycle.py
 """
+
 import json
 from mock import mock
 
@@ -34,9 +35,9 @@ class LifecycleTestCase(MyTestCase):
         finalizer1 = mock.MagicMock()
         finalizer2 = mock.MagicMock()
         # test that we can use finalizers
-        with self.app.test_request_context('/token/',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/token/", method="GET", headers={"Authorization": self.at}
+        ):
             register_finalizer(finalizer1)
             register_finalizer(finalizer2)
             res = self.app.full_dispatch_request()
@@ -45,9 +46,9 @@ class LifecycleTestCase(MyTestCase):
         finalizer1.assert_called_once()
         finalizer2.assert_called_once()
         # test that they are not called in the next request
-        with self.app.test_request_context('/token/',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/token/", method="GET", headers={"Authorization": self.at}
+        ):
             res = self.app.full_dispatch_request()
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
@@ -59,9 +60,9 @@ class LifecycleTestCase(MyTestCase):
         finalizer1.side_effect = RuntimeError()
         finalizer2 = mock.MagicMock()
         # test that we can use finalizers
-        with self.app.test_request_context('/token/',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/token/", method="GET", headers={"Authorization": self.at}
+        ):
             register_finalizer(finalizer1)
             register_finalizer(finalizer2)
             res = self.app.full_dispatch_request()
@@ -69,4 +70,3 @@ class LifecycleTestCase(MyTestCase):
             self.assertTrue(result.get("status"))
         finalizer1.assert_called_once()
         finalizer2.assert_called_once()
-

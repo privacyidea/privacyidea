@@ -36,7 +36,7 @@ from privacyidea.lib.policy import SCOPE, ACTION, GROUP
 
 # We use the old default length of 24 for registration tokens
 DEFAULT_LENGTH = 24
-DEFAULT_CONTENTS = 'cn'
+DEFAULT_CONTENTS = "cn"
 
 optional = True
 required = False
@@ -111,7 +111,7 @@ class RegistrationTokenClass(PasswordTokenClass):
 
     @staticmethod
     @log_with(log)
-    def get_class_info(key=None, ret='all'):
+    def get_class_info(key=None, ret="all"):
         """
         returns a subtree of the token definition
 
@@ -122,37 +122,43 @@ class RegistrationTokenClass(PasswordTokenClass):
         :return: subsection if key exists or user defined
         :rtype: dict or scalar
         """
-        res = {'type': 'registration',
-               'title': 'Registration Code Token',
-               'description': _('Registration: A token that creates a '
-                                'registration code that '
-                                'can be used as a second factor once.'),
-               'init': {},
-               'config': {},
-               'user':  [],
-               # This tokentype is enrollable in the UI for...
-               'ui_enroll': ["admin"],
-               'policy': {
-                   SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of registration tokens assigned."),
-                           'group': GROUP.TOKEN
-                       },
-                       ACTION.MAXACTIVETOKENUSER: {
-                           'type': 'int',
-                           'desc': _(
-                               "The user may only have this maximum number of active registration tokens assigned."),
-                           'group': GROUP.TOKEN
-                       }
-                   }
-               },
-               }
+        res = {
+            "type": "registration",
+            "title": "Registration Code Token",
+            "description": _(
+                "Registration: A token that creates a "
+                "registration code that "
+                "can be used as a second factor once."
+            ),
+            "init": {},
+            "config": {},
+            "user": [],
+            # This tokentype is enrollable in the UI for...
+            "ui_enroll": ["admin"],
+            "policy": {
+                SCOPE.ENROLL: {
+                    ACTION.MAXTOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum number of registration tokens assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                    ACTION.MAXACTIVETOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum number of active registration tokens assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                }
+            },
+        }
 
         if key:
             ret = res.get(key)
         else:
-            if ret == 'all':
+            if ret == "all":
                 ret = res
         return ret
 

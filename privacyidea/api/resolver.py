@@ -31,16 +31,16 @@
 """
 The code of this module is tested in tests/test_api_system.py
 """
-from flask import (Blueprint,
-                   request)
-from .lib.utils import (getParam,
-                        optional,
-                        required,
-                        send_result)
+
+from flask import Blueprint, request
+from .lib.utils import getParam, optional, required, send_result
 from ..lib.log import log_with
-from ..lib.resolver import (get_resolver_list,
-                            save_resolver,
-                            delete_resolver, pretestresolver)
+from ..lib.resolver import (
+    get_resolver_list,
+    save_resolver,
+    delete_resolver,
+    pretestresolver,
+)
 from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
@@ -50,11 +50,11 @@ from ..lib.policy import ACTION
 log = logging.getLogger(__name__)
 
 
-resolver_blueprint = Blueprint('resolver_blueprint', __name__)
+resolver_blueprint = Blueprint("resolver_blueprint", __name__)
 
 
-@resolver_blueprint.route('/', methods=['GET'])
-@resolver_blueprint.route('/<resolver>', methods=['GET'])
+@resolver_blueprint.route("/", methods=["GET"])
+@resolver_blueprint.route("/<resolver>", methods=["GET"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.RESOLVERREAD)
 def get_resolvers(resolver=None):
@@ -80,16 +80,17 @@ def get_resolvers(resolver=None):
     elif editable == "0":
         editable = False
 
-    res = get_resolver_list(filter_resolver_name=resolver,
-                            filter_resolver_type=typ,
-                            editable=editable,
-                            censor=True)
-    g.audit_object.log({"success": True,
-                        "info": resolver})
+    res = get_resolver_list(
+        filter_resolver_name=resolver,
+        filter_resolver_type=typ,
+        editable=editable,
+        censor=True,
+    )
+    g.audit_object.log({"success": True, "info": resolver})
     return send_result(res)
 
 
-@resolver_blueprint.route('/<resolver>', methods=['POST'])
+@resolver_blueprint.route("/<resolver>", methods=["POST"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
 def set_resolver(resolver=None):
@@ -152,12 +153,11 @@ def set_resolver(resolver=None):
         # The resolver parameter was passed as a part of the URL
         param.update({"resolver": resolver})
     res = save_resolver(param)
-    g.audit_object.log({"success": res,
-                        "info": resolver})
+    g.audit_object.log({"success": res, "info": resolver})
     return send_result(res)
 
 
-@resolver_blueprint.route('/<resolver>', methods=['DELETE'])
+@resolver_blueprint.route("/<resolver>", methods=["DELETE"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
 def delete_resolver_api(resolver=None):
@@ -169,13 +169,12 @@ def delete_resolver_api(resolver=None):
     :return: json with success or fail
     """
     res = delete_resolver(resolver)
-    g.audit_object.log({"success": res,
-                        "info": resolver})
+    g.audit_object.log({"success": res, "info": resolver})
 
     return send_result(res)
 
 
-@resolver_blueprint.route('/test', methods=["POST"])
+@resolver_blueprint.route("/test", methods=["POST"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
 def test_resolver():
@@ -193,4 +192,3 @@ def test_resolver():
     rtype = getParam(param, "type", required)
     success, desc = pretestresolver(rtype, param)
     return send_result(success, details={"description": desc})
-

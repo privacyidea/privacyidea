@@ -25,12 +25,18 @@ class PIStandaloneTestCase(CliTestCase):
     def test_01_pi_standalone_help(self):
         runner = self.app.test_cli_runner()
         result = runner.invoke(pi_standalone)
-        self.assertIn("Check the given username and password against privacyIDEA.",
-                      result.output, result)
-        self.assertIn("Run a local webserver to configure the privacyIDEA instance.",
-                      result.output, result)
-        self.assertIn("Create a new privacyIDEA instance.",
-                      result.output, result)
+        self.assertIn(
+            "Check the given username and password against privacyIDEA.",
+            result.output,
+            result,
+        )
+        self.assertIn(
+            "Run a local webserver to configure the privacyIDEA instance.",
+            result.output,
+            result,
+        )
+        self.assertIn("Create a new privacyIDEA instance.", result.output, result)
+
 
 # TODO: write tests to create, configure and check an instance. We need to add
 #  parameters for the admin user name and password as well as the desired

@@ -26,19 +26,24 @@ import json
 import yaml
 
 from privacyidea.lib.authcache import cleanup
-from privacyidea.lib.caconnector import (get_caconnector_list,
-                                         get_caconnector_class,
-                                         get_caconnector_object,
-                                         save_caconnector)
+from privacyidea.lib.caconnector import (
+    get_caconnector_list,
+    get_caconnector_class,
+    get_caconnector_object,
+    save_caconnector,
+)
 from privacyidea.lib.caconnectors.localca import ATTR
 from privacyidea.lib.crypto import create_hsm_object
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.event import EventConfiguration, enable_event, delete_event
-from privacyidea.lib.policy import (PolicyClass, enable_policy, delete_policy,
-                                    set_policy)
-from privacyidea.lib.realm import (get_realms, delete_realm, set_default_realm,
-                                   get_default_realm)
-from privacyidea.lib.resolver import (save_resolver, get_resolver_list)
+from privacyidea.lib.policy import PolicyClass, enable_policy, delete_policy, set_policy
+from privacyidea.lib.realm import (
+    get_realms,
+    delete_realm,
+    set_default_realm,
+    get_default_realm,
+)
+from privacyidea.lib.resolver import save_resolver, get_resolver_list
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
 
 config_cli = AppGroup("config", help="privacyIDEA server configuration")
@@ -47,8 +52,12 @@ ca_cli = AppGroup("ca", help="Manage Certificate Authorities")
 
 
 @ca_cli.command("list")
-@click.option("-v", "--verbose", is_flag=True,
-              help="Additionally output the configuration of the CA connector")
+@click.option(
+    "-v",
+    "--verbose",
+    is_flag=True,
+    help="Additionally output the configuration of the CA connector",
+)
 def ca_list(verbose):
     """
     List the Certificate Authorities.
@@ -57,14 +66,20 @@ def ca_list(verbose):
     for ca in lst:
         click.echo(f"{ca.get('connectorname')} (type {ca.get('type')})")
         if verbose:
-            for (k, v) in ca.get("data").items():
+            for k, v in ca.get("data").items():
                 click.echo(f"\t{k:20}: {v}")
 
 
 @ca_cli.command("create", short_help="Create a new CA connector.")
-@click.argument('name', type=str)
-@click.option('-t', '--type', "catype", default="local",
-              help='The type of the new CA', show_default=True)
+@click.argument("name", type=str)
+@click.option(
+    "-t",
+    "--type",
+    "catype",
+    default="local",
+    help="The type of the new CA",
+    show_default=True,
+)
 @click.pass_context
 def ca_create(ctx, name, catype):
     """
@@ -75,8 +90,7 @@ def ca_create(ctx, name, catype):
     """
     ca = get_caconnector_object(name)
     if ca:
-        click.secho(f"A CA connector with the name '{name}' already exists.",
-                    fg="red")
+        click.secho(f"A CA connector with the name '{name}' already exists.", fg="red")
         ctx.exit(1)
     click.echo(f"Creating CA connector of type {catype}.")
     ca_class = get_caconnector_class(catype)
@@ -85,16 +99,18 @@ def ca_create(ctx, name, catype):
     if r:
         click.secho(f"Saved CA Connector with ID {r}.", fg="green")
         if ca_params["type"] == "local":
-            click.secho(f"Warning: Be sure to set the correct access rights "
-                        f"to the directory {ca_params[ATTR.WORKING_DIR]}.", fg="yellow")
+            click.secho(
+                f"Warning: Be sure to set the correct access rights "
+                f"to the directory {ca_params[ATTR.WORKING_DIR]}.",
+                fg="yellow",
+            )
     else:
         click.secho(f"Error saving CA connector {name}.", fg="red")
 
 
 @ca_cli.command("create_crl", short_help="Create and publish CRL")
 @click.argument("name", type=str)
-@click.option("-f", "--force", is_flag=True,
-              help="Enforce creation of a new CRL")
+@click.option("-f", "--force", is_flag=True, help="Enforce creation of a new CRL")
 def ca_create_crl(name, force):
     """
     Create and publish the CRL for the CA NAME.
@@ -140,7 +156,7 @@ def realm_list():
     """
     realm_lst = get_realms()
     def_realm = get_default_realm()
-    for (name, realm_data) in realm_lst.items():
+    for name, realm_data in realm_lst.items():
         if name == def_realm:
             name = f"* {name}"
         resolver_names = [x.get("name") for x in realm_data.get("resolver")]
@@ -158,13 +174,18 @@ def realm_create(name, resolvers):
     An existing realm with the same name will be replaced.
     """
     from privacyidea.lib.realm import set_realm
-    (added, failed) = set_realm(name, [{'name': res} for res in resolvers])
+
+    (added, failed) = set_realm(name, [{"name": res} for res in resolvers])
     if failed:
-        click.secho(f"Realm '{name}' created. Following resolvers could not be "
-                    f"assigned: {failed}", fg="yellow")
+        click.secho(
+            f"Realm '{name}' created. Following resolvers could not be "
+            f"assigned: {failed}",
+            fg="yellow",
+        )
     else:
-        click.secho(f"Successfully created realm '{name}' with resolver: {added}.",
-                    fg="green")
+        click.secho(
+            f"Successfully created realm '{name}' with resolver: {added}.", fg="green"
+        )
 
 
 @realm_cli.command("delete")
@@ -210,8 +231,12 @@ resolver_cli = AppGroup("resolver", help="Manage user resolver")
 
 
 @resolver_cli.command("list")
-@click.option("-v", "--verbose", is_flag=True,
-              help="Additionally output the configuration of the resolvers")
+@click.option(
+    "-v",
+    "--verbose",
+    is_flag=True,
+    help="Additionally output the configuration of the resolvers",
+)
 def resolver_list(verbose):
     """
     List the available resolvers and their type.
@@ -219,14 +244,14 @@ def resolver_list(verbose):
     reso_list = get_resolver_list()
 
     if not verbose:
-        for (name, resolver) in reso_list.items():
+        for name, resolver in reso_list.items():
             click.echo(f"{name:16} - ({resolver.get('type')})")
     else:
-        for (name, resolver) in reso_list.items():
+        for name, resolver in reso_list.items():
             click.echo(f"{name:16} - ({resolver.get('type')})")
             click.echo("." * 32)
             data = resolver.get("data", {})
-            for (k, v) in data.items():
+            for k, v in data.items():
                 if k.lower() in ["bindpw", "password"]:
                     v = "xxxxx"
                 click.echo(f"{k:>24}: {v!r}")
@@ -236,7 +261,7 @@ def resolver_list(verbose):
 @resolver_cli.command("create")
 @click.argument("name", type=str)
 @click.argument("rtype", type=str)
-@click.argument("filename", type=click.File('r'))
+@click.argument("filename", type=click.File("r"))
 def resolver_create(name, rtype, filename):
     """
     Create a new resolver with the specified name and type.
@@ -299,44 +324,49 @@ def resolver_create_internal(ctx, name):
         elif len(userparts) == 1:
             username = userparts[0]
         else:
-            click.secho(f"Invalid username and password in database URI: {sqluri}",
-                        fg="red")
+            click.secho(
+                f"Invalid username and password in database URI: {sqluri}", fg="red"
+            )
             ctx.exit(3)
     # now we can create the resolver
     params = {
-        'resolver': name,
-        'type': "sqlresolver",
-        'Server': host,
-        'Driver': sql_driver,
-        'User': username,
-        'Password': password,
-        'Database': database,
-        'Table': 'users_' + name,
-        'Limit': '500',
-        'Editable': '1',
-        'Map': '{"userid": "id", "username": "username", '
-               '"email":"email", "password": "password", '
-               '"phone":"phone", "mobile":"mobile", "surname":"surname", '
-               '"givenname":"givenname", "description": "description"}'}
+        "resolver": name,
+        "type": "sqlresolver",
+        "Server": host,
+        "Driver": sql_driver,
+        "User": username,
+        "Password": password,
+        "Database": database,
+        "Table": "users_" + name,
+        "Limit": "500",
+        "Editable": "1",
+        "Map": '{"userid": "id", "username": "username", '
+        '"email":"email", "password": "password", '
+        '"phone":"phone", "mobile":"mobile", "surname":"surname", '
+        '"givenname":"givenname", "description": "description"}',
+    }
     save_resolver(params)
 
     # Now we create the database table
     from sqlalchemy import create_engine
     from sqlalchemy import Table, MetaData, Column
     from sqlalchemy import Integer, String
+
     engine = create_engine(sqluri)
     metadata = MetaData()
-    Table('users_%s' % name,
-          metadata,
-          Column('id', Integer, primary_key=True),
-          Column('username', String(40), unique=True),
-          Column('email', String(80)),
-          Column('password', String(255)),
-          Column('phone', String(40)),
-          Column('mobile', String(40)),
-          Column('surname', String(40)),
-          Column('givenname', String(40)),
-          Column('description', String(255)))
+    Table(
+        "users_%s" % name,
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("username", String(40), unique=True),
+        Column("email", String(80)),
+        Column("password", String(255)),
+        Column("phone", String(40)),
+        Column("mobile", String(40)),
+        Column("surname", String(40)),
+        Column("givenname", String(40)),
+        Column("description", String(255)),
+    )
     metadata.create_all(engine)
 
 
@@ -351,11 +381,17 @@ def event_list():
     List events
     """
     events = EventConfiguration().events
-    click.echo("\n{0:7} {4:4} {1:30}\t{2:20}\t{3}".format("Active", "Name", "Module", "Action", "ID"))
+    click.echo(
+        "\n{0:7} {4:4} {1:30}\t{2:20}\t{3}".format(
+            "Active", "Name", "Module", "Action", "ID"
+        )
+    )
     click.echo(90 * "=")
     for event in events:
-        click.echo(f"{event['active']!r:7} {event['id']:<4} {event['name']:30}"
-                   f"\t{event['handlermodule']:20}\t{event['action']}")
+        click.echo(
+            f"{event['active']!r:7} {event['id']:<4} {event['name']:30}"
+            f"\t{event['handlermodule']:20}\t{event['action']}"
+        )
 
 
 @event_cli.command("enable")
@@ -412,11 +448,13 @@ def policy_list():
     """
     pol_cls = PolicyClass()
     policies = pol_cls.list_policies()
-    click.echo("Active   Name " + 16 * ' ' + "Scope")
+    click.echo("Active   Name " + 16 * " " + "Scope")
     click.echo(40 * "=")
     for policy in policies:
-        click.echo(f"{policy.get('active')!r:8} {policy.get('name'):20} "
-                   f"{policy.get('scope')}")
+        click.echo(
+            f"{policy.get('active')!r:8} {policy.get('name'):20} "
+            f"{policy.get('scope')}"
+        )
 
 
 @policy_cli.command("enable")
@@ -478,48 +516,62 @@ def policy_create(name, scope, action, filename=None):
     """
     if filename:
         try:
-            with open(filename, 'r') as f:
+            with open(filename, "r") as f:
                 contents = f.read()
 
             params = ast.literal_eval(contents)
 
             if params.get("name") and params.get("name") != name:
-                print("Found name '{0!s}' in file, will use that instead of "
-                      "'{1!s}'.".format(params.get("name"), name))
+                print(
+                    "Found name '{0!s}' in file, will use that instead of "
+                    "'{1!s}'.".format(params.get("name"), name)
+                )
             else:
-                print("name not defined in file, will use the cli value "
-                      "{0!s}.".format(name))
+                print(
+                    "name not defined in file, will use the cli value " "{0!s}.".format(
+                        name
+                    )
+                )
                 params["name"] = name
 
             if params.get("scope") and params.get("scope") != scope:
-                print("Found scope '{0!s}' in file, will use that instead of "
-                      "'{1!s}'.".format(params.get("scope"), scope))
+                print(
+                    "Found scope '{0!s}' in file, will use that instead of "
+                    "'{1!s}'.".format(params.get("scope"), scope)
+                )
             else:
-                print("scope not defined in file, will use the cli value "
-                      "{0!s}.".format(scope))
+                print(
+                    "scope not defined in file, will use the cli value "
+                    "{0!s}.".format(scope)
+                )
                 params["scope"] = scope
 
             if params.get("action") and params.get("action") != action:
-                print("Found action in file: '{0!s}', will use that instead "
-                      "of: '{1!s}'.".format(params.get("action"), action))
+                print(
+                    "Found action in file: '{0!s}', will use that instead "
+                    "of: '{1!s}'.".format(params.get("action"), action)
+                )
             else:
-                print("action not defined in file, will use the cli value "
-                      "{0!s}.".format(action))
+                print(
+                    "action not defined in file, will use the cli value "
+                    "{0!s}.".format(action)
+                )
                 params["action"] = action
 
-            r = set_policy(params.get("name"),
-                           scope=params.get("scope"),
-                           action=params.get("action"),
-                           realm=params.get("realm"),
-                           resolver=params.get("resolver"),
-                           user=params.get("user"),
-                           time=params.get("time"),
-                           client=params.get("client"),
-                           active=params.get("active", True),
-                           adminrealm=params.get("adminrealm"),
-                           adminuser=params.get("adminuser"),
-                           check_all_resolvers=params.get(
-                               "check_all_resolvers", False))
+            r = set_policy(
+                params.get("name"),
+                scope=params.get("scope"),
+                action=params.get("action"),
+                realm=params.get("realm"),
+                resolver=params.get("resolver"),
+                user=params.get("user"),
+                time=params.get("time"),
+                client=params.get("client"),
+                active=params.get("active", True),
+                adminrealm=params.get("adminrealm"),
+                adminuser=params.get("adminuser"),
+                check_all_resolvers=params.get("check_all_resolvers", False),
+            )
             return r
 
         except Exception as _e:
@@ -532,32 +584,43 @@ def policy_create(name, scope, action, filename=None):
 
 config_cli.add_command(policy_cli)
 
-imp_fmt_dict = {
-    'python': ast.literal_eval,
-    'json': json.loads,
-    'yaml': yaml.safe_load}
+imp_fmt_dict = {"python": ast.literal_eval, "json": json.loads, "yaml": yaml.safe_load}
 
 
 @config_cli.command("import")
-@click.option('-i', '--input', "infile", type=click.File('r'),
-              default=sys.stdin,
-              help='The filename to import the data from. Try to read '
-                   'from <stdin> if this argument is not given.')
-@click.option('-t', '--types', multiple=True, default=['all'], show_default=True,
-              type=click.Choice(['all'] + list(IMPORT_FUNCTIONS.keys()), case_sensitive=False),
-              help='The types of configuration to import. By default import all '
-                   'available data if a corresponding importer type exists. '
-                   'Currently registered importer types are: '
-                   '{0!s}'.format(', '.join(['all'] + list(IMPORT_FUNCTIONS.keys()))))
-@click.option('-n', '--name',
-              help='The name of the configuration object to import (default: import all)')
+@click.option(
+    "-i",
+    "--input",
+    "infile",
+    type=click.File("r"),
+    default=sys.stdin,
+    help="The filename to import the data from. Try to read "
+    "from <stdin> if this argument is not given.",
+)
+@click.option(
+    "-t",
+    "--types",
+    multiple=True,
+    default=["all"],
+    show_default=True,
+    type=click.Choice(["all"] + list(IMPORT_FUNCTIONS.keys()), case_sensitive=False),
+    help="The types of configuration to import. By default import all "
+    "available data if a corresponding importer type exists. "
+    "Currently registered importer types are: "
+    "{0!s}".format(", ".join(["all"] + list(IMPORT_FUNCTIONS.keys()))),
+)
+@click.option(
+    "-n",
+    "--name",
+    help="The name of the configuration object to import (default: import all)",
+)
 @click.pass_context
 def config_import(ctx, infile, types, name):
     """
     Import server configuration using specific or all registered importer types.
     """
     data = None
-    imp_types = IMPORT_FUNCTIONS.keys() if 'all' in types else types
+    imp_types = IMPORT_FUNCTIONS.keys() if "all" in types else types
 
     content = infile.read()
 
@@ -568,56 +631,78 @@ def config_import(ctx, infile, types, name):
         except (SyntaxError, json.decoder.JSONDecodeError, yaml.error.YAMLError) as _e:
             continue
     if not data:
-        print('Could not read input format! '
-              'Accepting: {0!s}.'.format(', '.join(imp_fmt_dict.keys())),
-              file=sys.stderr)
+        print(
+            "Could not read input format! " "Accepting: {0!s}.".format(
+                ", ".join(imp_fmt_dict.keys())
+            ),
+            file=sys.stderr,
+        )
         ctx.exit(1)
 
     # we need to go through the importer functions based on priority
-    for typ, value in sorted(IMPORT_FUNCTIONS.items(), key=lambda x: x[1]['prio']):
+    for typ, value in sorted(IMPORT_FUNCTIONS.items(), key=lambda x: x[1]["prio"]):
         if typ in imp_types:
             if typ in data:
                 print('Importing configuration type "{0!s}".'.format(typ))
-                value['func'](data[typ], name=name)
+                value["func"](data[typ], name=name)
 
 
 exp_fmt_dict = {
-    'python': str,
-    'json': partial(json.dumps, indent=2),
-    'yaml': yaml.safe_dump}
+    "python": str,
+    "json": partial(json.dumps, indent=2),
+    "yaml": yaml.safe_dump,
+}
 
 
 @config_cli.command("export")
-@click.option('-o', '--output', type=click.File('w'),
-              default=sys.stdout,
-              help='The filename to export the data to. Write to '
-                   '<stdout> if this argument is not given or is \'-\'.')
-@click.option('-f', '--format', "fmt", default='python', show_default=True,
-              type=click.Choice(exp_fmt_dict.keys(), case_sensitive=False),
-              help='Output format, default is \'python\'')
+@click.option(
+    "-o",
+    "--output",
+    type=click.File("w"),
+    default=sys.stdout,
+    help="The filename to export the data to. Write to "
+    "<stdout> if this argument is not given or is '-'.",
+)
+@click.option(
+    "-f",
+    "--format",
+    "fmt",
+    default="python",
+    show_default=True,
+    type=click.Choice(exp_fmt_dict.keys(), case_sensitive=False),
+    help="Output format, default is 'python'",
+)
 # TODO: we need to have an eye on the help output, it might get less readable
 #  when more exporter functions are added
-@click.option('-t', '--types', multiple=True, default=['all'], show_default=True,
-              type=click.Choice(['all'] + list(EXPORT_FUNCTIONS.keys()), case_sensitive=False),
-              help='The types of configuration to export (can be given multiple '
-                   'times). By default, export all available types. Currently '
-                   'registered exporter types are: '
-                   '{0!s}'.format(', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))),
-              )
-@click.option('-n', '--name',
-              help='The name of the configuration object to export (default: export all)')
+@click.option(
+    "-t",
+    "--types",
+    multiple=True,
+    default=["all"],
+    show_default=True,
+    type=click.Choice(["all"] + list(EXPORT_FUNCTIONS.keys()), case_sensitive=False),
+    help="The types of configuration to export (can be given multiple "
+    "times). By default, export all available types. Currently "
+    "registered exporter types are: "
+    "{0!s}".format(", ".join(["all"] + list(EXPORT_FUNCTIONS.keys()))),
+)
+@click.option(
+    "-n",
+    "--name",
+    help="The name of the configuration object to export (default: export all)",
+)
 def config_export(output, fmt, types, name):
     """
     Export server configuration using specific or all registered exporter types.
     """
-    exp_types = EXPORT_FUNCTIONS.keys() if 'all' in types else types
+    exp_types = EXPORT_FUNCTIONS.keys() if "all" in types else types
 
     out = {}
     for typ in exp_types:
         out.update({typ: EXPORT_FUNCTIONS[typ](name=name)})
 
     if out:
-        res = exp_fmt_dict.get(fmt.lower())(out) + '\n'
+        res = exp_fmt_dict.get(fmt.lower())(out) + "\n"
         output.write(res)
 
 
@@ -625,8 +710,14 @@ authcache_cli = AppGroup("authcache", help="Manage authentication cache")
 
 
 @authcache_cli.command("cleanup")
-@click.option("-m", "--minutes", default=480, show_default=True, type=int,
-              help="Clean up authcache entries older than this number of minutes")
+@click.option(
+    "-m",
+    "--minutes",
+    default=480,
+    show_default=True,
+    type=int,
+    help="Clean up authcache entries older than this number of minutes",
+)
 def authcache_cleanup(minutes):
     """
     Remove entries from the authcache.

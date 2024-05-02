@@ -42,26 +42,32 @@ def get_init_tokenlabel_parameters(g, params=None, token_type="hotp", user_objec
     :return: modified request parameters
     """
     params = params or {}
-    label_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.TOKENLABEL,
-                            user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
+    label_pols = Match.user(
+        g, scope=SCOPE.ENROLL, action=ACTION.TOKENLABEL, user_object=user_object
+    ).action_values(unique=True, allow_white_space_in_action=True)
     if len(label_pols) == 1:
         # The policy was set, so we need to set the tokenlabel in the request.
         params[ACTION.TOKENLABEL] = list(label_pols)[0]
 
-    issuer_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.TOKENISSUER,
-                             user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
+    issuer_pols = Match.user(
+        g, scope=SCOPE.ENROLL, action=ACTION.TOKENISSUER, user_object=user_object
+    ).action_values(unique=True, allow_white_space_in_action=True)
     if len(issuer_pols) == 1:
         params[ACTION.TOKENISSUER] = list(issuer_pols)[0]
 
-    imageurl_pols = Match.user(g, scope=SCOPE.ENROLL, action=ACTION.APPIMAGEURL,
-                               user_object=user_object).action_values(unique=True, allow_white_space_in_action=True)
+    imageurl_pols = Match.user(
+        g, scope=SCOPE.ENROLL, action=ACTION.APPIMAGEURL, user_object=user_object
+    ).action_values(unique=True, allow_white_space_in_action=True)
     if len(imageurl_pols) == 1:
         params[ACTION.APPIMAGEURL] = list(imageurl_pols)[0]
 
     # check the force_app_pin policy
-    app_pin_pols = Match.user(g, scope=SCOPE.ENROLL,
-                              action='{0!s}_{1!s}'.format(token_type, ACTION.FORCE_APP_PIN),
-                              user_object=user_object).any()
+    app_pin_pols = Match.user(
+        g,
+        scope=SCOPE.ENROLL,
+        action="{0!s}_{1!s}".format(token_type, ACTION.FORCE_APP_PIN),
+        user_object=user_object,
+    ).any()
     if app_pin_pols:
         params[ACTION.FORCE_APP_PIN] = True
 
@@ -81,33 +87,54 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
     from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 
     # Get the firebase configuration from the policies
-    firebase_config = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.FIREBASE_CONFIG,
-                                 user_object=user_obj if user_obj else None) \
-        .action_values(unique=True, allow_white_space_in_action=True)
+    firebase_config = Match.user(
+        g,
+        scope=SCOPE.ENROLL,
+        action=PUSH_ACTION.FIREBASE_CONFIG,
+        user_object=user_obj if user_obj else None,
+    ).action_values(unique=True, allow_white_space_in_action=True)
     if len(firebase_config) == 1:
         params[PUSH_ACTION.FIREBASE_CONFIG] = list(firebase_config)[0]
     else:
-        raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.FIREBASE_CONFIG))
+        raise PolicyError(
+            "Missing enrollment policy for push token: {0!s}".format(
+                PUSH_ACTION.FIREBASE_CONFIG
+            )
+        )
 
     # Get the sslverify definition from the policies
-    ssl_verify = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.SSL_VERIFY,
-                            user_object=user_obj if user_obj else None).action_values(unique=True)
+    ssl_verify = Match.user(
+        g,
+        scope=SCOPE.ENROLL,
+        action=PUSH_ACTION.SSL_VERIFY,
+        user_object=user_obj if user_obj else None,
+    ).action_values(unique=True)
     if len(ssl_verify) == 1:
         params[PUSH_ACTION.SSL_VERIFY] = list(ssl_verify)[0]
     else:
         params[PUSH_ACTION.SSL_VERIFY] = "1"
 
     # Get the TTL and the registration URL from the policies
-    registration_url = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.REGISTRATION_URL,
-                                  user_object=user_obj if user_obj else None) \
-        .action_values(unique=True, allow_white_space_in_action=True)
+    registration_url = Match.user(
+        g,
+        scope=SCOPE.ENROLL,
+        action=PUSH_ACTION.REGISTRATION_URL,
+        user_object=user_obj if user_obj else None,
+    ).action_values(unique=True, allow_white_space_in_action=True)
     if len(registration_url) == 1:
         params[PUSH_ACTION.REGISTRATION_URL] = list(registration_url)[0]
     else:
-        raise PolicyError("Missing enrollment policy for push token: {0!s}".format(PUSH_ACTION.REGISTRATION_URL))
-    ttl = Match.user(g, scope=SCOPE.ENROLL, action=PUSH_ACTION.TTL,
-                     user_object=user_obj if user_obj else None) \
-        .action_values(unique=True, allow_white_space_in_action=True)
+        raise PolicyError(
+            "Missing enrollment policy for push token: {0!s}".format(
+                PUSH_ACTION.REGISTRATION_URL
+            )
+        )
+    ttl = Match.user(
+        g,
+        scope=SCOPE.ENROLL,
+        action=PUSH_ACTION.TTL,
+        user_object=user_obj if user_obj else None,
+    ).action_values(unique=True, allow_white_space_in_action=True)
     if len(ttl) == 1:
         params[PUSH_ACTION.TTL] = list(ttl)[0]
     else:

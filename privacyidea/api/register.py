@@ -26,7 +26,7 @@ register.
 
 The methods are tested in the file tests/test_api_register.py
 """
-from flask import (Blueprint, request, g, current_app)
+from flask import Blueprint, request, g, current_app
 from .lib.utils import send_result, getParam
 from .lib.utils import required
 import logging
@@ -40,18 +40,19 @@ from privacyidea.lib.error import RegistrationError
 from privacyidea.api.lib.prepolicy import required_email, prepolicy
 from privacyidea.lib.smtpserver import get_smtpserver, send_email_identifier
 
-DEFAULT_BODY="""
+DEFAULT_BODY = """
 Your registration token is {regkey}.
 """
 
 log = logging.getLogger(__name__)
 
-register_blueprint = Blueprint('register_blueprint', __name__)
+register_blueprint = Blueprint("register_blueprint", __name__)
 
 
 # The before and after methods are the same as in the validate endpoint
 
-@register_blueprint.route('', methods=['GET'])
+
+@register_blueprint.route("", methods=["GET"])
 def register_status():
     """
     This endpoint returns the information if registration is allowed or not.
@@ -59,15 +60,15 @@ def register_status():
 
     :return: JSON with value=True or value=False
     """
-    resolvername = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER)\
-        .action_values(unique=True)
+    resolvername = Match.action_only(
+        g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER
+    ).action_values(unique=True)
     result = bool(resolvername)
-    g.audit_object.log({"info": result,
-                        "success": True})
+    g.audit_object.log({"info": result, "success": True})
     return send_result(result)
 
 
-@register_blueprint.route('', methods=['POST'])
+@register_blueprint.route("", methods=["POST"])
 @prepolicy(required_email, request=request)
 def register_post():
     """
@@ -107,31 +108,33 @@ def register_post():
     password = getParam(request.all_data, "password", required)
     mobile = getParam(request.all_data, "mobile")
     phone = getParam(request.all_data, "phone")
-    options = {"g": g,
-               "clientip": g.client_ip}
+    options = {"g": g, "clientip": g.client_ip}
     g.audit_object.log({"info": username})
     # Add all params to the options
     for key, value in request.all_data.items():
-            if value and key not in ["g", "clientip"]:
-                options[key] = value
+        if value and key not in ["g", "clientip"]:
+            options[key] = value
 
     # 0. check, if we can do the registration at all!
-    smtpconfig = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.EMAILCONFIG)\
-        .action_values(unique=True)
+    smtpconfig = Match.action_only(
+        g, scope=SCOPE.REGISTER, action=ACTION.EMAILCONFIG
+    ).action_values(unique=True)
     if not smtpconfig:
         raise RegistrationError("No SMTP server configuration specified!")
 
     # 1. determine, in which resolver/realm the user should be created
-    realm = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.REALM)\
-        .action_values(unique=True)
+    realm = Match.action_only(
+        g, scope=SCOPE.REGISTER, action=ACTION.REALM
+    ).action_values(unique=True)
     if not realm:
         # No policy for realm, so we use the default realm
         realm = get_default_realm
     else:
         # we use the first realm in the list
         realm = list(realm)[0]
-    resolvername = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER)\
-        .action_values(unique=True)
+    resolvername = Match.action_only(
+        g, scope=SCOPE.REGISTER, action=ACTION.RESOLVER
+    ).action_values(unique=True)
     if not resolvername:
         raise RegistrationError("No resolver specified to register in!")
     resolvername = list(resolvername)[0]
@@ -140,13 +143,18 @@ def register_post():
     if user.exist():
         raise RegistrationError("The username is already registered!")
     # Create user
-    uid = create_user(resolvername, {"username": username,
-                                     "email": email,
-                                     "phone": phone,
-                                     "mobile": mobile,
-                                     "surname": surname,
-                                     "givenname": givenname,
-                                     "password": password})
+    uid = create_user(
+        resolvername,
+        {
+            "username": username,
+            "email": email,
+            "phone": phone,
+            "mobile": mobile,
+            "surname": surname,
+            "givenname": givenname,
+            "password": password,
+        },
+    )
 
     # 3. create a registration token for this user
     user = User(username, realm=realm, resolver=resolvername)
@@ -156,13 +164,16 @@ def register_post():
 
     smtpconfig = list(smtpconfig)[0]
     # Send the registration key via email
-    body = Match.action_only(g, scope=SCOPE.REGISTER, action=ACTION.REGISTERBODY)\
-        .action_values(unique=True)
+    body = Match.action_only(
+        g, scope=SCOPE.REGISTER, action=ACTION.REGISTERBODY
+    ).action_values(unique=True)
     body = body or DEFAULT_BODY
     email_sent = send_email_identifier(
-        smtpconfig, email,
+        smtpconfig,
+        email,
         "Your privacyIDEA registration",
-        body.format(regkey=registration_key))
+        body.format(regkey=registration_key),
+    )
     if not email_sent:
         log.warning("Failed to send registration email to {0!r}".format(email))
         # delete registration token

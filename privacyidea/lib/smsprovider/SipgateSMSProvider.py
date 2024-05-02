@@ -21,7 +21,7 @@
 #
 #
 #
-__doc__="""This module provides sending SMS via sipgate
+__doc__ = """This module provides sending SMS via sipgate
 
 The code is tested in tests/test_lib_smsprovider
 """
@@ -29,10 +29,11 @@ from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider, SMSError
 from privacyidea.lib import _
 import logging
 import requests
+
 log = logging.getLogger(__name__)
 
 
-REQUEST_XML='''<?xml version="1.0" encoding="UTF-8"?>
+REQUEST_XML = """<?xml version="1.0" encoding="UTF-8"?>
 <methodCall>
 <methodName>samurai.SessionInitiate</methodName>
 <params>
@@ -55,13 +56,12 @@ REQUEST_XML='''<?xml version="1.0" encoding="UTF-8"?>
 </value>
 </param>
 </params>
-</methodCall>'''
+</methodCall>"""
 
 URL = "https://samurai.sipgate.net/RPC2"
 
 
 class SipgateSMSProvider(ISMSProvider):
-
     # We do not need to overwrite the __init__ and
     # the loadConfig functions!
     # They provide the self.config dictionary.
@@ -75,27 +75,29 @@ class SipgateSMSProvider(ISMSProvider):
         else:
             username = self.config.get("USERNAME")
             password = self.config.get("PASSWORD")
-            proxy = self.config.get('PROXY')
+            proxy = self.config.get("PROXY")
         proxies = None
         if proxy:
             protocol = proxy.split(":")[0]
             proxies = {protocol: proxy}
 
         log.debug("submitting message {0!r} to {1!s}".format(message, phone))
-        r = requests.post(URL,
-                          data=REQUEST_XML % (phone.strip().strip("+"),
-                                              message),
-                          headers={'content-type': 'text/xml'},
-                          auth=(username, password),
-                          proxies=proxies,
-                          timeout=60)
+        r = requests.post(
+            URL,
+            data=REQUEST_XML % (phone.strip().strip("+"), message),
+            headers={"content-type": "text/xml"},
+            auth=(username, password),
+            proxies=proxies,
+            timeout=60,
+        )
 
         log.debug("SMS submitted: {0!s}".format(r.status_code))
         log.debug("response content: {0!s}".format(r.text))
 
         if r.status_code != 200:
-            raise SMSError(r.status_code, "SMS could not be "
-                                          "sent: %s" % r.status_code)
+            raise SMSError(
+                r.status_code, "SMS could not be " "sent: %s" % r.status_code
+            )
         return True
 
     @classmethod
@@ -108,21 +110,15 @@ class SipgateSMSProvider(ISMSProvider):
         :return: dict
         """
         from privacyidea.lib.smtpserver import get_smtpservers
-        params = {"options_allowed": False,
-                  "headers_allowed": False,
-                  "parameters": {
-                      "USERNAME": {
-                          "required": True,
-                          "description": "The sipgate username."},
-                      "PASSWORD": {
-                          "required": True,
-                          "description": "The sipgate password."},
-                      "PROXY": {
-                          "description": "An optional proxy URI."
-                      },
-                      "REGEXP": {
-                          "description": cls.regexp_description
-                      }
-                  }
-                  }
+
+        params = {
+            "options_allowed": False,
+            "headers_allowed": False,
+            "parameters": {
+                "USERNAME": {"required": True, "description": "The sipgate username."},
+                "PASSWORD": {"required": True, "description": "The sipgate password."},
+                "PROXY": {"description": "An optional proxy URI."},
+                "REGEXP": {"description": cls.regexp_description},
+            },
+        }
         return params

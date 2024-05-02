@@ -42,11 +42,9 @@ import os
 
 from hashlib import sha256
 
-from privacyidea.lib.crypto import (geturandom, zerome, aes_cbc_encrypt,
-                                    aes_cbc_decrypt)
+from privacyidea.lib.crypto import geturandom, zerome, aes_cbc_encrypt, aes_cbc_decrypt
 from privacyidea.lib.error import HSMException
-from privacyidea.lib.utils import (is_true, to_unicode, to_bytes,
-                                   hexlify_and_unicode)
+from privacyidea.lib.utils import is_true, to_unicode, to_bytes, hexlify_and_unicode
 
 from .password import PASSWORD
 from cryptography.hazmat.primitives.ciphers import algorithms
@@ -70,7 +68,7 @@ def create_key_from_password(password):
 
 
 def int_list_to_bytestring(int_list):  # pragma: no cover
-    return b"".join([bytes((i, )) for i in int_list])
+    return b"".join([bytes((i,)) for i in int_list])
 
 
 class SecurityModule(object):
@@ -79,11 +77,7 @@ class SecurityModule(object):
     VALUE_KEY = 2
     DEFAULT_KEY = 3
 
-    mapping = {
-        'token': TOKEN_KEY,
-        'config': CONFIG_KEY,
-        'value': VALUE_KEY
-    }
+    mapping = {"token": TOKEN_KEY, "config": CONFIG_KEY, "value": VALUE_KEY}
 
     is_ready = False
 
@@ -93,28 +87,37 @@ class SecurityModule(object):
         self.name = "SecurityModule"
 
     def setup_module(self, params):
-        fname = 'setup_module'
-        log.error("This is the base class. You should implement "
-                  "the method : %s " % (fname,))
+        fname = "setup_module"
+        log.error(
+            "This is the base class. You should implement "
+            "the method : %s " % (fname,)
+        )
         raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
-    ''' base methods '''
+    """ base methods """
+
     def random(self, length):
-        fname = 'random'
-        log.error("This is the base class. You should implement "
-                  "the method : %s " % (fname,))
+        fname = "random"
+        log.error(
+            "This is the base class. You should implement "
+            "the method : %s " % (fname,)
+        )
         raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
     def encrypt(self, data, iv, key_id=TOKEN_KEY):
-        fname = 'encrypt'
-        log.error("This is the base class. You should implement "
-                  "the method : %s " % (fname,))
+        fname = "encrypt"
+        log.error(
+            "This is the base class. You should implement "
+            "the method : %s " % (fname,)
+        )
         raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
     def decrypt(self, enc_data, iv, key_id=TOKEN_KEY):
-        fname = 'decrypt'
-        log.error("This is the base class. You should implement "
-                  "the method : %s " % (fname,))
+        fname = "decrypt"
+        log.error(
+            "This is the base class. You should implement "
+            "the method : %s " % (fname,)
+        )
         raise NotImplementedError("Should have been implemented {0!s}".format(fname))
 
     def decrypt_password(self, crypt_pass):
@@ -173,7 +176,8 @@ class SecurityModule(object):
         """
         return self._encrypt_value(pin, self.TOKEN_KEY)
 
-    ''' base methods for pin and password '''
+    """ base methods for pin and password """
+
     def _encrypt_value(self, value, slot_id):
         """
         base method to encrypt a value
@@ -192,7 +196,7 @@ class SecurityModule(object):
         iv = self.random(16)
         v = self.encrypt(to_bytes(value), iv, slot_id)
 
-        cipher_value = binascii.hexlify(iv) + b':' + binascii.hexlify(v)
+        cipher_value = binascii.hexlify(iv) + b":" + binascii.hexlify(v)
         return cipher_value.decode("utf-8")
 
     def _decrypt_value(self, crypt_value, slot_id):
@@ -210,9 +214,9 @@ class SecurityModule(object):
         :rtype: str
         """
         # split at ":"
-        pos = crypt_value.find(':')
+        pos = crypt_value.find(":")
         bIV = crypt_value[:pos]
-        bData = crypt_value[pos + 1:]
+        bData = crypt_value[pos + 1 :]
 
         iv = binascii.unhexlify(bIV)
         data = binascii.unhexlify(bData)
@@ -231,7 +235,6 @@ class SecurityModule(object):
 
 
 class DefaultSecurityModule(SecurityModule):
-
     def __init__(self, config=None):
         """
         Init of the default security module. The config needs to contain the key
@@ -259,12 +262,14 @@ class DefaultSecurityModule(SecurityModule):
         self._id = binascii.hexlify(os.urandom(3))
 
         if "file" not in config:
-            log.error("No secret file defined. A parameter "
-                      "PI_ENCFILE is missing in your pi.cfg.")
+            log.error(
+                "No secret file defined. A parameter "
+                "PI_ENCFILE is missing in your pi.cfg."
+            )
             raise HSMException("no secret file defined: PI_ENCFILE!")
 
         # We determine, if the file is encrypted.
-        with open(config.get("file"), 'rb') as f:
+        with open(config.get("file"), "rb") as f:
             cipher = f.read()
 
         if len(cipher) > 100:
@@ -274,7 +279,7 @@ class DefaultSecurityModule(SecurityModule):
             self.crypted = True
             self.is_ready = False
 
-        self.secFile = config.get('file')
+        self.secFile = config.get("file")
         self.secrets = {}
 
     def _get_secret(self, slot_id=SecurityModule.TOKEN_KEY, password=None):
@@ -296,15 +301,16 @@ class DefaultSecurityModule(SecurityModule):
         if self.crypted and slot_id in self.secrets:
             return self.secrets.get(slot_id)
 
-        secret = b''
+        secret = b""
 
         if self.crypted:
             # if the password was not provided, read it from the module
             # singleton cache
             password = password or PASSWORD
             if not password:
-                raise HSMException("Error decrypting the encryption key. "
-                                   "No password provided!")
+                raise HSMException(
+                    "Error decrypting the encryption key. " "No password provided!"
+                )
             # Read all keys, decrypt them and return the key for
             # the slot id
             # TODO we assume here, that the file contains the hexlified data
@@ -314,20 +320,24 @@ class DefaultSecurityModule(SecurityModule):
             try:
                 keys = self.password_decrypt(cipher, password)
             except UnicodeDecodeError as e:
-                raise HSMException("Error decrypting the encryption key. You "
-                                   "probably provided the wrong password.")
-            secret = keys[slot_id*32:(slot_id+1)*32]
+                raise HSMException(
+                    "Error decrypting the encryption key. You "
+                    "probably provided the wrong password."
+                )
+            secret = keys[slot_id * 32 : (slot_id + 1) * 32]
 
         else:
             # Only read the key with the slot_id
-            with open(self.secFile, 'rb') as f:
+            with open(self.secFile, "rb") as f:
                 for _i in range(0, slot_id + 1):
                     secret = f.read(32)
 
             if secret == b"":
-                raise HSMException("No secret key defined for index: %s !\n"
-                                   "Please extend your %s"" !"
-                                   % (str(slot_id), self.secFile))
+                raise HSMException(
+                    "No secret key defined for index: %s !\n"
+                    "Please extend your %s"
+                    " !" % (str(slot_id), self.secFile)
+                )
 
         # cache the result
         self.secrets[slot_id] = secret
@@ -396,7 +406,7 @@ class DefaultSecurityModule(SecurityModule):
         :rtype:  bytes
         """
         if self.is_ready is False:
-            raise HSMException('setup of security module incomplete')
+            raise HSMException("setup of security module incomplete")
 
         key = self._get_secret(key_id)
 
@@ -481,7 +491,7 @@ class DefaultSecurityModule(SecurityModule):
         :rtype: bytes
         """
         if self.is_ready is False:
-            raise HSMException('setup of security module incomplete')
+            raise HSMException("setup of security module incomplete")
 
         key = self._get_secret(key_id)
         output = aes_cbc_decrypt(key, iv, enc_data)

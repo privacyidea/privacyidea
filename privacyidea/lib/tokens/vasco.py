@@ -22,7 +22,7 @@
 #    E-mail: linotp@keyidentity.com
 #    Contact: www.linotp.org
 #    Support: www.keyidentity.com
-""" VASCO library binding """
+"""VASCO library binding"""
 
 import logging
 
@@ -47,7 +47,7 @@ vasco_dll = None
 
 try:
     vasco_library_path = get_app_config_value("PI_VASCO_LIBRARY")
-    if vasco_library_path is not None: # pragma: no cover
+    if vasco_library_path is not None:  # pragma: no cover
         log.info("Loading VASCO library from {!s} ...".format(vasco_library_path))
         vasco_dll = CDLL(vasco_library_path)
     else:
@@ -65,11 +65,13 @@ def check_vasco(fn):
     :param fn: function - the to be called function
     :return: return the function call result
     """
+
     def new(*args, **kw):
         if not vasco_dll:
             raise RuntimeError("No VASCO library available")
         else:
             return fn(*args, **kw)
+
     return new
 
 
@@ -77,46 +79,51 @@ class TKernelParams(Structure):
     """
     KernelParams struct
     """
-    _fields_ = [("ParmCount", c_ulong),
-                ("ITimeWindow", c_ulong),
-                ("STimeWindow", c_ulong),
-                ("DiagLevel", c_ulong),
-                ("GMTAdjust", c_ulong),
-                ("CheckChallenge", c_ulong),
-                ("IThreshold", c_ulong),
-                ("SThreshold", c_ulong),
-                ("ChkInactDays", c_ulong),
-                ("DeriveVector", c_ulong),
-                ("SyncWindow", c_ulong),
-                ("OnLineSG", c_ulong),
-                ("EventWindow", c_ulong),
-                ("HSMSlotId", c_ulong),
-                ("StorageKeyId", c_ulong),
-                ("TransportKeyId", c_ulong),
-                ("StorageDeriveKey1", c_ulong),
-                ("StorageDeriveKey2", c_ulong),
-                ("StorageDeriveKey3", c_ulong),
-                ("StorageDeriveKey4", c_ulong), ]
+
+    _fields_ = [
+        ("ParmCount", c_ulong),
+        ("ITimeWindow", c_ulong),
+        ("STimeWindow", c_ulong),
+        ("DiagLevel", c_ulong),
+        ("GMTAdjust", c_ulong),
+        ("CheckChallenge", c_ulong),
+        ("IThreshold", c_ulong),
+        ("SThreshold", c_ulong),
+        ("ChkInactDays", c_ulong),
+        ("DeriveVector", c_ulong),
+        ("SyncWindow", c_ulong),
+        ("OnLineSG", c_ulong),
+        ("EventWindow", c_ulong),
+        ("HSMSlotId", c_ulong),
+        ("StorageKeyId", c_ulong),
+        ("TransportKeyId", c_ulong),
+        ("StorageDeriveKey1", c_ulong),
+        ("StorageDeriveKey2", c_ulong),
+        ("StorageDeriveKey3", c_ulong),
+        ("StorageDeriveKey4", c_ulong),
+    ]
 
 
 class TDigipassBlob(Structure):
     """
     Digi Pass Token Blob struct
     """
-    _fields_ = [("Serial", c_char * 10),
-                ("AppName", c_char * 12),
-                ("DPFlags", c_byte * 2),
-                ("Blob", c_char * 224)]
+
+    _fields_ = [
+        ("Serial", c_char * 10),
+        ("AppName", c_char * 12),
+        ("DPFlags", c_byte * 2),
+        ("Blob", c_char * 224),
+    ]
 
 
 def vasco_verify(data, params, password, challenge=b"\0" * 16):
     # Construct actual buffers in case the library writes to ``password`` or ``challenge``
     password_buffer = create_string_buffer(password)
     challenge_buffer = create_string_buffer(challenge)
-    res = vasco_dll.AAL2VerifyPassword(byref(data),
-                                       byref(params),
-                                       password_buffer,
-                                       challenge_buffer)
+    res = vasco_dll.AAL2VerifyPassword(
+        byref(data), byref(params), password_buffer, challenge_buffer
+    )
 
     return res, data
 

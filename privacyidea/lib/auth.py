@@ -89,11 +89,9 @@ def delete_db_admin(username):
 
 
 @libpolicy(login_mode)
-def check_webui_user(user_obj,
-                     password,
-                     options=None,
-                     superuser_realms=None,
-                     check_otp=False):
+def check_webui_user(
+    user_obj, password, options=None, superuser_realms=None, check_otp=False
+):
     """
     This function is used to authenticate the user at the web ui.
     It checks against the userstore or against OTP/privacyidea (check_otp).

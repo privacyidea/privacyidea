@@ -23,12 +23,11 @@ This code is tested in test_ui_certificate.py
 """
 __author__ = "Cornelius Kölbel, <cornelius@privacyidea.org>"
 
-from flask import (Blueprint, render_template, request)
-from privacyidea.api.lib.utils import (get_all_params,
-                                       verify_auth_token, send_html)
+from flask import Blueprint, render_template, request
+from privacyidea.api.lib.utils import get_all_params, verify_auth_token, send_html
 
 
-cert_blueprint = Blueprint('cert_blueprint', __name__)
+cert_blueprint = Blueprint("cert_blueprint", __name__)
 
 
 @cert_blueprint.before_request
@@ -47,7 +46,7 @@ def before_request():
     request.PI_role = r.get("role")
 
 
-@cert_blueprint.route('', methods=['POST'])
+@cert_blueprint.route("", methods=["POST"])
 def cert_form():
     instance = request.script_root
     if instance == "/":
@@ -56,13 +55,18 @@ def cert_form():
     backend_url = ""
     authtoken = request.all_data.get("authtoken")
     ca = request.all_data.get("ca")
-    return send_html(render_template("cert_request_form.html",
-                                     instance=instance,
-                                     backendUrl=backend_url, ca=ca,
-                                     authtoken=authtoken))
+    return send_html(
+        render_template(
+            "cert_request_form.html",
+            instance=instance,
+            backendUrl=backend_url,
+            ca=ca,
+            authtoken=authtoken,
+        )
+    )
 
 
-@cert_blueprint.route('/enroll', methods=['POST'])
+@cert_blueprint.route("/enroll", methods=["POST"])
 def cert_enroll():
     instance = request.script_root
     if instance == "/":
@@ -73,36 +77,33 @@ def cert_enroll():
     r = request
     request_key = request.form.get("requestkey")
     # Firefox creates line breaks, Google Chrome does not
-    request_key = request_key.replace('\n', "")
-    request_key = request_key.replace('\r', "")
+    request_key = request_key.replace("\n", "")
+    request_key = request_key.replace("\r", "")
     ca = request.form.get("ca")
     # TODO: Read the email address from the user source
     email = "meine"
     csr = """SPKAC={0!s}
 CN={1!s},CN={2!s},O={3!s}
 emailAddress={4!s}
-""".format(request_key,
-           request.PI_username,
-           request.PI_role,
-           request.PI_realm,
-           email)
+""".format(request_key, request.PI_username, request.PI_role, request.PI_realm, email)
     # Take the CSR and run a token init
     from privacyidea.lib.token import init_token
-    tokenobject = init_token({"request": csr,
-                              "spkac": 1,
-                              "type": "certificate",
-                              "ca": ca})
+
+    tokenobject = init_token(
+        {"request": csr, "spkac": 1, "type": "certificate", "ca": ca}
+    )
     certificate = tokenobject.get_tokeninfo("certificate")
     serial = tokenobject.get_serial()
-    cert_pem = certificate.replace('\r', "").replace('\n', "")
+    cert_pem = certificate.replace("\r", "").replace("\n", "")
     cert_pem = cert_pem.replace("-----BEGIN CERTIFICATE-----", "")
     cert_pem = cert_pem.replace("-----END CERTIFICATE-----", "")
-    render_context = {'instance': instance,
-                      'backendUrl': backend_url,
-                      'username': "{0!s}@{1!s}".format(request.PI_username,
-                                                       request.PI_realm),
-                      'role': request.PI_role,
-                      'serial': serial,
-                      'certificate': certificate,
-                      'cert_pem': cert_pem }
+    render_context = {
+        "instance": instance,
+        "backendUrl": backend_url,
+        "username": "{0!s}@{1!s}".format(request.PI_username, request.PI_realm),
+        "role": request.PI_role,
+        "serial": serial,
+        "certificate": certificate,
+        "cert_pem": cert_pem,
+    }
     return send_html(render_template("token_enrolled.html", **render_context))

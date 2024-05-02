@@ -5,8 +5,8 @@ from sqlalchemy.orm.session import close_all_sessions
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
 from privacyidea.models import db, save_config_timestamp
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
 from privacyidea.lib.auth import create_db_admin
 from privacyidea.lib.auditmodules.base import Audit
@@ -30,7 +30,6 @@ class FakeFlaskG(object):
 
 
 class FakeAudit(Audit):
-
     def __init__(self):
         super(FakeAudit).__init__()
         self.audit_data = {}
@@ -45,25 +44,27 @@ class MyTestCase(unittest.TestCase):
     realm1 = "realm1"
     realm2 = "realm2"
     realm3 = "realm3"
-    testadmin = 'testadmin'
-    testadminpw = 'testpw'
+    testadmin = "testadmin"
+    testadminpw = "testpw"
     testadminmail = "admin@test.tld"
     serials = ["SE1", "SE2", "SE3"]
     otpkey = "3132333435363738393031323334353637383930"
-    valid_otp_values = ["755224",
-                        "287082",
-                        "359152",
-                        "969429",
-                        "338314",
-                        "254676",
-                        "287922",
-                        "162583",
-                        "399871",
-                        "520489"]
+    valid_otp_values = [
+        "755224",
+        "287082",
+        "359152",
+        "969429",
+        "338314",
+        "254676",
+        "287922",
+        "162583",
+        "399871",
+        "520489",
+    ]
 
     @classmethod
     def setUpClass(cls):
-        cls.app = create_app('testing', "")
+        cls.app = create_app("testing", "")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
         db.create_all()
@@ -82,18 +83,20 @@ class MyTestCase(unittest.TestCase):
 
     def setUp_user_realms(self):
         # create user realm
-        rid = save_resolver({"resolver": self.resolvername1,
-                             "type": "passwdresolver",
-                             "fileName": PWFILE})
+        rid = save_resolver(
+            {
+                "resolver": self.resolvername1,
+                "type": "passwdresolver",
+                "fileName": PWFILE,
+            }
+        )
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(self.realm1, [{'name': self.resolvername1}])
+        (added, failed) = set_realm(self.realm1, [{"name": self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
-        user = User(login="root",
-                    realm=self.realm1,
-                    resolver=self.resolvername1)
+        user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
 
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
@@ -107,19 +110,20 @@ class MyTestCase(unittest.TestCase):
 
     def setUp_user_realm2(self):
         # create user realm
-        rid = save_resolver({"resolver": self.resolvername1,
-                             "type": "passwdresolver",
-                             "fileName": PWFILE})
+        rid = save_resolver(
+            {
+                "resolver": self.resolvername1,
+                "type": "passwdresolver",
+                "fileName": PWFILE,
+            }
+        )
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(self.realm2,
-                                    [{'name': self.resolvername1}])
+        (added, failed) = set_realm(self.realm2, [{"name": self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
-        user = User(login="root",
-                    realm=self.realm2,
-                    resolver=self.resolvername1)
+        user = User(login="root", realm=self.realm2, resolver=self.resolvername1)
 
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm2>", user_str)
@@ -133,19 +137,20 @@ class MyTestCase(unittest.TestCase):
 
     def setUp_user_realm3(self):
         # create user realm
-        rid = save_resolver({"resolver": self.resolvername3,
-                             "type": "passwdresolver",
-                             "fileName": PWFILE2})
+        rid = save_resolver(
+            {
+                "resolver": self.resolvername3,
+                "type": "passwdresolver",
+                "fileName": PWFILE2,
+            }
+        )
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(self.realm3,
-                                    [{'name': self.resolvername3}])
+        (added, failed) = set_realm(self.realm3, [{"name": self.resolvername3}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
-        user = User(login="root",
-                    realm=self.realm3,
-                    resolver=self.resolvername3)
+        user = User(login="root", realm=self.realm3, resolver=self.resolvername3)
 
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.reso3@realm3>", user_str)
@@ -158,26 +163,27 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(user_repr == expected, user_repr)
 
     def setUp_sqlite_resolver_realm(self, sqlite_file, realm):
-        parameters = {'resolver': "sqlite_resolver",
-                      "type": "sqlresolver",
-                      'Driver': 'sqlite',
-                      'Server': '/tests/testdata/',
-                      'Database': sqlite_file,
-                      'Table': 'users',
-                      'Encoding': 'utf8',
-                      'Editable': True,
-                      'Map': """{ "username": "username",
+        parameters = {
+            "resolver": "sqlite_resolver",
+            "type": "sqlresolver",
+            "Driver": "sqlite",
+            "Server": "/tests/testdata/",
+            "Database": sqlite_file,
+            "Table": "users",
+            "Encoding": "utf8",
+            "Editable": True,
+            "Map": """{ "username": "username",
                         "userid" : "id",
                         "email" : "email",
                         "surname" : "name",
                         "givenname" : "givenname",
                         "password" : "password",
                         "phone": "phone",
-                        "mobile": "mobile"}"""
-                      }
+                        "mobile": "mobile"}""",
+        }
         r = save_resolver(parameters)
         self.assertTrue(r)
-        success, fail = set_realm(realm, [{'name': "sqlite_resolver"}])
+        success, fail = set_realm(realm, [{"name": "sqlite_resolver"}])
         self.assertEqual(len(success), 1)
         self.assertEqual(len(fail), 0)
 
@@ -190,10 +196,11 @@ class MyTestCase(unittest.TestCase):
         cls.app_context.pop()
 
     def authenticate(self):
-        with self.app.test_request_context('/auth',
-                                           data={"username": self.testadmin,
-                                                 "password": self.testadminpw},
-                                           method='POST'):
+        with self.app.test_request_context(
+            "/auth",
+            data={"username": self.testadmin, "password": self.testadminpw},
+            method="POST",
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -201,10 +208,11 @@ class MyTestCase(unittest.TestCase):
             self.at = result.get("value").get("token")
 
     def authenticate_selfservice_user(self):
-        with self.app.test_request_context('/auth',
-                                           method='POST',
-                                           data={"username": "selfservice@realm1",
-                                                 "password": "test"}):
+        with self.app.test_request_context(
+            "/auth",
+            method="POST",
+            data={"username": "selfservice@realm1", "password": "test"},
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -224,15 +232,17 @@ class MyTestCase(unittest.TestCase):
         """
         sorted_filter = filter_data.copy()
         sorted_filter["sortorder"] = "desc"
-        with self.app.test_request_context('/audit/',
-                                           method='GET',
-                                           data=sorted_filter,
-                                           headers={"Authorization": self.at}):
+        with self.app.test_request_context(
+            "/audit/",
+            method="GET",
+            data=sorted_filter,
+            headers={"Authorization": self.at},
+        ):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.data)
             self.assertTrue(res.is_json, res)
-            result = res.json['result']
-            self.assertIn('auditdata', result['value'])
+            result = res.json["result"]
+            self.assertIn("auditdata", result["value"])
             # return the last entry
             return res.json["result"]["value"]["auditdata"][0]
 
@@ -243,12 +253,13 @@ class OverrideConfigTestCase(MyTestCase):
     This can be useful if config values need to be adjusted *for app creation*.
     For that, just override the inner ``Config`` class.
     """
+
     class Config(TestingConfig):
         pass
 
     @classmethod
     def setUpClass(cls):
-        """ override privacyidea.config.config["testing"] with the inner config class """
+        """override privacyidea.config.config["testing"] with the inner config class"""
         with mock.patch.dict("privacyidea.config.config", {"testing": cls.Config}):
             MyTestCase.setUpClass()
 
@@ -256,9 +267,11 @@ class OverrideConfigTestCase(MyTestCase):
 class MyApiTestCase(MyTestCase):
     @classmethod
     def cls_auth(cls, app):
-        with app.test_request_context('/auth', data={"username": cls.testadmin,
-                                                     "password": cls.testadminpw},
-                                      method='POST'):
+        with app.test_request_context(
+            "/auth",
+            data={"username": cls.testadmin, "password": cls.testadminpw},
+            method="POST",
+        ):
             res = app.full_dispatch_request()
             assert res.status_code == 200
             result = res.json.get("result")

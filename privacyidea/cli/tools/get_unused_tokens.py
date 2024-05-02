@@ -33,6 +33,7 @@ You can call the script like this:
     value"
 
 """
+
 import click
 from flask.cli import with_appcontext
 from privacyidea.lib.utils import get_version_number
@@ -40,30 +41,36 @@ from privacyidea.lib.token import get_tokens, remove_token, enable_token
 from privacyidea.lib.policy import ACTION
 from privacyidea.cli import NoPluginsFlaskGroup, create_silent_app
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
-@click.group(cls=NoPluginsFlaskGroup, create_app=create_silent_app,
-             context_settings=CONTEXT_SETTINGS, add_default_commands=False,
-             epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
+@click.group(
+    cls=NoPluginsFlaskGroup,
+    create_app=create_silent_app,
+    context_settings=CONTEXT_SETTINGS,
+    add_default_commands=False,
+    epilog="Check out our docs at https://privacyidea.readthedocs.io/ for more details",
+)
 def cli():
     """
-\b
-             _                    _______  _______
-   ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
-  / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
- / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|  Get unused tokens
-/_/                       /___/
+    \b
+                 _                    _______  _______
+       ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
+      / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
+     / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|  Get unused tokens
+    /_/                       /___/
 
-   Search for tokens that have not been used for a while"""
-    click.echo(r"""
+       Search for tokens that have not been used for a while"""
+    click.echo(
+        r"""
                  _                    _______  _______
        ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
       / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
      / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|  Get unused tokens
     /_/                       /___/
     {0!s:>51}
-        """.format('v{0!s}'.format(get_version_number())))
+        """.format("v{0!s}".format(get_version_number()))
+    )
 
 
 def _get_tokenlist(age):
@@ -80,7 +87,7 @@ def _get_tokenlist(age):
 
 
 @click.command()
-@click.argument('age')
+@click.argument("age")
 @with_appcontext
 def list_tokens(age):
     """
@@ -95,15 +102,20 @@ def list_tokens(age):
         click.echo("Token serial\tLast authentication")
         click.echo("=" * 50)
         for token_obj in tlist:
-            click.echo(f"{token_obj.token.serial}\t{token_obj.get_tokeninfo(ACTION.LASTAUTH)}")
+            click.echo(
+                f"{token_obj.token.serial}\t{token_obj.get_tokeninfo(ACTION.LASTAUTH)}"
+            )
 
 
 @click.command()
-@click.argument('age')
-@click.option('-d', '--description', help='The description that will be set.')
-@click.option('-t', '--tokeninfo',
-              help='The tokeninfo that will be set. It needs a key and a '
-                   'value and should be specified like key=value.')
+@click.argument("age")
+@click.option("-d", "--description", help="The description that will be set.")
+@click.option(
+    "-t",
+    "--tokeninfo",
+    help="The tokeninfo that will be set. It needs a key and a "
+    "value and should be specified like key=value.",
+)
 @with_appcontext
 def mark(age, description=None, tokeninfo=None):
     """
@@ -116,20 +128,26 @@ def mark(age, description=None, tokeninfo=None):
     tlist = _get_tokenlist(age)
     for token_obj in tlist:
         if description:
-            click.echo("Setting description for token {0!s}: {1!s}".format(
-                token_obj.token.serial, description))
+            click.echo(
+                "Setting description for token {0!s}: {1!s}".format(
+                    token_obj.token.serial, description
+                )
+            )
             token_obj.set_description(description)
             token_obj.save()
         if tokeninfo:
             key, value = tokeninfo.split("=")
-            click.echo("Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
-                token_obj.token.serial, key, value))
+            click.echo(
+                "Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
+                    token_obj.token.serial, key, value
+                )
+            )
             token_obj.add_tokeninfo(key, value)
             token_obj.save()
 
 
 @click.command()
-@click.argument('age')
+@click.argument("age")
 @with_appcontext
 def delete(age):
     """
@@ -145,7 +163,7 @@ def delete(age):
 
 
 @click.command()
-@click.argument('age')
+@click.argument("age")
 @with_appcontext
 def disable(age):
     """
@@ -165,5 +183,5 @@ cli.add_command(disable)
 cli.add_command(delete)
 cli.add_command(mark)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

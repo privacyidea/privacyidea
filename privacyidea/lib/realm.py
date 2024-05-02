@@ -28,30 +28,30 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''
+"""
 These are the library functions to create, modify and delete realms in the
 database. It depends on the lib.resolver.
 
 It is independent of any user or token libraries and can be tested standalone
 in tests/test_lib_realm.py
-'''
+"""
+
 import uuid
 
-from ..models import (Realm,
-                      ResolverRealm,
-                      Resolver, db, save_config_timestamp)
+from ..models import Realm, ResolverRealm, Resolver, db, save_config_timestamp
 from .log import log_with
 from privacyidea.lib.config import get_config_object
 import logging
 from privacyidea.lib.utils import sanity_name_check, fetch_one_resource, is_true
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import register_import, register_export
+
 log = logging.getLogger(__name__)
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_realms(realmname=None):
-    '''
+    """
     Either return all defined realms or a specific realm.
 
     :param realmname: the realm, that is of interest. If not given, all realms
@@ -59,7 +59,7 @@ def get_realms(realmname=None):
     :type realmname: string
     :return: a dict with realm description like
     :rtype: dict
-    '''
+    """
     config_object = get_config_object()
     realms = config_object.realm
     if realmname:
@@ -70,7 +70,7 @@ def get_realms(realmname=None):
     return realms
 
 
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_realm(realmname):
     """
     :param realmname:
@@ -133,7 +133,7 @@ def set_default_realm(default_realm=None):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_default_realm():
     """
     return the default realm
@@ -157,7 +157,7 @@ def delete_realm(realmname):
     """
     # Check if there is a default realm
     defRealm = get_default_realm()
-    hadDefRealmBefore = (defRealm != "")
+    hadDefRealmBefore = defRealm != ""
 
     ret = fetch_one_resource(Realm, name=realmname).delete()
 
@@ -223,12 +223,15 @@ def set_realm(realm, resolvers=None):
 
     # assign the resolvers
     for reso in resolvers:
-        reso_name = reso['name'].strip()
+        reso_name = reso["name"].strip()
         db_reso = Resolver.query.filter_by(name=reso_name).first()
         if db_reso:
-            ResolverRealm(db_reso.id, db_realm.id,
-                          node_uuid=str(reso.get('node', '')),
-                          priority=reso.get('priority', None)).save()
+            ResolverRealm(
+                db_reso.id,
+                db_realm.id,
+                node_uuid=str(reso.get("node", "")),
+                priority=reso.get("priority", None),
+            ).save()
             added.append(reso_name)
         else:
             failed.append(reso_name)
@@ -242,7 +245,7 @@ def set_realm(realm, resolvers=None):
     return added, failed
 
 
-@register_export('realm')
+@register_export("realm")
 def export_realms(name=None):
     """
     Export given realm configuration or all realms
@@ -250,7 +253,7 @@ def export_realms(name=None):
     return get_realms(realmname=name)
 
 
-@register_import('realm')
+@register_import("realm")
 def import_realms(data, name=None):
     """
     Import given realm configurations
@@ -260,12 +263,15 @@ def import_realms(data, name=None):
     # TODO: the set_realm() function always creates the realm in the DB even if
     #  the associated resolver are not available. So the realms must be imported
     #  *after* the resolver.
-    log.debug('Import realm config: {0!s}'.format(data))
+    log.debug("Import realm config: {0!s}".format(data))
     for realm, r_config in data.items():
         if name and name != realm:
             continue
-        added, failed = set_realm(realm, resolvers=r_config.get('resolver', []))
-        if is_true(r_config['default']):
+        added, failed = set_realm(realm, resolvers=r_config.get("resolver", []))
+        if is_true(r_config["default"]):
             set_default_realm(realm)
-        log.info('realm: {0!s:<15} resolver added: {1!s} '
-                 'failed: {2!s}'.format(realm, added, failed))
+        log.info(
+            "realm: {0!s:<15} resolver added: {1!s} " "failed: {2!s}".format(
+                realm, added, failed
+            )
+        )

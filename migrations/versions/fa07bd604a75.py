@@ -7,10 +7,13 @@ Create Date: 2021-05-18 23:29:59.273457
 """
 
 # revision identifiers, used by Alembic.
-revision = 'fa07bd604a75'
-down_revision = '3ba618f6b820'
+revision = "fa07bd604a75"
+down_revision = "3ba618f6b820"
 
-from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, delete_smsgateway_option
+from privacyidea.lib.smsprovider.SMSProvider import (
+    get_smsgateway,
+    delete_smsgateway_option,
+)
 from privacyidea.lib.tokens.pushtoken import GWTYPE, PUSH_ACTION
 from privacyidea.lib.policy import PolicyClass, set_policy, SCOPE
 
@@ -21,8 +24,9 @@ def upgrade():
     print(fb_gateways)
     # 2. Check which policy contains this Firebase Config
     P = PolicyClass()
-    pols = P.list_policies(scope=SCOPE.ENROLL,
-                           action="{0!s}".format(PUSH_ACTION.FIREBASE_CONFIG))
+    pols = P.list_policies(
+        scope=SCOPE.ENROLL, action="{0!s}".format(PUSH_ACTION.FIREBASE_CONFIG)
+    )
 
     # iterate through all enrollment policies
     for pol in pols:
@@ -44,11 +48,13 @@ def upgrade():
                     action[PUSH_ACTION.REGISTRATION_URL] = registration_url
                 if ttl:
                     action[PUSH_ACTION.TTL] = ttl
-                r = set_policy(name=pol.get("name"),
-                               scope=SCOPE.ENROLL,
-                               active=pol.get("active"),
-                               check_all_resolvers=pol.get("check_all_resolvers"),
-                               action=action)
+                r = set_policy(
+                    name=pol.get("name"),
+                    scope=SCOPE.ENROLL,
+                    active=pol.get("active"),
+                    check_all_resolvers=pol.get("check_all_resolvers"),
+                    action=action,
+                )
                 print("+- Updated policy {0!s}: {1!s}".format(pol.get("name"), r))
                 # 4. Delete push_registration_url and ttl from the Firebase Config
                 #    Note: If we had a firebase config, that would not be used in a policy,

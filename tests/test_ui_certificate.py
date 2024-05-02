@@ -3,6 +3,7 @@ This file tests the web UI for creating certificate requests
 
 implementation is contained webui/certificate.py
 """
+
 import json
 from .base import MyTestCase
 import os
@@ -17,7 +18,6 @@ WORKINGDIR = "tests/testdata/ca"
 
 
 class WebUICertificateTestCase(MyTestCase):
-
     my_serial = "myToken"
     foreign_serial = "notMyToken"
 
@@ -28,10 +28,11 @@ class WebUICertificateTestCase(MyTestCase):
         self.setUp_user_realms()
 
     def test_01_cert_request(self):
-        with self.app.test_request_context('/auth',
-                                           method='POST',
-                                           data={"username": "selfservice@realm1",
-                                                 "password": "test"}):
+        with self.app.test_request_context(
+            "/auth",
+            method="POST",
+            data={"username": "selfservice@realm1", "password": "test"},
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -40,28 +41,24 @@ class WebUICertificateTestCase(MyTestCase):
             authtoken = result.get("value")
 
         # Check the form
-        with self.app.test_request_context('/certificate',
-                                           method='POST',
-                                           data={"authtoken": authtoken.get("token")}):
+        with self.app.test_request_context(
+            "/certificate", method="POST", data={"authtoken": authtoken.get("token")}
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertEqual(res.mimetype, 'text/html', res)
+            self.assertEqual(res.mimetype, "text/html", res)
             # Check the form
             self.assertTrue(b"privacyIDEA Certificate Request" in res.data)
             self.assertTrue(b"Key strength" in res.data)
             self.assertTrue(b'input type="hidden" name="authtoken"' in res.data)
 
         # Check that missing authentication will result in an error
-        with self.app.test_request_context('/certificate',
-                                           method='POST',
-                                           data={}):
+        with self.app.test_request_context("/certificate", method="POST", data={}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)
 
         # GET-Request will fail, Method not allowed
-        with self.app.test_request_context('/certificate',
-                                           method='GET',
-                                           data={}):
+        with self.app.test_request_context("/certificate", method="GET", data={}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 405, res)
 
@@ -69,56 +66,65 @@ class WebUICertificateTestCase(MyTestCase):
         # Setup the CA
         self.authenticate()
         cwd = os.getcwd()
-        with self.app.test_request_context('/caconnector/localCA',
-                                           data={'type': 'local',
-                                                 'cakey': CAKEY,
-                                                 'cacert': CACERT,
-                                                 'openssl.cnf': OPENSSLCNF,
-                                                 "WorkingDir": cwd + "/" + WORKINGDIR},
-                                           method='POST',
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/caconnector/localCA",
+            data={
+                "type": "local",
+                "cakey": CAKEY,
+                "cacert": CACERT,
+                "openssl.cnf": OPENSSLCNF,
+                "WorkingDir": cwd + "/" + WORKINGDIR,
+            },
+            method="POST",
+            headers={"Authorization": self.at},
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = res.json['result']
+            result = res.json["result"]
             self.assertTrue(result["status"], result)
             self.assertTrue(result["value"] == 1, result)
 
         # Get the users authtoken
-        with self.app.test_request_context('/auth',
-                                           method='POST',
-                                           data={"username": "selfservice@realm1",
-                                                 "password": "test"}):
+        with self.app.test_request_context(
+            "/auth",
+            method="POST",
+            data={"username": "selfservice@realm1", "password": "test"},
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            result = res.json['result']
+            result = res.json["result"]
             self.assertTrue(result.get("status"), res.data)
             # In self.at_user we store the user token
             authtoken = result.get("value")
 
         # Check the form
-        with self.app.test_request_context('/certificate/enroll',
-                                           method='POST',
-                                           data={"authtoken": authtoken.get("token"),
-                                                 "requestkey": REQUESTKEY,
-                                                 "ca": "localCA"}):
+        with self.app.test_request_context(
+            "/certificate/enroll",
+            method="POST",
+            data={
+                "authtoken": authtoken.get("token"),
+                "requestkey": REQUESTKEY,
+                "ca": "localCA",
+            },
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertEqual(res.mimetype, 'text/html', res)
+            self.assertEqual(res.mimetype, "text/html", res)
             # Check the form
             self.assertTrue(b"The certificate with token serial" in res.data)
             self.assertTrue(b"Certificate to Browser" in res.data)
-            self.assertTrue(b'data:application/x-x509-user-cert;base64' in res.data)
+            self.assertTrue(b"data:application/x-x509-user-cert;base64" in res.data)
 
         # Check that missing authentication will result in an error
-        with self.app.test_request_context('/certificate/enroll',
-                                           method='POST',
-                                           data={}):
+        with self.app.test_request_context(
+            "/certificate/enroll", method="POST", data={}
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401, res)
 
         # GET-Request will fail, Method not allowed
-        with self.app.test_request_context('/certificate/enroll',
-                                           method='GET',
-                                           data={}):
+        with self.app.test_request_context(
+            "/certificate/enroll", method="GET", data={}
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 405, res)

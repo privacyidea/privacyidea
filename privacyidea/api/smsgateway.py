@@ -25,29 +25,31 @@ These gateway definitions are written to the database table "smsgateway" and
 
 The code of this module is tested in tests/test_api_smsgateway.py
 """
-from flask import (Blueprint,
-                   request)
+
+from flask import Blueprint, request
 from .lib.utils import getParam, send_result
 from ..lib.log import log_with
 from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policy import ACTION
-from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
-                                                     get_smsgateway,
-                                                     set_smsgateway,
-                                                     delete_smsgateway_key_generic,
-                                                     delete_smsgateway,
-                                                     get_sms_provider_class)
+from privacyidea.lib.smsprovider.SMSProvider import (
+    SMS_PROVIDERS,
+    get_smsgateway,
+    set_smsgateway,
+    delete_smsgateway_key_generic,
+    delete_smsgateway,
+    get_sms_provider_class,
+)
 
 log = logging.getLogger(__name__)
 
 
-smsgateway_blueprint = Blueprint('smsgateway_blueprint', __name__)
+smsgateway_blueprint = Blueprint("smsgateway_blueprint", __name__)
 
 
-@smsgateway_blueprint.route('/', methods=['GET'])
-@smsgateway_blueprint.route('/<gwid>', methods=['GET'])
+@smsgateway_blueprint.route("/", methods=["GET"])
+@smsgateway_blueprint.route("/<gwid>", methods=["GET"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.SMSGATEWAYREAD)
 def get_gateway(gwid=None):
@@ -66,8 +68,9 @@ def get_gateway(gwid=None):
     #  allowed to read the identifier of the definitions!
     if gwid == "providers":
         for classname in SMS_PROVIDERS:
-            smsclass = get_sms_provider_class(classname.rsplit(".", 1)[0],
-                                              classname.rsplit(".", 1)[1])
+            smsclass = get_sms_provider_class(
+                classname.rsplit(".", 1)[0], classname.rsplit(".", 1)[1]
+            )
             res[classname] = smsclass.parameters()
     else:
         res = [gw.as_dict() for gw in get_smsgateway(id=gwid)]
@@ -76,7 +79,7 @@ def get_gateway(gwid=None):
     return send_result(res)
 
 
-@smsgateway_blueprint.route('', methods=['POST'])
+@smsgateway_blueprint.route("", methods=["POST"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.SMSGATEWAYWRITE)
 def set_gateway():
@@ -103,14 +106,14 @@ def set_gateway():
         elif k.startswith("header."):
             headers[k[7:]] = v
 
-    res = set_smsgateway(identifier, providermodule, description,
-                         options=options, headers=headers)
-    g.audit_object.log({"success": True,
-                        "info": res})
+    res = set_smsgateway(
+        identifier, providermodule, description, options=options, headers=headers
+    )
+    g.audit_object.log({"success": True, "info": res})
     return send_result(res)
 
 
-@smsgateway_blueprint.route('/<identifier>', methods=['DELETE'])
+@smsgateway_blueprint.route("/<identifier>", methods=["DELETE"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.SMSGATEWAYWRITE)
 def delete_gateway(identifier=None):
@@ -121,13 +124,12 @@ def delete_gateway(identifier=None):
     :return: json with success or fail
     """
     res = delete_smsgateway(identifier=identifier)
-    g.audit_object.log({"success": res,
-                        "info": identifier})
+    g.audit_object.log({"success": res, "info": identifier})
 
     return send_result(res)
 
 
-@smsgateway_blueprint.route('/option/<gwid>/<key>', methods=['DELETE'])
+@smsgateway_blueprint.route("/option/<gwid>/<key>", methods=["DELETE"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.SMSGATEWAYWRITE)
 def delete_gateway_option(gwid=None, key=None):
@@ -142,7 +144,6 @@ def delete_gateway_option(gwid=None, key=None):
         type, key = key.split(".", 1)
 
     res = delete_smsgateway_key_generic(gwid, key, Type=type)
-    g.audit_object.log({"success": res,
-                        "info": "{0!s}/{1!s}".format(gwid, key)})
+    g.audit_object.log({"success": res, "info": "{0!s}/{1!s}".format(gwid, key)})
 
     return send_result(res)

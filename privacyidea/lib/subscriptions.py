@@ -63,18 +63,20 @@ SIGN_FORMAT = """{application}
 """
 
 
-APPLICATIONS = {"demo_application": 0,
-                "owncloud": 50,
-                "privacyidea-ldap-proxy": 50,
-                "privacyidea-cp": 50,
-                "privacyidea-pam": 10000,
-                "privacyidea-shibboleth": 10000,
-                "privacyidea-adfs": 50,
-                "privacyidea-keycloak": 10000,
-                "simplesamlphp": 10000,
-                "privacyidea-simplesamlphp": 10000,
-                "privacyidea authenticator": 10,
-                "privacyidea": 50}
+APPLICATIONS = {
+    "demo_application": 0,
+    "owncloud": 50,
+    "privacyidea-ldap-proxy": 50,
+    "privacyidea-cp": 50,
+    "privacyidea-pam": 10000,
+    "privacyidea-shibboleth": 10000,
+    "privacyidea-adfs": 50,
+    "privacyidea-keycloak": 10000,
+    "simplesamlphp": 10000,
+    "privacyidea-simplesamlphp": 10000,
+    "privacyidea authenticator": 10,
+    "privacyidea": 50,
+}
 
 log = logging.getLogger(__name__)
 
@@ -87,8 +89,13 @@ def get_users_with_active_tokens():
     :rtype: int
     """
     from privacyidea.models import Token, TokenOwner
+
     sql_query = TokenOwner.query.with_entities(TokenOwner.resolver, TokenOwner.user_id)
-    sql_query = sql_query.filter(Token.active == True).filter(Token.id == TokenOwner.token_id).distinct()
+    sql_query = (
+        sql_query.filter(Token.active == True)
+        .filter(Token.id == TokenOwner.token_id)
+        .distinct()
+    )
     return sql_query.count()
 
 
@@ -103,7 +110,9 @@ def subscription_status(component="privacyidea", tokentype=None):
 
     :return: subscription state
     """
-    token_count = get_tokens(assigned=True, active=True, count=True, tokentype=tokentype)
+    token_count = get_tokens(
+        assigned=True, active=True, count=True, tokentype=tokentype
+    )
     if token_count <= APPLICATIONS.get(component, 50):
         return 0
 
@@ -133,34 +142,37 @@ def save_subscription(subscription):
     """
     if isinstance(subscription.get("date_from"), str):
         subscription["date_from"] = datetime.datetime.strptime(
-            subscription.get("date_from"), SUBSCRIPTION_DATE_FORMAT)
+            subscription.get("date_from"), SUBSCRIPTION_DATE_FORMAT
+        )
     if isinstance(subscription.get("date_till"), str):
         subscription["date_till"] = datetime.datetime.strptime(
-            subscription.get("date_till"), SUBSCRIPTION_DATE_FORMAT)
+            subscription.get("date_till"), SUBSCRIPTION_DATE_FORMAT
+        )
 
     # verify the signature of the subscriptions
     check_signature(subscription)
 
-    s = Subscription(application=subscription.get("application"),
-                     for_name=subscription.get("for_name"),
-                     for_address=subscription.get("for_address"),
-                     for_email=subscription.get("for_email"),
-                     for_phone=subscription.get("for_phone"),
-                     for_url=subscription.get("for_url"),
-                     for_comment=subscription.get("for_comment"),
-                     by_name=subscription.get("by_name"),
-                     by_email=subscription.get("by_email"),
-                     by_address=subscription.get("by_address"),
-                     by_phone=subscription.get("by_phone"),
-                     by_url=subscription.get("by_url"),
-                     date_from=subscription.get("date_from"),
-                     date_till=subscription.get("date_till"),
-                     num_users=subscription.get("num_users"),
-                     num_tokens=subscription.get("num_tokens"),
-                     num_clients=subscription.get("num_clients"),
-                     level=subscription.get("level"),
-                     signature=subscription.get("signature")
-                     ).save()
+    s = Subscription(
+        application=subscription.get("application"),
+        for_name=subscription.get("for_name"),
+        for_address=subscription.get("for_address"),
+        for_email=subscription.get("for_email"),
+        for_phone=subscription.get("for_phone"),
+        for_url=subscription.get("for_url"),
+        for_comment=subscription.get("for_comment"),
+        by_name=subscription.get("by_name"),
+        by_email=subscription.get("by_email"),
+        by_address=subscription.get("by_address"),
+        by_phone=subscription.get("by_phone"),
+        by_url=subscription.get("by_url"),
+        date_from=subscription.get("date_from"),
+        date_till=subscription.get("date_till"),
+        num_users=subscription.get("num_users"),
+        num_tokens=subscription.get("num_tokens"),
+        num_clients=subscription.get("num_clients"),
+        level=subscription.get("level"),
+        signature=subscription.get("signature"),
+    ).save()
     return s
 
 
@@ -175,8 +187,9 @@ def get_subscription(application=None):
     subscriptions = []
     sql_query = Subscription.query
     if application:
-        sql_query = sql_query.filter(func.lower(Subscription.application) ==
-                                     application.lower())
+        sql_query = sql_query.filter(
+            func.lower(Subscription.application) == application.lower()
+        )
 
     for sub in sql_query.all():
         subscriptions.append(sub.get())
@@ -193,8 +206,7 @@ def delete_subscription(application):
     :return: True in case of success
     """
     ret = -1
-    sub = Subscription.query.filter(Subscription.application ==
-                                  application).first()
+    sub = Subscription.query.filter(Subscription.application == application).first()
 
     if sub:
         sub.delete()
@@ -223,7 +235,7 @@ def raise_exception_probability(subscription=None):
         # After 44 days we get 50%
         # After 74 days we get 80%
         # After 94 days we get 100%
-        p = 0.2 + ((delta.days-14.0)/30.0) * 0.3
+        p = 0.2 + ((delta.days - 14.0) / 30.0) * 0.3
         # This is only for probability, so we use the less secure but faster random module
         return random.random() < p  # nosec B311
 
@@ -263,33 +275,41 @@ def check_subscription(application, max_free_subscriptions=None):
     """
     if application.lower() in APPLICATIONS:
         subscriptions = get_subscription(application) or get_subscription(
-            application.lower())
+            application.lower()
+        )
         # get the number of users with active tokens
         token_users = get_users_with_active_tokens()
-        free_subscriptions = max_free_subscriptions or APPLICATIONS.get(application.lower())
+        free_subscriptions = max_free_subscriptions or APPLICATIONS.get(
+            application.lower()
+        )
         if len(subscriptions) == 0:
             if subscription_exceeded_probability(token_users, free_subscriptions):
-                raise SubscriptionError(description="No subscription for your client.",
-                                        application=application)
+                raise SubscriptionError(
+                    description="No subscription for your client.",
+                    application=application,
+                )
         else:
             subscription = subscriptions[0]
             expire_date = subscription.get("date_till")
             if expire_date < datetime.datetime.now():
                 # subscription has expired
                 if raise_exception_probability(subscription):
-                    raise SubscriptionError(description="Your subscription "
-                                                        "expired.",
-                                            application=application)
+                    raise SubscriptionError(
+                        description="Your subscription " "expired.",
+                        application=application,
+                    )
             else:
                 # subscription is still valid, so check the signature.
                 check_signature(subscription)
                 allowed_tokennums = subscription.get("num_tokens")
                 if subscription_exceeded_probability(token_users, allowed_tokennums):
                     # subscription is exceeded
-                    raise SubscriptionError(description="Too many users "
-                                                        "with assigned tokens. "
-                                                        "Subscription exceeded.",
-                                            application=application)
+                    raise SubscriptionError(
+                        description="Too many users "
+                        "with assigned tokens. "
+                        "Subscription exceeded.",
+                        application=application,
+                    )
 
     return True
 
@@ -310,30 +330,36 @@ def check_signature(subscription):
 
     try:
         # remove the minutes 00:00:00
-        subscription["date_from"] = subscription.get("date_from").strftime(SUBSCRIPTION_DATE_FORMAT)
-        subscription["date_till"] = subscription.get("date_till").strftime(SUBSCRIPTION_DATE_FORMAT)
+        subscription["date_from"] = subscription.get("date_from").strftime(
+            SUBSCRIPTION_DATE_FORMAT
+        )
+        subscription["date_till"] = subscription.get("date_till").strftime(
+            SUBSCRIPTION_DATE_FORMAT
+        )
         sign_string = SIGN_FORMAT.format(**subscription)
-        with open(filename, 'rb') as key_file:
+        with open(filename, "rb") as key_file:
             sign_obj = Sign(private_key=None, public_key=key_file.read())
 
-        signature = subscription.get('signature', '100')
+        signature = subscription.get("signature", "100")
         r = sign_obj.verify(sign_string, signature, verify_old_sigs=True)
         subscription["date_from"] = datetime.datetime.strptime(
-            subscription.get("date_from"),
-            SUBSCRIPTION_DATE_FORMAT)
+            subscription.get("date_from"), SUBSCRIPTION_DATE_FORMAT
+        )
         subscription["date_till"] = datetime.datetime.strptime(
-            subscription.get("date_till"),
-            SUBSCRIPTION_DATE_FORMAT)
+            subscription.get("date_till"), SUBSCRIPTION_DATE_FORMAT
+        )
     except Exception as _e:
         log.debug(traceback.format_exc())
-        raise SubscriptionError("Verifying the signature of your subscription "
-                                "failed.",
-                                application=subscription.get("application"))
+        raise SubscriptionError(
+            "Verifying the signature of your subscription " "failed.",
+            application=subscription.get("application"),
+        )
 
     if not r:
-        raise SubscriptionError("Signature of your subscription does not "
-                                "match.",
-                                application=subscription.get("application"))
+        raise SubscriptionError(
+            "Signature of your subscription does not " "match.",
+            application=subscription.get("application"),
+        )
 
     return r
 

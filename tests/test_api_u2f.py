@@ -8,7 +8,7 @@ from cryptography.hazmat.primitives import hashes
 from privacyidea.lib.token import assign_token, remove_token, get_tokens
 from privacyidea.lib.user import User
 from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.lib.tokens.u2f import (check_response, url_encode)
+from privacyidea.lib.tokens.u2f import check_response, url_encode
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.tokens.u2ftoken import U2FACTION
 from privacyidea.models import Challenge
@@ -25,8 +25,9 @@ OTPKEY2 = "010fe88d31948c0c2e3258a4b0f7b11956a258ef"
 OTPVALUES2 = ["551536", "703671", "316522", "413789"]
 
 
-def sign_challenge(user_priv_key, app_id, client_data, counter,
-                   user_presence_byte=b'\x01'):
+def sign_challenge(
+    user_priv_key, app_id, client_data, counter, user_presence_byte=b"\x01"
+):
     """
     This creates a signature for the U2F data.
     Only used in test scenario
@@ -64,14 +65,12 @@ def sign_challenge(user_priv_key, app_id, client_data, counter,
 
 
 class APIU2fTestCase(MyApiTestCase):
-
     serial = "U2F001"
 
     def test_000_setup_realms(self):
         self.setUp_user_realms()
         # U2F is not configured yet
-        with self.app.test_request_context('/ttype/u2f',
-                                           method='GET'):
+        with self.app.test_request_context("/ttype/u2f", method="GET"):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
 
@@ -93,21 +92,21 @@ class APIU2fTestCase(MyApiTestCase):
                         "x":"HzQwlfXX7Q4S5MtCCnZUNBw3RMzPO9tOyWjBqRl4tJ8",
                         "y":"XVguGFLIZx1fXg3wNqfdbn75hi4-_7-BxhMljw42Ht4"},
                     "origin":"http://example.com"}"""
-        client_data = ''.join(cdata.split())
+        client_data = "".join(cdata.split())
         counter = 1
-        signature = sign_challenge(privkey, app_id,
-                                   client_data, counter)
+        signature = sign_challenge(privkey, app_id, client_data, counter)
 
         r = check_response(pubkey, app_id, client_data, signature, counter)
         self.assertEqual(r, 1)
 
     def test_01_register_u2f(self):
         # step 1
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"type": "u2f",
-                                                 "serial": self.serial},
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/token/init",
+            method="POST",
+            data={"type": "u2f", "serial": self.serial},
+            headers={"Authorization": self.at},
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             response = res.json
@@ -117,8 +116,7 @@ class APIU2fTestCase(MyApiTestCase):
 
             serial = details.get("serial")
             self.assertEqual(serial[:3], "U2F")
-            self.assertEqual(details.get("u2fRegisterRequest").get(
-                "version"), "U2F_V2")
+            self.assertEqual(details.get("u2fRegisterRequest").get("version"), "U2F_V2")
             challenge = details.get("u2fRegisterRequest").get("challenge")
             self.assertTrue(len(challenge) > 20)
 
@@ -127,13 +125,17 @@ class APIU2fTestCase(MyApiTestCase):
         # from the registration example
         reg_data = "BQRFnd8XtfZzsTK68VPK64Bcjiog_ZzyYNuzjaaGwpPnSpifxaqQV4_4IMxVlGS3CLoQmNAR41MSMxZHG0dENLRmQGnk4OqRxGRHmUOOLmDkGgdIJycQe79JCERV1gqGnWAOFBg_bH4WFSxZwnX-IMRcl3zW_X442QNrrdFySvXrba4wggIcMIIBBqADAgECAgQ4Zt91MAsGCSqGSIb3DQEBCzAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJvb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwMDAwMFowKzEpMCcGA1UEAwwgWXViaWNvIFUyRiBFRSBTZXJpYWwgMTM4MzExNjc4NjEwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQ3jfx0DHOblHJO09Ujubh2gQZWwT3ob6-uzzjZD1XiyAob_gsw3FOzXefQRblty48r-U-o4LkDFjx_btwuSHtxoxIwEDAOBgorBgEEAYLECgEBBAAwCwYJKoZIhvcNAQELA4IBAQIaR2TKAInPkq24f6hIU45yzD79uzR5KUMEe4IWqTm69METVio0W2FHWXlpeUe85nGqanwGeW7U67G4_WAnGbcd6zz2QumNsdlmb_AebbdPRa95Z8BG1ub_S04JoxQYNLaa8WRlzN7POgqAnAqkmnsZQ_W9Tj2uO9zP3mpxOkkmnqz7P5zt4Lp5xrv7p15hGOIPD5V-ph7tUmiCJsq0LfeRA36X7aXi32Ap0rt_wyfnRef59YYr7SmwaMuXKjbIZSLesscZZTMzXd-uuLb6DbUCasqEVBkGGqTRfAcOmPov1nHUrNDCkOR0obR4PsJG4PiamIfApNeoXGYpGbok6nucMEYCIQC_yerJqB3mnuAJGfbdKuOIx-Flxr-VSQ2nAkUUE_50dQIhAJE2NL1Xs2oVEG4bFzEM86TfS7nkHxad89aYmUrII49V"
         client_data = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZmluaXNoRW5yb2xsbWVudCIsImNoYWxsZW5nZSI6ImdXbndtYnFSMl9YOE91RFhId0dyQWNmUTBUajN4YTVfZ2RJMjBYcVlsdTg9Iiwib3JpZ2luIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiY2lkX3B1YmtleSI6IiJ9"
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"serial": serial,
-                                                 "type": "u2f",
-                                                 "regdata": reg_data,
-                                                 "clientdata": client_data},
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/token/init",
+            method="POST",
+            data={
+                "serial": serial,
+                "type": "u2f",
+                "regdata": reg_data,
+                "clientdata": client_data,
+            },
+            headers={"Authorization": self.at},
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             response = res.json
@@ -141,17 +143,24 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
 
         # In this case we get the automatic description
-        self.assertEqual(get_tokens(serial=serial)[0].token.description, "Yubico U2F EE Serial 13831167861")
+        self.assertEqual(
+            get_tokens(serial=serial)[0].token.description,
+            "Yubico U2F EE Serial 13831167861",
+        )
         remove_token(self.serial)
 
     def test_01a_register_u2f_with_custom_description(self):
         # step 1
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"type": "u2f",
-                                                 "serial": self.serial,
-                                                 "description": "my description"},
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/token/init",
+            method="POST",
+            data={
+                "type": "u2f",
+                "serial": self.serial,
+                "description": "my description",
+            },
+            headers={"Authorization": self.at},
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             response = res.json
@@ -161,8 +170,7 @@ class APIU2fTestCase(MyApiTestCase):
 
             serial = details.get("serial")
             self.assertEqual(serial[:3], "U2F")
-            self.assertEqual(details.get("u2fRegisterRequest").get(
-                "version"), "U2F_V2")
+            self.assertEqual(details.get("u2fRegisterRequest").get("version"), "U2F_V2")
             challenge = details.get("u2fRegisterRequest").get("challenge")
             self.assertTrue(len(challenge) > 20)
 
@@ -171,13 +179,17 @@ class APIU2fTestCase(MyApiTestCase):
         # from the registration example
         reg_data = "BQRFnd8XtfZzsTK68VPK64Bcjiog_ZzyYNuzjaaGwpPnSpifxaqQV4_4IMxVlGS3CLoQmNAR41MSMxZHG0dENLRmQGnk4OqRxGRHmUOOLmDkGgdIJycQe79JCERV1gqGnWAOFBg_bH4WFSxZwnX-IMRcl3zW_X442QNrrdFySvXrba4wggIcMIIBBqADAgECAgQ4Zt91MAsGCSqGSIb3DQEBCzAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJvb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwMDAwMFowKzEpMCcGA1UEAwwgWXViaWNvIFUyRiBFRSBTZXJpYWwgMTM4MzExNjc4NjEwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQ3jfx0DHOblHJO09Ujubh2gQZWwT3ob6-uzzjZD1XiyAob_gsw3FOzXefQRblty48r-U-o4LkDFjx_btwuSHtxoxIwEDAOBgorBgEEAYLECgEBBAAwCwYJKoZIhvcNAQELA4IBAQIaR2TKAInPkq24f6hIU45yzD79uzR5KUMEe4IWqTm69METVio0W2FHWXlpeUe85nGqanwGeW7U67G4_WAnGbcd6zz2QumNsdlmb_AebbdPRa95Z8BG1ub_S04JoxQYNLaa8WRlzN7POgqAnAqkmnsZQ_W9Tj2uO9zP3mpxOkkmnqz7P5zt4Lp5xrv7p15hGOIPD5V-ph7tUmiCJsq0LfeRA36X7aXi32Ap0rt_wyfnRef59YYr7SmwaMuXKjbIZSLesscZZTMzXd-uuLb6DbUCasqEVBkGGqTRfAcOmPov1nHUrNDCkOR0obR4PsJG4PiamIfApNeoXGYpGbok6nucMEYCIQC_yerJqB3mnuAJGfbdKuOIx-Flxr-VSQ2nAkUUE_50dQIhAJE2NL1Xs2oVEG4bFzEM86TfS7nkHxad89aYmUrII49V"
         client_data = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZmluaXNoRW5yb2xsbWVudCIsImNoYWxsZW5nZSI6ImdXbndtYnFSMl9YOE91RFhId0dyQWNmUTBUajN4YTVfZ2RJMjBYcVlsdTg9Iiwib3JpZ2luIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiY2lkX3B1YmtleSI6IiJ9"
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"serial": serial,
-                                                 "type": "u2f",
-                                                 "regdata": reg_data,
-                                                 "clientdata": client_data},
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/token/init",
+            method="POST",
+            data={
+                "serial": serial,
+                "type": "u2f",
+                "regdata": reg_data,
+                "clientdata": client_data,
+            },
+            headers={"Authorization": self.at},
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             response = res.json
@@ -185,19 +197,21 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
 
         # In this case we get the automatic description
-        self.assertEqual(get_tokens(serial=serial)[0].token.description, "my description")
+        self.assertEqual(
+            get_tokens(serial=serial)[0].token.description, "my description"
+        )
 
     def test_02_validate(self):
         # assign token to user
-        r = assign_token(self.serial, User("cornelius", self.realm1),
-                         pin="u2f")
+        r = assign_token(self.serial, User("cornelius", self.realm1), pin="u2f")
         self.assertEqual(r, True)
 
         # Issue challenge
-        with self.app.test_request_context('/validate/check',
-                                           method='POST',
-                                           data={"user": "cornelius@"+self.realm1,
-                                                 "pass": "u2f"}):
+        with self.app.test_request_context(
+            "/validate/check",
+            method="POST",
+            data={"user": "cornelius@" + self.realm1, "pass": "u2f"},
+        ):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
@@ -206,9 +220,14 @@ class APIU2fTestCase(MyApiTestCase):
             transaction_id = detail.get("transaction_id")
             multi_challenge = detail.get("multi_challenge")
             self.assertEqual("u2f", multi_challenge[0].get("client_mode"))
-            self.assertEqual(len(transaction_id), len('01350277175811850842'))
-            self.assertEqual(detail.get("message"), detail.get("message"),
-                             "Please confirm with your U2F token ({0!s})".format("Yubico U2F EE Serial 13831167861"))
+            self.assertEqual(len(transaction_id), len("01350277175811850842"))
+            self.assertEqual(
+                detail.get("message"),
+                detail.get("message"),
+                "Please confirm with your U2F token ({0!s})".format(
+                    "Yubico U2F EE Serial 13831167861"
+                ),
+            )
             attributes = detail.get("attributes")
             u2f_sign_request = attributes.get("u2fSignRequest")
             self.assertTrue("appId" in u2f_sign_request)
@@ -231,23 +250,25 @@ class APIU2fTestCase(MyApiTestCase):
                         "y":"XVguGFLIZx1fXg3wNqfdbn75hi4-_7-BxhMljw42Ht4"}},
                     "origin":"{1!s}"}}"""
         client_data = cdata.format(challenge, app_id)
-        client_data_str = ''.join(client_data.split())
+        client_data_str = "".join(client_data.split())
         signature_hex = sign_challenge(privkey, app_id, client_data_str, counter)
         signature_data_hex = "0100000001" + signature_hex
         signature_data_url = url_encode(binascii.unhexlify(signature_data_hex))
         client_data_url = url_encode(client_data_str)
         # Send the response. Unfortunately it does not fit to the
         # registration, so we create a BadSignatureError
-        with self.app.test_request_context('/validate/check',
-                                           method='POST',
-                                           data={"user": "cornelius",
-                                                 "realm": self.realm1,
-                                                 "pass": "",
-                                                 "transaction_id":
-                                                     transaction_id,
-                                                 "clientdata": client_data_url,
-                                                 "signaturedata":
-                                                     signature_data_url}):
+        with self.app.test_request_context(
+            "/validate/check",
+            method="POST",
+            data={
+                "user": "cornelius",
+                "realm": self.realm1,
+                "pass": "",
+                "transaction_id": transaction_id,
+                "clientdata": client_data_url,
+                "signaturedata": signature_data_url,
+            },
+        ):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
@@ -255,18 +276,19 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), False)
 
     def test_03_facet_list(self):
-        with self.app.test_request_context('/ttype/u2f',
-                                           method='GET'):
+        with self.app.test_request_context("/ttype/u2f", method="GET"):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             data = res.json
             self.assertTrue("trustedFacets" in data)
 
-        set_policy(name="facet1", scope=SCOPE.AUTH,
-                   action="{0!s}=host1 host2 host3".format(U2FACTION.FACETS))
+        set_policy(
+            name="facet1",
+            scope=SCOPE.AUTH,
+            action="{0!s}=host1 host2 host3".format(U2FACTION.FACETS),
+        )
 
-        with self.app.test_request_context('/ttype/u2f',
-                                           method='GET'):
+        with self.app.test_request_context("/ttype/u2f", method="GET"):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             data = res.json
@@ -283,8 +305,7 @@ class APIU2fTestCase(MyApiTestCase):
         # test data taken from
         # https://fidoalliance.org/specs/fido-u2f-v1.0-ps-20141009/fido-u2f-raw-message-formats-ps-20141009.html#examples
         serial = "U2F0010BF6F"
-        set_privacyidea_config("u2f.appId",
-                               "https://puck.az.intern")
+        set_privacyidea_config("u2f.appId", "https://puck.az.intern")
         # Registration data
         client_data = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZmluaXNoRW5yb2xsbWVudCIsImNoYWxsZW5nZSI6ImpIakIxaEM2VjA3dDl4ZnNNaDRfOEQ3U1JuSHRFY1BqUTdsaVl3cWxkX009Iiwib3JpZ2luIjoiaHR0cHM6Ly9wdWNrLmF6LmludGVybiIsImNpZF9wdWJrZXkiOiJ1bnVzZWQifQ"
         reg_data = "BQRHjwxEYFCkLHz3xdrmifKOHl2h17BmRJQ_S1Y9PRAhS2R186T391YE-ryqWis9HSmdp0XpRqUaKk9L8lxJTPpTQF_xFJ_LAsKkPTzKIwUlPIjGZDsLmv0en2Iya17Yz8X8OS89fuxwZOvEok-NQOKUTJP3att_RVe3dEAbq_iOtyAwggJEMIIBLqADAgECAgRVYr6gMAsGCSqGSIb3DQEBCzAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJvb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwMDAwMFowKjEoMCYGA1UEAwwfWXViaWNvIFUyRiBFRSBTZXJpYWwgMTQzMjUzNDY4ODBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEszH3c9gUS5mVy-RYVRfhdYOqR2I2lcvoWsSCyAGfLJuUZ64EWw5m8TGy6jJDyR_aYC4xjz_F2NKnq65yvRQwmjOzA5MCIGCSsGAQQBgsQKAgQVMS4zLjYuMS40LjEuNDE0ODIuMS41MBMGCysGAQQBguUcAgEBBAQDAgUgMAsGCSqGSIb3DQEBCwOCAQEArBbZs262s6m3bXWUs09Z9Pc-28n96yk162tFHKv0HSXT5xYU10cmBMpypXjjI-23YARoXwXn0bm-BdtulED6xc_JMqbK-uhSmXcu2wJ4ICA81BQdPutvaizpnjlXgDJjq6uNbsSAp98IStLLp7fW13yUw-vAsWb5YFfK9f46Yx6iakM3YqNvvs9M9EUJYl_VrxBJqnyLx2iaZlnpr13o8NcsKIJRdMUOBqt_ageQg3ttsyq_3LyoNcu7CQ7x8NmeCGm_6eVnZMQjDmwFdymwEN4OxfnM5MkcKCYhjqgIGruWkVHsFnJa8qjZXneVvKoiepuUQyDEJ2GcqvhU2YKY1zBFAiEA4ZkIXXyjEPExcMGtW6kJXqYv7UHgjxJR5h3H9w9FV7gCIFGdhxZDqwCQKplDi-LU4WJ45OyCpNK6lGa72eZqUR_k"
@@ -295,11 +316,12 @@ class APIU2fTestCase(MyApiTestCase):
         signature_data = "AQAAAAMwRQIgU8d6waOIRVVydg_AXxediEZGkfFioUjd6FG3OxH2wUMCIQDpxzavJyxRlMwgNmD1Kw-iw_oP2egdshU9hrpxFHTRzQ"
 
         # step 1
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"type": "u2f",
-                                                 "serial": serial},
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/token/init",
+            method="POST",
+            data={"type": "u2f", "serial": serial},
+            headers={"Authorization": self.at},
+        ):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
@@ -307,13 +329,17 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
 
         # Init step 2
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"type": "u2f",
-                                                 "serial": serial,
-                                                 "regdata": reg_data,
-                                                 "clientdata": client_data},
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/token/init",
+            method="POST",
+            data={
+                "type": "u2f",
+                "serial": serial,
+                "regdata": reg_data,
+                "clientdata": client_data,
+            },
+            headers={"Authorization": self.at},
+        ):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
@@ -321,26 +347,29 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
 
         # create a challenge in the database
-        db_challenge = Challenge(serial,
-                                 transaction_id=transaction_id,
-                                 challenge=challenge,
-                                 data=None)
+        db_challenge = Challenge(
+            serial, transaction_id=transaction_id, challenge=challenge, data=None
+        )
         db_challenge.save()
 
-        set_policy(name="u2f01", scope=SCOPE.AUTHZ,
-                   action="{0!s}=issuer/.*Yubico.*/".format(U2FACTION.REQ) )
+        set_policy(
+            name="u2f01",
+            scope=SCOPE.AUTHZ,
+            action="{0!s}=issuer/.*Yubico.*/".format(U2FACTION.REQ),
+        )
 
         # Successful C/R authentication
-        with self.app.test_request_context('/validate/check',
-                                           method='POST',
-                                           data={"serial": serial,
-                                                 "pass": "",
-                                                 "transaction_id":
-                                                     transaction_id,
-                                                 "clientdata":
-                                                     client_data_auth,
-                                                 "signaturedata":
-                                                     signature_data}):
+        with self.app.test_request_context(
+            "/validate/check",
+            method="POST",
+            data={
+                "serial": serial,
+                "pass": "",
+                "transaction_id": transaction_id,
+                "clientdata": client_data_auth,
+                "signaturedata": signature_data,
+            },
+        ):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
@@ -354,8 +383,7 @@ class APIU2fTestCase(MyApiTestCase):
         # test data taken from
         # https://fidoalliance.org/specs/fido-u2f-v1.0-ps-20141009/fido-u2f-raw-message-formats-ps-20141009.html#examples
         serial = "U2F0010BF6F"
-        set_privacyidea_config("u2f.appId",
-                               "https://puck.az.intern")
+        set_privacyidea_config("u2f.appId", "https://puck.az.intern")
         # Registration data
         client_data = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZmluaXNoRW5yb2xsbWVudCIsImNoYWxsZW5nZSI6ImpIakIxaEM2VjA3dDl4ZnNNaDRfOEQ3U1JuSHRFY1BqUTdsaVl3cWxkX009Iiwib3JpZ2luIjoiaHR0cHM6Ly9wdWNrLmF6LmludGVybiIsImNpZF9wdWJrZXkiOiJ1bnVzZWQifQ"
         reg_data = "BQRHjwxEYFCkLHz3xdrmifKOHl2h17BmRJQ_S1Y9PRAhS2R186T391YE-ryqWis9HSmdp0XpRqUaKk9L8lxJTPpTQF_xFJ_LAsKkPTzKIwUlPIjGZDsLmv0en2Iya17Yz8X8OS89fuxwZOvEok-NQOKUTJP3att_RVe3dEAbq_iOtyAwggJEMIIBLqADAgECAgRVYr6gMAsGCSqGSIb3DQEBCzAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJvb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwMDAwMFowKjEoMCYGA1UEAwwfWXViaWNvIFUyRiBFRSBTZXJpYWwgMTQzMjUzNDY4ODBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEszH3c9gUS5mVy-RYVRfhdYOqR2I2lcvoWsSCyAGfLJuUZ64EWw5m8TGy6jJDyR_aYC4xjz_F2NKnq65yvRQwmjOzA5MCIGCSsGAQQBgsQKAgQVMS4zLjYuMS40LjEuNDE0ODIuMS41MBMGCysGAQQBguUcAgEBBAQDAgUgMAsGCSqGSIb3DQEBCwOCAQEArBbZs262s6m3bXWUs09Z9Pc-28n96yk162tFHKv0HSXT5xYU10cmBMpypXjjI-23YARoXwXn0bm-BdtulED6xc_JMqbK-uhSmXcu2wJ4ICA81BQdPutvaizpnjlXgDJjq6uNbsSAp98IStLLp7fW13yUw-vAsWb5YFfK9f46Yx6iakM3YqNvvs9M9EUJYl_VrxBJqnyLx2iaZlnpr13o8NcsKIJRdMUOBqt_ageQg3ttsyq_3LyoNcu7CQ7x8NmeCGm_6eVnZMQjDmwFdymwEN4OxfnM5MkcKCYhjqgIGruWkVHsFnJa8qjZXneVvKoiepuUQyDEJ2GcqvhU2YKY1zBFAiEA4ZkIXXyjEPExcMGtW6kJXqYv7UHgjxJR5h3H9w9FV7gCIFGdhxZDqwCQKplDi-LU4WJ45OyCpNK6lGa72eZqUR_k"
@@ -366,13 +394,17 @@ class APIU2fTestCase(MyApiTestCase):
         signature_data = "AQAAAAMwRQIgU8d6waOIRVVydg_AXxediEZGkfFioUjd6FG3OxH2wUMCIQDpxzavJyxRlMwgNmD1Kw-iw_oP2egdshU9hrpxFHTRzQ"
 
         # step 1
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"type": "u2f",
-                                                 "user": "cornelius",
-                                                 "realm": self.realm1,
-                                                 "serial": serial},
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/token/init",
+            method="POST",
+            data={
+                "type": "u2f",
+                "user": "cornelius",
+                "realm": self.realm1,
+                "serial": serial,
+            },
+            headers={"Authorization": self.at},
+        ):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
@@ -380,13 +412,17 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
 
         # Init step 2
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"type": "u2f",
-                                                 "serial": serial,
-                                                 "regdata": reg_data,
-                                                 "clientdata": client_data},
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/token/init",
+            method="POST",
+            data={
+                "type": "u2f",
+                "serial": serial,
+                "regdata": reg_data,
+                "clientdata": client_data,
+            },
+            headers={"Authorization": self.at},
+        ):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
@@ -394,34 +430,39 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
 
         # create a challenge in the database
-        db_challenge = Challenge(serial,
-                                 transaction_id=transaction_id,
-                                 challenge=challenge,
-                                 data=None)
+        db_challenge = Challenge(
+            serial, transaction_id=transaction_id, challenge=challenge, data=None
+        )
         db_challenge.save()
 
-        set_policy(name="u2f01", scope=SCOPE.AUTHZ,
-                   action="{0!s}=issuer/.*Plugup.*/".format(U2FACTION.REQ))
+        set_policy(
+            name="u2f01",
+            scope=SCOPE.AUTHZ,
+            action="{0!s}=issuer/.*Plugup.*/".format(U2FACTION.REQ),
+        )
 
         # Successful C/R authentication
-        with self.app.test_request_context('/validate/check',
-                                           method='POST',
-                                           data={"serial": serial,
-                                                 "pass": "",
-                                                 "transaction_id":
-                                                     transaction_id,
-                                                 "clientdata":
-                                                     client_data_auth,
-                                                 "signaturedata":
-                                                     signature_data}):
+        with self.app.test_request_context(
+            "/validate/check",
+            method="POST",
+            data={
+                "serial": serial,
+                "pass": "",
+                "transaction_id": transaction_id,
+                "clientdata": client_data_auth,
+                "signaturedata": signature_data,
+            },
+        ):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json.get("result")
             self.assertEqual(result.get("status"), False)
             self.assertEqual(result.get("error").get("code"), ERROR.POLICY)
-            self.assertEqual(result.get("error").get("message"),
-                             'The U2F device is not allowed to authenticate '
-                             'due to policy restriction.')
+            self.assertEqual(
+                result.get("error").get("message"),
+                "The U2F device is not allowed to authenticate "
+                "due to policy restriction.",
+            )
 
         delete_policy("u2f01")
         remove_token(serial)
@@ -430,20 +471,23 @@ class APIU2fTestCase(MyApiTestCase):
         # test data taken from
         # https://fidoalliance.org/specs/fido-u2f-v1.0-ps-20141009/fido-u2f-raw-message-formats-ps-20141009.html#examples
         serial = "U2F0010BF6F"
-        set_privacyidea_config("u2f.appId",
-                               "https://puck.az.intern")
+        set_privacyidea_config("u2f.appId", "https://puck.az.intern")
         # Registration data
         client_data = "eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZmluaXNoRW5yb2xsbWVudCIsImNoYWxsZW5nZSI6ImpIakIxaEM2VjA3dDl4ZnNNaDRfOEQ3U1JuSHRFY1BqUTdsaVl3cWxkX009Iiwib3JpZ2luIjoiaHR0cHM6Ly9wdWNrLmF6LmludGVybiIsImNpZF9wdWJrZXkiOiJ1bnVzZWQifQ"
         reg_data = "BQRHjwxEYFCkLHz3xdrmifKOHl2h17BmRJQ_S1Y9PRAhS2R186T391YE-ryqWis9HSmdp0XpRqUaKk9L8lxJTPpTQF_xFJ_LAsKkPTzKIwUlPIjGZDsLmv0en2Iya17Yz8X8OS89fuxwZOvEok-NQOKUTJP3att_RVe3dEAbq_iOtyAwggJEMIIBLqADAgECAgRVYr6gMAsGCSqGSIb3DQEBCzAuMSwwKgYDVQQDEyNZdWJpY28gVTJGIFJvb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAwMDBaGA8yMDUwMDkwNDAwMDAwMFowKjEoMCYGA1UEAwwfWXViaWNvIFUyRiBFRSBTZXJpYWwgMTQzMjUzNDY4ODBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEszH3c9gUS5mVy-RYVRfhdYOqR2I2lcvoWsSCyAGfLJuUZ64EWw5m8TGy6jJDyR_aYC4xjz_F2NKnq65yvRQwmjOzA5MCIGCSsGAQQBgsQKAgQVMS4zLjYuMS40LjEuNDE0ODIuMS41MBMGCysGAQQBguUcAgEBBAQDAgUgMAsGCSqGSIb3DQEBCwOCAQEArBbZs262s6m3bXWUs09Z9Pc-28n96yk162tFHKv0HSXT5xYU10cmBMpypXjjI-23YARoXwXn0bm-BdtulED6xc_JMqbK-uhSmXcu2wJ4ICA81BQdPutvaizpnjlXgDJjq6uNbsSAp98IStLLp7fW13yUw-vAsWb5YFfK9f46Yx6iakM3YqNvvs9M9EUJYl_VrxBJqnyLx2iaZlnpr13o8NcsKIJRdMUOBqt_ageQg3ttsyq_3LyoNcu7CQ7x8NmeCGm_6eVnZMQjDmwFdymwEN4OxfnM5MkcKCYhjqgIGruWkVHsFnJa8qjZXneVvKoiepuUQyDEJ2GcqvhU2YKY1zBFAiEA4ZkIXXyjEPExcMGtW6kJXqYv7UHgjxJR5h3H9w9FV7gCIFGdhxZDqwCQKplDi-LU4WJ45OyCpNK6lGa72eZqUR_k"
 
         # step 1
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"type": "u2f",
-                                                 "user": "cornelius",
-                                                 "realm": self.realm1,
-                                                 "serial": serial},
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/token/init",
+            method="POST",
+            data={
+                "type": "u2f",
+                "user": "cornelius",
+                "realm": self.realm1,
+                "serial": serial,
+            },
+            headers={"Authorization": self.at},
+        ):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
@@ -451,27 +495,37 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 
-        set_policy(name="u2f01", scope=SCOPE.ENROLL,
-                   action="{0!s}=issuer/.*Plugup.*/".format(U2FACTION.REQ))
+        set_policy(
+            name="u2f01",
+            scope=SCOPE.ENROLL,
+            action="{0!s}=issuer/.*Plugup.*/".format(U2FACTION.REQ),
+        )
 
         # Init step 2
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"type": "u2f",
-                                                 "serial": serial,
-                                                 "regdata": reg_data,
-                                                 "clientdata": client_data},
-                                           headers={'Authorization': self.at}):
+        with self.app.test_request_context(
+            "/token/init",
+            method="POST",
+            data={
+                "type": "u2f",
+                "serial": serial,
+                "regdata": reg_data,
+                "clientdata": client_data,
+            },
+            headers={"Authorization": self.at},
+        ):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 403)
             result = res.json.get("result")
             self.assertEqual(result.get("status"), False)
-            self.assertEqual(result.get("error").get("message"),
-                             'The U2F device is not allowed to be registered '
-                             'due to policy restriction.')
+            self.assertEqual(
+                result.get("error").get("message"),
+                "The U2F device is not allowed to be registered "
+                "due to policy restriction.",
+            )
 
         delete_policy("u2f01")
         remove_token(serial)
+
 
 # TODO: check wrong challenge
 # TODO: check wrong type (navigator.id)

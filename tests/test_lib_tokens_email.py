@@ -3,15 +3,18 @@ This test file tests the lib.tokens.smstoken
 """
 
 from .base import MyTestCase, FakeFlaskG, FakeAudit
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
-from privacyidea.lib.user import (User)
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm
+from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.emailtoken import EmailTokenClass, EMAILACTION
-from privacyidea.models import (Token, Config, Challenge)
-from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin,
-                                    delete_privacyidea_config)
+from privacyidea.models import Token, Config, Challenge
+from privacyidea.lib.config import (
+    set_privacyidea_config,
+    set_prepend_pin,
+    delete_privacyidea_config,
+)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib import _
@@ -28,6 +31,7 @@ class EmailTokenTestCase(MyTestCase):
     """
     Test the Email Token
     """
+
     email = "pi_tester@privacyidea.org"
     otppin = "topsecret"
     resolvername1 = "resolver1"
@@ -42,18 +46,20 @@ class EmailTokenTestCase(MyTestCase):
     success_body = "ID 12345"
 
     def test_00_create_user_realm(self):
-        rid = save_resolver({"resolver": self.resolvername1,
-                             "type": "passwdresolver",
-                             "fileName": PWFILE})
+        rid = save_resolver(
+            {
+                "resolver": self.resolvername1,
+                "type": "passwdresolver",
+                "fileName": PWFILE,
+            }
+        )
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(self.realm1, [{'name': self.resolvername1}])
+        (added, failed) = set_realm(self.realm1, [{"name": self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
-        user = User(login="root",
-                    realm=self.realm1,
-                    resolver=self.resolvername1)
+        user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
 
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
@@ -91,14 +97,12 @@ class EmailTokenTestCase(MyTestCase):
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "PIEM", class_prefix)
         self.assertTrue(token.get_class_type() == "email", token)
-        token.add_user(User(login="cornelius",
-                            realm=self.realm1))
+        token.add_user(User(login="cornelius", realm=self.realm1))
 
     def test_02_set_user(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = EmailTokenClass(db_token)
-        self.assertTrue(token.token.tokentype == "email",
-                        token.token.tokentype)
+        self.assertTrue(token.token.tokentype == "email", token.token.tokentype)
         self.assertTrue(token.type == "email", token.type)
 
         token.add_user(User(login="cornelius", realm=self.realm1))
@@ -106,10 +110,8 @@ class EmailTokenTestCase(MyTestCase):
         self.assertEqual(token.token.first_owner.user_id, "1000")
 
         user_object = token.user
-        self.assertTrue(user_object.login == "cornelius",
-                        user_object)
-        self.assertTrue(user_object.resolver == self.resolvername1,
-                        user_object)
+        self.assertTrue(user_object.login == "cornelius", user_object)
+        self.assertTrue(user_object.resolver == self.resolvername1, user_object)
 
     def test_04_base_methods(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -175,11 +177,11 @@ class EmailTokenTestCase(MyTestCase):
 
     def test_10_get_hashlib(self):
         # check if functions are returned
-        for hl in ["sha1", "md5", "sha256", "sha512",
-                   "sha224", "sha384", "", None]:
-            self.assertTrue(hasattr(EmailTokenClass.get_hashlib(hl),
-                                    '__call__'),
-                            EmailTokenClass.get_hashlib(hl))
+        for hl in ["sha1", "md5", "sha256", "sha512", "sha224", "sha384", "", None]:
+            self.assertTrue(
+                hasattr(EmailTokenClass.get_hashlib(hl), "__call__"),
+                EmailTokenClass.get_hashlib(hl),
+            )
 
     def test_11_tokeninfo(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -193,8 +195,7 @@ class EmailTokenTestCase(MyTestCase):
         token.set_tokeninfo(info1)
         info2 = token.get_tokeninfo()
         self.assertTrue("key2" not in info2, info2)
-        self.assertTrue(token.get_tokeninfo("key1") == "value2",
-                        info2)
+        self.assertTrue(token.get_tokeninfo("key1") == "value2", info2)
 
         # auth counter
         token.set_count_auth_success_max(200)
@@ -219,14 +220,12 @@ class EmailTokenTestCase(MyTestCase):
         token.set_validity_period_end("2014-12-30T16:00+0200")
         end = token.get_validity_period_end()
         self.assertTrue(end == "2014-12-30T16:00+0200", end)
-        self.assertRaises(Exception,
-                          token.set_validity_period_end, "wrong date")
+        self.assertRaises(Exception, token.set_validity_period_end, "wrong date")
         # handle validity start date
         token.set_validity_period_start("2013-12-30T16:00+0200")
         start = token.get_validity_period_start()
         self.assertTrue(start == "2013-12-30T16:00+0200", start)
-        self.assertRaises(Exception,
-                          token.set_validity_period_start, "wrong date")
+        self.assertRaises(Exception, token.set_validity_period_start, "wrong date")
 
         self.assertFalse(token.check_validity_period())
 
@@ -280,10 +279,9 @@ class EmailTokenTestCase(MyTestCase):
     def test_13_check_otp(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = EmailTokenClass(db_token)
-        token.update({"otpkey": self.otpkey,
-                      "pin": "test",
-                      "otplen": 6,
-                      "email": self.email})
+        token.update(
+            {"otpkey": self.otpkey, "pin": "test", "otplen": 6, "email": self.email}
+        )
         # OTP does not exist
         self.assertTrue(token.check_otp_exist("222333") == -1)
         # OTP does exist
@@ -329,7 +327,7 @@ class EmailTokenTestCase(MyTestCase):
 
     @smtpmock.activate
     def test_18_challenge_request(self):
-        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, "OK")})
         transactionid = "123456098712"
         # send the email with the old configuration
         set_privacyidea_config("email.mailserver", "localhost")
@@ -342,7 +340,7 @@ class EmailTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid)
         self.assertTrue(c[0], c)
         otp = c[1]
-        self.assertTrue(c[3].get('attributes').get("state"), transactionid)
+        self.assertTrue(c[3].get("attributes").get("state"), transactionid)
 
         # check for the challenges response
         r = token.check_challenge_response(passw=otp)
@@ -350,7 +348,7 @@ class EmailTokenTestCase(MyTestCase):
 
     @smtpmock.activate
     def test_18a_challenge_request_dynamic(self):
-        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, "OK")})
         transactionid = "123456098712"
         # send the email with the old configuration
         set_privacyidea_config("email.mailserver", "localhost")
@@ -363,7 +361,7 @@ class EmailTokenTestCase(MyTestCase):
         c = token.create_challenge(transactionid)
         self.assertTrue(c[0], c)
         otp = c[1]
-        self.assertTrue(c[3]['attributes']["state"], transactionid)
+        self.assertTrue(c[3]["attributes"]["state"], transactionid)
 
         # check for the challenges response
         r = token.check_challenge_response(passw=otp)
@@ -374,18 +372,21 @@ class EmailTokenTestCase(MyTestCase):
         token = EmailTokenClass(db_token)
         # if the email is a multi-value attribute, the first address should be chosen
         new_user_info = token.user.info.copy()
-        new_user_info['email'] = ['email1@example.com', 'email2@example.com']
-        with mock.patch('privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserInfo') as mock_user_info:
+        new_user_info["email"] = ["email1@example.com", "email2@example.com"]
+        with mock.patch(
+            "privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserInfo"
+        ) as mock_user_info:
             mock_user_info.return_value = new_user_info
-            self.assertEqual(token._email_address, 'email1@example.com')
-
+            self.assertEqual(token._email_address, "email1@example.com")
 
     @smtpmock.activate
     def test_19_emailtext(self):
         # create a EMAILTEXT policy:
-        p = set_policy(name="emailtext",
-                       action="{0!s}={1!s}".format(EMAILACTION.EMAILTEXT, "'Your {otp}'"),
-                       scope=SCOPE.AUTH)
+        p = set_policy(
+            name="emailtext",
+            action="{0!s}={1!s}".format(EMAILACTION.EMAILTEXT, "'Your {otp}'"),
+            scope=SCOPE.AUTH,
+        )
         self.assertTrue(p > 0)
 
         g = FakeFlaskG()
@@ -406,9 +407,7 @@ class EmailTokenTestCase(MyTestCase):
         self.assertEqual(mimetype, "plain")
 
         # Test AUTOEMAIL
-        p = set_policy(name="autoemail",
-                       action=EMAILACTION.EMAILAUTO,
-                       scope=SCOPE.AUTH)
+        p = set_policy(name="autoemail", action=EMAILACTION.EMAILAUTO, scope=SCOPE.AUTH)
         self.assertTrue(p > 0)
 
         g = FakeFlaskG()
@@ -421,9 +420,11 @@ class EmailTokenTestCase(MyTestCase):
         self.assertTrue(r > 0, r)
 
         # create a EMAILTEXT policy with template
-        p = set_policy(name="emailtext",
-                       action="{0!s}=file:{1!s}".format(EMAILACTION.EMAILTEXT, TEMPLATE_FILE),
-                       scope=SCOPE.AUTH)
+        p = set_policy(
+            name="emailtext",
+            action="{0!s}=file:{1!s}".format(EMAILACTION.EMAILTEXT, TEMPLATE_FILE),
+            scope=SCOPE.AUTH,
+        )
         self.assertTrue(p > 0)
 
         g = FakeFlaskG()
@@ -435,7 +436,9 @@ class EmailTokenTestCase(MyTestCase):
         transactionid = "123456098714"
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = EmailTokenClass(db_token)
-        email_text, mimetype = token._get_email_text_or_subject(options, EMAILACTION.EMAILTEXT)
+        email_text, mimetype = token._get_email_text_or_subject(
+            options, EMAILACTION.EMAILTEXT
+        )
         self.assertTrue("<p>Hello,</p>" in email_text)
         self.assertEqual(mimetype, "html")
         c = token.create_challenge(transactionid, options=options)
@@ -452,24 +455,32 @@ class EmailTokenTestCase(MyTestCase):
         token = EmailTokenClass(db_token)
         c = token.create_challenge(transactionid)
         self.assertFalse(c[0])
-        self.assertTrue("The PIN was correct, but the EMail could not "
-                        "be sent" in c[1])
+        self.assertTrue(
+            "The PIN was correct, but the EMail could not " "be sent" in c[1]
+        )
         # test with the parameter exception=1
-        self.assertRaises(Exception, token.create_challenge, transactionid, {"exception": "1"})
+        self.assertRaises(
+            Exception, token.create_challenge, transactionid, {"exception": "1"}
+        )
 
     @smtpmock.activate
     def test_21_test_email_config(self):
         from privacyidea.lib.tokens.emailtoken import TEST_SUCCESSFUL
+
         smtpmock.setdata(response={"user@example.com": (200, "OK")})
-        r = EmailTokenClass.test_config({"email.mailserver": "mail.example.com",
-                                         "email.mailfrom": "pi@example.com",
-                                         "email.recipient": "user@example.com"})
+        r = EmailTokenClass.test_config(
+            {
+                "email.mailserver": "mail.example.com",
+                "email.mailfrom": "pi@example.com",
+                "email.recipient": "user@example.com",
+            }
+        )
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], TEST_SUCCESSFUL)
 
     @smtpmock.activate
     def test_22_new_email_config(self):
-        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, "OK")})
         transactionid = "123456098717"
         # send the email with the new configuration
         r = add_smtpserver(identifier="myServer", server="1.2.3.4")
@@ -490,7 +501,7 @@ class EmailTokenTestCase(MyTestCase):
 
     @smtpmock.activate
     def test_23_specific_email_config(self):
-        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, "OK")})
         transactionid = "123456098723"
         # create new configuration
         r = add_smtpserver(identifier="myServer", server="1.2.3.4")

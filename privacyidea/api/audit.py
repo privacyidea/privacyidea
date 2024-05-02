@@ -24,15 +24,20 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This is the audit REST API that can be used to search the audit log.
+__doc__ = """This is the audit REST API that can be used to search the audit log.
 It only provides the method
 
   GET /audit
 """
-from flask import (Blueprint, request, current_app, stream_with_context)
-from .lib.utils import (send_result, send_file)
-from ..api.lib.prepolicy import (prepolicy, check_base_action, auditlog_age,
-                                 allowed_audit_realm, hide_audit_columns)
+from flask import Blueprint, request, current_app, stream_with_context
+from .lib.utils import send_result, send_file
+from ..api.lib.prepolicy import (
+    prepolicy,
+    check_base_action,
+    auditlog_age,
+    allowed_audit_realm,
+    hide_audit_columns,
+)
 from ..api.auth import admin_required
 from ..lib.policy import ACTION
 from flask import g
@@ -42,10 +47,10 @@ from privacyidea.lib.utils import parse_timedelta
 
 log = logging.getLogger(__name__)
 
-audit_blueprint = Blueprint('audit_blueprint', __name__)
+audit_blueprint = Blueprint("audit_blueprint", __name__)
 
 
-@audit_blueprint.route('/', methods=['GET'])
+@audit_blueprint.route("/", methods=["GET"])
 @prepolicy(check_base_action, request, ACTION.AUDIT)
 @prepolicy(allowed_audit_realm, request, ACTION.AUDIT)
 @prepolicy(auditlog_age, request)
@@ -90,12 +95,12 @@ def search_audit():
         }
     """
     audit_dict = search(current_app.config, request.all_data)
-    g.audit_object.log({'success': True})
-    
+    g.audit_object.log({"success": True})
+
     return send_result(audit_dict)
 
 
-@audit_blueprint.route('/<csvfile>', methods=['GET'])
+@audit_blueprint.route("/<csvfile>", methods=["GET"])
 @prepolicy(check_base_action, request, ACTION.AUDIT_DOWNLOAD)
 @prepolicy(auditlog_age, request)
 @admin_required
@@ -136,13 +141,14 @@ def download_csv(csvfile=None):
         }
     """
     audit = getAudit(current_app.config)
-    g.audit_object.log({'success': True})
+    g.audit_object.log({"success": True})
     param = request.all_data
     if "timelimit" in param:
         timelimit = parse_timedelta(param["timelimit"])
         del param["timelimit"]
     else:
         timelimit = None
-    return send_file(stream_with_context(audit.csv_generator(param=param,
-                                                             timelimit=timelimit)),
-                     csvfile)
+    return send_file(
+        stream_with_context(audit.csv_generator(param=param, timelimit=timelimit)),
+        csvfile,
+    )

@@ -1,17 +1,18 @@
 """
 This test file tests the lib.tokens.daypasswordtoken.py
 """
+
 import datetime
 import binascii
 import logging
 import time
 from unittest import mock
 from .base import MyTestCase, FakeAudit, FakeFlaskG
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
-from privacyidea.lib.user import (User)
-from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOPE)
-from privacyidea.models import (Token, Config, Challenge)
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm
+from privacyidea.lib.user import User
+from privacyidea.lib.policy import PolicyClass, set_policy, delete_policy, SCOPE
+from privacyidea.models import Token, Config, Challenge
 from privacyidea.lib.config import set_prepend_pin
 from privacyidea.lib.tokens.daypasswordtoken import DayPasswordTokenClass
 
@@ -22,6 +23,7 @@ class DayPasswordTokenTestCase(MyTestCase):
     """
     Test the token on the database level
     """
+
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
     resolvername3 = "reso3"
@@ -43,18 +45,20 @@ class DayPasswordTokenTestCase(MyTestCase):
     # add_user, get_user, reset, set_user_identifiers
 
     def test_00_create_user_realm(self):
-        rid = save_resolver({"resolver": self.resolvername1,
-                             "type": "passwdresolver",
-                             "fileName": PWFILE})
+        rid = save_resolver(
+            {
+                "resolver": self.resolvername1,
+                "type": "passwdresolver",
+                "fileName": PWFILE,
+            }
+        )
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(self.realm1, [{'name': self.resolvername1}])
+        (added, failed) = set_realm(self.realm1, [{"name": self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
-        user = User(login="root",
-                    realm=self.realm1,
-                    resolver=self.resolvername1)
+        user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
 
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
@@ -80,33 +84,28 @@ class DayPasswordTokenTestCase(MyTestCase):
     def test_02_set_user(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
-        self.assertTrue(token.token.tokentype == "daypassword",
-                        token.token.tokentype)
+        self.assertTrue(token.token.tokentype == "daypassword", token.token.tokentype)
         self.assertTrue(token.type == "daypassword", token.type)
 
-        token.add_user(User(login="cornelius",
-                            realm=self.realm1))
+        token.add_user(User(login="cornelius", realm=self.realm1))
         self.assertEqual(token.token.first_owner.resolver, self.resolvername1)
         self.assertEqual(token.token.first_owner.user_id, "1000")
 
         user_object = token.user
-        self.assertTrue(user_object.login == "cornelius",
-                        user_object)
-        self.assertTrue(user_object.resolver == self.resolvername1,
-                        user_object)
+        self.assertTrue(user_object.login == "cornelius", user_object)
+        self.assertTrue(user_object.resolver == self.resolvername1, user_object)
 
     def test_03_reset_failcounter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
         token.token.failcount = 10
         token.reset()
-        self.assertTrue(token.token.failcount == 0,
-                        token.token.failcount)
+        self.assertTrue(token.token.failcount == 0, token.token.failcount)
 
     def test_04_base_methods(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
-        self.assertTrue(token.check_otp("123456", 1, options={'initTime': "10"}) == -1)
+        self.assertTrue(token.check_otp("123456", 1, options={"initTime": "10"}) == -1)
 
         c = token.create_challenge("transactionid")
         self.assertTrue(c[0], c)
@@ -114,8 +113,7 @@ class DayPasswordTokenTestCase(MyTestCase):
 
         # set the description
         token.set_description("something new")
-        self.assertTrue(token.token.description == "something new",
-                        token.token)
+        self.assertTrue(token.token.description == "something new", token.token)
 
         # set defaults
         token.set_defaults()
@@ -144,22 +142,18 @@ class DayPasswordTokenTestCase(MyTestCase):
         self.assertEqual(token.get_user_id(), token.token.first_owner.user_id)
 
         self.assertTrue(token.get_serial() == "SE123456", token.token.serial)
-        self.assertTrue(token.get_tokentype() == "daypassword",
-                        token.token.tokentype)
+        self.assertTrue(token.get_tokentype() == "daypassword", token.token.tokentype)
 
         token.set_so_pin("sopin")
         token.set_user_pin("userpin")
         token.set_otpkey(self.otpkey)
         token.set_otplen(8)
         token.set_otp_count(1000)
-        self.assertTrue(len(token.token.so_pin) == 32,
-                        token.token.so_pin)
-        self.assertTrue(len(token.token.user_pin) == 32,
-                        token.token.user_pin)
+        self.assertTrue(len(token.token.so_pin) == 32, token.token.so_pin)
+        self.assertTrue(len(token.token.user_pin) == 32, token.token.user_pin)
         self.assertEqual(len(token.token.key_enc), 96, token.token.key_enc)
         self.assertTrue(token.get_otplen() == 8)
-        self.assertTrue(token.token.count == 1000,
-                        token.token.count)
+        self.assertTrue(token.token.count == 1000, token.token.count)
 
         token.set_maxfail(1000)
         self.assertTrue(token.token.maxfail == 1000)
@@ -215,11 +209,11 @@ class DayPasswordTokenTestCase(MyTestCase):
 
     def test_10_get_hashlib(self):
         # check if functions are returned
-        for hl in ["sha1", "md5", "sha256", "sha512",
-                   "sha224", "sha384", "", None]:
-            self.assertTrue(hasattr(DayPasswordTokenClass.get_hashlib(hl),
-                                    '__call__'),
-                            DayPasswordTokenClass.get_hashlib(hl))
+        for hl in ["sha1", "md5", "sha256", "sha512", "sha224", "sha384", "", None]:
+            self.assertTrue(
+                hasattr(DayPasswordTokenClass.get_hashlib(hl), "__call__"),
+                DayPasswordTokenClass.get_hashlib(hl),
+            )
 
     def test_11_tokeninfo(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -233,8 +227,7 @@ class DayPasswordTokenTestCase(MyTestCase):
         token.set_tokeninfo(info1)
         info2 = token.get_tokeninfo()
         self.assertTrue("key2" not in info2, info2)
-        self.assertTrue(token.get_tokeninfo("key1") == "value2",
-                        info2)
+        self.assertTrue(token.get_tokeninfo("key1") == "value2", info2)
 
         # auth counter
         token.set_count_auth_success_max(200)
@@ -272,13 +265,12 @@ class DayPasswordTokenTestCase(MyTestCase):
     def test_13_check_otp(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
-        token.update({"otpkey": self.otpkey,
-                      "pin": "test",
-                      "otplen": 6,
-                      "timeStep": "1h"})
+        token.update(
+            {"otpkey": self.otpkey, "pin": "test", "otplen": 6, "timeStep": "1h"}
+        )
         token.set_otp_count(470184)  # 2023-08-22T00:05:23+00:00
         self.assertEqual(token.get_tokeninfo("timeStep"), "1h", token.get_tokeninfo())
-        with mock.patch('time.time') as MockTime:
+        with mock.patch("time.time") as MockTime:
             MockTime.return_value = 1692662723.0  # 2023-08-22T00:55:23+00:00
             # The previous OTP does not work
             self.assertEqual(token.check_otp_exist("819480"), -1)
@@ -320,13 +312,11 @@ class DayPasswordTokenTestCase(MyTestCase):
         self.assertTrue("otpkey" in detail, detail)
         # but the otpkey must not be written to token.token.info (DB)
         # As this only writes the OTPkey to the internal init_details dict
-        self.assertTrue("otpkey" not in token.token.get_info(),
-                        token.token.get_info())
+        self.assertTrue("otpkey" not in token.token.get_info(), token.token.get_info())
 
         # Now get the Google Authenticator URL, which we only
         # get, if a user is specified.
-        detail = token.get_init_detail(user=User("cornelius",
-                                                 self.realm1))
+        detail = token.get_init_detail(user=User("cornelius", self.realm1))
         self.assertTrue("otpkey" in detail, detail)
         otpkey = detail.get("otpkey")
         self.assertTrue("img" in otpkey, otpkey)
@@ -334,39 +324,29 @@ class DayPasswordTokenTestCase(MyTestCase):
         # some other stuff.
         self.assertRaises(Exception, token.set_init_details, "invalid value")
         token.set_init_details({"detail1": "value1"})
-        self.assertTrue("detail1" in token.get_init_details(),
-                        token.get_init_details())
+        self.assertTrue("detail1" in token.get_init_details(), token.get_init_details())
 
     def test_17_update_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
         # Failed update: genkey wrong
-        self.assertRaises(Exception,
-                          token.update,
-                          {"description": "new desc",
-                           "genkey": "17"})
+        self.assertRaises(
+            Exception, token.update, {"description": "new desc", "genkey": "17"}
+        )
         # genkey and otpkey used at the same time
-        token.update({"otpkey": self.otpkey,
-                      "genkey": "1"})
+        token.update({"otpkey": self.otpkey, "genkey": "1"})
 
-        token.update({"otpkey": self.otpkey,
-                      "pin": "654321",
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "pin": "654321", "otplen": 6})
         self.assertTrue(token.check_pin("654321"))
         self.assertTrue(token.token.otplen == 6)
         # update hashlib
-        token.update({"otpkey": self.otpkey,
-                      "hashlib": "sha1"})
-        self.assertTrue(token.get_tokeninfo("hashlib") == "sha1",
-                        token.get_tokeninfo())
+        token.update({"otpkey": self.otpkey, "hashlib": "sha1"})
+        self.assertTrue(token.get_tokeninfo("hashlib") == "sha1", token.get_tokeninfo())
 
         # save pin encrypted
-        token.update({"genkey": 1,
-                      "pin": "secret",
-                      "encryptpin": "true"})
+        token.update({"genkey": 1, "pin": "secret", "encryptpin": "true"})
         # check if the PIN is encrypted
-        self.assertTrue(token.token.pin_hash.startswith("@@"),
-                        token.token.pin_hash)
+        self.assertTrue(token.token.pin_hash.startswith("@@"), token.token.pin_hash)
 
         # update token without otpkey raises an error
         self.assertRaises(Exception, token.update, {"description": "test"})
@@ -374,26 +354,26 @@ class DayPasswordTokenTestCase(MyTestCase):
         # update time settings
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
-        token.update({"otpkey": self.otpkey,
-                      "otplen": 6,
-                      "timeStep": '30s'
-                      })
+        token.update({"otpkey": self.otpkey, "otplen": 6, "timeStep": "30s"})
 
     def test_18_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
-        resp = token.is_challenge_response("test123456",
-                                           user=User(login="cornelius",
-                                                     realm=self.realm1))
+        resp = token.is_challenge_response(
+            "test123456", user=User(login="cornelius", realm=self.realm1)
+        )
         self.assertFalse(resp, resp)
 
         transaction_id = "123456789"
-        chal = Challenge(self.serial1, transaction_id=transaction_id, challenge="Who are you?")
+        chal = Challenge(
+            self.serial1, transaction_id=transaction_id, challenge="Who are you?"
+        )
         chal.save()
-        resp = token.is_challenge_response("test123456",
-                                           user=User(login="cornelius",
-                                                     realm=self.realm1),
-                                           options={"transaction_id": transaction_id})
+        resp = token.is_challenge_response(
+            "test123456",
+            user=User(login="cornelius", realm=self.realm1),
+            options={"transaction_id": transaction_id},
+        )
         self.assertTrue(resp, resp)
 
         # test if challenge is valid
@@ -403,37 +383,36 @@ class DayPasswordTokenTestCase(MyTestCase):
     def test_19_pin_otp_functions(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
-        token.update({"otpkey": self.otpkey,
-                      "pin": "test",
-                      "otplen": 6,
-                      "timeStep": "1h"})
+        token.update(
+            {"otpkey": self.otpkey, "pin": "test", "otplen": 6, "timeStep": "1h"}
+        )
         set_prepend_pin()
-        self.assertTrue(token.check_pin('test'))
+        self.assertTrue(token.check_pin("test"))
         # get the OTP value for time at 1692785442 (2023-08-23T10:10:42+00:00)
-        with mock.patch('time.time') as MockTime:
+        with mock.patch("time.time") as MockTime:
             MockTime.return_value = 1692785442.0
             res = token.get_otp()
             self.assertEqual(res[2], "165753", res)
 
         # Check that we get the same OTP during the hour
-        with mock.patch('time.time') as MockTime:
+        with mock.patch("time.time") as MockTime:
             MockTime.return_value = 1692784902.0  # 2023-08-23T10:01:42+00:00
             res = token.get_otp()
             self.assertEqual(res[2], "165753", res)
 
-        with mock.patch('time.time') as MockTime:
+        with mock.patch("time.time") as MockTime:
             MockTime.return_value = 1692788382.0  # 2023-08-23T10:59:42+00:00
             res = token.get_otp()
             self.assertEqual(res[2], "165753", res)
 
         # Previous OTP
-        with mock.patch('time.time') as MockTime:
+        with mock.patch("time.time") as MockTime:
             MockTime.return_value = 1692784782.0  # 2023-08-23T09:59:42+00:00
             res = token.get_otp()
             self.assertEqual(res[2], "403777", res)
 
         # Next OTP
-        with mock.patch('time.time') as MockTime:
+        with mock.patch("time.time") as MockTime:
             MockTime.return_value = 1692788502.0  # 2023-08-23T11:01:42+00:00
             res = token.get_otp()
             self.assertEqual(res[2], "708916", res)
@@ -442,14 +421,14 @@ class DayPasswordTokenTestCase(MyTestCase):
         self.assertEqual(token.token.count, 470219, token.token)
 
         # successful authentication
-        with mock.patch('time.time') as MockTime:
+        with mock.patch("time.time") as MockTime:
             MockTime.return_value = 1692792000.0  # 2023-08-23T14:00:00+00:00
             res = token.authenticate("test758203")
             # This is the OTP value of the counter=470220
             self.assertEqual((True, 470220, None), res)
 
         # try the same OTP value again some time later, and it should not fail!
-        with mock.patch('time.time') as MockTime:
+        with mock.patch("time.time") as MockTime:
             MockTime.return_value = 1692793000.0  # 2023-08-23T14:16:40+00:00
             res = token.authenticate("test758203")
             # This is the OTP value of the counter=47251650
@@ -459,14 +438,21 @@ class DayPasswordTokenTestCase(MyTestCase):
         res = token.get_multi_otp()
         self.assertFalse(res[0], res)
 
-        with mock.patch('time.time') as MockTime:
+        with mock.patch("time.time") as MockTime:
             MockTime.return_value = 1692799300.0  # 2023-08-23T16:01:40+00:00
             res = token.get_multi_otp(count=5)
             self.assertTrue(res[0], res)
             self.assertEqual(res[1], "OK", res)
-            for count, value in [(470222, '001659'), (470223, '006788'),
-                                 (470224, '506071'), (470225, '554912'), (470226, '756301')]:
-                self.assertEqual(res[2].get("otp").get(count).get('otpval'), value, res[2].get("otp"))
+            for count, value in [
+                (470222, "001659"),
+                (470223, "006788"),
+                (470224, "506071"),
+                (470225, "554912"),
+                (470226, "756301"),
+            ]:
+                self.assertEqual(
+                    res[2].get("otp").get(count).get("otpval"), value, res[2].get("otp")
+                )
 
         # do some failing otp checks
         token.token.otplen = "invalid otp counter"
@@ -477,19 +463,19 @@ class DayPasswordTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         db_token.set_pin("test")
         token = DayPasswordTokenClass(db_token)
-        r = token.check_challenge_response(user=None,
-                                           passw="123454")
+        r = token.check_challenge_response(user=None, passw="123454")
         # check empty challenges
         self.assertTrue(r == -1, r)
 
         # create a challenge and match the transaction_id
-        c = Challenge(self.serial1, transaction_id="mytransaction",
-                      challenge="Blah, what now?")
+        c = Challenge(
+            self.serial1, transaction_id="mytransaction", challenge="Blah, what now?"
+        )
         # save challenge to the database
         c.save()
-        r = token.check_challenge_response(user=None,
-                                           passw="123454",
-                                           options={"state": "mytransaction"})
+        r = token.check_challenge_response(
+            user=None, passw="123454", options={"state": "mytransaction"}
+        )
         # The challenge matches, but the OTP does not match!
         self.assertTrue(r == -1, r)
 
@@ -529,8 +515,7 @@ class DayPasswordTokenTestCase(MyTestCase):
     def test_24_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DayPasswordTokenClass(db_token)
-        token.update({"otpkey": self.otpkey,
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "otplen": 6})
         token.set_pin("test")
         token.token.count = 0
         token.set_sync_window(10)
@@ -588,8 +573,11 @@ class DayPasswordTokenTestCase(MyTestCase):
         db_token = Token(serial, tokentype="daypassword")
         db_token.save()
         token = DayPasswordTokenClass(db_token)
-        token.set_otpkey(binascii.hexlify(
-            b"1234567890123456789012345678901234567890123456789012345678901234"))
+        token.set_otpkey(
+            binascii.hexlify(
+                b"1234567890123456789012345678901234567890123456789012345678901234"
+            )
+        )
         token.set_hashlib("sha512")
         token.set_otplen(8)
         token.save()
@@ -604,7 +592,7 @@ class DayPasswordTokenTestCase(MyTestCase):
         r = DayPasswordTokenClass.get_setting_type("daypassword.blabla")
         self.assertEqual(r, "")
 
-    @mock.patch('time.time', mock.MagicMock(return_value=1686902767))
+    @mock.patch("time.time", mock.MagicMock(return_value=1686902767))
     def test_26_is_previous_otp(self):
         # check if the OTP was used previously
         serial = "previous"
@@ -612,9 +600,7 @@ class DayPasswordTokenTestCase(MyTestCase):
         db_token.save()
         token = DayPasswordTokenClass(db_token)
         token.set_hashlib("sha1")
-        token.update({"otpkey": self.otpkey,
-                      "otplen": 6,
-                      "timeStep": '1m'})
+        token.update({"otpkey": self.otpkey, "otplen": 6, "timeStep": "1m"})
         # Authenticate with the current OTP value
         counter = token._time2counter(time.time(), timeStepping=60)
         otp_now = token._calc_otp(counter)
@@ -625,12 +611,14 @@ class DayPasswordTokenTestCase(MyTestCase):
         params = {}
         g = FakeFlaskG()
         g.audit_object = FakeAudit()
-        g.logged_in_user = {"user": "hans",
-                            "realm": "default",
-                            "role": "user"}
-        set_policy("pol1", scope=SCOPE.USER, action="daypassword_hashlib=sha256,"
-                                                    "daypassword_timestep=60,"
-                                                    "daypassword_otplen=8")
+        g.logged_in_user = {"user": "hans", "realm": "default", "role": "user"}
+        set_policy(
+            "pol1",
+            scope=SCOPE.USER,
+            action="daypassword_hashlib=sha256,"
+            "daypassword_timestep=60,"
+            "daypassword_otplen=8",
+        )
         g.policy_object = PolicyClass()
         p = DayPasswordTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")
@@ -639,12 +627,14 @@ class DayPasswordTokenTestCase(MyTestCase):
         delete_policy("pol1")
 
         # the same should work for admins
-        g.logged_in_user = {"user": "admin",
-                            "realm": "super",
-                            "role": "admin"}
-        set_policy("pol1", scope=SCOPE.ADMIN, action="daypassword_hashlib=sha512,"
-                                                     "daypassword_timestep=60,"
-                                                     "daypassword_otplen=8")
+        g.logged_in_user = {"user": "admin", "realm": "super", "role": "admin"}
+        set_policy(
+            "pol1",
+            scope=SCOPE.ADMIN,
+            action="daypassword_hashlib=sha512,"
+            "daypassword_timestep=60,"
+            "daypassword_otplen=8",
+        )
         g.policy_object = PolicyClass()
         p = DayPasswordTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")

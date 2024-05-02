@@ -31,7 +31,9 @@ log = logging.getLogger(__name__)
 class DayPasswordTokenClass(TotpTokenClass):
     previous_otp_offset = 0
 
-    desc_timestep = _('Specify the time step of the DayPassword token. For example: "24h"')
+    desc_timestep = _(
+        'Specify the time step of the DayPassword token. For example: "24h"'
+    )
 
     @log_with(log)
     def __init__(self, db_token):
@@ -66,7 +68,7 @@ class DayPasswordTokenClass(TotpTokenClass):
 
     @staticmethod
     @log_with(log)
-    def get_class_info(key=None, ret='all'):
+    def get_class_info(key=None, ret="all"):
         """
         returns a subtree of the token definition
 
@@ -77,68 +79,88 @@ class DayPasswordTokenClass(TotpTokenClass):
         :return: subsection if key exists or user defined
         :rtype: dict or scalar
         """
-        res = {'type': 'daypassword',
-               'title': 'Time based Password',
-               'description': _('DayPassword: A time-based token with a variable timestep and the possibility'
-                                ' to use the OTP more than once.'),
-               'user': ['enroll'],
-               # This tokentype is enrollable in the UI for...
-               'ui_enroll': [SCOPE.ADMIN, SCOPE.USER],
-               'policy': {
-                   SCOPE.USER: {
-                       'timestep': {'type': 'str',
-                                    'desc': DayPasswordTokenClass.desc_timestep},
-                       'hashlib': {'type': 'str',
-                                   'value': ["sha1",
-                                             "sha256",
-                                             "sha512"],
-                                   'desc': DayPasswordTokenClass.desc_hash_func},
-                       'otplen': {'type': 'int',
-                                  'value': [6, 8],
-                                  'desc': DayPasswordTokenClass.desc_otp_len},
-                       'force_server_generate': {'type': 'bool',
-                                                 'desc': DayPasswordTokenClass.desc_key_gen}
-                   },
-                   SCOPE.ADMIN: {
-                       'timestep': {'type': 'str',
-                                    'desc': DayPasswordTokenClass.desc_timestep},
-                       'hashlib': {'type': 'str',
-                                   'value': ["sha1",
-                                             "sha256",
-                                             "sha512"],
-                                   'desc': DayPasswordTokenClass.desc_hash_func},
-                       'otplen': {'type': 'int',
-                                  'value': [6, 8],
-                                  'desc': DayPasswordTokenClass.desc_otp_len},
-                       'force_server_generate': {'type': 'bool',
-                                                 'desc': DayPasswordTokenClass.desc_key_gen}
-                   },
-                   SCOPE.ENROLL: {
-                       ACTION.FORCE_APP_PIN: {
-                           'type': 'bool',
-                           'desc': _('Enforce setting an app pin for the privacyIDEA '
-                                     'Authenticator App')
-                       },
-                       ACTION.MAXTOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum "
-                                     "number of daypassword tokens assigned."),
-                           'group': GROUP.TOKEN
-                       },
-                       ACTION.MAXACTIVETOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number "
-                                     "of active daypassword tokens assigned."),
-                           'group': GROUP.TOKEN
-                       }
-
-                   }
-               },
-               }
+        res = {
+            "type": "daypassword",
+            "title": "Time based Password",
+            "description": _(
+                "DayPassword: A time-based token with a variable timestep and the possibility"
+                " to use the OTP more than once."
+            ),
+            "user": ["enroll"],
+            # This tokentype is enrollable in the UI for...
+            "ui_enroll": [SCOPE.ADMIN, SCOPE.USER],
+            "policy": {
+                SCOPE.USER: {
+                    "timestep": {
+                        "type": "str",
+                        "desc": DayPasswordTokenClass.desc_timestep,
+                    },
+                    "hashlib": {
+                        "type": "str",
+                        "value": ["sha1", "sha256", "sha512"],
+                        "desc": DayPasswordTokenClass.desc_hash_func,
+                    },
+                    "otplen": {
+                        "type": "int",
+                        "value": [6, 8],
+                        "desc": DayPasswordTokenClass.desc_otp_len,
+                    },
+                    "force_server_generate": {
+                        "type": "bool",
+                        "desc": DayPasswordTokenClass.desc_key_gen,
+                    },
+                },
+                SCOPE.ADMIN: {
+                    "timestep": {
+                        "type": "str",
+                        "desc": DayPasswordTokenClass.desc_timestep,
+                    },
+                    "hashlib": {
+                        "type": "str",
+                        "value": ["sha1", "sha256", "sha512"],
+                        "desc": DayPasswordTokenClass.desc_hash_func,
+                    },
+                    "otplen": {
+                        "type": "int",
+                        "value": [6, 8],
+                        "desc": DayPasswordTokenClass.desc_otp_len,
+                    },
+                    "force_server_generate": {
+                        "type": "bool",
+                        "desc": DayPasswordTokenClass.desc_key_gen,
+                    },
+                },
+                SCOPE.ENROLL: {
+                    ACTION.FORCE_APP_PIN: {
+                        "type": "bool",
+                        "desc": _(
+                            "Enforce setting an app pin for the privacyIDEA "
+                            "Authenticator App"
+                        ),
+                    },
+                    ACTION.MAXTOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum "
+                            "number of daypassword tokens assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                    ACTION.MAXACTIVETOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum number "
+                            "of active daypassword tokens assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                },
+            },
+        }
         if key:
             ret = res.get(key, {})
         else:
-            if ret == 'all':
+            if ret == "all":
                 ret = res
 
         return ret
@@ -166,20 +188,23 @@ class DayPasswordTokenClass(TotpTokenClass):
 
     @property
     def timestep(self):
-        timeStepping = parse_time_sec_int(self.get_tokeninfo("timeStep") or
-                                          (get_from_config("daypassword.timeStep")) or "1d")
+        timeStepping = parse_time_sec_int(
+            self.get_tokeninfo("timeStep")
+            or (get_from_config("daypassword.timeStep"))
+            or "1d"
+        )
 
         return timeStepping
 
     @property
     def hashlib(self):
-        hashlibStr = self.get_tokeninfo("hashlib") or \
-                     get_from_config("daypassword.hashlib", 'sha1')
+        hashlibStr = self.get_tokeninfo("hashlib") or get_from_config(
+            "daypassword.hashlib", "sha1"
+        )
         return hashlibStr
 
     @log_with(log)
-    def check_otp_exist(self, otp, options=None, symetric=False,
-                        inc_counter=True):
+    def check_otp_exist(self, otp, options=None, symetric=False, inc_counter=True):
         """
         checks if the given password value is/are values of this very token at all.
         This is used to autoassign and to determine the serial number of
@@ -220,7 +245,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         oCount = self.get_otp_count()
         inow = int(time.time())
 
-        initTime = int(options.get('initTime', -1))
+        initTime = int(options.get("initTime", -1))
         if initTime != -1:
             server_time = int(initTime)
         else:
@@ -229,16 +254,10 @@ class DayPasswordTokenClass(TotpTokenClass):
         # If we have a counter from the parameter list
         if not counter:
             # No counter, so we take the current token_time
-            counter = self._time2counter(server_time,
-                                         timeStepping=self.timestep)
+            counter = self._time2counter(server_time, timeStepping=self.timestep)
 
-        hmac2Otp = HmacOtp(secretHOtp,
-                           counter,
-                           otplen,
-                           self.get_hashlib(self.hashlib))
-        res = hmac2Otp.checkOtp(anOtpVal,
-                                int(1),
-                                symetric=False)
+        hmac2Otp = HmacOtp(secretHOtp, counter, otplen, self.get_hashlib(self.hashlib))
+        res = hmac2Otp.checkOtp(anOtpVal, int(1), symetric=False)
 
         if res != -1:
             # on success, we have to save the last attempt
@@ -261,8 +280,9 @@ class DayPasswordTokenClass(TotpTokenClass):
 
         return res
 
-    def get_otp(self, current_time=None, do_truncation=True,
-                time_seconds=None, challenge=None):
+    def get_otp(
+        self, current_time=None, do_truncation=True, time_seconds=None, challenge=None
+    ):
         """
         get the next OTP value
 
@@ -278,10 +298,9 @@ class DayPasswordTokenClass(TotpTokenClass):
         otplen = int(self.token.otplen)
         secretHOtp = self.token.get_otpkey()
 
-        hmac2Otp = HmacOtp(secretHOtp,
-                           self.get_otp_count(),
-                           otplen,
-                           self.get_hashlib(self.hashlib))
+        hmac2Otp = HmacOtp(
+            secretHOtp, self.get_otp_count(), otplen, self.get_hashlib(self.hashlib)
+        )
 
         if time_seconds is None:
             time_seconds = time.time()
@@ -289,10 +308,12 @@ class DayPasswordTokenClass(TotpTokenClass):
             time_seconds = self._time2float(current_time)
 
         counter = int(time_seconds / self.timestep)
-        otpval = hmac2Otp.generate(counter=counter,
-                                   inc_counter=False,
-                                   do_truncation=do_truncation,
-                                   challenge=challenge)
+        otpval = hmac2Otp.generate(
+            counter=counter,
+            inc_counter=False,
+            do_truncation=do_truncation,
+            challenge=challenge,
+        )
 
         pin = self.token.get_pin()
         combined = "{0!s}{1!s}".format(otpval, pin)
@@ -302,8 +323,9 @@ class DayPasswordTokenClass(TotpTokenClass):
         return 1, pin, otpval, combined
 
     @log_with(log)
-    def get_multi_otp(self, count=0, epoch_start=0, epoch_end=0,
-                      curTime=None, timestamp=None):
+    def get_multi_otp(
+        self, count=0, epoch_start=0, epoch_end=0, curTime=None, timestamp=None
+    ):
         """
         return a dictionary of multiple future OTP values
         of the HOTP/HMAC token
@@ -326,8 +348,9 @@ class DayPasswordTokenClass(TotpTokenClass):
         otplen = int(self.token.otplen)
         secretHOtp = self.token.get_otpkey()
 
-        hmac2Otp = HmacOtp(secretHOtp, self.get_otp_count(),
-                           otplen, self.get_hashlib(self.hashlib))
+        hmac2Otp = HmacOtp(
+            secretHOtp, self.get_otp_count(), otplen, self.get_hashlib(self.hashlib)
+        )
 
         if curTime:
             # datetime object provided for simulation
@@ -344,22 +367,20 @@ class DayPasswordTokenClass(TotpTokenClass):
         if count > 0:
             error = "OK"
             for i in range(0, count):
-                otpval = hmac2Otp.generate(counter=counter + i,
-                                           inc_counter=False)
+                otpval = hmac2Otp.generate(counter=counter + i, inc_counter=False)
                 timeCounter = (counter + i) * self.timestep
 
-                val_time = datetime.datetime. \
-                    fromtimestamp(timeCounter).strftime("%Y-%m-%d %H:%M:%S")
-                otp_dict["otp"][counter + i] = {'otpval': otpval,
-                                                'time': val_time}
+                val_time = datetime.datetime.fromtimestamp(timeCounter).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+                otp_dict["otp"][counter + i] = {"otpval": otpval, "time": val_time}
             ret = True
 
         return ret, error, otp_dict
 
     @staticmethod
     def get_setting_type(key):
-        settings = {"daypassword.hashlib": "public",
-                    "daypassword.timeStep": "public"}
+        settings = {"daypassword.hashlib": "public", "daypassword.timeStep": "public"}
         return settings.get(key, "")
 
     @classmethod
@@ -382,32 +403,42 @@ class DayPasswordTokenClass(TotpTokenClass):
         ret = {}
         if not g.logged_in_user:
             return ret
-        (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
-                                                                                            params)
-        hashlib_pol = Match.generic(g, scope=role,
-                                    action="daypassword_hashlib",
-                                    user=username,
-                                    realm=userrealm,
-                                    adminuser=adminuser,
-                                    adminrealm=adminrealm).action_values(unique=True)
+        (role, username, userrealm, adminuser, adminrealm) = (
+            determine_logged_in_userparams(g.logged_in_user, params)
+        )
+        hashlib_pol = Match.generic(
+            g,
+            scope=role,
+            action="daypassword_hashlib",
+            user=username,
+            realm=userrealm,
+            adminuser=adminuser,
+            adminrealm=adminrealm,
+        ).action_values(unique=True)
         if hashlib_pol:
             ret["hashlib"] = list(hashlib_pol)[0]
 
-        timestep_pol = Match.generic(g, scope=role,
-                                     action="daypassword_timestep",
-                                     user=username,
-                                     realm=userrealm,
-                                     adminuser=adminuser,
-                                     adminrealm=adminrealm).action_values(unique=True)
+        timestep_pol = Match.generic(
+            g,
+            scope=role,
+            action="daypassword_timestep",
+            user=username,
+            realm=userrealm,
+            adminuser=adminuser,
+            adminrealm=adminrealm,
+        ).action_values(unique=True)
         if timestep_pol:
             ret["timeStep"] = list(timestep_pol)[0]
 
-        otplen_pol = Match.generic(g, scope=role,
-                                   action="daypassword_otplen",
-                                   user=username,
-                                   realm=userrealm,
-                                   adminuser=adminuser,
-                                   adminrealm=adminrealm).action_values(unique=True)
+        otplen_pol = Match.generic(
+            g,
+            scope=role,
+            action="daypassword_otplen",
+            user=username,
+            realm=userrealm,
+            adminuser=adminuser,
+            adminrealm=adminrealm,
+        ).action_values(unique=True)
         if otplen_pol:
             ret["otplen"] = list(otplen_pol)[0]
 

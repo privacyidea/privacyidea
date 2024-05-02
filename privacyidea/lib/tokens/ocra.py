@@ -27,21 +27,17 @@ The OCRA class is tested in tests/test_lib_tokens_tiqr.py
 
 # TODO: Mutual Challenges Response not implemented, yet.
 
-from privacyidea.lib.crypto import (geturandom, get_rand_digit_str,
-                                    get_alphanum_str)
+from privacyidea.lib.crypto import geturandom, get_rand_digit_str, get_alphanum_str
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.utils import to_bytes
 from hashlib import sha1, sha256, sha512
 import binascii
 import struct
 
-SHA_FUNC = {"SHA1": sha1,
-            "SHA256": sha256,
-            "SHA512": sha512}
+SHA_FUNC = {"SHA1": sha1, "SHA256": sha256, "SHA512": sha512}
 
 
 class OCRASuite(object):
-
     def __init__(self, ocrasuite):
         """
         Check if the given *ocrasuite* is a valid ocrasuite according to
@@ -56,42 +52,52 @@ class OCRASuite(object):
         ocrasuite = ocrasuite.upper()
         algo_crypto_data = ocrasuite.split(":")
         if len(algo_crypto_data) != 3:
-            raise Exception("The OCRAsuite consists of three fields "
-                            "'algorithm', 'cryptofunction' and 'datainput' "
-                            "delimited by ':'")
+            raise Exception(
+                "The OCRAsuite consists of three fields "
+                "'algorithm', 'cryptofunction' and 'datainput' "
+                "delimited by ':'"
+            )
         self.algorithm = algo_crypto_data[0]
         self.cryptofunction = algo_crypto_data[1]
         self.datainput = algo_crypto_data[2]
 
         # Test algorithm
         if self.algorithm != "OCRA-1":
-            raise Exception("Error in algorithm. At the moment only version "
-                            "OCRA-1 is supported.")
+            raise Exception(
+                "Error in algorithm. At the moment only version " "OCRA-1 is supported."
+            )
 
         # Test cryptofunction
         hotp_sha_trunc = self.cryptofunction.split("-")
         if len(hotp_sha_trunc) != 3:
-            raise Exception("The cryptofunction consists of three fields "
-                            "'HOTP', 'SHA' and 'Truncation' "
-                            "delimited by '-'")
+            raise Exception(
+                "The cryptofunction consists of three fields "
+                "'HOTP', 'SHA' and 'Truncation' "
+                "delimited by '-'"
+            )
         hotp = hotp_sha_trunc[0]
         self.sha = hotp_sha_trunc[1]
         self.truncation = int(hotp_sha_trunc[2])
         if hotp != "HOTP":
             raise Exception("Only HOTP is allowed. You specified {0!s}".format(hotp))
         if self.sha not in ["SHA1", "SHA256", "SHA512"]:
-            raise Exception("Only SHA1, SHA256 or SHA512 is allowed. You "
-                            "specified %s" % self.sha)
+            raise Exception(
+                "Only SHA1, SHA256 or SHA512 is allowed. You " "specified %s" % self.sha
+            )
         if self.truncation not in [0, 4, 5, 6, 7, 8, 9, 10]:
-            raise Exception("Only truncation of 0 or 4-10 is allowed. "
-                            "You specified %s" % self.truncation)
+            raise Exception(
+                "Only truncation of 0 or 4-10 is allowed. "
+                "You specified %s" % self.truncation
+            )
 
         ########################################################
         # test datainput
         counter_input_signature = self.datainput.split("-")
         if len(counter_input_signature) not in [1, 2, 3]:
-            raise Exception("Error in datainput. The datainput must consist "
-                            "of 1, 2 or 3 fields separated by '-'")
+            raise Exception(
+                "Error in datainput. The datainput must consist "
+                "of 1, 2 or 3 fields separated by '-'"
+            )
         if len(counter_input_signature) == 1:
             self.counter = None
             self.challenge = counter_input_signature[0]
@@ -117,21 +123,25 @@ class OCRASuite(object):
         # the first two characters of the challenge need to be Q[A|N|H]
         self.challenge_type = self.challenge[:2]
         if self.challenge_type not in ["QA", "QH", "QN"]:
-            raise Exception("Error in challenge. The challenge must start "
-                            "with QA, QN or QH. You specified %s" %
-                            self.challenge)
+            raise Exception(
+                "Error in challenge. The challenge must start "
+                "with QA, QN or QH. You specified %s" % self.challenge
+            )
 
         self.challenge_length = 0
         try:
             self.challenge_length = int(self.challenge[2:])
         except ValueError:
-            raise Exception("The last characters in the challenge must be a "
-                            "number. You specified %s" % self.challenge)
+            raise Exception(
+                "The last characters in the challenge must be a "
+                "number. You specified %s" % self.challenge
+            )
 
         if self.challenge_length < 4 or self.challenge_length > 64:
-            raise Exception("The length of the challenge must be specified "
-                            "between 4 and 64. You specified %s" %
-                            self.challenge_length)
+            raise Exception(
+                "The length of the challenge must be specified "
+                "between 4 and 64. You specified %s" % self.challenge_length
+            )
 
         # signature
         if not self.signature:
@@ -139,14 +149,17 @@ class OCRASuite(object):
         else:
             self.signature_type = self.signature[0]
             if self.signature_type not in ["P", "S", "T"]:
-                raise Exception("The signature needs to be P, S or T. You "
-                                "specified %s" % self.signature_type)
+                raise Exception(
+                    "The signature needs to be P, S or T. You "
+                    "specified %s" % self.signature_type
+                )
             if self.signature_type == "P":
                 # P is followed by a Hashing Algorithm SHA1, SHA256, SHA512
                 self.signature_hash = self.signature[1:]
                 if self.signature_hash not in ["SHA1", "SHA256", "SHA512"]:
-                    raise Exception("The signature hash needs to be SHA1, SHA256 "
-                                    "or SHA512")
+                    raise Exception(
+                        "The signature hash needs to be SHA1, SHA256 " "or SHA512"
+                    )
             elif self.signature_type == "S":
                 # Allowed Session length is 64, 128, 256 or 512
                 try:
@@ -154,24 +167,29 @@ class OCRASuite(object):
                 except ValueError:
                     raise Exception("The session length needs to be a number.")
                 if self.session_length not in [64, 128, 256, 512]:
-                    raise Exception("The session length needs to be 64, 128, "
-                                    "256 or 512")
+                    raise Exception(
+                        "The session length needs to be 64, 128, " "256 or 512"
+                    )
 
             elif self.signature_type == "T":
                 # Allowed timestamp is [1-59]S, [1-56]M, [0-48]H
                 self.time_frame = self.signature[-1:]
                 if self.time_frame not in ["S", "M", "H"]:
-                    raise Exception("The time in the signature must be 'S', 'M' or "
-                                    "'H'")
+                    raise Exception(
+                        "The time in the signature must be 'S', 'M' or " "'H'"
+                    )
                 self.time_value = self.signature[1:-1]
                 try:
                     self.time_value = int(self.time_value)
                 except ValueError:
-                    raise Exception("You must specify a valid number in the "
-                                    "timestamp in the signature.")
+                    raise Exception(
+                        "You must specify a valid number in the "
+                        "timestamp in the signature."
+                    )
                 if self.time_value < 0 or self.time_value > 59:
-                    raise Exception("You must specify a time value between 0 and "
-                                    "59.")
+                    raise Exception(
+                        "You must specify a time value between 0 and " "59."
+                    )
 
     def create_challenge(self):
         """
@@ -181,22 +199,22 @@ class OCRASuite(object):
         """
         ret = None
         if self.challenge_type == "QH":
-            ret = geturandom(length=int(round(self.challenge_length/2)), hex=True)
-            ret = ret[:self.challenge_length]
+            ret = geturandom(length=int(round(self.challenge_length / 2)), hex=True)
+            ret = ret[: self.challenge_length]
         elif self.challenge_type == "QA":
             ret = get_alphanum_str(self.challenge_length)
         elif self.challenge_type == "QN":
             ret = get_rand_digit_str(length=self.challenge_length)
 
         if not ret:  # pragma: no cover
-            raise Exception("OCRA.create_challenge failed. Obviously no good "
-                            "challenge_type!")
+            raise Exception(
+                "OCRA.create_challenge failed. Obviously no good " "challenge_type!"
+            )
 
         return ret
 
 
 class OCRA(object):
-
     def __init__(self, ocrasuite, key=None, security_object=None):
         """
         Creates an OCRA Object that can be used to calculate OTP response or
@@ -217,12 +235,15 @@ class OCRA(object):
         self.security_obj = security_object
 
         digits = self.ocrasuite_obj.truncation
-        self.hmac_obj = HmacOtp(secObj=self.security_obj,
-                                digits=digits,
-                                hashfunc=SHA_FUNC.get(self.ocrasuite_obj.sha))
+        self.hmac_obj = HmacOtp(
+            secObj=self.security_obj,
+            digits=digits,
+            hashfunc=SHA_FUNC.get(self.ocrasuite_obj.sha),
+        )
 
-    def create_data_input(self, question, pin=None, pin_hash=None,
-                          counter=None, timesteps=None):
+    def create_data_input(
+        self, question, pin=None, pin_hash=None, counter=None, timesteps=None
+    ):
         """
         Create the data_input to be used in the HMAC function
         In case of QN the question would be "111111"
@@ -243,33 +264,34 @@ class OCRA(object):
         """
         # In case the ocrasuite comes as a unicode (like from the webui) we
         # need to convert it!
-        data_input = to_bytes(self.ocrasuite) + b'\0'
+        data_input = to_bytes(self.ocrasuite) + b"\0"
         # Check for counter
         if self.ocrasuite_obj.counter == "C":
             if counter:
                 counter = int(counter)
-                counter = struct.pack('>Q', int(counter))
+                counter = struct.pack(">Q", int(counter))
                 data_input += counter
             else:
-                raise Exception("The ocrasuite {0!s} requires a counter".format(
-                                self.ocrasuite))
+                raise Exception(
+                    "The ocrasuite {0!s} requires a counter".format(self.ocrasuite)
+                )
         # Check for Question
         if self.ocrasuite_obj.challenge_type == "QN":
             # question contains only numeric values
-            hex_q = '{0:x}'.format(int(question))
-            hex_q += '0' * (len(hex_q) % 2)
+            hex_q = "{0:x}".format(int(question))
+            hex_q += "0" * (len(hex_q) % 2)
             bin_q = binascii.unhexlify(hex_q)
-            bin_q += b'\x00' * (128-len(bin_q))
+            bin_q += b"\x00" * (128 - len(bin_q))
             data_input += bin_q
         elif self.ocrasuite_obj.challenge_type == "QA":
             # question contains alphanumeric characters
             bin_q = to_bytes(question)
-            bin_q += b'\x00' * (128-len(bin_q))
+            bin_q += b"\x00" * (128 - len(bin_q))
             data_input += bin_q
         elif self.ocrasuite_obj.challenge_type == "QH":
             # qustion contains hex values
             bin_q = binascii.unhexlify(question)
-            bin_q += b'\x00' * (128-len(bin_q))
+            bin_q += b"\x00" * (128 - len(bin_q))
             data_input += bin_q
 
         # in case of PIN
@@ -278,18 +300,21 @@ class OCRA(object):
                 data_input += binascii.unhexlify(pin_hash)
             elif pin:
                 pin_hash = SHA_FUNC.get(self.ocrasuite_obj.signature_hash)(
-                    to_bytes(pin)).digest()
+                    to_bytes(pin)
+                ).digest()
                 data_input += pin_hash
             else:
-                raise Exception("The ocrasuite {0!s} requires a PIN!".format(
-                                self.ocrasuite))
+                raise Exception(
+                    "The ocrasuite {0!s} requires a PIN!".format(self.ocrasuite)
+                )
         elif self.ocrasuite_obj.signature_type == "T":
             if not timesteps:
-                raise Exception("The ocrasuite {0!s} requires timesteps".format(
-                                self.ocrasuite))
+                raise Exception(
+                    "The ocrasuite {0!s} requires timesteps".format(self.ocrasuite)
+                )
             # In case of Time
             timesteps = int(timesteps, 16)
-            timesteps = struct.pack('>Q', int(timesteps))
+            timesteps = struct.pack(">Q", int(timesteps))
             data_input += timesteps
         elif self.ocrasuite_obj.signature_type == "S":  # pragma: no cover
             # In case of session
@@ -297,8 +322,9 @@ class OCRA(object):
             raise NotImplementedError("OCRA Session not implemented, yet.")
         return data_input
 
-    def get_response(self, question, pin=None, pin_hash=None, counter=None,
-                     timesteps=None):
+    def get_response(
+        self, question, pin=None, pin_hash=None, counter=None, timesteps=None
+    ):
         """
         Create an OTP response from the given input values.
 
@@ -308,17 +334,21 @@ class OCRA(object):
         :param counter:
         :return:
         """
-        data_input = self.create_data_input(question,
-                                            pin=pin,
-                                            pin_hash=pin_hash,
-                                            counter=counter,
-                                            timesteps=timesteps)
-        r = self.hmac_obj.generate(key=self.key,
-                                   challenge=binascii.hexlify(data_input))
+        data_input = self.create_data_input(
+            question, pin=pin, pin_hash=pin_hash, counter=counter, timesteps=timesteps
+        )
+        r = self.hmac_obj.generate(key=self.key, challenge=binascii.hexlify(data_input))
         return r
 
-    def check_response(self, response, question=None, pin=None,
-                       pin_hash=None, counter=None, timesteps=None):
+    def check_response(
+        self,
+        response,
+        question=None,
+        pin=None,
+        pin_hash=None,
+        counter=None,
+        timesteps=None,
+    ):
         """
         Check the given *response* if it is the correct response to the
         challenge/question.
@@ -331,8 +361,9 @@ class OCRA(object):
         :param timesteps:
         :return:
         """
-        r = self.get_response(question, pin=pin, pin_hash=pin_hash,
-                              counter=counter, timesteps=timesteps)
+        r = self.get_response(
+            question, pin=pin, pin_hash=pin_hash, counter=counter, timesteps=timesteps
+        )
         if r == response:
             return 1
         else:

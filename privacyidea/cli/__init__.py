@@ -19,6 +19,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """Utility functions for CLI tools"""
+
 from flask.cli import FlaskGroup
 from privacyidea.app import create_app
 
@@ -33,5 +34,6 @@ def create_silent_app():
 # Don't load plugin commands
 class NoPluginsFlaskGroup(FlaskGroup):
     """A FlaskGroup class which does not load commands from plugins"""
+
     def _load_plugin_commands(self):
         pass

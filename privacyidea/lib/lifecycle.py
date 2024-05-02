@@ -30,9 +30,9 @@ def register_finalizer(func):
     """
     # from http://flask.pocoo.org/snippets/53/
     store = get_request_local_store()
-    if 'call_on_teardown' not in store:
-        store['call_on_teardown'] = []
-    store['call_on_teardown'].append(func)
+    if "call_on_teardown" not in store:
+        store["call_on_teardown"] = []
+    store["call_on_teardown"].append(func)
 
 
 def call_finalizers():
@@ -41,11 +41,11 @@ def call_finalizers():
     Exceptions will be caught and written to the log.
     """
     store = get_request_local_store()
-    if 'call_on_teardown' in store:
-        for func in store['call_on_teardown']:
+    if "call_on_teardown" in store:
+        for func in store["call_on_teardown"]:
             try:
                 func()
             except Exception as exx:
                 log.warning("Caught exception in finalizer: {!r}".format(exx))
                 log.debug("Exception in finalizer:", exc_info=True)
-        store['call_on_teardown'] = []
+        store["call_on_teardown"] = []

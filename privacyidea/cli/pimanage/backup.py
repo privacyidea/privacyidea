@@ -40,24 +40,37 @@ MYSQL_DIALECTS = ["mysql", "pymysql", "mysql+pymysql", "mariadb+pymysql"]
 backup_cli = AppGroup("backup", help="Backup/Restore server")
 
 
-@backup_cli.command("create", short_help="Create a new backup of the database and configuration")
-@click.option("-d", "--directory", "backup_dir",
-              type=click.Path(file_okay=False, writable=True),
-              default="/var/lib/privacyidea/backup/",
-              show_default=True,
-              help="Path to the backup directory")
-@click.option("-c", "--config_dir",
-              type=click.Path(exists=True, file_okay=False, writable=True),
-              default="/etc/privacyidea/",
-              show_default=True,
-              help="Path to privacyIDEA config directory")
-@click.option("-r", "--radius_dir",
-              type=click.Path(exists=True, file_okay=False, readable=True),
-              default=None,
-              show_default=True,
-              help="Path to FreeRADIUS config directory")
-@click.option("-e", "--enckey", is_flag=True,
-              help="Add the encryption key to the backup")
+@backup_cli.command(
+    "create", short_help="Create a new backup of the database and configuration"
+)
+@click.option(
+    "-d",
+    "--directory",
+    "backup_dir",
+    type=click.Path(file_okay=False, writable=True),
+    default="/var/lib/privacyidea/backup/",
+    show_default=True,
+    help="Path to the backup directory",
+)
+@click.option(
+    "-c",
+    "--config_dir",
+    type=click.Path(exists=True, file_okay=False, writable=True),
+    default="/etc/privacyidea/",
+    show_default=True,
+    help="Path to privacyIDEA config directory",
+)
+@click.option(
+    "-r",
+    "--radius_dir",
+    type=click.Path(exists=True, file_okay=False, readable=True),
+    default=None,
+    show_default=True,
+    help="Path to FreeRADIUS config directory",
+)
+@click.option(
+    "-e", "--enckey", is_flag=True, help="Add the encryption key to the backup"
+)
 def backup_create(backup_dir, config_dir, radius_dir, enckey):
     """
     Create a new backup of the database and the configuration. By default,
@@ -106,11 +119,15 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
         defaults_file = conf_dir.joinpath("mysql.cnf")
         _write_mysql_defaults(defaults_file, parsed_sqluri)
         # call mysqldump to get a copy of the database
-        cmd = ['mysqldump', '--defaults-file={!s}'.format(defaults_file), '-h',
-               shlex.quote(parsed_sqluri.hostname)]
+        cmd = [
+            "mysqldump",
+            "--defaults-file={!s}".format(defaults_file),
+            "-h",
+            shlex.quote(parsed_sqluri.hostname),
+        ]
         if parsed_sqluri.port:
-            cmd.extend(['-P', str(parsed_sqluri.port)])
-        cmd.extend(['-B', shlex.quote(database), '-r', sqlfile])
+            cmd.extend(["-P", str(parsed_sqluri.port)])
+        cmd.extend(["-B", shlex.quote(database), "-r", sqlfile])
         subprocess.run(cmd)
     else:
         click.echo(f"unsupported SQL syntax: {sqltype}")
@@ -154,8 +171,7 @@ def backup_restore(backup_file):
     sqlfile = None
     enckey_contained = False
 
-    p = subprocess.run(["tar", "-ztf", backup_file], capture_output=True,
-                       text=True)
+    p = subprocess.run(["tar", "-ztf", backup_file], capture_output=True, text=True)
     if p.returncode != 0:
         click.secho(f"Unable to open backup file {backup_file}", fg="red")
         sys.exit(2)
@@ -177,8 +193,11 @@ def backup_restore(backup_file):
     if enckey_contained:
         click.echo("Also restoring the encryption key")
     else:
-        click.secho("NO FILE 'enckey' CONTAINED! BE SURE TO RESTORE THE ENCRYPTION "
-                    "KEY MANUALLY!", fg='yellow')
+        click.secho(
+            "NO FILE 'enckey' CONTAINED! BE SURE TO RESTORE THE ENCRYPTION "
+            "KEY MANUALLY!",
+            fg="yellow",
+        )
     click.echo(f"Restoring to {config_file} with data from {sqlfile}")
 
     subprocess.run(["tar", "-zxf", backup_file, "-C", "/"])
@@ -189,8 +208,7 @@ def backup_restore(backup_file):
     sqluri = cfg["SQLALCHEMY_DATABASE_URI"]
 
     if sqluri is None:
-        click.secho(f"No SQLALCHEMY_DATABASE_URI found in {config_file}",
-                    fg="red")
+        click.secho(f"No SQLALCHEMY_DATABASE_URI found in {config_file}", fg="red")
         sys.exit(2)
     parsed_sqluri = urlparse(sqluri)
     sqltype = parsed_sqluri.scheme
@@ -205,11 +223,15 @@ def backup_restore(backup_file):
         _write_mysql_defaults(defaults_file, parsed_sqluri)
         # Rewriting database
         click.echo("Restoring database.")
-        cmd = ["mysql", f"--defaults-file={defaults_file}",
-               "-h", parsed_sqluri.hostname]
+        cmd = [
+            "mysql",
+            f"--defaults-file={defaults_file}",
+            "-h",
+            parsed_sqluri.hostname,
+        ]
         if parsed_sqluri.port:
-            cmd.extend(['-P', str(parsed_sqluri.port)])
-        cmd.extend(['-B', shlex.quote(database)])
+            cmd.extend(["-P", str(parsed_sqluri.port)])
+        cmd.extend(["-B", shlex.quote(database)])
         with open(sqlfile, "r") as sql_file:
             p = subprocess.run(cmd, input=sql_file.read())
             if p.returncode == 0:
@@ -222,11 +244,11 @@ def backup_restore(backup_file):
 def _write_mysql_defaults(defaults_file, parsed_sqluri):
     # create a mysql config file to avoid adding username and password to the command
     sql_defaults = configparser.ConfigParser()
-    sql_defaults['client'] = {
+    sql_defaults["client"] = {
         "user": parsed_sqluri.username,
-        "password": parsed_sqluri.password
+        "password": parsed_sqluri.password,
     }
-    sql_defaults['mysqldump'] = {"no-tablespaces": "True"}
+    sql_defaults["mysqldump"] = {"no-tablespaces": "True"}
     with defaults_file.open(mode="w") as f:
         sql_defaults.write(f)
     defaults_file.chmod(0o600)

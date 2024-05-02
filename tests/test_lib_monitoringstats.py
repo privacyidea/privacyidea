@@ -1,7 +1,11 @@
 from privacyidea.models import MonitoringStats, db
-from privacyidea.lib.monitoringstats import (write_stats, delete_stats,
-                                             get_stats_keys, get_values,
-                                             get_last_value)
+from privacyidea.lib.monitoringstats import (
+    write_stats,
+    delete_stats,
+    get_stats_keys,
+    get_values,
+    get_last_value,
+)
 
 from .base import MyTestCase
 import datetime
@@ -10,7 +14,6 @@ from datetime import timedelta
 
 
 class TokenModelTestCase(MyTestCase):
-
     def test_01_write_stats(self):
         key1 = "some_key"
         write_stats(key1, 12)
@@ -18,7 +21,10 @@ class TokenModelTestCase(MyTestCase):
 
         self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).count(), 2)
         # Assert naive datetime
-        self.assertEqual(MonitoringStats.query.filter_by(stats_key=key1).first().timestamp.tzinfo, None)
+        self.assertEqual(
+            MonitoringStats.query.filter_by(stats_key=key1).first().timestamp.tzinfo,
+            None,
+        )
 
         # Now we write a new value, but with the parameter to delete old values
         write_stats(key1, 14, reset_values=True)
@@ -31,7 +37,7 @@ class TokenModelTestCase(MyTestCase):
     def test_02_delete_stats(self):
         key1 = "otherkey"
         now = datetime.datetime.now(tzlocal())
-        write_stats(key1, 12, timestamp=now- timedelta(days=1))
+        write_stats(key1, 12, timestamp=now - timedelta(days=1))
         write_stats(key1, 13, timestamp=now)
         write_stats(key1, 14, timestamp=now + timedelta(days=1))
         db.session.commit()
@@ -103,9 +109,11 @@ class TokenModelTestCase(MyTestCase):
         # The last value is a 10
         self.assertEqual(r[9][1], 10)
 
-        r = get_values("key1",
-                       start_timestamp=ts - timedelta(minutes=8),
-                       end_timestamp=ts - timedelta(minutes=4))
+        r = get_values(
+            "key1",
+            start_timestamp=ts - timedelta(minutes=8),
+            end_timestamp=ts - timedelta(minutes=4),
+        )
         # We get 3,4,5,6,7
         self.assertEqual([entry[1] for entry in r], [3, 4, 5, 6, 7])
         # Assert it is the correct time, and timezone-aware UTC
@@ -113,12 +121,10 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(r[0][0].tzinfo, tzutc())
         self.assertEqual(r[-1][0], ts - timedelta(minutes=4))
 
-        r = get_values("key1",
-                       start_timestamp=ts - timedelta(minutes=8))
+        r = get_values("key1", start_timestamp=ts - timedelta(minutes=8))
         self.assertEqual([entry[1] for entry in r], [3, 4, 5, 6, 7, 8, 9, 10])
 
-        r = get_values("key1",
-                       end_timestamp=ts - timedelta(minutes=8))
+        r = get_values("key1", end_timestamp=ts - timedelta(minutes=8))
         self.assertEqual([entry[1] for entry in r], [1, 2, 3])
 
         # Get the last value of key1
