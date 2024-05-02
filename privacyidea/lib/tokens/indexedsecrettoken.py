@@ -175,9 +175,6 @@ class IndexedSecretTokenClass(TokenClass):
 
         TokenClass.update(self, param, reset_failcount)
 
-        # finally we set the otplen of the token, no matter if the otpkey was generated or not
-        key = self.token.get_otpkey().getKey()
-        self.set_otplen(len(key))
         return
 
     @log_with(log)
@@ -295,7 +292,7 @@ class IndexedSecretTokenClass(TokenClass):
                             # increase the received_count
                             challengeobject.set_otp_status()
                     else:
-                        log.debug("Length of password does not match the requested number of positions.")
+                        log.info("Length of password does not match the requested number of positions.")
                         # increase the received_count
                         challengeobject.set_otp_status()
 
