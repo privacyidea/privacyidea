@@ -27,6 +27,7 @@ It is tested in conjunction with the policy decorator init_random_pin in
 tests/test_api_lib_policy.py
 """
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -47,11 +48,20 @@ class PinHandler(object):
         *  mobile (if the module would deliver via SMS)
       * the administrator name (who enrolled the token)
     """
+
     def __init__(self, options=None):
         pass
 
-    def send(self, pin, serial, user, tokentype=None, logged_in_user=None,
-             userdata=None, options=None):
+    def send(
+        self,
+        pin,
+        serial,
+        user,
+        tokentype=None,
+        logged_in_user=None,
+        userdata=None,
+        options=None,
+    ):
         """
 
         :param pin: The PIN in cleartext
@@ -69,7 +79,12 @@ class PinHandler(object):
         :rtype: bool
         """
         # The most simple way of handling a random PIN! ;-)
-        log.info("handling pin {0!r} for token {1!s} of user {2!r}".format(pin, serial,
-                                                              user))
-        log.info("The token was enrolled by {0!r}@{1!s}".format(logged_in_user.get("username"), logged_in_user.get("realm")))
+        log.info(
+            "handling pin {0!r} for token {1!s} of user {2!r}".format(pin, serial, user)
+        )
+        log.info(
+            "The token was enrolled by {0!r}@{1!s}".format(
+                logged_in_user.get("username"), logged_in_user.get("realm")
+            )
+        )
         return True

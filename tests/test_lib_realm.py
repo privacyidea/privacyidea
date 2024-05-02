@@ -20,20 +20,22 @@
 """
 This test file tests the lib/realm.py
 """
+
 import uuid
 from .base import MyTestCase
 
-from privacyidea.lib.resolver import (save_resolver,
-                                      delete_resolver)
+from privacyidea.lib.resolver import save_resolver, delete_resolver
 
-from privacyidea.lib.realm import (set_realm,
-                                   get_realms,
-                                   get_default_realm,
-                                   realm_is_defined,
-                                   set_default_realm,
-                                   delete_realm,
-                                   export_realms,
-                                   import_realms)
+from privacyidea.lib.realm import (
+    set_realm,
+    get_realms,
+    get_default_realm,
+    realm_is_defined,
+    set_default_realm,
+    delete_realm,
+    export_realms,
+    import_realms,
+)
 
 from privacyidea.models import NodeName
 
@@ -42,33 +44,40 @@ class RealmTestCase(MyTestCase):
     """
     Test the realm library level
     """
+
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
     realm1 = "realm1"
     realm_dot = "realm1.com"
 
     def test_01_create_realm(self):
-        rid = save_resolver({"resolver": self.resolvername1,
-                             "type": "passwdresolver",
-                             "fileName": "/etc/passwd"})
+        rid = save_resolver(
+            {
+                "resolver": self.resolvername1,
+                "type": "passwdresolver",
+                "fileName": "/etc/passwd",
+            }
+        )
         self.assertTrue(rid > 0, rid)
 
-        rid = save_resolver({"resolver": self.resolvername2,
-                             "type": "passwdresolver",
-                             "fileName": "/etc/secrets"})
+        rid = save_resolver(
+            {
+                "resolver": self.resolvername2,
+                "type": "passwdresolver",
+                "fileName": "/etc/secrets",
+            }
+        )
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(self.realm1,
-                                    [
-                                        {'name': self.resolvername1},
-                                        {'name': self.resolvername2}])
+        (added, failed) = set_realm(
+            self.realm1, [{"name": self.resolvername1}, {"name": self.resolvername2}]
+        )
         self.assertEqual(len(failed), 0, failed)
         self.assertEqual(len(added), 2, added)
 
-        (added, failed) = set_realm(self.realm_dot,
-                                    [
-                                        {'name': self.resolvername1},
-                                        {'name': self.resolvername2}])
+        (added, failed) = set_realm(
+            self.realm_dot, [{"name": self.resolvername1}, {"name": self.resolvername2}]
+        )
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 2)
 
@@ -85,10 +94,9 @@ class RealmTestCase(MyTestCase):
         self.assertRaises(Exception, set_realm, "#####")
 
         # update the resolver list:
-        (added, failed) = set_realm(self.realm1,
-                                    [
-                                        {'name': self.resolvername1},
-                                        {'name': "non exiting"}])
+        (added, failed) = set_realm(
+            self.realm1, [{"name": self.resolvername1}, {"name": "non exiting"}]
+        )
         self.assertTrue(len(failed) == 1)
         self.assertTrue(len(added) == 1)
 
@@ -101,9 +109,7 @@ class RealmTestCase(MyTestCase):
         self.assertTrue(len(realm) == 1, realm)
 
     def test_02_set_default_realm(self):
-        (added, failed) = set_realm("realm2",
-                                    [
-                                        {'name': self.resolvername2}])
+        (added, failed) = set_realm("realm2", [{"name": self.resolvername2}])
         self.assertTrue(len(added) == 1)
         self.assertTrue(len(failed) == 0)
 
@@ -132,18 +138,25 @@ class RealmTestCase(MyTestCase):
         NodeName(id=uuid1, name="Node1").save()
         NodeName(id=uuid2, name="Node2").save()
 
-        save_resolver({"resolver": self.resolvername1,
-                       "type": "passwdresolver",
-                       "fileName": "/etc/passwd"})
+        save_resolver(
+            {
+                "resolver": self.resolvername1,
+                "type": "passwdresolver",
+                "fileName": "/etc/passwd",
+            }
+        )
 
-        save_resolver({"resolver": self.resolvername2,
-                       "type": "passwdresolver",
-                       "fileName": "/etc/secrets"})
+        save_resolver(
+            {
+                "resolver": self.resolvername2,
+                "type": "passwdresolver",
+                "fileName": "/etc/secrets",
+            }
+        )
 
-        (added, failed) = set_realm("realm1",
-                                    [
-                                        {'name': self.resolvername1,
-                                         'node': uuid.UUID(uuid1)}])
+        (added, failed) = set_realm(
+            "realm1", [{"name": self.resolvername1, "node": uuid.UUID(uuid1)}]
+        )
         self.assertIn(self.resolvername1, added, added)
         self.assertEqual(len(failed), 0, failed)
         realms_dict = get_realms()
@@ -153,35 +166,38 @@ class RealmTestCase(MyTestCase):
         self.assertEqual(resolver_list[0]["node"], uuid1, resolver_list)
 
         # overwrite/update existing realm with resolvers with different nodes
-        (added, failed) = set_realm("realm1",
-                                    [
-                                        {'name': self.resolvername1,
-                                         'node': uuid.UUID(uuid1)},
-                                        {'name': self.resolvername1,
-                                         'node': uuid.UUID(uuid2)}])
+        (added, failed) = set_realm(
+            "realm1",
+            [
+                {"name": self.resolvername1, "node": uuid.UUID(uuid1)},
+                {"name": self.resolvername1, "node": uuid.UUID(uuid2)},
+            ],
+        )
         self.assertIn(self.resolvername1, added, added)
         self.assertEqual(len(failed), 0, failed)
         realms_dict = get_realms()
         self.assertIn("realm1", realms_dict, realms_dict)
         resolver_list = realms_dict["realm1"]["resolver"]
         self.assertEqual(len(resolver_list), 2, realms_dict)
-        self.assertIn(uuid1, [x.get('node') for x in resolver_list], resolver_list)
-        self.assertIn(uuid2, [x.get('node') for x in resolver_list], resolver_list)
+        self.assertIn(uuid1, [x.get("node") for x in resolver_list], resolver_list)
+        self.assertIn(uuid2, [x.get("node") for x in resolver_list], resolver_list)
 
         # same rsolver with same node
-        (added, failed) = set_realm("realm1",
-                                    [
-                                        {'name': self.resolvername1,
-                                         'node': uuid.UUID(uuid1)},
-                                        {'name': self.resolvername1}])
+        (added, failed) = set_realm(
+            "realm1",
+            [
+                {"name": self.resolvername1, "node": uuid.UUID(uuid1)},
+                {"name": self.resolvername1},
+            ],
+        )
         self.assertIn(self.resolvername1, added, added)
         self.assertEqual(len(failed), 0, failed)
         realms_dict = get_realms()
         self.assertIn("realm1", realms_dict, realms_dict)
         resolver_list = realms_dict["realm1"]["resolver"]
         self.assertEqual(len(resolver_list), 2, realms_dict)
-        self.assertIn(uuid1, [x.get('node') for x in resolver_list], resolver_list)
-        delete_realm('realm1')
+        self.assertIn(uuid1, [x.get("node") for x in resolver_list], resolver_list)
+        delete_realm("realm1")
         NodeName.query.filter_by(id=uuid1).delete()
         NodeName.query.filter_by(id=uuid2).delete()
 
@@ -191,31 +207,62 @@ class RealmTestCase(MyTestCase):
         NodeName(id=uuid1, name="Node1").save()
         NodeName(id=uuid2, name="Node2").save()
 
-        save_resolver({"resolver": self.resolvername1,
-                       "type": "passwdresolver",
-                       "fileName": "/etc/passwd"})
+        save_resolver(
+            {
+                "resolver": self.resolvername1,
+                "type": "passwdresolver",
+                "fileName": "/etc/passwd",
+            }
+        )
 
-        save_resolver({"resolver": self.resolvername2,
-                       "type": "passwdresolver",
-                       "fileName": "/etc/secrets"})
+        save_resolver(
+            {
+                "resolver": self.resolvername2,
+                "type": "passwdresolver",
+                "fileName": "/etc/secrets",
+            }
+        )
 
-        set_realm("realm1",
-                  [
-                      {'name': self.resolvername1,
-                       'node': uuid.UUID(uuid1)},
-                      {'name': self.resolvername1}])
+        set_realm(
+            "realm1",
+            [
+                {"name": self.resolvername1, "node": uuid.UUID(uuid1)},
+                {"name": self.resolvername1},
+            ],
+        )
         realm_exp = export_realms("realm1")
         self.assertIn("realm1", realm_exp, realm_exp)
         self.assertTrue(realm_exp["realm1"]["default"], realm_exp)
-        self.assertIn(self.resolvername1, [x["name"] for x in realm_exp["realm1"]["resolver"]], realm_exp)
-        self.assertIn(uuid1, [x["node"] for x in realm_exp["realm1"]["resolver"]], realm_exp)
+        self.assertIn(
+            self.resolvername1,
+            [x["name"] for x in realm_exp["realm1"]["resolver"]],
+            realm_exp,
+        )
+        self.assertIn(
+            uuid1, [x["node"] for x in realm_exp["realm1"]["resolver"]], realm_exp
+        )
 
         import_dict = {
-            'realm2': {'id': 2, 'option': '', 'default': False, 'resolver': [
-                {'priority': None, 'name': 'Resolver2', 'type': 'passwdresolver',
-                 'node': uuid2},
-                {'priority': None, 'name': 'resolver1', 'type': 'passwdresolver',
-                 'node': ''}]}}
+            "realm2": {
+                "id": 2,
+                "option": "",
+                "default": False,
+                "resolver": [
+                    {
+                        "priority": None,
+                        "name": "Resolver2",
+                        "type": "passwdresolver",
+                        "node": uuid2,
+                    },
+                    {
+                        "priority": None,
+                        "name": "resolver1",
+                        "type": "passwdresolver",
+                        "node": "",
+                    },
+                ],
+            }
+        }
 
         import_realms(import_dict)
         realms_dict = get_realms()
@@ -223,11 +270,13 @@ class RealmTestCase(MyTestCase):
         self.assertIn("realm2", realms_dict, realms_dict)
         resolver_list = realms_dict["realm2"]["resolver"]
         self.assertEqual(len(resolver_list), 2, realms_dict)
-        self.assertIn(uuid2, [x.get('node') for x in resolver_list], resolver_list)
-        self.assertIn(self.resolvername2, [x.get('name') for x in resolver_list], resolver_list)
+        self.assertIn(uuid2, [x.get("node") for x in resolver_list], resolver_list)
+        self.assertIn(
+            self.resolvername2, [x.get("name") for x in resolver_list], resolver_list
+        )
 
-        delete_realm('realm1')
-        delete_realm('realm2')
+        delete_realm("realm1")
+        delete_realm("realm2")
 
         NodeName.query.filter_by(id=uuid1).delete()
         NodeName.query.filter_by(id=uuid2).delete()

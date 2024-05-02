@@ -15,7 +15,7 @@ class TanTokenTestCase(MyTestCase):
     serial1 = "ser1"
 
     # add_user, get_user, reset, set_user_identifiers
-    
+
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="tan")
         db_token.save()
@@ -48,8 +48,7 @@ class TanTokenTestCase(MyTestCase):
         self.assertTrue("otps" in init_detail)
 
     def test_04_get_init_details_with_key(self):
-        token = init_token({"type": "tan",
-                            "otpkey": OTPKEY})
+        token = init_token({"type": "tan", "otpkey": OTPKEY})
         init_detail = token.get_init_detail()
         self.assertTrue("otps" in init_detail)
         otps = init_detail.get("otps")
@@ -69,11 +68,14 @@ class TanTokenTestCase(MyTestCase):
         self.assertEqual(r, -1)
 
     def test_05_import(self):
-        params = TanTokenClass.get_import_csv(["se1", "121212", "tan",
-                                               "tan1 tan2  tan3    tan4    tan5"])
+        params = TanTokenClass.get_import_csv(
+            ["se1", "121212", "tan", "tan1 tan2  tan3    tan4    tan5"]
+        )
         self.assertEqual(params.get("serial"), "se1")
         self.assertEqual(params.get("type"), "tan")
-        self.assertEqual(params.get("tans").split(), ["tan1", "tan2", "tan3", "tan4", "tan5"])
+        self.assertEqual(
+            params.get("tans").split(), ["tan1", "tan2", "tan3", "tan4", "tan5"]
+        )
 
         # test init token
         tok = init_token(params)
@@ -110,12 +112,14 @@ class TanTokenTestCase(MyTestCase):
         # This are example values that are imported from a file and end up at
         # lib/token.import_token
         serial = "ABC123"
-        params = {'hashlib': 'sha1',
-                  'type': 'tan',
-                  'user': {},
-                  'serial': 'ABC123',
-                  'tans': '123465 798111',
-                  'otpkey': ''}
+        params = {
+            "hashlib": "sha1",
+            "type": "tan",
+            "user": {},
+            "serial": "ABC123",
+            "tans": "123465 798111",
+            "otpkey": "",
+        }
 
         tok = import_token(serial, params)
         self.assertEqual("tan", tok.type)

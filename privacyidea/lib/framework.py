@@ -15,6 +15,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from flask import current_app, g
+
 # We import the gettext function here and export it as ``_``.
 from flask_babel import gettext as _
 
@@ -25,7 +26,7 @@ def get_app_local_store():
     but shared among all threads.
     :return: a Python dict
     """
-    return current_app.config.setdefault('_app_local_store', {})
+    return current_app.config.setdefault("_app_local_store", {})
 
 
 def get_request_local_store():
@@ -34,7 +35,7 @@ def get_request_local_store():
     is not shared among threads.
     :return: a Python dict
     """
-    if '_request_local_store' not in g:
+    if "_request_local_store" not in g:
         g._request_local_store = {}
     return g._request_local_store
 
@@ -57,5 +58,10 @@ def get_app_config_value(key, default=None):
     return get_app_config().get(key, default)
 
 
-__all__ = ['get_app_local_store', 'get_request_local_store',
-           'get_app_config', 'get_app_config_value', '_']
+__all__ = [
+    "get_app_local_store",
+    "get_request_local_store",
+    "get_app_config",
+    "get_app_config_value",
+    "_",
+]

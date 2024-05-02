@@ -32,7 +32,7 @@ from pyrad.packet import AccessReject, AccessAccept, AccessChallenge
 
 from .smtpmock import get_wrapped
 
-Call = namedtuple('Call', ['request', 'response'])
+Call = namedtuple("Call", ["request", "response"])
 
 _wrapper_template = """\
 def wrapper%(signature)s:
@@ -62,7 +62,6 @@ class CallList(Sequence, Sized):
 
 
 class RadiusMock(object):
-
     def __init__(self):
         self._calls = CallList()
         self.reset()
@@ -71,13 +70,20 @@ class RadiusMock(object):
         self._request_data = {}
         self._calls.reset()
 
-    def setdata(self, server=None, rpacket=None, response=AccessReject, response_data=None, timeout=False):
+    def setdata(
+        self,
+        server=None,
+        rpacket=None,
+        response=AccessReject,
+        response_data=None,
+        timeout=False,
+    ):
         self._request_data = {
-            'server': server,
-            'packet': rpacket,
-            'response': response,
-            'response_data': response_data or {},
-            'timeout': timeout
+            "server": server,
+            "packet": rpacket,
+            "response": response,
+            "response_data": response_data or {},
+            "timeout": timeout,
         }
 
     @property
@@ -92,7 +98,7 @@ class RadiusMock(object):
         self.reset()
 
     def activate(self, func):
-        evaldict = {'radiusmock': self, 'func': func}
+        evaldict = {"radiusmock": self, "func": func}
         return get_wrapped(func, _wrapper_template, evaldict)
 
     def _on_request(self, client_instance, pkt):
@@ -113,7 +119,7 @@ class RadiusMock(object):
                13       Status-Client (experimental)
               255       Reserved
         """
-        #reply = pkt.CreateReply(packet=rawreply)
+        # reply = pkt.CreateReply(packet=rawreply)
         if self._request_data.get("timeout"):
             raise Timeout()
         reply = pkt.CreateReply(**self._request_data.get("response_data"))
@@ -124,9 +130,9 @@ class RadiusMock(object):
         import mock
 
         def unbound_on_send(Client, pkt, *a, **kwargs):
-            return self._on_request(Client, pkt,  *a, **kwargs)
-        self._patcher = mock.patch('pyrad.client.Client.SendPacket',
-                                   unbound_on_send)
+            return self._on_request(Client, pkt, *a, **kwargs)
+
+        self._patcher = mock.patch("pyrad.client.Client.SendPacket", unbound_on_send)
         self._patcher.start()
 
     def stop(self):
@@ -136,6 +142,6 @@ class RadiusMock(object):
 # expose default mock namespace
 mock = _default_mock = RadiusMock()
 __all__ = []
-for __attr in (a for a in dir(_default_mock) if not a.startswith('_')):
+for __attr in (a for a in dir(_default_mock) if not a.startswith("_")):
     __all__.append(__attr)
     globals()[__attr] = getattr(_default_mock, __attr)

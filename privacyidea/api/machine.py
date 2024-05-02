@@ -23,26 +23,31 @@ __doc__ = """This REST API is used to list machines from Machine Resolvers.
 The code is tested in tests/test_api_machines
 """
 
-from flask import (Blueprint,
-                   request, g)
-from .lib.utils import (getParam, send_result)
+from flask import Blueprint, request, g
+from .lib.utils import getParam, send_result
 from ..api.lib.prepolicy import prepolicy, check_base_action, mangle
 from ..lib.policy import ACTION
 
-from ..lib.machine import (get_machines, attach_token, detach_token,
-                           add_option, delete_option,
-                           list_token_machines, list_machine_tokens,
-                           get_auth_items)
+from ..lib.machine import (
+    get_machines,
+    attach_token,
+    detach_token,
+    add_option,
+    delete_option,
+    list_token_machines,
+    list_machine_tokens,
+    get_auth_items,
+)
 from privacyidea.lib.machine import ANY_MACHINE
 import logging
 import netaddr
 
 log = logging.getLogger(__name__)
 
-machine_blueprint = Blueprint('machine_blueprint', __name__)
+machine_blueprint = Blueprint("machine_blueprint", __name__)
 
 
-@machine_blueprint.route('/', methods=['GET'])
+@machine_blueprint.route("/", methods=["GET"])
 @prepolicy(check_base_action, request, ACTION.MACHINELIST)
 def list_machines_api():
     """
@@ -54,7 +59,7 @@ def list_machines_api():
     :param resolver: filter for substring matching resolvers
     :param any: filter for a substring either matching in "hostname", "ip"
         or "id"
-    
+
     :return: json result with "result": true and the machine list in "value".
 
     **Example request**:
@@ -108,18 +113,18 @@ def list_machines_api():
 
     any = getParam(request.all_data, "any")
 
-    machines = get_machines(hostname=hostname, ip=ip, id=id, resolver=resolver,
-                            any=any)
+    machines = get_machines(hostname=hostname, ip=ip, id=id, resolver=resolver, any=any)
     # this returns a list of Machine Object. This is not JSON serialiable,
     # so we need to convert the Machine Object to dict
     machines = [mobject.get_dict() for mobject in machines]
-    g.audit_object.log({'success': True,
-                        'info': "hostname: {0!s}, ip: {1!s}".format(hostname, ip)})
+    g.audit_object.log(
+        {"success": True, "info": "hostname: {0!s}, ip: {1!s}".format(hostname, ip)}
+    )
 
     return send_result(machines)
 
 
-@machine_blueprint.route('/token', methods=['POST'])
+@machine_blueprint.route("/token", methods=["POST"])
 @prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
 def attach_token_api():
     """
@@ -163,27 +168,37 @@ def attach_token_api():
     # get additional options:
     options = {}
     for key in request.all_data.keys():
-        if key not in ["hostname", "machineid", "resolver", "serial",
-                       "application"]:
+        if key not in ["hostname", "machineid", "resolver", "serial", "application"]:
             # We use the key as additional option
             options[key] = request.all_data.get(key)
 
-    mt_object = attach_token(serial, application, hostname=hostname,
-                             machine_id=machineid, resolver_name=resolver,
-                             options=options)
+    mt_object = attach_token(
+        serial,
+        application,
+        hostname=hostname,
+        machine_id=machineid,
+        resolver_name=resolver,
+        options=options,
+    )
 
-    g.audit_object.log({'success': True,
-                        'info': "serial: {0!s}, application: {1!s}".format(serial,
-                                                                           application)})
+    g.audit_object.log(
+        {
+            "success": True,
+            "info": "serial: {0!s}, application: {1!s}".format(serial, application),
+        }
+    )
 
     return send_result(mt_object.id)
 
 
-@machine_blueprint.route('/token/<serial>/<machineid>/<resolver>/<application>',
-                         methods=['DELETE'])
-@machine_blueprint.route('/token/<serial>/<application>/<mtid>', methods=['DELETE'])
+@machine_blueprint.route(
+    "/token/<serial>/<machineid>/<resolver>/<application>", methods=["DELETE"]
+)
+@machine_blueprint.route("/token/<serial>/<application>/<mtid>", methods=["DELETE"])
 @prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
-def detach_token_api(serial, machineid=None, resolver=None, application=None, mtid=None):
+def detach_token_api(
+    serial, machineid=None, resolver=None, application=None, mtid=None
+):
     """
     Detach a token from a machine with a certain application.
 
@@ -209,17 +224,21 @@ def detach_token_api(serial, machineid=None, resolver=None, application=None, mt
          "application": "luks" }
 
     """
-    r = detach_token(serial, application,
-                     machine_id=machineid, resolver_name=resolver, mtid=mtid)
+    r = detach_token(
+        serial, application, machine_id=machineid, resolver_name=resolver, mtid=mtid
+    )
 
-    g.audit_object.log({'success': True,
-                        'info': "serial: {0!s}, application: {1!s}".format(serial,
-                                                                           application)})
+    g.audit_object.log(
+        {
+            "success": True,
+            "info": "serial: {0!s}, application: {1!s}".format(serial, application),
+        }
+    )
 
     return send_result(r)
 
 
-@machine_blueprint.route('/token', methods=['GET'])
+@machine_blueprint.route("/token", methods=["GET"])
 @prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
 def list_machinetokens_api():
     """
@@ -256,10 +275,24 @@ def list_machinetokens_api():
     sortdir = getParam(request.all_data, "sortdir", "asc")
     filter_params = {}
     # Use remaining params as filters
-    for key, value in {k: v for k, v in request.all_data.items() if k not in [
-        "hostname", "machineid", "resolver", "serial", "application", "client", "g",
-        "sortby", "sortdir", "page", "pagesize"
-    ]}.items():
+    for key, value in {
+        k: v
+        for k, v in request.all_data.items()
+        if k
+        not in [
+            "hostname",
+            "machineid",
+            "resolver",
+            "serial",
+            "application",
+            "client",
+            "g",
+            "sortby",
+            "sortdir",
+            "page",
+            "pagesize",
+        ]
+    }.items():
         filter_params[key] = value
 
     serial_pattern = None
@@ -275,22 +308,34 @@ def list_machinetokens_api():
             hostname = None
             machineid = None
             resolver = None
-        res = list_machine_tokens(hostname=hostname, machine_id=machineid, resolver_name=resolver,
-                                  serial=serial, application=application, filter_params=filter_params,
-                                  serial_pattern=serial_pattern)
+        res = list_machine_tokens(
+            hostname=hostname,
+            machine_id=machineid,
+            resolver_name=resolver,
+            serial=serial,
+            application=application,
+            filter_params=filter_params,
+            serial_pattern=serial_pattern,
+        )
 
     if sortby == "serial":
         res.sort(key=lambda x: x.get("serial"), reverse=sortdir == "desc")
     else:
-        res.sort(key=lambda x: x.get("options", {}).get(sortby, ""), reverse=sortdir == "desc")
+        res.sort(
+            key=lambda x: x.get("options", {}).get(sortby, ""),
+            reverse=sortdir == "desc",
+        )
 
-    g.audit_object.log({'success': True,
-                        'info': "serial: {0!s}, hostname: {1!s}".format(serial,
-                                                                        hostname)})
+    g.audit_object.log(
+        {
+            "success": True,
+            "info": "serial: {0!s}, hostname: {1!s}".format(serial, hostname),
+        }
+    )
     return send_result(res)
 
 
-@machine_blueprint.route('/tokenoption', methods=['POST'])
+@machine_blueprint.route("/tokenoption", methods=["POST"])
 @prepolicy(check_base_action, request, ACTION.MACHINETOKENS)
 def set_option_api():
     """
@@ -318,9 +363,21 @@ def set_option_api():
     # get additional options:
     options_add = {}
     options_del = []
-    for key, value in {k: v for k, v in request.all_data.items() if k not in [
-        "hostname", "machineid", "resolver", "serial", "application", "client", "g", "mtid"
-    ]}.items():
+    for key, value in {
+        k: v
+        for k, v in request.all_data.items()
+        if k
+        not in [
+            "hostname",
+            "machineid",
+            "resolver",
+            "serial",
+            "application",
+            "client",
+            "g",
+            "mtid",
+        ]
+    }.items():
         if value:
             options_add[key] = value
         else:
@@ -329,29 +386,40 @@ def set_option_api():
     if mtid:
         o_add = add_option(machinetoken_id=mtid, options=options_add)
     else:
-        o_add = add_option(serial=serial, application=application,
-                           hostname=hostname,
-                           machine_id=machineid, resolver_name=resolver,
-                           options=options_add)
+        o_add = add_option(
+            serial=serial,
+            application=application,
+            hostname=hostname,
+            machine_id=machineid,
+            resolver_name=resolver,
+            options=options_add,
+        )
     o_del = len(options_del)
     for k in options_del:
         if mtid:
             delete_option(machinetoken_id=mtid, key=k)
         else:
-            delete_option(serial=serial, application=application,
-                          hostname=hostname,
-                          machine_id=machineid, resolver_name=resolver,
-                          key=k)
+            delete_option(
+                serial=serial,
+                application=application,
+                hostname=hostname,
+                machine_id=machineid,
+                resolver_name=resolver,
+                key=k,
+            )
 
-    g.audit_object.log({'success': True,
-                        'info': "serial: {0!s}, application: {1!s}".format(serial,
-                                                                           application)})
+    g.audit_object.log(
+        {
+            "success": True,
+            "info": "serial: {0!s}, application: {1!s}".format(serial, application),
+        }
+    )
 
     return send_result({"added": o_add, "deleted": o_del})
 
 
-@machine_blueprint.route('/authitem', methods=['GET'])
-@machine_blueprint.route('/authitem/<application>', methods=['GET'])
+@machine_blueprint.route("/authitem", methods=["GET"])
+@machine_blueprint.route("/authitem/<application>", methods=["GET"])
 @prepolicy(mangle, request=request)
 @prepolicy(check_base_action, request, ACTION.AUTHITEMS)
 def get_auth_items_api(application=None):
@@ -401,12 +469,19 @@ def get_auth_items_api(application=None):
     filter_param = request.all_data
     for key in ["challenge", "hostname", "application"]:
         if key in filter_param:
-            del (filter_param[key])
+            del filter_param[key]
 
-    ret = get_auth_items(hostname, ip=g.client_ip,
-                         application=application, challenge=challenge,
-                         filter_param=filter_param)
-    g.audit_object.log({'success': True,
-                        'info': "host: {0!s}, application: {1!s}".format(hostname,
-                                                                         application)})
+    ret = get_auth_items(
+        hostname,
+        ip=g.client_ip,
+        application=application,
+        challenge=challenge,
+        filter_param=filter_param,
+    )
+    g.audit_object.log(
+        {
+            "success": True,
+            "info": "host: {0!s}, application: {1!s}".format(hostname, application),
+        }
+    )
     return send_result(ret)

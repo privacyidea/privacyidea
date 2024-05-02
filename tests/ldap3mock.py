@@ -54,7 +54,7 @@ from privacyidea.lib.utils import to_bytes, to_unicode
 
 DIRECTORY = "tests/testdata/tmp_directory"
 
-Call = namedtuple('Call', ['request', 'response'])
+Call = namedtuple("Call", ["request", "response"])
 
 _wrapper_template = """\
 def wrapper%(signature)s:
@@ -90,23 +90,21 @@ class CallList(Sequence, Sized):
 
 
 class Connection(object):
-
     class Extend(object):
-
         class Standard(object):
-
             def __init__(self, connection):
                 self.connection = connection
 
             def paged_search(self, **kwargs):
-                self.connection.search(search_base=kwargs.get("search_base"),
-                                       search_scope=kwargs.get("search_scope"),
-                                       search_filter=kwargs.get(
-                                           "search_filter"),
-                                       attributes=kwargs.get("attributes"),
-                                       paged_size=kwargs.get("page_size"),
-                                       size_limit=kwargs.get("size_limit"),
-                                       paged_cookie=None)
+                self.connection.search(
+                    search_base=kwargs.get("search_base"),
+                    search_scope=kwargs.get("search_scope"),
+                    search_filter=kwargs.get("search_filter"),
+                    attributes=kwargs.get("attributes"),
+                    paged_size=kwargs.get("page_size"),
+                    size_limit=kwargs.get("size_limit"),
+                    paged_cookie=None,
+                )
                 result = self.connection.response
                 if kwargs.get("generator", False):
                     # If ``generator=True`` is passed, ``paged_search`` should return an iterator.
@@ -118,18 +116,19 @@ class Connection(object):
 
     def __init__(self, directory=None):
         if directory is None:
-                directory = []
+            directory = []
         import copy
+
         self.directory = copy.deepcopy(directory)
         self.bound = False
         self.start_tls_called = False
         self.extend = self.Extend(self)
 
         self.operation = {
-                    "!" : self._search_not,
-                    "&" : self._search_and,
-                    "|" : self._search_or,
-            }
+            "!": self._search_not,
+            "&": self._search_and,
+            "|": self._search_or,
+        }
 
     def set_directory(self, directory):
         self.directory = directory
@@ -148,13 +147,14 @@ class Connection(object):
         self.start_tls_called = True
 
     def add(self, dn, object_class=None, attributes=None):
-
-        self.result = { 'dn' : '',
-                        'referrals' : None,
-                        'description' : 'success',
-                        'result' : 0,
-                        'message' : '',
-                        'type' : 'addResponse'}
+        self.result = {
+            "dn": "",
+            "referrals": None,
+            "description": "success",
+            "result": 0,
+            "message": "",
+            "type": "addResponse",
+        }
 
         # Check to see if the user exists in the directory
         try:
@@ -163,35 +163,35 @@ class Connection(object):
             # If we get here the user doesn't exist so continue
             # Create a entry object for the new user
             entry = {}
-            entry['dn'] = dn
-            entry['attributes'] = attributes
+            entry["dn"] = dn
+            entry["attributes"] = attributes
             if object_class != None:
-                entry['attributes'].update( {'objectClass': object_class} )
+                entry["attributes"].update({"objectClass": object_class})
         else:
             # User already exists
             self.result["description"] = "failure"
             self.result["result"] = 68
-            self.result["message"] = \
-                    "Error entryAlreadyExists for {0}".format(dn)
+            self.result["message"] = "Error entryAlreadyExists for {0}".format(dn)
             return False
 
         # Add the user entry to the directory
         self.directory.append(entry)
 
         # Attempt to write changes to disk
-        with open(DIRECTORY, 'w+') as f:
+        with open(DIRECTORY, "w+") as f:
             f.write(str(self.directory))
 
         return True
 
     def delete(self, dn, controls=None):
-
-        self.result = { 'dn' : '',
-                        'referrals' : None,
-                        'description' : 'success',
-                        'result' : 0,
-                        'message' : '',
-                        'type' : 'addResponse'}
+        self.result = {
+            "dn": "",
+            "referrals": None,
+            "description": "success",
+            "result": 0,
+            "message": "",
+            "type": "addResponse",
+        }
 
         # Check to see if the user exists in the directory
         try:
@@ -207,19 +207,20 @@ class Connection(object):
         self.directory.pop(index)
 
         # Attempt to write changes to disk
-        with open(DIRECTORY, 'w+') as f:
+        with open(DIRECTORY, "w+") as f:
             f.write(str(self.directory))
 
         return True
 
     def modify(self, dn, changes, controls=None):
-
-        self.result = { 'dn' : '',
-                        'referrals' : None,
-                        'description' : 'success',
-                        'result' : 0,
-                        'message' : '',
-                        'type' : 'modifyResponse'}
+        self.result = {
+            "dn": "",
+            "referrals": None,
+            "description": "success",
+            "result": 0,
+            "message": "",
+            "type": "modifyResponse",
+        }
 
         # Check to see if the user exists in the directory
         try:
@@ -242,14 +243,15 @@ class Connection(object):
                 entry[k] = v[1][0]
             else:
                 self.result["result"] = 2
-                self.result["message"] = "Error bad/missing/not implemented" \
-                    "modify operation: %s" % k[1]
+                self.result["message"] = (
+                    "Error bad/missing/not implemented" "modify operation: %s" % k[1]
+                )
 
         # Place the attributes back into the directory hash
         self.directory[index]["attributes"] = entry
 
         # Attempt to write changes to disk
-        with open(DIRECTORY, 'w+') as f:
+        with open(DIRECTORY, "w+") as f:
             f.write(str(self.directory))
 
         return True
@@ -321,8 +323,8 @@ class Connection(object):
 
         if "*" in value:
             match_using_regex = True
-            #regex = check_escape(value)
-            regex = value.replace('*', '.*')
+            # regex = check_escape(value)
+            regex = value.replace("*", ".*")
             regex = "^{0}$".format(regex)
 
         for entry in candidates:
@@ -360,8 +362,7 @@ class Connection(object):
                     # The value, which we compare is unicode, so we convert
                     # the values_from_directory to unicode rather than str.
                     if isinstance(values_from_directory, bytes):
-                        values_from_directory = values_from_directory.decode(
-                            "utf-8")
+                        values_from_directory = values_from_directory.decode("utf-8")
                     elif type(values_from_directory) == int:
                         values_from_directory = "{0!s}".format(values_from_directory)
                     if value == values_from_directory:
@@ -377,8 +378,8 @@ class Connection(object):
 
         if "*" in value:
             match_using_regex = True
-            #regex = check_escape(value)
-            regex = value.replace('*', '.*')
+            # regex = check_escape(value)
+            regex = value.replace("*", ".*")
             regex = "^{0}$".format(regex)
 
         for entry in candidates:
@@ -422,9 +423,9 @@ class Connection(object):
 
     @staticmethod
     def _parse_filter():
-        op = pyparsing.oneOf('! & |')
-        lpar  = pyparsing.Literal('(').suppress()
-        rpar  = pyparsing.Literal(')').suppress()
+        op = pyparsing.oneOf("! & |")
+        lpar = pyparsing.Literal("(").suppress()
+        rpar = pyparsing.Literal(")").suppress()
 
         k = pyparsing.Word(pyparsing.alphanums)
         # NOTE: We may need to expand on this list, but as this is not a real
@@ -436,9 +437,10 @@ class Connection(object):
         rel = pyparsing.oneOf("= ~= >= <=")
 
         expr = pyparsing.Forward()
-        atom = pyparsing.Group(lpar + op + expr + rpar) \
-                            | pyparsing.Combine(lpar + k + rel + v + rpar)
-        expr << atom + pyparsing.ZeroOrMore( expr )
+        atom = pyparsing.Group(lpar + op + expr + rpar) | pyparsing.Combine(
+            lpar + k + rel + v + rpar
+        )
+        expr << atom + pyparsing.ZeroOrMore(expr)
 
         return expr
 
@@ -476,7 +478,7 @@ class Connection(object):
         for condition in search_filter:
             if not isinstance(condition, list):
                 this_filter.append(condition)
-            index +=1
+            index += 1
 
         # Remove this_filter items from search_filter list
         for condition in this_filter:
@@ -486,13 +488,13 @@ class Connection(object):
             search_filter = list(search_filter[0])
             for sub_filter in search_filter:
                 if not isinstance(sub_filter, list):
-                    candidates = self.operation.get(sub_filter)(base,
-                                                                search_filter,
-                                                                candidates)
+                    candidates = self.operation.get(sub_filter)(
+                        base, search_filter, candidates
+                    )
                 else:
-                    candidates = self.operation.get(sub_filter[0])(base,
-                                                                   sub_filter,
-                                                                   candidates)
+                    candidates = self.operation.get(sub_filter[0])(
+                        base, sub_filter, candidates
+                    )
         except IndexError:
             pass
 
@@ -501,21 +503,17 @@ class Connection(object):
         for item in this_filter:
             if ">=" in item:
                 k, v = item.split(">=")
-                candidates = Connection._match_less_than(base, k, v,
-                                                            self.directory)
+                candidates = Connection._match_less_than(base, k, v, self.directory)
             elif "<=" in item:
                 k, v = item.split("<=")
-                candidates = Connection._match_greater_than(base, k, v,
-                                                         self.directory)
+                candidates = Connection._match_greater_than(base, k, v, self.directory)
             # Emulate AD functionality, same as "="
             elif "~=" in item:
                 k, v = item.split("~=")
-                candidates = Connection._match_notequal_to(base, k, v,
-                                                         self.directory)
+                candidates = Connection._match_notequal_to(base, k, v, self.directory)
             elif "=" in item:
                 k, v = item.split("=")
-                candidates = Connection._match_notequal_to(base, k, v,
-                                                         self.directory)
+                candidates = Connection._match_notequal_to(base, k, v, self.directory)
         return candidates
 
     def _search_and(self, base, search_filter, candidates=None):
@@ -529,7 +527,7 @@ class Connection(object):
         for condition in search_filter:
             if not isinstance(condition, list):
                 this_filter.append(condition)
-            index +=1
+            index += 1
 
         # Remove this_filter items from search_filter list
         for condition in this_filter:
@@ -539,34 +537,34 @@ class Connection(object):
             search_filter = list(search_filter[0])
             for sub_filter in search_filter:
                 if not isinstance(sub_filter, list):
-                    candidates = self.operation.get(sub_filter)(base,
-                                                                search_filter,
-                                                                candidates)
+                    candidates = self.operation.get(sub_filter)(
+                        base, search_filter, candidates
+                    )
                 else:
-                    candidates = self.operation.get(sub_filter[0])(base,
-                                                                   sub_filter,
-                                                                   candidates)
+                    candidates = self.operation.get(sub_filter[0])(
+                        base, sub_filter, candidates
+                    )
         except IndexError:
             pass
 
         for item in this_filter:
             if ">=" in item:
                 k, v = item.split(">=")
-                candidates = Connection._match_greater_than_or_equal(base, k, v,
-                                                                     candidates)
+                candidates = Connection._match_greater_than_or_equal(
+                    base, k, v, candidates
+                )
             elif "<=" in item:
                 k, v = item.split("<=")
-                candidates = Connection._match_less_than_or_equal(base, k, v,
-                                                                  candidates)
+                candidates = Connection._match_less_than_or_equal(
+                    base, k, v, candidates
+                )
             # Emulate AD functionality, same as "="
             elif "~=" in item:
                 k, v = item.split("~=")
-                candidates = Connection._match_equal_to(base, k, v,
-                                                         candidates)
+                candidates = Connection._match_equal_to(base, k, v, candidates)
             elif "=" in item:
                 k, v = item.split("=")
-                candidates = Connection._match_equal_to(base, k, v,
-                                                         candidates)
+                candidates = Connection._match_equal_to(base, k, v, candidates)
         return candidates
 
     def _search_or(self, base, search_filter, candidates=None):
@@ -580,7 +578,7 @@ class Connection(object):
         for condition in search_filter:
             if not isinstance(condition, list):
                 this_filter.append(condition)
-            index +=1
+            index += 1
 
         # Remove this_filter items from search_filter list
         for condition in this_filter:
@@ -590,39 +588,46 @@ class Connection(object):
             search_filter = list(search_filter[0])
             for sub_filter in search_filter:
                 if not isinstance(sub_filter, list):
-                    candidates += self.operation.get(sub_filter)(base,
-                                                                 search_filter,
-                                                                 candidates)
+                    candidates += self.operation.get(sub_filter)(
+                        base, search_filter, candidates
+                    )
                 else:
-                    candidates += self.operation.get(sub_filter[0])(base,
-                                                                    sub_filter,
-                                                                    candidates)
+                    candidates += self.operation.get(sub_filter[0])(
+                        base, sub_filter, candidates
+                    )
         except IndexError:
             pass
 
         for item in this_filter:
             if ">=" in item:
                 k, v = item.split(">=")
-                candidates += Connection._match_greater_than_or_equal(base, k, v,
-                                                             self.directory)
+                candidates += Connection._match_greater_than_or_equal(
+                    base, k, v, self.directory
+                )
             elif "<=" in item:
                 k, v = item.split("<=")
-                candidates += Connection._match_less_than_or_equal(base, k, v,
-                                                          self.directory)
+                candidates += Connection._match_less_than_or_equal(
+                    base, k, v, self.directory
+                )
             # Emulate AD functionality, same as "="
             elif "~=" in item:
                 k, v = item.split("~=")
-                candidates += Connection._match_equal_to(base, k, v,
-                                                         self.directory)
+                candidates += Connection._match_equal_to(base, k, v, self.directory)
             elif "=" in item:
                 k, v = item.split("=")
-                candidates += Connection._match_equal_to(base, k, v,
-                                                         self.directory)
+                candidates += Connection._match_equal_to(base, k, v, self.directory)
         return candidates
 
-    def search(self, search_base=None, search_scope=None,
-               search_filter=None, attributes=None, paged_size=5,
-               size_limit=0, paged_cookie=None):
+    def search(
+        self,
+        search_base=None,
+        search_scope=None,
+        search_filter=None,
+        attributes=None,
+        paged_size=5,
+        size_limit=0,
+        paged_cookie=None,
+    ):
         s_filter = list()
         candidates = list()
         self.response = list()
@@ -641,8 +646,7 @@ class Connection(object):
 
         for item in s_filter:
             if item[0] in self.operation:
-                candidates = self.operation.get(item[0])(search_base,
-                                                         s_filter)
+                candidates = self.operation.get(item[0])(search_base, s_filter)
         self.response = Connection._deDuplicate(candidates)
 
         return True
@@ -652,7 +656,6 @@ class Connection(object):
 
 
 class Ldap3Mock(object):
-
     def __init__(self):
         self._calls = CallList()
         self._server_mock = None
@@ -665,10 +668,10 @@ class Ldap3Mock(object):
 
     def setLDAPDirectory(self, directory=None):
         if directory is None:
-                self.directory = []
+            self.directory = []
         else:
             try:
-                with open(DIRECTORY, 'w+') as f:
+                with open(DIRECTORY, "w+") as f:
                     f.write(str(directory))
                     self.directory = directory
             except OSError as e:
@@ -679,7 +682,7 @@ class Ldap3Mock(object):
 
     def _load_data(self, directory):
         try:
-            with open(directory, 'r') as f:
+            with open(directory, "r") as f:
                 data = f.read()
                 return literal_eval(data)
         except OSError as e:
@@ -697,19 +700,26 @@ class Ldap3Mock(object):
         self.reset()
 
     def activate(self, func):
-        evaldict = {'ldap3mock': self, 'func': func}
+        evaldict = {"ldap3mock": self, "func": func}
         return get_wrapped(func, _wrapper_template, evaldict)
 
-    def _on_Server(self, host, port, use_ssl, connect_timeout, get_info=None,
-                   tls=None):
+    def _on_Server(self, host, port, use_ssl, connect_timeout, get_info=None, tls=None):
         # mangle request packet
 
         return "FakeServerObject"
 
-    def _on_Connection(self, server, user, password,
-                       auto_bind=None, client_strategy=None,
-                       authentication=None, check_names=None,
-                       auto_referrals=None, receive_timeout=None):
+    def _on_Connection(
+        self,
+        server,
+        user,
+        password,
+        auto_bind=None,
+        client_strategy=None,
+        authentication=None,
+        check_names=None,
+        auto_referrals=None,
+        receive_timeout=None,
+    ):
         """
         We need to create a Connection object with
         methods:
@@ -737,7 +747,7 @@ class Ldap3Mock(object):
                 # password can be unicode
                 if to_bytes(pw) == to_bytes(password):
                     correct_password = True
-                elif pw.startswith('{SSHA}'):
+                elif pw.startswith("{SSHA}"):
                     correct_password = ldap_salted_sha1.verify(password, pw)
                 else:
                     correct_password = False
@@ -748,36 +758,40 @@ class Ldap3Mock(object):
     def start(self):
         import mock
 
-        def unbound_on_Server(host, port,
-                              use_ssl,
-                              connect_timeout, *a, **kwargs):
-            return self._on_Server(host, port,
-                              use_ssl,
-                              connect_timeout, *a, **kwargs)
+        def unbound_on_Server(host, port, use_ssl, connect_timeout, *a, **kwargs):
+            return self._on_Server(host, port, use_ssl, connect_timeout, *a, **kwargs)
+
         self._server_mock = mock.MagicMock()
         self._server_mock.side_effect = unbound_on_Server
-        self._patcher = mock.patch('ldap3.Server',
-                                   self._server_mock)
+        self._patcher = mock.patch("ldap3.Server", self._server_mock)
         self._patcher.start()
 
-        def unbound_on_Connection(server=None, user=None,
-                                  password=None,
-                                  auto_bind=None,
-                                  client_strategy=None,
-                                  authentication=None,
-                                  check_names=None,
-                                  auto_referrals=None, *a, **kwargs):
-            return self._on_Connection(server, user,
-                                       password,
-                                       auto_bind,
-                                       client_strategy,
-                                       authentication,
-                                       check_names,
-                                       auto_referrals, *a,
-                                       **kwargs)
+        def unbound_on_Connection(
+            server=None,
+            user=None,
+            password=None,
+            auto_bind=None,
+            client_strategy=None,
+            authentication=None,
+            check_names=None,
+            auto_referrals=None,
+            *a,
+            **kwargs,
+        ):
+            return self._on_Connection(
+                server,
+                user,
+                password,
+                auto_bind,
+                client_strategy,
+                authentication,
+                check_names,
+                auto_referrals,
+                *a,
+                **kwargs,
+            )
 
-        self._patcher2 = mock.patch('ldap3.Connection',
-                                    unbound_on_Connection)
+        self._patcher2 = mock.patch("ldap3.Connection", unbound_on_Connection)
         self._patcher2.start()
 
     def stop(self):
@@ -788,9 +802,10 @@ class Ldap3Mock(object):
     def get_server_mock(self):
         return self._server_mock
 
+
 # expose default mock namespace
 mock = _default_mock = Ldap3Mock()
 __all__ = []
-for __attr in (a for a in dir(_default_mock) if not a.startswith('_')):
+for __attr in (a for a in dir(_default_mock) if not a.startswith("_")):
     __all__.append(__attr)
     globals()[__attr] = getattr(_default_mock, __attr)

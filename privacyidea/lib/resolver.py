@@ -46,19 +46,17 @@ webservice!
 import logging
 
 from .log import log_with
-from .config import (get_resolver_types, get_resolver_classes, get_config_object)
+from .config import get_resolver_types, get_resolver_classes, get_config_object
 from privacyidea.lib.usercache import delete_user_cache
 from privacyidea.lib.framework import get_request_local_store
-from ..models import (Resolver,
-                      ResolverConfig)
+from ..models import Resolver, ResolverConfig
 from ..api.lib.utils import required
 from ..api.lib.utils import getParam
 from .error import ConfigAdminError
 from sqlalchemy import func
 from .crypto import encryptPassword
-from privacyidea.lib.utils import (sanity_name_check, get_data_from_params,
-                                   is_true)
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils import sanity_name_check, get_data_from_params, is_true
+from privacyidea.lib.utils.export import register_import, register_export
 import copy
 
 CENSORED = "__CENSORED__"
@@ -87,15 +85,19 @@ def save_resolver(params):
     """
     # before we create the resolver in the database, we need to check
     # for the name and type thing...
-    resolvername = getParam(params, 'resolver', required)
-    resolvertype = getParam(params, 'type', required)
+    resolvername = getParam(params, "resolver", required)
+    resolvertype = getParam(params, "type", required)
     update_resolver = False
     # check the name
     sanity_name_check(resolvername)
     # check the type
     resolvertypes = get_resolver_types()
     if resolvertype not in resolvertypes:
-        raise Exception("resolver type : {0!s} not in {1!s}".format(resolvertype, str(resolvertypes)))
+        raise Exception(
+            "resolver type : {0!s} not in {1!s}".format(
+                resolvertype, str(resolvertypes)
+            )
+        )
 
     # check the name
     resolvers = get_resolver_list(filter_resolver_name=resolvername)
@@ -105,24 +107,28 @@ def save_resolver(params):
             # So we will update this resolver
             update_resolver = True
         else:
-            raise Exception("resolver with similar name and other type already "
-                            "exists: %s" % r_name)
+            raise Exception(
+                "resolver with similar name and other type already "
+                "exists: %s" % r_name
+            )
 
     # create a dictionary for the ResolverConfig
     resolver_config = get_resolver_config_description(resolvertype)
-    config_description = resolver_config.get(resolvertype).get('config', {})
+    config_description = resolver_config.get(resolvertype).get("config", {})
 
-    data, types, desc = get_data_from_params(params, ['resolver', 'type'],
-                                             config_description, resolvertype,
-                                             resolvername)
+    data, types, desc = get_data_from_params(
+        params, ["resolver", "type"], config_description, resolvertype, resolvername
+    )
 
     # Everything passed. So lets actually create the resolver in the DB
     if update_resolver:
-        resolver_id = Resolver.query.filter(func.lower(Resolver.name) ==
-                                  resolvername.lower()).first().id
+        resolver_id = (
+            Resolver.query.filter(func.lower(Resolver.name) == resolvername.lower())
+            .first()
+            .id
+        )
     else:
-        resolver = Resolver(params.get("resolver"),
-                            params.get("type"))
+        resolver = Resolver(params.get("resolver"), params.get("type"))
         resolver_id = resolver.save()
     # create the config
     for key, value in data.items():
@@ -132,11 +138,13 @@ def save_resolver(params):
             else:
                 value = encryptPassword(value)
 
-        ResolverConfig(resolver_id=resolver_id,
-                       Key=key,
-                       Value=value,
-                       Type=types.get(key, ""),
-                       Description=desc.get(key, "")).save()
+        ResolverConfig(
+            resolver_id=resolver_id,
+            Key=key,
+            Value=value,
+            Type=types.get(key, ""),
+            Description=desc.get(key, ""),
+        ).save()
 
     # Remove corresponding entries from the user cache
     delete_user_cache(resolver=resolvername)
@@ -145,11 +153,10 @@ def save_resolver(params):
 
 
 @log_with(log, log_exit=False)
-#@cache.memoize(10)
-def get_resolver_list(filter_resolver_type=None,
-                      filter_resolver_name=None,
-                      editable=None,
-                      censor=False):
+# @cache.memoize(10)
+def get_resolver_list(
+    filter_resolver_type=None, filter_resolver_name=None, editable=None, censor=False
+):
     """
     Gets the list of configured resolvers from the database
 
@@ -185,14 +192,16 @@ def get_resolver_list(filter_resolver_type=None,
         reduced_resolvers = {}
         if editable is True:
             for reso_name, reso in resolvers.items():
-                check_editable = is_true(reso["data"].get("Editable")) or \
-                                 is_true(reso["data"].get("EDITABLE"))
+                check_editable = is_true(reso["data"].get("Editable")) or is_true(
+                    reso["data"].get("EDITABLE")
+                )
                 if check_editable:
                     reduced_resolvers[reso_name] = resolvers[reso_name]
         elif editable is False:
             for reso_name, reso in resolvers.items():
-                check_editable = is_true(reso["data"].get("Editable")) or \
-                                 is_true(reso["data"].get("EDITABLE"))
+                check_editable = is_true(reso["data"].get("Editable")) or is_true(
+                    reso["data"].get("EDITABLE")
+                )
                 if not check_editable:
                     reduced_resolvers[reso_name] = resolvers[reso_name]
         resolvers = reduced_resolvers
@@ -222,15 +231,17 @@ def delete_resolver(resolvername):
         if reso.realm_list:
             # The resolver is still contained in a realm! We must not delete it
             realmname = reso.realm_list[0].realm.name
-            raise ConfigAdminError("The resolver %r is still contained in "
-                                   "realm %r." % (resolvername, realmname))
+            raise ConfigAdminError(
+                "The resolver %r is still contained in "
+                "realm %r." % (resolvername, realmname)
+            )
         reso.delete()
         ret = reso.id
     # Delete resolver object from cache
     store = get_request_local_store()
-    if 'resolver_objects' in store:
-        if resolvername in store['resolver_objects']:
-            del store['resolver_objects'][resolvername]
+    if "resolver_objects" in store:
+        if resolvername in store["resolver_objects"]:
+            del store["resolver_objects"][resolvername]
 
     # Remove corresponding entries from the user cache
     delete_user_cache(resolver=resolvername)
@@ -239,7 +250,7 @@ def delete_resolver(resolvername):
 
 
 @log_with(log, log_exit=False)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_config(resolvername):
     """
     return the complete config of a given resolver from the database
@@ -253,7 +264,7 @@ def get_resolver_config(resolvername):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_config_description(resolver_type):
     """
     get the configuration description of a resolver
@@ -278,7 +289,7 @@ def get_resolver_config_description(resolver_type):
     return descriptor
 
 
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_class(resolver_type):
     """
     return the class object for a resolver type
@@ -295,11 +306,11 @@ def get_resolver_class(resolver_type):
     return ret
 
 
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_type(resolvername):
     """
     return the type of a resolvername
-    
+
     :param resolvername: THe name of the resolver
     :return: The type of the resolver
     :rtype: string
@@ -310,7 +321,7 @@ def get_resolver_type(resolvername):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_object(resolvername):
     """
     Return the cached resolver object for the given resolver name (stored in the request context).
@@ -329,9 +340,9 @@ def get_resolver_object(resolvername):
         return None
     else:
         store = get_request_local_store()
-        if 'resolver_objects' not in store:
-            store['resolver_objects'] = {}
-        resolver_objects = store['resolver_objects']
+        if "resolver_objects" not in store:
+            store["resolver_objects"] = {}
+        resolver_objects = store["resolver_objects"]
         if resolvername not in resolver_objects:
             # create the resolver instance and load the config
             r_obj = resolver_objects[resolvername] = r_obj_class()
@@ -339,6 +350,7 @@ def get_resolver_object(resolvername):
                 resolver_config = get_resolver_config(resolvername)
                 r_obj.loadConfig(resolver_config)
         return resolver_objects[resolvername]
+
 
 @log_with(log)
 def pretestresolver(resolvertype, params):
@@ -354,7 +366,9 @@ def pretestresolver(resolvertype, params):
     # If an already saved resolver is tested again, the password
     # could be "__CENSORED__". In this case we use the old, saved password.
     if params.get("resolver"):
-        old_config_list = get_resolver_list(filter_resolver_name=params.get("resolver")) or {}
+        old_config_list = (
+            get_resolver_list(filter_resolver_name=params.get("resolver")) or {}
+        )
         old_config = old_config_list.get(params.get("resolver")) or {}
         for key in old_config.get("censor_keys", []):
             if params.get(key) == CENSORED:
@@ -367,31 +381,34 @@ def pretestresolver(resolvertype, params):
     return success, desc
 
 
-@register_export('resolver')
+@register_export("resolver")
 def export_resolver(name=None, censor=False):
-    """ Export given or all resolver configuration """
+    """Export given or all resolver configuration"""
     return get_resolver_list(filter_resolver_name=name, censor=censor)
 
 
-@register_import('resolver', prio=10)
+@register_import("resolver", prio=10)
 def import_resolver(data, name=None):
     """Import resolver configuration"""
     # TODO: Currently this functions does not check for the plausibility of the
     #  given data. We could use "pretestresolver() / testconnection()" (which
     #  doesn't check the input) or "loadConfig()" (which also doesn't check the
     #  parameter, at least for LDAP/SQL-resolver).
-    log.debug('Import resolver config: {0!s}'.format(data))
+    log.debug("Import resolver config: {0!s}".format(data))
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
         # remove the 'censor_keys' entry from data since it is not necessary
-        res_data.pop('censor_keys', None)
+        res_data.pop("censor_keys", None)
         # save_resolver() needs the resolver name at key 'resolver'
-        res_data['resolver'] = res_data.pop('resolvername')
+        res_data["resolver"] = res_data.pop("resolvername")
         # also all the 'data' entries need to be in the first dict level
-        res_data.update(res_data.pop('data'))
+        res_data.update(res_data.pop("data"))
         rid = save_resolver(res_data)
         # TODO: we have no information if a new resolver was created or an
         #  existing resolver updated. We would need to enhance "save_resolver()".
-        log.info('Import of resolver "{0!s}" finished,'
-                 ' id: {1!s}'.format(res_data['resolver'], rid))
+        log.info(
+            'Import of resolver "{0!s}" finished,' " id: {1!s}".format(
+                res_data["resolver"], rid
+            )
+        )

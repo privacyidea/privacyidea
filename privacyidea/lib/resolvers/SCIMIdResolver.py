@@ -48,13 +48,12 @@ from privacyidea.lib.utils import to_bytes, to_unicode, convert_column_to_unicod
 log = logging.getLogger(__name__)
 
 
-class IdResolver (UserIdResolver):
-
+class IdResolver(UserIdResolver):
     def __init__(self):
-        self.auth_server = ''
-        self.resource_server = ''
-        self.auth_client = 'localhost'
-        self.auth_secret = ''  # nosec B105 # default parameter
+        self.auth_server = ""
+        self.resource_server = ""
+        self.auth_client = "localhost"
+        self.auth_secret = ""  # nosec B105 # default parameter
         self.access_token = None
 
     def checkPass(self, uid, password):
@@ -74,9 +73,7 @@ class IdResolver (UserIdResolver):
         ret = {}
         # The SCIM ID is always /Users/ID
         # Alas, we can not map the ID to any other attribute
-        res = self._get_user(self.resource_server,
-                             self.access_token,
-                             userid)
+        res = self._get_user(self.resource_server, self.access_token, userid)
         user = res
         ret = self._fill_user_schema_1_0(user)
 
@@ -87,23 +84,21 @@ class IdResolver (UserIdResolver):
         # We assume the schema:
         # "schemas": ["urn:scim:schemas:core:1.0"]
 
-        #ret['username'] = user.get(self.mapping.get("username"))
-        #ret['givenname'] = user.get(self.mapping.get("givenname"), "")
-        #ret['surname'] = user.get(self.mapping.get("surname"), "")
-        #ret['phone'] = user.get(self.mapping.get("phone"), "")
-        #ret['mobile'] = user.get(self.mapping.get("mobile"), "")
-        #ret['email'] = user.get(self.mapping.get("email"), "")
+        # ret['username'] = user.get(self.mapping.get("username"))
+        # ret['givenname'] = user.get(self.mapping.get("givenname"), "")
+        # ret['surname'] = user.get(self.mapping.get("surname"), "")
+        # ret['phone'] = user.get(self.mapping.get("phone"), "")
+        # ret['mobile'] = user.get(self.mapping.get("mobile"), "")
+        # ret['email'] = user.get(self.mapping.get("email"), "")
 
-        ret = {"phone": "",
-               "email": "",
-               "mobile": ""}
-        ret['username'] = user.get("userName", {})
-        ret['givenname'] = user.get("name", {}).get("givenName", "")
-        ret['surname'] = user.get("name", {}).get("familyName", "")
+        ret = {"phone": "", "email": "", "mobile": ""}
+        ret["username"] = user.get("userName", {})
+        ret["givenname"] = user.get("name", {}).get("givenName", "")
+        ret["surname"] = user.get("name", {}).get("familyName", "")
         if user.get("phoneNumbers", {}):
-            ret['phone'] = user.get("phoneNumbers")[0].get("value")
+            ret["phone"] = user.get("phoneNumbers")[0].get("value")
         if user.get("emails", {}):
-            ret['email'] = user.get("emails")[0].get("value")
+            ret["email"] = user.get("emails")[0].get("value")
         return ret
 
     def getUsername(self, userid):
@@ -114,8 +109,8 @@ class IdResolver (UserIdResolver):
         :return: username
         :rtype: string
         """
-        #user = self.getUserInfo(userid)
-        #return user.get("username", "")
+        # user = self.getUserInfo(userid)
+        # return user.get("username", "")
         # It seems that the userName is the UserId
         return userid
 
@@ -124,13 +119,13 @@ class IdResolver (UserIdResolver):
         returns the uid for a given loginname/username
         :rtype: str
         """
-        #res = {}
-        #if self.access_token:
+        # res = {}
+        # if self.access_token:
         #    res = self._search_users(self.resource_server,
         #                                         self.access_token,
         #                                         {'filter': '%s eq "%s"' %
         #                                          ("userName", loginName)})
-        #return res.get("Resources", [{}])[0].get("externalId")
+        # return res.get("Resources", [{}])[0].get("externalId")
         # It seems that the userName is the userId
         return convert_column_to_unicode(loginName)
 
@@ -143,9 +138,7 @@ class IdResolver (UserIdResolver):
         # TODO: search dict is not used at the moment
         res = {}
         if self.access_token:
-            res = self._search_users(self.resource_server,
-                                                 self.access_token,
-                                                 "")
+            res = self._search_users(self.resource_server, self.access_token, "")
 
         for user in res.get("Resources"):
             ret_user = self._fill_user_schema_1_0(user)
@@ -162,7 +155,7 @@ class IdResolver (UserIdResolver):
 
     @staticmethod
     def getResolverClassType():
-        return 'scimresolver'
+        return "scimresolver"
 
     @staticmethod
     def getResolverDescriptor():
@@ -184,12 +177,14 @@ class IdResolver (UserIdResolver):
         """
         descriptor = {}
         typ = cls.getResolverClassType()
-        descriptor['clazz'] = "useridresolver.SCIMIdResolver.IdResolver"
-        descriptor['config'] = {'authserver': 'string',
-                                'resourceserver': 'string',
-                                'authclient': 'string',
-                                'authsecret': 'string',
-                                'mapping': 'string'}
+        descriptor["clazz"] = "useridresolver.SCIMIdResolver.IdResolver"
+        descriptor["config"] = {
+            "authserver": "string",
+            "resourceserver": "string",
+            "authclient": "string",
+            "authsecret": "string",
+            "mapping": "string",
+        }
         return {typ: descriptor}
 
     def loadConfig(self, config):
@@ -206,11 +201,11 @@ class IdResolver (UserIdResolver):
         :type config: dict
         :return: the resolver instance
         """
-        self.auth_server = config.get('Authserver')
-        self.resource_server = config.get('Resourceserver')
-        self.auth_client = config.get('Client')
-        self.auth_secret = config.get('Secret')
-        self.mapping = yaml.safe_load(config.get('Mapping'))
+        self.auth_server = config.get("Authserver")
+        self.resource_server = config.get("Resourceserver")
+        self.auth_client = config.get("Client")
+        self.auth_secret = config.get("Secret")
+        self.mapping = yaml.safe_load(config.get("Mapping"))
         self.create_scim_object()
         return self
 
@@ -218,24 +213,23 @@ class IdResolver (UserIdResolver):
     def testconnection(cls, param):
         """
         This function lets you test the to be saved SCIM connection.
-              
+
         :param param: A dictionary with all necessary parameter to test the
                         connection.
         :type param: dict
         :return: Tuple of success and a description
         :rtype: (bool, string)
-        
+
         Parameters are: Authserver, Resourceserver, Client, Secret, Mapping
         """
         desc = None
         success = False
-               
+
         try:
-            access_token = cls.get_access_token(str(param.get("Authserver")),
-                                                param.get("Client"),
-                                                param.get("Secret"))
-            content = cls._search_users(param.get("Resourceserver"),
-                                                    access_token, "")
+            access_token = cls.get_access_token(
+                str(param.get("Authserver")), param.get("Client"), param.get("Secret")
+            )
+            content = cls._search_users(param.get("Resourceserver"), access_token, "")
             num = content.get("totalResults", -1)
             desc = "Found {0!s} users".format(num)
             success = True
@@ -243,7 +237,7 @@ class IdResolver (UserIdResolver):
             log.error("Failed to retrieve users: {0!s}".format(exx))
             log.debug("{0!s}".format(traceback.format_exc()))
             desc = "failed to retrieve users: {0!s}".format(exx)
-            
+
         return success, desc
 
     @staticmethod
@@ -253,9 +247,11 @@ class IdResolver (UserIdResolver):
         :type params: dictionary
         """
         params = params or {}
-        headers = {'Authorization': "Bearer {0}".format(access_token),
-                   'content-type': 'application/json'}
-        url = '{0}/Users?{1}'.format(resource_server, urlencode(params))
+        headers = {
+            "Authorization": "Bearer {0}".format(access_token),
+            "content-type": "application/json",
+        }
+        url = "{0}/Users?{1}".format(resource_server, urlencode(params))
         resp = requests.get(url, headers=headers, timeout=60)
         if resp.status_code != 200:
             info = "Could not get user list: {0!s}".format(resp.status_code)
@@ -264,7 +260,7 @@ class IdResolver (UserIdResolver):
         j_content = yaml.safe_load(resp.content)
 
         return j_content
-    
+
     @staticmethod
     def _get_user(resource_server, access_token, userid):
         """
@@ -278,9 +274,11 @@ class IdResolver (UserIdResolver):
         :type userid: basestring
         :return: Dictionary of User object.
         """
-        headers = {'Authorization': "Bearer {0}".format(access_token),
-                   'content-type': 'application/json'}
-        url = '{0}/Users/{1}'.format(resource_server, userid)
+        headers = {
+            "Authorization": "Bearer {0}".format(access_token),
+            "content-type": "application/json",
+        }
+        url = "{0}/Users/{1}".format(resource_server, userid)
         resp = requests.get(url, headers=headers, timeout=60)
 
         if resp.status_code != 200:
@@ -293,23 +291,20 @@ class IdResolver (UserIdResolver):
 
     @staticmethod
     def get_access_token(server=None, client=None, secret=None):
-
-        auth = to_unicode(base64.b64encode(to_bytes(client + ':' + secret)))
+        auth = to_unicode(base64.b64encode(to_bytes(client + ":" + secret)))
 
         url = "{0!s}/oauth/token?grant_type=client_credentials".format(server)
-        resp = requests.get(url,
-                            headers={'Authorization': 'Basic ' + auth},
-                            timeout=60)
+        resp = requests.get(url, headers={"Authorization": "Basic " + auth}, timeout=60)
 
         if resp.status_code != 200:
             info = "Could not get access token: {0!s}".format(resp.status_code)
             log.error(info)
             raise Exception(info)
 
-        access_token = yaml.safe_load(resp.content).get('access_token')
+        access_token = yaml.safe_load(resp.content).get("access_token")
         return access_token
 
     def create_scim_object(self):
-        self.access_token = self.get_access_token(self.auth_server,
-                                                  self.auth_client,
-                                                  self.auth_secret)
+        self.access_token = self.get_access_token(
+            self.auth_server, self.auth_client, self.auth_secret
+        )

@@ -18,8 +18,11 @@
 #
 #
 from privacyidea.models import RADIUSServer as RADIUSServerDB
-from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
-                                    FAILED_TO_DECRYPT_PASSWORD)
+from privacyidea.lib.crypto import (
+    decryptPassword,
+    encryptPassword,
+    FAILED_TO_DECRYPT_PASSWORD,
+)
 from privacyidea.lib.config import get_from_config
 import logging
 from privacyidea.lib.log import log_with
@@ -30,7 +33,7 @@ from pyrad.client import Timeout
 from pyrad.dictionary import Dictionary
 from privacyidea.lib import _
 from privacyidea.lib.utils import fetch_one_resource, to_bytes
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import register_import, register_export
 
 __doc__ = """
 This is the library for creating, listing and deleting RADIUS server objects in
@@ -85,21 +88,23 @@ class RADIUSServer(object):
         """
         success = False
 
-        nas_identifier = get_from_config("radius.nas_identifier",
-                                         "privacyIDEA")
-        r_dict = config.dictionary or get_from_config("radius.dictfile",
-                                                      "/etc/privacyidea/"
-                                                      "dictionary")
-        log.debug("NAS Identifier: %r, "
-                  "Dictionary: %r" % (nas_identifier, r_dict))
-        log.debug("constructing client object "
-                  "with server: %r, port: %r, secret: %r" %
-                  (config.server, config.port, config.secret))
+        nas_identifier = get_from_config("radius.nas_identifier", "privacyIDEA")
+        r_dict = config.dictionary or get_from_config(
+            "radius.dictfile", "/etc/privacyidea/" "dictionary"
+        )
+        log.debug("NAS Identifier: %r, " "Dictionary: %r" % (nas_identifier, r_dict))
+        log.debug(
+            "constructing client object "
+            "with server: %r, port: %r, secret: %r"
+            % (config.server, config.port, config.secret)
+        )
 
-        srv = Client(server=config.server,
-                     authport=config.port,
-                     secret=to_bytes(decryptPassword(config.secret)),
-                     dict=Dictionary(r_dict))
+        srv = Client(
+            server=config.server,
+            authport=config.port,
+            secret=to_bytes(decryptPassword(config.secret)),
+            dict=Dictionary(r_dict),
+        )
 
         # Set retries and timeout of the client
         if config.timeout:
@@ -107,9 +112,11 @@ class RADIUSServer(object):
         if config.retries:
             srv.retries = config.retries
 
-        req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
-                                   User_Name=user.encode('utf-8'),
-                                   NAS_Identifier=nas_identifier.encode('ascii'))
+        req = srv.CreateAuthPacket(
+            code=pyrad.packet.AccessRequest,
+            User_Name=user.encode("utf-8"),
+            NAS_Identifier=nas_identifier.encode("ascii"),
+        )
 
         # PwCrypt encodes unicode strings to UTF-8
         req["User-Password"] = req.PwCrypt(password)
@@ -117,14 +124,22 @@ class RADIUSServer(object):
             response = srv.SendPacket(req)
 
             if response.code == pyrad.packet.AccessAccept:
-                log.info("Radiusserver %s granted "
-                         "access to user %s." % (config.server, user))
+                log.info(
+                    "Radiusserver %s granted "
+                    "access to user %s." % (config.server, user)
+                )
                 success = True
             else:
-                log.warning("Radiusserver %s rejected "
-                            "access to user %s." % (config.server, user))
+                log.warning(
+                    "Radiusserver %s rejected "
+                    "access to user %s." % (config.server, user)
+                )
         except Timeout:
-            log.warning("Receiving timeout from remote radius server {0!s}".format(config.server))
+            log.warning(
+                "Receiving timeout from remote radius server {0!s}".format(
+                    config.server
+                )
+            )
 
         return success
 
@@ -141,8 +156,9 @@ def get_radius(identifier):
     """
     server_list = get_radiusservers(identifier=identifier)
     if not server_list:
-        raise ConfigAdminError("The specified RADIUSServer configuration does "
-                               "not exist.")
+        raise ConfigAdminError(
+            "The specified RADIUSServer configuration does " "not exist."
+        )
     return server_list[0]
 
 
@@ -174,6 +190,7 @@ def get_radiusservers(identifier=None, server=None):
 
     return res
 
+
 @log_with(log)
 def list_radiusservers(identifier=None, server=None):
     res = {}
@@ -183,20 +200,30 @@ def list_radiusservers(identifier=None, server=None):
         # If the database contains garbage, use the empty password as fallback
         if decrypted_password == FAILED_TO_DECRYPT_PASSWORD:
             decrypted_password = ""  # nosec B105 # Reset password in case of error
-        res[server.config.identifier] = {"server": server.config.server,
-                                         "port": server.config.port,
-                                         "dictionary": server.config.dictionary,
-                                         "description": server.config.description,
-                                         "password": decrypted_password,
-                                         "timeout": server.config.timeout,
-                                         "retries": server.config.retries}
+        res[server.config.identifier] = {
+            "server": server.config.server,
+            "port": server.config.port,
+            "dictionary": server.config.dictionary,
+            "description": server.config.description,
+            "password": decrypted_password,
+            "timeout": server.config.timeout,
+            "retries": server.config.retries,
+        }
 
     return res
 
 
 @log_with(log)
-def add_radius(identifier, server=None, secret=None, port=1812, description="",
-               dictionary='/etc/privacyidea/dictionary', retries=3, timeout=5):
+def add_radius(
+    identifier,
+    server=None,
+    secret=None,
+    port=1812,
+    description="",
+    dictionary="/etc/privacyidea/dictionary",
+    retries=3,
+    timeout=5,
+):
     """
     This adds a RADIUS server to the RADIUSServer database table.
 
@@ -220,18 +247,33 @@ def add_radius(identifier, server=None, secret=None, port=1812, description="",
     """
     cryptedSecret = encryptPassword(secret)
     if len(cryptedSecret) > 255:
-        raise privacyIDEAError(description=_("The RADIUS secret is too long"),
-                               id=2234)
-    r = RADIUSServerDB(identifier=identifier, server=server, port=port,
-                       secret=cryptedSecret, description=description,
-                       dictionary=dictionary,
-                       retries=retries, timeout=timeout).save()
+        raise privacyIDEAError(description=_("The RADIUS secret is too long"), id=2234)
+    r = RADIUSServerDB(
+        identifier=identifier,
+        server=server,
+        port=port,
+        secret=cryptedSecret,
+        description=description,
+        dictionary=dictionary,
+        retries=retries,
+        timeout=timeout,
+    ).save()
     return r
 
 
 @log_with(log)
-def test_radius(identifier, server, secret, user, password, port=1812, description="",
-               dictionary='/etc/privacyidea/dictionary', retries=3, timeout=5):
+def test_radius(
+    identifier,
+    server,
+    secret,
+    user,
+    password,
+    port=1812,
+    description="",
+    dictionary="/etc/privacyidea/dictionary",
+    retries=3,
+    timeout=5,
+):
     """
     This tests a RADIUS server configuration by sending an access request.
 
@@ -252,12 +294,17 @@ def test_radius(identifier, server, secret, user, password, port=1812, descripti
     """
     cryptedSecret = encryptPassword(secret)
     if len(cryptedSecret) > 255:
-        raise privacyIDEAError(description=_("The RADIUS secret is too long"),
-                               id=2234)
-    s = RADIUSServerDB(identifier=identifier, server=server, port=port,
-                       secret=cryptedSecret, dictionary=dictionary,
-                       retries=retries, timeout=timeout,
-                       description=description)
+        raise privacyIDEAError(description=_("The RADIUS secret is too long"), id=2234)
+    s = RADIUSServerDB(
+        identifier=identifier,
+        server=server,
+        port=port,
+        secret=cryptedSecret,
+        dictionary=dictionary,
+        retries=retries,
+        timeout=timeout,
+        description=description,
+    )
     return RADIUSServer.request(s, user, password)
 
 
@@ -272,20 +319,21 @@ def delete_radius(identifier):
     return fetch_one_resource(RADIUSServerDB, identifier=identifier).delete()
 
 
-@register_export('radiusserver')
+@register_export("radiusserver")
 def export_radiusserver(name=None):
-    """ Export given or all radiusserver configuration """
+    """Export given or all radiusserver configuration"""
     return list_radiusservers(identifier=name)
 
 
-@register_import('radiusserver')
+@register_import("radiusserver")
 def import_radiusserver(data, name=None):
     """Import radiusserver configuration"""
-    log.debug('Import radiusserver config: {0!s}'.format(data))
+    log.debug("Import radiusserver config: {0!s}".format(data))
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
-        res_data['secret'] = res_data.pop('password')
+        res_data["secret"] = res_data.pop("password")
         rid = add_radius(res_name, **res_data)
-        log.info('Import of smtpserver "{0!s}" finished,'
-                 ' id: {1!s}'.format(res_name, rid))
+        log.info(
+            'Import of smtpserver "{0!s}" finished,' " id: {1!s}".format(res_name, rid)
+        )

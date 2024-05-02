@@ -2,6 +2,7 @@
 This test file tests the lib.tokens.tiqrtoken and lib.tokens.ocra
 This depends on lib.tokenclass
 """
+
 from tests import smtpmock
 from .base import MyTestCase, MyApiTestCase
 from privacyidea.lib.challenge import get_challenges
@@ -22,82 +23,60 @@ from werkzeug.test import EnvironBuilder
 
 
 class OCRASuiteTestCase(MyTestCase):
-
     def test_00_ocrasuite_fail(self):
         self.assertRaises(Exception, OCRASuite, "algo:crypto")
-        self.assertRaises(Exception, OCRASuite,
-                          "algo:crypto:data:ss")
+        self.assertRaises(Exception, OCRASuite, "algo:crypto:data:ss")
 
         # NO OCRA-2
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-2:HOTP-SHA1-6:QH10-S128")
+        self.assertRaises(Exception, OCRASuite, "OCRA-2:HOTP-SHA1-6:QH10-S128")
 
         # no TOTP
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-2:TOTP-SHA1-6:QH10-S128")
+        self.assertRaises(Exception, OCRASuite, "OCRA-2:TOTP-SHA1-6:QH10-S128")
 
         # No unknown SHA
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA3-6:QH10-S128")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA3-6:QH10-S128")
 
         # No unknown truncation
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA1-3:QH10-S128")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA1-3:QH10-S128")
 
         # wrong cryptofunction
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTPSHA13:QH10-S128")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTPSHA13:QH10-S128")
 
         # No HOTP
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:TOTP-SHA1-4:QH10-S128")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:TOTP-SHA1-4:QH10-S128")
 
         # check datainput
         # counter
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:X-QN08-PSHA1")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:X-QN08-PSHA1")
 
         # challenge
         # wrong datainput
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:CQX04PSHA1")
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:C-Q-X-0-4-PSHA1")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:CQX04PSHA1")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:C-Q-X-0-4-PSHA1")
         # wrong challenge type
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:C-QX04-PSHA1")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:C-QX04-PSHA1")
         # challenge to short
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:C-QN03-PSHA1")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:C-QN03-PSHA1")
         # challenge to long
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:C-QN65-PSHA1")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:C-QN65-PSHA1")
         # challenge length not a number
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:C-QNXX-PSHA1")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:C-QNXX-PSHA1")
 
         # signature
         # unknown signature type
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:C-QN04-XSHA1")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:C-QN04-XSHA1")
         # Wrong hash
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:C-QN04-PSHA3")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:C-QN04-PSHA3")
 
         # Session length
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:C-QN04-SXXX")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:C-QN04-SXXX")
 
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:C-QN04-S100")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:C-QN04-S100")
 
         # Timestamp
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:C-QN04-T10X")
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:C-QN04-T100M")
-        self.assertRaises(Exception, OCRASuite,
-                          "OCRA-1:HOTP-SHA512-8:C-QN04-TxxM")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:C-QN04-T10X")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:C-QN04-T100M")
+        self.assertRaises(Exception, OCRASuite, "OCRA-1:HOTP-SHA512-8:C-QN04-TxxM")
 
     def test_01_ocrasuite_success(self):
         os = OCRASuite("OCRA-1:HOTP-SHA1-6:QH10-S128")
@@ -142,12 +121,13 @@ class OCRASuiteTestCase(MyTestCase):
 
 KEY20 = "3132333435363738393031323334353637383930"
 KEY32 = "3132333435363738393031323334353637383930313233343536373839303132"
-KEY64 = "31323334353637383930313233343536373839303132333435363738393031323334" \
-        "353637383930313233343536373839303132333435363738393031323334"
+KEY64 = (
+    "31323334353637383930313233343536373839303132333435363738393031323334"
+    "353637383930313233343536373839303132333435363738393031323334"
+)
 
 
 class OCRATestCase(MyTestCase):
-
     def test_01_one_way_chal_resp(self):
         # http://tools.ietf.org/html/rfc6287#appendix-C.1
         ocrasuite = "OCRA-1:HOTP-SHA1-6:QN08"
@@ -161,7 +141,7 @@ class OCRATestCase(MyTestCase):
             {"Q": "66666666", "r": "816933"},
             {"Q": "77777777", "r": "224598"},
             {"Q": "88888888", "r": "750600"},
-            {"Q": "99999999", "r": "294470"}
+            {"Q": "99999999", "r": "294470"},
         ]
         for tv in testvectors:
             ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY20))
@@ -177,7 +157,7 @@ class OCRATestCase(MyTestCase):
             {"Q": "11111111", "r": "01501458"},
             {"Q": "22222222", "r": "17957585"},
             {"Q": "33333333", "r": "86776967"},
-            {"Q": "44444444", "r": "86807031"}
+            {"Q": "44444444", "r": "86807031"},
         ]
         for tv in testvectors:
             ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY32))
@@ -204,15 +184,15 @@ class OCRATestCase(MyTestCase):
         # test with PIN
         for tv in testvectors:
             ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY32))
-            r = ocra_object.get_response(tv.get("Q"), pin=pin,
-                                         counter=tv.get("C"))
+            r = ocra_object.get_response(tv.get("Q"), pin=pin, counter=tv.get("C"))
             self.assertEqual(r, tv.get("r"))
 
         # test with pin_hash
         for tv in testvectors:
             ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY32))
-            r = ocra_object.get_response(tv.get("Q"), pin_hash=pin_hash,
-                                         counter=tv.get("C"))
+            r = ocra_object.get_response(
+                tv.get("Q"), pin_hash=pin_hash, counter=tv.get("C")
+            )
             self.assertEqual(r, tv.get("r"))
 
     def test_04_one_way_chal_with_counter_512(self):
@@ -232,8 +212,7 @@ class OCRATestCase(MyTestCase):
         ]
         for tv in testvectors:
             ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY64))
-            r = ocra_object.get_response(tv.get("Q"),
-                                         counter=tv.get("C"))
+            r = ocra_object.get_response(tv.get("Q"), counter=tv.get("C"))
             self.assertEqual(r, tv.get("r"))
 
     def test_05_one_way_chal_with_timestamp(self):
@@ -244,12 +223,11 @@ class OCRATestCase(MyTestCase):
             {"Q": "11111111", "T": "132d0b6", "r": "55907591"},
             {"Q": "22222222", "T": "132d0b6", "r": "22048402"},
             {"Q": "33333333", "T": "132d0b6", "r": "24218844"},
-            {"Q": "44444444", "T": "132d0b6", "r": "36209546"}
+            {"Q": "44444444", "T": "132d0b6", "r": "36209546"},
         ]
         for tv in testvectors:
             ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY64))
-            r = ocra_object.get_response(tv.get("Q"),
-                                         timesteps=tv.get("T"))
+            r = ocra_object.get_response(tv.get("Q"), timesteps=tv.get("T"))
             self.assertEqual(r, tv.get("r"))
 
     def test_06_plain_signature(self):
@@ -260,7 +238,7 @@ class OCRATestCase(MyTestCase):
             {"Q": "SIG11000", "r": "04110475"},
             {"Q": "SIG12000", "r": "31331128"},
             {"Q": "SIG13000", "r": "76028668"},
-            {"Q": "SIG14000", "r": "46554205"}
+            {"Q": "SIG14000", "r": "46554205"},
         ]
         for tv in testvectors:
             ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY32))
@@ -275,7 +253,7 @@ class OCRATestCase(MyTestCase):
             {"Q": "SIG1100000", "r": "31970405", "T": "132d0b6"},
             {"Q": "SIG1200000", "r": "10235557", "T": "132d0b6"},
             {"Q": "SIG1300000", "r": "95213541", "T": "132d0b6"},
-            {"Q": "SIG1400000", "r": "65360607", "T": "132d0b6"}
+            {"Q": "SIG1400000", "r": "65360607", "T": "132d0b6"},
         ]
         for tv in testvectors:
             ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY64))
@@ -292,17 +270,17 @@ class OCRATestCase(MyTestCase):
 
         # create data_input with missing counter
         ocrasuite = "OCRA-1:HOTP-SHA1-6:C-QN10"
-        ocra_object=OCRA(ocrasuite, binascii.unhexlify(KEY20))
+        ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY20))
         self.assertRaises(Exception, ocra_object.create_data_input, question)
 
         # create data_input with missing PIN
         ocrasuite = "OCRA-1:HOTP-SHA1-6:QN10-PSHA1"
-        ocra_object=OCRA(ocrasuite, binascii.unhexlify(KEY20))
+        ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY20))
         self.assertRaises(Exception, ocra_object.create_data_input, question)
 
         # create data_input with missing Timesteps
         ocrasuite = "OCRA-1:HOTP-SHA1-6:QN10-T1M"
-        ocra_object=OCRA(ocrasuite, binascii.unhexlify(KEY20))
+        ocra_object = OCRA(ocrasuite, binascii.unhexlify(KEY20))
         self.assertRaises(Exception, ocra_object.create_data_input, question)
 
         ocrasuite = "OCRA-1:HOTP-SHA1-8:QH40"
@@ -314,19 +292,21 @@ class OCRATestCase(MyTestCase):
 
 
 class OcraTokenTestCase(MyTestCase):
-
     def test_00_users(self):
         self.setUp_user_realms()
 
     def test_01_create_token(self):
         pin = "test"
-        token = init_token({"type": "ocra",
-                            "pin": pin,
-                            "serial": "OCRA1",
-                            "user": "cornelius",
-                            "realm": self.realm1,
-                            "otpkey": KEY20
-                            })
+        token = init_token(
+            {
+                "type": "ocra",
+                "pin": pin,
+                "serial": "OCRA1",
+                "user": "cornelius",
+                "realm": self.realm1,
+                "otpkey": KEY20,
+            }
+        )
         self.assertEqual(token.type, "ocra")
 
         prefix = OcraTokenClass.get_class_prefix()
@@ -346,8 +326,7 @@ class OcraTokenTestCase(MyTestCase):
 
         # Check create_challenge
         displayTAN_challenge = b"83507112  ~320,00~1399458665_G6HNVF"
-        challengeQH40 = hexlify_and_unicode(hashlib.sha1(
-            displayTAN_challenge).digest())
+        challengeQH40 = hexlify_and_unicode(hashlib.sha1(displayTAN_challenge).digest())
         r = token.create_challenge(options={"challenge": challengeQH40})
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], "Please answer the challenge")
@@ -367,22 +346,26 @@ class OcraTokenTestCase(MyTestCase):
         transaction_id = r[2]
 
         # answer the challenge wrongly using check_challenge_response
-        r = token.check_challenge_response(passw="00065298", options={
-            "transaction_id": transaction_id
-        })
+        r = token.check_challenge_response(
+            passw="00065298", options={"transaction_id": transaction_id}
+        )
         self.assertEqual(r, -1)
 
         # assert there is still one challenge
-        self.assertEqual(len(get_challenges(serial="OCRA1", transaction_id=transaction_id)), 1)
+        self.assertEqual(
+            len(get_challenges(serial="OCRA1", transaction_id=transaction_id)), 1
+        )
 
         # answer the challenge correctly using check_challenge_response
-        r = token.check_challenge_response(passw="90065298", options={
-            "transaction_id": transaction_id
-        })
+        r = token.check_challenge_response(
+            passw="90065298", options={"transaction_id": transaction_id}
+        )
         self.assertTrue(r > 0, r)
 
         # assert there is no challenge anymore
-        self.assertEqual(len(get_challenges(serial="OCRA1", transaction_id=transaction_id)), 0)
+        self.assertEqual(
+            len(get_challenges(serial="OCRA1", transaction_id=transaction_id)), 0
+        )
 
 
 class TiQRTokenTestCase(MyApiTestCase):
@@ -400,9 +383,9 @@ class TiQRTokenTestCase(MyApiTestCase):
         except Exception:
             pass
         pin = "test"
-        token = init_token({"type": "tiqr",
-                            "pin": pin,
-                            "serial": "TIQR1"}, User(user, self.realm1))
+        token = init_token(
+            {"type": "tiqr", "pin": pin, "serial": "TIQR1"}, User(user, self.realm1)
+        )
         self.assertEqual(token.type, "tiqr")
 
         prefix = TiqrTokenClass.get_class_prefix()
@@ -436,29 +419,24 @@ class TiQRTokenTestCase(MyApiTestCase):
 
     def _test_api_endpoint(self, user, expected_netloc):
         pin = "tiqr"
-        token = init_token({"type": "tiqr",
-                            "pin": pin}, User(user, self.realm1))
+        token = init_token({"type": "tiqr", "pin": pin}, User(user, self.realm1))
         idetail = token.get_init_detail()
         value = idetail.get("tiqrenroll").get("value")
         # 'tiqrenroll://None?action=metadata&session=b81ecdf74118dcf6fa1cd41d3d4b2fec56c9107f&serial=TiQR000163CB
         # get the serial and the session
-        m = re.search('&serial=(.*)$', value)
+        m = re.search("&serial=(.*)$", value)
         serial = m.group(1)
-        m = re.search('&session=(.*)&', value)
+        m = re.search("&session=(.*)&", value)
         session = m.group(1)
 
         # test meta data
-        builder = EnvironBuilder(method='POST',
-                                 data={},
-                                 headers={})
+        builder = EnvironBuilder(method="POST", data={}, headers={})
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
-        req.all_data = {"action": "metadata",
-                        "session": session,
-                        "serial": serial}
+        req.all_data = {"action": "metadata", "session": session, "serial": serial}
 
         r = TiqrTokenClass.api_endpoint(req, g)
 
@@ -468,23 +446,25 @@ class TiQRTokenTestCase(MyApiTestCase):
 
         # Test invalid action
         req.all_data = {"action": "unknown"}
-        self.assertRaises(Exception,
-                          TiqrTokenClass.api_endpoint, req, g)
+        self.assertRaises(Exception, TiqrTokenClass.api_endpoint, req, g)
 
         # test enrollment with invalid session
-        req.all_data = {"action": "enrollment",
-                        "serial": serial,
-                        "session": "123",
-                        "secret": KEY20}
+        req.all_data = {
+            "action": "enrollment",
+            "serial": serial,
+            "session": "123",
+            "secret": KEY20,
+        }
 
-        self.assertRaises(ParameterError,
-                          TiqrTokenClass.api_endpoint, req, g)
+        self.assertRaises(ParameterError, TiqrTokenClass.api_endpoint, req, g)
 
         # test enrollment with valid session
-        req.all_data = {"action": "enrollment",
-                        "serial": serial,
-                        "session": session,
-                        "secret": KEY20}
+        req.all_data = {
+            "action": "enrollment",
+            "serial": serial,
+            "session": session,
+            "secret": KEY20,
+        }
         r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "plain")
         self.assertEqual(r[1], "OK")
@@ -493,12 +473,13 @@ class TiQRTokenTestCase(MyApiTestCase):
         # create a challenge by issuing validate/check with user and pin
         session = ""
         challenge = ""
-        with self.app.test_request_context('/validate/check',
-                                           method='GET',
-                                           query_string=urlencode({
-                                               "user": user.encode('utf-8'),
-                                               "realm": self.realm1,
-                                               "pass": pin})):
+        with self.app.test_request_context(
+            "/validate/check",
+            method="GET",
+            query_string=urlencode(
+                {"user": user.encode("utf-8"), "realm": self.realm1, "pass": pin}
+            ),
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -525,12 +506,14 @@ class TiQRTokenTestCase(MyApiTestCase):
         # Calculate Response with the challenge.
         response = ocra_object.get_response(challenge)
 
-        encoded_user_id = "{!s}_{!s}".format(user, self.realm1).encode('utf-8')
+        encoded_user_id = "{!s}_{!s}".format(user, self.realm1).encode("utf-8")
         # First, send a wrong response
-        req.all_data = {"response": "12345",
-                        "userId": encoded_user_id,
-                        "sessionKey": session,
-                        "operation": "login"}
+        req.all_data = {
+            "response": "12345",
+            "userId": encoded_user_id,
+            "sessionKey": session,
+            "operation": "login",
+        }
         r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "plain")
         # check the failed response count
@@ -538,10 +521,12 @@ class TiQRTokenTestCase(MyApiTestCase):
         self.assertRegex(r[1], r"INVALID_RESPONSE:{0!s}".format(fcnt1))
 
         # Try another wrong response
-        req.all_data = {"response": "67890",
-                        "userId": encoded_user_id,
-                        "sessionKey": session,
-                        "operation": "login"}
+        req.all_data = {
+            "response": "67890",
+            "userId": encoded_user_id,
+            "sessionKey": session,
+            "operation": "login",
+        }
         r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "plain")
         # check the failed response count
@@ -551,83 +536,82 @@ class TiQRTokenTestCase(MyApiTestCase):
         self.assertEqual(fcnt1 - 1, fcnt2)
 
         # Check that the OTP status is still incorrect
-        r = token.check_challenge_response(options={"transaction_id":
-                                                    transaction_id})
+        r = token.check_challenge_response(options={"transaction_id": transaction_id})
         self.assertEqual(r, -1)
 
         # Send the correct response
-        req.all_data = {"response": response,
-                        "userId": encoded_user_id,
-                        "sessionKey": session,
-                        "operation": "login"}
+        req.all_data = {
+            "response": response,
+            "userId": encoded_user_id,
+            "sessionKey": session,
+            "operation": "login",
+        }
         r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "plain")
         self.assertEqual(r[1], "OK")
 
         # Send the same response a second time would not work
         # since the Challenge is marked as answered
-        req.all_data = {"response": response,
-                        "userId": encoded_user_id,
-                        "sessionKey": session,
-                        "operation": "login"}
+        req.all_data = {
+            "response": response,
+            "userId": encoded_user_id,
+            "sessionKey": session,
+            "operation": "login",
+        }
         r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "plain")
         self.assertEqual(r[1], "INVALID_CHALLENGE")
 
         # Finally we check the OTP status:
-        r = token.check_challenge_response(options={"transaction_id":
-                                                    transaction_id})
+        r = token.check_challenge_response(options={"transaction_id": transaction_id})
         self.assertTrue(r > 0, r)
 
         # Check the same challenge again. It will fail, since the
         # challenge was deleted from the database
-        r = token.check_challenge_response(options={"transaction_id":
-                                                    transaction_id})
+        r = token.check_challenge_response(options={"transaction_id": transaction_id})
         self.assertTrue(r < 0, r)
 
     def test_01_create_token(self):
-        self._test_create_token('cornelius')
+        self._test_create_token("cornelius")
 
     def test_02_api_endpoint(self):
-        self._test_api_endpoint('cornelius', 'cornelius_realm1@org.privacyidea')
+        self._test_api_endpoint("cornelius", "cornelius_realm1@org.privacyidea")
 
     def test_03_create_token_nonascii(self):
-        self._test_create_token('nönäscii')
+        self._test_create_token("nönäscii")
 
     def test_04_api_endpoint_nonascii(self):
-        self._test_api_endpoint('nönäscii', 'n%C3%B6n%C3%A4scii_realm1@org.privacyidea')
+        self._test_api_endpoint("nönäscii", "n%C3%B6n%C3%A4scii_realm1@org.privacyidea")
 
     @smtpmock.activate
     def test_05_api_endpoint_with_multiple_tokens(self):
         # We test the behavior of the TiQR token with other CR tokens (ie. an email token) present
-        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
-        other_token = init_token({"type": "email",
-                                  "email": "some@example.com",
-                                  "pin": "somepin"}, User('selfservice', self.realm1))
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, "OK")})
+        other_token = init_token(
+            {"type": "email", "email": "some@example.com", "pin": "somepin"},
+            User("selfservice", self.realm1),
+        )
         pin = "tiqr"
-        token = init_token({"type": "tiqr",
-                            "pin": pin}, User('selfservice', self.realm1))
+        token = init_token(
+            {"type": "tiqr", "pin": pin}, User("selfservice", self.realm1)
+        )
         idetail = token.get_init_detail()
         value = idetail.get("tiqrenroll").get("value")
         # 'tiqrenroll://None?action=metadata&session=b81ecdf74118dcf6fa1cd41d3d4b2fec56c9107f&serial=TiQR000163CB
         # get the serial and the session
-        m = re.search('&serial=(.*)$', value)
+        m = re.search("&serial=(.*)$", value)
         serial = m.group(1)
-        m = re.search('&session=(.*)&', value)
+        m = re.search("&session=(.*)&", value)
         session = m.group(1)
 
         # test meta data
-        builder = EnvironBuilder(method='POST',
-                                 data={},
-                                 headers={})
+        builder = EnvironBuilder(method="POST", data={}, headers={})
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
-        req.all_data = {"action": "metadata",
-                        "session": session,
-                        "serial": serial}
+        req.all_data = {"action": "metadata", "session": session, "serial": serial}
 
         r = TiqrTokenClass.api_endpoint(req, g)
 
@@ -637,33 +621,37 @@ class TiQRTokenTestCase(MyApiTestCase):
 
         # Test invalid action
         req.all_data = {"action": "unknown"}
-        self.assertRaises(Exception,
-                          TiqrTokenClass.api_endpoint, req, g)
+        self.assertRaises(Exception, TiqrTokenClass.api_endpoint, req, g)
 
         # test enrollment with invalid session
-        req.all_data = {"action": "enrollment",
-                        "serial": serial,
-                        "session": "123",
-                        "secret": KEY20}
+        req.all_data = {
+            "action": "enrollment",
+            "serial": serial,
+            "session": "123",
+            "secret": KEY20,
+        }
 
-        self.assertRaises(ParameterError,
-                          TiqrTokenClass.api_endpoint, req, g)
+        self.assertRaises(ParameterError, TiqrTokenClass.api_endpoint, req, g)
 
         # test enrollment with valid session
-        req.all_data = {"action": "enrollment",
-                        "serial": serial,
-                        "session": session,
-                        "secret": KEY20}
+        req.all_data = {
+            "action": "enrollment",
+            "serial": serial,
+            "session": session,
+            "secret": KEY20,
+        }
         r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "plain")
         self.assertEqual(r[1], "OK")
 
         # test authentication endpoint
         # create a challenge by issuing validate/triggerchallenge
-        with self.app.test_request_context('/validate/triggerchallenge',
-                                           method='POST',
-                                           data={"user": "selfservice", "realm": self.realm1},
-                                           headers={"Authorization": self.at}):
+        with self.app.test_request_context(
+            "/validate/triggerchallenge",
+            method="POST",
+            data={"user": "selfservice", "realm": self.realm1},
+            headers={"Authorization": self.at},
+        ):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -672,9 +660,17 @@ class TiQRTokenTestCase(MyApiTestCase):
             transaction_id = detail.get("transaction_id")
             # we've got two challenges with the same transaction ID
             self.assertEqual(len(detail["multi_challenge"]), 2)
-            email_challenge = [challenge for challenge in detail["multi_challenge"] if challenge["type"] == "email"][0]
+            email_challenge = [
+                challenge
+                for challenge in detail["multi_challenge"]
+                if challenge["type"] == "email"
+            ][0]
             self.assertEqual(email_challenge["transaction_id"], transaction_id)
-            tiqr_challenge = [challenge for challenge in detail["multi_challenge"] if challenge["type"] == "tiqr"][0]
+            tiqr_challenge = [
+                challenge
+                for challenge in detail["multi_challenge"]
+                if challenge["type"] == "tiqr"
+            ][0]
             self.assertEqual(tiqr_challenge["transaction_id"], transaction_id)
             image_url = tiqr_challenge.get("attributes").get("value")
             self.assertTrue(image_url.startswith("tiqrauth"))
@@ -695,47 +691,50 @@ class TiQRTokenTestCase(MyApiTestCase):
         # Calculate Response with the challenge.
         response = ocra_object.get_response(challenge)
 
-        encoded_user_id = "{!s}_{!s}".format("selfservice", self.realm1).encode('utf-8')
+        encoded_user_id = "{!s}_{!s}".format("selfservice", self.realm1).encode("utf-8")
         # First, send a wrong response
-        req.all_data = {"response": "12345",
-                        "userId": encoded_user_id,
-                        "sessionKey": session,
-                        "operation": "login"}
+        req.all_data = {
+            "response": "12345",
+            "userId": encoded_user_id,
+            "sessionKey": session,
+            "operation": "login",
+        }
         r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "plain")
         self.assertRegex(r[1], r"INVALID_RESPONSE:[0-9]+")
 
         # Check that the OTP status is still incorrect
-        r = token.check_challenge_response(options={"transaction_id":
-                                                    transaction_id})
+        r = token.check_challenge_response(options={"transaction_id": transaction_id})
         self.assertEqual(r, -1)
 
         # Send the correct response
-        req.all_data = {"response": response,
-                        "userId": encoded_user_id,
-                        "sessionKey": session,
-                        "operation": "login"}
+        req.all_data = {
+            "response": response,
+            "userId": encoded_user_id,
+            "sessionKey": session,
+            "operation": "login",
+        }
         r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "plain")
         self.assertEqual(r[1], "OK")
 
         # Send the same response a second time would not work
         # since the Challenge is marked as answered
-        req.all_data = {"response": response,
-                        "userId": encoded_user_id,
-                        "sessionKey": session,
-                        "operation": "login"}
+        req.all_data = {
+            "response": response,
+            "userId": encoded_user_id,
+            "sessionKey": session,
+            "operation": "login",
+        }
         r = TiqrTokenClass.api_endpoint(req, g)
         self.assertEqual(r[0], "plain")
         self.assertEqual(r[1], "INVALID_CHALLENGE")
 
         # Finally we check the OTP status:
-        r = token.check_challenge_response(options={"transaction_id":
-                                                    transaction_id})
+        r = token.check_challenge_response(options={"transaction_id": transaction_id})
         self.assertTrue(r > 0, r)
 
         # Check the same challenge again. It will fail, since the
         # challenge was deleted from the database
-        r = token.check_challenge_response(options={"transaction_id":
-                                                    transaction_id})
+        r = token.check_challenge_response(options={"transaction_id": transaction_id})
         self.assertTrue(r < 0, r)

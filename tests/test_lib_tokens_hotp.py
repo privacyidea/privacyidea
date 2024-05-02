@@ -3,22 +3,20 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+
 import warnings
 
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
-from privacyidea.lib.user import (User)
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm
+from privacyidea.lib.user import User
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.utils import b32encode_and_unicode
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
-from privacyidea.models import (Token,
-                                Config,
-                                Challenge)
-from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
-from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
-                                    delete_policy)
+from privacyidea.models import Token, Config, Challenge
+from privacyidea.lib.config import set_privacyidea_config, set_prepend_pin
+from privacyidea.lib.policy import PolicyClass, SCOPE, set_policy, delete_policy
 import binascii
 import datetime
 import hashlib
@@ -34,6 +32,7 @@ class HOTPTokenTestCase(MyTestCase):
     """
     Test the token on the database level
     """
+
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
     resolvername3 = "reso3"
@@ -45,18 +44,20 @@ class HOTPTokenTestCase(MyTestCase):
     # add_user, get_user, reset, set_user_identifiers
 
     def test_00_create_user_realm(self):
-        rid = save_resolver({"resolver": self.resolvername1,
-                             "type": "passwdresolver",
-                             "fileName": PWFILE})
+        rid = save_resolver(
+            {
+                "resolver": self.resolvername1,
+                "type": "passwdresolver",
+                "fileName": PWFILE,
+            }
+        )
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(self.realm1, [{'name': self.resolvername1}])
+        (added, failed) = set_realm(self.realm1, [{"name": self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
-        user = User(login="root",
-                    realm=self.realm1,
-                    resolver=self.resolvername1)
+        user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
 
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
@@ -82,28 +83,23 @@ class HOTPTokenTestCase(MyTestCase):
     def test_02_set_user(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = HotpTokenClass(db_token)
-        self.assertTrue(token.token.tokentype == "hotp",
-                        token.token.tokentype)
+        self.assertTrue(token.token.tokentype == "hotp", token.token.tokentype)
         self.assertTrue(token.type == "hotp", token.type)
 
-        token.add_user(User(login="cornelius",
-                            realm=self.realm1))
+        token.add_user(User(login="cornelius", realm=self.realm1))
         self.assertEqual(token.token.first_owner.resolver, self.resolvername1)
         self.assertEqual(token.token.first_owner.user_id, "1000")
 
         user_object = token.user
-        self.assertTrue(user_object.login == "cornelius",
-                        user_object)
-        self.assertTrue(user_object.resolver == self.resolvername1,
-                        user_object)
+        self.assertTrue(user_object.login == "cornelius", user_object)
+        self.assertTrue(user_object.resolver == self.resolvername1, user_object)
 
     def test_03_reset_failcounter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = HotpTokenClass(db_token)
         token.token.failcount = 10
         token.reset()
-        self.assertTrue(token.token.failcount == 0,
-                        token.token.failcount)
+        self.assertTrue(token.token.failcount == 0, token.token.failcount)
 
     def test_04_base_methods(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -116,8 +112,7 @@ class HOTPTokenTestCase(MyTestCase):
 
         # set the description
         token.set_description("something new")
-        self.assertTrue(token.token.description == "something new",
-                        token.token)
+        self.assertTrue(token.token.description == "something new", token.token)
 
         # set defaults
         token.set_defaults()
@@ -146,22 +141,18 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(token.get_user_id(), token.token.first_owner.user_id)
 
         self.assertTrue(token.get_serial() == "SE123456", token.token.serial)
-        self.assertTrue(token.get_tokentype() == "hotp",
-                        token.token.tokentype)
+        self.assertTrue(token.get_tokentype() == "hotp", token.token.tokentype)
 
         token.set_so_pin("sopin")
         token.set_user_pin("userpin")
         token.set_otpkey(self.otpkey)
         token.set_otplen(8)
         token.set_otp_count(1000)
-        self.assertTrue(len(token.token.so_pin) == 32,
-                        token.token.so_pin)
-        self.assertTrue(len(token.token.user_pin) == 32,
-                        token.token.user_pin)
+        self.assertTrue(len(token.token.so_pin) == 32, token.token.so_pin)
+        self.assertTrue(len(token.token.user_pin) == 32, token.token.user_pin)
         self.assertEqual(len(token.token.key_enc), 96, token.token.key_enc)
         self.assertTrue(token.get_otplen() == 8)
-        self.assertTrue(token.token.count == 1000,
-                        token.token.count)
+        self.assertTrue(token.token.count == 1000, token.token.count)
 
         token.set_maxfail(1000)
         self.assertTrue(token.token.maxfail == 1000)
@@ -225,11 +216,11 @@ class HOTPTokenTestCase(MyTestCase):
 
     def test_10_get_hashlib(self):
         # check if functions are returned
-        for hl in ["sha1", "md5", "sha256", "sha512",
-                   "sha224", "sha384", "", None]:
-            self.assertTrue(hasattr(HotpTokenClass.get_hashlib(hl),
-                                    '__call__'),
-                            HotpTokenClass.get_hashlib(hl))
+        for hl in ["sha1", "md5", "sha256", "sha512", "sha224", "sha384", "", None]:
+            self.assertTrue(
+                hasattr(HotpTokenClass.get_hashlib(hl), "__call__"),
+                HotpTokenClass.get_hashlib(hl),
+            )
 
     def test_11_tokeninfo(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -243,8 +234,7 @@ class HOTPTokenTestCase(MyTestCase):
         token.set_tokeninfo(info1)
         info2 = token.get_tokeninfo()
         self.assertTrue("key2" not in info2, info2)
-        self.assertTrue(token.get_tokeninfo("key1") == "value2",
-                        info2)
+        self.assertTrue(token.get_tokeninfo("key1") == "value2", info2)
 
         # auth counter
         token.set_count_auth_success_max(200)
@@ -269,14 +259,12 @@ class HOTPTokenTestCase(MyTestCase):
         token.set_validity_period_end("2014-12-30T16:00+0200")
         end = token.get_validity_period_end()
         self.assertTrue(end == "2014-12-30T16:00+0200", end)
-        self.assertRaises(Exception,
-                          token.set_validity_period_end, "wrong date")
+        self.assertRaises(Exception, token.set_validity_period_end, "wrong date")
         # handle validity start date
         token.set_validity_period_start("2013-12-30T16:00+0200")
         start = token.get_validity_period_start()
         self.assertTrue(start == "2013-12-30T16:00+0200", start)
-        self.assertRaises(Exception,
-                          token.set_validity_period_start, "wrong date")
+        self.assertRaises(Exception, token.set_validity_period_start, "wrong date")
 
         self.assertFalse(token.check_validity_period())
 
@@ -330,9 +318,7 @@ class HOTPTokenTestCase(MyTestCase):
     def test_13_check_otp(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = HotpTokenClass(db_token)
-        token.update({"otpkey": self.otpkey,
-                      "pin": "test",
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "pin": "test", "otplen": 6})
         # OTP does not exist
         self.assertTrue(token.check_otp_exist("222333") == -1)
         # OTP does exist
@@ -379,13 +365,11 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertTrue("otpkey" in detail, detail)
         # but the otpkey must not be written to token.token.info (DB)
         # As this only writes the OTPkey to the internal init_details dict
-        self.assertTrue("otpkey" not in token.token.get_info(),
-                        token.token.get_info())
+        self.assertTrue("otpkey" not in token.token.get_info(), token.token.get_info())
 
         # Now get the Google Authenticator URL, which we only
         # get, if a user is specified.
-        detail = token.get_init_detail(user=User("cornelius",
-                                                 self.realm1))
+        detail = token.get_init_detail(user=User("cornelius", self.realm1))
         self.assertTrue("otpkey" in detail, detail)
         otpkey = detail.get("otpkey")
         self.assertTrue("img" in otpkey, otpkey)
@@ -393,40 +377,30 @@ class HOTPTokenTestCase(MyTestCase):
         # some other stuff.
         self.assertRaises(Exception, token.set_init_details, "invalid value")
         token.set_init_details({"detail1": "value1"})
-        self.assertTrue("detail1" in token.get_init_details(),
-                        token.get_init_details())
+        self.assertTrue("detail1" in token.get_init_details(), token.get_init_details())
 
     def test_17_update_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = HotpTokenClass(db_token)
         # Failed update: genkey wrong
-        self.assertRaises(Exception,
-                          token.update,
-                          {"description": "new desc",
-                           "genkey": "17"})
+        self.assertRaises(
+            Exception, token.update, {"description": "new desc", "genkey": "17"}
+        )
         # genkey and otpkey used at the same time
-        token.update({"otpkey": self.otpkey,
-                      "genkey": "1"})
+        token.update({"otpkey": self.otpkey, "genkey": "1"})
         self.assertTrue(token.token.otplen == 6)
 
-        token.update({"otpkey": self.otpkey,
-                      "pin": "654321",
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "pin": "654321", "otplen": 6})
         self.assertTrue(token.check_pin("654321"))
         self.assertTrue(token.token.otplen == 6)
         # update hashlib
-        token.update({"otpkey": self.otpkey,
-                      "hashlib": "sha1"})
-        self.assertTrue(token.get_tokeninfo("hashlib") == "sha1",
-                        token.get_tokeninfo())
+        token.update({"otpkey": self.otpkey, "hashlib": "sha1"})
+        self.assertTrue(token.get_tokeninfo("hashlib") == "sha1", token.get_tokeninfo())
 
         # save pin encrypted
-        token.update({"genkey": 1,
-                      "pin": "secret",
-                      "encryptpin": "true"})
+        token.update({"genkey": 1, "pin": "secret", "encryptpin": "true"})
         # check if the PIN is encrypted
-        self.assertTrue(token.token.pin_hash.startswith("@@"),
-                        token.token.pin_hash)
+        self.assertTrue(token.token.pin_hash.startswith("@@"), token.token.pin_hash)
 
         # update token without otpkey raises an error
         self.assertRaises(Exception, token.update, {"description": "test"})
@@ -435,17 +409,20 @@ class HOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = HotpTokenClass(db_token)
         transaction_id = "123456789"
-        resp = token.is_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                           "test123456")
+        resp = token.is_challenge_response(
+            User(login="cornelius", realm=self.realm1), "test123456"
+        )
         self.assertFalse(resp, resp)
 
-        C = Challenge(self.serial1, transaction_id=transaction_id, challenge="Who are you?")
+        C = Challenge(
+            self.serial1, transaction_id=transaction_id, challenge="Who are you?"
+        )
         C.save()
-        resp = token.is_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                           "test123456",
-                                           options={"transaction_id": transaction_id})
+        resp = token.is_challenge_response(
+            User(login="cornelius", realm=self.realm1),
+            "test123456",
+            options={"transaction_id": transaction_id},
+        )
         self.assertTrue(resp, resp)
         # test if challenge is valid
         self.assertTrue(C.is_valid())
@@ -502,8 +479,7 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertTrue(res[2] == "755224", res)
         res = token.get_multi_otp()
         self.assertTrue(res[0] is False, res)
-        token.update({"otpkey": self.otpkey,
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "otplen": 6})
         token.token.count = 0
         res = token.get_multi_otp(count=5)
         self.assertTrue(res[0], res)
@@ -520,19 +496,19 @@ class HOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         db_token.set_pin("test")
         token = HotpTokenClass(db_token)
-        r = token.check_challenge_response(user=None,
-                                           passw="123454")
+        r = token.check_challenge_response(user=None, passw="123454")
         # check empty challenges
         self.assertTrue(r == -1, r)
 
         # create a challenge and match the transaction_id
-        c = Challenge(self.serial1, transaction_id="mytransaction",
-                      challenge="Blah, what now?")
+        c = Challenge(
+            self.serial1, transaction_id="mytransaction", challenge="Blah, what now?"
+        )
         # save challenge to the database
         c.save()
-        r = token.check_challenge_response(user=None,
-                                           passw="123454",
-                                           options={"state": "mytransaction"})
+        r = token.check_challenge_response(
+            user=None, passw="123454", options={"state": "mytransaction"}
+        )
         # The challenge matches, but the OTP does not match!
         self.assertTrue(r == -1, r)
 
@@ -549,8 +525,7 @@ class HOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = HotpTokenClass(db_token)
         set_privacyidea_config("AutoResync", True)
-        token.update({"otpkey": self.otpkey,
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "otplen": 6})
         token.token.count = 0
         token.set_sync_window(10)
         token.set_count_window(5)
@@ -600,8 +575,7 @@ class HOTPTokenTestCase(MyTestCase):
     def test_23_resync(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = HotpTokenClass(db_token)
-        token.update({"otpkey": self.otpkey,
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "otplen": 6})
         token.token.count = 0
         token.set_sync_window(10)
         token.set_count_window(5)
@@ -622,8 +596,7 @@ class HOTPTokenTestCase(MyTestCase):
     def test_24_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = HotpTokenClass(db_token)
-        token.update({"otpkey": self.otpkey,
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "otplen": 6})
         token.set_pin("test")
         token.token.count = 0
         token.set_sync_window(10)
@@ -693,22 +666,20 @@ class HOTPTokenTestCase(MyTestCase):
         params = {}
         g = FakeFlaskG()
         g.audit_object = FakeAudit()
-        g.logged_in_user = {"user": "hans",
-                            "realm": "default",
-                            "role": "user"}
-        set_policy("pol1", scope=SCOPE.USER, action="hotp_hashlib=sha256,"
-                                                    "hotp_otplen=8")
+        g.logged_in_user = {"user": "hans", "realm": "default", "role": "user"}
+        set_policy(
+            "pol1", scope=SCOPE.USER, action="hotp_hashlib=sha256," "hotp_otplen=8"
+        )
         g.policy_object = PolicyClass()
         p = HotpTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")
         self.assertEqual(p.get("hashlib"), "sha256")
         delete_policy("pol1")
         # the same should work for an admin user
-        g.logged_in_user = {"user": "admin",
-                            "realm": "super",
-                            "role": "admin"}
-        set_policy("pol1", scope=SCOPE.ADMIN, action="hotp_hashlib=sha512,"
-                                                     "hotp_otplen=8")
+        g.logged_in_user = {"user": "admin", "realm": "super", "role": "admin"}
+        set_policy(
+            "pol1", scope=SCOPE.ADMIN, action="hotp_hashlib=sha512," "hotp_otplen=8"
+        )
         g.policy_object = PolicyClass()
         p = HotpTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")
@@ -728,7 +699,7 @@ class HOTPTokenTestCase(MyTestCase):
         # fetch the server component for later tests
         server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
         # generate a 8-byte client component
-        client_component = b'abcdefgh'
+        client_component = b"abcdefgh"
         # construct a secret
         token.update({"otpkey": binascii.hexlify(client_component)})
         # check the generated secret
@@ -738,8 +709,9 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(len(client_component), 8)
         self.assertEqual(len(secret), 20)
         # check the secret has been generated according to the specification
-        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
-                                      client_component, 10000, 20)
+        expected_secret = pbkdf2_hmac(
+            "sha1", binascii.hexlify(server_component), client_component, 10000, 20
+        )
         self.assertEqual(secret, expected_secret)
 
     def test_29_2step_generation_custom(self):
@@ -747,32 +719,36 @@ class HOTPTokenTestCase(MyTestCase):
         db_token = Token(serial, tokentype="hotp")
         db_token.save()
         token = HotpTokenClass(db_token)
-        token.update({
-            "2stepinit": "1",
-            "2step_serversize": "40",
-            "2step_difficulty": "12345",
-            "2step_clientsize": "12",
-            "hashlib": "sha512",
-        })
+        token.update(
+            {
+                "2stepinit": "1",
+                "2step_serversize": "40",
+                "2step_difficulty": "12345",
+                "2step_clientsize": "12",
+                "hashlib": "sha512",
+            }
+        )
         self.assertEqual(token.token.rollout_state, "clientwait")
         self.assertEqual(token.get_tokeninfo("2step_clientsize"), "12")
         self.assertEqual(token.get_tokeninfo("2step_difficulty"), "12345")
         # fetch the server component for later tests
         server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
         # too short
-        self.assertRaises(ParameterError, token.update, {
-            "otpkey": binascii.hexlify(b"=" * 8)
-        })
+        self.assertRaises(
+            ParameterError, token.update, {"otpkey": binascii.hexlify(b"=" * 8)}
+        )
         # generate a 12-byte client component
-        client_component = b'abcdefghijkl'
+        client_component = b"abcdefghijkl"
         # construct a secret
-        token.update({
-            "otpkey": binascii.hexlify(client_component),
-            # the following values are ignored
-            "2step_serversize": "23",
-            "2step_difficulty": "666666",
-            "2step_clientsize": "13"
-        })
+        token.update(
+            {
+                "otpkey": binascii.hexlify(client_component),
+                # the following values are ignored
+                "2step_serversize": "23",
+                "2step_difficulty": "666666",
+                "2step_clientsize": "13",
+            }
+        )
         # check the generated secret
         secret = binascii.unhexlify(token.token.get_otpkey().getKey())
         # check the correct lengths
@@ -780,8 +756,13 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(len(client_component), 12)
         self.assertEqual(len(secret), 64)  # because of SHA-512
         # check the secret has been generated according to the specification
-        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
-                                      client_component, 12345, len(secret))
+        expected_secret = pbkdf2_hmac(
+            "sha1",
+            binascii.hexlify(server_component),
+            client_component,
+            12345,
+            len(secret),
+        )
         self.assertEqual(secret, expected_secret)
         self.assertTrue(token.token.active)
 
@@ -790,38 +771,45 @@ class HOTPTokenTestCase(MyTestCase):
         db_token = Token(serial, tokentype="hotp")
         db_token.save()
         token = HotpTokenClass(db_token)
-        token.update({
-            "2stepinit": "1",
-            "2step_clientsize": "12",
-            "hashlib": "sha512",
-        })
+        token.update(
+            {
+                "2stepinit": "1",
+                "2step_clientsize": "12",
+                "hashlib": "sha512",
+            }
+        )
         self.assertEqual(token.token.rollout_state, "clientwait")
         self.assertEqual(token.get_tokeninfo("2step_clientsize"), "12")
         # fetch the server component for later tests
         server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
         # generate a 12-byte client component
-        client_component = b'abcdefghijkl'
+        client_component = b"abcdefghijkl"
         checksum = hashlib.sha1(client_component).digest()[:4]
         # wrong checksum
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=DeprecationWarning)
+            warnings.simplefilter("ignore", category=DeprecationWarning)
             self.assertRaisesRegex(
                 ParameterError,
                 "Incorrect checksum",
                 token.update,
                 {
-                    "otpkey": b32encode_and_unicode(b"\x37" + checksum[1:] + client_component).strip("="),
+                    "otpkey": b32encode_and_unicode(
+                        b"\x37" + checksum[1:] + client_component
+                    ).strip("="),
                     "otpkeyformat": "base32check",
-                })
+                },
+            )
         # construct a secret
-        token.update({
-            "otpkey": b32encode_and_unicode(checksum + client_component).strip("="),
-            "otpkeyformat": "base32check",
-            # the following values are ignored
-            "2step_serversize": "23",
-            "2step_difficulty": "666666",
-            "2step_clientsize": "13"
-        })
+        token.update(
+            {
+                "otpkey": b32encode_and_unicode(checksum + client_component).strip("="),
+                "otpkeyformat": "base32check",
+                # the following values are ignored
+                "2step_serversize": "23",
+                "2step_difficulty": "666666",
+                "2step_clientsize": "13",
+            }
+        )
         # check the generated secret
         secret = binascii.unhexlify(token.token.get_otpkey().getKey())
         # check the correct lengths
@@ -829,8 +817,13 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertEqual(len(client_component), 12)
         self.assertEqual(len(secret), 64)  # because of SHA-512
         # check the secret has been generated according to the specification
-        expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
-                                      client_component, 10000, len(secret))
+        expected_secret = pbkdf2_hmac(
+            "sha1",
+            binascii.hexlify(server_component),
+            client_component,
+            10000,
+            len(secret),
+        )
         self.assertEqual(secret, expected_secret)
         self.assertTrue(token.token.active)
 
@@ -840,6 +833,9 @@ class HOTPTokenTestCase(MyTestCase):
             token = HotpTokenClass(db_token)
             token.add_init_details("otpkey", "11223344556677889900")
             params = {"tokenlabel": "{real}"}
-            _detail = token.get_init_detail(user=User("cornelius",
-                                                      self.realm1), params=params)
-            mock_log.assert_any_call("Unknown Tag 'real' in one of your policy definition")
+            _detail = token.get_init_detail(
+                user=User("cornelius", self.realm1), params=params
+            )
+            mock_log.assert_any_call(
+                "Unknown Tag 'real' in one of your policy definition"
+            )

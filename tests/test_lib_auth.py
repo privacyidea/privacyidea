@@ -4,9 +4,14 @@ This tests the files
 """
 
 from .base import MyTestCase
-from privacyidea.lib.auth import (create_db_admin, verify_db_admin,
-                                  list_db_admin, delete_db_admin,
-                                  check_webui_user, db_admin_exist)
+from privacyidea.lib.auth import (
+    create_db_admin,
+    verify_db_admin,
+    list_db_admin,
+    delete_db_admin,
+    check_webui_user,
+    db_admin_exist,
+)
 from privacyidea.lib.user import User
 
 
@@ -16,9 +21,7 @@ class AuthTestCase(MyTestCase):
     """
 
     def test_01_db_admin(self):
-
-        create_db_admin("mytestadmin", email="admin@localhost",
-                        password="PSTwort")
+        create_db_admin("mytestadmin", email="admin@localhost", password="PSTwort")
         r = verify_db_admin("mytestadmin", "PSTwort")
         self.assertTrue(r)
 
@@ -37,8 +40,7 @@ class AuthTestCase(MyTestCase):
         self.assertEqual(role, "user")
 
     def test_03_empty_passsword(self):
-        create_db_admin("mytestadmin", email="admin@localhost",
-                        password="PSTwort")
+        create_db_admin("mytestadmin", email="admin@localhost", password="PSTwort")
         r = verify_db_admin("mytestadmin", None)
         self.assertFalse(r)
 

@@ -2,6 +2,7 @@ import os
 import logging
 import secrets
 import string
+
 log = logging.getLogger(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
 basedir = "/".join(basedir.split("/")[:-1]) + "/"
@@ -31,13 +32,15 @@ WQIDAQAB
 
 def _random_password(size):
     log.info("SECRET_KEY not set in config. Generating a random key.")
-    passwd = [secrets.choice(string.ascii_lowercase + \
-                             string.ascii_uppercase + string.digits) for _x in range(size)]
+    passwd = [
+        secrets.choice(string.ascii_lowercase + string.ascii_uppercase + string.digits)
+        for _x in range(size)
+    ]
     return "".join(passwd)
 
 
 class Config(object):
-    SECRET_KEY = os.environ.get('SECRET_KEY')
+    SECRET_KEY = os.environ.get("SECRET_KEY")
     # SQL_ALCHEMY_DATABASE_URI = "mysql://privacyidea:XmbSrlqy5d4IS08zjz"
     # "GG5HTt40Cpf5@localhost/privacyidea"
     PI_ENCFILE = os.path.join(basedir, "tests/testdata/enckey")
@@ -59,9 +62,10 @@ class Config(object):
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 't0p s3cr3t'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
+    SECRET_KEY = os.environ.get("SECRET_KEY") or "t0p s3cr3t"
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        "DEV_DATABASE_URL"
+    ) or "sqlite:///" + os.path.join(basedir, "data-dev.sqlite")
     PI_LOGLEVEL = logging.DEBUG
     PI_TRANSLATION_WARNING = "[Missing]"
 
@@ -69,10 +73,11 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     TESTING = True
     # This is used to encrypt the auth token
-    SUPERUSER_REALM = ['adminrealm']
-    SECRET_KEY = 'secret'  # nosec B105 # used for testing
-    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
+    SUPERUSER_REALM = ["adminrealm"]
+    SECRET_KEY = "secret"  # nosec B105 # used for testing
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        "TEST_DATABASE_URL"
+    ) or "sqlite:///" + os.path.join(basedir, "data-test.sqlite")
     # This is used to encrypt the admin passwords
     PI_PEPPER = ""
     # This is only for testing encrypted files
@@ -86,30 +91,40 @@ class TestingConfig(Config):
     PI_UUID = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
     PI_NODE = "Node1"
     PI_ENGINE_REGISTRY_CLASS = "null"
-    PI_TRUSTED_JWT = [{"public_key": pubtest_key,
-                       "algorithm": "HS256",
-                       "role": "user",
-                       "realm": "realm1",
-                       "username": "userA",
-                       "resolver": "resolverX"},
-                      {"public_key": non_matchin_pubkey,
-                       "algorithm": "RS256",
-                       "role": "user",
-                       "realm": "realm1",
-                       "username": "userA",
-                       "resolver": "resolverX"},
-                      {"public_key": pubtest_key,
-                       "algorithm": "RS256",
-                       "role": "user",
-                       "realm": "realmX",
-                       "resolver": "resolverX",
-                       "username": "h.*s"},
-                      {"public_key": pubtest_key,
-                       "algorithm": "RS256",
-                       "role": "user",
-                       "realm": "realm1",
-                       "username": "userA",
-                       "resolver": "resolverX"}]
+    PI_TRUSTED_JWT = [
+        {
+            "public_key": pubtest_key,
+            "algorithm": "HS256",
+            "role": "user",
+            "realm": "realm1",
+            "username": "userA",
+            "resolver": "resolverX",
+        },
+        {
+            "public_key": non_matchin_pubkey,
+            "algorithm": "RS256",
+            "role": "user",
+            "realm": "realm1",
+            "username": "userA",
+            "resolver": "resolverX",
+        },
+        {
+            "public_key": pubtest_key,
+            "algorithm": "RS256",
+            "role": "user",
+            "realm": "realmX",
+            "resolver": "resolverX",
+            "username": "h.*s",
+        },
+        {
+            "public_key": pubtest_key,
+            "algorithm": "RS256",
+            "role": "user",
+            "realm": "realm1",
+            "username": "userA",
+            "resolver": "resolverX",
+        },
+    ]
 
 
 class AltUIConfig(TestingConfig):
@@ -119,11 +134,12 @@ class AltUIConfig(TestingConfig):
 
 
 class ProductionConfig(Config):
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'data.sqlite')
-    #SQLALCHEMY_DATABASE_URI = "mysql://pi2:pi2@localhost/pi2"
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        "DATABASE_URL"
+    ) or "sqlite:///" + os.path.join(basedir, "data.sqlite")
+    # SQLALCHEMY_DATABASE_URI = "mysql://pi2:pi2@localhost/pi2"
     # This is used to encrypt the auth_token
-    SECRET_KEY = os.environ.get('SECRET_KEY') or _random_password(24)
+    SECRET_KEY = os.environ.get("SECRET_KEY") or _random_password(24)
     # This is used to encrypt the admin passwords
     PI_PEPPER = "Never know..."
     # This is used to encrypt the token data and token passwords
@@ -132,33 +148,34 @@ class ProductionConfig(Config):
     PI_AUDIT_KEY_PRIVATE = os.path.join(basedir, "private.pem")
     PI_AUDIT_KEY_PUBLIC = os.path.join(basedir, "public.pem")
     PI_LOGLEVEL = logging.INFO
-    SUPERUSER_REALM = ['superuser']
+    SUPERUSER_REALM = ["superuser"]
 
 
 class HerokuConfig(Config):
-    SQLALCHEMY_DATABASE_URI = "postgres://mvfkmtkwzuwojj:" \
-                              "wqy_btZE3CPPNWsmkfdmeorxy6@" \
-                              "ec2-54-83-0-61.compute-1." \
-                              "amazonaws.com:5432/d6fjidokoeilp6"
-    #SQLALCHEMY_DATABASE_URI = "mysql://pi2:pi2@localhost/pi2"
+    SQLALCHEMY_DATABASE_URI = (
+        "postgres://mvfkmtkwzuwojj:"
+        "wqy_btZE3CPPNWsmkfdmeorxy6@"
+        "ec2-54-83-0-61.compute-1."
+        "amazonaws.com:5432/d6fjidokoeilp6"
+    )
+    # SQLALCHEMY_DATABASE_URI = "mysql://pi2:pi2@localhost/pi2"
     # This is used to encrypt the auth_token
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 't0p s3cr3t'
+    SECRET_KEY = os.environ.get("SECRET_KEY") or "t0p s3cr3t"
     # This is used to encrypt the admin passwords
     PI_PEPPER = "Never know..."
     # This is used to encrypt the token data and token passwords
     PI_ENCFILE = os.path.join(basedir, "deploy/heroku/enckey")
     # This is used to sign the audit log
-    PI_AUDIT_KEY_PRIVATE = os.path.join(basedir,
-                                        "deploy/heroku/private.pem")
+    PI_AUDIT_KEY_PRIVATE = os.path.join(basedir, "deploy/heroku/private.pem")
     PI_AUDIT_KEY_PUBLIC = os.path.join(basedir, "deploy/heroku/public.pem")
-    SUPERUSER_REALM = ['superuser']
+    SUPERUSER_REALM = ["superuser"]
 
 
 config = {
-    'development': DevelopmentConfig,
-    'testing': TestingConfig,
-    'production': ProductionConfig,
-    'default': DevelopmentConfig,
-    'heroku': HerokuConfig,
-    'altUI': AltUIConfig
+    "development": DevelopmentConfig,
+    "testing": TestingConfig,
+    "production": ProductionConfig,
+    "default": DevelopmentConfig,
+    "heroku": HerokuConfig,
+    "altUI": AltUIConfig,
 }

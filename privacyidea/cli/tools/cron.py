@@ -33,15 +33,18 @@ import warnings
 
 from privacyidea.cli import create_silent_app, NoPluginsFlaskGroup
 from privacyidea.lib.config import get_privacyidea_node
-from privacyidea.lib.periodictask import (get_scheduled_periodic_tasks,
-                                          execute_task, get_periodic_tasks,
-                                          get_periodic_task_by_name,
-                                          set_periodic_task_last_run)
+from privacyidea.lib.periodictask import (
+    get_scheduled_periodic_tasks,
+    execute_task,
+    get_periodic_tasks,
+    get_periodic_task_by_name,
+    set_periodic_task_last_run,
+)
 from privacyidea.lib.utils import get_version_number
 
 warnings.simplefilter("ignore")
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
 def print_stdout(*args, **kwargs):
@@ -84,55 +87,70 @@ def run_task_on_node(ptask, node):
         print_stdout("Running {!r} ...".format(ptask["name"]), nl=False)
         result = execute_task(ptask["taskmodule"], ptask["options"])
     except Exception as e:
-        print_stderr('Caught exception when running {!r}: {!r}'.format(ptask["name"], e))
+        print_stderr(
+            "Caught exception when running {!r}: {!r}".format(ptask["name"], e)
+        )
         print_stderr(f"{traceback.format_exc()}")
         result = False
     if result:
         current_time = datetime.now(tz.tzlocal())
-        print_stdout('Task {!r} on node {!r} exited successfully. Noting this '
-                     'in the database ...'.format(ptask["name"], node))
+        print_stdout(
+            "Task {!r} on node {!r} exited successfully. Noting this "
+            "in the database ...".format(ptask["name"], node)
+        )
         set_periodic_task_last_run(ptask["id"], node, current_time)
     else:
-        print_stderr('Task {!r} on node {!r} did not run '
-                     'successfully.'.format(ptask["name"], node))
-        print_stderr('This unsuccessful run is not recorded in the database.')
+        print_stderr(
+            "Task {!r} on node {!r} did not run " "successfully.".format(
+                ptask["name"], node
+            )
+        )
+        print_stderr("This unsuccessful run is not recorded in the database.")
         if not ptask.get("retry_if_failed"):
             current_time = datetime.now(tz.tzlocal())
             set_periodic_task_last_run(ptask["id"], node, current_time)
     return result
 
 
-@click.group(cls=NoPluginsFlaskGroup, create_app=create_silent_app,
-             context_settings=CONTEXT_SETTINGS, add_default_commands=False,
-             epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
+@click.group(
+    cls=NoPluginsFlaskGroup,
+    create_app=create_silent_app,
+    context_settings=CONTEXT_SETTINGS,
+    add_default_commands=False,
+    epilog="Check out our docs at https://privacyidea.readthedocs.io/ for more details",
+)
 def cli():
     """
-\b
-             _                    _______  _______
-   ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
-  / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
- / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|  Cron
-/_/                       /___/
+    \b
+                 _                    _______  _______
+       ___  ____(_)  _____ _______ __/  _/ _ \\/ __/ _ |
+      / _ \\/ __/ / |/ / _ `/ __/ // // // // / _// __ |
+     / .__/_/ /_/|___/\\_,_/\\__/\\_, /___/____/___/_/ |_|  Cron
+    /_/                       /___/
 
-This script is meant to be invoked periodically by the system cron daemon.
-It runs periodic tasks that are specified in the database.
-"""
-    click.echo(r"""
+    This script is meant to be invoked periodically by the system cron daemon.
+    It runs periodic tasks that are specified in the database.
+    """
+    click.echo(
+        r"""
              _                    _______  _______
    ___  ____(_)  _____ _______ __/  _/ _ \/ __/ _ |
   / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
  / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|  Cron
 /_/                       /___/
 {0!s:>51}
-    """.format('v{0!s}'.format(get_version_number())))
+    """.format("v{0!s}".format(get_version_number()))
+    )
 
 
 @cli.command()
-@click.option("-n", "--node", "node_string",
-              help="Override the node name (read from privacyIDEA config by default)")
-@click.option("-t", "--task", "task_name",
-              help="Run the specified task",
-              required=True)
+@click.option(
+    "-n",
+    "--node",
+    "node_string",
+    help="Override the node name (read from privacyIDEA config by default)",
+)
+@click.option("-t", "--task", "task_name", help="Run the specified task", required=True)
 def run_manually(node_string, task_name):
     """
     Manually run a periodic task.
@@ -149,8 +167,10 @@ def list_tasks():
     """
     Show a list of available tasks that could be run.
     """
-    line_format = ('{active!s:7.7} {id:3} {name:16.16}\t{interval:16.16}\t{taskmodule:16}'
-                   '\t{node_list:20}\t{options_json}')
+    line_format = (
+        "{active!s:7.7} {id:3} {name:16.16}\t{interval:16.16}\t{taskmodule:16}"
+        "\t{node_list:20}\t{options_json}"
+    )
     heading = line_format.format(
         active="Active",
         id="ID",
@@ -163,29 +183,47 @@ def list_tasks():
     print_stdout(heading)
     print_stdout("=" * 120)
     for ptask in get_periodic_tasks():
-        print_stdout(line_format.format(node_list=', '.join(ptask["nodes"]),
-                                        options_json=json.dumps(ptask["options"]),
-                                        **ptask))
+        print_stdout(
+            line_format.format(
+                node_list=", ".join(ptask["nodes"]),
+                options_json=json.dumps(ptask["options"]),
+                **ptask,
+            )
+        )
 
 
 @cli.command()
-@click.option("-d", "--dryrun",
-              is_flag=True,
-              help="Do not run any tasks, only show what would be done")
-@click.option("-n", "--node", "node_string",
-              help="Override the node name (read from privacyIDEA config by default)")
-@click.option("-c", "--cron", "cron_mode", is_flag=True,
-              help="Run in 'cron mode', i.e. do not write to stdout, but write errors to stderr")
+@click.option(
+    "-d",
+    "--dryrun",
+    is_flag=True,
+    help="Do not run any tasks, only show what would be done",
+)
+@click.option(
+    "-n",
+    "--node",
+    "node_string",
+    help="Override the node name (read from privacyIDEA config by default)",
+)
+@click.option(
+    "-c",
+    "--cron",
+    "cron_mode",
+    is_flag=True,
+    help="Run in 'cron mode', i.e. do not write to stdout, but write errors to stderr",
+)
 def run_scheduled(node_string=None, dryrun=False, cron_mode=False):
     """
     Execute all periodic tasks that are scheduled to run.
     """
-    current_app.config['cron_mode'] = cron_mode
+    current_app.config["cron_mode"] = cron_mode
     node = get_node_name(node_string)
     current_time = datetime.now(tz.tzlocal())
     scheduled_tasks = get_scheduled_periodic_tasks(node, current_time)
     if scheduled_tasks:
-        print_stdout("The following tasks are scheduled to run on node {!s}:".format(node))
+        print_stdout(
+            "The following tasks are scheduled to run on node {!s}:".format(node)
+        )
         print_stdout()
         for ptask in scheduled_tasks:
             print_stdout("  {name} ({interval!r}, {taskmodule})".format(**ptask))
@@ -207,5 +245,5 @@ def run_scheduled(node_string=None, dryrun=False, cron_mode=False):
         print_stdout("There are no tasks scheduled on node {!s}.".format(node))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

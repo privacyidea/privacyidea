@@ -29,6 +29,7 @@ class FakeQueue(BaseQueue):
     """
     A queue class that keeps track of enqueued jobs, for usage in unit tests.
     """
+
     def __init__(self, options):
         BaseQueue.__init__(self, options)
         self._jobs = {}
@@ -63,6 +64,7 @@ class MockQueueTestCase(OverrideConfigTestCase):
 
     The ``enqueued_jobs`` attribute is reset for each test case.
     """
+
     class Config(TestingConfig):
         PI_JOB_QUEUE_CLASS = "tests.queuemock.FakeQueue"
 

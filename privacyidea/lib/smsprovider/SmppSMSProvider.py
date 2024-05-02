@@ -20,11 +20,11 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __doc__ = """This is the SMSClass to send SMS via SMPP protocol to SMS center
-It requires smpplib installation, this lib works with ascii only, but message support unicode 
+It requires smpplib installation, this lib works with ascii only, but message support unicode
 
 """
 
-from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
+from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider, SMSError
 from privacyidea.lib import _
 from privacyidea.lib.utils import parse_int
 import logging
@@ -36,7 +36,6 @@ log = logging.getLogger(__name__)
 
 
 class SmppSMSProvider(ISMSProvider):
-
     def submit_message(self, phone, message):
         """
         send a message to a phone via a smpp protocol to smsc
@@ -73,25 +72,25 @@ class SmppSMSProvider(ISMSProvider):
 
         # Initialize the SMPP Client
         client = None
-        error_message = None 
+        error_message = None
         try:
             msg_parts, encoding_flag, msg_type_flag = smpplib.gsm.make_parts(message)
-            client = smpplib.client.Client(smsc_host,
-                                           smsc_port)
+            client = smpplib.client.Client(smsc_host, smsc_port)
             client.connect()
-            r = client.bind_transmitter(system_id=sys_id,
-                                        password=passwd)
+            r = client.bind_transmitter(system_id=sys_id, password=passwd)
             log.debug("bind_transmitter returns {0!r}".format(r.get_status_desc()))
             for part in msg_parts:
-                r = client.send_message(source_addr_ton=s_addr_ton,
-                                        source_addr_npi=s_addr_npi,
-                                        source_addr=s_addr,
-                                        dest_addr_ton=d_addr_ton,
-                                        dest_addr_npi=d_addr_npi,
-                                        destination_addr=phone,
-                                        short_message=part,
-                                        data_coding=encoding_flag,
-                                        esm_class=msg_type_flag)
+                r = client.send_message(
+                    source_addr_ton=s_addr_ton,
+                    source_addr_npi=s_addr_npi,
+                    source_addr=s_addr,
+                    dest_addr_ton=d_addr_ton,
+                    dest_addr_npi=d_addr_npi,
+                    destination_addr=phone,
+                    short_message=part,
+                    data_coding=encoding_flag,
+                    esm_class=msg_type_flag,
+                )
                 log.debug("send_message returns {0!r}".format(r.get_status_desc()))
 
         except Exception as err:
@@ -104,8 +103,9 @@ class SmppSMSProvider(ISMSProvider):
                 client.disconnect()
 
         if error_message:
-            raise SMSError(error_message, "SMS could not be "
-                                          "sent: {0!r}".format(error_message))
+            raise SMSError(
+                error_message, "SMS could not be " "sent: {0!r}".format(error_message)
+            )
         return True
 
     @classmethod
@@ -117,30 +117,20 @@ class SmppSMSProvider(ISMSProvider):
 
         :return: dict
         """
-        params = {"options_allowed": False,
-                  "headers_allowed": False,
-                    "parameters": {
-                        "SMSC_HOST": {
-                            "required": True,
-                            "description": _("SMSC Host IP")},
-                        "SMSC_PORT": {
-                            "required": True,
-                            "description": _("SMSC Port")},
-                        "SYSTEM_ID": {
-                            "description": _("SMSC Service ID")},
-                        "PASSWORD": {
-                            "description": _("Password for authentication on SMSC")},
-                        "S_ADDR_TON": {
-                            "description": _("SOURCE_ADDR_TON Special Flag")},
-                        "S_ADDR_NPI": {
-                            "description": _("S_ADDR_NPI Special Flag")},
-                        "S_ADDR": {
-                            "description": _("Source address (SMS sender)")},
-                        "D_ADDR_TON": {"description": _("DESTINATION_ADDR_TON Special Flag")},
-                        "D_ADDR_NPI": {"description": _("D_ADDR_NPI Special Flag")},
-                        "REGEXP": {
-                            "description": cls.regexp_description
-                        }
-                    }
-                    }
+        params = {
+            "options_allowed": False,
+            "headers_allowed": False,
+            "parameters": {
+                "SMSC_HOST": {"required": True, "description": _("SMSC Host IP")},
+                "SMSC_PORT": {"required": True, "description": _("SMSC Port")},
+                "SYSTEM_ID": {"description": _("SMSC Service ID")},
+                "PASSWORD": {"description": _("Password for authentication on SMSC")},
+                "S_ADDR_TON": {"description": _("SOURCE_ADDR_TON Special Flag")},
+                "S_ADDR_NPI": {"description": _("S_ADDR_NPI Special Flag")},
+                "S_ADDR": {"description": _("Source address (SMS sender)")},
+                "D_ADDR_TON": {"description": _("DESTINATION_ADDR_TON Special Flag")},
+                "D_ADDR_NPI": {"description": _("D_ADDR_NPI Special Flag")},
+                "REGEXP": {"description": cls.regexp_description},
+            },
+        }
         return params

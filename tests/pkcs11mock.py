@@ -20,6 +20,7 @@
 """
 Mock module for testing the handling of hardware security modules
 """
+
 import sys
 import mock
 
@@ -31,9 +32,13 @@ except ImportError:
         def __init__(self, value):
             self.value = value
 
-
-    MOCK_CONSTANTS = ['CKA_CLASS', 'CKO_SECRET_KEY', 'CKA_LABEL', 'CKR_SLOT_ID_INVALID', 'CKR_DEVICE_ERROR']
-
+    MOCK_CONSTANTS = [
+        "CKA_CLASS",
+        "CKO_SECRET_KEY",
+        "CKA_LABEL",
+        "CKR_SLOT_ID_INVALID",
+        "CKR_DEVICE_ERROR",
+    ]
 
     def _setup_module_mock():
         module = mock.MagicMock()
@@ -43,9 +48,8 @@ except ImportError:
             setattr(module, name, object())
         return module
 
-
     PyKCS11 = _setup_module_mock()
-    sys.modules['PyKCS11'] = PyKCS11
+    sys.modules["PyKCS11"] = PyKCS11
 
 from PyKCS11 import PyKCS11Error
 from contextlib import contextmanager
@@ -82,6 +86,7 @@ class PKCS11Mock(object):
     ``fake_encrypt`` and ``fake_decrypt``. Generated random
     values are just "\x00\x01\x02...".
     """
+
     def __init__(self, default_mocks=True):
         self.mock = mock.MagicMock()
         self.lowlevel_mock = mock.MagicMock()
@@ -138,13 +143,15 @@ class PKCS11Mock(object):
         This is just a shortcut for calling ``simulate_failure`` on ``generateRandom``, ``encrypt``,
         ``decrypt`` and ``openSession``.
         """
-        with self.simulate_failure(self.session_mock.generateRandom, count,
-                                   error=PyKCS11.CKR_SESSION_HANDLE_INVALID), \
-                self.simulate_failure(self.session_mock.encrypt, count,
-                                      error=PyKCS11.CKR_SESSION_HANDLE_INVALID), \
-                self.simulate_failure(self.session_mock.decrypt, count,
-                                      error=PyKCS11.CKR_SESSION_HANDLE_INVALID), \
-                self.simulate_failure(self.mock.openSession, count):
+        with self.simulate_failure(
+            self.session_mock.generateRandom,
+            count,
+            error=PyKCS11.CKR_SESSION_HANDLE_INVALID,
+        ), self.simulate_failure(
+            self.session_mock.encrypt, count, error=PyKCS11.CKR_SESSION_HANDLE_INVALID
+        ), self.simulate_failure(
+            self.session_mock.decrypt, count, error=PyKCS11.CKR_SESSION_HANDLE_INVALID
+        ), self.simulate_failure(self.mock.openSession, count):
             yield
 
     def _mock_openSession(self, slot):
@@ -186,7 +193,7 @@ class PKCS11Mock(object):
         self.stop()
 
     def start(self):
-        self._patcher = mock.patch('PyKCS11.PyKCS11Lib', return_value=self.mock)
+        self._patcher = mock.patch("PyKCS11.PyKCS11Lib", return_value=self.mock)
         self._patcher.start()
         self.mock.lib = self.lowlevel_mock
 

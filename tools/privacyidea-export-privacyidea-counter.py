@@ -4,7 +4,7 @@
 
 __doc__ = """
 This script exports counter from privacyIDEA to a csv file.
-It exports 
+It exports
    serial, counter
 
 """
@@ -28,9 +28,12 @@ def get_privacyidea_uri(config_file):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("-c", "--config", help="privacyIDEA config file. We only "
-                                               "need the SQLALCHEMY_DATABASE_URI.",
-                        required=True)
+    parser.add_argument(
+        "-c",
+        "--config",
+        help="privacyIDEA config file. We only " "need the SQLALCHEMY_DATABASE_URI.",
+        required=True,
+    )
     args = parser.parse_args()
 
     # Parse data
@@ -49,5 +52,5 @@ def main():
         print("{0!s}, {1!s}".format(r.serial, r.count))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

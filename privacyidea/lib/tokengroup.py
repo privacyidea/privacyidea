@@ -54,19 +54,25 @@ def delete_tokengroup(name=None, tokengroup_id=None):
     if tokengroup_id:
         if tg:
             if tg.id != tokengroup_id:
-                raise privacyIDEAError('ID of tokengroup with name {0!s} does not '
-                                       'match given ID ({1:d}).'.format(name, tokengroup_id))
+                raise privacyIDEAError(
+                    "ID of tokengroup with name {0!s} does not "
+                    "match given ID ({1:d}).".format(name, tokengroup_id)
+                )
         else:
             tg = fetch_one_resource(Tokengroup, id=tokengroup_id)
     if tg:
         tok_count = TokenTokengroup.query.filter_by(tokengroup_id=tg.id).count()
         if tok_count > 0:
-            raise privacyIDEAError('The tokengroup with name {0!s} still has '
-                                   '{1:d} tokens assigned.'.format(tg.name, tok_count))
+            raise privacyIDEAError(
+                "The tokengroup with name {0!s} still has "
+                "{1:d} tokens assigned.".format(tg.name, tok_count)
+            )
         tg.delete()
         db.session.commit()
     else:
-        raise ResourceNotFoundError("You need to specify either a tokengroup ID or a name.")
+        raise ResourceNotFoundError(
+            "You need to specify either a tokengroup ID or a name."
+        )
 
 
 def get_tokengroups(name=None, id=None):

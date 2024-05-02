@@ -32,7 +32,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This code implements the motp one time password algorithm
+__doc__ = """This code implements the motp one time password algorithm
 described in motp.sourceforge.net.
 
 The code is tested in tests/test_lib_tokens_motp
@@ -55,9 +55,7 @@ required = False
 log = logging.getLogger(__name__)
 
 
-
 class MotpTokenClass(TokenClass):
-
     @staticmethod
     def get_class_type():
         return "motp"
@@ -67,7 +65,7 @@ class MotpTokenClass(TokenClass):
         return "PIMO"
 
     @staticmethod
-    def get_class_info(key=None, ret='all'):
+    def get_class_info(key=None, ret="all"):
         """
         returns a subtree of the token definition
         Is used by lib.token.get_token_info
@@ -80,42 +78,51 @@ class MotpTokenClass(TokenClass):
         :rtype : dict or string
         """
 
-        res = {'type': 'motp',
-               'title': 'mOTP Token',
-               'description': 'mOTP: Classical mobile One Time Passwords.',
-               'init': {'page': {'html': 'motptoken.mako',
-                                 'scope': 'enroll', },
-                        'title': {'html': 'motptoken.mako',
-                                  'scope': 'enroll.title'},
-                        },
-               'config': {'page': {'html': 'motptoken.mako',
-                                   'scope': 'config'},
-                          'title': {'html': 'motptoken.mako',
-                                    'scope': 'config.title', },
-                          },
-               'user': ['enroll'],
-               # This tokentype is enrollable in the UI for...
-               'ui_enroll': ["admin", "user"],
-               'policy': {
-                   SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of mOTP tokens assigned."),
-                           'group': GROUP.TOKEN
-                       },
-                       ACTION.MAXACTIVETOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of active mOTP tokens assigned."),
-                           'group': GROUP.TOKEN
-                       }
-                   }
-               }
-               }
+        res = {
+            "type": "motp",
+            "title": "mOTP Token",
+            "description": "mOTP: Classical mobile One Time Passwords.",
+            "init": {
+                "page": {
+                    "html": "motptoken.mako",
+                    "scope": "enroll",
+                },
+                "title": {"html": "motptoken.mako", "scope": "enroll.title"},
+            },
+            "config": {
+                "page": {"html": "motptoken.mako", "scope": "config"},
+                "title": {
+                    "html": "motptoken.mako",
+                    "scope": "config.title",
+                },
+            },
+            "user": ["enroll"],
+            # This tokentype is enrollable in the UI for...
+            "ui_enroll": ["admin", "user"],
+            "policy": {
+                SCOPE.ENROLL: {
+                    ACTION.MAXTOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum number of mOTP tokens assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                    ACTION.MAXACTIVETOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum number of active mOTP tokens assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                }
+            },
+        }
 
         if key:
             ret = res.get(key, {})
         else:
-            if ret == 'all':
+            if ret == "all":
                 ret = res
 
         return ret
@@ -132,7 +139,7 @@ class MotpTokenClass(TokenClass):
         self.set_type("motp")
         self.hKeyRequired = True
         return
-    
+
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
         """
@@ -140,23 +147,23 @@ class MotpTokenClass(TokenClass):
         should be build by the token specific method, the getInitDetails
         """
         response_detail = TokenClass.get_init_detail(self, params, user)
-        otpkey = self.init_details.get('otpkey')
+        otpkey = self.init_details.get("otpkey")
         if otpkey:
             tok_type = self.type.lower()
             if user is not None:
                 try:
-                    motp_url = create_motp_url(otpkey,
-                                               user.login, user.realm,
-                                               serial=self.get_serial())
-                    response_detail["motpurl"] = {"description": _("URL for MOTP "
-                                                                   "token"),
-                                                  "value": motp_url,
-                                                  "img": create_img(motp_url)
-                                                  }
-                except Exception as ex:   # pragma: no cover
+                    motp_url = create_motp_url(
+                        otpkey, user.login, user.realm, serial=self.get_serial()
+                    )
+                    response_detail["motpurl"] = {
+                        "description": _("URL for MOTP " "token"),
+                        "value": motp_url,
+                        "img": create_img(motp_url),
+                    }
+                except Exception as ex:  # pragma: no cover
                     log.debug("{0!s}".format(traceback.format_exc()))
-                    log.error('failed to set motp url: {0!r}'.format(ex))
-                    
+                    log.error("failed to set motp url: {0!r}".format(ex))
+
         return response_detail
 
     @log_with(log)
@@ -171,18 +178,18 @@ class MotpTokenClass(TokenClass):
         """
         if self.hKeyRequired is True:
             genkey = is_true(getParam(param, "genkey", optional))
-            if not param.get('keysize'):
-                param['keysize'] = 16
+            if not param.get("keysize"):
+                param["keysize"] = 16
             if genkey:
-                otpKey = generate_otpkey(param['keysize'])
-                del param['genkey']
+                otpKey = generate_otpkey(param["keysize"])
+                del param["genkey"]
             else:
                 # genkey not set: check otpkey is given
                 # this will raise an exception if otpkey is not present
                 otpKey = getParam(param, "otpkey", required)
 
-            param['otpkey'] = otpKey
-            
+            param["otpkey"] = otpKey
+
         # motp token specific
         mOTPPin = getParam(param, "motppin", required)
         self.token.set_user_pin(mOTPPin)
@@ -223,9 +230,10 @@ class MotpTokenClass(TokenClass):
         res = mtimeOtp.checkOtp(anOtpVal, window, options=options)
 
         if res != -1 and oCount != 0 and res <= oCount:
-            log.warning("a previous OTP value was used again! former "
-                        "tokencounter: %i, presented counter %i" %
-                        (oCount, res))
+            log.warning(
+                "a previous OTP value was used again! former "
+                "tokencounter: %i, presented counter %i" % (oCount, res)
+            )
             res = -1
             return res
 

@@ -35,6 +35,7 @@ class DeleteLimit(Delete, ClauseElement):
     A dedicated clause element is needed because different
     databases use different notation for limits on DELETE statements.
     """
+
     inherit_cache = False
 
     def __init__(self, table, filter, limit=1000):
@@ -42,9 +43,9 @@ class DeleteLimit(Delete, ClauseElement):
         self.table = table
         self.filter = filter
         if not isinstance(limit, int):
-            raise RuntimeError('limit must be an integer')
+            raise RuntimeError("limit must be an integer")
         if limit <= 0:
-            raise RuntimeError('limit must be positive')
+            raise RuntimeError("limit must be positive")
         self.limit = limit
 
 
@@ -60,12 +61,14 @@ def visit_delete_limit(element, compiler, **kw):
 
     However, this syntax is not supported by MySQL.
     """
-    select_stmt = select([element.table.c.id]).where(element.filter).limit(element.limit)
+    select_stmt = (
+        select([element.table.c.id]).where(element.filter).limit(element.limit)
+    )
     delete_stmt = element.table.delete().where(element.table.c.id.in_(select_stmt))
     return compiler.process(delete_stmt)
 
 
-@compiles(DeleteLimit, 'mysql')
+@compiles(DeleteLimit, "mysql")
 def visit_delete_limit_mysql(element, compiler, **kw):
     """
     Special compiler for the DeleteLimit clause element
@@ -74,9 +77,11 @@ def visit_delete_limit_mysql(element, compiler, **kw):
 
         DELETE FROM pidea_audit WHERE ... LIMIT ...
     """
-    return 'DELETE FROM {} WHERE {} LIMIT {:d}'.format(  # nosec B608 # no user input used in query construction
+    return "DELETE FROM {} WHERE {} LIMIT {:d}".format(  # nosec B608 # no user input used in query construction
         compiler.process(element.table, asfrom=True, **kw),
-        compiler.process(element.filter), element.limit)
+        compiler.process(element.filter),
+        element.limit,
+    )
 
 
 def delete_chunked(session, table, filter, limit=1000):

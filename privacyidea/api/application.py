@@ -25,8 +25,9 @@ Applications are used to attach tokens to machines.
 
 The code of this module is tested in tests/test_api_applications.py
 """
-from flask import (Blueprint)
-from .lib.utils import (send_result)
+
+from flask import Blueprint
+from .lib.utils import send_result
 from ..lib.log import log_with
 from flask import g
 import logging
@@ -36,10 +37,10 @@ from privacyidea.lib.applications import get_application_types
 log = logging.getLogger(__name__)
 
 
-application_blueprint = Blueprint('application_blueprint', __name__)
+application_blueprint = Blueprint("application_blueprint", __name__)
 
 
-@application_blueprint.route('/', methods=['GET'])
+@application_blueprint.route("/", methods=["GET"])
 @log_with(log)
 def get_applications():
     """

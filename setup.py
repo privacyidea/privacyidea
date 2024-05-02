@@ -3,7 +3,7 @@ import os
 import stat
 import sys
 
-#VERSION = "2.1dev4"
+# VERSION = "2.1dev4"
 VERSION = "3.10dev1"
 
 # Taken from kennethreitz/requests/setup.py
@@ -15,7 +15,7 @@ def get_file_contents(file_path):
     content = ""
     try:
         full_path = os.path.join(package_directory, file_path)
-        content = open(full_path, 'r').read()
+        content = open(full_path, "r").read()
     except:
         print("### could not open file {0!r}".format(file_path), file=sys.stderr)
     return content
@@ -62,7 +62,7 @@ install_requires = [
     "requests>=2.7.0",
     "segno>=1.5",
     "smpplib>=2.0",
-    "SQLAlchemy>=1.4.0,<2.0"
+    "SQLAlchemy>=1.4.0,<2.0",
 ]
 
 
@@ -95,76 +95,85 @@ def get_scripts(dir):
 
 
 setup(
-    name='privacyIDEA',
+    name="privacyIDEA",
     version=VERSION,
-    description='privacyIDEA: multifactor authentication management system',
-    author='privacyidea.org',
-    license='AGPLv3',
-    author_email='cornelius@privacyidea.org',
-    url='https://www.privacyidea.org',
-    keywords='OTP, two factor authentication, management, security',
-    python_requires='>=3.7',
+    description="privacyIDEA: multifactor authentication management system",
+    author="privacyidea.org",
+    license="AGPLv3",
+    author_email="cornelius@privacyidea.org",
+    url="https://www.privacyidea.org",
+    keywords="OTP, two factor authentication, management, security",
+    python_requires=">=3.7",
     packages=find_packages(),
     scripts=get_scripts("tools"),
     entry_points={
-        'console_scripts': [
-            'privacyidea-token-janitor = privacyidea.cli.privacyideatokenjanitor:cli',
-            'pi-manage = privacyidea.cli.pimanage:cli',
-            'privacyidea-standalone = privacyidea.cli.tools.standalone:cli',
-            'privacyidea-get-serial = privacyidea.cli.tools.get_serial:byotp_call',
-            'privacyidea-usercache-cleanup = privacyidea.cli.tools.usercache_cleanup:delete_call',
-            'privacyidea-get-unused-tokens = privacyidea.cli.tools.get_unused_tokens:cli',
-            'privacyidea-expired-users = privacyidea.cli.tools.expired_users:expire_call',
-            'privacyidea-cron = privacyidea.cli.tools.cron:cli'
-        ]},
+        "console_scripts": [
+            "privacyidea-token-janitor = privacyidea.cli.privacyideatokenjanitor:cli",
+            "pi-manage = privacyidea.cli.pimanage:cli",
+            "privacyidea-standalone = privacyidea.cli.tools.standalone:cli",
+            "privacyidea-get-serial = privacyidea.cli.tools.get_serial:byotp_call",
+            "privacyidea-usercache-cleanup = privacyidea.cli.tools.usercache_cleanup:delete_call",
+            "privacyidea-get-unused-tokens = privacyidea.cli.tools.get_unused_tokens:cli",
+            "privacyidea-expired-users = privacyidea.cli.tools.expired_users:expire_call",
+            "privacyidea-cron = privacyidea.cli.tools.cron:cli",
+        ]
+    },
     extras_require={
-        'doc': ["Pallets-Sphinx-Themes>=1.2.3",
-                "Sphinx>=1.3.1",
-                "sphinxcontrib-httpdomain>=1.3.0",
-                "sphinxcontrib-plantuml>=0.18",
-                "sphinxcontrib-spelling>=7.0.0"],
-        'test': ["mock>=2.0.0",
-                 "pyparsing>=3.0",
-                 "pytest>=3.6.0",
-                 "pytest-cov>=2.5.1",
-                 "responses>=0.9.0",
-                 "testfixtures>=6.14.2"],
-        'postgres': ['psycopg2>=2.8.3'],
-        'hsm': ['PyKCS11>=1.5.10'],
-        'kerberos': ['gssapi>=1.7.0']
+        "doc": [
+            "Pallets-Sphinx-Themes>=1.2.3",
+            "Sphinx>=1.3.1",
+            "sphinxcontrib-httpdomain>=1.3.0",
+            "sphinxcontrib-plantuml>=0.18",
+            "sphinxcontrib-spelling>=7.0.0",
+        ],
+        "test": [
+            "mock>=2.0.0",
+            "pyparsing>=3.0",
+            "pytest>=3.6.0",
+            "pytest-cov>=2.5.1",
+            "responses>=0.9.0",
+            "testfixtures>=6.14.2",
+        ],
+        "postgres": ["psycopg2>=2.8.3"],
+        "hsm": ["PyKCS11>=1.5.10"],
+        "kerberos": ["gssapi>=1.7.0"],
     },
     install_requires=install_requires,
     include_package_data=True,
-    data_files=[('etc/privacyidea/',
-                 ['deploy/apache/privacyideaapp.wsgi',
-                  'deploy/privacyidea/dictionary']),
-                ('share/man/man1', get_man_pages("tools")),
-                ('lib/privacyidea/migrations',
-                 ["migrations/alembic.ini",
-                  "migrations/env.py",
-                  "migrations/README",
-                  "migrations/script.py.mako"]),
-                ('lib/privacyidea/migrations/versions',
-                 get_file_list("migrations/versions/")),
-                ('lib/privacyidea/', ['requirements.txt'])
-                ],
-    classifiers=["Framework :: Flask",
-                 "License :: OSI Approved :: "
-                 "GNU Affero General Public License v3",
-                 "Programming Language :: Python",
-                 "Development Status :: 5 - Production/Stable",
-                 "Topic :: Internet",
-                 "Topic :: Security",
-                 "Topic :: System ::"
-                 " Systems Administration :: Authentication/Directory",
-                 'Programming Language :: Python',
-                 'Programming Language :: Python :: 3',
-                 'Programming Language :: Python :: 3.6',
-                 'Programming Language :: Python :: 3.7',
-                 'Programming Language :: Python :: 3.8',
-                 'Programming Language :: Python :: 3.9',
-                 'Programming Language :: Python :: 3.10'
-                 ],
+    data_files=[
+        (
+            "etc/privacyidea/",
+            ["deploy/apache/privacyideaapp.wsgi", "deploy/privacyidea/dictionary"],
+        ),
+        ("share/man/man1", get_man_pages("tools")),
+        (
+            "lib/privacyidea/migrations",
+            [
+                "migrations/alembic.ini",
+                "migrations/env.py",
+                "migrations/README",
+                "migrations/script.py.mako",
+            ],
+        ),
+        ("lib/privacyidea/migrations/versions", get_file_list("migrations/versions/")),
+        ("lib/privacyidea/", ["requirements.txt"]),
+    ],
+    classifiers=[
+        "Framework :: Flask",
+        "License :: OSI Approved :: " "GNU Affero General Public License v3",
+        "Programming Language :: Python",
+        "Development Status :: 5 - Production/Stable",
+        "Topic :: Internet",
+        "Topic :: Security",
+        "Topic :: System ::" " Systems Administration :: Authentication/Directory",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+    ],
     zip_safe=False,
-    long_description=get_file_contents('README.rst')
+    long_description=get_file_contents("README.rst"),
 )

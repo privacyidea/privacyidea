@@ -3,18 +3,17 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+
 PWFILE = "tests/testdata/passwords"
 
 from .base import MyTestCase
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
-from privacyidea.lib.user import (User)
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm
+from privacyidea.lib.user import User
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.tokens.daplugtoken import (DaplugTokenClass, _digi2daplug)
-from privacyidea.models import (Token,
-                                 Config,
-                                 Challenge)
-from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
+from privacyidea.lib.tokens.daplugtoken import DaplugTokenClass, _digi2daplug
+from privacyidea.models import Token, Config, Challenge
+from privacyidea.lib.config import set_privacyidea_config, set_prepend_pin
 import datetime
 from dateutil.tz import tzlocal
 
@@ -23,6 +22,7 @@ class DaplugTokenTestCase(MyTestCase):
     """
     Test the token on the database level
     """
+
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
     resolvername3 = "reso3"
@@ -34,19 +34,20 @@ class DaplugTokenTestCase(MyTestCase):
     # add_user, get_user, reset, set_user_identifiers
 
     def test_00_create_user_realm(self):
-        rid = save_resolver({"resolver": self.resolvername1,
-                             "type": "passwdresolver",
-                             "fileName": PWFILE})
+        rid = save_resolver(
+            {
+                "resolver": self.resolvername1,
+                "type": "passwdresolver",
+                "fileName": PWFILE,
+            }
+        )
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(self.realm1,
-                                    [{'name': self.resolvername1}])
+        (added, failed) = set_realm(self.realm1, [{"name": self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
-        user = User(login="root",
-                    realm=self.realm1,
-                    resolver=self.resolvername1)
+        user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
 
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
@@ -63,8 +64,7 @@ class DaplugTokenTestCase(MyTestCase):
         db_token.save()
         token = DaplugTokenClass(db_token)
         self.assertTrue(token.token.serial == self.serial1, token)
-        self.assertTrue(token.token.tokentype == "daplug",
-                        token.token.tokentype)
+        self.assertTrue(token.token.tokentype == "daplug", token.token.tokentype)
         self.assertTrue(token.type == "daplug", token)
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "DPLG", class_prefix)
@@ -73,28 +73,23 @@ class DaplugTokenTestCase(MyTestCase):
     def test_02_set_user(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DaplugTokenClass(db_token)
-        self.assertTrue(token.token.tokentype == "daplug",
-                        token.token.tokentype)
+        self.assertTrue(token.token.tokentype == "daplug", token.token.tokentype)
         self.assertTrue(token.type == "daplug", token.type)
 
-        token.add_user(User(login="cornelius",
-                            realm=self.realm1))
+        token.add_user(User(login="cornelius", realm=self.realm1))
         self.assertEqual(token.token.first_owner.resolver, self.resolvername1)
         self.assertEqual(token.token.first_owner.user_id, "1000")
 
         user_object = token.user
-        self.assertTrue(user_object.login == "cornelius",
-                        user_object)
-        self.assertTrue(user_object.resolver == self.resolvername1,
-                        user_object)
+        self.assertTrue(user_object.login == "cornelius", user_object)
+        self.assertTrue(user_object.resolver == self.resolvername1, user_object)
 
     def test_03_reset_failcounter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DaplugTokenClass(db_token)
         token.token.failcount = 10
         token.reset()
-        self.assertTrue(token.token.failcount == 0,
-                        token.token.failcount)
+        self.assertTrue(token.token.failcount == 0, token.token.failcount)
 
     def test_04_base_methods(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -107,8 +102,7 @@ class DaplugTokenTestCase(MyTestCase):
 
         # set the description
         token.set_description("something new")
-        self.assertTrue(token.token.description == "something new",
-                        token.token)
+        self.assertTrue(token.token.description == "something new", token.token)
 
         # set defaults
         token.set_defaults()
@@ -137,22 +131,18 @@ class DaplugTokenTestCase(MyTestCase):
         self.assertEqual(token.get_user_id(), token.token.first_owner.user_id)
 
         self.assertTrue(token.get_serial() == "SE123456", token.token.serial)
-        self.assertTrue(token.get_tokentype() == "daplug",
-                        token.token.tokentype)
+        self.assertTrue(token.get_tokentype() == "daplug", token.token.tokentype)
 
         token.set_so_pin("sopin")
         token.set_user_pin("userpin")
         token.set_otpkey(self.otpkey)
         token.set_otplen(8)
         token.set_otp_count(1000)
-        self.assertTrue(len(token.token.so_pin) == 32,
-                        token.token.so_pin)
-        self.assertTrue(len(token.token.user_pin) == 32,
-                        token.token.user_pin)
+        self.assertTrue(len(token.token.so_pin) == 32, token.token.so_pin)
+        self.assertTrue(len(token.token.user_pin) == 32, token.token.user_pin)
         self.assertEqual(len(token.token.key_enc), 96, token.token.key_enc)
         self.assertTrue(token.get_otplen() == 8)
-        self.assertTrue(token.token.count == 1000,
-                        token.token.count)
+        self.assertTrue(token.token.count == 1000, token.token.count)
 
         token.set_maxfail(1000)
         self.assertTrue(token.token.maxfail == 1000)
@@ -216,11 +206,11 @@ class DaplugTokenTestCase(MyTestCase):
 
     def test_10_get_hashlib(self):
         # check if functions are returned
-        for hl in ["sha1", "md5", "sha256", "sha512",
-                   "sha224", "sha384", "", None]:
-            self.assertTrue(hasattr(DaplugTokenClass.get_hashlib(hl),
-                                    '__call__'),
-                            DaplugTokenClass.get_hashlib(hl))
+        for hl in ["sha1", "md5", "sha256", "sha512", "sha224", "sha384", "", None]:
+            self.assertTrue(
+                hasattr(DaplugTokenClass.get_hashlib(hl), "__call__"),
+                DaplugTokenClass.get_hashlib(hl),
+            )
 
     def test_11_tokeninfo(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -234,8 +224,7 @@ class DaplugTokenTestCase(MyTestCase):
         token.set_tokeninfo(info1)
         info2 = token.get_tokeninfo()
         self.assertTrue("key2" not in info2, info2)
-        self.assertTrue(token.get_tokeninfo("key1") == "value2",
-                        info2)
+        self.assertTrue(token.get_tokeninfo("key1") == "value2", info2)
 
         # auth counter
         token.set_count_auth_success_max(200)
@@ -260,14 +249,12 @@ class DaplugTokenTestCase(MyTestCase):
         token.set_validity_period_end("2014-12-30T16:00+0200")
         end = token.get_validity_period_end()
         self.assertEqual("2014-12-30T16:00+0200", end)
-        self.assertRaises(Exception,
-                          token.set_validity_period_end, "wrong date")
+        self.assertRaises(Exception, token.set_validity_period_end, "wrong date")
         # handle validity start date
         token.set_validity_period_start("2013-12-30T16:00+0200")
         start = token.get_validity_period_start()
         self.assertEqual("2013-12-30T16:00+0200", start)
-        self.assertRaises(Exception,
-                          token.set_validity_period_start, "wrong date")
+        self.assertRaises(Exception, token.set_validity_period_start, "wrong date")
 
         self.assertFalse(token.check_validity_period())
 
@@ -321,9 +308,7 @@ class DaplugTokenTestCase(MyTestCase):
     def test_13_check_otp(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DaplugTokenClass(db_token)
-        token.update({"otpkey": self.otpkey,
-                      "pin": "test",
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "pin": "test", "otplen": 6})
         # OTP does not exist
         self.assertEqual(token.check_otp_exist(_digi2daplug("222333")), -1)
         # OTP does exist
@@ -337,12 +322,12 @@ class DaplugTokenTestCase(MyTestCase):
         token.token.otplen = 6
         # postpend pin
         set_prepend_pin(False)
-        _res, pin, value = token.split_pin_pass(_digi2daplug("222333")+"test")
+        _res, pin, value = token.split_pin_pass(_digi2daplug("222333") + "test")
         self.assertTrue(pin == "test", pin)
         self.assertTrue(value == _digi2daplug("222333"), value)
         # prepend pin
         set_prepend_pin(True)
-        _res, pin, value = token.split_pin_pass("test"+_digi2daplug("222333"))
+        _res, pin, value = token.split_pin_pass("test" + _digi2daplug("222333"))
         self.assertTrue(pin == "test", pin)
         self.assertTrue(value == _digi2daplug("222333"), value)
 
@@ -367,13 +352,11 @@ class DaplugTokenTestCase(MyTestCase):
         self.assertTrue("otpkey" in detail, detail)
         # but the otpkey must not be written to token.token.info (DB)
         # As this only writes the OTPkey to the internal init_details dict
-        self.assertTrue("otpkey" not in token.token.get_info(),
-                        token.token.get_info())
+        self.assertTrue("otpkey" not in token.token.get_info(), token.token.get_info())
 
         # Now get the Google Authenticator URL, which we only
         # get, if a user is specified.
-        detail = token.get_init_detail(user=User("cornelius",
-                                                 self.realm1))
+        detail = token.get_init_detail(user=User("cornelius", self.realm1))
         self.assertTrue("otpkey" in detail, detail)
         otpkey = detail.get("otpkey")
         self.assertTrue("img" in otpkey, otpkey)
@@ -381,40 +364,30 @@ class DaplugTokenTestCase(MyTestCase):
         # some other stuff.
         self.assertRaises(Exception, token.set_init_details, "invalid value")
         token.set_init_details({"detail1": "value1"})
-        self.assertTrue("detail1" in token.get_init_details(),
-                        token.get_init_details())
+        self.assertTrue("detail1" in token.get_init_details(), token.get_init_details())
 
     def test_17_update_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DaplugTokenClass(db_token)
         # Failed update: genkey wrong
-        self.assertRaises(Exception,
-                          token.update,
-                          {"description": "new desc",
-                           "genkey": "17"})
+        self.assertRaises(
+            Exception, token.update, {"description": "new desc", "genkey": "17"}
+        )
         # genkey and otpkey used at the same time
-        token.update({"otpkey": self.otpkey,
-                      "genkey": "1"})
+        token.update({"otpkey": self.otpkey, "genkey": "1"})
         self.assertTrue(token.token.otplen == 6)
 
-        token.update({"otpkey": self.otpkey,
-                      "pin": "654321",
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "pin": "654321", "otplen": 6})
         self.assertTrue(token.check_pin("654321"))
         self.assertTrue(token.token.otplen == 6)
         # update hashlib
-        token.update({"otpkey": self.otpkey,
-                      "hashlib": "sha1"})
-        self.assertTrue(token.get_tokeninfo("hashlib") == "sha1",
-                        token.get_tokeninfo())
+        token.update({"otpkey": self.otpkey, "hashlib": "sha1"})
+        self.assertTrue(token.get_tokeninfo("hashlib") == "sha1", token.get_tokeninfo())
 
         # save pin encrypted
-        token.update({"genkey": 1,
-                      "pin": "secret",
-                      "encryptpin": "true"})
+        token.update({"genkey": 1, "pin": "secret", "encryptpin": "true"})
         # check if the PIN is encrypted
-        self.assertTrue(token.token.pin_hash.startswith("@@"),
-                        token.token.pin_hash)
+        self.assertTrue(token.token.pin_hash.startswith("@@"), token.token.pin_hash)
 
         # update token without otpkey raises an error
         self.assertRaises(Exception, token.update, {"description": "test"})
@@ -422,19 +395,21 @@ class DaplugTokenTestCase(MyTestCase):
     def test_18_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DaplugTokenClass(db_token)
-        resp = token.is_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                            "test"+_digi2daplug("123456"))
+        resp = token.is_challenge_response(
+            User(login="cornelius", realm=self.realm1), "test" + _digi2daplug("123456")
+        )
         self.assertFalse(resp, resp)
 
         transaction_id = "123456789"
-        C = Challenge(self.serial1, transaction_id=transaction_id, challenge="Who are you?")
+        C = Challenge(
+            self.serial1, transaction_id=transaction_id, challenge="Who are you?"
+        )
         C.save()
-        resp = token.is_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                            "test"+_digi2daplug("123456"),
-                                            options={"transaction_id":
-                                                         transaction_id})
+        resp = token.is_challenge_response(
+            User(login="cornelius", realm=self.realm1),
+            "test" + _digi2daplug("123456"),
+            options={"transaction_id": transaction_id},
+        )
         self.assertTrue(resp, resp)
 
         # test if challenge is valid
@@ -462,22 +437,24 @@ class DaplugTokenTestCase(MyTestCase):
         token.update({"otpkey": self.otpkey})
         self.assertTrue(db_token.otplen == 6, 6)
         set_prepend_pin()
-        res, pin, otp = token.split_pin_pass("test"+_digi2daplug("123456"))
+        res, pin, otp = token.split_pin_pass("test" + _digi2daplug("123456"))
         self.assertTrue(pin == "test", pin)
         self.assertTrue(otp == _digi2daplug("123456"), otp)
         self.assertTrue(token.check_pin(pin), pin)
         check = token.check_otp(_digi2daplug("755224"), counter=0, window=10)
         self.assertTrue(check == 0, check)
-        self.assertTrue(token.check_otp(_digi2daplug("287082"), counter=1,
-                                        window=10) == 1)
+        self.assertTrue(
+            token.check_otp(_digi2daplug("287082"), counter=1, window=10) == 1
+        )
         # The 6th counter:
-        self.assertTrue(token.check_otp(_digi2daplug("287922"), counter=2,
-                                        window=10) == 6)
+        self.assertTrue(
+            token.check_otp(_digi2daplug("287922"), counter=2, window=10) == 6
+        )
         # The tokenclass itself saves the counter to the database
         self.assertTrue(token.token.count == 7, token.token.count)
 
         # successful authentication
-        res = token.authenticate("test"+_digi2daplug("399871"))
+        res = token.authenticate("test" + _digi2daplug("399871"))
         # This is the OTP value of the counter=8
         self.assertTrue(res == (True, 8, None), res)
 
@@ -489,14 +466,12 @@ class DaplugTokenTestCase(MyTestCase):
         self.assertTrue(res[2] == _digi2daplug("755224"), res)
         res = token.get_multi_otp()
         self.assertTrue(res[0] is False, res)
-        token.update({"otpkey": self.otpkey,
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "otplen": 6})
         token.token.count = 0
         res = token.get_multi_otp(count=5)
         self.assertTrue(res[0], res)
         self.assertTrue(res[1] == "OK", res)
-        self.assertTrue(res[2].get("otp").get(1) == _digi2daplug("287082"),
-                        res[2])
+        self.assertTrue(res[2].get("otp").get(1) == _digi2daplug("287082"), res[2])
         self.assertTrue(res[2].get("type") == "daplug", res)
 
         # do some failing otp checks
@@ -508,19 +483,19 @@ class DaplugTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         db_token.set_pin("test")
         token = DaplugTokenClass(db_token)
-        r = token.check_challenge_response(user=None,
-                                           passw=_digi2daplug("123454"))
+        r = token.check_challenge_response(user=None, passw=_digi2daplug("123454"))
         # check empty challenges
         self.assertTrue(r == -1, r)
 
         # create a challenge and match the transaction_id
-        c = Challenge(self.serial1, transaction_id="mytransaction",
-                      challenge="Blah, what now?")
+        c = Challenge(
+            self.serial1, transaction_id="mytransaction", challenge="Blah, what now?"
+        )
         # save challenge to the database
         c.save()
-        r = token.check_challenge_response(user=None,
-                                           passw=_digi2daplug("123454"),
-                                           options={"state": "mytransaction"})
+        r = token.check_challenge_response(
+            user=None, passw=_digi2daplug("123454"), options={"state": "mytransaction"}
+        )
         # The challenge matches, but the OTP does not match!
         self.assertTrue(r == -1, r)
 
@@ -536,8 +511,7 @@ class DaplugTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DaplugTokenClass(db_token)
         set_privacyidea_config("AutoResync", True)
-        token.update({"otpkey": self.otpkey,
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "otplen": 6})
         token.token.count = 0
         token.set_sync_window(10)
         token.set_count_window(5)
@@ -582,8 +556,7 @@ class DaplugTokenTestCase(MyTestCase):
     def test_23_resync(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DaplugTokenClass(db_token)
-        token.update({"otpkey": self.otpkey,
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "otplen": 6})
         token.token.count = 0
         token.set_sync_window(10)
         token.set_count_window(5)
@@ -594,20 +567,17 @@ class DaplugTokenTestCase(MyTestCase):
         self.assertTrue(r is True, r)
         # resync fails
         token.token.count = 0
-        self.assertFalse(token.resync(_digi2daplug("399871"), _digi2daplug(
-            "123456")))
+        self.assertFalse(token.resync(_digi2daplug("399871"), _digi2daplug("123456")))
         # resync fails, the two correct OTP values are outside of the sync
         # window
         token.token.count = 0
         token.set_sync_window(5)
-        self.assertFalse(token.resync(_digi2daplug("399871"), _digi2daplug(
-            "520489")))
+        self.assertFalse(token.resync(_digi2daplug("399871"), _digi2daplug("520489")))
 
     def test_24_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DaplugTokenClass(db_token)
-        token.update({"otpkey": self.otpkey,
-                      "otplen": 6})
+        token.update({"otpkey": self.otpkey, "otplen": 6})
         token.set_pin("test")
         token.token.count = 0
         token.set_sync_window(10)

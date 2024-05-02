@@ -31,19 +31,21 @@ webservice!
 
 import logging
 from .log import log_with
-from ..models import (MachineResolver,
-                      MachineResolverConfig)
+from ..models import MachineResolver, MachineResolverConfig
 from ..api.lib.utils import required
 from ..api.lib.utils import getParam
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.config import get_machine_resolver_class_dict
-from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils import (
+    sanity_name_check,
+    get_data_from_params,
+    fetch_one_resource,
+)
+from privacyidea.lib.utils.export import register_import, register_export
 
 
 log = logging.getLogger(__name__)
-
 
 
 @log_with(log)
@@ -67,16 +69,19 @@ def save_resolver(params):
     """
     # before we create the resolver in the database, we need to check
     # for the name and type.
-    resolvername = getParam(params, 'name', required)
-    resolvertype = getParam(params, 'type', required)
+    resolvername = getParam(params, "name", required)
+    resolvertype = getParam(params, "type", required)
     update_resolver = False
     # check the name
     sanity_name_check(resolvername)
     # check the type
     (class_dict, type_dict) = get_machine_resolver_class_dict()
     if resolvertype not in type_dict.values():
-        raise Exception("machine resolver type : {0!s} "
-                        "not in {1!s}".format(resolvertype, list(type_dict.values())))
+        raise Exception(
+            "machine resolver type : {0!s} " "not in {1!s}".format(
+                resolvertype, list(type_dict.values())
+            )
+        )
 
     # check the name
     resolvers = get_resolver_list(filter_resolver_name=resolvername)
@@ -86,24 +91,27 @@ def save_resolver(params):
             # So we will update this resolver
             update_resolver = True
         else:  # pragma: no cover
-            raise Exception("machine resolver with similar name and other type "
-                            "already exists: %s" % r_name)
+            raise Exception(
+                "machine resolver with similar name and other type "
+                "already exists: %s" % r_name
+            )
 
     # create a dictionary for the ResolverConfig
     resolver_config = get_resolver_config_description(resolvertype)
-    config_description = resolver_config.get(resolvertype,
-                                             {}).get('config',
-                                                     {})
-    data, types, desc = get_data_from_params(params,
-                                             ["name", "type"],
-                                             config_description,
-                                             "machine resolver",
-                                             resolvertype)
+    config_description = resolver_config.get(resolvertype, {}).get("config", {})
+    data, types, desc = get_data_from_params(
+        params, ["name", "type"], config_description, "machine resolver", resolvertype
+    )
 
     # Everything passed. So lets actually create the resolver in the DB
     if update_resolver:
-        resolver_id = MachineResolver.query.filter(func.lower(
-            MachineResolver.name) == resolvername.lower()).first().id
+        resolver_id = (
+            MachineResolver.query.filter(
+                func.lower(MachineResolver.name) == resolvername.lower()
+            )
+            .first()
+            .id
+        )
     else:
         resolver = MachineResolver(params.get("name"), params.get("type"))
         resolver_id = resolver.save()
@@ -111,18 +119,19 @@ def save_resolver(params):
     for key, value in data.items():
         if types.get(key) == "password":
             value = encryptPassword(value)
-        MachineResolverConfig(resolver_id=resolver_id,
-                              Key=key,
-                              Value=value,
-                              Type=types.get(key, ""),
-                              Description=desc.get(key, "")).save()
+        MachineResolverConfig(
+            resolver_id=resolver_id,
+            Key=key,
+            Value=value,
+            Type=types.get(key, ""),
+            Description=desc.get(key, ""),
+        ).save()
     return resolver_id
 
 
 @log_with(log)
-#@cache.memoize(10)
-def get_resolver_list(filter_resolver_type=None,
-                      filter_resolver_name=None):
+# @cache.memoize(10)
+def get_resolver_list(filter_resolver_type=None, filter_resolver_name=None):
     """
     Gets the list of configured machine resolvers from the database
 
@@ -132,19 +141,18 @@ def get_resolver_list(filter_resolver_type=None,
     """
     Resolvers = {}
     if filter_resolver_name:
-        resolvers = MachineResolver.query\
-            .filter(func.lower(MachineResolver.name) ==
-                    filter_resolver_name.lower())
+        resolvers = MachineResolver.query.filter(
+            func.lower(MachineResolver.name) == filter_resolver_name.lower()
+        )
     elif filter_resolver_type:
-        resolvers = MachineResolver.query\
-                            .filter(MachineResolver.rtype ==
-                                    filter_resolver_type)
+        resolvers = MachineResolver.query.filter(
+            MachineResolver.rtype == filter_resolver_type
+        )
     else:
         resolvers = MachineResolver.query.all()
-    
+
     for reso in resolvers:
-        r = {"resolvername": reso.name,
-             "type": reso.rtype}
+        r = {"resolvername": reso.name, "type": reso.rtype}
         # Add resolver config data
         data = {}
         for conf in reso.rconfig:
@@ -173,7 +181,7 @@ def delete_resolver(resolvername):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_config_description(resolver_type):
     """
     get the configuration description of a machine resolver
@@ -198,7 +206,7 @@ def get_resolver_config_description(resolver_type):
     return descriptor
 
 
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_class(resolver_type):
     """
     return the class object for a resolver type
@@ -207,7 +215,7 @@ def get_resolver_class(resolver_type):
     :return: resolver object class
     """
     ret = None
-    
+
     (resolver_clazzes, resolver_types) = get_machine_resolver_class_dict()
 
     if resolver_type in resolver_types.values():
@@ -219,7 +227,7 @@ def get_resolver_class(resolver_type):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_config(resolvername):
     """
     return the complete config of a given resolver from the database
@@ -233,7 +241,7 @@ def get_resolver_config(resolvername):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_resolver_object(resolvername):
     """
     return the resolver object for a given name
@@ -244,16 +252,16 @@ def get_resolver_object(resolvername):
 
     """
     r_obj = None
-    resolver = get_resolver_list(filter_resolver_name=resolvername).get(
-        resolvername)
+    resolver = get_resolver_list(filter_resolver_name=resolvername).get(resolvername)
     if resolver:
         r_obj_class = get_resolver_class(resolver.get("type"))
 
         if r_obj_class is None:  # pragma: no cover
             # This can only happen if a resolver class definition would be
             # removed.
-            log.error("unknown resolver class for type {0!s} ".format(
-                      resolver.get("type")))
+            log.error(
+                "unknown resolver class for type {0!s} ".format(resolver.get("type"))
+            )
         else:
             # create the resolver instance and load the config
             r_obj = r_obj_class(resolvername, resolver.get("data"))
@@ -278,23 +286,26 @@ def pretestresolver(resolvertype, params):
     return success, desc
 
 
-@register_export('machineresolver')
+@register_export("machineresolver")
 def export_machineresolver(name=None):
-    """ Export given or all machineresolver configuration """
+    """Export given or all machineresolver configuration"""
     return get_resolver_list(filter_resolver_name=name)
 
 
-@register_import('machineresolver')
+@register_import("machineresolver")
 def import_machineresolver(data, name=None):
     """Import machineresolver configuration"""
-    log.debug('Import caconnector config: {0!s}'.format(data))
+    log.debug("Import caconnector config: {0!s}".format(data))
     for _res_name, res_data in data.items():
-        if name and name != res_data.get('resolvername'):
+        if name and name != res_data.get("resolvername"):
             continue
         # Todo: unfortunately privacyidea delivers 'resolvername' on reading,
         #  but requires 'name' in save_resolver.
-        res_data['name'] = res_data.pop('resolvername')
-        res_data.update(res_data.pop('data'))
+        res_data["name"] = res_data.pop("resolvername")
+        res_data.update(res_data.pop("data"))
         rid = save_resolver(res_data)
-        log.info('Import of caconnector "{0!s}" finished,'
-                 ' id: {1!s}'.format(res_data['name'], rid))
+        log.info(
+            'Import of caconnector "{0!s}" finished,' " id: {1!s}".format(
+                res_data["name"], rid
+            )
+        )

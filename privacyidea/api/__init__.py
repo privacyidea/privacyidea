@@ -27,4 +27,3 @@ Policies are rules how privacyidea behaves and which user and administrator
 is allowed to do what.
 
 """
-

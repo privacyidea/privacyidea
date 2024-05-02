@@ -1,10 +1,16 @@
 """
 This file contains the tests for the module lib/framework.py
 """
+
 from flask import current_app, g
 
 from privacyidea.app import create_app
-from privacyidea.lib.framework import get_app_config, get_app_config_value, get_app_local_store, get_request_local_store
+from privacyidea.lib.framework import (
+    get_app_config,
+    get_app_config_value,
+    get_app_local_store,
+    get_request_local_store,
+)
 from tests.base import MyTestCase
 
 

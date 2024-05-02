@@ -29,6 +29,7 @@ from flask.cli import AppGroup
 from flask import current_app
 from flask_migrate import stamp as fm_stamp
 import gnupg
+
 try:
     from importlib import metadata
 except ImportError:  # Python 3.7
@@ -37,15 +38,25 @@ except ImportError:  # Python 3.7
 from privacyidea.models import db
 from privacyidea.lib.security.default import DefaultSecurityModule
 
-setup_cli = AppGroup("setup", short_help="privacyIDEA server setup",
-                     help="Commands to setup the privacyIDEA server for production")
+setup_cli = AppGroup(
+    "setup",
+    short_help="privacyIDEA server setup",
+    help="Commands to setup the privacyIDEA server for production",
+)
 
 
-@setup_cli.command("encrypt_enckey", short_help="Additionally encrypt the encryption key")
+@setup_cli.command(
+    "encrypt_enckey", short_help="Additionally encrypt the encryption key"
+)
 @click.argument("encfile", type=click.File("rb"))
-@click.option("-o", "--outfile", type=click.File("w"), default=sys.stdout,
-              help="The file to which the encrypted encryption key will be "
-                   "written to (default: stdout)")
+@click.option(
+    "-o",
+    "--outfile",
+    type=click.File("w"),
+    default=sys.stdout,
+    help="The file to which the encrypted encryption key will be "
+    "written to (default: stdout)",
+)
 @click.password_option()
 def encrypt_enckey(encfile, outfile, password):
     """
@@ -65,12 +76,11 @@ def encrypt_enckey(encfile, outfile, password):
     enckey = encfile.read()
     res = DefaultSecurityModule.password_encrypt(enckey, password)
     outfile.write(res)
-    outfile.write('\n')
+    outfile.write("\n")
 
 
 @setup_cli.command("create_enckey")
-@click.option("-e", "--enckey_b64", type=str,
-              help="base64 encoded plain text key")
+@click.option("-e", "--enckey_b64", type=str, help="base64 encoded plain text key")
 @click.pass_context
 def create_enckey(ctx, enckey_b64):
     """
@@ -82,15 +92,19 @@ def create_enckey(ctx, enckey_b64):
     """
     enc_file = pathlib.Path(current_app.config.get("PI_ENCFILE"))
     if enc_file.is_file():
-        click.secho(f"The file \n\t{enc_file}\nalready exist. We do not overwrite it!",
-                    fg="yellow")
+        click.secho(
+            f"The file \n\t{enc_file}\nalready exist. We do not overwrite it!",
+            fg="yellow",
+        )
         ctx.exit(1)
     with open(enc_file, "wb") as f:
         if enckey_b64 is None:
             f.write(DefaultSecurityModule.random(96))
         else:
-            click.secho("Warning: Passing enckey via cli input is considered harmful.",
-                        fg="yellow")
+            click.secho(
+                "Warning: Passing enckey via cli input is considered harmful.",
+                fg="yellow",
+            )
             bin_enckey = base64.b64decode(enckey_b64)
             if len(bin_enckey) != 96:
                 click.secho("Error: enckey must be 96 bytes length", fg="red")
@@ -103,17 +117,24 @@ def create_enckey(ctx, enckey_b64):
 
 
 @setup_cli.command("create_pgp_keys")
-@click.option("-f", "--force", is_flag=True,
-              help="Overwrite existing PGP keys")
-@click.option("-k", "--keysize", type=int, default=2048, show_default=True,
-              help="Size of the generated PGP keys (in bits)")
+@click.option("-f", "--force", is_flag=True, help="Overwrite existing PGP keys")
+@click.option(
+    "-k",
+    "--keysize",
+    type=int,
+    default=2048,
+    show_default=True,
+    help="Size of the generated PGP keys (in bits)",
+)
 @click.pass_context
 def create_pgp_keys(ctx, keysize, force):
     """
     Generate PGP keys to allow encrypted token import.
     """
     # TODO: change owner and permission of gpg directory
-    gpg_home = pathlib.Path(current_app.config.get("PI_GNUPG_HOME", "/etc/privacyidea/gpg"))
+    gpg_home = pathlib.Path(
+        current_app.config.get("PI_GNUPG_HOME", "/etc/privacyidea/gpg")
+    )
     if not gpg_home.exists():
         try:
             gpg_home.mkdir(parents=True)
@@ -123,19 +144,25 @@ def create_pgp_keys(ctx, keysize, force):
     gpg = gnupg.GPG(gnupghome=gpg_home)
     keys = gpg.list_keys(True)
     if len(keys) and not force:
-        click.secho("There are already private keys. If you want to generate a "
-                    "new private key, use the parameter --force.", fg="yellow")
+        click.secho(
+            "There are already private keys. If you want to generate a "
+            "new private key, use the parameter --force.",
+            fg="yellow",
+        )
         click.echo(f"uids: {keys[0]['uids']}\t fingerprint: {keys[0]['fingerprint']}")
         ctx.exit(1)
     else:
         click.secho("Overwriting existing PGP keys!", fg="yellow")
-    input_data = gpg.gen_key_input(key_type="RSA", key_length=keysize,
-                                   name_real="privacyIDEA Server",
-                                   name_comment="Import")
+    input_data = gpg.gen_key_input(
+        key_type="RSA",
+        key_length=keysize,
+        name_real="privacyIDEA Server",
+        name_comment="Import",
+    )
     inputs = input_data.split("\n")
     if inputs[-2] == "%commit":
-        del (inputs[-1])
-        del (inputs[-1])
+        del inputs[-1]
+        del inputs[-1]
         inputs.append("%no-protection")
         inputs.append("%commit")
         inputs.append("")
@@ -144,8 +171,14 @@ def create_pgp_keys(ctx, keysize, force):
 
 
 @setup_cli.command("create_audit_keys")
-@click.option("-k", "--keysize", type=int, default=2048, show_default=True,
-              help="Create keys with the given size in bits")
+@click.option(
+    "-k",
+    "--keysize",
+    type=int,
+    default=2048,
+    show_default=True,
+    help="Create keys with the given size in bits",
+)
 @click.pass_context
 def create_audit_keys(ctx, keysize):
     """
@@ -156,16 +189,19 @@ def create_audit_keys(ctx, keysize):
     """
     priv_key = pathlib.Path(current_app.config.get("PI_AUDIT_KEY_PRIVATE"))
     if priv_key.is_file():
-        click.secho(f"The file \n\t{priv_key}\nalready exist. We do not overwrite it!",
-                    fg="yellow")
+        click.secho(
+            f"The file \n\t{priv_key}\nalready exist. We do not overwrite it!",
+            fg="yellow",
+        )
         ctx.exit(1)
-    new_key = rsa.generate_private_key(public_exponent=65537,
-                                       key_size=keysize,
-                                       backend=default_backend())
+    new_key = rsa.generate_private_key(
+        public_exponent=65537, key_size=keysize, backend=default_backend()
+    )
     priv_pem = new_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.NoEncryption())
+        encryption_algorithm=serialization.NoEncryption(),
+    )
     with open(priv_key, "wb") as f:
         f.write(priv_pem)
 
@@ -173,7 +209,8 @@ def create_audit_keys(ctx, keysize):
     public_key = new_key.public_key()
     pub_pem = public_key.public_bytes(
         encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
     with open(pub_key, "wb") as f:
         f.write(pub_pem)
 
@@ -184,8 +221,9 @@ def create_audit_keys(ctx, keysize):
 
 
 @setup_cli.command("create_tables")
-@click.option("-s", "--stamp", is_flag=True,
-              help='Stamp database to current head revision.')
+@click.option(
+    "-s", "--stamp", is_flag=True, help="Stamp database to current head revision."
+)
 def create_tables(stamp=False):
     """
     Initially create the tables in the database. The database must exist
@@ -195,16 +233,23 @@ def create_tables(stamp=False):
     db.create_all()
     if stamp:
         # get the path to the migration directory from the distribution
-        p = [x.locate() for x in metadata.files('privacyidea') if
-             'migrations/env.py' in str(x)]
+        p = [
+            x.locate()
+            for x in metadata.files("privacyidea")
+            if "migrations/env.py" in str(x)
+        ]
         migration_dir = os.path.dirname(os.path.abspath(p[0]))
         fm_stamp(directory=migration_dir)
     db.session.commit()
 
 
 @setup_cli.command("drop_tables")
-@click.option("-d", "--dropit", type=str,
-              help="If You are sure to drop the tables, pass the parameter \"yes\"")
+@click.option(
+    "-d",
+    "--dropit",
+    type=str,
+    help='If You are sure to drop the tables, pass the parameter "yes"',
+)
 def drop_tables(dropit):
     """
     This drops all the privacyIDEA database tables.
@@ -220,8 +265,6 @@ def drop_tables(dropit):
         db.reflect()
         table = db.metadata.tables.get(table_name, None)
         if table is not None:
-            db.metadata.drop_all(bind=db.engine,
-                                 tables=[table],
-                                 checkfirst=True)
+            db.metadata.drop_all(bind=db.engine, tables=[table], checkfirst=True)
     else:
         click.echo("Not dropping anything!")

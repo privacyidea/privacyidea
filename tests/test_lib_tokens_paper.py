@@ -15,7 +15,7 @@ class PaperTokenTestCase(MyTestCase):
     serial1 = "ser1"
 
     # add_user, get_user, reset, set_user_identifiers
-    
+
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="paper")
         db_token.save()
@@ -48,8 +48,7 @@ class PaperTokenTestCase(MyTestCase):
         self.assertTrue("otps" in init_detail)
 
     def test_04_get_init_details_with_key(self):
-        token = init_token({"type": "paper",
-                            "otpkey": OTPKEY})
+        token = init_token({"type": "paper", "otpkey": OTPKEY})
         init_detail = token.get_init_detail()
         self.assertTrue("otps" in init_detail)
         otps = init_detail.get("otps")

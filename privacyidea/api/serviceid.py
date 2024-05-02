@@ -17,8 +17,8 @@
 #
 __doc__ = """The serviceid endpoint allows administrators to manage service ID definitions.
 """
-from flask import (Blueprint, request)
-from .lib.utils import (getParam, send_result)
+from flask import Blueprint, request
+from .lib.utils import getParam, send_result
 from ..lib.log import log_with
 from privacyidea.lib.serviceid import get_serviceids, delete_serviceid, set_serviceid
 from privacyidea.lib.event import event
@@ -32,10 +32,10 @@ import logging
 log = logging.getLogger(__name__)
 
 
-serviceid_blueprint = Blueprint('serviceid_blueprint', __name__)
+serviceid_blueprint = Blueprint("serviceid_blueprint", __name__)
 
 
-@serviceid_blueprint.route('/<name>', methods=['POST'])
+@serviceid_blueprint.route("/<name>", methods=["POST"])
 @prepolicy(check_base_action, request, ACTION.SERVICEID_ADD)
 @event("serviceid_add", request, g)
 @log_with(log)
@@ -87,12 +87,12 @@ def set_serviceid_api(name):
 
     r = set_serviceid(name, description)
 
-    g.audit_object.log({'success': r > 0, 'info':  name})
+    g.audit_object.log({"success": r > 0, "info": name})
     return send_result(r)
 
 
-@serviceid_blueprint.route('/<name>', methods=['GET'])
-@serviceid_blueprint.route('/', methods=['GET'])
+@serviceid_blueprint.route("/<name>", methods=["GET"])
+@serviceid_blueprint.route("/", methods=["GET"])
 @prepolicy(check_base_action, request, ACTION.SERVICEID_LIST)
 @event("serviceid_list", request, g)
 @log_with(log)
@@ -137,13 +137,12 @@ def get_serviceid_api(name=None):
     g.audit_object.log({"success": True})
     r_serviceids = {}
     for si in sids:
-        r_serviceids[si.name] = {"description": si.Description,
-                                 "id": si.id}
+        r_serviceids[si.name] = {"description": si.Description, "id": si.id}
 
     return send_result(r_serviceids)
 
 
-@serviceid_blueprint.route('/<name>', methods=['DELETE'])
+@serviceid_blueprint.route("/<name>", methods=["DELETE"])
 @prepolicy(check_base_action, request, ACTION.SERVICEID_DELETE)
 @event("serviceid_delete", request, g)
 @log_with(log)
@@ -182,7 +181,6 @@ def delete_serviceid_api(name=None):
 
     """
     ret = delete_serviceid(name)
-    g.audit_object.log({"success": True,
-                        "info": name})
+    g.audit_object.log({"success": True, "info": name})
 
     return send_result(1)

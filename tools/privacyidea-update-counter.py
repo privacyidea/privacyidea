@@ -48,18 +48,27 @@ def read_counter_file(import_file):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("-c", "--config",
-                        help="privacyIDEA config file. We only need the SQLALCHEMY_DATABASE_URI.",
-                        required=True)
-    parser.add_argument('file',
-                        help='The CSV file with the updated counters. The file should contain one '
-                             'serial and counter per line split by a comma. '
-                             'You can specify "-" to read from stdin.',
-                        type=argparse.FileType())
-    parser.add_argument("-i", "--increase-only",
-                        help="Only update the token counter, if the new counter value "
-                             "is bigger than the existing in the database.",
-                        action='store_const', const=True)
+    parser.add_argument(
+        "-c",
+        "--config",
+        help="privacyIDEA config file. We only need the SQLALCHEMY_DATABASE_URI.",
+        required=True,
+    )
+    parser.add_argument(
+        "file",
+        help="The CSV file with the updated counters. The file should contain one "
+        "serial and counter per line split by a comma. "
+        'You can specify "-" to read from stdin.',
+        type=argparse.FileType(),
+    )
+    parser.add_argument(
+        "-i",
+        "--increase-only",
+        help="Only update the token counter, if the new counter value "
+        "is bigger than the existing in the database.",
+        action="store_const",
+        const=True,
+    )
     args = parser.parse_args()
 
     # Parse data
@@ -84,7 +93,11 @@ def main():
                 # The counter in the database is bigger
                 continue
         sys.stdout.write("\r {0!s}: {1!s}     ".format(processed, count[0]))
-        r = privacyidea_session.query(Token).filter_by(serial=count[0]).update({"count": count[1]})
+        r = (
+            privacyidea_session.query(Token)
+            .filter_by(serial=count[0])
+            .update({"count": count[1]})
+        )
         if r > 0:
             # r==0, if the token was not found!
             updated += 1
@@ -101,5 +114,5 @@ def main():
     print("{0!s:6} tokens not found.".format(not_found))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

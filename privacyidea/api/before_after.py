@@ -25,7 +25,7 @@ Flask endpoints.
 It also contains the error handlers.
 """
 
-from .lib.utils import (send_error, get_all_params)
+from .lib.utils import send_error, get_all_params
 from ..lib.framework import get_app_config_value
 from ..lib.user import get_user_from_param
 import logging
@@ -36,8 +36,13 @@ from flask import current_app
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.lifecycle import call_finalizers
-from privacyidea.api.auth import (user_required, admin_required, jwtauth)
-from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
+from privacyidea.api.auth import user_required, admin_required, jwtauth
+from privacyidea.lib.config import (
+    get_from_config,
+    SYSCONF,
+    ensure_no_config_object,
+    get_privacyidea_node,
+)
 from privacyidea.lib.token import get_token_type, get_token_owner
 from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.validate import validate_blueprint
@@ -67,9 +72,13 @@ from .monitoring import monitoring_blueprint
 from .tokengroup import tokengroup_blueprint
 from .serviceid import serviceid_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
-from ..lib.error import (privacyIDEAError,
-                         AuthError, UserError,
-                         PolicyError, ResourceNotFoundError)
+from ..lib.error import (
+    privacyIDEAError,
+    AuthError,
+    UserError,
+    PolicyError,
+    ResourceNotFoundError,
+)
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
 from privacyidea.lib.user import User
 import datetime
@@ -181,11 +190,12 @@ def before_request():
     g.audit_object = getAudit(current_app.config, g.startdate)
     g.event_config = EventConfiguration()
     # access_route contains the ip adresses of all clients, hops and proxies.
-    g.client_ip = get_client_ip(request,
-                                get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
-    privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
+    privacyidea_server = get_app_config_value(
+        "PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host)
+    )
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
     if serial and not "*" in serial:
@@ -212,21 +222,27 @@ def before_request():
         audit_resolver = getParam(request.all_data, "resolver")
         audit_username = getParam(request.all_data, "user")
 
-    ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
-    g.audit_object.log({"success": False,
-                        "serial": serial,
-                        "user": audit_username,
-                        "realm": audit_realm,
-                        "resolver": audit_resolver,
-                        "token_type": tokentype,
-                        "client": g.client_ip,
-                        "user_agent": ua_name,
-                        "user_agent_version": ua_version,
-                        "privacyidea_server": privacyidea_server,
-                        "action": "{0!s} {1!s}".format(request.method, request.url_rule),
-                        "action_detail": "",
-                        "thread_id": "{0!s}".format(threading.current_thread().ident),
-                        "info": ""})
+    ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(
+        request.user_agent.string
+    )
+    g.audit_object.log(
+        {
+            "success": False,
+            "serial": serial,
+            "user": audit_username,
+            "realm": audit_realm,
+            "resolver": audit_resolver,
+            "token_type": tokentype,
+            "client": g.client_ip,
+            "user_agent": ua_name,
+            "user_agent_version": ua_version,
+            "privacyidea_server": privacyidea_server,
+            "action": "{0!s} {1!s}".format(request.method, request.url_rule),
+            "action_detail": "",
+            "thread_id": "{0!s}".format(threading.current_thread().ident),
+            "info": "",
+        }
+    )
 
     if g.logged_in_user.get("role") == "admin":
         # An administrator is calling this API
@@ -273,7 +289,7 @@ def after_request(response):
     :return: The response
     """
     # No caching!
-    response.headers['Cache-Control'] = 'no-cache'
+    response.headers["Cache-Control"] = "no-cache"
     return response
 
 
@@ -294,20 +310,18 @@ def after_request(response):
 @serviceid_blueprint.app_errorhandler(AuthError)
 def auth_error(error):
     if "audit_object" in g:
-        message = ''
+        message = ""
 
-        if hasattr(error, 'message'):
+        if hasattr(error, "message"):
             message = error.message
 
-        if hasattr(error, 'details'):
+        if hasattr(error, "details"):
             if error.details:
-                if 'message' in error.details:
-                    message = '{}|{}'.format(message, error.details['message'])
+                if "message" in error.details:
+                    message = "{}|{}".format(message, error.details["message"])
 
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
-    return send_error(error.message,
-                      error_code=error.id,
-                      details=error.details), 401
+    return send_error(error.message, error_code=error.id, details=error.details), 401
 
 
 @system_blueprint.errorhandler(PolicyError)

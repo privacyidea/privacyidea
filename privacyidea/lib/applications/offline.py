@@ -29,7 +29,10 @@ from passlib.hash import pbkdf2_sha512
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.config import get_prepend_pin
 from privacyidea.lib.policy import TYPE
-from privacyidea.lib.utils import get_plugin_info_from_useragent, get_computer_name_from_user_agent
+from privacyidea.lib.utils import (
+    get_plugin_info_from_useragent,
+    get_computer_name_from_user_agent,
+)
 
 log = logging.getLogger(__name__)
 ROUNDS = 6549
@@ -53,6 +56,7 @@ class MachineApplication(MachineApplicationBase):
       * count: is the number of OTP values returned
 
     """
+
     application_name = "offline"
 
     @staticmethod
@@ -69,7 +73,9 @@ class MachineApplication(MachineApplicationBase):
         if token_obj.type.lower() == "webauthn":
             computer_name = get_computer_name_from_user_agent(user_agent)
             if computer_name is None:
-                raise ParameterError("Unable to generate refilltoken for a WebAuthn token without a computer name")
+                raise ParameterError(
+                    "Unable to generate refilltoken for a WebAuthn token without a computer name"
+                )
             else:
                 key = "refilltoken_" + computer_name
         else:
@@ -100,8 +106,7 @@ class MachineApplication(MachineApplicationBase):
         for key, otp in otps.items():
             # Return the hash of OTP PIN and OTP values
             otppw = otppin + otp if prepend_pin else otp + otppin
-            otps[key] = pbkdf2_sha512.using(
-                rounds=rounds, salt_size=10).hash(otppw)
+            otps[key] = pbkdf2_sha512.using(rounds=rounds, salt_size=10).hash(otppw)
         # We do not disable the token, so if all offline OTP values
         # are used, the token can be used to authenticate online again.
         # token_obj.enable(False)
@@ -145,20 +150,23 @@ class MachineApplication(MachineApplicationBase):
             # we sent to the client. Assume the client then requests a refill with that exact OTP value.
             # Then, we need to respond with a refill of one OTP value, as the client has consumed one OTP value.
             counter_diff = matching_count - first_offline_counter + 1
-            otps = MachineApplication.get_offline_otps(token_obj, otppin, counter_diff, rounds)
-            token_obj.add_tokeninfo(key="offline_counter",
-                                    value=count)
+            otps = MachineApplication.get_offline_otps(
+                token_obj, otppin, counter_diff, rounds
+            )
+            token_obj.add_tokeninfo(key="offline_counter", value=count)
         elif token_obj.type.lower() == "webauthn":
             pass
         return otps
 
     @staticmethod
-    def get_authentication_item(token_type,
-                                serial,
-                                challenge=None,
-                                options=None,
-                                filter_param=None,
-                                user_agent=None):
+    def get_authentication_item(
+        token_type,
+        serial,
+        challenge=None,
+        options=None,
+        filter_param=None,
+        user_agent=None,
+    ):
         """
         :param token_type: the type of the token. At the moment
                            we support "HOTP" tokens and "WebAuthn" tokens.
@@ -186,15 +194,19 @@ class MachineApplication(MachineApplicationBase):
                 if "username" in user_info:
                     ret["user"] = ret["username"] = user_info.get("username")
 
-            ret["refilltoken"] = MachineApplication.generate_new_refilltoken(token_obj, user_agent)
+            ret["refilltoken"] = MachineApplication.generate_new_refilltoken(
+                token_obj, user_agent
+            )
 
             # token specific data
             if token_type.lower() == "webauthn":
                 # return the pubKey, rpId and the credentialId (contained in the otpkey) to allow the machine to
                 # verify the WebAuthn assertions signed with the token
-                ret["response"] = {"pubKey": token_obj.get_tokeninfo("pubKey"),
-                                   "credentialId": token_obj.decrypt_otpkey(),
-                                   "rpId": token_obj.get_tokeninfo("relying_party_id")}
+                ret["response"] = {
+                    "pubKey": token_obj.get_tokeninfo("pubKey"),
+                    "credentialId": token_obj.decrypt_otpkey(),
+                    "rpId": token_obj.get_tokeninfo("relying_party_id"),
+                }
             elif token_type.lower() == "hotp":
                 if password:
                     _r, otppin, _ = token_obj.split_pin_pass(password)
@@ -203,13 +215,17 @@ class MachineApplication(MachineApplicationBase):
                 else:
                     otppin = ""
 
-                ret["response"] = MachineApplication.get_offline_otps(token_obj,
-                                                                      otppin,
-                                                                      int(options.get("count", 100)),
-                                                                      int(options.get("rounds", ROUNDS)))
+                ret["response"] = MachineApplication.get_offline_otps(
+                    token_obj,
+                    otppin,
+                    int(options.get("count", 100)),
+                    int(options.get("rounds", ROUNDS)),
+                )
         else:
-            log.info("Token %r, type %r is not supported by "
-                     "OFFLINE application module" % (serial, token_type))
+            log.info(
+                "Token %r, type %r is not supported by "
+                "OFFLINE application module" % (serial, token_type)
+            )
 
         return ret
 
@@ -218,8 +234,8 @@ class MachineApplication(MachineApplicationBase):
         """
         returns a dictionary with a list of required and optional options
         """
-        options = {"hotp":
-                       {'count': {'type': TYPE.STRING},
-                        'rounds': {'type': TYPE.STRING}},
-                   "webauthn": {}}
+        options = {
+            "hotp": {"count": {"type": TYPE.STRING}, "rounds": {"type": TYPE.STRING}},
+            "webauthn": {},
+        }
         return options

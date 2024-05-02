@@ -25,8 +25,11 @@ class PIGetSerialTestCase(CliTestCase):
     def test_01_pi_get_serial_help(self):
         runner = self.app.test_cli_runner()
         result = runner.invoke(byotp, ["-h"])
-        self.assertIn("This searches the list of the specified tokens for the given OTP value.",
-                      result.output, result)
+        self.assertIn(
+            "This searches the list of the specified tokens for the given OTP value.",
+            result.output,
+            result,
+        )
         self.assertIn("--assigned", result.output, result)
         self.assertIn("--unassigned", result.output, result)
         self.assertIn("--window", result.output, result)

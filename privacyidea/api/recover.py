@@ -23,25 +23,25 @@ user managed in privacyIDEA.
 
 The methods are also tested in the file tests/test_api_register.py
 """
-from flask import (Blueprint, request, g, current_app)
+from flask import Blueprint, request, g, current_app
 from .lib.utils import send_result, getParam
 from .lib.utils import required
 from privacyidea.lib.user import get_user_from_param
 import logging
-from privacyidea.lib.passwordreset import (create_recoverycode,
-                                           check_recoverycode)
+from privacyidea.lib.passwordreset import create_recoverycode, check_recoverycode
 from privacyidea.lib.policy import ACTION
 from privacyidea.api.lib.prepolicy import prepolicy, check_anonymous_user
 
 
 log = logging.getLogger(__name__)
 
-recover_blueprint = Blueprint('recover_blueprint', __name__)
+recover_blueprint = Blueprint("recover_blueprint", __name__)
 
 
 # The before and after methods are the same as in the validate endpoint
 
-@recover_blueprint.route('', methods=['POST'])
+
+@recover_blueprint.route("", methods=["POST"])
 @prepolicy(check_anonymous_user, request, action=ACTION.PASSWORDRESET)
 def get_recover_code():
     """
@@ -57,12 +57,11 @@ def get_recover_code():
     user_obj = get_user_from_param(param, required)
     email = getParam(param, "email", required)
     r = create_recoverycode(user_obj, email, base_url=request.base_url)
-    g.audit_object.log({"success": r,
-                        "info": "{0!s}".format(user_obj)})
+    g.audit_object.log({"success": r, "info": "{0!s}".format(user_obj)})
     return send_result(r)
 
 
-@recover_blueprint.route('/reset', methods=['POST'])
+@recover_blueprint.route("/reset", methods=["POST"])
 @prepolicy(check_anonymous_user, request, action=ACTION.PASSWORDRESET)
 def reset_password():
     """
@@ -82,6 +81,5 @@ def reset_password():
     if check_recoverycode(user_obj, recoverycode):
         # set password
         r = user_obj.update_user_info({"password": password})
-        g.audit_object.log({"success": r,
-                            "info": "{0!s}".format(user_obj)})
+        g.audit_object.log({"success": r, "info": "{0!s}".format(user_obj)})
     return send_result(r)

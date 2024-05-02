@@ -24,15 +24,16 @@ hosts file or an Active Directory.
 
 The code of this module is tested in tests/test_api_machineresolver.py
 """
-from flask import (Blueprint,
-                   request)
-from .lib.utils import (getParam,
-                        optional,
-                        required,
-                        send_result)
+
+from flask import Blueprint, request
+from .lib.utils import getParam, optional, required, send_result
 from ..lib.log import log_with
-from ..lib.machineresolver import (get_resolver_list, save_resolver, delete_resolver,
-                           pretestresolver)
+from ..lib.machineresolver import (
+    get_resolver_list,
+    save_resolver,
+    delete_resolver,
+    pretestresolver,
+)
 from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
@@ -42,10 +43,10 @@ from ..lib.policy import ACTION
 log = logging.getLogger(__name__)
 
 
-machineresolver_blueprint = Blueprint('machineresolver_blueprint', __name__)
+machineresolver_blueprint = Blueprint("machineresolver_blueprint", __name__)
 
 
-@machineresolver_blueprint.route('/', methods=['GET'])
+@machineresolver_blueprint.route("/", methods=["GET"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.MACHINERESOLVERREAD)
 def get_resolvers():
@@ -60,7 +61,7 @@ def get_resolvers():
     return send_result(res)
 
 
-@machineresolver_blueprint.route('/<resolver>', methods=['POST'])
+@machineresolver_blueprint.route("/<resolver>", methods=["POST"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.MACHINERESOLVERWRITE)
 def set_resolver(resolver=None):
@@ -93,7 +94,7 @@ def set_resolver(resolver=None):
     return send_result(res)
 
 
-@machineresolver_blueprint.route('/<resolver>', methods=['DELETE'])
+@machineresolver_blueprint.route("/<resolver>", methods=["DELETE"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.MACHINERESOLVERDELETE)
 def delete_resolver_api(resolver=None):
@@ -104,13 +105,12 @@ def delete_resolver_api(resolver=None):
     :return: json with success or fail
     """
     res = delete_resolver(resolver)
-    g.audit_object.log({"success": res,
-                        "info": resolver})
+    g.audit_object.log({"success": res, "info": resolver})
 
     return send_result(res)
 
 
-@machineresolver_blueprint.route('/<resolver>', methods=['GET'])
+@machineresolver_blueprint.route("/<resolver>", methods=["GET"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.MACHINERESOLVERREAD)
 def get_resolver(resolver=None):
@@ -122,13 +122,12 @@ def get_resolver(resolver=None):
     """
     res = get_resolver_list(filter_resolver_name=resolver)
 
-    g.audit_object.log({"success": True,
-                        "info": resolver})
+    g.audit_object.log({"success": True, "info": resolver})
 
     return send_result(res)
 
 
-@machineresolver_blueprint.route('/test', methods=["POST"])
+@machineresolver_blueprint.route("/test", methods=["POST"])
 @log_with(log)
 def test_resolver():
     """
@@ -142,4 +141,3 @@ def test_resolver():
     rtype = getParam(param, "type", required)
     success, desc = pretestresolver(rtype, param)
     return send_result(success, details={"description": desc})
-

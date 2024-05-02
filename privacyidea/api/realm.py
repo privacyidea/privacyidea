@@ -39,18 +39,12 @@ You will only be able to see and use user object, that are contained in a realm.
 
 The code of this module is tested in tests/test_api_system.py
 """
-from flask import (Blueprint,
-                   request, current_app)
-from .lib.utils import (getParam,
-                        required,
-                        send_result, get_priority_from_param)
+from flask import Blueprint, request, current_app
+from .lib.utils import getParam, required, send_result, get_priority_from_param
 from ..lib.log import log_with
 from ..lib.realm import get_realms
 
-from ..lib.realm import (set_default_realm,
-                         get_default_realm,
-                         set_realm,
-                         delete_realm)
+from ..lib.realm import set_default_realm, get_default_realm, set_realm, delete_realm
 from ..lib.policy import ACTION, Match
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.utils import reduce_realms
@@ -62,8 +56,8 @@ import logging
 
 log = logging.getLogger(__name__)
 
-realm_blueprint = Blueprint('realm_blueprint', __name__)
-defaultrealm_blueprint = Blueprint('defaultrealm_blueprint', __name__)
+realm_blueprint = Blueprint("realm_blueprint", __name__)
+defaultrealm_blueprint = Blueprint("defaultrealm_blueprint", __name__)
 
 
 # ----------------------------------------------------------------
@@ -72,7 +66,8 @@ defaultrealm_blueprint = Blueprint('defaultrealm_blueprint', __name__)
 #
 #
 
-@realm_blueprint.route('/<realm>', methods=['POST'])
+
+@realm_blueprint.route("/<realm>", methods=["POST"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
 def set_realm_api(realm=None):
@@ -137,17 +132,21 @@ def set_realm_api(realm=None):
     if isinstance(resolvers, list):
         resolver_list = resolvers
     else:
-        resolver_list = resolvers.split(',')
-    resolvers = [{'name': res, 'priority': priority.get(res, None)} for res in resolver_list]
+        resolver_list = resolvers.split(",")
+    resolvers = [
+        {"name": res, "priority": priority.get(res, None)} for res in resolver_list
+    ]
     (added, failed) = set_realm(realm, resolvers=resolvers)
-    g.audit_object.log({'success': not failed,
-                        'info':  "realm: {0!r}, resolvers: {1!r}".format(realm,
-                                                                         resolvers)})
-    return send_result({"added": added,
-                        "failed": failed})
+    g.audit_object.log(
+        {
+            "success": not failed,
+            "info": "realm: {0!r}, resolvers: {1!r}".format(realm, resolvers),
+        }
+    )
+    return send_result({"added": added, "failed": failed})
 
 
-@realm_blueprint.route('/', methods=['GET'])
+@realm_blueprint.route("/", methods=["GET"])
 @log_with(log)
 def get_realms_api():
     """
@@ -196,17 +195,20 @@ def get_realms_api():
     g.audit_object.log({"success": True})
     # This endpoint is called by admins anyways
     luser = g.logged_in_user
-    policies = Match.generic(g, scope=luser.get("role", ROLE.ADMIN),
-                             adminrealm=luser.get("realm"),
-                             adminuser=luser.get("username"),
-                             active=True,
-                             extended_condition_check=CONDITION_CHECK.DO_NOT_CHECK_AT_ALL).policies()
+    policies = Match.generic(
+        g,
+        scope=luser.get("role", ROLE.ADMIN),
+        adminrealm=luser.get("realm"),
+        adminuser=luser.get("username"),
+        active=True,
+        extended_condition_check=CONDITION_CHECK.DO_NOT_CHECK_AT_ALL,
+    ).policies()
     realms = reduce_realms(all_realms, policies)
 
     return send_result(realms)
 
 
-@realm_blueprint.route('/superuser', methods=['GET'])
+@realm_blueprint.route("/superuser", methods=["GET"])
 @log_with(log)
 def get_super_user_realms():
     """
@@ -249,7 +251,7 @@ def get_super_user_realms():
     return send_result(superuser_realms)
 
 
-@defaultrealm_blueprint.route('/<realm>', methods=['POST'])
+@defaultrealm_blueprint.route("/<realm>", methods=["POST"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.RESOLVERWRITE)
 def set_default_realm_api(realm=None):
@@ -262,12 +264,11 @@ def set_default_realm_api(realm=None):
     """
     realm = realm.lower().strip()
     r = set_default_realm(realm)
-    g.audit_object.log({"success": r,
-                        "info": realm})
+    g.audit_object.log({"success": r, "info": realm})
     return send_result(r)
 
 
-@defaultrealm_blueprint.route('', methods=['DELETE'])
+@defaultrealm_blueprint.route("", methods=["DELETE"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
 def delete_default_realm_api(realm=None):
@@ -291,12 +292,11 @@ def delete_default_realm_api(realm=None):
         }
     """
     r = set_default_realm("")
-    g.audit_object.log({"success": r,
-                        "info": ""})
+    g.audit_object.log({"success": r, "info": ""})
     return send_result(r)
 
 
-@defaultrealm_blueprint.route('', methods=['GET'])
+@defaultrealm_blueprint.route("", methods=["GET"])
 @log_with(log)
 def get_default_realm_api():
     """
@@ -333,15 +333,14 @@ def get_default_realm_api():
     if defRealm:
         res = get_realms(defRealm)
 
-    g.audit_object.log({"success": True,
-                        "info": defRealm})
+    g.audit_object.log({"success": True, "info": defRealm})
 
     return send_result(res)
 
 
-@realm_blueprint.route('/<realm>', methods=['DELETE'])
+@realm_blueprint.route("/<realm>", methods=["DELETE"])
 @log_with(log)
-#@system_blueprint.route('/delRealm', methods=['POST', 'DELETE'])
+# @system_blueprint.route('/delRealm', methods=['POST', 'DELETE'])
 @prepolicy(check_base_action, request, ACTION.RESOLVERDELETE)
 def delete_realm_api(realm=None):
     """
@@ -378,7 +377,6 @@ def delete_realm_api(realm=None):
 
     """
     ret = delete_realm(realm)
-    g.audit_object.log({"success": ret,
-                        "info": realm})
+    g.audit_object.log({"success": ret, "info": realm})
 
     return send_result(ret)

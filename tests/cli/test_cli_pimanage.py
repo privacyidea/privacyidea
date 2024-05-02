@@ -28,14 +28,14 @@ class PIManageAdminTestCase(CliTestCase):
     def test_01_pimanage_admin_help(self):
         runner = self.app.test_cli_runner()
         result = runner.invoke(pi_manage, ["admin"])
-        self.assertIn("Register a new administrator in the database.",
-                      result.output, result)
-        self.assertIn("Change the email address or the password of an",
-                      result.output, result)
-        self.assertIn("Delete an existing administrator.",
-                      result.output, result)
-        self.assertIn("List all administrators.",
-                      result.output, result)
+        self.assertIn(
+            "Register a new administrator in the database.", result.output, result
+        )
+        self.assertIn(
+            "Change the email address or the password of an", result.output, result
+        )
+        self.assertIn("Delete an existing administrator.", result.output, result)
+        self.assertIn("List all administrators.", result.output, result)
 
 
 class PIManageAuditTestCase(CliTestCase):
@@ -56,8 +56,9 @@ class PIManageBackupTestCase(CliTestCase):
         self.assertIn("-r, --radius_dir DIRECTORY", result.output, result)
         self.assertIn("-e, --enckey", result.output, result)
         result = runner.invoke(pi_manage, ["backup", "restore", "-h"])
-        self.assertIn("Usage: cli backup restore [OPTIONS] BACKUP_FILE",
-                      result.output, result)
+        self.assertIn(
+            "Usage: cli backup restore [OPTIONS] BACKUP_FILE", result.output, result
+        )
 
     def test_02_pimanage_backup_create(self):
         # TODO: create backup from an SQLite based configuration
@@ -75,18 +76,29 @@ class PIManageRealmTestCase(CliTestCase):
         self.assertIn("clear_default", result.output, result)
 
     def test_02_pimanage_realm_crud(self):
-        save_resolver({"resolver": "resolver1",
-                       "type": "passwdresolver",
-                       "fileName": PWFILE})
+        save_resolver(
+            {"resolver": "resolver1", "type": "passwdresolver", "fileName": PWFILE}
+        )
         runner = self.app.test_cli_runner()
         # create a realm with an existing resolver
-        result = runner.invoke(pi_manage, ["config", "realm", "create", "realm1", "resolver1"])
-        self.assertIn("Successfully created realm 'realm1' with resolver: ['resolver1'].",
-                      result.output, result)
+        result = runner.invoke(
+            pi_manage, ["config", "realm", "create", "realm1", "resolver1"]
+        )
+        self.assertIn(
+            "Successfully created realm 'realm1' with resolver: ['resolver1'].",
+            result.output,
+            result,
+        )
         # create a realm with an existing and non-existing resolver
-        result = runner.invoke(pi_manage, ["config", "realm", "create", "realm2", "resolver1", "reso2"])
-        self.assertIn("Realm 'realm2' created. Following resolvers could not be "
-                      "assigned: ['reso2']", result.output, result)
+        result = runner.invoke(
+            pi_manage, ["config", "realm", "create", "realm2", "resolver1", "reso2"]
+        )
+        self.assertIn(
+            "Realm 'realm2' created. Following resolvers could not be "
+            "assigned: ['reso2']",
+            result.output,
+            result,
+        )
         result = runner.invoke(pi_manage, ["config", "realm", "list"])
         self.assertIn("realm1", result.output)
         self.assertIn("resolver1", result.output)

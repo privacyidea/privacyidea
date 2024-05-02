@@ -53,8 +53,10 @@ SALT_SIZE = 10
 
 def check_password(environ, username, password):
     PRIVACYIDEA, REDIS, SSLVERIFY, TIMEOUT = _get_config()
-    syslog.syslog(syslog.LOG_DEBUG, "Authentication with {0!s}, {1!s}, {2!s}".format(
-        PRIVACYIDEA, REDIS, SSLVERIFY))
+    syslog.syslog(
+        syslog.LOG_DEBUG,
+        "Authentication with {0!s}, {1!s}, {2!s}".format(PRIVACYIDEA, REDIS, SSLVERIFY),
+    )
     r_value = UNAUTHORIZED
     rd = redis.Redis(REDIS)
 
@@ -68,10 +70,10 @@ def check_password(environ, username, password):
 
     else:
         # Check against privacyidea
-        data = {"user": username,
-                "pass": password}
-        response = requests.post(PRIVACYIDEA + "/validate/check", data=data,
-                                 verify=SSLVERIFY)
+        data = {"user": username, "pass": password}
+        response = requests.post(
+            PRIVACYIDEA + "/validate/check", data=data, verify=SSLVERIFY
+        )
 
         if response.status_code == 200:
             try:
@@ -87,24 +89,29 @@ def check_password(environ, username, password):
                 rd.setex(key, value=_generate_digest(password), time=TIMEOUT)
                 r_value = OK
         else:
-            syslog.syslog(syslog.LOG_ERR, "Error connecting to privacyIDEA: "
-                                          "%s: %s" % (response.status_code,
-                                                      response.text))
+            syslog.syslog(
+                syslog.LOG_ERR,
+                "Error connecting to privacyIDEA: "
+                "%s: %s" % (response.status_code, response.text),
+            )
 
     return r_value
 
 
 def _generate_digest(password):
-    pw_dig = passlib.hash.pbkdf2_sha512.using(rounds=ROUNDS,
-                                              salt_size=SALT_SIZE).hash(password)
+    pw_dig = passlib.hash.pbkdf2_sha512.using(rounds=ROUNDS, salt_size=SALT_SIZE).hash(
+        password
+    )
     return pw_dig
 
 
 def _generate_key(username, environ):
-    key = "{0!s}+{1!s}+{2!s}+{3!s}".format(environ.get("SERVER_NAME", ""),
-                           environ.get("SERVER_PORT", ""),
-                           environ.get("DOCUMENT_ROOT", ""),
-                           username)
+    key = "{0!s}+{1!s}+{2!s}+{3!s}".format(
+        environ.get("SERVER_NAME", ""),
+        environ.get("SERVER_PORT", ""),
+        environ.get("DOCUMENT_ROOT", ""),
+        username,
+    )
     return key
 
 
@@ -138,6 +145,10 @@ def _get_config():
         TIMEOUT = int(TIMEOUT)
     except configparser.NoOptionError as exx:
         syslog.syslog(syslog.LOG_ERR, "{0!s}".format(exx))
-    syslog.syslog(syslog.LOG_DEBUG, "Reading configuration {0!s}, {1!s}, {2!s}".format(
-        PRIVACYIDEA, REDIS, SSLVERIFY))
+    syslog.syslog(
+        syslog.LOG_DEBUG,
+        "Reading configuration {0!s}, {1!s}, {2!s}".format(
+            PRIVACYIDEA, REDIS, SSLVERIFY
+        ),
+    )
     return PRIVACYIDEA, REDIS, SSLVERIFY, TIMEOUT

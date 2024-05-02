@@ -1,13 +1,16 @@
 """
 This test file tests the lib/passwordreset.py
 """
+
 from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.smtpserver import add_smtpserver
 from . import smtpmock
 from privacyidea.lib.error import privacyIDEAError
-from privacyidea.lib.passwordreset import (create_recoverycode,
-                                           check_recoverycode,
-                                           is_password_reset)
+from privacyidea.lib.passwordreset import (
+    create_recoverycode,
+    check_recoverycode,
+    is_password_reset,
+)
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver
@@ -18,20 +21,21 @@ from privacyidea.lib.policy import ACTION, SCOPE, set_policy, PolicyClass
 class RecoveryTestCase(MyTestCase):
     serial1 = "ser1"
 
-    parameters = {'Driver': 'sqlite',
-                  'Server': '/tests/testdata/',
-                  'Database': "testuser.sqlite",
-                  'Table': 'users',
-                  'Encoding': 'utf8',
-                  'Editable': True,
-                  'Map': '{ "username": "username", \
+    parameters = {
+        "Driver": "sqlite",
+        "Server": "/tests/testdata/",
+        "Database": "testuser.sqlite",
+        "Table": "users",
+        "Encoding": "utf8",
+        "Editable": True,
+        "Map": '{ "username": "username", \
                     "userid" : "id", \
                     "email" : "email", \
                     "surname" : "name", \
                     "givenname" : "givenname", \
                     "password" : "password", \
                     "phone": "phone", \
-                    "mobile": "mobile"}'
+                    "mobile": "mobile"}',
     }
 
     # add_user, get_user, reset, set_user_identifiers
@@ -44,8 +48,9 @@ class RecoveryTestCase(MyTestCase):
         smtpmock.setdata(response={"user@localhost.localdomain": (200, "OK")})
 
         # missing configuration
-        self.assertRaises(privacyIDEAError, create_recoverycode,
-                          user=User("cornelius", self.realm1))
+        self.assertRaises(
+            privacyIDEAError, create_recoverycode, user=User("cornelius", self.realm1)
+        )
 
         # recover password with "recovery.identifier"
         r = add_smtpserver(identifier="myserver", server="1.2.3.4")
@@ -75,9 +80,9 @@ class RecoveryTestCase(MyTestCase):
         param["resolver"] = "register"
         param["type"] = "sqlresolver"
         r = save_resolver(param)
-        self. assertTrue(r > 0)
+        self.assertTrue(r > 0)
 
-        added, failed = set_realm("register", resolvers=[{'name': "register"}])
+        added, failed = set_realm("register", resolvers=[{"name": "register"}])
         self.assertGreater(len(added), 0, added)
         self.assertEqual(len(failed), 0, failed)
 
@@ -108,7 +113,7 @@ class RecoveryTestCase(MyTestCase):
         param["resolver"] = "register"
         param["type"] = "sqlresolver"
         r = save_resolver(param)
-        self. assertTrue(r > 0)
+        self.assertTrue(r > 0)
         # recover password with "recovery.identifier"
         r = add_smtpserver(identifier="myserver", server="1.2.3.4")
         self.assertTrue(r > 0)

@@ -24,7 +24,7 @@ from collections.abc import Sequence, Sized
 
 from .smtpmock import get_wrapped
 
-Call = namedtuple('Call', ['setex', 'get'])
+Call = namedtuple("Call", ["setex", "get"])
 
 _wrapper_template = """\
 def wrapper%(signature)s:
@@ -54,7 +54,6 @@ class CallList(Sequence, Sized):
 
 
 class Redis(object):
-
     def __init__(self):
         self.dictionary = {}
 
@@ -70,7 +69,6 @@ class Redis(object):
 
 
 class RedisMock(object):
-
     def __init__(self):
         self._calls = CallList()
         self.data = {}
@@ -91,7 +89,7 @@ class RedisMock(object):
         self.reset()
 
     def activate(self, func):
-        evaldict = {'redismock': self, 'func': func}
+        evaldict = {"redismock": self, "func": func}
         return get_wrapped(func, _wrapper_template, evaldict)
 
     def set_data(self, data):
@@ -105,16 +103,16 @@ class RedisMock(object):
             self.redis_obj.set_data(self.data)
             return self.redis_obj
 
-        self._patcher = mock.patch('redis.Redis',
-                                   unbound_on_Redis)
+        self._patcher = mock.patch("redis.Redis", unbound_on_Redis)
         self._patcher.start()
 
     def stop(self):
         self._patcher.stop()
 
+
 # expose default mock namespace
 mock = _default_mock = RedisMock()
 __all__ = []
-for __attr in (a for a in dir(_default_mock) if not a.startswith('_')):
+for __attr in (a for a in dir(_default_mock) if not a.startswith("_")):
     __all__.append(__attr)
     globals()[__attr] = getattr(_default_mock, __attr)

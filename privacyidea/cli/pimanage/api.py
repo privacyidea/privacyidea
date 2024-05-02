@@ -31,20 +31,35 @@ api_cli = AppGroup("api", help="Manage API keys")
 
 
 @api_cli.command("createtoken")
-@click.option('-r', '--role',
-              help="The role of the API key can either be "
-                   "'admin' or 'validate' to access the admin "
-                   "API or the validate API.",
-              type=click.Choice([ROLE.ADMIN, ROLE.VALIDATE]),
-              default=ROLE.ADMIN, show_default=True)
-@click.option('-d', '--days',
-              help='The number of days the access token should be valid.',
-              default=365, show_default=True, type=int)
-@click.option('-R', '--realm',
-              help='The realm of the admin.',
-              default="API", type=str, show_default=True)
-@click.option('-u', '--username', type=str, required=True,
-              help='The username of the admin.')
+@click.option(
+    "-r",
+    "--role",
+    help="The role of the API key can either be "
+    "'admin' or 'validate' to access the admin "
+    "API or the validate API.",
+    type=click.Choice([ROLE.ADMIN, ROLE.VALIDATE]),
+    default=ROLE.ADMIN,
+    show_default=True,
+)
+@click.option(
+    "-d",
+    "--days",
+    help="The number of days the access token should be valid.",
+    default=365,
+    show_default=True,
+    type=int,
+)
+@click.option(
+    "-R",
+    "--realm",
+    help="The realm of the admin.",
+    default="API",
+    type=str,
+    show_default=True,
+)
+@click.option(
+    "-u", "--username", type=str, required=True, help="The username of the admin."
+)
 @click.pass_context
 def api_createtoken(ctx, role, days, realm, username):
     """
@@ -59,15 +74,18 @@ def api_createtoken(ctx, role, days, realm, username):
     secret = current_app.config.get("SECRET_KEY")
     authtype = "API"
     validity = datetime.timedelta(days=int(days))
-    token = jwt.encode({
-        "username": username,
-        "realm": realm,
-        "nonce": geturandom(hex=True),
-        "role": role,
-        "authtype": authtype,
-        "exp": datetime.datetime.utcnow() + validity,
-        "rights": "TODO"},
-        secret)
+    token = jwt.encode(
+        {
+            "username": username,
+            "realm": realm,
+            "nonce": geturandom(hex=True),
+            "role": role,
+            "authtype": authtype,
+            "exp": datetime.datetime.utcnow() + validity,
+            "rights": "TODO",
+        },
+        secret,
+    )
     click.echo(f"Username:   {username}")
     click.echo(f"Realm:      {realm}")
     click.echo(f"Role:       {role}")

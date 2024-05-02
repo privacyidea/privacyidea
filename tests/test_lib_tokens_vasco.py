@@ -2,6 +2,7 @@
 This test file tests the lib.tokens.vascotoken
 This depends on lib.tokenclass
 """
+
 import functools
 from binascii import hexlify
 
@@ -18,11 +19,14 @@ def mock_verification(replacement):
     def decorator(f):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
-            with mock.patch('privacyidea.lib.tokens.vasco.vasco_dll') as mock_dll:
+            with mock.patch("privacyidea.lib.tokens.vasco.vasco_dll") as mock_dll:
                 mock_dll.AAL2VerifyPassword.side_effect = replacement
                 return f(*args, **kwargs)
+
         return wrapper
+
     return decorator
+
 
 def _set_next_blob(data):
     """
@@ -31,24 +35,30 @@ def _set_next_blob(data):
     """
     data._obj.Blob = b"".join(bytes((x + 1,)) for x in data._obj.Blob)
 
+
 def mock_success(data, params, password, challenge):
     # fake a new blob
     _set_next_blob(data)
     return 0
+
 
 def create_mock_failure(return_value):
     def mock_failure(data, params, password, challenge):
         # fake a new blob
         _set_next_blob(data)
         return return_value
+
     return mock_failure
+
 
 def mock_missing_dll(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
-        with mock.patch('privacyidea.lib.tokens.vasco.vasco_dll', None):
+        with mock.patch("privacyidea.lib.tokens.vasco.vasco_dll", None):
             return f(*args, **kwargs)
+
     return wrapper
+
 
 class VascoTokenTest(MyTestCase):
     otppin = "topsecret"
@@ -64,8 +74,9 @@ class VascoTokenTest(MyTestCase):
         db_token = Token(self.serial1, tokentype="vasco")
         db_token.save()
         token = VascoTokenClass(db_token)
-        token.update({"otpkey": hexlify(b"X" * 248).decode("utf-8"),
-                      "pin": self.otppin})
+        token.update(
+            {"otpkey": hexlify(b"X" * 248).decode("utf-8"), "pin": self.otppin}
+        )
         self.assertTrue(token.token.serial == self.serial1, token)
         self.assertTrue(token.token.tokentype == "vasco", token.token.tokentype)
         self.assertTrue(token.type == "vasco", token)
@@ -85,9 +96,12 @@ class VascoTokenTest(MyTestCase):
         db_token = Token(self.serial2, tokentype="vasco")
         db_token.save()
         token = VascoTokenClass(db_token)
-        token.update({"otpkey": hexlify(b"X"*248).decode("utf-8"),
-                      "pin": self.otppin})
-        self.assertRaises(RuntimeError, token.authenticate, "{}123456".format(self.otppin))
+        token.update(
+            {"otpkey": hexlify(b"X" * 248).decode("utf-8"), "pin": self.otppin}
+        )
+        self.assertRaises(
+            RuntimeError, token.authenticate, "{}123456".format(self.otppin)
+        )
         token.delete_token()
 
     @mock_verification(create_mock_failure(1))
@@ -95,26 +109,27 @@ class VascoTokenTest(MyTestCase):
         db_token = Token(self.serial2, tokentype="vasco")
         db_token.save()
         token = VascoTokenClass(db_token)
-        token.update({"otpkey": hexlify(b"X"*248).decode("utf-8"),
-                      "pin": self.otppin})
+        token.update(
+            {"otpkey": hexlify(b"X" * 248).decode("utf-8"), "pin": self.otppin}
+        )
         r = token.authenticate("{}123456".format(self.otppin))
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], -1)
         # failure, but the token secret has been updated nonetheless
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"X"*24 + b"Y"*224)
+        self.assertEqual(key, b"X" * 24 + b"Y" * 224)
         # wrong PIN, the token secret has not been updated
         r = token.authenticate("WRONG123456".format(self.otppin))
         self.assertEqual(r[0], False)
         self.assertEqual(r[1], -1)
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"X"*24 + b"Y"*224)
+        self.assertEqual(key, b"X" * 24 + b"Y" * 224)
         # another failure, but the token secret has been updated again!
         r = token.authenticate("{}234567".format(self.otppin))
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], -1)
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"X"*24 + b"Z"*224)
+        self.assertEqual(key, b"X" * 24 + b"Z" * 224)
         token.delete_token()
 
     @mock_verification(mock_success)
@@ -122,34 +137,36 @@ class VascoTokenTest(MyTestCase):
         db_token = Token(self.serial2, tokentype="vasco")
         db_token.save()
         token = VascoTokenClass(db_token)
-        token.update({"otpkey": hexlify(b"X"*248).decode("utf-8"),
-                      "pin": self.otppin})
+        token.update(
+            {"otpkey": hexlify(b"X" * 248).decode("utf-8"), "pin": self.otppin}
+        )
         # wrong PIN, the token secret has not been updated
         r = token.authenticate("WRONG123456".format(self.otppin))
         self.assertEqual(r[0], False)
         self.assertEqual(r[1], -1)
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"X"*24 + b"X"*224)
+        self.assertEqual(key, b"X" * 24 + b"X" * 224)
         # correct PIN + OTP
         r = token.authenticate("{}123456".format(self.otppin))
         self.assertEqual(r[0], True)
-        self.assertEqual(r[1], 0) # TODO: that is success?
+        self.assertEqual(r[1], 0)  # TODO: that is success?
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"X"*24 + b"Y"*224)
+        self.assertEqual(key, b"X" * 24 + b"Y" * 224)
         # another success
         r = token.authenticate("{}234567".format(self.otppin))
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], 0)  # TODO: that is success?
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"X"*24 + b"Z"*224)
+        self.assertEqual(key, b"X" * 24 + b"Z" * 224)
         token.delete_token()
 
     def test_06_reuse(self):
         db_token = Token(self.serial2, tokentype="vasco")
         db_token.save()
         token = VascoTokenClass(db_token)
-        token.update({"otpkey": hexlify(b"X" * 248).decode("utf-8"),
-                      "pin": self.otppin})
+        token.update(
+            {"otpkey": hexlify(b"X" * 248).decode("utf-8"), "pin": self.otppin}
+        )
 
         @mock_verification(mock_success)
         def _step1():
@@ -195,8 +212,9 @@ class VascoTokenTest(MyTestCase):
         db_token = Token(self.serial2, tokentype="vasco")
         db_token.save()
         token = VascoTokenClass(db_token)
-        token.update({"otpkey": hexlify(b"X"*248).decode('utf-8'),
-                      "pin": self.otppin})
+        token.update(
+            {"otpkey": hexlify(b"X" * 248).decode("utf-8"), "pin": self.otppin}
+        )
 
         @mock_verification(create_mock_failure(123))
         def _step1():
@@ -207,17 +225,18 @@ class VascoTokenTest(MyTestCase):
         self.assertEqual(r[1], -1)
         # failure, but the token secret has been updated nonetheless
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"X"*24 + b"Y"*224)
+        self.assertEqual(key, b"X" * 24 + b"Y" * 224)
 
         @mock_verification(create_mock_failure(202))
         def _step2():
             return token.authenticate("{}123456".format(self.otppin))
+
         r = _step2()
         self.assertEqual(r[0], True)
         self.assertEqual(r[1], -1)
         # failure, but the token secret has been updated nonetheless
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"X"*24 + b"Z"*224)
+        self.assertEqual(key, b"X" * 24 + b"Z" * 224)
 
         token.delete_token()
 
@@ -225,20 +244,23 @@ class VascoTokenTest(MyTestCase):
         db_token = Token(self.serial2, tokentype="vasco")
         db_token.save()
         token = VascoTokenClass(db_token)
-        self.assertRaises(ParameterError,
-                          token.update,
-                          {"otpkey": hexlify(b"X"*250).decode("utf-8")}) # wrong length
-        self.assertRaises(ParameterError,
-                          token.update,
-                          {"otpkey": "X"*496}) # not a hex-string
+        self.assertRaises(
+            ParameterError,
+            token.update,
+            {"otpkey": hexlify(b"X" * 250).decode("utf-8")},
+        )  # wrong length
+        self.assertRaises(
+            ParameterError, token.update, {"otpkey": "X" * 496}
+        )  # not a hex-string
         token.delete_token()
 
     def test_09_failcount(self):
         db_token = Token(self.serial2, tokentype="vasco")
         db_token.save()
         token = VascoTokenClass(db_token)
-        token.update({"otpkey": hexlify(b"A" * 248).decode("utf-8"),
-                      "pin": self.otppin})
+        token.update(
+            {"otpkey": hexlify(b"A" * 248).decode("utf-8"), "pin": self.otppin}
+        )
 
         @mock_verification(create_mock_failure(1))
         def _step1():
@@ -250,7 +272,7 @@ class VascoTokenTest(MyTestCase):
         for _ in range(10 + 1):
             r = _step1()
             self.assertEqual(r[0], False)
-            self.assertEqual(r[1].get('message'), 'wrong otp value')
+            self.assertEqual(r[1].get("message"), "wrong otp value")
 
         key = token.token.get_otpkey().getKey()
         self.assertEqual(key, b"A" * 24 + b"L" * 224)
@@ -265,7 +287,7 @@ class VascoTokenTest(MyTestCase):
         # subsequent authentication attempt fails due to fail counter
         r = _step2()
         self.assertEqual(r[0], False)
-        self.assertEqual(r[1].get('message'), 'matching 1 tokens, Failcounter exceeded')
+        self.assertEqual(r[1].get("message"), "matching 1 tokens, Failcounter exceeded")
         # this actually does update the OTP key
         key = token.token.get_otpkey().getKey()
         self.assertEqual(key, b"A" * 24 + b"M" * 224)
@@ -276,7 +298,7 @@ class VascoTokenTest(MyTestCase):
         # now, authentication works again
         r = _step2()
         self.assertEqual(r[0], True)
-        self.assertEqual(r[1].get('message'), 'matching 1 tokens')
+        self.assertEqual(r[1].get("message"), "matching 1 tokens")
         key = token.token.get_otpkey().getKey()
         self.assertEqual(key, b"A" * 24 + b"N" * 224)
 

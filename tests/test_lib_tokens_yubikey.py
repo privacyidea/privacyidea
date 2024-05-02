@@ -2,10 +2,13 @@
 This test file tests the lib.tokens.yubikeytoken
 
 """
+
 from .base import MyTestCase
-from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass,
-                                                 yubico_api_signature,
-                                                 yubico_check_api_signature)
+from privacyidea.lib.tokens.yubikeytoken import (
+    YubikeyTokenClass,
+    yubico_api_signature,
+    yubico_check_api_signature,
+)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.error import EnrollmentError
 from privacyidea.models import Token
@@ -20,6 +23,7 @@ class YubikeyTokenTestCase(MyTestCase):
     """
     Test the Yubikey in Yubico AES mode.
     """
+
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
     resolvername3 = "reso3"
@@ -47,7 +51,6 @@ class YubikeyTokenTestCase(MyTestCase):
         public_uid + "kehbefcrnlfejedfdulubuldfbhdlicc",
         public_uid + "ljlhjbkejkctubnejrhuvljkvglvvlbk",
         public_uid + "eihtnehtetluntirtirrvblfkttbjuih",
-
     ]
 
     def test_01_enroll_yubikey_and_auth(self):
@@ -115,13 +118,16 @@ class YubikeyTokenTestCase(MyTestCase):
 
         # check an otp value, that does not match a token
         r, opt = YubikeyTokenClass.check_yubikey_pass(
-            "fcebeeejedecebegfcniufvgvjturjgvinhebbbertjnihit")
+            "fcebeeejedecebegfcniufvgvjturjgvinhebbbertjnihit"
+        )
         self.assertFalse(r)
-        #self.assertTrue(opt.get("action_detail") ==
+        # self.assertTrue(opt.get("action_detail") ==
         #                "The serial UBAM@1382015 could not be found!", opt)
-        self.assertTrue(opt.get("action_detail") ==
-                        "The prefix fcebeeejedecebeg could not be found!", opt)
-
+        self.assertTrue(
+            opt.get("action_detail")
+            == "The prefix fcebeeejedecebeg could not be found!",
+            opt,
+        )
 
         # check for an invalid OTP
         r, opt = YubikeyTokenClass.check_yubikey_pass(self.further_otps[0])
@@ -144,53 +150,63 @@ class YubikeyTokenTestCase(MyTestCase):
         # will fail
         r, opt = YubikeyTokenClass.check_yubikey_pass(self.further_otps[2])
         self.assertFalse(r)
-        self.assertTrue(opt.get("message") == "matching 1 tokens, "
-                                              "Failcounter exceeded", opt)
+        self.assertTrue(
+            opt.get("message") == "matching 1 tokens, " "Failcounter exceeded", opt
+        )
         # check failcounter
         self.assertEqual(db_token.failcount, 5)
         token.set_failcount(old_failcounter)
 
     def test_06_check_init_update(self):
-        self.assertRaises(EnrollmentError, init_token,
-                          {"type": "yubikey",
-                           "otpkey": '313233343536373839303132333435'})
-        self.assertRaises(EnrollmentError, init_token,
-                          {"type": "yubikey",
-                           "otpkey": '3132333435363738393031323334353637'})
+        self.assertRaises(
+            EnrollmentError,
+            init_token,
+            {"type": "yubikey", "otpkey": "313233343536373839303132333435"},
+        )
+        self.assertRaises(
+            EnrollmentError,
+            init_token,
+            {"type": "yubikey", "otpkey": "3132333435363738393031323334353637"},
+        )
 
     def test_09_api_signature(self):
         api_key = "LqeG/IZscF1f7/oGQBqNnGY7MLk="
         signature = "0KRJecfPNSrpZ79+xODbJl0HM8I="
-        data = {"otp": "ececegecejeeedehfftnecrrfcfibfbklhvetghgrvtjdtvv",
-                "nonce": "blablafoo",
-                "h": signature,
-                "timestamp": "time"}
+        data = {
+            "otp": "ececegecejeeedehfftnecrrfcfibfbklhvetghgrvtjdtvv",
+            "nonce": "blablafoo",
+            "h": signature,
+            "timestamp": "time",
+        }
 
         h = yubico_api_signature(data, api_key)
         self.assertEqual(h, signature)
-        self.assertEqual(yubico_check_api_signature(data, api_key,
-                                                    signature), True)
+        self.assertEqual(yubico_check_api_signature(data, api_key, signature), True)
         self.assertEqual(yubico_check_api_signature(data, api_key), True)
 
     def test_10_api_endpoint(self):
         fixed = "ebedeeefegeheiej"
         otpkey = "cc17a4d77eaed96e9d14b5c87a02e718"
         uid = "000000000000"
-        otps = ["ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt",
-                "ebedeeefegeheiejlekvlrlkrcluvctenlnnjfknrhgtjned",
-                "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
-                "ebedeeefegeheiejjvjncbnffdrvjcvrbgdfufjgndfetieu",
-                "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
+        otps = [
+            "ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt",
+            "ebedeeefegeheiejlekvlrlkrcluvctenlnnjfknrhgtjned",
+            "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
+            "ebedeeefegeheiejjvjncbnffdrvjcvrbgdfufjgndfetieu",
+            "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk",
         ]
 
-        token = init_token({"type": "yubikey",
-                            "otpkey": otpkey,
-                            "otplen": len(otps[0]),
-                            "yubikey.prefix": fixed,
-                            "serial": "UBAM12345678_1"})
+        token = init_token(
+            {
+                "type": "yubikey",
+                "otpkey": otpkey,
+                "otplen": len(otps[0]),
+                "yubikey.prefix": fixed,
+                "serial": "UBAM12345678_1",
+            }
+        )
 
-        builder = EnvironBuilder(method='GET',
-                                 headers={})
+        builder = EnvironBuilder(method="GET", headers={})
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
@@ -200,9 +216,7 @@ class YubikeyTokenTestCase(MyTestCase):
         apiid = "hallo"
         apikey = "1YMEbMZijD3DzL21UfKGnOOI13c="
         set_privacyidea_config("yubikey.apiid.{0!s}".format(apiid), apikey)
-        req.all_data = {'id': apiid,
-                        "otp": otps[0],
-                        "nonce": nonce}
+        req.all_data = {"id": apiid, "otp": otps[0], "nonce": nonce}
         text_type, result = YubikeyTokenClass.api_endpoint(req, g)
         self.assertEqual(text_type, "plain")
         self.assertTrue("status=OK" in result, result)
@@ -213,21 +227,25 @@ class YubikeyTokenTestCase(MyTestCase):
         # The backend automatically strips whitespace from the OTP key
         otpkey = "cc 17 a4 d7 7e ae d9 6e 9d 14 b5 c8 7a 02 e7 18"
         uid = "000000000000"
-        otps = ["ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt",
-                "ebedeeefegeheiejlekvlrlkrcluvctenlnnjfknrhgtjned",
-                "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
-                "ebedeeefegeheiejjvjncbnffdrvjcvrbgdfufjgndfetieu",
-                "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
+        otps = [
+            "ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt",
+            "ebedeeefegeheiejlekvlrlkrcluvctenlnnjfknrhgtjned",
+            "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
+            "ebedeeefegeheiejjvjncbnffdrvjcvrbgdfufjgndfetieu",
+            "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk",
         ]
 
-        token = init_token({"type": "yubikey",
-                            "otpkey": otpkey,
-                            "otplen": len(otps[0]),
-                            "yubikey.prefix": fixed,
-                            "serial": "UBAM12345678_1"})
+        token = init_token(
+            {
+                "type": "yubikey",
+                "otpkey": otpkey,
+                "otplen": len(otps[0]),
+                "yubikey.prefix": fixed,
+                "serial": "UBAM12345678_1",
+            }
+        )
 
-        builder = EnvironBuilder(method='GET',
-                                 headers={})
+        builder = EnvironBuilder(method="GET", headers={})
         env = builder.get_environ()
         # Set the remote address so that we can filter for it
         env["REMOTE_ADDR"] = "10.0.0.1"
@@ -237,9 +255,7 @@ class YubikeyTokenTestCase(MyTestCase):
         apiid = "hallo"
         apikey = "1YMEbMZijD3DzL21UfKGnOOI13c="
         set_privacyidea_config("yubikey.apiid.{0!s}".format(apiid), apikey)
-        req.all_data = {'id': apiid,
-                        "otp": otps[0],
-                        "nonce": nonce}
+        req.all_data = {"id": apiid, "otp": otps[0], "nonce": nonce}
         text_type, result = YubikeyTokenClass.api_endpoint(req, g)
         self.assertEqual(text_type, "plain")
         self.assertTrue("status=OK" in result, result)

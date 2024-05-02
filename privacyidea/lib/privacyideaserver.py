@@ -21,15 +21,15 @@ import logging
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import fetch_one_resource, to_unicode
 from privacyidea.lib.error import ConfigAdminError
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import register_import, register_export
 import json
 import requests
 
 __doc__ = """
-This is the library for creating, listing and deleting remote privacyIDEA 
+This is the library for creating, listing and deleting remote privacyIDEA
 server objects in the Database.
 
-It depends on the PrivacyIDEAServver in the database model models.py. This 
+It depends on the PrivacyIDEAServver in the database model models.py. This
 module can be tested standalone without any webservices.
 This module is tested in tests/test_lib_privacyideaserver.py
 """
@@ -52,8 +52,15 @@ class PrivacyIDEAServer(object):
         """
         self.config = db_privacyideaserver_object
 
-    def validate_check(self, user, password, serial=None, realm=None,
-                       transaction_id=None, resolver=None):
+    def validate_check(
+        self,
+        user,
+        password,
+        serial=None,
+        realm=None,
+        transaction_id=None,
+        resolver=None,
+    ):
         """
         Perform an HTTP validate/check request to the remote privacyIDEA
         Server.
@@ -76,10 +83,12 @@ class PrivacyIDEAServer(object):
             data["transaction_id"] = transaction_id
         if resolver:
             data["resolver"] = resolver
-        response = requests.post(self.config.url + "/validate/check",
-                                 data=data,
-                                 verify=self.config.tls,
-                                 timeout=60)
+        response = requests.post(
+            self.config.url + "/validate/check",
+            data=data,
+            verify=self.config.tls,
+            timeout=60,
+        )
 
         return response
 
@@ -98,17 +107,22 @@ class PrivacyIDEAServer(object):
         :param password: the password/OTP to test
         :return: True or False. If any error occurs, an exception is raised.
         """
-        response = requests.post(config.url + "/validate/check",
-                                 data={"user": quote(user), "pass": quote(password)},
-                                 verify=config.tls,
-                                 timeout=60
-                          )
-        log.debug("Sent request to privacyIDEA server. status code returned: "
-                  "{0!s}".format(response.status_code))
+        response = requests.post(
+            config.url + "/validate/check",
+            data={"user": quote(user), "pass": quote(password)},
+            verify=config.tls,
+            timeout=60,
+        )
+        log.debug(
+            "Sent request to privacyIDEA server. status code returned: " "{0!s}".format(
+                response.status_code
+            )
+        )
         if response.status_code != 200:
-            log.warning("The request to the remote privacyIDEA server {0!s} "
-                        "returned a status code: {1!s}".format(config.url,
-                                                               response.status_code))
+            log.warning(
+                "The request to the remote privacyIDEA server {0!s} "
+                "returned a status code: {1!s}".format(config.url, response.status_code)
+            )
             return False
 
         j_response = json.loads(to_unicode(response.content))
@@ -121,10 +135,12 @@ def list_privacyideaservers(identifier=None, id=None):
     res = {}
     server_list = get_privacyideaservers(identifier=identifier, id=id)
     for server in server_list:
-        res[server.config.identifier] = {"id": server.config.id,
-                                         "url": server.config.url,
-                                         "tls": server.config.tls,
-                                         "description": server.config.description}
+        res[server.config.identifier] = {
+            "id": server.config.id,
+            "url": server.config.url,
+            "tls": server.config.tls,
+            "description": server.config.description,
+        }
     return res
 
 
@@ -141,8 +157,9 @@ def get_privacyideaserver(identifier=None, id=None):
     """
     server_list = get_privacyideaservers(identifier=identifier, id=id)
     if not server_list:
-        raise ConfigAdminError("The specified privacyIDEA Server configuration "
-                               "does not exist.")
+        raise ConfigAdminError(
+            "The specified privacyIDEA Server configuration " "does not exist."
+        )
     return server_list[0]
 
 
@@ -150,7 +167,7 @@ def get_privacyideaserver(identifier=None, id=None):
 def get_privacyideaservers(identifier=None, url=None, id=None):
     """
     This returns a list of all privacyIDEA Servers matching the criterion.
-    If no identifier or url is provided, it will return a list of all 
+    If no identifier or url is provided, it will return a list of all
     privacyIDEA server definitions.
 
     :param identifier: The identifier or the name of the privacyIDEA Server
@@ -199,8 +216,9 @@ def add_privacyideaserver(identifier, url=None, tls=True, description=""):
         definition
     :return: The Id of the database object
     """
-    r = PrivacyIDEAServerDB(identifier=identifier, url=url, tls=tls,
-                            description=description).save()
+    r = PrivacyIDEAServerDB(
+        identifier=identifier, url=url, tls=tls, description=description
+    ).save()
     return r
 
 
@@ -215,23 +233,26 @@ def delete_privacyideaserver(identifier):
     return fetch_one_resource(PrivacyIDEAServerDB, identifier=identifier).delete()
 
 
-@register_export('privacyideaserver')
+@register_export("privacyideaserver")
 def export_privacyideaservers(name=None):
-    """ Export given or all privacyideaservers configuration """
+    """Export given or all privacyideaservers configuration"""
     # remove the id from the resulting objects
     pids_list = list_privacyideaservers(identifier=name)
     for _, pids in pids_list.items():
-        pids.pop('id')
+        pids.pop("id")
     return pids_list
 
 
-@register_import('privacyideaserver')
+@register_import("privacyideaserver")
 def import_privacyideaservers(data, name=None):
     """Import privacyideaservers configuration"""
-    log.debug('Import privacyideaservers config: {0!s}'.format(data))
+    log.debug("Import privacyideaservers config: {0!s}".format(data))
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
         rid = add_privacyideaserver(res_name, **res_data)
-        log.info('Import of privacyideaservers "{0!s}" finished,'
-                 ' id: {1!s}'.format(res_name, rid))
+        log.info(
+            'Import of privacyideaservers "{0!s}" finished,' " id: {1!s}".format(
+                res_name, rid
+            )
+        )

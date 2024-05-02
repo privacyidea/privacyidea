@@ -22,26 +22,28 @@ The CA connectors are written to the database table "caconnector".
 
 The code is tested in tests/test_api_caconnector.py.
 """
-from flask import (Blueprint, request)
-from .lib.utils import (send_result, getParam)
+from flask import Blueprint, request
+from .lib.utils import send_result, getParam
 from ..lib.log import log_with
 from flask import g
 import logging
-from privacyidea.lib.caconnector import (save_caconnector,
-                                         delete_caconnector,
-                                         get_caconnector_specific_options,
-                                         get_caconnector_list)
+from privacyidea.lib.caconnector import (
+    save_caconnector,
+    delete_caconnector,
+    get_caconnector_specific_options,
+    get_caconnector_list,
+)
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.lib.policy import ACTION
 
 log = logging.getLogger(__name__)
 
 
-caconnector_blueprint = Blueprint('caconnector_blueprint', __name__)
+caconnector_blueprint = Blueprint("caconnector_blueprint", __name__)
 
 
-@caconnector_blueprint.route('/<name>', methods=['GET'])
-@caconnector_blueprint.route('/', methods=['GET'])
+@caconnector_blueprint.route("/<name>", methods=["GET"])
+@caconnector_blueprint.route("/", methods=["GET"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.CACONNECTORREAD)
 def get_caconnector_api(name=None):
@@ -49,13 +51,14 @@ def get_caconnector_api(name=None):
     returns a json list of the available CA connectors
     """
     g.audit_object.log({"detail": "{0!s}".format(name)})
-    res = get_caconnector_list(filter_caconnector_name=name,
-                               return_config=True)  # the endpoint is only accessed by admins
+    res = get_caconnector_list(
+        filter_caconnector_name=name, return_config=True
+    )  # the endpoint is only accessed by admins
     g.audit_object.log({"success": True})
     return send_result(res)
 
 
-@caconnector_blueprint.route('/specific/<catype>', methods=['GET'])
+@caconnector_blueprint.route("/specific/<catype>", methods=["GET"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.CACONNECTORREAD)
 def get_caconnector_specific(catype):
@@ -70,7 +73,7 @@ def get_caconnector_specific(catype):
     return send_result(res)
 
 
-@caconnector_blueprint.route('/<name>', methods=['POST'])
+@caconnector_blueprint.route("/<name>", methods=["POST"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.CACONNECTORWRITE)
 def save_caconnector_api(name=None):
@@ -85,7 +88,7 @@ def save_caconnector_api(name=None):
     return send_result(res)
 
 
-@caconnector_blueprint.route('/<name>', methods=['DELETE'])
+@caconnector_blueprint.route("/<name>", methods=["DELETE"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.CACONNECTORDELETE)
 def delete_caconnector_api(name=None):

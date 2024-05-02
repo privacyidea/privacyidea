@@ -52,9 +52,13 @@ from dateutil.tz import tzlocal, tzutc
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.utils import parse_legacy_time
 from privacyidea.lib.importotp import export_pskc
-from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
-                                   unassign_token,
-                                   get_tokens_paginated_generator)
+from privacyidea.lib.token import (
+    get_tokens,
+    remove_token,
+    enable_token,
+    unassign_token,
+    get_tokens_paginated_generator,
+)
 from privacyidea.models import Token
 import re
 import sys
@@ -106,14 +110,22 @@ Actions:
 
 """
 
-ALLOWED_ACTIONS = ["disable", "delete", "unassign", "mark", "export", "listuser", "tokenrealms"]
+ALLOWED_ACTIONS = [
+    "disable",
+    "delete",
+    "unassign",
+    "mark",
+    "export",
+    "listuser",
+    "tokenrealms",
+]
 
 
 def _try_convert_to_integer(given_value_string):
     try:
         return int(given_value_string)
     except ValueError:
-        raise ClickException('Not an integer: {}'.format(given_value_string))
+        raise ClickException("Not an integer: {}".format(given_value_string))
 
 
 def _compare_greater_than(_key, given_value_string):
@@ -168,7 +180,9 @@ def _try_convert_to_datetime(given_value_string):
             parsed = parsed.replace(tzinfo=tzlocal())
         return parsed
     except ValueError:
-        raise ClickException('Not a valid datetime format: {}'.format(given_value_string))
+        raise ClickException(
+            "Not a valid datetime format: {}".format(given_value_string)
+        )
 
 
 def _compare_after(key, given_value_string):
@@ -214,12 +228,14 @@ def _compare_regex_or_equal(_key, given_regex):
     return comparator
 
 
-def build_tokenvalue_filter(key,
-                            tokeninfo_value,
-                            tokeninfo_value_greater_than,
-                            tokeninfo_value_less_than,
-                            tokeninfo_value_after,
-                            tokeninfo_value_before):
+def build_tokenvalue_filter(
+    key,
+    tokeninfo_value,
+    tokeninfo_value_greater_than,
+    tokeninfo_value_less_than,
+    tokeninfo_value_after,
+    tokeninfo_value_before,
+):
     """
     Build and return a token value filter, which is a list of comparator functions.
     Each comparator function takes a tokeninfo value and returns True if the
@@ -251,9 +267,22 @@ def build_tokenvalue_filter(key,
     return tvfilter
 
 
-def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
-                   tokeninfo_value_filter, tokenattribute, tokenattribute_filter,
-                   orphaned, tokentype, serial, description, chunksize, has_not_tokeninfo_key, has_tokeninfo_key):
+def _get_tokenlist(
+    last_auth,
+    assigned,
+    active,
+    tokeninfo_key,
+    tokeninfo_value_filter,
+    tokenattribute,
+    tokenattribute_filter,
+    orphaned,
+    tokentype,
+    serial,
+    description,
+    chunksize,
+    has_not_tokeninfo_key,
+    has_tokeninfo_key,
+):
     filter_active = None
     filter_assigned = None
     orphaned = orphaned or ""
@@ -264,29 +293,34 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
         filter_active = active.lower() == "true"
 
     if chunksize is not None:
-        iterable = get_tokens_paginated_generator(tokentype=tokentype,
-                                                  active=filter_active,
-                                                  assigned=filter_assigned,
-                                                  psize=chunksize)
+        iterable = get_tokens_paginated_generator(
+            tokentype=tokentype,
+            active=filter_active,
+            assigned=filter_assigned,
+            psize=chunksize,
+        )
     else:
-        iterable = [get_tokens(tokentype=tokentype,
-                               active=filter_active,
-                               assigned=filter_assigned)]
+        iterable = [
+            get_tokens(
+                tokentype=tokentype, active=filter_active, assigned=filter_assigned
+            )
+        ]
     for tokenobj_list in iterable:
         filtered_list = []
         sys.stderr.write("++ Creating token object list.\n")
         tok_count = 0
         tok_found = 0
         for token_obj in tokenobj_list:
-            sys.stderr.write('{0} Tokens processed / {1} Tokens found\r'.format(tok_count, tok_found))
+            sys.stderr.write(
+                "{0} Tokens processed / {1} Tokens found\r".format(tok_count, tok_found)
+            )
             sys.stderr.flush()
             tok_count += 1
             if last_auth and token_obj.check_last_auth_newer(last_auth):
                 continue
             if serial and not re.search(serial, token_obj.token.serial):
                 continue
-            if description and not re.search(description,
-                                             token_obj.token.description):
+            if description and not re.search(description, token_obj.token.description):
                 continue
             if has_not_tokeninfo_key:
                 if has_not_tokeninfo_key in token_obj.get_tokeninfo():
@@ -320,7 +354,9 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
             # if everything matched, we append the token object
             filtered_list.append(token_obj)
 
-        sys.stderr.write('{0} Tokens processed / {1} Tokens found\r\n'.format(tok_count, tok_found))
+        sys.stderr.write(
+            "{0} Tokens processed / {1} Tokens found\r\n".format(tok_count, tok_found)
+        )
         sys.stderr.write("++ Token object list created.\n")
         sys.stderr.flush()
         yield filtered_list
@@ -336,8 +372,10 @@ def export_token_data(token_list, attributes=None):
     """
     tokens = []
     for token_obj in token_list:
-        token_data = ["{0!s}".format(token_obj.token.serial),
-                      "{0!s}".format(token_obj.token.tokentype)]
+        token_data = [
+            "{0!s}".format(token_obj.token.serial),
+            "{0!s}".format(token_obj.token.tokentype),
+        ]
         try:
             user = token_obj.user
             if user:
@@ -350,13 +388,13 @@ def export_token_data(token_list, attributes=None):
 
             if attributes:
                 for att in attributes.split(","):
-                    token_data.append("{0!s}".format(
-                        user.info.get(att, ""))
-                    )
+                    token_data.append("{0!s}".format(user.info.get(att, "")))
         except Exception:
-            sys.stderr.write("Failed to determine user for token {0!s}.\n".format(
-                token_obj.token.serial
-            ))
+            sys.stderr.write(
+                "Failed to determine user for token {0!s}.\n".format(
+                    token_obj.token.serial
+                )
+            )
             token_data.append("**failed to resolve user**")
         tokens.append(token_data)
     return tokens
@@ -375,9 +413,11 @@ def export_user_data(token_list, attributes=None):
         try:
             user = token_obj.user
         except Exception:
-            sys.stderr.write("Failed to determine user for token {0!s}.\n".format(
-                token_obj.token.serial
-            ))
+            sys.stderr.write(
+                "Failed to determine user for token {0!s}.\n".format(
+                    token_obj.token.serial
+                )
+            )
         if user:
             uid = "'{0!s}','{1!s}','{2!s}','{3!s}','{4!s}','{5!s}'".format(
                 user.info.get("username", ""),
@@ -385,13 +425,11 @@ def export_user_data(token_list, attributes=None):
                 user.info.get("surname", ""),
                 user.uid,
                 user.resolver,
-                user.realm
+                user.realm,
             )
             if attributes:
                 for att in attributes.split(","):
-                    uid += ",'{0!s}'".format(
-                        user.info.get(att, "")
-                    )
+                    uid += ",'{0!s}'".format(user.info.get(att, ""))
         else:
             uid = "N/A" + ", " * 5
 
@@ -404,103 +442,203 @@ def export_user_data(token_list, attributes=None):
 
 
 @find_cli.command("find")
-@click.option('--set-description', help='set a new description')
-@click.option('--set-tokeninfo-key', help='set a new tokeninfo-key')
-@click.option('--set-tokeninfo-value', help='set a new tokeninfo-value')
-@click.option('--tokeninfo-value-before', metavar='DATETIME',
-              help='Interpret tokeninfo values as datetimes,'
-                   ' match only if they occur before the given ISO 8601 datetime')
-@click.option('--tokeninfo-value-after', metavar='DATETIME',
-              help='Interpret tokeninfo values as datetimes,'
-                   ' match only if they occur after the given ISO 8601 datetime')
-@click.option('--tokeninfo-value-greater-than', metavar='INTEGER',
-              help='Interpret tokeninfo values as integers and match only if they are '
-                   'greater than the given integer')
-@click.option('--tokeninfo-value-less-than', metavar='INTEGER',
-              help='Interpret tokeninfo values as integers and match only if they are '
-                   'smaller than the given integer')
-@click.option('--tokeninfo-value', metavar='REGEX|INTEGER', help='The tokeninfo value to match')
-@click.option('--has-not-tokeninfo-key', help='filters for tokens that have not given the specified tokeninfo-key')
-@click.option('--has-tokeninfo-key', help='filters for tokens that have given the specified tokeninfo-key.')
-@click.option('--tokeninfo-key', help='The tokeninfo key to match. ')
-@click.option('--tokenattribute-value-greater-than', metavar='INTEGER',
-              help="Match if the value of the token attribute is greater than the given value.")
-@click.option('--tokenattribute-value-less-than', metavar='INTEGER',
-              help="Match if the value of the token attribute is less than the given value.")
-@click.option('--tokenattribute-value', metavar='REGEX|INTEGER',
-              help='The value of the token attribute which should match.')
-@click.option('--tokenattribute', help='Match for a certain token attribute from the database.')
-@click.option('--tokentype', help='The tokentype to search.')
-@click.option('--serial', help='A regular expression on the serial')
-@click.option('--description', help='A regular expression on the description')
-@click.option('--attributes', help='Extends the "listuser" function to display additional user attributes')
-@click.option('--tokenrealms', help='A comma separated list of realms, to which the tokens should be assigned.')
-@click.option('--sum', 'sum_tokens', is_flag=True,
-              help='In case of the action "listuser", this switch specifies if'
-                   ' the output should only contain the number of tokens owned by the user.')
-@click.option('--action', help='Which action should be performed on the '
-                               'found tokens. {0!s}. Exporting to PSKC only supports '
-                               'HOTP, TOTP and PW tokens!'.format("|".join(ALLOWED_ACTIONS)))
-@click.option('--csv', is_flag=True,
-              help='In case of a simple find, the output is written as CSV instead of the '
-                   'formatted output.')
-@click.option('--yaml', is_flag=True,
-              help='In case of a simple find, the output is written as YAML instead of the '
-                   'formatted output.')
-@click.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
-@click.option('--assigned', help='True|False|None')
-@click.option('--active', help='True|False|None')
-@click.option('--orphaned',
-              help='Whether the token is an orphaned token. Set to 1')
-@click.option('--b32', is_flag=True,
-              help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.')
-@click.option('--chunksize', default=None,
-              help='Read tokens from the database in smaller chunks to perform operations.')
-def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
-               tokeninfo_value_greater_than, tokeninfo_value_less_than,
-               tokeninfo_value_after, tokeninfo_value_before,
-               orphaned, tokentype, serial, description, action, set_description,
-               set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv,
-               chunksize, attributes, b32, has_not_tokeninfo_key, has_tokeninfo_key,
-               tokenattribute, tokenattribute_value, tokenattribute_value_greater_than,
-               tokenattribute_value_less_than, yaml):
+@click.option("--set-description", help="set a new description")
+@click.option("--set-tokeninfo-key", help="set a new tokeninfo-key")
+@click.option("--set-tokeninfo-value", help="set a new tokeninfo-value")
+@click.option(
+    "--tokeninfo-value-before",
+    metavar="DATETIME",
+    help="Interpret tokeninfo values as datetimes,"
+    " match only if they occur before the given ISO 8601 datetime",
+)
+@click.option(
+    "--tokeninfo-value-after",
+    metavar="DATETIME",
+    help="Interpret tokeninfo values as datetimes,"
+    " match only if they occur after the given ISO 8601 datetime",
+)
+@click.option(
+    "--tokeninfo-value-greater-than",
+    metavar="INTEGER",
+    help="Interpret tokeninfo values as integers and match only if they are "
+    "greater than the given integer",
+)
+@click.option(
+    "--tokeninfo-value-less-than",
+    metavar="INTEGER",
+    help="Interpret tokeninfo values as integers and match only if they are "
+    "smaller than the given integer",
+)
+@click.option(
+    "--tokeninfo-value", metavar="REGEX|INTEGER", help="The tokeninfo value to match"
+)
+@click.option(
+    "--has-not-tokeninfo-key",
+    help="filters for tokens that have not given the specified tokeninfo-key",
+)
+@click.option(
+    "--has-tokeninfo-key",
+    help="filters for tokens that have given the specified tokeninfo-key.",
+)
+@click.option("--tokeninfo-key", help="The tokeninfo key to match. ")
+@click.option(
+    "--tokenattribute-value-greater-than",
+    metavar="INTEGER",
+    help="Match if the value of the token attribute is greater than the given value.",
+)
+@click.option(
+    "--tokenattribute-value-less-than",
+    metavar="INTEGER",
+    help="Match if the value of the token attribute is less than the given value.",
+)
+@click.option(
+    "--tokenattribute-value",
+    metavar="REGEX|INTEGER",
+    help="The value of the token attribute which should match.",
+)
+@click.option(
+    "--tokenattribute", help="Match for a certain token attribute from the database."
+)
+@click.option("--tokentype", help="The tokentype to search.")
+@click.option("--serial", help="A regular expression on the serial")
+@click.option("--description", help="A regular expression on the description")
+@click.option(
+    "--attributes",
+    help='Extends the "listuser" function to display additional user attributes',
+)
+@click.option(
+    "--tokenrealms",
+    help="A comma separated list of realms, to which the tokens should be assigned.",
+)
+@click.option(
+    "--sum",
+    "sum_tokens",
+    is_flag=True,
+    help='In case of the action "listuser", this switch specifies if'
+    " the output should only contain the number of tokens owned by the user.",
+)
+@click.option(
+    "--action",
+    help="Which action should be performed on the "
+    "found tokens. {0!s}. Exporting to PSKC only supports "
+    "HOTP, TOTP and PW tokens!".format("|".join(ALLOWED_ACTIONS)),
+)
+@click.option(
+    "--csv",
+    is_flag=True,
+    help="In case of a simple find, the output is written as CSV instead of the "
+    "formatted output.",
+)
+@click.option(
+    "--yaml",
+    is_flag=True,
+    help="In case of a simple find, the output is written as YAML instead of the "
+    "formatted output.",
+)
+@click.option("--last_auth", help="Can be something like 10h, 7d, or 2y")
+@click.option("--assigned", help="True|False|None")
+@click.option("--active", help="True|False|None")
+@click.option("--orphaned", help="Whether the token is an orphaned token. Set to 1")
+@click.option(
+    "--b32",
+    is_flag=True,
+    help="In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.",
+)
+@click.option(
+    "--chunksize",
+    default=None,
+    help="Read tokens from the database in smaller chunks to perform operations.",
+)
+def findtokens(
+    last_auth,
+    assigned,
+    active,
+    tokeninfo_key,
+    tokeninfo_value,
+    tokeninfo_value_greater_than,
+    tokeninfo_value_less_than,
+    tokeninfo_value_after,
+    tokeninfo_value_before,
+    orphaned,
+    tokentype,
+    serial,
+    description,
+    action,
+    set_description,
+    set_tokeninfo_key,
+    set_tokeninfo_value,
+    sum_tokens,
+    tokenrealms,
+    csv,
+    chunksize,
+    attributes,
+    b32,
+    has_not_tokeninfo_key,
+    has_tokeninfo_key,
+    tokenattribute,
+    tokenattribute_value,
+    tokenattribute_value_greater_than,
+    tokenattribute_value_less_than,
+    yaml,
+):
     """
     Finds all tokens which match the conditions.
     """
     tokenattributes = [col.key for col in Token.__table__.columns]
     if tokenattribute and tokenattribute not in tokenattributes:
-        sys.stderr.write("Unknown token attribute. Allowed attributes are {0!s}\n".format(
-            ", ".join(tokenattributes)
-        ))
+        sys.stderr.write(
+            "Unknown token attribute. Allowed attributes are {0!s}\n".format(
+                ", ".join(tokenattributes)
+            )
+        )
         sys.exit(1)
     if action and action not in ALLOWED_ACTIONS:
-        sys.stderr.write("Unknown action. Allowed actions are {0!s}\n".format(
-            ", ".join(["'{0!s}'".format(x) for x in ALLOWED_ACTIONS])
-        ))
+        sys.stderr.write(
+            "Unknown action. Allowed actions are {0!s}\n".format(
+                ", ".join(["'{0!s}'".format(x) for x in ALLOWED_ACTIONS])
+            )
+        )
         sys.exit(1)
     if chunksize is not None:
         chunksize = int(chunksize)
     # filter for tokeninfo values
-    tvfilter = build_tokenvalue_filter(tokeninfo_key,
-                                       tokeninfo_value,
-                                       tokeninfo_value_greater_than,
-                                       tokeninfo_value_less_than,
-                                       tokeninfo_value_after,
-                                       tokeninfo_value_before)
+    tvfilter = build_tokenvalue_filter(
+        tokeninfo_key,
+        tokeninfo_value,
+        tokeninfo_value_greater_than,
+        tokeninfo_value_less_than,
+        tokeninfo_value_after,
+        tokeninfo_value_before,
+    )
     # filter for token attribute
-    tafilter = build_tokenvalue_filter(tokenattribute,
-                                       tokenattribute_value,
-                                       tokenattribute_value_greater_than,
-                                       tokenattribute_value_less_than,
-                                       None, None)
-    generator = _get_tokenlist(last_auth, assigned, active,
-                               tokeninfo_key, tvfilter,
-                               tokenattribute, tafilter,
-                               orphaned, tokentype, serial,
-                               description, chunksize, has_not_tokeninfo_key,
-                               has_tokeninfo_key)
+    tafilter = build_tokenvalue_filter(
+        tokenattribute,
+        tokenattribute_value,
+        tokenattribute_value_greater_than,
+        tokenattribute_value_less_than,
+        None,
+        None,
+    )
+    generator = _get_tokenlist(
+        last_auth,
+        assigned,
+        active,
+        tokeninfo_key,
+        tvfilter,
+        tokenattribute,
+        tafilter,
+        orphaned,
+        tokentype,
+        serial,
+        description,
+        chunksize,
+        has_not_tokeninfo_key,
+        has_tokeninfo_key,
+    )
     if chunksize is not None:
-        sys.stderr.write("+ Reading tokens from database in chunks of {}...\n".format(chunksize))
+        sys.stderr.write(
+            "+ Reading tokens from database in chunks of {}...\n".format(chunksize)
+        )
     else:
         sys.stderr.write("+ Reading tokens from database...\n")
     for tlist in generator:
@@ -510,19 +648,24 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 print("Token serial\tTokeninfo")
                 print("=" * 42)
                 for token_obj in tlist:
-                    print("{0!s} ({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
-                        token_obj.token.serial,
-                        token_obj.token.tokentype,
-                        token_obj.token.description,
-                        token_obj.get_tokeninfo()))
+                    print(
+                        "{0!s} ({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
+                            token_obj.token.serial,
+                            token_obj.token.tokentype,
+                            token_obj.token.description,
+                            token_obj.get_tokeninfo(),
+                        )
+                    )
             else:
                 for token_obj in tlist:
-                    print("'{!s}','{!s}','{!s}','{!s}'".format(
-                        token_obj.token.serial,
-                        token_obj.token.tokentype,
-                        token_obj.token.description,
-                        token_obj.get_tokeninfo()
-                    ))
+                    print(
+                        "'{!s}','{!s}','{!s}','{!s}'".format(
+                            token_obj.token.serial,
+                            token_obj.token.tokentype,
+                            token_obj.token.description,
+                            token_obj.get_tokeninfo(),
+                        )
+                    )
 
         elif action == "listuser":
             if not sum_tokens:
@@ -540,35 +683,58 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                     if tokenobj.type.lower() not in ["totp", "hotp"]:
                         continue
                     token_dict = tokenobj._to_dict(b32=b32)
-                    owner = "{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm)if tokenobj.user else "n/a"
+                    owner = (
+                        "{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm)
+                        if tokenobj.user
+                        else "n/a"
+                    )
                     if type == "totp":
-                        print("{!s}, {!s}, {!s}, {!s}, {!s}, {!s}".format(owner, token_dict.get("serial"),
-                                                                          token_dict.get("otpkey"),
-                                                                          token_dict.get("type"),
-                                                                          token_dict.get("otplen"),
-                                                                          token_dict.get("timestep")))
+                        print(
+                            "{!s}, {!s}, {!s}, {!s}, {!s}, {!s}".format(
+                                owner,
+                                token_dict.get("serial"),
+                                token_dict.get("otpkey"),
+                                token_dict.get("type"),
+                                token_dict.get("otplen"),
+                                token_dict.get("timestep"),
+                            )
+                        )
                     else:
-                        print("{!s}, {!s}, {!s}, {!s}, {!s}".format(owner, token_dict.get("serial"),
-                                                                    token_dict.get("otpkey"),
-                                                                    token_dict.get("type"),
-                                                                    token_dict.get("otplen")))
+                        print(
+                            "{!s}, {!s}, {!s}, {!s}, {!s}".format(
+                                owner,
+                                token_dict.get("serial"),
+                                token_dict.get("otpkey"),
+                                token_dict.get("type"),
+                                token_dict.get("otplen"),
+                            )
+                        )
             elif yaml:
                 token_list = []
                 for tokenobj in tlist:
                     try:
                         token_dict = tokenobj._to_dict(b32=b32)
-                        token_dict["owner"] = "{!s}@{!s}".format(tokenobj.user.login,
-                                                                 tokenobj.user.realm) if tokenobj.user else "n/a"
+                        token_dict["owner"] = (
+                            "{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm)
+                            if tokenobj.user
+                            else "n/a"
+                        )
                         token_list.append(token_dict)
                     except Exception as e:
-                        sys.stderr.write("\nFailed to export token {0!s}.\n".format(token_dict.get("serial")))
+                        sys.stderr.write(
+                            "\nFailed to export token {0!s}.\n".format(
+                                token_dict.get("serial")
+                            )
+                        )
                 print(yaml_safe_dump(token_list))
             else:
                 key, token_num, soup = export_pskc(tlist)
                 sys.stderr.write("\n{0!s} tokens exported.\n".format(token_num))
-                sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
-                                 "You need this key to import the "
-                                 "tokens again:\n\n\t{0!s}\n\n".format(key))
+                sys.stderr.write(
+                    "\nThis is the AES encryption key of the token seeds.\n"
+                    "You need this key to import the "
+                    "tokens again:\n\n\t{0!s}\n\n".format(key)
+                )
                 print("{0!s}".format(soup))
         else:
             for token_obj in tlist:
@@ -576,7 +742,11 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                     if action == "tokenrealms":
                         trealms = [r.strip() for r in tokenrealms.split(",") if r]
                         token_obj.set_realms(trealms)
-                        print("Setting realms of token {0!s} to {1!s}.".format(token_obj.token.serial, trealms))
+                        print(
+                            "Setting realms of token {0!s} to {1!s}.".format(
+                                token_obj.token.serial, trealms
+                            )
+                        )
                     if action == "disable":
                         enable_token(serial=token_obj.token.serial, enable=False)
                         print("Disabling token {0!s}".format(token_obj.token.serial))
@@ -588,16 +758,25 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                         print("Unassigning token {0!s}".format(token_obj.token.serial))
                     elif action == "mark":
                         if set_description:
-                            print("Setting description for token {0!s}: {1!s}".format(
-                                token_obj.token.serial, set_description))
+                            print(
+                                "Setting description for token {0!s}: {1!s}".format(
+                                    token_obj.token.serial, set_description
+                                )
+                            )
                             token_obj.set_description(set_description)
                             token_obj.save()
                         if set_tokeninfo_value and set_tokeninfo_key:
-                            print("Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
-                                token_obj.token.serial, set_tokeninfo_key, set_tokeninfo_value))
-                            token_obj.add_tokeninfo(set_tokeninfo_key, set_tokeninfo_value)
+                            print(
+                                "Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
+                                    token_obj.token.serial,
+                                    set_tokeninfo_key,
+                                    set_tokeninfo_value,
+                                )
+                            )
+                            token_obj.add_tokeninfo(
+                                set_tokeninfo_key, set_tokeninfo_value
+                            )
                             token_obj.save()
                 except Exception as exx:
-                    print("Failed to process token {0}.".format(
-                        token_obj.token.serial))
+                    print("Failed to process token {0}.".format(token_obj.token.serial))
                     print("{0}".format(exx))

@@ -8,7 +8,7 @@ Create Date: 2015-01-26 10:06:50.568505
 """
 
 # revision identifiers, used by Alembic.
-revision = '4f32a4e1bf33'
+revision = "4f32a4e1bf33"
 down_revision = None
 
 from alembic import op
@@ -24,11 +24,12 @@ Base = declarative_base()
 
 
 class Token_old(Base):
-    __tablename__ = 'Token_old'
+    __tablename__ = "Token_old"
     privacyIDEATokenId = sa.Column(sa.Integer, primary_key=True, nullable=False)
-    privacyIDEATokenDesc = sa.Column(sa.Unicode(80), default=u'')
-    privacyIDEATokenSerialnumber = sa.Column(sa.Unicode(40), default=u'',
-                                 unique=True, nullable=False, index=True)
+    privacyIDEATokenDesc = sa.Column(sa.Unicode(80), default="")
+    privacyIDEATokenSerialnumber = sa.Column(
+        sa.Unicode(40), default="", unique=True, nullable=False, index=True
+    )
     privacyIDEATokenType = sa.Column(sa.Unicode(30))
     privacyIDEATokenInfo = sa.Column(sa.Unicode(2000))
     privacyIDEATokenPinUser = sa.Column(sa.Unicode(512))
@@ -55,36 +56,34 @@ class Token(Base):
     """
     The Token table contains all token information.
     """
-    __tablename__ = 'token'
-    id = sa.Column(sa.Integer,
-                   primary_key=True,
-                   nullable=False)
-    description = sa.Column(sa.Unicode(80), default=u'')
-    serial = sa.Column(sa.Unicode(40), default=u'',
-                       unique=True,
-                       nullable=False,
-                       index=True)
-    tokentype = sa.Column(sa.Unicode(30), default=u'HOTP', index=True)
-    user_pin = sa.Column(sa.Unicode(512), default=u'')
-    user_pin_iv = sa.Column(sa.Unicode(32), default=u'')
-    so_pin = sa.Column(sa.Unicode(512), default=u'')
-    so_pin_iv = sa.Column(sa.Unicode(32), default=u'')
-    resolver = sa.Column(sa.Unicode(120), default=u'', index=True)
-    resolver_type = sa.Column(sa.Unicode(120), default=u'')
-    user_id = sa.Column(sa.Unicode(320), default=u'', index=True)
-    pin_seed = sa.Column(sa.Unicode(32), default=u'')
+
+    __tablename__ = "token"
+    id = sa.Column(sa.Integer, primary_key=True, nullable=False)
+    description = sa.Column(sa.Unicode(80), default="")
+    serial = sa.Column(
+        sa.Unicode(40), default="", unique=True, nullable=False, index=True
+    )
+    tokentype = sa.Column(sa.Unicode(30), default="HOTP", index=True)
+    user_pin = sa.Column(sa.Unicode(512), default="")
+    user_pin_iv = sa.Column(sa.Unicode(32), default="")
+    so_pin = sa.Column(sa.Unicode(512), default="")
+    so_pin_iv = sa.Column(sa.Unicode(32), default="")
+    resolver = sa.Column(sa.Unicode(120), default="", index=True)
+    resolver_type = sa.Column(sa.Unicode(120), default="")
+    user_id = sa.Column(sa.Unicode(320), default="", index=True)
+    pin_seed = sa.Column(sa.Unicode(32), default="")
     otplen = sa.Column(sa.Integer(), default=6)
-    pin_hash = sa.Column(sa.Unicode(512), default=u'')
-    key_enc = sa.Column(sa.Unicode(1024), default=u'')
-    key_iv = sa.Column(sa.Unicode(32), default=u'')
+    pin_hash = sa.Column(sa.Unicode(512), default="")
+    key_enc = sa.Column(sa.Unicode(1024), default="")
+    key_iv = sa.Column(sa.Unicode(32), default="")
     maxfail = sa.Column(sa.Integer(), default=10)
     active = sa.Column(sa.Boolean(), default=True)
     failcount = sa.Column(sa.Integer(), default=0)
     count = sa.Column(sa.Integer(), default=0)
     count_window = sa.Column(sa.Integer(), default=10)
     sync_window = sa.Column(sa.Integer(), default=1000)
-    rollout_state = sa.Column(sa.Unicode(10), default=u'')
-    info = relationship('TokenInfo', lazy='dynamic', backref='info')
+    rollout_state = sa.Column(sa.Unicode(10), default="")
+    info = relationship("TokenInfo", lazy="dynamic", backref="info")
 
 
 class TokenInfo(Base):
@@ -93,72 +92,60 @@ class TokenInfo(Base):
     The idea of the tokeninfo table is, that new token types can easily store
     long additional information.
     """
-    __tablename__ = 'tokeninfo'
+
+    __tablename__ = "tokeninfo"
     id = sa.Column(sa.Integer, primary_key=True)
-    Key = sa.Column(sa.Unicode(255),
-                    nullable=False)
-    Value = sa.Column(sa.UnicodeText(), default=u'')
-    Description = sa.Column(sa.Unicode(2000), default=u'')
-    token_id = sa.Column(sa.Integer(),
-                         sa.ForeignKey('token.id'))
-    token = relationship('Token', lazy='joined', backref='info_list')
-    __table_args__ = (sa.UniqueConstraint('token_id',
-                                          'Key',
-                                          name='tiix_2'), {})
+    Key = sa.Column(sa.Unicode(255), nullable=False)
+    Value = sa.Column(sa.UnicodeText(), default="")
+    Description = sa.Column(sa.Unicode(2000), default="")
+    token_id = sa.Column(sa.Integer(), sa.ForeignKey("token.id"))
+    token = relationship("Token", lazy="joined", backref="info_list")
+    __table_args__ = (sa.UniqueConstraint("token_id", "Key", name="tiix_2"), {})
 
 
 class TokenRealm(Base):
     """This table stores in which realms a token is assign"""
-    __tablename__ = 'tokenrealm'
+
+    __tablename__ = "tokenrealm"
     id = sa.Column(sa.Integer(), primary_key=True, nullable=True)
-    token_id = sa.Column(sa.Integer(),
-                         sa.ForeignKey('token.id'))
-    realm_id = sa.Column(sa.Integer(),
-                         sa.ForeignKey('realm.id'))
-    token = relationship('Token',
-                            lazy='joined',
-                            backref='realm_list')
-    realm = relationship('Realm',
-                            lazy='joined',
-                            backref='token_list')
-    __table_args__ = (sa.UniqueConstraint('token_id',
-                                          'realm_id',
-                                          name='trix_2'), {})
+    token_id = sa.Column(sa.Integer(), sa.ForeignKey("token.id"))
+    realm_id = sa.Column(sa.Integer(), sa.ForeignKey("realm.id"))
+    token = relationship("Token", lazy="joined", backref="realm_list")
+    realm = relationship("Realm", lazy="joined", backref="token_list")
+    __table_args__ = (sa.UniqueConstraint("token_id", "realm_id", name="trix_2"), {})
+
 
 class TokenRealm_old(Base):
     """This table stores in which realms a token is assign"""
-    __tablename__ = 'TokenRealm_old'
+
+    __tablename__ = "TokenRealm_old"
     id = sa.Column(sa.Integer(), primary_key=True, nullable=True)
-    token_id = sa.Column(sa.Integer(),
-                         sa.ForeignKey('token.id'))
-    realm_id = sa.Column(sa.Integer(),
-                         sa.ForeignKey('realm.id'))
+    token_id = sa.Column(sa.Integer(), sa.ForeignKey("token.id"))
+    realm_id = sa.Column(sa.Integer(), sa.ForeignKey("realm.id"))
+
 
 class Realm(Base):
-    __tablename__ = 'realm'
+    __tablename__ = "realm"
     id = sa.Column(sa.Integer, primary_key=True, nullable=False)
-    name = sa.Column(sa.Unicode(255), default=u'',
-                     unique=True, nullable=False)
+    name = sa.Column(sa.Unicode(255), default="", unique=True, nullable=False)
     default = sa.Column(sa.Boolean(), default=False)
-    option = sa.Column(sa.Unicode(40), default=u'')
+    option = sa.Column(sa.Unicode(40), default="")
+
 
 class Realm_old(Base):
-    __tablename__ = 'Realm_old'
+    __tablename__ = "Realm_old"
     id = sa.Column(sa.Integer, primary_key=True, nullable=False)
-    name = sa.Column(sa.Unicode(255), default=u'',
-                     unique=True, nullable=False)
+    name = sa.Column(sa.Unicode(255), default="", unique=True, nullable=False)
     default = sa.Column(sa.Boolean(), default=False)
-    option = sa.Column(sa.Unicode(40), default=u'')
+    option = sa.Column(sa.Unicode(40), default="")
 
 
 class Resolver(Base):
-    __tablename__ = 'resolver'
+    __tablename__ = "resolver"
     id = sa.Column(sa.Integer, primary_key=True, nullable=False)
-    name = sa.Column(sa.Unicode(255), default=u"",
-                     unique=True, nullable=False)
-    rtype = sa.Column(sa.Unicode(255), default=u"",
-                      nullable=False)
-    rconfig = relationship('ResolverConfig', lazy='dynamic', backref='resolver')
+    name = sa.Column(sa.Unicode(255), default="", unique=True, nullable=False)
+    rtype = sa.Column(sa.Unicode(255), default="", nullable=False)
+    rconfig = relationship("ResolverConfig", lazy="dynamic", backref="resolver")
 
 
 class ResolverConfig(Base):
@@ -166,40 +153,32 @@ class ResolverConfig(Base):
     Each Resolver can have multiple configuration entries.
     The config entries are referenced by the id of the resolver
     """
-    __tablename__ = 'resolverconfig'
+
+    __tablename__ = "resolverconfig"
     id = sa.Column(sa.Integer, primary_key=True)
-    resolver_id = sa.Column(sa.Integer,
-                            sa.ForeignKey('resolver.id'))
+    resolver_id = sa.Column(sa.Integer, sa.ForeignKey("resolver.id"))
     Key = sa.Column(sa.Unicode(255), nullable=False)
-    Value = sa.Column(sa.Unicode(2000), default=u'')
-    Type = sa.Column(sa.Unicode(2000), default=u'')
-    Description = sa.Column(sa.Unicode(2000), default=u'')
-    reso = relationship('Resolver',
-                           lazy='joined',
-                           backref='config_list')
-    __table_args__ = (sa.UniqueConstraint('resolver_id',
-                                          'Key',
-                                          name='rcix_2'), {})
+    Value = sa.Column(sa.Unicode(2000), default="")
+    Type = sa.Column(sa.Unicode(2000), default="")
+    Description = sa.Column(sa.Unicode(2000), default="")
+    reso = relationship("Resolver", lazy="joined", backref="config_list")
+    __table_args__ = (sa.UniqueConstraint("resolver_id", "Key", name="rcix_2"), {})
 
 
 class Config(Base):
     __tablename__ = "config"
-    Key = sa.Column(sa.Unicode(255),
-                    primary_key=True,
-                    nullable=False)
-    Value = sa.Column(sa.Unicode(2000), default=u'')
-    Type = sa.Column(sa.Unicode(2000), default=u'')
-    Description = sa.Column(sa.Unicode(2000), default=u'')
+    Key = sa.Column(sa.Unicode(255), primary_key=True, nullable=False)
+    Value = sa.Column(sa.Unicode(2000), default="")
+    Type = sa.Column(sa.Unicode(2000), default="")
+    Description = sa.Column(sa.Unicode(2000), default="")
 
 
 class Config_old(Base):
     __tablename__ = "Config_old"
-    Key = sa.Column(sa.Unicode(255),
-                    primary_key=True,
-                    nullable=False)
-    Value = sa.Column(sa.Unicode(2000), default=u'')
-    Type = sa.Column(sa.Unicode(2000), default=u'')
-    Description = sa.Column(sa.Unicode(2000), default=u'')
+    Key = sa.Column(sa.Unicode(255), primary_key=True, nullable=False)
+    Value = sa.Column(sa.Unicode(2000), default="")
+    Type = sa.Column(sa.Unicode(2000), default="")
+    Description = sa.Column(sa.Unicode(2000), default="")
 
 
 class ResolverRealm(Base):
@@ -207,23 +186,26 @@ class ResolverRealm(Base):
     This table stores which Resolver is located in which realm
     This is a N:M relation
     """
-    __tablename__ = 'resolverrealm'
+
+    __tablename__ = "resolverrealm"
     id = sa.Column(sa.Integer, primary_key=True)
     resolver_id = sa.Column(sa.Integer, sa.ForeignKey("resolver.id"))
     realm_id = sa.Column(sa.Integer, sa.ForeignKey("realm.id"))
     # this will create a "realm_list" in the resolver object
-    resolver = relationship(Resolver,
-                               lazy="joined",
-                               foreign_keys="ResolverRealm.resolver_id",
-                               backref="realm_list")
+    resolver = relationship(
+        Resolver,
+        lazy="joined",
+        foreign_keys="ResolverRealm.resolver_id",
+        backref="realm_list",
+    )
     # this will create a "resolver list" in the realm object
-    realm = relationship(Realm,
-                            lazy="joined",
-                            foreign_keys="ResolverRealm.realm_id",
-                            backref="resolver_list")
-    __table_args__ = (sa.UniqueConstraint('resolver_id',
-                                          'realm_id',
-                                          name='rrix_2'), {})
+    realm = relationship(
+        Realm,
+        lazy="joined",
+        foreign_keys="ResolverRealm.realm_id",
+        backref="resolver_list",
+    )
+    __table_args__ = (sa.UniqueConstraint("resolver_id", "realm_id", name="rrix_2"), {})
 
 
 class Admin(Base):
@@ -231,10 +213,9 @@ class Admin(Base):
     The administrators for managing the system.
     Certain realms can be defined to be administrative realms in addition
     """
+
     __tablename__ = "admin"
-    username = sa.Column(sa.Unicode(120),
-                         primary_key=True,
-                         nullable=False)
+    username = sa.Column(sa.Unicode(120), primary_key=True, nullable=False)
     password = sa.Column(sa.Unicode(255))
     email = sa.Column(sa.Unicode(255))
 
@@ -244,7 +225,7 @@ def create_update_token_table():
     print("Migrating the Token information...")
     print("----------------------------------")
     # rename the old table
-    op.rename_table('Token', 'Token_old')
+    op.rename_table("Token", "Token_old")
 
     bind = op.get_bind()
     session = Session(bind=bind)
@@ -274,37 +255,36 @@ def create_update_token_table():
         else:
             tokentype = ot.privacyIDEATokenType.lower()
 
-        nt = Token(id=ot.privacyIDEATokenId,
-                   serial=ot.privacyIDEATokenSerialnumber,
-                   active=ot.privacyIDEAIsactive,
-                   description=ot.privacyIDEATokenDesc,
-                   tokentype=tokentype,
-                   user_pin=ot.privacyIDEATokenPinUser,
-                   user_pin_iv=ot.privacyIDEATokenPinUserIV,
-                   so_pin=ot.privacyIDEATokenPinSO,
-                   so_pin_iv=ot.privacyIDEATokenPinSOIV,
-                   resolver=resolvername,
-                   resolver_type=resolvertype,
-                   user_id=ot.privacyIDEAUserid,
-                   pin_seed=ot.privacyIDEASeed,
-                   pin_hash=ot.privacyIDEAPinHash,
-                   otplen=ot.privacyIDEAOtpLen,
-                   key_enc=ot.privacyIDEAKeyEnc,
-                   key_iv=ot.privacyIDEAKeyIV,
-                   maxfail=ot.privacyIDEAMaxFail,
-                   failcount=ot.privacyIDEAFailCount,
-                   count=ot.privacyIDEACount,
-                   count_window=ot.privacyIDEACountWindow,
-                   sync_window=ot.privacyIDEASyncWindow
-                   )
+        nt = Token(
+            id=ot.privacyIDEATokenId,
+            serial=ot.privacyIDEATokenSerialnumber,
+            active=ot.privacyIDEAIsactive,
+            description=ot.privacyIDEATokenDesc,
+            tokentype=tokentype,
+            user_pin=ot.privacyIDEATokenPinUser,
+            user_pin_iv=ot.privacyIDEATokenPinUserIV,
+            so_pin=ot.privacyIDEATokenPinSO,
+            so_pin_iv=ot.privacyIDEATokenPinSOIV,
+            resolver=resolvername,
+            resolver_type=resolvertype,
+            user_id=ot.privacyIDEAUserid,
+            pin_seed=ot.privacyIDEASeed,
+            pin_hash=ot.privacyIDEAPinHash,
+            otplen=ot.privacyIDEAOtpLen,
+            key_enc=ot.privacyIDEAKeyEnc,
+            key_iv=ot.privacyIDEAKeyIV,
+            maxfail=ot.privacyIDEAMaxFail,
+            failcount=ot.privacyIDEAFailCount,
+            count=ot.privacyIDEACount,
+            count_window=ot.privacyIDEACountWindow,
+            sync_window=ot.privacyIDEASyncWindow,
+        )
 
         session.add(nt)
         if ot.privacyIDEATokenInfo:
             info = json.loads(ot.privacyIDEATokenInfo)
             for k, v in info.iteritems():
-                ti = TokenInfo(Key=k,
-                               Value=v,
-                               token_id=nt.id)
+                ti = TokenInfo(Key=k, Value=v, token_id=nt.id)
                 session.add(ti)
 
     session.commit()
@@ -330,38 +310,40 @@ def create_resolver_config():
         print("processing {0!s}".format(resolvertype))
         resolvers = {}
         configs = session.query(Config_old).filter(
-            Config_old.Key.like("privacyidea." + resolvertype + ".%"))
+            Config_old.Key.like("privacyidea." + resolvertype + ".%")
+        )
         for oc in configs:
             (_pi, _rtype, key, name) = oc.Key.split(".")
             value = oc.Value
             desc = oc.Description
             if name not in resolvers:
-                resolvers[name] = {key : {"value": value,
-                                          "desc": desc}}
+                resolvers[name] = {key: {"value": value, "desc": desc}}
             else:
-                resolvers[name][key] = {"value": value,
-                                        "desc": desc}
+                resolvers[name][key] = {"value": value, "desc": desc}
 
         for resolvername in resolvers:
-            r = Resolver(name=resolvername,
-                         rtype=resolvertype)
+            r = Resolver(name=resolvername, rtype=resolvertype)
             session.add(r)
             session.commit()
             # get the DB id and save the config
-            rid = session.query(Resolver).filter(Resolver.name==resolvername).first(
-
-            ).id
+            rid = (
+                session.query(Resolver).filter(Resolver.name == resolvername).first().id
+            )
             resconfig = resolvers.get(resolvername)
             for k, v in resconfig.iteritems():
-                rc = ResolverConfig(Key=k, Value=v.get("value"),
-                                    Description=v.get("desc"), resolver_id=rid)
+                rc = ResolverConfig(
+                    Key=k,
+                    Value=v.get("value"),
+                    Description=v.get("desc"),
+                    resolver_id=rid,
+                )
                 session.add(rc)
             session.commit()
 
         # Remove the resolvers from the Config table
-        session.query(Config_old).\
-            filter(Config_old.Key.like("privacyidea." + resolvertype + ".%")).\
-            delete(synchronize_session=False)
+        session.query(Config_old).filter(
+            Config_old.Key.like("privacyidea." + resolvertype + ".%")
+        ).delete(synchronize_session=False)
         session.commit()
 
 
@@ -374,8 +356,8 @@ def create_realms():
     bind = op.get_bind()
     session = Session(bind=bind)
 
-    op.rename_table('Realm', 'Realm_old')
-    op.rename_table('TokenRealm', 'TokenRealm_old')
+    op.rename_table("Realm", "Realm_old")
+    op.rename_table("TokenRealm", "TokenRealm_old")
     # create the tables
     Realm.__table__.create(bind)
     ResolverRealm.__table__.create(bind)
@@ -385,8 +367,9 @@ def create_realms():
     print("Migrating Realms and tokenrealms")
     for realm in session.query(Realm_old):
         try:
-            r = Realm(name=realm.name, id=realm.id, default=realm.default,
-                      option=realm.option)
+            r = Realm(
+                name=realm.name, id=realm.id, default=realm.default, option=realm.option
+            )
             session.add(r)
             session.commit()
         except Exception as exx:
@@ -394,17 +377,21 @@ def create_realms():
 
     for tokenrealm in session.query(TokenRealm_old):
         try:
-            tr = TokenRealm(id=tokenrealm.id, token_id=tokenrealm.token_id,
-                            realm_id=tokenrealm.realm_id)
+            tr = TokenRealm(
+                id=tokenrealm.id,
+                token_id=tokenrealm.token_id,
+                realm_id=tokenrealm.realm_id,
+            )
             session.add(tr)
             session.commit()
         except Exception as exx:
             session.rollback()
-            print (exx)
+            print(exx)
 
     print("Add resolvers to the realms")
-    realms = session.query(Config_old).\
-        filter(Config_old.Key.like("privacyidea.useridresolver.group.%"))
+    realms = session.query(Config_old).filter(
+        Config_old.Key.like("privacyidea.useridresolver.group.%")
+    )
     for realm in realms:
         realmname = realm.Key.split(".")[-1]
         print(realmname)
@@ -412,10 +399,15 @@ def create_realms():
         print("   with resolvers: {0!s}".format(resolver_list))
         for resolvername in resolver_list:
             try:
-                res_id = session.query(Resolver).\
-                    filter(Resolver.name == resolvername).first().id
-                realm_id = session.query(Realm).\
-                    filter(Realm.name == realmname).first().id
+                res_id = (
+                    session.query(Resolver)
+                    .filter(Resolver.name == resolvername)
+                    .first()
+                    .id
+                )
+                realm_id = (
+                    session.query(Realm).filter(Realm.name == realmname).first().id
+                )
                 rr = ResolverRealm(resolver_id=res_id, realm_id=realm_id)
                 session.add(rr)
                 session.commit()
@@ -424,9 +416,9 @@ def create_realms():
                 print(exx)
 
     # Remove the realms from the config
-    session.query(Config_old).\
-        filter(Config_old.Key.like("privacyidea.useridresolver.group.%")).\
-        delete(synchronize_session=False)
+    session.query(Config_old).filter(
+        Config_old.Key.like("privacyidea.useridresolver.group.%")
+    ).delete(synchronize_session=False)
     session.commit()
 
 
@@ -451,39 +443,37 @@ def finalize_config():
         Description = conf.Description
         if key == "FailCounterIncOnFalsePin":
             key = "IncFailCountOnFalsePin"
-            value = (conf.Value == "True")
+            value = conf.Value == "True"
         if Type == "bool":
-            value = (conf.Value == "True")
+            value = conf.Value == "True"
         if key == "splitAtSign":
-            value = (conf.Value == "True")
+            value = conf.Value == "True"
             Type = "bool"
 
-        c = Config(Key=key,
-                   Value=value,
-                   Type=Type,
-                   Description=Description)
+        c = Config(Key=key, Value=value, Type=Type, Description=Description)
         session.add(c)
     session.commit()
-    op.drop_table('Config_old')
+    op.drop_table("Config_old")
 
 
 def create_new_tables():
     print("Create remaining tables")
     bind = op.get_bind()
     Admin.__table__.create(bind)
-    #op.drop_table("Challenges")
-    op.create_table('challenge',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('transaction_id', sa.Unicode(length=64), nullable=False),
-    sa.Column('data', sa.Unicode(length=512), nullable=True),
-    sa.Column('challenge', sa.Unicode(length=512), nullable=True),
-    sa.Column('session', sa.Unicode(length=512), nullable=True),
-    sa.Column('serial', sa.Unicode(length=40), nullable=True),
-    sa.Column('timestamp', sa.DateTime(), nullable=True),
-    sa.Column('expiration', sa.DateTime(), nullable=True),
-    sa.Column('received_count', sa.Integer(), nullable=True),
-    sa.Column('otp_valid', sa.Boolean(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    # op.drop_table("Challenges")
+    op.create_table(
+        "challenge",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("transaction_id", sa.Unicode(length=64), nullable=False),
+        sa.Column("data", sa.Unicode(length=512), nullable=True),
+        sa.Column("challenge", sa.Unicode(length=512), nullable=True),
+        sa.Column("session", sa.Unicode(length=512), nullable=True),
+        sa.Column("serial", sa.Unicode(length=40), nullable=True),
+        sa.Column("timestamp", sa.DateTime(), nullable=True),
+        sa.Column("expiration", sa.DateTime(), nullable=True),
+        sa.Column("received_count", sa.Integer(), nullable=True),
+        sa.Column("otp_valid", sa.Boolean(), nullable=True),
+        sa.PrimaryKeyConstraint("id"),
     )
 
     # drop old tables
@@ -502,19 +492,20 @@ def upgrade():
     try:
         create_update_token_table()
         # rename the old table
-        op.rename_table('Config', 'Config_old')
+        op.rename_table("Config", "Config_old")
         create_resolver_config()
         create_realms()
         create_policy()
         finalize_config()
         create_new_tables()
     except ProgrammingError as exx:
-        print("An error occurred during upgrade! Maybe You database schema is "
-              "more recent than 2015? If this is the case, please check the "
-              "output if any changes were made to the db and revert them.")
+        print(
+            "An error occurred during upgrade! Maybe You database schema is "
+            "more recent than 2015? If this is the case, please check the "
+            "output if any changes were made to the db and revert them."
+        )
         print(exx)
 
 
 def downgrade():
     print("We do not support downgrading to version 1.5.")
-

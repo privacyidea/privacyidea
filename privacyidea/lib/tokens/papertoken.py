@@ -39,12 +39,12 @@ class PAPERACTION(object):
 
 
 class PaperTokenClass(HotpTokenClass):
-
     """
     The Paper Token allows to print out the next e.g. 100 OTP values.
     This sheet of paper can be used to authenticate and strike out the used
     OTP values.
     """
+
     # If the token is enrollable via multichallenge
     is_multichallenge_enrollable = False
 
@@ -80,7 +80,7 @@ class PaperTokenClass(HotpTokenClass):
 
     @staticmethod
     @log_with(log)
-    def get_class_info(key=None, ret='all'):
+    def get_class_info(key=None, ret="all"):
         """
         returns a subtree of the token definition
 
@@ -91,41 +91,46 @@ class PaperTokenClass(HotpTokenClass):
         :return: subsection if key exists or user defined
         :rtype: dict or scalar
         """
-        res = {'type': 'paper',
-               'title': 'Paper Token',
-               'description': 'PPR: One Time Passwords printed on a sheet '
-                              'of paper.',
-               'init': {},
-               'config': {},
-               'user':  ['enroll'],
-               # This tokentype is enrollable in the UI for...
-               'ui_enroll': ["admin", "user"],
-               'policy': {
-                   SCOPE.ENROLL: {
-                       PAPERACTION.PAPERTOKEN_COUNT: {
-                           "type": "int",
-                           "desc": _("The number of OTP values, which are "
-                                     "printed on the paper.")
-                       },
-                       ACTION.MAXTOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of paper tokens assigned."),
-                           'group': GROUP.TOKEN
-                       },
-                       ACTION.MAXACTIVETOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of active paper tokens assigned."),
-                           'group': GROUP.TOKEN
-                       }
-
-                   }
-               }
-               }
+        res = {
+            "type": "paper",
+            "title": "Paper Token",
+            "description": "PPR: One Time Passwords printed on a sheet " "of paper.",
+            "init": {},
+            "config": {},
+            "user": ["enroll"],
+            # This tokentype is enrollable in the UI for...
+            "ui_enroll": ["admin", "user"],
+            "policy": {
+                SCOPE.ENROLL: {
+                    PAPERACTION.PAPERTOKEN_COUNT: {
+                        "type": "int",
+                        "desc": _(
+                            "The number of OTP values, which are "
+                            "printed on the paper."
+                        ),
+                    },
+                    ACTION.MAXTOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum number of paper tokens assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                    ACTION.MAXACTIVETOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum number of active paper tokens assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                }
+            },
+        }
 
         if key:
             ret = res.get(key, {})
         else:
-            if ret == 'all':
+            if ret == "all":
                 ret = res
         return ret
 

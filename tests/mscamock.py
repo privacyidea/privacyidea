@@ -54,7 +54,6 @@ class MyCertificateReply(object):
 
 
 class CAServiceMock(object):
-
     def __init__(self, config, mock_config=None):
         self.cas = mock_config.get("available_cas") or []
         self.templates = mock_config.get("ca_templates") or []

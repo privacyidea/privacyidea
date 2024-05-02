@@ -61,24 +61,30 @@ class CounterEventHandler(BaseEventHandler):
 
         :return: dict with actions
         """
-        actions = {"increase_counter": {
-            "counter_name": {
-                "type": "str",
-                "description": _("The identifier/key of the counter.")}
+        actions = {
+            "increase_counter": {
+                "counter_name": {
+                    "type": "str",
+                    "description": _("The identifier/key of the counter."),
+                }
             },
             "decrease_counter": {
                 "counter_name": {
                     "type": "str",
-                    "description": _("The identifier/key of the counter.")},
-                'allow_negative_values': {
+                    "description": _("The identifier/key of the counter."),
+                },
+                "allow_negative_values": {
                     "type": "bool",
-                    "description": _("Don't stop counter if it reaches zero.")}
+                    "description": _("Don't stop counter if it reaches zero."),
+                },
             },
             "reset_counter": {
                 "counter_name": {
                     "type": "str",
-                    "description": _("The identifier/key of the counter.")}
-        }}
+                    "description": _("The identifier/key of the counter."),
+                }
+            },
+        }
         return actions
 
     def do(self, action, options=None):
@@ -92,7 +98,7 @@ class CounterEventHandler(BaseEventHandler):
         :return:
         """
         ret = True
-        #g = options.get("g")
+        # g = options.get("g")
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
         counter_name = handler_options.get("counter_name")
@@ -101,7 +107,9 @@ class CounterEventHandler(BaseEventHandler):
             increase(counter_name)
             log.debug("Increased the counter {0!s}.".format(counter_name))
         elif action == "decrease_counter":
-            allow_negative = is_true(handler_options.get("allow_negative_values", False))
+            allow_negative = is_true(
+                handler_options.get("allow_negative_values", False)
+            )
             decrease(counter_name, allow_negative)
             log.debug("Decreased the counter {0!s}.".format(counter_name))
         elif action == "reset_counter":

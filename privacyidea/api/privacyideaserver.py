@@ -17,35 +17,35 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """This endpoint is used to create, update, list and delete 
-privacyIDEA server definitions. privacyIDEA server definitions can be used for 
+__doc__ = """This endpoint is used to create, update, list and delete
+privacyIDEA server definitions. privacyIDEA server definitions can be used for
 Remote-Tokens and for Federation-Events.
 
 The code of this module is tested in tests/test_api_privacyideaserver.py
 """
-from flask import (Blueprint, request)
-from .lib.utils import (getParam,
-                        required,
-                        send_result)
+from flask import Blueprint, request
+from .lib.utils import getParam, required, send_result
 from ..lib.log import log_with
 from ..lib.policy import ACTION
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.utils import is_true
 from flask import g
 import logging
-from privacyidea.lib.privacyideaserver import (add_privacyideaserver,
-                                               PrivacyIDEAServer,
-                                               delete_privacyideaserver,
-                                               list_privacyideaservers)
+from privacyidea.lib.privacyideaserver import (
+    add_privacyideaserver,
+    PrivacyIDEAServer,
+    delete_privacyideaserver,
+    list_privacyideaservers,
+)
 from privacyidea.models import PrivacyIDEAServer as PrivacyIDEAServerDB
 
 
 log = logging.getLogger(__name__)
 
-privacyideaserver_blueprint = Blueprint('privacyideaserver_blueprint', __name__)
+privacyideaserver_blueprint = Blueprint("privacyideaserver_blueprint", __name__)
 
 
-@privacyideaserver_blueprint.route('/<identifier>', methods=['POST'])
+@privacyideaserver_blueprint.route("/<identifier>", methods=["POST"])
 @prepolicy(check_base_action, request, ACTION.PRIVACYIDEASERVERWRITE)
 @log_with(log)
 def create(identifier=None):
@@ -63,15 +63,13 @@ def create(identifier=None):
     tls = is_true(getParam(param, "tls", default="1"))
     description = getParam(param, "description", default="")
 
-    r = add_privacyideaserver(identifier, url=url, tls=tls,
-                              description=description)
+    r = add_privacyideaserver(identifier, url=url, tls=tls, description=description)
 
-    g.audit_object.log({'success': r > 0,
-                        'info':  r})
+    g.audit_object.log({"success": r > 0, "info": r})
     return send_result(r > 0)
 
 
-@privacyideaserver_blueprint.route('/', methods=['GET'])
+@privacyideaserver_blueprint.route("/", methods=["GET"])
 @log_with(log)
 @prepolicy(check_base_action, request, ACTION.PRIVACYIDEASERVERREAD)
 def list_privacyidea():
@@ -80,11 +78,11 @@ def list_privacyidea():
     """
     res = list_privacyideaservers()
 
-    g.audit_object.log({'success': True})
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
-@privacyideaserver_blueprint.route('/<identifier>', methods=['DELETE'])
+@privacyideaserver_blueprint.route("/<identifier>", methods=["DELETE"])
 @prepolicy(check_base_action, request, ACTION.PRIVACYIDEASERVERWRITE)
 @log_with(log)
 def delete_server(identifier=None):
@@ -95,12 +93,11 @@ def delete_server(identifier=None):
     """
     r = delete_privacyideaserver(identifier)
 
-    g.audit_object.log({'success': r > 0,
-                        'info':  r})
+    g.audit_object.log({"success": r > 0, "info": r})
     return send_result(r > 0)
 
 
-@privacyideaserver_blueprint.route('/test_request', methods=['POST'])
+@privacyideaserver_blueprint.route("/test_request", methods=["POST"])
 @prepolicy(check_base_action, request, ACTION.PRIVACYIDEASERVERWRITE)
 @log_with(log)
 def test():
@@ -115,10 +112,8 @@ def test():
     user = getParam(param, "username", required)
     password = getParam(param, "password", required)
 
-
     s = PrivacyIDEAServerDB(identifier=identifier, url=url, tls=tls)
     r = PrivacyIDEAServer.request(s, user, password)
 
-    g.audit_object.log({'success': r > 0,
-                        'info':  r})
+    g.audit_object.log({"success": r > 0, "info": r})
     return send_result(r > 0)

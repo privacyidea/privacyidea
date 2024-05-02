@@ -50,12 +50,17 @@ Defines the rough interface for a UserId Resolver
 
 
 class UserIdResolver(object):
-
-    fields = {"username": 1, "userid": 1,
-              "description": 0,
-              "phone": 0, "mobile": 0, "email": 0,
-              "givenname": 0, "surname": 0, "gender": 0
-              }
+    fields = {
+        "username": 1,
+        "userid": 1,
+        "description": 0,
+        "phone": 0,
+        "mobile": 0,
+        "email": 0,
+        "givenname": 0,
+        "surname": 0,
+        "gender": 0,
+    }
     name = ""
     id = "baseid"
 
@@ -73,7 +78,7 @@ class UserIdResolver(object):
         """
         provide the resolver type for registration
         """
-        return 'UserIdResolver'
+        return "UserIdResolver"
 
     @staticmethod
     def getResolverType():
@@ -83,7 +88,7 @@ class UserIdResolver(object):
         :return: returns the string 'ldapresolver'
         :rtype:  string
         """
-        return 'UserIdResolver'
+        return "UserIdResolver"
 
     @classmethod
     def getResolverClassDescriptor(cls):
@@ -97,8 +102,8 @@ class UserIdResolver(object):
         """
         descriptor = {}
         typ = cls.getResolverClassType()
-        descriptor['clazz'] = "useridresolver.UserIdResolver"
-        descriptor['config'] = {}
+        descriptor["clazz"] = "useridresolver.UserIdResolver"
+        descriptor["config"] = {}
         return {typ: descriptor}
 
     @staticmethod

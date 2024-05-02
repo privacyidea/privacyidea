@@ -121,7 +121,9 @@ class EmailTokenClass(HotpTokenClass):
         else:
             email = self.get_tokeninfo(self.EMAIL_ADDRESS_KEY)
         if not email:  # pragma: no cover
-            log.warning("Token {0!s} does not have an email address!".format(self.token.serial))
+            log.warning(
+                "Token {0!s} does not have an email address!".format(self.token.serial)
+            )
         return email
 
     @_email_address.setter
@@ -140,7 +142,7 @@ class EmailTokenClass(HotpTokenClass):
         return "PIEM"
 
     @staticmethod
-    def get_class_info(key=None, ret='all'):
+    def get_class_info(key=None, ret="all"):
         """
         returns all or a subtree of the token definition
 
@@ -151,57 +153,74 @@ class EmailTokenClass(HotpTokenClass):
         :return: subsection if key exists or user defined
         :rtype: dict
         """
-        res = {'type': 'email',
-               'title': _('EMail Token'),
-               'description':
-                   _('EMail: Send a One Time Password to the users email '
-                     'address.'),
-               'user': ['enroll'],
-               # This tokentype is enrollable in the UI for...
-               'ui_enroll': ["admin", "user"],
-               'policy': {SCOPE.AUTH: {
-                   EMAILACTION.EMAILTEXT: {
-                       'type': 'str',
-                       'desc': _('The text that will be sent via EMail for '
-                                 'an EMail-token. Several tags like {otp} and '
-                                 '{serial} can be used as parameters. You may '
-                                 'also specify a filename as email template '
-                                 'starting with "file:".')},
-                   EMAILACTION.EMAILSUBJECT: {
-                       'type': 'str',
-                       'desc': _('The subject of the EMail for '
-                                 'an EMail token. Use tags like {otp} and {serial} '
-                                 'as parameters.')},
-                   EMAILACTION.EMAILAUTO: {
-                       'type': 'bool',
-                       'desc': _('If set, a new EMail OTP will be sent '
-                                 'after successful authentication with '
-                                 'one EMail OTP.')},
-                   ACTION.CHALLENGETEXT: {
-                       'type': 'str',
-                       'desc': _('Use an alternate challenge text for telling the '
-                                 'user to enter the code from the eMail.')
-                   },
-               },
-                   SCOPE.ENROLL: {
-                       ACTION.MAXTOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of email tokens assigned."),
-                           'group': GROUP.TOKEN
-                       },
-                       ACTION.MAXACTIVETOKENUSER: {
-                           'type': 'int',
-                           'desc': _("The user may only have this maximum number of active email tokens assigned."),
-                           'group': GROUP.TOKEN
-                   }
-               }
-           }
+        res = {
+            "type": "email",
+            "title": _("EMail Token"),
+            "description": _(
+                "EMail: Send a One Time Password to the users email " "address."
+            ),
+            "user": ["enroll"],
+            # This tokentype is enrollable in the UI for...
+            "ui_enroll": ["admin", "user"],
+            "policy": {
+                SCOPE.AUTH: {
+                    EMAILACTION.EMAILTEXT: {
+                        "type": "str",
+                        "desc": _(
+                            "The text that will be sent via EMail for "
+                            "an EMail-token. Several tags like {otp} and "
+                            "{serial} can be used as parameters. You may "
+                            "also specify a filename as email template "
+                            'starting with "file:".'
+                        ),
+                    },
+                    EMAILACTION.EMAILSUBJECT: {
+                        "type": "str",
+                        "desc": _(
+                            "The subject of the EMail for "
+                            "an EMail token. Use tags like {otp} and {serial} "
+                            "as parameters."
+                        ),
+                    },
+                    EMAILACTION.EMAILAUTO: {
+                        "type": "bool",
+                        "desc": _(
+                            "If set, a new EMail OTP will be sent "
+                            "after successful authentication with "
+                            "one EMail OTP."
+                        ),
+                    },
+                    ACTION.CHALLENGETEXT: {
+                        "type": "str",
+                        "desc": _(
+                            "Use an alternate challenge text for telling the "
+                            "user to enter the code from the eMail."
+                        ),
+                    },
+                },
+                SCOPE.ENROLL: {
+                    ACTION.MAXTOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum number of email tokens assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                    ACTION.MAXACTIVETOKENUSER: {
+                        "type": "int",
+                        "desc": _(
+                            "The user may only have this maximum number of active email tokens assigned."
+                        ),
+                        "group": GROUP.TOKEN,
+                    },
+                },
+            },
         }
 
         if key:
             ret = res.get(key, {})
         else:
-            if ret == 'all':
+            if ret == "all":
                 ret = res
 
         return ret
@@ -223,14 +242,14 @@ class EmailTokenClass(HotpTokenClass):
                 self.add_tokeninfo("dynamic_email", True)
             else:
                 # specific - e-mail
-                self._email_address = getParam(param,
-                                               self.EMAIL_ADDRESS_KEY,
-                                               optional=False)
+                self._email_address = getParam(
+                    param, self.EMAIL_ADDRESS_KEY, optional=False
+                )
 
             # in case of the e-mail token, only the server must know the otpkey
             # thus if none is provided, we let create one (in the TokenClass)
-            if 'genkey' not in param and 'otpkey' not in param:
-                param['genkey'] = 1
+            if "genkey" not in param and "otpkey" not in param:
+                param["genkey"] = 1
 
         HotpTokenClass.update(self, param, reset_failcount)
         return
@@ -270,11 +289,12 @@ class EmailTokenClass(HotpTokenClass):
         """
         success = False
         options = options or {}
-        return_message = get_action_values_from_options(SCOPE.AUTH,
-                                                        "{0!s}_{1!s}".format(self.get_class_type(),
-                                                                             ACTION.CHALLENGETEXT),
-                                                        options) or _("Enter the OTP from the Email:")
-        reply_dict = {'attributes': {'state': transactionid}}
+        return_message = get_action_values_from_options(
+            SCOPE.AUTH,
+            "{0!s}_{1!s}".format(self.get_class_type(), ACTION.CHALLENGETEXT),
+            options,
+        ) or _("Enter the OTP from the Email:")
+        reply_dict = {"attributes": {"state": transactionid}}
         validity = int(get_from_config("email.validtime", 120))
 
         if self.is_active() is True:
@@ -289,40 +309,43 @@ class EmailTokenClass(HotpTokenClass):
                 if options.get("session") != CHALLENGE_SESSION.ENROLLMENT:
                     # Only if this is NOT an multichallenge enrollment, we try to send the email
                     self.inc_otp_counter(counter, reset=False)
-                    message_template, mimetype = self._get_email_text_or_subject(options)
-                    subject_template, _n = self._get_email_text_or_subject(options,
-                                                                       EMAILACTION.EMAILSUBJECT,
-                                                                       "Your OTP")
+                    message_template, mimetype = self._get_email_text_or_subject(
+                        options
+                    )
+                    subject_template, _n = self._get_email_text_or_subject(
+                        options, EMAILACTION.EMAILSUBJECT, "Your OTP"
+                    )
                     success, sent_message = self._compose_email(
                         options=options,
                         message=message_template,
                         subject=subject_template,
-                        mimetype=mimetype)
+                        mimetype=mimetype,
+                    )
 
                 # Create the challenge in the database
                 if is_true(get_from_config("email.concurrent_challenges")):
                     data = self.get_otp()[2]
-                db_challenge = Challenge(self.token.serial,
-                                         transaction_id=transactionid,
-                                         challenge=options.get("challenge"),
-                                         data=data,
-                                         session=options.get("session"),
-                                         validitytime=validity)
+                db_challenge = Challenge(
+                    self.token.serial,
+                    transaction_id=transactionid,
+                    challenge=options.get("challenge"),
+                    data=data,
+                    session=options.get("session"),
+                    validitytime=validity,
+                )
                 db_challenge.save()
                 transactionid = transactionid or db_challenge.transaction_id
 
             except Exception as e:
-                info = _("The PIN was correct, but the "
-                         "EMail could not be sent!")
+                info = _("The PIN was correct, but the " "EMail could not be sent!")
                 log.warning(info + " ({0!r})".format(e))
                 log.debug("{0!s}".format(traceback.format_exc()))
                 return_message = info
                 if is_true(options.get("exception")):
                     raise Exception(info)
 
-        expiry_date = datetime.datetime.now() + \
-                                    datetime.timedelta(seconds=validity)
-        reply_dict['attributes']['valid_until'] = "{0!s}".format(expiry_date)
+        expiry_date = datetime.datetime.now() + datetime.timedelta(seconds=validity)
+        reply_dict["attributes"]["valid_until"] = "{0!s}".format(expiry_date)
 
         return success, return_message, transactionid, reply_dict
 
@@ -347,22 +370,21 @@ class EmailTokenClass(HotpTokenClass):
                 ret = 1
         if ret >= 0 and self._get_auto_email(options):
             message, mimetype = self._get_email_text_or_subject(options)
-            subject, _ = self._get_email_text_or_subject(options,
-                                                      action=EMAILACTION.EMAILSUBJECT,
-                                                      default="Your OTP")
+            subject, _ = self._get_email_text_or_subject(
+                options, action=EMAILACTION.EMAILSUBJECT, default="Your OTP"
+            )
             self.inc_otp_counter(ret, reset=False)
-            success, message = self._compose_email(options=options,
-                                                   message=message,
-                                                   subject=subject,
-                                                   mimetype=mimetype)
+            success, message = self._compose_email(
+                options=options, message=message, subject=subject, mimetype=mimetype
+            )
             log.debug("AutoEmail: send new SMS: {0!s}".format(success))
             log.debug("AutoEmail: {0!r}".format(message))
         return ret
 
     @staticmethod
-    def _get_email_text_or_subject(options,
-                                   action=EMAILACTION.EMAILTEXT,
-                                   default="<otp>"):
+    def _get_email_text_or_subject(
+        options, action=EMAILACTION.EMAILTEXT, default="<otp>"
+    ):
         """
         This returns the EMAILTEXT or EMAILSUBJECT from the policy
         "emailtext" or "emailsubject
@@ -379,8 +401,12 @@ class EmailTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            messages = Match.user(g, scope=SCOPE.AUTH, action=action, user_object=user_object if user_object else None)\
-                .action_values(unique=True, allow_white_space_in_action=True)
+            messages = Match.user(
+                g,
+                scope=SCOPE.AUTH,
+                action=action,
+                user_object=user_object if user_object else None,
+            ).action_values(unique=True, allow_white_space_in_action=True)
             if len(messages) == 1:
                 message = list(messages)[0]
 
@@ -411,13 +437,20 @@ class EmailTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            autoemailpol = Match.user(g, scope=SCOPE.AUTH, action=EMAILACTION.EMAILAUTO, user_object=user_object).policies()
+            autoemailpol = Match.user(
+                g,
+                scope=SCOPE.AUTH,
+                action=EMAILACTION.EMAILAUTO,
+                user_object=user_object,
+            ).policies()
             autosms = len(autoemailpol) >= 1
 
         return autosms
 
     @log_with(log)
-    def _compose_email(self, message="<otp>", subject="Your OTP", mimetype="plain", options=None):
+    def _compose_email(
+        self, message="<otp>", subject="Your OTP", mimetype="plain", options=None
+    ):
         """
         send email
 
@@ -441,13 +474,17 @@ class EmailTokenClass(HotpTokenClass):
         message = message.replace("<otp>", otp)
         message = message.replace("<serial>", serial)
 
-        tags = create_tag_dict(serial=serial,
-                               tokenowner=self.user,
-                               tokentype=self.get_tokentype(),
-                               recipient={"givenname": self.user.info.get("givenname") if self.user else "",
-                                          "surname": self.user.info.get("surname") if self.user else ""},
-                               escape_html=mimetype.lower() == "html",
-                               challenge=challenge)
+        tags = create_tag_dict(
+            serial=serial,
+            tokenowner=self.user,
+            tokentype=self.get_tokentype(),
+            recipient={
+                "givenname": self.user.info.get("givenname") if self.user else "",
+                "surname": self.user.info.get("surname") if self.user else "",
+            },
+            escape_html=mimetype.lower() == "html",
+            challenge=challenge,
+        )
 
         message = message.format(otp=otp, **tags)
 
@@ -459,11 +496,14 @@ class EmailTokenClass(HotpTokenClass):
         log.debug("sending Email to {0!r}".format(recipient))
 
         # The token specific identifier has priority over the system wide identifier
-        identifier = self.get_tokeninfo("email.identifier") or get_from_config("email.identifier")
+        identifier = self.get_tokeninfo("email.identifier") or get_from_config(
+            "email.identifier"
+        )
         if identifier:
             # New way to send email
-            ret = send_email_identifier(identifier, recipient, subject, message,
-                                        mimetype=mimetype)
+            ret = send_email_identifier(
+                identifier, recipient, subject, message, mimetype=mimetype
+            )
         else:
             # old way to send email / DEPRECATED
             mailserver = get_from_config("email.mailserver", "localhost")
@@ -471,11 +511,18 @@ class EmailTokenClass(HotpTokenClass):
             username = get_from_config("email.username")
             password = get_from_config("email.password")
             mail_from = get_from_config("email.mailfrom", "privacyidea@localhost")
-            email_tls = get_from_config("email.tls", default=False,
-                                        return_bool=True)
-            ret = send_email_data(mailserver, subject, message, mail_from,
-                                  recipient, username, password, port,
-                                  email_tls)
+            email_tls = get_from_config("email.tls", default=False, return_bool=True)
+            ret = send_email_data(
+                mailserver,
+                subject,
+                message,
+                mail_from,
+                recipient,
+                username,
+                password,
+                port,
+                email_tls,
+            )
         return ret, message
 
     @classmethod
@@ -489,9 +536,17 @@ class EmailTokenClass(HotpTokenClass):
         username = getParam(params, "email.username")
         port = getParam(params, "email.port", default=25)
         email_tls = getParam(params, "email.tls", default=False)
-        r = send_email_data(mailserver, subject, message, mail_from,
-                            recipient, username=username,
-                            password=password, port=port, email_tls=email_tls)
+        r = send_email_data(
+            mailserver,
+            subject,
+            message,
+            mail_from,
+            recipient,
+            username=username,
+            password=password,
+            port=port,
+            email_tls=email_tls,
+        )
 
         description = "Could not send email."
         if r:
@@ -528,23 +583,29 @@ class EmailTokenClass(HotpTokenClass):
         """
         from privacyidea.lib.token import init_token
         from privacyidea.lib.tokenclass import CLIENTMODE
-        token_obj = init_token({"type": cls.get_class_type(),
-                                "dynamic_email": 1}, user=user_obj)
+
+        token_obj = init_token(
+            {"type": cls.get_class_type(), "dynamic_email": 1}, user=user_obj
+        )
         content.get("result")["value"] = False
         content.get("result")["authentication"] = "CHALLENGE"
 
         detail = content.setdefault("detail", {})
         # Create a challenge!
-        c = token_obj.create_challenge(options={"session": CHALLENGE_SESSION.ENROLLMENT})
+        c = token_obj.create_challenge(
+            options={"session": CHALLENGE_SESSION.ENROLLMENT}
+        )
         # get details of token
         init_details = token_obj.get_init_detail()
         detail["transaction_ids"] = [c[2]]
-        chal = {"transaction_id": c[2],
-                "image": None,
-                "client_mode": CLIENTMODE.INTERACTIVE,
-                "serial": token_obj.token.serial,
-                "type": token_obj.type,
-                "message": message or _("Please enter your new email address!")}
+        chal = {
+            "transaction_id": c[2],
+            "image": None,
+            "client_mode": CLIENTMODE.INTERACTIVE,
+            "serial": token_obj.token.serial,
+            "type": token_obj.type,
+            "message": message or _("Please enter your new email address!"),
+        }
         detail["multi_challenge"] = [chal]
         detail.update(chal)
 

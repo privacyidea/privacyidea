@@ -26,7 +26,6 @@ import netaddr
 
 
 class Machine(object):
-
     """
     The Machine object is returned by the resolver for a given machine_id.
     It contains data like the hostname, the ip address and additional
@@ -85,18 +84,20 @@ class Machine(object):
         elif type(self.ip) == netaddr.IPAddress:
             ip = "{0!s}".format(ip)
 
-        d = {"hostname": self.hostname,
-             "ip": ip,
-             "resolver_name": self.resolver_name,
-             "id": self.id}
+        d = {
+            "hostname": self.hostname,
+            "ip": ip,
+            "resolver_name": self.resolver_name,
+            "id": self.id,
+        }
         return d
+
 
 class MachineResolverError(Exception):
     pass
 
 
 class BaseMachineResolver(object):
-
     type = "base"
 
     def __init__(self, name, config=None):
@@ -114,8 +115,9 @@ class BaseMachineResolver(object):
     def get_type(cls):
         return cls.type
 
-    def get_machines(self, machine_id=None, hostname=None, ip=None, any=None,
-                     substring=False):
+    def get_machines(
+        self, machine_id=None, hostname=None, ip=None, any=None, substring=False
+    ):
         """
         Return a list of all machine objects in this resolver
 
@@ -177,4 +179,3 @@ class BaseMachineResolver(object):
         :rtype: (bool, string)
         """
         return False, "Not Implemented"
-
