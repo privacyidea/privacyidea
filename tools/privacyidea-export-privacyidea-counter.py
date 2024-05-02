@@ -4,7 +4,7 @@
 
 __doc__ = """
 This script exports counter from privacyIDEA to a csv file.
-It exports 
+It exports
    serial, counter
 
 """
@@ -40,7 +40,7 @@ def main():
     # Start DB stuff
 
     pi_engine = create_engine(SQL_URI)
-    conn_pi = pi_engine.connect()
+    pi_engine.connect()
 
     s = select([Token.serial, Token.count])
     result = pi_engine.execute(s)

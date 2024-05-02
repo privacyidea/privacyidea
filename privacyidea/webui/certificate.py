@@ -70,7 +70,6 @@ def cert_enroll():
     # The backend URL should come from the configuration of the system.
     backend_url = ""
 
-    r = request
     request_key = request.form.get("requestkey")
     # Firefox creates line breaks, Google Chrome does not
     request_key = request_key.replace('\n', "")

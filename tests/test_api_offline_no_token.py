@@ -19,10 +19,10 @@ class OfflinePassNoTokenTestCase(MyApiTestCase):
 
         userA = User("shadow", self.realm1, self.resolvername1)
         userB = User("cornelius", self.realm1, self.resolvername1)
-        userC = User("usernotoken", self.realm1, self.resolvername1)
-        tokA = init_token({"otpkey": self.otpkey, "serial": "tokA"},
+        User("usernotoken", self.realm1, self.resolvername1)
+        init_token({"otpkey": self.otpkey, "serial": "tokA"},
                           user=userA)
-        tokB = init_token({"otpkey": self.otpkey, "serial": "tokB"},
+        init_token({"otpkey": self.otpkey, "serial": "tokB"},
                           user=userB)
         # attach tokens to offline
         attach_token("tokA", "offline")

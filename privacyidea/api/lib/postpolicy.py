@@ -56,7 +56,6 @@ from .prepolicy import check_max_token_user, check_max_token_realm
 import functools
 import json
 import re
-import netaddr
 from privacyidea.lib.crypto import Sign
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.auth import ROLE
@@ -468,7 +467,6 @@ def save_pin_change(request, response, serial=None):
     :param action:
     :return:
     """
-    policy_object = g.policy_object
     serial = serial or request.all_data.get("serial")
     if not serial:
         # No serial in request, so we look into the response

@@ -7,7 +7,6 @@ import datetime
 import os
 import types
 
-import sqlalchemy.engine
 from mock import mock
 
 from privacyidea.config import TestingConfig
@@ -69,7 +68,7 @@ class AuditTestCase(MyTestCase):
 
         tot = self.Audit.get_total({})
         self.assertTrue(tot == 3, tot)
-        audit_log = self.Audit.search({}, sortorder="desc")
+        self.Audit.search({}, sortorder="desc")
 
         # with search filter
         tot = self.Audit.get_total({"action": "action2",
@@ -436,7 +435,7 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
 
     def test_10_container_audit(self):
         import os
-        basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
+        os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
         a = ContainerAudit({"PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.loggeraudit",
                                                          "privacyidea.lib.auditmodules.sqlaudit"],
                             "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
@@ -469,7 +468,7 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
 
     def test_15_container_audit_check_audit(self):
         import os
-        basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
+        os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
         a = ContainerAudit({"PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.loggeraudit",
                                                          "privacyidea.lib.auditmodules.sqlaudit"],
                             "PI_AUDIT_CONTAINER_READ": "privacyidea.lib.auditmodules.sqlaudit",
@@ -503,7 +502,7 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
     def test_20_container_audit_wrong_module(self):
         # Test what happens with a non-existing module
         import os
-        basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
+        os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
         module_config = {
             "PI_AUDIT_CONTAINER_WRITE": ["privacyidea.lib.auditmodules.doesnotexist",
                                          "privacyidea.lib.auditmodules.sqlaudit"],

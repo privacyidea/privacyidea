@@ -537,7 +537,7 @@ class EmailTokenClass(HotpTokenClass):
         # Create a challenge!
         c = token_obj.create_challenge(options={"session": CHALLENGE_SESSION.ENROLLMENT})
         # get details of token
-        init_details = token_obj.get_init_detail()
+        token_obj.get_init_detail()
         detail["transaction_ids"] = [c[2]]
         chal = {"transaction_id": c[2],
                 "image": None,

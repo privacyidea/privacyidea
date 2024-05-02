@@ -17,8 +17,7 @@ from privacyidea.lib.policy import ACTION
 from privacyidea.lib.subscriptions import (get_subscription,
                                            get_users_with_active_tokens,
                                            delete_subscription,
-                                           save_subscription,
-                                           SUBSCRIPTION_DATE_FORMAT)
+                                           save_subscription)
 import logging
 import datetime
 import yaml
@@ -76,4 +75,3 @@ def api_delete(application=None):
     r = delete_subscription(application)
     g.audit_object.log({'success': True})
     return send_result(r)
-

@@ -62,7 +62,6 @@ from ..lib.error import ParameterError
 from .auth import admin_required
 from flask import (g, current_app, render_template)
 import logging
-import json
 import datetime
 import re
 import socket
@@ -116,8 +115,8 @@ def get_config_documentation():
 def get_gpg_keys():
     """
     Returns the GPG keys in the config directory specified by PI_GNUPG_HOME.
-    
-    :return: A json list of the public GPG keys 
+
+    :return: A json list of the public GPG keys
     """
     GPG = GPGImport(current_app.config)
     keys = GPG.get_publickeys()
@@ -241,7 +240,7 @@ def set_default():
             "DefaultCountWindow",
             "DefaultOtpLen",
             "DefaultResetFailCount"]
-    
+
     description = "parameters are: {0!s}".format(", ".join(keys))
     param = getLowerParams(request.all_data)
     result = {}
@@ -258,7 +257,7 @@ def set_default():
                     "known parameter. %s"
                     % description)
         raise ParameterError("Usage: {0!s}".format(description), id=77)
-    
+
     return send_result(result)
 
 

@@ -18,7 +18,6 @@ import ldap3
 import responses
 import datetime
 import uuid
-import pytest
 import json
 import ssl
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver, LockingServerPool
@@ -1916,7 +1915,7 @@ class LDAPResolverTestCase(MyTestCase):
         original_search = y.l.extend.standard.paged_search
         with mock.patch.object(ldap3mock.Connection.Extend.Standard, 'paged_search') as mock_search:
             def _search_with_exception(*args, **kwargs):
-                results = original_search(*args, **kwargs)
+                original_search(*args, **kwargs)
                 raise LDAPOperationResult(result=RESULT_SIZE_LIMIT_EXCEEDED)
                 # This ``yield`` is needed to turn this function into a generator.
                 # If we omit this, the exception above would be raised immediately when ``paged_search`` is called.
@@ -2097,7 +2096,7 @@ class LDAPResolverTestCase(MyTestCase):
         with mock.patch('privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime',
                         wraps=datetime.datetime) as mock_datetime:
             mock_datetime.now.return_value = now + datetime.timedelta(seconds=2 * (cache_timeout + 2))
-            manager_id = y.getUserId('manager')
+            y.getUserId('manager')
         self.assertEqual(list(CACHE[y.getResolverId()]['getUserId'].keys()), ['manager'])
 
     @ldap3mock.activate

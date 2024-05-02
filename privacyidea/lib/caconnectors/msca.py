@@ -380,7 +380,7 @@ class MSCAConnector(BaseCAConnector):
             print("Available CAs: \n")
             for c in cas:
                 print("     {0!s}".format(c))
-            config.ca = input("Choose CA: ".format(config.ca))
+            config.ca = input("Choose CA: ".format())
             print("=" * 60)
             print("{0!s}".format(config))
             answer = input("Is this configuration correct? [y/n] ")

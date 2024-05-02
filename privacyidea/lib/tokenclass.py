@@ -59,7 +59,7 @@ This is the Token Base class, which is inherited by all token types.
 It depends on lib.user and lib.config.
 
 The token object also contains a database token object as self.token.
-The token object runs the self.update() method during the initialization 
+The token object runs the self.update() method during the initialization
 process in the API /token/init.
 
 The update method takes a dictionary. Some of the following parameters:
@@ -70,8 +70,8 @@ genkey      -> genkey=1 : privacyIDEA generates an OTPKey, creates the token
 2stepinit   -> Will do a two step rollout.
                privacyIDEA creates the first part of the OTPKey, sends it
                to the client and the clients needs to send back the second part.
-               
-In case of 2stepinit the key is generated from the server_component and the 
+
+In case of 2stepinit the key is generated from the server_component and the
 client_component using the TokenClass method generate_symmetric_key.
 This method is supposed to be overwritten by the corresponding token classes.
 """
@@ -89,7 +89,7 @@ from .log import log_with
 from .config import (get_from_config, get_prepend_pin)
 from .user import (User,
                    get_username)
-from ..models import (TokenOwner, TokenTokengroup, Tokengroup, Challenge, cleanup_challenges)
+from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges)
 from .challenge import get_challenges
 from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
                                     generate_otpkey)
@@ -149,7 +149,7 @@ class CLIENTMODE(object):
     U2F = 'u2f'
     WEBAUTHN = 'webauthn'
 
-    
+
 class ROLLOUTSTATE(object):
     CLIENTWAIT = 'clientwait'
     # The rollout is pending in the backend, like CSRs that need to be approved
@@ -179,7 +179,7 @@ class TokenClass(object):
     def __init__(self, db_token):
         """
         Create a new token object.
-        
+
         :param db_token: A database token object
         :type db_token: Token
         :return: A TokenClass object
@@ -199,7 +199,7 @@ class TokenClass(object):
         """
         Set the tokentype in this object and
         also in the underlying database-Token-object.
-        
+
         :param tokentype: The type of the token like HOTP or TOTP
         :type tokentype: string
         """
@@ -230,7 +230,7 @@ class TokenClass(object):
     def add_user(self, user, report=None):
         """
         Set the user attributes (uid, resolvername, resolvertype) of a token.
-        
+
         :param user: a User() object, consisting of loginname and realm
         :param report: tbdf.
         :return: None
@@ -245,7 +245,7 @@ class TokenClass(object):
 
         if not self.user:
             # If the tokenowner is not set yet, set it / avoid setting the same tokenowner multiple times
-            r = TokenOwner(token_id=self.token.id,
+            TokenOwner(token_id=self.token.id,
                            user_id=uid, resolver=resolvername,
                            realmname=user.realm).save()
         # set the tokenrealm
@@ -306,8 +306,8 @@ class TokenClass(object):
     def is_orphaned(self):
         """
         Return True if the token is orphaned.
-        
-        An orphaned token means, that it has a user assigned, but the user 
+
+        An orphaned token means, that it has a user assigned, but the user
         does not exist in the user store (anymore)
 
         :return: True / False
@@ -444,7 +444,7 @@ class TokenClass(object):
         The default token does not support getting the otp value
         will return a tuple of four values
         a negative value is a failure.
-        
+
         :return: something like:  (1, pin, otpval, combined)
         """
         return -2, 0, 0, 0
@@ -564,7 +564,7 @@ class TokenClass(object):
     def update(self, param, reset_failcount=True):
         """
         Update the token object
-        
+
         :param param: a dictionary with different params like keysize,
                       description, genkey, otpkey, pin
         :type: param: dict
@@ -680,7 +680,7 @@ class TokenClass(object):
     def set_description(self, description):
         """
         Set the description on the database level
-        
+
         :param description: description of the token
         :type description: string
         """
@@ -799,7 +799,7 @@ class TokenClass(object):
         :type add: boolean
         """
         self.token.set_realms(realms, add=add)
-        
+
     def get_realms(self):
         """
         Return a list of realms the token is assigned to
@@ -808,10 +808,10 @@ class TokenClass(object):
         :rtype: list
         """
         return self.token.get_realms()
-        
+
     def get_serial(self):
         return self.token.serial
-    
+
     def get_tokentype(self):
         return self.token.tokentype
 
@@ -1258,7 +1258,7 @@ class TokenClass(object):
         This function checks the count_auth and the count_auth_success.
         If the counters are less or equal than the maximum allowed counters
         it returns True. Otherwise False.
-        
+
         :return: success if the counter is less than max
         :rtype: bool
         """
@@ -1369,7 +1369,7 @@ class TokenClass(object):
         checks if the given OTP value is/are values of this very token.
         This is used to autoassign and to determine the serial number of
         a token.
-        
+
         :param otp: the OTP value
         :param window: The look ahead window
         :type window: int
@@ -1456,7 +1456,7 @@ class TokenClass(object):
         get_init_detail returns additional information after an admin/init
         like the QR code of an HOTP/TOTP token.
         Can be anything else.
-        
+
         :param params: The request params during token creation token/init
         :type params: dict
         :param user: the user, token owner
@@ -1842,20 +1842,20 @@ class TokenClass(object):
     def generate_symmetric_key(self, server_component, client_component,
                                options=None):
         """
-        This method generates a symmetric key, from a server component and a 
-        client component. 
+        This method generates a symmetric key, from a server component and a
+        client component.
         This key generation could be based on HMAC, KDF or even Diffie-Hellman.
-        
-        The basic key-generation is simply replacing the last n byte of the 
+
+        The basic key-generation is simply replacing the last n byte of the
         server component with bytes of the client component.
-                
+
         :param server_component: The component usually generated by privacyIDEA.
                                  This is a hex string
         :type server_component: str
         :param client_component: The component usually generated by the
             client (e.g. smartphone). This is a hex string.
         :type client_component: str
-        :param options: 
+        :param options:
         :return: the new generated key as hex string
         :rtype: str
         """

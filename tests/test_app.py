@@ -84,7 +84,7 @@ class AppTestCase(unittest.TestCase):
         class Config(TestingConfig):
             PI_LOGCONFIG = "tests/testdata/logging.cfg"
         with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
-            app = create_app(config_name='testing')
+            create_app(config_name='testing')
             # check the correct initialization of the logging from config file
             logger = logging.getLogger('privacyidea')
             self.assertEqual(logger.level, logging.DEBUG, logger)
@@ -119,7 +119,7 @@ class AppTestCase(unittest.TestCase):
         class Config(TestingConfig):
             PI_LOGCONFIG = "tests/testdata/logging.yml"
         with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
-            app = create_app(config_name='testing')
+            create_app(config_name='testing')
             # check the correct initialization of the logging from config file
             logger = logging.getLogger('privacyidea')
             self.assertEqual(logger.level, logging.INFO, logger)
@@ -151,7 +151,7 @@ class AppTestCase(unittest.TestCase):
         class Config(TestingConfig):
             PI_LOGCONFIG = "tests/testdata/logging_broken.yaml"
         with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
-            app = create_app(config_name='testing')
+            create_app(config_name='testing')
             # check the correct initialization of the logging with the default
             # values since the yaml file is broken
             logger = logging.getLogger('privacyidea')

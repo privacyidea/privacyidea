@@ -5,7 +5,7 @@ This depends on lib.tokenclass
 
 from .base import MyTestCase
 from privacyidea.lib.tokens.tantoken import TanTokenClass
-from privacyidea.lib.token import init_token, get_tokens_paginate, import_token
+from privacyidea.lib.token import init_token, import_token
 from privacyidea.models import Token
 
 OTPKEY = "3132333435363738393031323334353637383930"
@@ -15,7 +15,7 @@ class TanTokenTestCase(MyTestCase):
     serial1 = "ser1"
 
     # add_user, get_user, reset, set_user_identifiers
-    
+
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="tan")
         db_token.save()

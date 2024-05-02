@@ -87,10 +87,10 @@ class MachineApplication(MachineApplicationBase):
                 else:
                     log.debug("The requested user {0!s} does not match the user "
                               "option ({0!s}) of the SSH application.".format(
-                        user_filter, options.get("user")))
+                        user_filter, ))
         else:
             log.info("Token {0!r}, type {0!r} is not supported by "
-                     "SSH application module".format(serial, token_type))
+                     "SSH application module".format(serial, ))
 
         return ret
 

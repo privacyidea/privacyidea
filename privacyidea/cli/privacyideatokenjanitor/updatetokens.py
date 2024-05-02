@@ -71,5 +71,5 @@ def updatetokens(yaml):
             print("Updating token {0!s}.".format(tok.get("serial")))
             try:
                 tok_objects[0].update(tok)
-            except Exception as e:
+            except Exception:
                 sys.stderr.write("\nFailed to update token {0!s}.".format(tok.get("serial")))

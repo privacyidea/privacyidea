@@ -96,7 +96,7 @@ def verify_certificate_path(certificate, trusted_ca_paths):
                 try:
                     verify_certificate(to_byte_string(certificate), chain)
                     return True
-                except Exception as exx:
+                except Exception:
                     log.debug("Can not verify attestation certificate against chain {0!s}.".format(chain))
         else:
             log.warning("The configured attestation CA directory does not exist.")
@@ -457,7 +457,7 @@ class CertificateTokenClass(TokenClass):
                     try:
                         verified = verify_certificate_path(attestation,
                                                            param.get(ACTION.TRUSTED_CA_PATH))
-                    except Exception as exx:
+                    except Exception:
                         # We could have file system errors during verification.
                         log.debug("{0!s}".format(traceback.format_exc()))
                         verified = False
@@ -475,7 +475,7 @@ class CertificateTokenClass(TokenClass):
                                                   x509object)
         elif generate:
             """
-            Create the certificate on behalf of another user. Now we need to create 
+            Create the certificate on behalf of another user. Now we need to create
             * the key pair,
             * the request
             * and the certificate
@@ -501,7 +501,7 @@ class CertificateTokenClass(TokenClass):
             req.get_subject().organizationName = 'xxx'
             """
             req.set_pubkey(key)
-            r = req.sign(key, "sha256")
+            req.sign(key, "sha256")
             csr = to_unicode(crypto.dump_certificate_request(crypto.FILETYPE_PEM, req))
             try:
                 request_id, x509object = cacon.sign_request(csr, options={"template": template_name})

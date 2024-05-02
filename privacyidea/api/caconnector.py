@@ -23,7 +23,7 @@ The CA connectors are written to the database table "caconnector".
 The code is tested in tests/test_api_caconnector.py.
 """
 from flask import (Blueprint, request)
-from .lib.utils import (send_result, getParam)
+from .lib.utils import (send_result)
 from ..lib.log import log_with
 from flask import g
 import logging

@@ -188,7 +188,6 @@ from privacyidea.lib.user import User
 from privacyidea.lib import _
 from netaddr import AddrFormatError
 from privacyidea.lib.error import privacyIDEAError
-import datetime
 import re
 import ast
 import traceback
@@ -801,7 +800,7 @@ class PolicyClass(object):
         if extended_condition_check != CONDITION_CHECK.DO_NOT_CHECK_AT_ALL:
             reduced_policies = self.filter_policies_by_conditions(reduced_policies, user_object, request_headers,
                                                                   serial, extended_condition_check)
-            log.debug("Policies after matching conditions".format([p.get("name") for p in reduced_policies]))
+            log.debug("Policies after matching conditions".format())
 
         if audit_data is not None:
             for p in reduced_policies:

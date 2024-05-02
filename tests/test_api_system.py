@@ -933,7 +933,7 @@ class APIConfigTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            value = result.get("value")
+            result.get("value")
             # We probably have no keys in here
             # But value returns a dictionary with the KeyID and "armor" and
             # "fingerprint"

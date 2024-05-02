@@ -78,7 +78,7 @@ from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_se
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
-                                MachineToken, TokenInfo, TokenOwner, TokenTokengroup, Tokengroup)
+                                TokenInfo, TokenOwner, TokenTokengroup, Tokengroup)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
@@ -194,7 +194,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
     if assigned is not None:
         # filter if assigned or not
         if assigned is False:
-            sql_query = sql_query.filter(Token.owners == None)
+            sql_query = sql_query.filter(Token.owners is None)
         elif assigned is True:
             sql_query = sql_query.filter(Token.owners)
         else:
@@ -259,7 +259,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             sql_query = sql_query.filter(TokenOwner.resolver == user.resolver)
         (uid, _rtype, _resolver) = user.get_user_identifiers()
         if uid:
-            if type(uid) == int:
+            if isinstance(uid, int):
                 uid = str(uid)
             sql_query = sql_query.filter(TokenOwner.token_id == Token.id)
             sql_query = sql_query.filter(TokenOwner.user_id == uid)

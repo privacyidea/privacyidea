@@ -28,7 +28,7 @@ from collections.abc import Sequence, Sized
 
 from pyrad import packet
 from pyrad.client import Timeout
-from pyrad.packet import AccessReject, AccessAccept, AccessChallenge
+from pyrad.packet import AccessReject
 
 from .smtpmock import get_wrapped
 
@@ -97,7 +97,7 @@ class RadiusMock(object):
 
     def _on_request(self, client_instance, pkt):
         # mangle request packet
-        request = pkt.RequestPacket()
+        pkt.RequestPacket()
         if pkt.code == packet.AccessRequest:
             # This is a request
             pass

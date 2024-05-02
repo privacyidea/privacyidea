@@ -188,7 +188,7 @@ def before_request():
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Already get some typical parameters to log
     serial = getParam(request.all_data, "serial")
-    if serial and not "*" in serial:
+    if serial and "*" not in serial:
         g.serial = serial
         tokentype = get_token_type(serial)
         if not request.User:

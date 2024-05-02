@@ -421,7 +421,7 @@ class WebAuthnTokenTestCase(MyTestCase):
             WEBAUTHNACTION.AUTHENTICATOR_ATTESTATION_LEVEL: ATTESTATION_LEVEL.NONE,
             'HTTP_ORIGIN': ORIGIN
         })
-        web_authn_registration_response = self.token.get_init_detail().get('webAuthnRegisterResponse')
+        self.token.get_init_detail().get('webAuthnRegisterResponse')
 
         self.assertEqual(NONE_ATTESTATION_CRED_ID, self.token.decrypt_otpkey())
         self.assertEqual(NONE_ATTESTATION_PUB_KEY, self.token.get_tokeninfo(WEBAUTHNINFO.PUB_KEY))

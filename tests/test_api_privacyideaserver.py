@@ -1,5 +1,4 @@
 from .base import MyApiTestCase
-import json
 import responses
 
 

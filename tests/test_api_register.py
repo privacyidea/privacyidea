@@ -3,7 +3,6 @@ from privacyidea.lib.realm import set_realm
 from .base import MyApiTestCase
 from privacyidea.lib.policy import SCOPE, ACTION, set_policy
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
-import json
 from privacyidea.lib.smtpserver import add_smtpserver
 from . import smtpmock
 from privacyidea.lib.config import set_privacyidea_config

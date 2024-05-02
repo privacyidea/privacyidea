@@ -67,7 +67,7 @@ import logging
 
 from OpenSSL import crypto
 from privacyidea.lib import _
-from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError, ParameterError
+from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
@@ -184,7 +184,6 @@ def set_random_pin(request=None, action=None):
     It uses the policy ACTION.OTPPINSETRANDOM in SCOPE.ADMIN or SCOPE.USER to set a random OTP PIN
     """
     params = request.all_data
-    policy_object = g.policy_object
     # Determine the user and admin. We still pass the "username" and "realm" explicitly,
     # since we could have an admin request with only a realm, but not a complete user_object.
     user_object = request.User
@@ -295,7 +294,7 @@ def realmadmin(request=None, action=None):
     # This decorator is only valid for admins
     if g.logged_in_user.get("role") == ROLE.ADMIN:
         params = request.all_data
-        if not "realm" in params:
+        if "realm" not in params:
             # add the realm to params
             po = Match.admin(g, action=action).policies()
             # TODO: fix this: there could be a list of policies with a list
@@ -711,8 +710,7 @@ def twostep_enrollment_parameters(request=None, action=None):
 
     This policy function is used to decorate the ``/token/init`` endpoint.
     """
-    policy_object = g.policy_object
-    user_object = get_user_from_param(request.all_data)
+    get_user_from_param(request.all_data)
     serial = getParam(request.all_data, "serial", optional)
     token_type = getParam(request.all_data, "type", optional, "hotp")
     if serial:
@@ -1162,7 +1160,6 @@ def check_anonymous_user(request=None, action=None):
     """
     ERROR = "User actions are defined, but this action is not allowed!"
     params = request.all_data
-    policy_object = g.policy_object
     user_obj = get_user_from_param(params)
 
     action_allowed = Match.user(g, scope=SCOPE.USER, action=action, user_object=user_obj).allowed()

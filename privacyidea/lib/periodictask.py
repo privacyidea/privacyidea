@@ -27,7 +27,7 @@ from croniter import croniter
 from dateutil.tz import tzutc, tzlocal
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
-from privacyidea.lib.utils import fetch_one_resource, parse_date
+from privacyidea.lib.utils import fetch_one_resource
 from privacyidea.lib.task.eventcounter import EventCounterTask
 from privacyidea.lib.task.simplestats import SimpleStatsTask
 from privacyidea.models import PeriodicTask

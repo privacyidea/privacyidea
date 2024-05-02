@@ -61,7 +61,7 @@ class ScriptEventHandler(BaseEventHandler):
             try:
                 self.script_directory = get_app_config_value("PI_SCRIPT_HANDLER_DIRECTORY",
                                                        "/etc/privacyidea/scripts")
-            except RuntimeError as e:
+            except RuntimeError:
                 # In case of the tests we are outside of the application context
                 self.script_directory = "tests/testdata/scripts"
 
@@ -218,4 +218,3 @@ class ScriptEventHandler(BaseEventHandler):
                 raise ServerError("Error during execution of the script.")
 
         return ret
-

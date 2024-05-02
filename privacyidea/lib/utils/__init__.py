@@ -1211,7 +1211,7 @@ def check_pin_contents(pin, policy):
 
     # check for not allowed characters
     for char in pin:
-        if not char in charlists_dict["base"]:
+        if char not in charlists_dict["base"]:
             ret = False
     if not ret:
         comment.append("Not allowed character in PIN!")
@@ -1331,12 +1331,12 @@ def split_pin_pass(passw, otplen, prependpin):
         pin = passw[0:-otplen]
         otpval = passw[-otplen:]
         log.debug("PIN prepended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
-                                                                                    len(otpval)))
+                                                                                    ))
     else:
         pin = passw[otplen:]
         otpval = passw[0:otplen]
         log.debug("PIN appended. PIN length is {0!s}, OTP length is {0!s}.".format(len(pin),
-                                                                                   len(otpval)))
+                                                                                   ))
     return pin, otpval
 
 

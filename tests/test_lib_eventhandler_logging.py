@@ -120,7 +120,7 @@ class LoggingTestCase(MyTestCase):
                           'surname', 'givenname', 'username', 'userrealm',
                           'tokentype', 'time', 'date', 'client_ip',
                           'ua_browser', 'ua_string']
-        tok = init_token({"serial": "testserial", "type": "spass",
+        init_token({"serial": "testserial", "type": "spass",
                           "pin": "pin"}, user=User("cornelius", "sqliterealm"))
         g = FakeFlaskG()
         g.audit_object = FakeAudit()

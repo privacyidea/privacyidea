@@ -2,14 +2,9 @@
 This testcase is used to test the REST API  in api/machines.py
 to fetch machine information and to attach token to machines
 """
-import passlib
 
-from privacyidea.lib.user import User
 from .base import MyApiTestCase
-import json
-from privacyidea.lib.token import init_token, get_tokens, remove_token
-from privacyidea.lib.machine import attach_token, detach_token, ANY_MACHINE, NO_RESOLVER
-from privacyidea.lib.policy import (set_policy, delete_policy, ACTION, SCOPE)
+from privacyidea.lib.token import init_token
 
 HOSTSFILE = "tests/testdata/hosts"
 
@@ -66,7 +61,7 @@ class APIMachinesServiceIDTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result["status"], True)
             self.assertTrue(result["value"] >= 1)
-            mtid = result.get("value")
+            result.get("value")
 
         # Attach S1 to mailserver
         with self.app.test_request_context('/machine/token',
@@ -81,7 +76,7 @@ class APIMachinesServiceIDTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result["status"], True)
             self.assertTrue(result["value"] >= 1)
-            mtid = result.get("value")
+            result.get("value")
 
         # Attach S2 to mailserver
         with self.app.test_request_context('/machine/token',
@@ -96,7 +91,7 @@ class APIMachinesServiceIDTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result["status"], True)
             self.assertTrue(result["value"] >= 1)
-            mtid = result.get("value")
+            result.get("value")
 
     def test_03_get_service_ids(self):
         # Get all machinetokens
@@ -202,7 +197,7 @@ class APIMachinesServiceIDTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result["status"], True)
             self.assertTrue(result["value"] >= 1)
-            mtid = result.get("value")
+            result.get("value")
 
         # Get token for service_id self.serviceID2 and the application=ssh and the user=root
         with self.app.test_request_context(

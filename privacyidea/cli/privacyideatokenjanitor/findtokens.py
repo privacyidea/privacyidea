@@ -560,7 +560,7 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                         token_dict["owner"] = "{!s}@{!s}".format(tokenobj.user.login,
                                                                  tokenobj.user.realm) if tokenobj.user else "n/a"
                         token_list.append(token_dict)
-                    except Exception as e:
+                    except Exception:
                         sys.stderr.write("\nFailed to export token {0!s}.\n".format(token_dict.get("serial")))
                 print(yaml_safe_dump(token_list))
             else:

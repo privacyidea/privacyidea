@@ -33,7 +33,6 @@ from privacyidea.models import (MachineToken, db, MachineTokenOptions,
                                 get_machineresolver_id,
                                 get_machinetoken_ids)
 from privacyidea.lib.utils import fetch_one_resource
-from netaddr import IPAddress
 from sqlalchemy import and_
 import logging
 import re

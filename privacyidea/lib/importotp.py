@@ -48,7 +48,8 @@
 It is used for importing SafeNet (former Aladdin)
 XML files, that hold the OTP secrets for eToken PASS.
 '''
-import hmac, hashlib
+import hmac
+import hashlib
 import defusedxml.ElementTree as etree
 import re
 import binascii

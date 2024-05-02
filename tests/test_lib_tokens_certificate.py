@@ -17,8 +17,7 @@ import mock
 from OpenSSL import crypto
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from privacyidea.lib.caconnectors.msca import MSCAConnector
-from .mscamock import (MyTemplateReply, MyCAReply, MyCSRReply,
-                       MyCertReply, MyCertificateReply, MyCSRStatusReply, CAServiceMock)
+from .mscamock import (CAServiceMock)
 from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
@@ -347,7 +346,7 @@ class CertificateTokenTestCase(MyTestCase):
     def test_02_create_token_from_request(self):
         cwd = os.getcwd()
         # setup ca connector
-        r = save_caconnector({"cakey": CAKEY,
+        save_caconnector({"cakey": CAKEY,
                               "cacert": CACERT,
                               "type": "local",
                               "caconnector": "localCA",
@@ -398,7 +397,7 @@ class CertificateTokenTestCase(MyTestCase):
     def test_02a_fail_request_with_attestation(self):
         cwd = os.getcwd()
         # setup ca connector
-        r = save_caconnector({"cakey": CAKEY,
+        save_caconnector({"cakey": CAKEY,
                               "cacert": CACERT,
                               "type": "local",
                               "caconnector": "localCA",
@@ -422,7 +421,7 @@ class CertificateTokenTestCase(MyTestCase):
     def test_02b_success_request_with_attestation(self):
         cwd = os.getcwd()
         # setup ca connector
-        r = save_caconnector({"cakey": CAKEY,
+        save_caconnector({"cakey": CAKEY,
                               "cacert": CACERT,
                               "type": "local",
                               "caconnector": "localCA",

@@ -4,13 +4,13 @@ This file contains the tests for periodic tasks.
 In particular, this tests
 lib/periodictask.py
 """
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from dateutil.parser import parse as parse_timestamp
 from dateutil.tz import gettz, tzutc
 from mock import mock
 
-from privacyidea.lib.error import ServerError, ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.periodictask import calculate_next_timestamp, set_periodic_task, get_periodic_tasks, \
     enable_periodic_task, delete_periodic_task, set_periodic_task_last_run, get_scheduled_periodic_tasks, \
     get_periodic_task_by_name, TASK_MODULES, execute_task, get_periodic_task_by_id

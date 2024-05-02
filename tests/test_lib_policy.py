@@ -1445,7 +1445,6 @@ class PolicyTestCase(MyTestCase):
         def _names(policies):
             return set(p['name'] for p in policies)
 
-        from privacyidea.lib.tokenclass import TokenClass
         from privacyidea.models import Token
         serial = "filter_by_conditions_token"
         db_token = Token(serial, tokentype="spass")

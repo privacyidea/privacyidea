@@ -175,7 +175,6 @@ class YubikeyTokenTestCase(MyTestCase):
     def test_10_api_endpoint(self):
         fixed = "ebedeeefegeheiej"
         otpkey = "cc17a4d77eaed96e9d14b5c87a02e718"
-        uid = "000000000000"
         otps = ["ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt",
                 "ebedeeefegeheiejlekvlrlkrcluvctenlnnjfknrhgtjned",
                 "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
@@ -183,7 +182,7 @@ class YubikeyTokenTestCase(MyTestCase):
                 "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
         ]
 
-        token = init_token({"type": "yubikey",
+        init_token({"type": "yubikey",
                             "otpkey": otpkey,
                             "otplen": len(otps[0]),
                             "yubikey.prefix": fixed,
@@ -212,7 +211,6 @@ class YubikeyTokenTestCase(MyTestCase):
         fixed = "ebedeeefegeheiej"
         # The backend automatically strips whitespace from the OTP key
         otpkey = "cc 17 a4 d7 7e ae d9 6e 9d 14 b5 c8 7a 02 e7 18"
-        uid = "000000000000"
         otps = ["ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt",
                 "ebedeeefegeheiejlekvlrlkrcluvctenlnnjfknrhgtjned",
                 "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
@@ -220,7 +218,7 @@ class YubikeyTokenTestCase(MyTestCase):
                 "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
         ]
 
-        token = init_token({"type": "yubikey",
+        init_token({"type": "yubikey",
                             "otpkey": otpkey,
                             "otplen": len(otps[0]),
                             "yubikey.prefix": fixed,

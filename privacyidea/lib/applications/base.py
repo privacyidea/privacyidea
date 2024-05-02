@@ -60,7 +60,7 @@ def get_machine_application_class_dict():
     long_class_names = get_machine_application_class_list()
     for long_class_name in long_class_names:
         module_name = ".".join(long_class_name.split(".")[:-1])
-        class_name = long_class_name.split(".")[-1:]
+        long_class_name.split(".")[-1:]
 
         mod = import_module(module_name)
         # should be able to run as class or as object

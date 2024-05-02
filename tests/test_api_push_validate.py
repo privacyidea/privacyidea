@@ -319,13 +319,13 @@ class PushAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             detail = res.json.get("detail")
-            serial = detail.get("serial")
+            detail.get("serial")
             self.assertEqual(detail.get("rollout_state"), "clientwait")
             self.assertTrue("pushurl" in detail)
             # check that the new URL contains the serial number
             self.assertTrue("&serial=PIPU" in detail.get("pushurl").get("value"))
             self.assertFalse("otpkey" in detail)
-            enrollment_credential = detail.get("enrollment_credential")
+            detail.get("enrollment_credential")
 
         # We skip the 2nd step of the enrollment!
         # But we activate the token on purpose!

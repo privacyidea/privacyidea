@@ -77,7 +77,7 @@ def check_password(environ, username, password):
             try:
                 json_response = response.json()
                 syslog.syslog(syslog.LOG_DEBUG, "requests > 1.0")
-            except Exception as exx:
+            except Exception:
                 # requests < 1.0
                 json_response = response.json
                 syslog.syslog(syslog.LOG_DEBUG, "requests < 1.0")

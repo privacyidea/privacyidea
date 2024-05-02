@@ -23,7 +23,7 @@ user managed in privacyIDEA.
 
 The methods are also tested in the file tests/test_api_register.py
 """
-from flask import (Blueprint, request, g, current_app)
+from flask import (Blueprint, request, g)
 from .lib.utils import send_result, getParam
 from .lib.utils import required
 from privacyidea.lib.user import get_user_from_param

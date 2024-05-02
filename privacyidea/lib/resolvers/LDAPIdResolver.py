@@ -243,7 +243,7 @@ def cache(func):
             resolver_id = self.getResolverId()
             now = datetime.datetime.now()
             tdelta = datetime.timedelta(seconds=self.cache_timeout)
-            if not resolver_id in CACHE:
+            if resolver_id not in CACHE:
                 CACHE[resolver_id] = {"getUserId": {},
                                       "getUserInfo": {},
                                       "_getDN": {}}
@@ -716,7 +716,7 @@ class IdResolver (UserIdResolver):
         ret = []
         self._bind()
         attributes = list(self.userinfo.values())
-        ad_timestamp = get_ad_timestamp_now()
+        get_ad_timestamp_now()
         if self.uidtype.lower() != "dn":
             attributes.append(str(self.uidtype))
 
@@ -1357,7 +1357,7 @@ class IdResolver (UserIdResolver):
         if start_tls:
             l.open(read_server_info=False)
             log.debug("Doing start_tls")
-            r = l.start_tls(read_server_info=False)
+            l.start_tls(read_server_info=False)
 
         return l
 

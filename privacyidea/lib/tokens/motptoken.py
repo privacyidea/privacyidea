@@ -132,7 +132,7 @@ class MotpTokenClass(TokenClass):
         self.set_type("motp")
         self.hKeyRequired = True
         return
-    
+
     @log_with(log)
     def get_init_detail(self, params=None, user=None):
         """
@@ -142,7 +142,7 @@ class MotpTokenClass(TokenClass):
         response_detail = TokenClass.get_init_detail(self, params, user)
         otpkey = self.init_details.get('otpkey')
         if otpkey:
-            tok_type = self.type.lower()
+            self.type.lower()
             if user is not None:
                 try:
                     motp_url = create_motp_url(otpkey,
@@ -156,7 +156,7 @@ class MotpTokenClass(TokenClass):
                 except Exception as ex:   # pragma: no cover
                     log.debug("{0!s}".format(traceback.format_exc()))
                     log.error('failed to set motp url: {0!r}'.format(ex))
-                    
+
         return response_detail
 
     @log_with(log)
@@ -182,7 +182,7 @@ class MotpTokenClass(TokenClass):
                 otpKey = getParam(param, "otpkey", required)
 
             param['otpkey'] = otpKey
-            
+
         # motp token specific
         mOTPPin = getParam(param, "motppin", required)
         self.token.set_user_pin(mOTPPin)

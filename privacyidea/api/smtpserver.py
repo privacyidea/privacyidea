@@ -27,17 +27,15 @@ registration.
 The code of this module is tested in tests/test_api_smtpserver.py
 """
 from flask import (Blueprint,
-                   request, current_app)
+                   request)
 from .lib.utils import (getParam,
                         required,
                         send_result)
 from ..lib.log import log_with
-from ..lib.crypto import decryptPassword, FAILED_TO_DECRYPT_PASSWORD
 from ..lib.policy import ACTION
 from ..lib.utils import is_true
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from flask import g
-from flask_babel import gettext as _
 import logging
 from privacyidea.lib.smtpserver import (add_smtpserver, list_smtpservers,
                                         delete_smtpserver, send_or_enqueue_email)

@@ -22,14 +22,14 @@ be inserted at one time.
 
 MIGRATE defines which elements should be migrated: This can be tokens, tokeninfo and assignment.
 
-The ASSIGNMENTS section defines, to which privacyIDEA users the old token-assignments 
+The ASSIGNMENTS section defines, to which privacyIDEA users the old token-assignments
     should be migrated to.
 
-The "resolver" key maps LinOTP-resolvers to privacyIDEA-Resolvers. 
+The "resolver" key maps LinOTP-resolvers to privacyIDEA-Resolvers.
 The key is the LinOTP resolver and the value is the new privacyIDEA resolver.
 
 The "realm" key puts tokens that are migrated into the specified privacyIDEA resolver (key)
-into the given privacyIDEA realm (value). Note: There is no logic checking with the 
+into the given privacyIDEA realm (value). Note: There is no logic checking with the
 privacyIDEA resolver-realm-configuration done.
 So take care that the privacyIDEA resolver is really located in the specified privacyIDEA realm.
 
@@ -43,7 +43,7 @@ LinOTP (sometimes) uses a mixed endian notation for the objectGUID of users in A
 So if your users can not be found due to an unknown objectGUID, you need to set "convert_endian"
 to true. This will convert the mixed endian notation to a standard notation used by privacyIDEA.
 
-The NEW_TOKENINFO section can set any arbitrary tokeninfo for the 
+The NEW_TOKENINFO section can set any arbitrary tokeninfo for the
 migrated tokens.
 """
 from sqlalchemy import create_engine
@@ -240,7 +240,7 @@ def migrate(config_obj):
                            Column("name", Unicode(255), default=""),
                            Column("rtype", Unicode(255), default=""))
 
-    resolver_config_table = Table("resolverconfig", metadata,
+    Table("resolverconfig", metadata,
                                   Column("id", Integer,
                                          Sequence('resolverconf_seq'),
                                          primary_key=True),
@@ -251,7 +251,7 @@ def migrate(config_obj):
                                   Column("Description", Unicode(2000), default=""),
                                   )
 
-    resolverrealm_table = Table("resolverrealm", metadata,
+    Table("resolverrealm", metadata,
                                 Column("id", Integer,
                                        Sequence('resolverrealm_seq'),
                                        primary_key=True),
@@ -319,8 +319,8 @@ def migrate(config_obj):
     linotp_engine = create_engine(config_obj.LINOTP_URI)
     privacyidea_engine = create_engine(config_obj.PRIVACYIDEA_URI)
 
-    linotp_session = sessionmaker(bind=linotp_engine)()
-    privacyidea_session = sessionmaker(bind=privacyidea_engine)()
+    sessionmaker(bind=linotp_engine)()
+    sessionmaker(bind=privacyidea_engine)()
 
     conn_linotp = linotp_engine.connect()
     conn_pi = privacyidea_engine.connect()
@@ -536,7 +536,7 @@ def usage():
     print("""
 privacyidea-migrate-linotp.py --generate-example-config [--config <config file>]
 
-    --generate-example-config, -g   Output an example config file. 
+    --generate-example-config, -g   Output an example config file.
                                     This is a JSON file, that needs to be passed
                                     to this command.
 

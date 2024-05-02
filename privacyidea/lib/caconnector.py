@@ -35,7 +35,6 @@ from ..models import (CAConnector,
                       CAConnectorConfig)
 from ..api.lib.utils import required
 from ..api.lib.utils import getParam
-from .error import CAError, CSRError, CSRPending
 from sqlalchemy import func
 from .crypto import encryptPassword, decryptPassword
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)

@@ -21,24 +21,9 @@
 __doc__ = """This is the event handler module modifying request parameters.
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
-from privacyidea.lib.token import (get_token_types, set_validity_period_end,
-                                   set_validity_period_start)
-from privacyidea.lib.realm import get_realms
-from privacyidea.lib.token import (set_realms, remove_token, enable_token,
-                                   unassign_token, init_token, set_description,
-                                   set_count_window, add_tokeninfo,
-                                   set_failcounter, delete_tokeninfo)
-from privacyidea.lib.utils import (parse_date, is_true,
-                                   parse_time_offset_from_now)
-from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
 from privacyidea.lib import _
-import json
 import logging
 import re
-import datetime
-import yaml
-from dateutil.parser import parse as parse_date_string
-from dateutil.tz import tzlocal
 
 log = logging.getLogger(__name__)
 
@@ -71,14 +56,14 @@ class RequestManglerEventHandler(BaseEventHandler):
         """
         """
         Usually we would only modify the parameters in the PRE location, so that
-        the request is handled with the modified parameters. 
-        
+        the request is handled with the modified parameters.
+
         But we could also modify the parameters in the POST location, so that the request
         is handled with the original parameters, but *after* the request is handled,
         some parameters can be changed to that an event handler, that is called *After*
         the RequestMangler gets other input parameters.
-        
-        At the time of writing I can not make up a scenario, but technically it could 
+
+        At the time of writing I can not make up a scenario, but technically it could
         make sense.
         """
         return ["post", "pre"]
@@ -157,7 +142,7 @@ class RequestManglerEventHandler(BaseEventHandler):
                         """
                         Note: Beware user supplied  format-string like "match_pattern", it can
                         be dangerous: http://lucumr.pocoo.org/2016/12/29/careful-with-str-format/
-                        but in our case it is fine because no objects are involved, as m.groups() 
+                        but in our case it is fine because no objects are involved, as m.groups()
                         always returns a tuple of strings
                         """
                         m = re.match("^" + match_pattern + "$", request.all_data.get(match_parameter))

@@ -37,8 +37,8 @@ class MachineTokenTestCase(MyTestCase):
     serialHotp = "hotp2"
 
     def test_00_setup(self):
-        token1 = init_token({"type": "spass", "serial": self.serial})
-        resolver1 = save_resolver({"name": self.resolvername,
+        init_token({"type": "spass", "serial": self.serial})
+        save_resolver({"name": self.resolvername,
                                    "type": "hosts",
                                    "filename": HOSTSFILE})
         init_token({"type": "hotp", "serial": self.serialHotp, "otpkey": "313233"})
@@ -99,7 +99,7 @@ class MachineTokenTestCase(MyTestCase):
     def test_04_list_tokens_for_machine(self):
         serial = "serial2"
         init_token({"type": "spass", "serial": serial})
-        mt = attach_token(serial, "luks", hostname="gandalf")
+        attach_token(serial, "luks", hostname="gandalf")
 
         tokenlist = list_machine_tokens(hostname="gandalf")
 
@@ -189,11 +189,11 @@ class MachineTokenTestCase(MyTestCase):
         self.assertEqual(token_obj.type, "sshkey")
 
         # Attach the token to the machine "gandalf" with the application SSH
-        r = attach_token(serial=self.serial2,
+        attach_token(serial=self.serial2,
                          application="ssh", options={"user": "testuser", "service_id": "webserver"})
-        r = attach_token(serial=self.serial2,
+        attach_token(serial=self.serial2,
                          application="ssh", options={"user": "root", "service_id": "mailserver"})
-        r = attach_token(serial=self.serial2,
+        attach_token(serial=self.serial2,
                          application="ssh", options={"user": "testuser", "service_id": "mailserver"})
         mt = list_token_machines(self.serial2)
         self.assertEqual(3, len(mt), mt)

@@ -21,7 +21,6 @@
 
 import binascii
 
-from OpenSSL import crypto
 from cryptography import x509
 
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
@@ -42,7 +41,6 @@ from privacyidea.lib.log import log_with
 import logging
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION
-from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode, is_true, convert_imagefile_to_dataimage
 
 __doc__ = """
@@ -422,7 +420,7 @@ device in the *assertion* and the *authenticatorData*, *clientDataJSON* and
 
 *clientDataJSON*, *authenticatorData* and *signature* should be encoded as
 web-safe base64 without padding. For more detailed instructions, refer to
-“2. Step” under “Enrollment” above. 
+“2. Step” under “Enrollment” above.
 
 The *userHandle* and *assertionClientExtensions* are optional and should be
 omitted, if not provided by the authenticator. The
@@ -608,7 +606,7 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     WEBAUTHNACTION.TIMEOUT: {
                         'type': 'int',
-                        'desc': _("The time in seconds the user has to confirm authorization on his WebAuthn token. " 
+                        'desc': _("The time in seconds the user has to confirm authorization on his WebAuthn token. "
                                   "Note: You will want to increase the ChallengeValidityTime along with this. "
                                   "Default: 60")
                     },

@@ -21,7 +21,7 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#    
+#
 """
 contains Errors and Exceptions
 """
@@ -80,7 +80,7 @@ class privacyIDEAError(Exception):
         ### if we have here unicode, we might fail with conversion error
         try:
             res = pstr % (self.id, self.message)
-        except Exception as exx:
+        except Exception:
             res = "ERR{0:d}: {1!r}".format(self.id, self.message)
         return res
 

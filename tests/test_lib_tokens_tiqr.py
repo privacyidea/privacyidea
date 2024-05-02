@@ -137,7 +137,7 @@ class OCRASuiteTestCase(MyTestCase):
         c = os.create_challenge()
         self.assertEqual(len(c), 10)
         # Test, if this is a number
-        i_c = int(c)
+        int(c)
 
 
 KEY20 = "3132333435363738393031323334353637383930"
@@ -601,7 +601,7 @@ class TiQRTokenTestCase(MyApiTestCase):
     def test_05_api_endpoint_with_multiple_tokens(self):
         # We test the behavior of the TiQR token with other CR tokens (ie. an email token) present
         smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
-        other_token = init_token({"type": "email",
+        init_token({"type": "email",
                                   "email": "some@example.com",
                                   "pin": "somepin"}, User('selfservice', self.realm1))
         pin = "tiqr"

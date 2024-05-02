@@ -3,7 +3,6 @@ This test case test the REST API
 api/applications.py
 """
 
-import json
 from .base import MyApiTestCase
 
 
@@ -16,7 +15,7 @@ class APIApplicationsResolverTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
+            res.json.get("detail")
             value = result.get("value")
             self.assertIn("ssh", value)
             self.assertIn("luks", value)

@@ -299,7 +299,7 @@ class AESHardwareSecurityModule(SecurityModule):  # pragma: no cover
                 (PyKCS11.CKA_UNWRAP, True),
                 (PyKCS11.CKA_EXTRACTABLE, False)
             ]
-            aesKey = session.generateKey(aesTemplate)
+            session.generateKey(aesTemplate)
             key_labels[kl] = label
 
         session.logout()

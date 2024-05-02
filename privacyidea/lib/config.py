@@ -51,7 +51,6 @@ from .resolvers.UserIdResolver import UserIdResolver
 from .machines.base import BaseMachineResolver
 from .caconnectors.baseca import BaseCAConnector
 # We need these imports to return the list of CA connector types. Bummer: New import for each new Class anyway.
-from .caconnectors import localca, msca
 from .utils import reload_db, is_true
 import importlib
 import datetime
@@ -407,7 +406,6 @@ def get_resolver_classes():
     :return: array of resolver classes
     :rtype: array
     """
-    resolver_classes = {}
     if "pi_resolver_classes" not in this.config:
         (r_classes, r_types) = get_resolver_class_dict()
         this.config["pi_resolver_types"] = r_types
@@ -835,7 +833,7 @@ def get_caconnector_module_list():
     modules = []
     for mod_name in module_list:
         mod_name = ".".join(mod_name.split(".")[:-1])
-        class_name = mod_name.split(".")[-1:]
+        mod_name.split(".")[-1:]
         try:
             log.debug("import module: {0!s}".format(mod_name))
             module = importlib.import_module(mod_name)

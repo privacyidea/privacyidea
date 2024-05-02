@@ -1,7 +1,6 @@
 from .base import MyApiTestCase
 from privacyidea.lib.monitoringstats import write_stats
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
-from privacyidea.models import db
 import datetime
 
 

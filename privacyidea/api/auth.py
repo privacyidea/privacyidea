@@ -60,8 +60,8 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
-from privacyidea.api.lib.postpolicy import (postpolicy, get_webui_settings, add_user_detail_to_response, check_tokentype,
-                                            check_tokeninfo, check_serial, no_detail_on_fail, no_detail_on_success,
+from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
+                                            check_tokeninfo, check_serial, no_detail_on_success,
                                             get_webui_settings)
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,

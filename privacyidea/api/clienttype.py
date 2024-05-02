@@ -23,9 +23,8 @@ privacyIDDEA authentication clients, which used privacyIDEA to authenticate.
   GET /clients
 """
 from flask import (Blueprint, request)
-from .lib.utils import (send_result, getParam)
+from .lib.utils import (send_result)
 from ..api.lib.prepolicy import prepolicy, check_base_action
-from ..api.auth import admin_required
 from ..lib.policy import ACTION
 from flask import g
 import logging
@@ -71,5 +70,5 @@ def get_clients():
     """
     clients = get_clientapplication()
     g.audit_object.log({'success': True})
-    
+
     return send_result(clients)

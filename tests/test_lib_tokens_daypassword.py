@@ -1,9 +1,7 @@
 """
 This test file tests the lib.tokens.daypasswordtoken.py
 """
-import datetime
 import binascii
-import logging
 import time
 from unittest import mock
 from .base import MyTestCase, FakeAudit, FakeFlaskG

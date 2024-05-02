@@ -381,10 +381,10 @@ class UserTestCase(MyTestCase):
         self.assertTrue(root.exist())
 
     def test_16_ordered_resolver(self):
-        rid = save_resolver({"resolver": "resolver2",
+        save_resolver({"resolver": "resolver2",
                              "type": "passwdresolver",
                              "fileName": PWFILE})
-        rid = save_resolver({"resolver": "reso4",
+        save_resolver({"resolver": "reso4",
                              "type": "passwdresolver",
                              "fileName": PWFILE})
 
@@ -507,7 +507,7 @@ class UserTestCase(MyTestCase):
         self.assertEqual(len(failed), 0)
 
         # Comparing different objects fails
-        self.assertFalse(User("salesman", "ldap") == None)
+        self.assertFalse(User("salesman", "ldap") is None)
         # comparing different realm or resolver fails
         self.assertFalse(User("cornelius", self.realm1) == User("salesman", "ldap"))
         # comparing different users fails
