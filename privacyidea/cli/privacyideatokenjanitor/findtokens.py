@@ -540,18 +540,22 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                     if tokenobj.type.lower() not in ["totp", "hotp"]:
                         continue
                     token_dict = tokenobj._to_dict(b32=b32)
-                    owner = "{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm)if tokenobj.user else "n/a"
+                    owner = "{!s}@{!s}".format(
+                        tokenobj.user.login,
+                        tokenobj.user.realm) if tokenobj.user else "n/a"
                     if type == "totp":
-                        print("{!s}, {!s}, {!s}, {!s}, {!s}, {!s}".format(owner, token_dict.get("serial"),
-                                                                          token_dict.get("otpkey"),
-                                                                          token_dict.get("type"),
-                                                                          token_dict.get("otplen"),
-                                                                          token_dict.get("timestep")))
+                        print("{!s}, {!s}, {!s}, {!s}, {!s}, {!s}".format(
+                            owner, token_dict.get("serial"),
+                            token_dict.get("otpkey"),
+                            token_dict.get("type"),
+                            token_dict.get("otplen"),
+                            token_dict.get("info_list", {}).get("timStep")))
                     else:
-                        print("{!s}, {!s}, {!s}, {!s}, {!s}".format(owner, token_dict.get("serial"),
-                                                                    token_dict.get("otpkey"),
-                                                                    token_dict.get("type"),
-                                                                    token_dict.get("otplen")))
+                        print("{!s}, {!s}, {!s}, {!s}, {!s}".format(
+                            owner, token_dict.get("serial"),
+                            token_dict.get("otpkey"),
+                            token_dict.get("type"),
+                            token_dict.get("otplen")))
             elif yaml:
                 token_list = []
                 for tokenobj in tlist:
