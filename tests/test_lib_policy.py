@@ -843,7 +843,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(user_str, "<cornelius.reso1@realm1>")
         # But the user "cornelius" is also contained in other resolves in
         # this realm
-        r = user.get_ordererd_resolvers()
+        r = user.get_ordered_resolvers()
         self.assertEqual(r, ["reso1", "resoX", "resoA"])
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())

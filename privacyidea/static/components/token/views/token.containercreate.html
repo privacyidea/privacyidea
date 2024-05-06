@@ -1,0 +1,37 @@
+<div class="well" ng-controller="containerCreateController">
+    <form name="formCreateContainer" role="form">
+        <!-- Container Type -->
+        <div class="form-group">
+            <select class="form-control"
+                id="containertype"
+                ng-change="changeContainerType()"
+                ng-model="form.containerType"
+                ng-options="type as desc for (type, desc) in formData.containerTypes">
+        </select>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group" ng-hide="loggedInUser.role == 'user' && !checkRight('setdescription')">
+            <label for="description" translate>Description</label>
+            <input type="text" class="form-control" id="description"
+                   autocomplete="new-password"
+                   placeholder="{{ 'Some nice words...'|translate }}"
+                   ng-model="form.description" />
+        </div>
+
+        <!-- User: will be $scope.newUser.user to use with fixUser() -->
+        <h4 translate>Assign container to user</h4>
+        <div>
+            <div assign-user new-user-object="newUser" realms="realms"
+                 default-realm="defaultRealm">
+            </div>
+        </div>
+        <!-- Submit Button -->
+        <div class="text-center">
+            <button type="button" ng-click="createContainer()"
+                    class="btn btn-primary">
+                <span>Create</span>
+            </button>
+        </div>
+    </form>
+</div>

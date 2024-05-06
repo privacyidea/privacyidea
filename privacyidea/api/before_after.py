@@ -28,6 +28,7 @@ It also contains the error handlers.
 """
 
 from .lib.utils import (send_error, get_all_params)
+from .container import container_blueprint
 from ..lib.framework import get_app_config_value
 from ..lib.user import get_user_from_param
 import logging
@@ -104,6 +105,7 @@ def teardown_request(exc):
 
 
 @token_blueprint.before_request
+@container_blueprint.before_request
 @audit_blueprint.before_request
 @system_blueprint.before_request
 @user_required
@@ -265,6 +267,7 @@ def before_request():
 @recover_blueprint.after_request
 @tokengroup_blueprint.after_request
 @serviceid_blueprint.after_request
+@container_blueprint.after_request
 @jwtauth.after_request
 @postrequest(sign_response, request=request)
 def after_request(response):
@@ -292,6 +295,7 @@ def after_request(response):
 @monitoring_blueprint.app_errorhandler(AuthError)
 @tokengroup_blueprint.app_errorhandler(AuthError)
 @serviceid_blueprint.app_errorhandler(AuthError)
+@container_blueprint.app_errorhandler(AuthError)
 def auth_error(error):
     if "audit_object" in g:
         message = ''
@@ -328,6 +332,7 @@ def auth_error(error):
 @ttype_blueprint.app_errorhandler(PolicyError)
 @tokengroup_blueprint.app_errorhandler(PolicyError)
 @serviceid_blueprint.app_errorhandler(PolicyError)
+@container_blueprint.app_errorhandler(PolicyError)
 def policy_error(error):
     if "audit_object" in g:
         g.audit_object.add_to_log({"info": error.message}, add_with_comma=True)
@@ -351,6 +356,7 @@ def policy_error(error):
 @ttype_blueprint.app_errorhandler(ResourceNotFoundError)
 @tokengroup_blueprint.errorhandler(ResourceNotFoundError)
 @serviceid_blueprint.errorhandler(ResourceNotFoundError)
+@container_blueprint.app_errorhandler(ResourceNotFoundError)
 def resource_not_found_error(error):
     """
     This function is called when an ResourceNotFoundError occurs.
@@ -379,6 +385,7 @@ def resource_not_found_error(error):
 @ttype_blueprint.app_errorhandler(privacyIDEAError)
 @tokengroup_blueprint.app_errorhandler(privacyIDEAError)
 @serviceid_blueprint.app_errorhandler(privacyIDEAError)
+@container_blueprint.app_errorhandler(privacyIDEAError)
 def privacyidea_error(error):
     """
     This function is called when an privacyIDEAError occurs.
@@ -408,6 +415,7 @@ def privacyidea_error(error):
 @ttype_blueprint.app_errorhandler(500)
 @tokengroup_blueprint.app_errorhandler(500)
 @serviceid_blueprint.app_errorhandler(500)
+@container_blueprint.app_errorhandler(500)
 def internal_error(error):
     """
     This function is called when an internal error (500) occurs.

@@ -22,14 +22,37 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
+/*
+angular.module('privacyideaApp.containerStates', ['ui.router', 'privacyideaApp.versioning'])
+    .config(['$stateProvider', 'versioningSuffixProviderProvider',
+        function ($stateProvider, versioningSuffixProviderProvider) {
+            let instance = window.location.pathname;
+            if (instance === "/") {
+                instance = "";
+            }
+            // TODO change to container path if needed
+            let tokenpath = instance + "/static/components/token/views/";
+            $stateProvider
+                .state('container', {
+                    url: "/container",
+                    templateUrl: tokenpath + "token.containercreate.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "containerCreateController"
+                })
+                .state('container.create', {
+                    url: "/container/create",
+                    templateUrl: tokenpath + "token.containercreate.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "containerCreateController"
+                })
+        }
+    ]);
+*/
 angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versioning']).config(
     ['$stateProvider', 'versioningSuffixProviderProvider',
         function ($stateProvider, versioningSuffixProviderProvider) {
             // get the instance, the pathname part
             var instance = window.location.pathname;
             if (instance === "/") {
-               instance = "";
+                instance = "";
             }
             var tokenpath = instance + "/static/components/token/views/";
             $stateProvider
@@ -66,7 +89,7 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
                     url: "/enroll/:realmname/:username",
                     templateUrl: tokenpath + "token.enroll.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "tokenEnrollController",
-                    params: { realmname: null, username: null },
+                    params: {realmname: null, username: null},
                 })
                 .state('token.rollover', {
                     url: "/rollover/:tokenType/:tokenSerial",
@@ -92,6 +115,21 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
                     url: "/applications/:application",
                     templateUrl: tokenpath + "token.applications.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "tokenApplicationsController",
-                    params: { "application": "ssh"}
-                });
+                    params: {"application": "ssh"}
+                })
+                .state('token.containercreate', {
+                    url: "/container",
+                    templateUrl: tokenpath + "token.containercreate.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "containerCreateController"
+                })
+                .state('token.containerlist', {
+                    url: "/container/list",
+                    templateUrl: tokenpath + "token.containerlist.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "containerListController"
+                })
+                .state('token.containerdetails', {
+                    url: "/container/details/:containerSerial",
+                    templateUrl: tokenpath + "token.containerdetails.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "containerDetailsController"
+                })
         }]);

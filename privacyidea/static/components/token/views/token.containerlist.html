@@ -1,0 +1,44 @@
+<div class="table-responsive">
+<table class="table table-bordered table-striped" id="tableContainerList">
+<thead>
+<tr>
+    <th class="pifilter">
+        <button class="btn btn-default unsorted"
+                        pi-sort-by="serial"
+                        translate>serial
+        </button>
+    </th>
+    <th>
+        Type
+    </th>
+    <th>
+        Description
+    </th>
+
+    <th>
+        User
+    </th>
+</tr>
+</thead>
+    <tbody>
+        <tr ng-repeat="container in containers">
+            <td>
+                <a ui-sref="token.containerdetails({containerSerial: container.serial})">{{ container.serial }}</a>
+            </td>
+            <td>
+                {{ container.type }}
+            </td>
+            <td>
+                {{ container.description }}
+            </td>
+            <td ng-show="loggedInUser.role == 'admin'">
+                <a ui-sref="user.details({username: container.users[0].user_name,
+                            realmname: container.users[0].user_realm,
+                            resolvername: token.resolver,
+                            editable: false})">
+                {{ container.users[0].user_name }}</a>
+            </td>
+        </tr>
+    </tbody>
+</table>
+</div>

@@ -59,7 +59,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                                                      MachineFactory, inform,
                                                      gettextCatalog) {
     $scope.tokenSerial = $stateParams.tokenSerial;
-    // This is the parents object
+    // This is the parent object
     $scope.selectedToken.serial = $scope.tokenSerial;
     $scope.editCountWindow = false;
     $scope.selectedRealms = {};
@@ -83,7 +83,6 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
     });
     // scroll to the top of the page
     document.body.scrollTop = document.documentElement.scrollTop = 0;
-
 
     // define functions
     $scope.get = function () {
@@ -116,7 +115,6 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
 
     // initialize
     $scope.get();
-
 
     $scope.return_to = function () {
         // After deleting the token, we return here.
@@ -236,14 +234,12 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             $('#dialogTokenDelete').modal();
         } else {
             $scope.delete();
-        };
+        }
      };
-
 
     $scope.delete = function () {
         TokenFactory.delete($scope.tokenSerial, $scope.return_to);
     };
-
 
     $scope.setRandomPin = function () {
         TokenFactory.setrandompin($scope.tokenSerial, function (data) {
@@ -315,8 +311,6 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             $scope.get();
         });
     };
-
-
 
     $scope.testOtp = function (otponly) {
         var params = {
@@ -418,7 +412,6 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             $scope.getMachines();
         };
 
-
         $scope.changeApplication = function () {
             if (AuthFactory.checkRight("manage_machine_tokens")) {
                 // read the application definition from the server
@@ -436,8 +429,6 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                 $scope.getMachines();
             }
         }
-
-
     }  // End of admin functions
 
 
@@ -463,6 +454,4 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         }
         return false;
     };
-
-
 }]);

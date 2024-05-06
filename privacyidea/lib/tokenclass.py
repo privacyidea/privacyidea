@@ -107,9 +107,7 @@ from privacyidea.lib.policy import (get_action_values_from_options, SCOPE, ACTIO
 from base64 import b32encode
 from binascii import unhexlify
 
-
-
-#DATE_FORMAT = "%d/%m/%y %H:%M"
+# DATE_FORMAT = "%d/%m/%y %H:%M"
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 # LASTAUTH is utcnow()
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -151,7 +149,7 @@ class CLIENTMODE(object):
     U2F = 'u2f'
     WEBAUTHN = 'webauthn'
 
-    
+
 class ROLLOUTSTATE(object):
     CLIENTWAIT = 'clientwait'
     # The rollout is pending in the backend, like CSRs that need to be approved
@@ -165,7 +163,6 @@ class ROLLOUTSTATE(object):
 
 
 class TokenClass(object):
-
     # Class properties
     using_pin = True
     hKeyRequired = False
@@ -175,7 +172,6 @@ class TokenClass(object):
     can_verify_enrollment = False
     # If the token is enrollable via multichallenge
     is_multichallenge_enrollable = False
-
 
     @log_with(log)
     def __init__(self, db_token):
@@ -247,9 +243,9 @@ class TokenClass(object):
 
         if not self.user:
             # If the tokenowner is not set yet, set it / avoid setting the same tokenowner multiple times
-            r = TokenOwner(token_id=self.token.id,
-                           user_id=uid, resolver=resolvername,
-                           realmname=user.realm).save()
+            TokenOwner(token_id=self.token.id,
+                       user_id=uid, resolver=resolvername,
+                       realmname=user.realm).save()
         # set the tokenrealm
         self.set_realms([user.realm])
 
@@ -338,7 +334,7 @@ class TokenClass(object):
         user_info = user_object.info
         user_identifier = "{0!s}_{1!s}".format(user_object.login, user_object.realm)
         user_displayname = "{0!s} {1!s}".format(user_info.get("givenname", "."),
-                                      user_info.get("surname", "."))
+                                                user_info.get("surname", "."))
         return user_identifier, user_displayname
 
     @check_token_locked
@@ -536,7 +532,7 @@ class TokenClass(object):
             pin_match = self.check_pin(pin, user=user, options=options)
             if pin_match is True:
                 otp_counter = self.check_otp(otpval, options=options)
-                #self.set_otp_count(otp_counter)
+                # self.set_otp_count(otp_counter)
 
         return pin_match, otp_counter, reply
 
@@ -611,8 +607,7 @@ class TokenClass(object):
             # The token is disabled
             self.token.active = False
 
-
-        #if genkey not in [0, 1]:
+        # if genkey not in [0, 1]:
         #    raise ParameterError("TokenClass supports only genkey in  range ["
         #                         "0,1] : %r" % genkey)
 
@@ -801,7 +796,7 @@ class TokenClass(object):
         :type add: boolean
         """
         self.token.set_realms(realms, add=add)
-        
+
     def get_realms(self):
         """
         Return a list of realms the token is assigned to
@@ -810,10 +805,10 @@ class TokenClass(object):
         :rtype: list
         """
         return self.token.get_realms()
-        
+
     def get_serial(self):
         return self.token.serial
-    
+
     def get_tokentype(self):
         return self.token.tokentype
 
@@ -1359,7 +1354,7 @@ class TokenClass(object):
             reset_counter = True
 
         if (reset_counter and self.token.active and self.token.failcount <
-            self.token.maxfail):
+                self.token.maxfail):
             self.set_failcount(0)
 
         # make DB persistent immediately, to avoid the re-usage of the counter
@@ -1744,7 +1739,7 @@ class TokenClass(object):
         :return: Flask Response or text
         """
         raise ParameterError("{0!s} does not support the API endpoint".format(
-                             cls.get_tokentype()))
+            cls.get_tokentype()))
 
     @staticmethod
     def test_config(params=None):

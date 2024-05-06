@@ -657,7 +657,7 @@ class PolicyClass(object):
                         # of this user in the realm
                         if not user_resolvers:
                             user_resolvers = User(user,
-                                                  realm=realm).get_ordererd_resolvers()
+                                                  realm=realm).get_ordered_resolvers()
                         for reso in user_resolvers:
                             value_found, _v_ex = self._search_value(
                                 policy.get("resolver"), reso)
@@ -1201,7 +1201,7 @@ class PolicyClass(object):
             user_object = None
             # During login of the admin there is no token, no tokeninfo and no user info available.
             # Also, the http header is only passed down to the policy Match-class, but not in the get_rights method.
-            # Thus we can not check any extended conditions for admins at this point.
+            # Thus, we can not check any extended conditions for admins at this point.
             extended_condition_check = CONDITION_CHECK.DO_NOT_CHECK_AT_ALL
         elif scope == SCOPE.USER:
             admin_user = None
@@ -1210,7 +1210,7 @@ class PolicyClass(object):
             user_object = User(username, realm)
             # During login of the admin there is no token and no tokeninfo available.
             # Also, the http header is only passed down to the policy Match-class, but not in the get_rights method.
-            # Thus we can only check the extended condition "userinfo" for users at this point.
+            # Thus, we can only check the extended condition "userinfo" for users at this point.
             extended_condition_check = CONDITION_CHECK.ONLY_CHECK_USERINFO
         else:
             raise PolicyError("Unknown scope: {}".format(scope))
@@ -1269,7 +1269,7 @@ class PolicyClass(object):
         """
         enroll_types = {}
         # In this case we do not distinguish the userobject as for whom an administrator would enroll a token
-        # We simply want to know, which tokentypes a user or an admin in generally allowed to enroll. This is
+        # We simply want to know which tokentypes a user or an admin in generally allowed to enroll. This is
         # why we pass an empty params.
         (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(logged_in_user, {})
         user_object = None

@@ -30,6 +30,7 @@ contains Errors and Exceptions
 
 from privacyidea.lib import _
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -78,8 +79,7 @@ class privacyIDEAError(Exception):
         if isinstance(self.message, str):
             pstr = "ERR%d: %s"
 
-
-        ### if we have here unicode, we might fail with conversion error
+        # if we have unicode here, we might fail with conversion error
         try:
             res = pstr % (self.id, self.message)
         except Exception as exx:
@@ -88,7 +88,7 @@ class privacyIDEAError(Exception):
 
     def __repr__(self):
         ret = '{0!s}(description={1!r}, id={2:d})'.format(type(self).__name__,
-                                             self.message, self.id)
+                                                          self.message, self.id)
         return ret
 
 

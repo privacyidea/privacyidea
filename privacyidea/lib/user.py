@@ -162,7 +162,7 @@ class User(object):
         """
         Compare two user objects and return true, if they are not equal
 
-        :param other: The other User objkect
+        :param other: The other User object
         :return: True or False
         """
         return not self.__eq__(other)
@@ -191,7 +191,7 @@ class User(object):
     __nonzero__ = __bool__
     
     @log_with(log)
-    def get_ordererd_resolvers(self):
+    def get_ordered_resolvers(self):
         """
         returns a list of resolvernames ordered by priority.
         The resolver with the lowest priority is the first.
@@ -233,7 +233,7 @@ class User(object):
             return [self.resolver]
         
         resolvers = []
-        for resolvername in self.get_ordererd_resolvers():
+        for resolvername in self.get_ordered_resolvers():
             # test, if the user is contained in this resolver
             if self._locate_user_in_resolver(resolvername):
                 break
@@ -303,13 +303,13 @@ class User(object):
             # An empty user has no info
             return {}
         (uid, _rtype, _resolver) = self.get_user_identifiers()
-        if uid == None:
+        if uid is None:
             return {}
         y = get_resolver_object(self.resolver)
-        userInfo = y.getUserInfo(uid)
+        user_info = y.getUserInfo(uid)
         # Now add the custom attributes, this is used e.g. in ADDUSERINRESPONSE
-        userInfo.update(self.attributes)
-        return userInfo
+        user_info.update(self.attributes)
+        return user_info
 
     @log_with(log)
     def set_attribute(self, attrkey, attrvalue, attrtype=None):

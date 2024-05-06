@@ -113,7 +113,7 @@ def send_result(obj, rid=1, details=None):
     :param details: optional parameter, which allows to provide more detail
     :type  details: None or simple type like dict, list or string/unicode
 
-    :return: json rendered sting result
+    :return: json rendered string result
     :rtype: string
     """
     return jsonify(prepare_result(obj, rid, details))

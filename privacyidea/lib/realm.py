@@ -29,14 +29,13 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''
+"""
 These are the library functions to create, modify and delete realms in the
 database. It depends on the lib.resolver.
 
 It is independent of any user or token libraries and can be tested standalone
 in tests/test_lib_realm.py
-'''
-import uuid
+"""
 
 from ..models import (Realm,
                       ResolverRealm,
@@ -46,13 +45,14 @@ from privacyidea.lib.config import get_config_object
 import logging
 from privacyidea.lib.utils import sanity_name_check, fetch_one_resource, is_true
 from privacyidea.lib.utils.export import (register_import, register_export)
+
 log = logging.getLogger(__name__)
 
 
 @log_with(log)
 #@cache.memoize(10)
 def get_realms(realmname=None):
-    '''
+    """
     Either return all defined realms or a specific realm.
 
     :param realmname: the realm, that is of interest. If not given, all realms
@@ -60,7 +60,7 @@ def get_realms(realmname=None):
     :type realmname: string
     :return: a dict with realm description like
     :rtype: dict
-    '''
+    """
     config_object = get_config_object()
     realms = config_object.realm
     if realmname:
@@ -157,17 +157,17 @@ def delete_realm(realmname):
     :type  realmname: string
     """
     # Check if there is a default realm
-    defRealm = get_default_realm()
-    hadDefRealmBefore = (defRealm != "")
+    def_realm = get_default_realm()
+    had_def_realm_before = (def_realm != "")
 
     ret = fetch_one_resource(Realm, name=realmname).delete()
 
     # If there was a default realm before
     # and if there is only one realm left, we set the
     # remaining realm the default realm
-    if hadDefRealmBefore is True:
-        defRealm = get_default_realm()
-        if not defRealm:
+    if had_def_realm_before is True:
+        def_realm = get_default_realm()
+        if not def_realm:
             realms = get_realms()
             if len(realms) == 1:
                 for key in realms:

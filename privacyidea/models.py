@@ -43,6 +43,8 @@ from datetime import datetime, timedelta
 from dateutil.tz import tzutc
 from json import loads, dumps
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import Mapped
+
 from privacyidea.lib.crypto import (encrypt,
                                     encryptPin,
                                     decryptPin,
@@ -142,16 +144,11 @@ class TimestampMethodsMixin(object):
         return ret
 
 
-class Container(MethodsMixin, db.Model):
-    """
-    The "Container" table contains the containers and their associated tokens.
-    """
-
-    __tablename__ = 'container'
-    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
-    id = db.Column(db.Integer, Sequence("container_seq"), primary_key=True)
-    type = db.Column(db.Unicode(30), default='Generic', nullable=False)
-    tokens = db.relationship('Token', lazy='dynamic', back_populates='container')
+token_container_association_table = (
+    db.Table('tokencontainertoken',
+             db.metadata,
+             db.Column('token_id', db.Integer, db.ForeignKey('token.id'), primary_key=True),
+             db.Column('container_id', db.Integer, db.ForeignKey('tokencontainer.id'), primary_key=True)))
 
 
 class Token(MethodsMixin, db.Model):
@@ -222,9 +219,9 @@ class Token(MethodsMixin, db.Model):
     info_list = db.relationship('TokenInfo', lazy='select', backref='token')
     # This creates an attribute "token" in the TokenOwner object
     owners = db.relationship('TokenOwner', lazy='dynamic', backref='token')
+
     # Container
-    container_id = db.Column(db.Integer(), db.ForeignKey("container.id"))
-    container = db.relationship("Container", back_populates="tokens")
+    container = db.relationship('TokenContainer', secondary=token_container_association_table, back_populates='tokens')
 
     def __init__(self, serial, tokentype="",
                  isactive=True, otplen=6,
@@ -272,26 +269,26 @@ class Token(MethodsMixin, db.Model):
 
     @log_with(log)
     def delete(self):
-        # some DBs (e.g. DB2) run in deadlock, if the TokenRealm entry
-        # is deleted via  key relation, so we delete it explicit
+        # some DBs (e.g. DB2) run in a deadlock, if the TokenRealm entry
+        # is deleted via key relation, so we delete it explicitly
         ret = self.id
-        db.session.query(TokenRealm)\
-                  .filter(TokenRealm.token_id == self.id)\
-                  .delete()
-        db.session.query(TokenOwner)\
-                  .filter(TokenOwner.token_id == self.id)\
-                  .delete()
-        db.session.query(MachineToken)\
-                  .filter(MachineToken.token_id == self.id)\
-                  .delete()
-        db.session.query(Challenge)\
-                  .filter(Challenge.serial == self.serial)\
-                  .delete()
-        db.session.query(TokenInfo)\
-                  .filter(TokenInfo.token_id == self.id)\
-                  .delete()
-        db.session.query(TokenTokengroup)\
-            .filter(TokenTokengroup.token_id == self.id)\
+        db.session.query(TokenRealm) \
+            .filter(TokenRealm.token_id == self.id) \
+            .delete()
+        db.session.query(TokenOwner) \
+            .filter(TokenOwner.token_id == self.id) \
+            .delete()
+        db.session.query(MachineToken) \
+            .filter(MachineToken.token_id == self.id) \
+            .delete()
+        db.session.query(Challenge) \
+            .filter(Challenge.serial == self.serial) \
+            .delete()
+        db.session.query(TokenInfo) \
+            .filter(TokenInfo.token_id == self.id) \
+            .delete()
+        db.session.query(TokenTokengroup) \
+            .filter(TokenTokengroup.token_id == self.id) \
             .delete()
         db.session.delete(self)
         db.session.commit()
@@ -341,9 +338,9 @@ class Token(MethodsMixin, db.Model):
         """
         # delete old Tokengroups
         if not add:
-            db.session.query(TokenTokengroup)\
-                      .filter(TokenTokengroup.token_id == self.id)\
-                      .delete()
+            db.session.query(TokenTokengroup) \
+                .filter(TokenTokengroup.token_id == self.id) \
+                .delete()
         # add new Tokengroups
         # We must not set the same tokengroup more than once...
         # uniquify: tokengroups -> set(tokengroups)
@@ -373,9 +370,9 @@ class Token(MethodsMixin, db.Model):
         """
         # delete old TokenRealms
         if not add:
-            db.session.query(TokenRealm)\
-                      .filter(TokenRealm.token_id == self.id)\
-                      .delete()
+            db.session.query(TokenRealm) \
+                .filter(TokenRealm.token_id == self.id) \
+                .delete()
         # add new TokenRealms
         # We must not set the same realm more than once...
         # uniquify: realms -> set(realms)
@@ -742,7 +739,7 @@ class TokenInfo(MethodsMixin, db.Model):
                       {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, token_id, Key, Value,
-                 Type= None,
+                 Type=None,
                  Description=None):
         """
         Create a new tokeninfo for a given token_id
@@ -874,7 +871,7 @@ class Admin(db.Model):
                 update_dict["email"] = self.email
             if self.password:
                 update_dict["password"] = self.password
-            Admin.query.filter_by(username=self.username)\
+            Admin.query.filter_by(username=self.username) \
                 .update(update_dict)
             ret = c.username
         db.session.commit()
@@ -950,13 +947,13 @@ class Realm(TimestampMethodsMixin, db.Model):
     def delete(self):
         ret = self.id
         # delete all TokenRealm
-        db.session.query(TokenRealm)\
-                  .filter(TokenRealm.realm_id == ret)\
-                  .delete()
+        db.session.query(TokenRealm) \
+            .filter(TokenRealm.realm_id == ret) \
+            .delete()
         # delete all ResolverRealms
-        db.session.query(ResolverRealm)\
-                  .filter(ResolverRealm.realm_id == ret)\
-                  .delete()
+        db.session.query(ResolverRealm) \
+            .filter(ResolverRealm.realm_id == ret) \
+            .delete()
         # delete the realm
         db.session.delete(self)
         save_config_timestamp()
@@ -977,7 +974,7 @@ class CAConnector(TimestampMethodsMixin, db.Model):
     name = db.Column(db.Unicode(255), default="",
                      unique=True, nullable=False)
     catype = db.Column(db.Unicode(255), default="",
-                      nullable=False)
+                       nullable=False)
     caconfig = db.relationship('CAConnectorConfig',
                                lazy='dynamic',
                                backref='caconnector')
@@ -989,9 +986,9 @@ class CAConnector(TimestampMethodsMixin, db.Model):
     def delete(self):
         ret = self.id
         # delete all CAConnectorConfig
-        db.session.query(CAConnectorConfig)\
-                  .filter(CAConnectorConfig.caconnector_id == ret)\
-                  .delete()
+        db.session.query(CAConnectorConfig) \
+            .filter(CAConnectorConfig.caconnector_id == ret) \
+            .delete()
         # Delete the CA itself
         db.session.delete(self)
         save_config_timestamp()
@@ -1012,7 +1009,7 @@ class CAConnectorConfig(db.Model):
     __tablename__ = 'caconnectorconfig'
     id = db.Column(db.Integer, Sequence("caconfig_seq"), primary_key=True)
     caconnector_id = db.Column(db.Integer,
-                            db.ForeignKey('caconnector.id'))
+                               db.ForeignKey('caconnector.id'))
     Key = db.Column(db.Unicode(255), nullable=False)
     Value = db.Column(db.Unicode(2000), default='')
     Type = db.Column(db.Unicode(2000), default='')
@@ -1029,10 +1026,10 @@ class CAConnectorConfig(db.Model):
         if caconnector_id:
             self.caconnector_id = caconnector_id
         elif caconnector:
-            self.caconnector_id = CAConnector.query\
-                                       .filter_by(name=caconnector)\
-                                       .first()\
-                                       .id
+            self.caconnector_id = CAConnector.query \
+                .filter_by(name=caconnector) \
+                .first() \
+                .id
         self.Key = Key
         self.Value = convert_column_to_unicode(Value)
         self.Type = Type
@@ -1040,7 +1037,7 @@ class CAConnectorConfig(db.Model):
 
     def save(self):
         c = CAConnectorConfig.query.filter_by(caconnector_id=self.caconnector_id,
-                                           Key=self.Key).first()
+                                              Key=self.Key).first()
         save_config_timestamp()
         if c is None:
             # create a new one
@@ -1050,11 +1047,11 @@ class CAConnectorConfig(db.Model):
         else:
             # update
             CAConnectorConfig.query.filter_by(caconnector_id=self.caconnector_id,
-                                           Key=self.Key
-                                           ).update({'Value': self.Value,
-                                                     'Type': self.Type,
-                                                     'Descrip'
-                                                     'tion': self.Description})
+                                              Key=self.Key
+                                              ).update({'Value': self.Value,
+                                                        'Type': self.Type,
+                                                        'Descrip'
+                                                        'tion': self.Description})
             ret = c.id
         db.session.commit()
         return ret
@@ -1097,9 +1094,9 @@ class Resolver(TimestampMethodsMixin, db.Model):
     def delete(self):
         ret = self.id
         # delete all ResolverConfig
-        db.session.query(ResolverConfig)\
-                  .filter(ResolverConfig.resolver_id == ret)\
-                  .delete()
+        db.session.query(ResolverConfig) \
+            .filter(ResolverConfig.resolver_id == ret) \
+            .delete()
         # delete the Resolver itself
         db.session.delete(self)
         save_config_timestamp()
@@ -1137,10 +1134,10 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
         if resolver_id:
             self.resolver_id = resolver_id
         elif resolver:
-            self.resolver_id = Resolver.query\
-                                       .filter_by(name=resolver)\
-                                       .first()\
-                                       .id
+            self.resolver_id = Resolver.query \
+                .filter_by(name=resolver) \
+                .first() \
+                .id
         self.Key = convert_column_to_unicode(Key)
         self.Value = convert_column_to_unicode(Value)
         self.Type = convert_column_to_unicode(Type)
@@ -1209,21 +1206,21 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
         if resolver_id:
             self.resolver_id = resolver_id
         elif resolver_name:
-            self.resolver_id = Resolver.query\
-                                       .filter_by(name=resolver_name)\
-                                       .first().id
+            self.resolver_id = Resolver.query \
+                .filter_by(name=resolver_name) \
+                .first().id
         if realm_id:
             self.realm_id = realm_id
         elif realm_name:
-            self.realm_id = Realm.query\
-                                 .filter_by(name=realm_name)\
-                                 .first().id
+            self.realm_id = Realm.query \
+                .filter_by(name=realm_name) \
+                .first().id
         if node_uuid:
             self.node_uuid = node_uuid
         elif node_name:
             # We need to get the last seen entry with the corresponding node name
-            self.node_uuid = NodeName.query.filter_by(name=node_name)\
-                .order_by(desc(NodeName.lastseen))\
+            self.node_uuid = NodeName.query.filter_by(name=node_name) \
+                .order_by(desc(NodeName.lastseen)) \
                 .first().id
 
 
@@ -1263,7 +1260,7 @@ class TokenOwner(MethodsMixin, db.Model):
             r = Token.query.filter_by(serial=serial).first()
             self.token_id = r.id
         self.resolver = resolver
-        self. user_id = user_id
+        self.user_id = user_id
 
     def save(self, persistent=True):
         to_func = TokenOwner.query.filter_by(token_id=self.token_id,
@@ -1388,7 +1385,7 @@ class PasswordReset(MethodsMixin, db.Model):
         self.email = email
         self.timestamp = timestamp or datetime.now()
         self.expiration = expiration or datetime.now() + \
-                                        timedelta(seconds=expiration_seconds)
+                          timedelta(seconds=expiration_seconds)
 
 
 class Challenge(MethodsMixin, db.Model):
@@ -1529,6 +1526,7 @@ def cleanup_challenges():
     Challenge.query.filter(Challenge.expiration < c_now).delete()
     db.session.commit()
 
+
 # -----------------------------------------------------------------------------
 #
 # POLICY
@@ -1565,7 +1563,7 @@ class Policy(TimestampMethodsMixin, db.Model):
     client = db.Column(db.Unicode(256), default="")
     time = db.Column(db.Unicode(64), default="")
     # If there are multiple matching policies, choose the one
-    # with the lowest priority number. We choose 1 to be the default priotity.
+    # with the lowest priority number. We choose 1 to be the default priority.
     priority = db.Column(db.Integer, default=1, nullable=False)
     conditions = db.relationship("PolicyCondition",
                                  lazy="joined",
@@ -1584,6 +1582,7 @@ class Policy(TimestampMethodsMixin, db.Model):
         if isinstance(active, str):
             active = is_true(active.lower())
         self.name = name
+
         self.user_case_insensitive = user_case_insensitive
         self.action = action
         self.scope = scope
@@ -1841,8 +1840,8 @@ class MachineTokenOptions(db.Model):
 
     def __init__(self, machinetoken_id, key, value):
         log.debug("setting {0!r} to {1!r} for MachineToken {2!s}".format(key,
-                                                            value,
-                                                            machinetoken_id))
+                                                                         value,
+                                                                         machinetoken_id))
         self.machinetoken_id = machinetoken_id
         self.mt_key = convert_column_to_unicode(key)
         self.mt_value = convert_column_to_unicode(value)
@@ -2134,9 +2133,9 @@ class MachineResolver(MethodsMixin, db.Model):
     def delete(self):
         ret = self.id
         # delete all MachineResolverConfig
-        db.session.query(MachineResolverConfig)\
-                  .filter(MachineResolverConfig.resolver_id == ret)\
-                  .delete()
+        db.session.query(MachineResolverConfig) \
+            .filter(MachineResolverConfig.resolver_id == ret) \
+            .delete()
         # delete the MachineResolver itself
         db.session.delete(self)
         db.session.commit()
@@ -2167,10 +2166,10 @@ class MachineResolverConfig(db.Model):
         if resolver_id:
             self.resolver_id = resolver_id
         elif resolver:
-            self.resolver_id = MachineResolver.query\
-                                .filter_by(name=resolver)\
-                                .first()\
-                                .id
+            self.resolver_id = MachineResolver.query \
+                .filter_by(name=resolver) \
+                .first() \
+                .id
         self.Key = Key
         self.Value = convert_column_to_unicode(Value)
         self.Type = Type
@@ -2187,7 +2186,7 @@ class MachineResolverConfig(db.Model):
         else:
             # update
             MachineResolverConfig.query.filter_by(
-                resolver_id=self.resolver_id, Key=self.Key)\
+                resolver_id=self.resolver_id, Key=self.Key) \
                 .update({'Value': self.Value,
                          'Type': self.Type,
                          'Description': self.Description})
@@ -2324,9 +2323,9 @@ class SMSGateway(MethodsMixin, db.Model):
         """
         ret = self.id
         # delete all SMSGatewayOptions
-        db.session.query(SMSGatewayOption)\
-                  .filter(SMSGatewayOption.gateway_id == ret)\
-                  .delete()
+        db.session.query(SMSGatewayOption) \
+            .filter(SMSGatewayOption.gateway_id == ret) \
+            .delete()
         # delete the SMSGateway itself
         db.session.delete(self)
         db.session.commit()
@@ -2406,7 +2405,7 @@ class SMSGatewayOption(MethodsMixin, db.Model):
         # See, if there is this option or header for this this gateway
         # The first match takes precedence
         go = SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
-                                               Key=self.Key, Type=self.Type).first()
+                                              Key=self.Key, Type=self.Type).first()
         if go is None:
             # create a new one
             db.session.add(self)
@@ -2415,9 +2414,9 @@ class SMSGatewayOption(MethodsMixin, db.Model):
         else:
             # update
             SMSGatewayOption.query.filter_by(gateway_id=self.gateway_id,
-                                              Key=self.Key, Type=self.Type
-                                              ).update({'Value': self.Value,
-                                                        'Type': self.Type})
+                                             Key=self.Key, Type=self.Type
+                                             ).update({'Value': self.Value,
+                                                       'Type': self.Type})
             ret = go.id
         db.session.commit()
         return ret
@@ -2537,7 +2536,7 @@ class SMTPServer(MethodsMixin, db.Model):
     """
     __tablename__ = 'smtpserver'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
-    id = db.Column(db.Integer, Sequence("smtpserver_seq"),primary_key=True)
+    id = db.Column(db.Integer, Sequence("smtpserver_seq"), primary_key=True)
     # This is a name to refer to
     identifier = db.Column(db.Unicode(255), nullable=False)
     # This is the FQDN or the IP address
@@ -3175,7 +3174,7 @@ class MonitoringStats(MethodsMixin, db.Model):
         self.timestamp = timestamp
         self.stats_key = key
         self.stats_value = value
-        #self.save()
+        # self.save()
 
 
 class Serviceid(TimestampMethodsMixin, db.Model):
@@ -3230,9 +3229,9 @@ class Tokengroup(TimestampMethodsMixin, db.Model):
     def delete(self):
         ret = self.id
         # delete all TokenTokenGroup
-        db.session.query(TokenTokengroup)\
-                  .filter(TokenTokengroup.tokengroup_id == ret)\
-                  .delete()
+        db.session.query(TokenTokengroup) \
+            .filter(TokenTokengroup.tokengroup_id == ret) \
+            .delete()
         # delete the tokengroup
         db.session.delete(self)
         save_config_timestamp()
@@ -3311,4 +3310,101 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
                 ret = self.id
         else:
             ret = self.id
+        return ret
+
+
+class TokenContainer(MethodsMixin, db.Model):
+    """
+    The "Tokencontainer" table contains the containers and their associated tokens.
+    """
+
+    __tablename__ = 'tokencontainer'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
+    type = db.Column(db.Unicode(100), default='Generic', nullable=False)
+    description = db.Column(db.Unicode(1024), default='')
+    tokens = db.relationship('Token', secondary=token_container_association_table,
+                             back_populates='container')
+
+    serial = db.Column(db.Unicode(40), default='', unique=True, nullable=False, index=True)
+
+    owners = db.relationship('TokenContainerOwner', lazy='dynamic', backref='container')
+
+    def __init__(self, serial, container_type="Generic", tokens=None, description=""):
+        self.serial = serial
+        self.type = container_type
+        self.description = description
+        if tokens:
+            self.tokens = [t.token for t in tokens]
+
+
+class TokenContainerTemplate(MethodsMixin, db.Model):
+    __tablename__ = 'tokencontainertemplate'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
+    options = db.Column(db.Unicode(2000), default='')
+    name = db.Column(db.Unicode(200), default='')
+    container_type = db.Column(db.Unicode(100), default='Generic', nullable=False)
+
+    def __init__(self, name=None, container_type="Generic", options=None):
+        self.name = name
+        self.container_type = container_type
+        self.options = options
+
+
+class TokenContainerOwner(MethodsMixin, db.Model):
+    __tablename__ = 'tokencontainerowner'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
+    container_id = db.Column(db.Integer(), db.ForeignKey("tokencontainer.id"))
+    resolver = db.Column(db.Unicode(120), default='', index=True)
+    user_id = db.Column(db.Unicode(320), default='', index=True)
+    realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
+    realm = db.relationship('Realm', lazy='joined', backref='tokencontainerowners')
+
+    def __init__(self, container_id=None, container_serial=None, resolver=None, user_id=None, realm_id=None,
+                 realm_name=None):
+        """
+        Create a new TokenContainerOwner assignment
+        :param container_id:
+        :param container_serial: alternative to container_id
+        :param resolver:
+        :param user_id:
+        :param realm_id:
+        :param realm_name: alternative to realm_id
+        """
+        if realm_id is not None:
+            self.realm_id = realm_id
+        elif realm_name:
+            realm = Realm.query.filter_by(name=realm_name).first()
+            self.realm_id = realm.id
+        if container_id is not None:
+            self.container_id = container_id
+        elif container_serial:
+            container = TokenContainer.query.filter_by(serial=container_serial).first()
+            self.container_id = container.id
+        self.resolver = resolver
+        self.user_id = user_id
+
+    def save(self, persistent=True):
+        to_func = TokenContainerOwner.query.filter_by(container_id=self.container_id,
+                                                      user_id=self.user_id,
+                                                      realm_id=self.realm_id,
+                                                      resolver=self.resolver).first
+        to = to_func()
+        if to is None:
+            # This very assignment does not exist, yet:
+            db.session.add(self)
+            db.session.commit()
+            if get_app_config_value(SAFE_STORE, False):
+                to = to_func()
+                ret = to.id
+            else:
+                ret = self.id
+        else:
+            ret = to.id
+            # There is nothing to update
+
+        if persistent:
+            db.session.commit()
         return ret

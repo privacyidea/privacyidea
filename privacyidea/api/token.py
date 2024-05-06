@@ -332,7 +332,7 @@ def init():
     #    log.debug("setting random pin for token with serial "
     #              "%s and user: %s" % (serial, user))
     #    setPin(newpin, None, serial)
-        
+
     # finally we render the info as qr immage, if the qr parameter
     # is provided and if the token supports this
     # if 'qr' in param and tokenobject is not None:
@@ -508,9 +508,9 @@ def assign_api():
 @log_with(log)
 def unassign_api():
     """
-    Unssign a token from a user.
+    Unassign a token from a user.
     You can either provide "serial" as an argument to unassign this very
-    token or you can provide user and realm, to unassign all tokens of a user.
+    token, or you can provide user and realm, to unassign all tokens of a user.
 
     :return: In case of success it returns the number of unassigned tokens in "value".
     :rtype: JSON object
@@ -553,7 +553,6 @@ def revoke_api(serial=None):
     res = revoke_token(serial, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
-
 
 
 @token_blueprint.route('/enable', methods=['POST'])
@@ -612,7 +611,6 @@ def disable_api(serial=None):
     res = enable_token(serial, enable=False, user=user)
     g.audit_object.log({"success": True})
     return send_result(res)
-
 
 
 @token_blueprint.route('/<serial>', methods=['DELETE'])
@@ -881,21 +879,21 @@ def set_api(serial=None):
 
     if count_auth_success_max is not None:
         g.audit_object.add_to_log({'action_detail':
-                                       "count_auth_success_max={0!r}, ".format(
-                                       count_auth_success_max)})
+            "count_auth_success_max={0!r}, ".format(
+                count_auth_success_max)})
         res += set_count_auth(serial, count_auth_success_max, user=user,
                               max=True, success=True)
 
     if validity_period_end is not None:
         g.audit_object.add_to_log({'action_detail':
-                                       "validity_period_end={0!r}, ".format(
-                                       validity_period_end)})
+            "validity_period_end={0!r}, ".format(
+                validity_period_end)})
         res += set_validity_period_end(serial, user, validity_period_end)
 
     if validity_period_start is not None:
         g.audit_object.add_to_log({'action_detail':
-                                       "validity_period_start={0!r}, ".format(
-                                       validity_period_start)})
+            "validity_period_start={0!r}, ".format(
+                validity_period_start)})
         res += set_validity_period_start(serial, user, validity_period_start)
 
     g.audit_object.log({"success": True})
@@ -997,11 +995,12 @@ def loadtokens_api(filename=None):
 
     if file_contents == "":
         log.error("Error loading/importing token file. file {0!s} empty!".format(
-                  filename))
+            filename))
         raise ParameterError("Error loading token file. File empty!")
 
     if file_type not in known_types:
-        log.error("Unknown file type: >>{0!s}<<. We only know the types: {1!s}".format(file_type, ', '.join(known_types)))
+        log.error(
+            "Unknown file type: >>{0!s}<<. We only know the types: {1!s}".format(file_type, ', '.join(known_types)))
         raise TokenAdminError("Unknown file type: >>%s<<. We only know the "
                               "types: %s" % (file_type,
                                              ', '.join(known_types)))
@@ -1020,7 +1019,7 @@ def loadtokens_api(filename=None):
         TOKENS = parseYubicoCSV(file_contents)
     elif file_type in ["pskc"]:
         TOKENS, not_imported_serials = parsePSKCdata(file_contents, preshared_key_hex=aes_psk,
-                                                   password=aes_password, validate_mac=aes_validate_mac)
+                                                     password=aes_password, validate_mac=aes_validate_mac)
 
     # Now import the Tokens from the dictionary
     ret = ""
@@ -1028,15 +1027,15 @@ def loadtokens_api(filename=None):
         log.debug("importing token {0!s}".format(TOKENS[serial]))
 
         log.info("initialize token. serial: {0!s}, realm: {1!s}".format(serial,
-                                                              tokenrealms))
+                                                                        tokenrealms))
 
         import_token(serial,
                      TOKENS[serial],
                      tokenrealms=tokenrealms)
 
     g.audit_object.log({'info': "{0!s}, {1!s} (imported: {2:d})".format(file_type,
-                                                           token_file,
-                                                           len(TOKENS)),
+                                                                        token_file,
+                                                                        len(TOKENS)),
                         'serial': ', '.join(TOKENS),
                         'success': True})
     # logTokenNum()
@@ -1165,7 +1164,7 @@ def get_serial_by_otp_api(otp=None):
         assigned = True
 
     count = get_tokens(tokentype=ttype, serial_wildcard="*{0!s}*".format(
-            serial_substr), assigned=assigned, count=True)
+        serial_substr), assigned=assigned, count=True)
     if not count_only:
         tokenobj_list = get_tokens(tokentype=ttype,
                                    serial_wildcard="*{0!s}*".format(serial_substr),

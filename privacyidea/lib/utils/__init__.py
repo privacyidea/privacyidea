@@ -1287,7 +1287,6 @@ def prepare_result(obj, rid=1, details=None):
            "versionnumber": get_version_number(),
            "id": rid,
            "time": time.time()}
-
     if details is not None and len(details) > 0:
         details["threadid"] = threading.current_thread().ident
         res["detail"] = details
@@ -1350,7 +1349,7 @@ def create_tag_dict(logged_in_user=None,
     This helper function creates a dictionary with tags to be used in sending emails
     either with email tokens or within the notification handler
 
-    :param logged_in_user: The acting logged in user (admin)
+    :param logged_in_user: The acting logged-in user (admin)
     :param request: The HTTP request object
     :param serial: The serial number of the token
     :param tokenowner: The owner of the token
@@ -1422,14 +1421,14 @@ def determine_logged_in_userparams(logged_in_user, params):
 
     If an administrator is acting, the "adminuser" and "adminrealm" are set from the logged_in_user
     information and the user parameters are taken from the request parameters.
-    Thus an admin can act on a user.
+    Thus, an admin can act on a user.
 
     If a user is acting, the adminuser and adminrealm are None, the username and userrealm are taken from
     the logged_in_user information.
 
-    :param logged_in_user: Logged in user dictionary.
+    :param logged_in_user: Logged-in user dictionary.
     :param params: Request parameters (all_data)
-    :return: Tupe of (scope, username, realm, adminuser, adminrealm)
+    :return: Tuple of (scope, username, realm, adminuser, adminrealm)
     """
     role = logged_in_user.get("role")
     username = logged_in_user.get("username")

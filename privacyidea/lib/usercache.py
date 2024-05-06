@@ -209,7 +209,7 @@ def user_init(wrapped_function, self):
         resolvers = [self.resolver]
     else:
         # In order to query the user cache, we need to find out the resolver
-        resolvers = self.get_ordererd_resolvers()
+        resolvers = self.get_ordered_resolvers()
     for resolvername in resolvers:
         # If we could figure out a resolver, we can query the user cache
         filter_conditions = create_filter(used_login=self.used_login, resolver=resolvername)
