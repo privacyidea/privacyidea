@@ -13,6 +13,7 @@ down_revision = '250931d82e51'
 from alembic import op
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
+
 def upgrade():
     try:
         op.create_index(op.f('ix_challenge_expiration'), 'challenge', ['expiration'], unique=False)
