@@ -798,8 +798,8 @@ def multichallenge_enroll_via_validate(request, response):
     :return:
     """
     content = response.json
-    # check, if the authentication was successful, then we need to do nothing
     result = content.get("result")
+    # check, if the authentication was successful, then we need to do nothing
     if result.get("value") and result.get("authentication") == "ACCEPT":
         user_obj = request.User
         if user_obj.login and user_obj.realm:
@@ -834,6 +834,9 @@ def construct_radius_response(request, response):
     results in an empty response with a HTTP 204 status code.
     An unsuccessful authentication results in an empty response
     with a HTTP 400 status code.
+
+    This needs to be the last decorator, since the JSON response is then lost.
+
     :return:
     """
     if request.url_rule.rule == '/validate/radiuscheck':

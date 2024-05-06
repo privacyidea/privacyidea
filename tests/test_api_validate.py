@@ -5744,6 +5744,11 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
                    action="{0!s}=email".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
+        # Challenge header and footer should not disturb the enrollment text
+        set_policy("pol_challengetext_head", scope=SCOPE.AUTH,
+                   action="{0!s}=challenge-head".format(ACTION.CHALLENGETEXT_HEADER))
+        set_policy("pol_challengetext_foot", scope=SCOPE.AUTH,
+                   action="{0!s}=challenge-foot".format(ACTION.CHALLENGETEXT_FOOTER))
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
