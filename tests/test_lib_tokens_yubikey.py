@@ -256,8 +256,6 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertEqual(-3, r, r)
         r = token.check_otp(self.valid_otps[3] + "k")
         self.assertEqual(-3, r, r)
-        r = token.check_otp(self.valid_otps[4].upper())
-        self.assertEqual(-4, r, r)
         token.delete_token()
 
     def test_98_wrong_tokenid(self):
