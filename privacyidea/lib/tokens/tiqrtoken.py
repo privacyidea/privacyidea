@@ -364,8 +364,9 @@ class TiqrTokenClass(OcraTokenClass):
                             maxfail = token.get_max_failcount()
                             res = "INVALID_RESPONSE:{0!s}".format(maxfail - fail)
                             break
-
-            cleanup_challenges()
+                if not challenge.is_valid():
+                    # The challenge is not valid anymore. We delete the challenge.
+                    challenge.delete()
 
             return "plain", res
 

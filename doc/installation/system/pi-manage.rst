@@ -81,6 +81,22 @@ log rotation::
 You can specify a highwatermark and a lowwatermark, age or a config file. Read more
 about it at :ref:`audit_rotate`.
 
+.. _pimanage_challenge:
+
+Clean up challenges
+-------------------
+
+The challenges of challenge response tokens are stored in a database table.
+Each challenge has a validity time. You can clean up old challenges with::
+
+   pi-manage challenge cleanup
+
+This will clean up all expired challenges. If you want to clean up challenges older than a certain age, you can use::
+
+   pi-manage challenge cleanup --age 10
+
+to clean up challenge that are older than 10 minutes.
+
 API Keys
 --------
 
