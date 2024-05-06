@@ -271,6 +271,12 @@ class YubikeyTokenClass(TokenClass):
         serial = self.token.serial
         secret = self.token.get_otpkey()
 
+        anOtpVal = anOtpVal.lower()
+
+        if len(anOtpVal) != self.token.otplen:
+            log.info("Yubikey OPT value has wrong length")
+            return -3
+
         # The prefix is the characters in front of the last 32 chars
         yubi_prefix = anOtpVal[:-32]
         # The variable otp val is the last 32 chars
@@ -280,6 +286,7 @@ class YubikeyTokenClass(TokenClass):
             otp_bin = modhex_decode(yubi_otp)
         except KeyError:
             # The OTP value is no yubikey aes otp value and can not be decoded
+            log.debug("OTP could not be decode")
             return -4
 
         msg_bin = secret.aes_ecb_decrypt(otp_bin)
@@ -293,7 +300,7 @@ class YubikeyTokenClass(TokenClass):
         crc16 = checksum(msg_bin)
         log.debug("calculated checksum (61624): {0!r}".format(crc16))
         if crc16 != 0xf0b8:  # pragma: no cover
-            log.warning("CRC checksum for token {0!r} failed".format(serial))
+            log.info("CRC checksum for token {0!r} failed".format(serial))
             return -3
 
         uid = msg_hex[0:12]
@@ -328,9 +335,8 @@ class YubikeyTokenClass(TokenClass):
 
         if tokenid != uid:
             # wrong token!
-            log.warning("The wrong token was presented for %r. "
-                        "Got %r, expected %r."
-                        % (serial, uid, tokenid))
+            log.warning(f"The wrong token was presented for {serial}. "
+                        f"Got {uid}, expected {tokenid}.")
             return -2
 
         # TODO: We also could check the timestamp

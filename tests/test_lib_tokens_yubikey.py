@@ -117,11 +117,10 @@ class YubikeyTokenTestCase(MyTestCase):
         r, opt = YubikeyTokenClass.check_yubikey_pass(
             "fcebeeejedecebegfcniufvgvjturjgvinhebbbertjnihit")
         self.assertFalse(r)
-        #self.assertTrue(opt.get("action_detail") ==
+        # self.assertTrue(opt.get("action_detail") ==
         #                "The serial UBAM@1382015 could not be found!", opt)
         self.assertTrue(opt.get("action_detail") ==
                         "The prefix fcebeeejedecebeg could not be found!", opt)
-
 
         # check for an invalid OTP
         r, opt = YubikeyTokenClass.check_yubikey_pass(self.further_otps[0])
@@ -181,7 +180,7 @@ class YubikeyTokenTestCase(MyTestCase):
                 "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
                 "ebedeeefegeheiejjvjncbnffdrvjcvrbgdfufjgndfetieu",
                 "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
-        ]
+                ]
 
         token = init_token({"type": "yubikey",
                             "otpkey": otpkey,
@@ -218,7 +217,7 @@ class YubikeyTokenTestCase(MyTestCase):
                 "ebedeeefegeheiejktudedbktcnbuntrhdueikggtrugckij",
                 "ebedeeefegeheiejjvjncbnffdrvjcvrbgdfufjgndfetieu",
                 "ebedeeefegeheiejdruibhvlvktcgfjiruhltketifnitbuk"
-        ]
+                ]
 
         token = init_token({"type": "yubikey",
                             "otpkey": otpkey,
@@ -244,6 +243,22 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertEqual(text_type, "plain")
         self.assertTrue("status=OK" in result, result)
         self.assertTrue("nonce={0!s}".format(nonce) in result, result)
+
+    def test_20_broken_otp_value(self):
+        token = init_token({"type": "yubikey",
+                            "otpkey": self.otpkey,
+                            "otplen": len(self.valid_otps[0])})
+        r = token.check_otp(self.valid_otps[0])
+        self.assertGreater(r, 0, r)
+        r = token.check_otp(self.valid_otps[1][:-1])
+        self.assertEqual(-3, r, r)
+        r = token.check_otp(self.valid_otps[2] + "a")
+        self.assertEqual(-3, r, r)
+        r = token.check_otp(self.valid_otps[3] + "k")
+        self.assertEqual(-3, r, r)
+        r = token.check_otp(self.valid_otps[4].upper())
+        self.assertEqual(-4, r, r)
+        token.delete_token()
 
     def test_98_wrong_tokenid(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
