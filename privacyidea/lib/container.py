@@ -12,7 +12,8 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
-from privacyidea.models import TokenContainer, TokenContainerTemplate, TokenContainerOwner
+from privacyidea.models import TokenContainer, TokenContainerTemplate, TokenContainerOwner, Token, \
+    TokenContainerToken
 
 log = logging.getLogger(__name__)
 
@@ -139,6 +140,19 @@ def find_containers_for_user(user: User):
     return [TokenContainerClass(c) for c in containers]
 
 
+def find_container_for_token(serial):
+    """
+    Returns a list of TokenContainerClass objects for the given token
+    """
+    token_id = Token.query.filter(Token.serial == serial).one().id
+    row = TokenContainerToken.query.filter(
+        TokenContainerToken.token_id == token_id).first()
+    if row:
+        container_id = row.container_id
+        return find_container_by_id(container_id)
+    return None
+
+
 def get_container_classes():
     """
     Returns a dictionary of all available container classes in the format:
@@ -147,10 +161,10 @@ def get_container_classes():
     """
     # className: module
     classes = {
-                "TokenContainerClass": "privacyidea.lib.containerclass",
-                "SmartphoneContainer": "privacyidea.lib.containers.smartphone",
-                "YubikeyContainer": "privacyidea.lib.containers.yubikey"
-                }
+        "TokenContainerClass": "privacyidea.lib.containerclass",
+        "SmartphoneContainer": "privacyidea.lib.containers.smartphone",
+        "YubikeyContainer": "privacyidea.lib.containers.yubikey"
+    }
 
     ret = {}
     for cls, mod in classes.items():

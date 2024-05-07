@@ -83,6 +83,7 @@
                 translate>UserId</th>
             <th ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist"
                 translate>Resolver</th>
+            <th>Container</th>
         </tr>
         </thead>
         <tbody>
@@ -141,6 +142,9 @@
             <td ng-show="loggedInUser.role == 'admin' &&
             user_details_in_tokenlist">
                 <a ui-sref="config.resolvers.list">{{ token.resolver }}</a>
+            </td>
+            <td>
+                <a ui-sref="token.containerdetails({containerSerial: token.container_serial})">{{ token.container_serial}}</a>
             </td>
         </tr>
         </tbody>

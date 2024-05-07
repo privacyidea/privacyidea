@@ -1,5 +1,6 @@
-<h3 name="Token Details"><translate>Token details for {{ tokenSerial }}
-        </translate>
+<h3 name="Token Details">
+    <translate>Token details for {{ tokenSerial }}
+    </translate>
     <a class="btn btn-default" ng-show="checkRight('auditlog')" ui-sref="audit.log({serial: tokenSerial})"
        translate>
         View token in Audit log</a>
@@ -30,15 +31,15 @@
             <td translate>Active</td>
             <td>
             <span class="label label-success" ng-show="token.active"
-                    translate>active
+                  translate>active
             </span>
-            <span class="label label-danger" ng-hide="token.active"
-                    translate>disabled
+                <span class="label label-danger" ng-hide="token.active"
+                      translate>disabled
             </span>
-            <span class="label label-danger" ng-show="token.locked"
-                  translate>locked</span>
-            <span class="label label-danger" ng-show="token.revoked"
-                  translate>revoked</span>
+                <span class="label label-danger" ng-show="token.locked"
+                      translate>locked</span>
+                <span class="label label-danger" ng-show="token.revoked"
+                      translate>revoked</span>
             </td>
             <td>
             <span ng-show="token.active"
@@ -49,16 +50,16 @@
                         ng-hide="!checkRight('disable') && hide_buttons"
                         translate>Disable</button>
             </span>
-            <span ng-show="!token.active && !token.locked"
-                  ng-click="enable()">
+                <span ng-show="!token.active && !token.locked"
+                      ng-click="enable()">
                 <button class="btn btn-success"
                         id="enableButton"
                         ng-disabled="!checkRight('enable')"
                         ng-hide="!checkRight('enable') && hide_buttons"
                         translate>Enable</button>
             </span>
-            <span ng-show="!token.revoked"
-                  ng-click="revoke()">
+                <span ng-show="!token.revoked"
+                      ng-click="revoke()">
                 <button class="btn btn-danger"
                         id="revokeButton"
                         ng-disabled="!checkRight('revoke')"
@@ -76,12 +77,13 @@
                     <input type="text" ng-model="token.verifyResponse" class="form-control"
                            placeholder="{{ 'Enter code to verify enrollment' | translate }}">
                     <button type="button" ng-click="sendVerifyResponse()"
-                            class="btn btn-primary" translate>Verify Token</button>
+                            class="btn btn-primary" translate>Verify Token
+                    </button>
                 </div>
             </td>
         </tr>
-        <tr token-data-edit text="{{'Maxfail' | translate }}"
-            button-text="{{ 'Set max fail'|translate}}"
+        <tr token-data-edit text="{{ 'Maxfail' | translate }}"
+            button-text="{{ 'Set max fail'|translate }}"
             token-data="{{ token.maxfail }}"
             token-key="max_failcount"
             token-locked="{{ token.locked }}"
@@ -166,7 +168,7 @@
             token-locked="{{ token.locked }}"
             hide-buttons="{{ hide_buttons }}"
             set-right="{{ checkRight('setdescription') }}"
-            editable-as-user = true
+            editable-as-user=true
             token-key="description"
             callback-cancel="get()"
             callback="setdescription(value)"
@@ -178,7 +180,7 @@
             token-locked="{{ token.locked }}"
             hide-buttons="{{ hide_buttons }}"
             set-right="{{ checkRight('setdescription') }}"
-            editable-as-user = true
+            editable-as-user=true
             token-key="description"
             callback-cancel="get()"
             callback="setdescription(value)"
@@ -211,7 +213,7 @@
                 <div ng-show="editTokenInfo">
                     <div class="form-group">
                         <label for="max_auth_count"
-                                translate>Maximum Authentication Count
+                               translate>Maximum Authentication Count
                         </label>
                         <input ng-model="max_auth_count"
                                class="form-control"
@@ -222,7 +224,7 @@
                     </div>
                     <div class="form-group">
                         <label for="max_success_auth_count"
-                                translate>Maximum Success Auth Count
+                               translate>Maximum Success Auth Count
                         </label>
                         <input ng-model="max_success_auth_count"
                                id="max_success_auth_count"
@@ -234,7 +236,7 @@
                     <!-- =========== EDIT Validity period ============ -->
                     <div class="form-group">
                         <label for="validity_start"
-                                translate>Validity Start
+                               translate>Validity Start
                         </label>
                         <p class="input-group">
                             <input type="text" class="form-control"
@@ -245,7 +247,7 @@
                                    min-date="today"
                                    show-button-bar="false"
                                    close-text="Close"/>
-                          <span class="input-group-btn">
+                            <span class="input-group-btn">
                             <button type="button" class="btn btn-default"
                                     ng-click="startOpened = openDate($event)">
                                 <i class="glyphicon glyphicon-calendar"></i>
@@ -260,7 +262,7 @@
                     </div>
                     <div class="form-group">
                         <label for="validity_end"
-                                translate>Validity End
+                               translate>Validity End
                         </label>
                         <p class="input-group">
                             <input type="text" class="form-control"
@@ -272,7 +274,7 @@
                                    min-date="today"
                                    show-button-bar="false"
                                    close-text="Close"/>
-                          <span class="input-group-btn">
+                            <span class="input-group-btn">
                             <button type="button" class="btn btn-default"
                                     ng-click="endOpened = openDate($event)">
                                     <i class="glyphicon glyphicon-calendar"></i>
@@ -314,7 +316,7 @@
                 <li ng-repeat="realm in token.realms">{{ realm }}</li>
             </ul>
             </span>
-            <span ng-show="editTokenRealm">
+                <span ng-show="editTokenRealm">
                 <span ng-repeat="(realmname, realm) in realms">
                     <label for="{{ realmname }}">
                         <input type="checkbox"
@@ -359,7 +361,7 @@
                 <li ng-repeat="group in token.tokengroup">{{ group }}</li>
             </ul>
             </span>
-            <span ng-show="editTokenGroups">
+                <span ng-show="editTokenGroups">
                 <span ng-repeat="(groupname, tokengroup) in tokengroups">
                     <label for="{{ groupname }}">
                         <input type="checkbox"
@@ -465,7 +467,7 @@
         <tr ng-hide="token.locked">
             <td><input type="checkbox" ng-model="showPassword"
                        id="showPassword"><label for="showPassword"
-                    translate> Show password</label></td>
+                                                translate> Show password</label></td>
             <td ng-hide="token.tokentype == 'registration'">
                 <input type="text" ng-model="testPassword"
                        name="testPassword"
@@ -553,23 +555,38 @@
 
 
 <div ng-show="checkRight('assign')">
-<h4 ng-hide="token.user_id || token.locked" translate>
-    Assign User</h4>
-<form ng-hide="token.user_id || token.locked"
-      name="formAssignToken"
-      role="form" validate>
-    <div assign-user new-user-object="newUser" realms="realms"></div>
+    <h4 ng-hide="token.user_id || token.locked" translate>
+        Assign User</h4>
+    <form ng-hide="token.user_id || token.locked"
+          name="formAssignToken"
+          role="form" validate>
+        <div assign-user new-user-object="newUser" realms="realms"></div>
 
-    <div class="text-center">
-        <button type="button" ng-click="assignUser()"
-                id="assignButton"
-                ng-disabled="formAssignToken.$invalid"
-                class="btn btn-primary">
-            <span class="glyphicon glyphicon-resize-small"></span>
-            <span translate>Assign User</span>
-        </button>
-    </div>
-</form>
+        <div class="text-center">
+            <button type="button" ng-click="assignUser()"
+                    id="assignButton"
+                    ng-disabled="formAssignToken.$invalid"
+                    class="btn btn-primary">
+                <span class="glyphicon glyphicon-resize-small"></span>
+                <span translate>Assign User</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- ============ Containers ======================= -->
+
+<div class="form-group">
+    <h4 translate>Add token to container</h4>
+    <select class="form-control"
+            ng-model="containerSerial"
+            ng-options="container.serial as container.displayString for container in containerList">
+    </select>
+</div>
+<div class="text-center">
+    <button ng-click="addTokenToContainer()"
+            class="btn btn-primary" translate>Add token
+    </button>
 </div>
 
 <!-- ============ Machines ======================= -->
@@ -641,7 +658,7 @@
                                    ng-show="option.type==='bool'">
                             </select>
                             <p class="help help-block">
-                                  {{ option.description }}
+                                {{ option.description }}
                             </p>
                         </div>
 
@@ -685,7 +702,7 @@
                         ng-change="changeApplication"
                         ng-required="1"
                         ng-options="app for app in formInit.application"
-                        >
+                >
                 </select>
             </div>
 
@@ -709,7 +726,7 @@
                        ng-model="form.options[optionname]"
                        ng-show="option.type==='bool'">
                 <p class="help help-block">
-                      {{ option.description }}
+                    {{ option.description }}
                 </p>
             </div>
 

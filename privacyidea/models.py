@@ -144,11 +144,18 @@ class TimestampMethodsMixin(object):
         return ret
 
 
-token_container_association_table = (
-    db.Table('tokencontainertoken',
-             db.metadata,
-             db.Column('token_id', db.Integer, db.ForeignKey('token.id'), primary_key=True),
-             db.Column('container_id', db.Integer, db.ForeignKey('tokencontainer.id'), primary_key=True)))
+# token_container_association_table = (
+#     db.Table('tokencontainertoken',
+#              db.metadata,
+#              db.Column('token_id', db.Integer, db.ForeignKey('token.id'), primary_key=True),
+#              db.Column('container_id', db.Integer, db.ForeignKey('tokencontainer.id'), primary_key=True)))
+#
+
+class TokenContainerToken(MethodsMixin, db.Model):
+    __tablename__ = 'tokencontainertoken'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    token_id = db.Column('token_id', db.Integer, db.ForeignKey('token.id'), primary_key=True)
+    container_id = db.Column('container_id', db.Integer, db.ForeignKey('tokencontainer.id'), primary_key=True)
 
 
 class Token(MethodsMixin, db.Model):
@@ -221,7 +228,7 @@ class Token(MethodsMixin, db.Model):
     owners = db.relationship('TokenOwner', lazy='dynamic', backref='token')
 
     # Container
-    container = db.relationship('TokenContainer', secondary=token_container_association_table, back_populates='tokens')
+    container = db.relationship('TokenContainer', secondary='tokencontainertoken', back_populates='tokens')
 
     def __init__(self, serial, tokentype="",
                  isactive=True, otplen=6,
@@ -3323,7 +3330,7 @@ class TokenContainer(MethodsMixin, db.Model):
     id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
     type = db.Column(db.Unicode(100), default='Generic', nullable=False)
     description = db.Column(db.Unicode(1024), default='')
-    tokens = db.relationship('Token', secondary=token_container_association_table,
+    tokens = db.relationship('Token', secondary='tokencontainertoken',
                              back_populates='container')
 
     serial = db.Column(db.Unicode(40), default='', unique=True, nullable=False, index=True)

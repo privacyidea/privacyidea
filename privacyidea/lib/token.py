@@ -69,6 +69,7 @@ import logging
 from sqlalchemy import (and_, func)
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.expression import FunctionElement
+
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    privacyIDEAError, ResourceNotFoundError)
@@ -545,6 +546,13 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
                 for key in list(token_dict['info']):
                     if key in hidden_tokeninfo:
                         token_dict['info'].pop(key)
+
+            # check if token is in a container
+            token_dict["container_serial"] = ""
+            from privacyidea.lib.container import find_container_for_token
+            container = find_container_for_token(tokenobject.get_serial())
+            if container:
+                token_dict["container_serial"] = container.serial
 
             token_list.append(token_dict)
 
