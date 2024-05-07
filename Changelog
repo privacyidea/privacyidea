@@ -1,3 +1,20 @@
+Version 3.10dev2, 2024-05-07
+
+  Enhancements:
+  * Migration of several tools to the click framework
+  * Offline token: Allow to post-pend the PIN
+  * Dump token data to JSON
+  * Allow case-insensitive usernames in policies
+  * Allow extended notes on policies
+  * WebAuthn: Allow offline usage
+  * Add user-agent to audit log
+  * Check secret length for Yubikey token during enrollment
+
+  Fixes:
+  * Verify enrollment for indexed secret token
+  * Verify enrollment for paper token and TAN token
+  * WebUI: cancel poll-transaction in case another token is used
+
 Version 3.10dev1, 2023-11-29
 
   Enhancements:
