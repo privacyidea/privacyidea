@@ -565,9 +565,18 @@ class EmailTokenClass(HotpTokenClass):
         :return:
         """
         # Get policy for email validation
-        # TODO
-        # check passw to be a valid email address
-        validate_email = get_email_validators().get("privacyidea.lib.utils.emailvalidation")
+        validate_module = "privacyidea.lib.utils.emailvalidation"
+        if "g" in options:
+            g = options.get("g")
+            validate_modules = Match.user(g, scope=SCOPE.ENROLL,
+                                  action=ACTION.EMAILVALIDATION,
+                                  user_object=options.get("user") if "user" in options else None).action_values(
+                unique=True)
+            # check passw to be a valid email address
+            if len(validate_modules) == 1:
+                # We have a policy for email validation
+                validate_module = list(validate_modules)[0]
+        validate_email = get_email_validators().get(validate_module)
         if validate_email(passw):
             # TODO: If anything special happens, we could leave it as a dynamic email
             self.del_tokeninfo("dynamic_email")
