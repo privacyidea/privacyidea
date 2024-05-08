@@ -70,7 +70,7 @@ import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
-from privacyidea.lib.config import get_from_config
+from privacyidea.lib.config import get_from_config,  get_email_validators
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
@@ -565,8 +565,8 @@ class EmailTokenClass(HotpTokenClass):
         :return:
         """
         # check passw to be a valid email address
-        from privacyidea.lib.utils.emailverification import verify_email
-        if verify_email(passw):
+        validate_email = get_email_validators().get("privacyidea.lib.utils.emailvalidation")
+        if validate_email(passw):
             # TODO: If anything special happens, we could leave it as a dynamic email
             self.del_tokeninfo("dynamic_email")
             self.add_tokeninfo(self.EMAIL_ADDRESS_KEY, passw)

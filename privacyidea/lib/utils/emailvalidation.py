@@ -24,7 +24,7 @@ import re
 log = logging.getLogger(__name__)
 
 
-def verify_email(email):
+def validate_email(email):
     """
     Verify if the email is valid format
     :param email: email address
