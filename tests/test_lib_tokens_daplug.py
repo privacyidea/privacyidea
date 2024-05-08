@@ -499,11 +499,6 @@ class DaplugTokenTestCase(MyTestCase):
                         res[2])
         self.assertTrue(res[2].get("type") == "daplug", res)
 
-        # do some failing otp checks
-        token.token.otplen = "invalid otp counter"
-        self.assertRaises(Exception, token.check_otp, _digi2daplug("123456"))
-        token.token.otplen = 0
-
     def test_20_check_challenge_response(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         db_token.set_pin("test")

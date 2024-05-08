@@ -45,6 +45,7 @@ def check_token_locked(func):
 
     return token_locked_wrapper
 
+
 def check_token_otp_lenght(func):
     """
     Decorator to check if a token otp has the correct length.

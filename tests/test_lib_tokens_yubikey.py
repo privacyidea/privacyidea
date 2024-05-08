@@ -256,7 +256,6 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertEqual(-1, r, r)
         token.delete_token()
 
-
     def test_97_wrong_tokenid(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = YubikeyTokenClass(db_token)
