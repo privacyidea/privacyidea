@@ -59,7 +59,7 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import (modhex_decode, hexlify_and_unicode, checksum,
                                    to_bytes, b64encode_and_unicode)
 import binascii
-from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_lenght
 from privacyidea.api.lib.utils import getParam
 import datetime
 import base64
@@ -238,6 +238,7 @@ class YubikeyTokenClass(TokenClass):
 
     @log_with(log)
     @check_token_locked
+    @check_token_otp_lenght
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         validate the token otp against a given otpvalue
@@ -272,10 +273,6 @@ class YubikeyTokenClass(TokenClass):
         secret = self.token.get_otpkey()
 
         anOtpVal = anOtpVal.lower()
-
-        if len(anOtpVal) != self.token.otplen:
-            log.info("Yubikey OPT value has wrong length")
-            return -3
 
         # The prefix is the characters in front of the last 32 chars
         yubi_prefix = anOtpVal[:-32]

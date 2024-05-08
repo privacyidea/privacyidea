@@ -19,7 +19,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
-from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_lenght
 from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.utils import determine_logged_in_userparams, parse_time_sec_int
@@ -200,6 +200,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         return res
 
     @check_token_locked
+    @check_token_otp_lenght
     def check_otp(self, anOtpVal, counter=None, options=None):
         """
         validate the token passwort against a given passwordvalue

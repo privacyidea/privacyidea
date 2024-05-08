@@ -67,7 +67,7 @@ from privacyidea.lib import _
 
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
 from privacyidea.models import Challenge
-from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_lenght
 import logging
 
 
@@ -368,6 +368,7 @@ class SmsTokenClass(HotpTokenClass):
 
     @log_with(log)
     @check_token_locked
+    @check_token_otp_lenght
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         check the otpval of a token against a given counter
@@ -380,6 +381,7 @@ class SmsTokenClass(HotpTokenClass):
         :rtype: int
         """
         options = options or {}
+
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
         if ret < 0 and is_true(get_from_config("sms.concurrent_challenges")):
             if safe_compare(options.get("data"), anOtpVal):

@@ -61,7 +61,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
                                    hexlify_and_unicode, determine_logged_in_userparams)
-from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_lenght
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, Match
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenclass import CLIENTMODE
@@ -400,6 +400,7 @@ class HotpTokenClass(TokenClass):
 
     @log_with(log)
     @check_token_locked
+    @check_token_otp_lenght
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         check if the given OTP value is valid for this token.

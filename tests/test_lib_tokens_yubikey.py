@@ -117,8 +117,6 @@ class YubikeyTokenTestCase(MyTestCase):
         r, opt = YubikeyTokenClass.check_yubikey_pass(
             "fcebeeejedecebegfcniufvgvjturjgvinhebbbertjnihit")
         self.assertFalse(r)
-        # self.assertTrue(opt.get("action_detail") ==
-        #                "The serial UBAM@1382015 could not be found!", opt)
         self.assertTrue(opt.get("action_detail") ==
                         "The prefix fcebeeejedecebeg could not be found!", opt)
 
@@ -251,14 +249,15 @@ class YubikeyTokenTestCase(MyTestCase):
         r = token.check_otp(self.valid_otps[0])
         self.assertGreater(r, 0, r)
         r = token.check_otp(self.valid_otps[1][:-1])
-        self.assertEqual(-3, r, r)
+        self.assertEqual(-1, r, r)
         r = token.check_otp(self.valid_otps[2] + "a")
-        self.assertEqual(-3, r, r)
+        self.assertEqual(-1, r, r)
         r = token.check_otp(self.valid_otps[3] + "k")
-        self.assertEqual(-3, r, r)
+        self.assertEqual(-1, r, r)
         token.delete_token()
 
-    def test_98_wrong_tokenid(self):
+
+    def test_97_wrong_tokenid(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = YubikeyTokenClass(db_token)
         token.add_tokeninfo("yubikey.tokenid", "wrongid!")
@@ -268,8 +267,46 @@ class YubikeyTokenTestCase(MyTestCase):
         r = token.check_otp(self.further_otps[2])
         self.assertTrue(r == -2, r)
 
-    def test_99_delete_token(self):
+    def test_98_delete_token(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = YubikeyTokenClass(db_token)
         # delete the token
         token.delete_token()
+
+    def test_99_different_public_uid_lenghts(self):
+        pui = ["e", "ec", "ece", "eceb", "ecebe", "ecebee", "ecebeee", "ecebeeej", "ecebeeeje", "ecebeeejed",
+               "ecebeeejede", "ecebeeejedecebe", "ecebeeejedecebeg"]
+        for id in pui:
+            new_otps = [
+                id + "fcniufvgvjturjgvinhebbbertjnihit",
+                id + "tbkfkdhnfjbjnkcbtbcckklhvgkljifu",
+                id + "ktvkekfgufndgbfvctgfrrkinergbtdj",
+                id + "jbefledlhkvjjcibvrdfcfetnjdjitrn",
+                id + "druecevifbfufgdegglttghghhvhjcbh",
+                id + "nvfnejvhkcililuvhntcrrulrfcrukll",
+                id + "kttkktdergcenthdredlvbkiulrkftuk",
+                id + "hutbgchjucnjnhlcnfijckbniegbglrt",
+                id + "vneienejjnedbfnjnnrfhhjudjgghckl",
+            ]
+            db_token = Token(self.serial1, tokentype="yubikey")
+            db_token.save()
+            token = YubikeyTokenClass(db_token)
+            token.set_otpkey(self.otpkey)
+            token.set_otplen(len(id) + 32)
+            token.set_pin(self.pin)
+            token.save()
+            self.assertTrue(token.token.serial == self.serial1, token)
+            self.assertTrue(token.token.tokentype == "yubikey", token.token)
+            self.assertTrue(token.type == "yubikey", token)
+            class_prefix = token.get_class_prefix()
+            self.assertTrue(class_prefix == "UBAM", class_prefix)
+            self.assertTrue(token.get_class_type() == "yubikey", token)
+
+            # Test a bunch of otp values
+            old_r = 0
+            for otp in new_otps:
+                r = token.check_otp(otp)
+                # check if the newly returned counter is bigger than the old one
+                self.assertTrue(r > old_r, (r, old_r))
+                old_r = r
+            token.delete_token()

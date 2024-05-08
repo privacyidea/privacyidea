@@ -492,18 +492,16 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertTrue(47278084 in res[2].get("otp"), res[2].get("otp"))
 
         # do some failing otp checks
-        token.token.otplen = "invalid otp counter"
-        self.assertRaises(Exception, token.check_otp, "123456")
-        token.token.otplen = 0
+        token.token.otplen = 5
+        self.assertTrue(token.check_otp("705493", counter=47251648) == -1, res)
+        token.token.otplen = 6
 
         # Previous OTP value used again
         token.token.otplen = 6
-        #token.token.count = 47251640
         # The OTP for this counter was already presented to the server
         token.token.count = 47251648
         # 47251647 -> 722053
         res = token.check_otp("722053", options={"initTime": 47251649 * 30})
-        #self.assertTrue(res == 47251647, res)
         self.assertTrue(res == -1, res)
 
         # simple OTPs of current time
@@ -576,28 +574,28 @@ class TOTPTokenTestCase(MyTestCase):
         token.token.count = 47251640
         token.set_sync_window(10)
         # counter = 47251649 => otp = 705493, is out of sync
-        r = token.check_otp(anOtpVal="705493", window=30,
+        r = token.check_otp("705493", window=30,
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
         # counter = 47251650 => otp = 389836, will be autosynced.
-        r = token.check_otp(anOtpVal="589836", window=30,
+        r = token.check_otp("589836", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == 47251650, r)
 
         # counter = 47251640 => otp = 166325 is an old OTP value
         # counter = 47251641 => otp = 432730 is an old OTP value
         # Autoresync with two times the same old OTP value must not work out!
-        r = token.check_otp(anOtpVal="166325", window=30,
+        r = token.check_otp("166325", window=30,
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
-        r = token.check_otp(anOtpVal="166325", window=30,
+        r = token.check_otp("166325", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
         # Autoresync with two consecutive old OTP values must not work out!
-        r = token.check_otp(anOtpVal="166325", window=30,
+        r = token.check_otp("166325", window=30,
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
-        r = token.check_otp(anOtpVal="432730", window=30,
+        r = token.check_otp("432730", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
 
@@ -606,11 +604,11 @@ class TOTPTokenTestCase(MyTestCase):
         # Just try some bullshit config value
         set_privacyidea_config("AutoResyncTimeout", "totally not a number")
         # counter = 47251648 => otp = 032819, is out of sync
-        r = token.check_otp(anOtpVal="032819", window=30,
+        r = token.check_otp("032819", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
         # counter = 47251650 => otp = 589836, will NOT _autosync
-        r = token.check_otp(anOtpVal="589836", window=30,
+        r = token.check_otp("589836", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
 
@@ -621,11 +619,11 @@ class TOTPTokenTestCase(MyTestCase):
         token.token.count = 47251640
         token.set_sync_window(10)
         # counter = 47251649 => otp = 705493, is out of sync
-        r = token.check_otp(anOtpVal="705493", window=30,
+        r = token.check_otp("705493", window=30,
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
         # counter = 47251650 => otp = 389836, will not get autosynced.
-        r = token.check_otp(anOtpVal="589836", window=30,
+        r = token.check_otp("589836", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
 

@@ -469,9 +469,9 @@ class DayPasswordTokenTestCase(MyTestCase):
                 self.assertEqual(res[2].get("otp").get(count).get('otpval'), value, res[2].get("otp"))
 
         # do some failing otp checks
-        token.token.otplen = "invalid otp counter"
-        self.assertRaises(Exception, token.check_otp, "123456")
-        token.token.otplen = 0
+        token.token.otplen = 5
+        self.assertTrue(token.check_otp("705493", counter=47251648) == -1, res)
+        token.token.otplen = 6
 
     def test_20_check_challenge_response(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

@@ -512,9 +512,9 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertTrue(res[2].get("type") == "hotp", res)
 
         # do some failing otp checks
-        token.token.otplen = "invalid otp counter"
-        self.assertRaises(Exception, token.check_otp, "123456")
-        token.token.otplen = 0
+        token.token.otplen = 5
+        self.assertTrue(token.check_otp("287082", counter=1, window=10) == -1)
+        token.token.otplen = 6
 
     def test_20_check_challenge_response(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -555,14 +555,14 @@ class HOTPTokenTestCase(MyTestCase):
         token.set_sync_window(10)
         token.set_count_window(5)
         # counter = 8, is out of sync
-        r = token.check_otp(anOtpVal="399871")
+        r = token.check_otp("399871")
         self.assertTrue(r == -1, r)
         # counter = 9, will be autosynced.
-        r = token.check_otp(anOtpVal="520489")
+        r = token.check_otp("520489")
         self.assertTrue(r == 9, r)
         # counter = 10, has also to authenticate! The counter of the token is
         #  set.
-        r = token.check_otp(anOtpVal="403154")
+        r = token.check_otp("403154")
         self.assertTrue(r == 10, r)
         self.assertEqual(token.token.count, 11)
 
@@ -571,30 +571,30 @@ class HOTPTokenTestCase(MyTestCase):
         # Just try some bullshit config value
         set_privacyidea_config("AutoResyncTimeout", "totally not a number")
         # counter = 7, is out of sync
-        r = token.check_otp(anOtpVal="162583")
+        r = token.check_otp("162583")
         self.assertTrue(r == -1, r)
         # counter = 9, will NOT _autosync
-        r = token.check_otp(anOtpVal="520489")
+        r = token.check_otp("520489")
         self.assertTrue(r == -1, r)
 
         # Autosync fails, if dueDate is over
         token.token.count = 0
         set_privacyidea_config("AutoResyncTimeout", 0)
         # counter = 8, is out of sync
-        r = token.check_otp(anOtpVal="399871")
+        r = token.check_otp("399871")
         self.assertTrue(r == -1, r)
         # counter = 9, is the next value, but duedate is over.
-        r = token.check_otp(anOtpVal="520489")
+        r = token.check_otp("520489")
         self.assertTrue(r == -1, r)
 
         # No _autosync
         set_privacyidea_config("AutoResync", False)
         token.token.count = 0
         # counter = 8, is out of sync
-        r = token.check_otp(anOtpVal="399871")
+        r = token.check_otp("399871")
         self.assertTrue(r == -1, r)
         # counter = 9, will not be autosynced
-        r = token.check_otp(anOtpVal="520489")
+        r = token.check_otp("520489")
         self.assertTrue(r == -1, r)
 
     def test_23_resync(self):
