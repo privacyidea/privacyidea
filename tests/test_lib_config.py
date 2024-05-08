@@ -22,7 +22,8 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_machine_resolver_class_dict,
                                     get_privacyidea_node, get_privacyidea_nodes,
                                     this, get_config_object, invalidate_config_object,
-                                    get_multichallenge_enrollable_tokentypes)
+                                    get_multichallenge_enrollable_tokentypes,
+                                    get_email_validators)
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
@@ -273,3 +274,11 @@ class ConfigTestCase(MyTestCase):
         self.assertNotIn("tan", ttypes)
         self.assertNotIn("daplug", ttypes)
         self.assertNotIn("paper", ttypes)
+
+    def test_11_get_email_validators(self):
+        ev = get_email_validators()
+        self.assertEqual(["privacyidea.lib.utils.emailvalidation"], list(ev.keys()))
+        validate_email = get_email_validators().get("privacyidea.lib.utils.emailvalidation")
+        self.assertTrue(validate_email("valid@email.com"))
+        self.assertFalse(validate_email("invalid@email.k"))
+

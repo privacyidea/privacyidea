@@ -173,7 +173,8 @@ import logging
 from ..models import (Policy, db, save_config_timestamp, Token, PolicyDescription)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
-                                    get_multichallenge_enrollable_tokentypes)
+                                    get_multichallenge_enrollable_tokentypes,
+                                    get_email_validators)
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
@@ -245,6 +246,7 @@ class ACTION(object):
     DELETE = "delete"
     DISABLE = "disable"
     EMAILCONFIG = "smtpconfig"
+    EMAILVALIDATION = "email_validation"
     ENABLE = "enable"
     ENCRYPTPIN = "encrypt_pin"
     FORCE_APP_PIN = "force_app_pin"
@@ -2294,6 +2296,12 @@ def get_static_policy_definitions(scope=None):
                           "(s)pecial. Use modifiers +/- or a list "
                           "of allowed characters [1234567890]"),
                 'group': GROUP.TOKEN},
+            ACTION.EMAILVALIDATION: {
+                'type': 'str',
+                'desc': _("Specify the email validator that should be used to validate "
+                          "email addresses during enrollment."),
+                'group': GROUP.TOKEN,
+                'value': list(get_email_validators().keys())},
             ACTION.VERIFY_ENROLLMENT: {
                 'type': 'str',
                 'desc': _("Specify a white space separated list of token types, "

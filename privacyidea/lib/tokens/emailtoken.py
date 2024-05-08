@@ -564,6 +564,8 @@ class EmailTokenClass(HotpTokenClass):
         :param options:
         :return:
         """
+        # Get policy for email validation
+        # TODO
         # check passw to be a valid email address
         validate_email = get_email_validators().get("privacyidea.lib.utils.emailvalidation")
         if validate_email(passw):
