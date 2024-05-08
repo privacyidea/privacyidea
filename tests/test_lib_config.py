@@ -281,4 +281,3 @@ class ConfigTestCase(MyTestCase):
         validate_email = get_email_validators().get("privacyidea.lib.utils.emailvalidation")
         self.assertTrue(validate_email("valid@email.com"))
         self.assertFalse(validate_email("invalid@email.k"))
-

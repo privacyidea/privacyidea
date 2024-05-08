@@ -70,7 +70,7 @@ import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
-from privacyidea.lib.config import get_from_config,  get_email_validators
+from privacyidea.lib.config import get_from_config, get_email_validators
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options

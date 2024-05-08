@@ -759,15 +759,15 @@ def get_token_list():
 def get_email_validators():
     """
     Return a dict of available email validator modules and its functions
-    
+
     The list be configured in "PI_EMAIL_VALIDATOR_MODULES" in pi.cfg.
-    
+
     The return value looks like:
     { "privacyidea.lib.utils.emailvalidation": func:validate_email }
 
-    :return: a dict 
+    :return: a dict
     """
-    validator_dict = { }
+    validator_dict = {}
     validator_list = to_list(get_app_config_value("PI_EMAIL_VALIDATOR_MODULES"))
     # Add our default validator
     validator_list.append("privacyidea.lib.utils.emailvalidation")
