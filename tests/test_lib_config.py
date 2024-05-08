@@ -277,7 +277,7 @@ class ConfigTestCase(MyTestCase):
 
     def test_11_get_email_validators(self):
         ev = get_email_validators()
-        self.assertEqual(["privacyidea.lib.utils.emailvalidation"], list(ev.keys()))
+        self.assertEqual(['tests.testdata.gmailvalidator', 'privacyidea.lib.utils.emailvalidation'], list(ev.keys()))
         validate_email = get_email_validators().get("privacyidea.lib.utils.emailvalidation")
         self.assertTrue(validate_email("valid@email.com"))
         self.assertFalse(validate_email("invalid@email.k"))
