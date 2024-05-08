@@ -31,7 +31,7 @@ def verify_email(email):
     :return: True if valid, False otherwise
     """
     # regular expression for email validation
-    regex='^[-\w\.]+@([\w-]+\.)+[\w-]{2,4}$'
+    regex = r'^[-\w\.]+@([\w-]+\.)+[\w-]{2,4}$'
     if re.search(regex, email):
         return True
     else:
