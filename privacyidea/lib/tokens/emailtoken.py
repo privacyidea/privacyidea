@@ -75,6 +75,7 @@ from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
 from privacyidea.lib.policy import Match
+from privacyidea.lib.error import ValidateError
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 from privacyidea.models import Challenge
@@ -563,7 +564,14 @@ class EmailTokenClass(HotpTokenClass):
         :param options:
         :return:
         """
-        self.del_tokeninfo("dynamic_email")
-        self.add_tokeninfo(self.EMAIL_ADDRESS_KEY, passw)
-        # Dynamically we remember that we need to do another challenge
-        self.currently_in_challenge = True
+        # check passw to be a valid email address
+        from privacyidea.lib.utils.emailverification import verify_email
+        if verify_email(passw):
+            # TODO: If anything special happens, we could leave it as a dynamic email
+            self.del_tokeninfo("dynamic_email")
+            self.add_tokeninfo(self.EMAIL_ADDRESS_KEY, passw)
+            # Dynamically we remember that we need to do another challenge
+            self.currently_in_challenge = True
+        else:
+            self.token.delete()
+            raise ValidateError(_("The email address is not valid!"))

@@ -5765,7 +5765,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertIn("image", detail)
             serial = detail.get("serial")
 
-        # 3. Enter the email address and finalize the token
+        # 3. Enter a correct email address and finalize the token
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "alice",
@@ -5801,6 +5801,78 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         delete_policy("pol_passthru")
         delete_policy("pol_multienroll")
         remove_token(serial)
+
+    @ldap3mock.activate
+    @smtpmock.activate
+    def test_03_fail_to_enroll_EMail(self):
+        # Init LDAP
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        # mock email sending
+        smtpmock.setdata(response={"alice@example.com": (200, 'OK')})
+        # create realm
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+
+        # 1. set policies.
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
+
+        # 2. authenticate user via passthru
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertEqual(result.get("authentication"), "ACCEPT")
+
+        # Set Policy scope:auth, action:enroll_via_multichallenge=email
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action="{0!s}=email".format(ACTION.ENROLL_VIA_MULTICHALLENGE))
+        # Now we should get an authentication Challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(result.get("authentication"), "CHALLENGE")
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            self.assertTrue("Please enter your new email address!" in detail.get("message"), detail.get("message"))
+            # Get image and client_mode
+            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"))
+            # Check, that multi_challenge is also contained.
+            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
+            self.assertIn("image", detail)
+            serial = detail.get("serial")
+
+        # 3. Enter an invalid email address and finalize the token
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "alice",
+                                                 "transaction_id": transaction_id,
+                                                 "pass": "alice@example.c"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(result.get("error").get("message"), "ERR401: The email address is not valid!")
+
+        # Cleanup
+        delete_policy("pol_passthru")
+        delete_policy("pol_multienroll")
+        # Check that the user has no token
+        toks = get_tokens(user=User("alice", "ldaprealm"), tokentype="email")
+        self.assertEqual(0, len(toks))
+
 
     @ldap3mock.activate
     @responses.activate
