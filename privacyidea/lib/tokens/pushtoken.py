@@ -25,6 +25,7 @@ and send it back to the authentication endpoint.
 This code is tested in tests/test_lib_tokens_push
 """
 
+import secrets
 from base64 import b32decode
 from binascii import Error as BinasciiError
 from urllib.parse import quote
@@ -169,7 +170,8 @@ def create_push_token_url(url=None, ttl=10, issuer="privacyIDEA", serial="mylabe
                                        extra=_construct_extra_parameters(extra_data)))
 
 
-def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, options):
+def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, options,
+                           require_presence="0"):
     """
     Create the dictionary to be sent to the smartphone as challenge
 
@@ -181,6 +183,8 @@ def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, 
     :type registration_url: str
     :param options: the options dictionary
     :type options: dict
+    :param require_presence: Require the user to confirm with the correct button from a list of options.
+    :type require_presence: str
     :return: the created smartphone_data dictionary
     :rtype: dict
     """
@@ -191,10 +195,6 @@ def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, 
     message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
                                                        PUSH_ACTION.MOBILE_TEXT,
                                                        options) or DEFAULT_MOBILE_TEXT
-    require_presence = get_action_values_from_options(SCOPE.AUTH,
-                                                      PUSH_ACTION.REQUIRE_PRESENCE, options) or "0"
-    require_presence = getParam({"require_presence": require_presence}, "require_presence",
-                                allowed_values=["0", "1"], default="0")
     # Get the request object
     _g = options.get("g", {})
     req_headers = None
@@ -904,7 +904,13 @@ class PushTokenClass(TokenClass):
                                                  ACTION.CHALLENGETEXT,
                                                  options) or DEFAULT_CHALLENGE_TEXT
 
-        data = None
+        # Determine, if we require presence
+        require_presence = get_action_values_from_options(SCOPE.AUTH,
+                                                          PUSH_ACTION.REQUIRE_PRESENCE, options) or "0"
+        require_presence = getParam({"require_presence": require_presence}, "require_presence",
+                                    allowed_values=["0", "1"], default="0")
+
+        data = secrets.choice("".join(AVAILABLE_PRESENCE_OPTIONS)) if require_presence == "1" else None
         # Initially we assume there is no error from Firebase
         res = True
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
@@ -963,6 +969,14 @@ class PushTokenClass(TokenClass):
                 raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")
 
         reply_dict = {"attributes": {"hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE}}
+
+        if data:
+            # If the message contains {} we replace it with the data
+            # otherwise we add a new text
+            if "{}" in message:
+                message = message.format(data)
+            else:
+                message += " Please press: {0!s}".format(data)
         return True, message, transactionid, reply_dict
 
     @check_token_locked
