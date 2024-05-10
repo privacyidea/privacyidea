@@ -582,6 +582,30 @@ Sensible numbers might be 10 or 20 seconds.
    to become unresponsive if the number of open PUSH challenges exceeds
    the number of available worker threads!
 
+.. _policy_push_require_presence:
+
+push_require_presence
+~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: push token
+
+type: int
+
+If `require presence` is set to "1", then the login window will display a message like
+"Please confirm login by pressing Button 'C' on your smartphone".
+
+The push notification on the smartphone will show several buttons. One is labeled "C".
+
+The user then can confirm the login by pressing this button. All other buttons will decline the
+login request.
+
+.. note:: This mechnism allows login scenarios where the user in front of the login window and the
+   person ownging the smartphone are two different persons. In this case they will have to communicate
+   for a successful login.
+
+If this policy is set to "0", the PUSH message will simply ask the user, if he wants to log in.
+
+
 
 .. _policy_auth_push_allow_poll:
 

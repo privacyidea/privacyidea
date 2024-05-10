@@ -42,7 +42,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            papertoken_count, allowed_audit_realm,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
-                                           pushtoken_add_config, pushtoken_wait,
+                                           pushtoken_add_config, pushtoken_validate,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, pushtoken_disable_wait,
                                            webauthntoken_auth, webauthntoken_authz,
@@ -2006,14 +2006,14 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.User = User()
         req.all_data = {"push_wait": "120"}
         g.policy_object = PolicyClass()
-        pushtoken_wait(req, None)
+        pushtoken_validate(req, None)
         self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
 
         # Now we use the policy, to set the push_wait seconds
         set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=10".format(PUSH_ACTION.WAIT))
         req.all_data = {}
         g.policy_object = PolicyClass()
-        pushtoken_wait(req, None)
+        pushtoken_validate(req, None)
         self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), 10)
 
         delete_policy("push1")
