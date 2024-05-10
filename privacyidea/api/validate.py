@@ -85,7 +85,8 @@ from privacyidea.api.lib.decorators import add_serial_from_response_to_g
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
-                                           check_base_action, pushtoken_validate, webauthntoken_auth, webauthntoken_authz,
+                                           check_base_action, pushtoken_validate, webauthntoken_auth,
+                                           webauthntoken_authz,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge)
 from privacyidea.api.lib.postpolicy import (postpolicy,

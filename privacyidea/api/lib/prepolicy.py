@@ -1478,9 +1478,8 @@ def pushtoken_validate(request, action):
     else:
         request.all_data[PUSH_ACTION.WAIT] = False
 
-    require_presence =  Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.REQUIRE_PRESENCE,
-                         user_object=user_object if user_object else None)\
-        .action_values(unique=True)
+    require_presence = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.REQUIRE_PRESENCE,
+                       user_object=user_object if user_object else None).action_values(unique=True)
     if len(require_presence) >= 1:
         request.all_data[PUSH_ACTION.REQUIRE_PRESENCE] = int(list(require_presence)[0])
     else:
