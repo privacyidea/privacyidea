@@ -599,8 +599,8 @@ The push notification on the smartphone will show several buttons. One is labele
 The user then can confirm the login by pressing this button. All other buttons will decline the
 login request.
 
-.. note:: This mechnism allows login scenarios where the user in front of the login window and the
-   person ownging the smartphone are two different persons. In this case they will have to communicate
+.. note:: This mechanism allows login scenarios where the user in front of the login window and the
+   person owning the smartphone are two different persons. In this case they will have to communicate
    for a successful login.
 
 If this policy is set to "0", the PUSH message will simply ask the user, if he wants to log in.
