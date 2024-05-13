@@ -70,11 +70,12 @@ import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
-from privacyidea.lib.config import get_from_config
+from privacyidea.lib.config import get_from_config, get_email_validators
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
 from privacyidea.lib.policy import Match
+from privacyidea.lib.error import ValidateError
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 from privacyidea.models import Challenge
@@ -563,7 +564,25 @@ class EmailTokenClass(HotpTokenClass):
         :param options:
         :return:
         """
-        self.del_tokeninfo("dynamic_email")
-        self.add_tokeninfo(self.EMAIL_ADDRESS_KEY, passw)
-        # Dynamically we remember that we need to do another challenge
-        self.currently_in_challenge = True
+        # Get policy for email validation
+        validate_module = "privacyidea.lib.utils.emailvalidation"
+        if "g" in options:
+            g = options.get("g")
+            validate_modules = Match.user(g, scope=SCOPE.ENROLL,
+                                  action=ACTION.EMAILVALIDATION,
+                                  user_object=options.get("user") if "user" in options else None).action_values(
+                unique=True)
+            # check passw to be a valid email address
+            if len(validate_modules) == 1:
+                # We have a policy for email validation
+                validate_module = list(validate_modules)[0]
+        validate_email = get_email_validators().get(validate_module)
+        if validate_email(passw):
+            # TODO: If anything special happens, we could leave it as a dynamic email
+            self.del_tokeninfo("dynamic_email")
+            self.add_tokeninfo(self.EMAIL_ADDRESS_KEY, passw)
+            # Dynamically we remember that we need to do another challenge
+            self.currently_in_challenge = True
+        else:
+            self.token.delete()
+            raise ValidateError(_("The email address is not valid!"))

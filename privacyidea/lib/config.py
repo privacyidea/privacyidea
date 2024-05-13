@@ -756,6 +756,40 @@ def get_token_list():
     return module_list
 
 
+def get_email_validators():
+    """
+    Return a dict of available email validator modules and its functions
+
+    The list be configured in "PI_EMAIL_VALIDATOR_MODULES" in pi.cfg.
+
+    The return value looks like:
+    { "privacyidea.lib.utils.emailvalidation": func:validate_email }
+
+    :return: a dict
+    """
+    if "pi_email_validators" not in this.config:
+        validator_dict = {}
+        validator_list = to_list(get_app_config_value("PI_EMAIL_VALIDATOR_MODULES"))
+        # Add our default validator
+        validator_list.append("privacyidea.lib.utils.emailvalidation")
+        # Remove empty entries
+        validator_list = [x for x in validator_list if x]
+
+        for mod_name in validator_list:
+            if mod_name == '\\' or len(mod_name.strip()) == 0:
+                continue
+            try:
+                log.debug("import module: {0!s}".format(mod_name))
+                module = importlib.import_module(mod_name)
+                validator_dict[mod_name] = module.validate_email
+            except Exception as exx:  # pragma: no cover
+                log.warning('unable to load validate module with function "validate_email": '
+                            '{0!r} ({1!r})'.format(mod_name, exx))
+        this.config["pi_email_validators"] = validator_dict
+
+    return this.config["pi_email_validators"]
+
+
 @log_with(log)
 #@cache.cached(key_prefix="modules")
 def get_token_module_list():

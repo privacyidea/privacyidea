@@ -304,6 +304,23 @@ in ``pi.cfg`` using the parameter ``PI_TOKEN_MODULES``::
 
     PI_TOKEN_MODULES = [ "myproject.cooltoken", "myproject.lametoken" ]
 
+.. _picfg_email_validators:
+
+3rd party email validators
+--------------------------
+
+privacyIDEA can use email validators while enrolling email tokens via validate/check.
+You can configure your own email validators in the `pi.cfg`::
+
+    PI_EMAIL_VALIDATOR_MODULES = [ "myproject.emailvalidator", "otherproject.nogmail" ]
+
+This module needs to provide a function `validate_email(email: str) -> bool` which returns True if the
+email is valid.
+
+The email validator module that comes with privacyIDEA is `privacyidea.lib.utils.emailvalidation`.
+You do not need to add this in the `pi.cfg` file, this is available by default.
+
+
 .. _custom_web_ui:
 
 Custom Web UI
