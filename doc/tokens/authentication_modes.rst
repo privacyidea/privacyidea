@@ -150,6 +150,8 @@ The *Service* is an application that is protected with a second factor by privac
 
  and privacyIDEA returns whether the authentication request succeeded or not.
 
+To clean up expired challenges read the :ref:`pimanage_challenge` section.
+
 .. _authentication_mode_outofband:
 
 ``outofband`` mode

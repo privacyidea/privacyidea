@@ -1660,14 +1660,13 @@ class TokenClass(object):
         """
         return False
 
-    @staticmethod
-    def challenge_janitor():
+    def challenge_janitor(self):
         """
         Just clean up all challenges, for which the expiration has expired.
 
         :return: None
         """
-        cleanup_challenges()
+        cleanup_challenges(self.token.serial)
 
     def create_challenge(self, transactionid=None, options=None):
         """

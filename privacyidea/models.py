@@ -1399,7 +1399,7 @@ class Challenge(MethodsMixin, db.Model):
     # The token serial number
     serial = db.Column(db.Unicode(40), default='', index=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow(), index=True)
-    expiration = db.Column(db.DateTime)
+    expiration = db.Column(db.DateTime, index=True)
     received_count = db.Column(db.Integer(), default=0)
     otp_valid = db.Column(db.Boolean, default=False)
 
@@ -1512,14 +1512,14 @@ class Challenge(MethodsMixin, db.Model):
         return "{0!s}".format(descr)
 
 
-def cleanup_challenges():
+def cleanup_challenges(serial):
     """
     Delete all challenges, that have expired.
 
     :return: None
     """
     c_now = datetime.utcnow()
-    Challenge.query.filter(Challenge.expiration < c_now).delete()
+    Challenge.query.filter(Challenge.expiration < c_now, Challenge.serial == serial).delete()
     db.session.commit()
 
 

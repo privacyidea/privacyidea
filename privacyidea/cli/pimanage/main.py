@@ -56,6 +56,7 @@ from privacyidea.cli import create_silent_app
 from privacyidea.lib.utils import get_version_number
 from .admin import admin_cli
 from .audit import audit_cli, rotate_audit as audit_rotate_audit
+from .challenge import challenge_cli
 from .backup import backup_cli
 from .pi_setup import (setup_cli, encrypt_enckey, create_enckey, create_tables,
                        create_pgp_keys, create_audit_keys, drop_tables)
@@ -106,6 +107,7 @@ cli.add_command(admin_cli)
 cli.add_command(audit_cli)
 cli.add_command(setup_cli)
 cli.add_command(config_cli)
+cli.add_command(challenge_cli)
 cli.add_command(backup_cli)
 cli.add_command(api_cli)
 cli.add_command(ca_cli)
