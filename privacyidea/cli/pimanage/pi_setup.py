@@ -186,7 +186,7 @@ def create_audit_keys(ctx, keysize):
 @setup_cli.command("create_tables")
 @click.option("-s", "--stamp", is_flag=True,
               help='Stamp database to current head revision.')
-def create_tables(stamp=False):
+def create_tables(stamp=True):
     """
     Initially create the tables in the database. The database must exist
     (an SQLite database will be created).
