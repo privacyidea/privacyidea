@@ -40,7 +40,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertTrue(len(added) == 1)
 
         # Create a container with tokens and users
-        serial = init_container({"type": "generic", "description":"test container"})
+        serial = init_container({"type": "generic", "description": "test container"})
         container = find_container_by_serial(serial)
         user_root = User(login="root", realm=self.realm1, resolver=self.resolvername1)
         user_statd = User(login="statd", realm=self.realm1, resolver=self.resolvername1)
