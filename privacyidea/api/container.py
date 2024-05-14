@@ -4,7 +4,8 @@ from flask import Blueprint, jsonify, request
 
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import get_container_classes, create_container_template, \
-    find_container_by_serial, init_container, get_all_containers, get_container_classes_descriptions
+    find_container_by_serial, init_container, get_all_containers, get_container_classes_descriptions, \
+    get_container_token_types
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import get_one_token
@@ -140,7 +141,8 @@ def remove_token(container_serial):
     token = get_one_token(serial=serial)
     res = False
     if token:
-        container.remove_token(token)
+        count = container.remove_token(token.get_serial())
+        print(count)
         res = True
     return send_result(res)
 
@@ -150,6 +152,16 @@ def remove_token(container_serial):
 def get_types():
     descriptions = get_container_classes_descriptions()
     return send_result(descriptions)
+
+
+@container_blueprint.route('tokentypes', methods=['GET'])
+@log_with(log)
+def get_token_types():
+    """
+    Get the supported token types for each container type
+    """
+    res = get_container_token_types()
+    return send_result(res)
 
 
 ######################## vvv TEMPLATES vvv ##########################

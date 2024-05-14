@@ -1,5 +1,5 @@
 myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
-                                                'AuthFactory', 'ConfigFactory',
+    'AuthFactory', 'ConfigFactory',
 
     function createContainerController($scope, $http, $q, ContainerFactory, $stateParams, AuthFactory, ConfigFactory) {
         $scope.formData = {
@@ -22,7 +22,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
                 // Set the default realm
-                var size = Object.keys($scope.realms).length;
+                const size = Object.keys($scope.realms).length;
                 angular.forEach($scope.realms, function (realm, realmname) {
                     if (size === 1) {
                         // if there is only one realm, preset it
@@ -73,7 +73,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                 params["description"] = $scope.form.description
             }
 
-            ContainerFactory.createContainer(params, function(data) {
+            ContainerFactory.createContainer(params, function (data) {
                 // TODO where to go after creation?
             })
         }

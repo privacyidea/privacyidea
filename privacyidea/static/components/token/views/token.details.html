@@ -5,6 +5,7 @@
        translate>
         View token in Audit log</a>
 </h3>
+
 <div class="table-responsive">
     <table class="table table-bordered table-striped">
         <tr>
@@ -171,7 +172,7 @@
             editable-as-user=true
             token-key="description"
             callback-cancel="get()"
-            callback="setdescription(value)"
+            callback="setDescription(value)"
             logged-in-user="loggedInUser"></tr>
         <tr ng-show="loggedInUser.role==='user'"
             token-data-edit text="{{ 'Description'|translate }}"
@@ -183,7 +184,7 @@
             editable-as-user=true
             token-key="description"
             callback-cancel="get()"
-            callback="setdescription(value)"
+            callback="setDescription(value)"
             logged-in-user="loggedInUser"></tr>
         <tr>
             <td translate>Info</td>
@@ -574,18 +575,19 @@
     </form>
 </div>
 
-<!-- ============ Containers ======================= -->
-
-<div class="form-group">
-    <h4 translate>Add token to container</h4>
-    <select class="form-control"
-            ng-model="containerSerial"
-            ng-options="container.serial as container.displayString for container in containerList">
-    </select>
+<!-- ============ Container ====================== -->
+<h4>Assign Container</h4>
+<div select-or-create-container container-serial="containerSerial" disable-selection="tokenIsInContainer"
+     enable-user-assignment="token.user_id" user-name="token.username" user-realm="token.user_realm" >
 </div>
-<div class="text-center">
-    <button ng-click="addTokenToContainer()"
-            class="btn btn-primary" translate>Add token
+<div class="text-center" ng-show="showAddToContainer && !tokenIsInContainer">
+    <button type="button" class="btn btn-primary" ng-click="addToContainer()">
+        <span translate>Add to Container</span>
+    </button>
+</div>
+<div class="text-center" ng-show="tokenIsInContainer">
+    <button type="button" class="btn btn-primary" ng-click="removeFromContainer()">
+        <span translate>Remove from Container</span>
     </button>
 </div>
 

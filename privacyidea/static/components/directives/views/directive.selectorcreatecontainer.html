@@ -1,0 +1,42 @@
+<div class="form-group">
+    <div>
+        <select class="form-control"
+                id="containerSelect"
+                ng-disabled="disableSelection"
+                ng-change="changeContainerSelection()"
+                ng-model="containerSerial"
+                ng-options="container.serial as container.displayString for container in containers">
+        </select>
+    </div>
+    <!-- New container creation -->
+    <div ng-show="isCreateNew">
+        <!-- Type -->
+        <label for="containerType" translate>New container type</label>
+        <select class="form-control"
+                id="containerType"
+                ng-change="changeContainerType()"
+                ng-model="newContainer.type"
+                ng-options="type as desc for (type, desc) in newContainer.types">
+        </select>
+        <!-- Description -->
+        <label for="description" translate>Description</label>
+        <input type="text" class="form-control" id="description"
+               autocomplete="new-password"
+               placeholder="{{ 'Some nice words...'|translate }}"
+               ng-model="newContainer.description"/>
+
+        <!-- User Assign (user provided from parent scope if available) -->
+        <div ng-show="enableUserAssignment">
+            <input type="checkbox" ng-model="assignUserToContainer" id="checkboxAssignContainerToUser">
+            <label for="checkboxAssignContainerToUser" translate>Assign the new container to {{userName}} in realm {{userRealm}}</label>
+        </div>
+        <!-- Button -->
+        <div class="text-center">
+            <button type="button" ng-click="createContainer()"
+                    class="btn btn-primary">
+                <span translate>Create Container</span>
+            </button>
+        </div>
+    </div>
+</div>
+

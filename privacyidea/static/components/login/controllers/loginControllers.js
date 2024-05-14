@@ -572,6 +572,7 @@ angular.module("privacyideaApp")
             $('#dialogWelcome').modal("hide");
         }
     };
+
     $scope.resetWelcome = function() {
         if ($scope.hide_welcome) {
             $scope.welcomeStep = 4;
@@ -613,10 +614,9 @@ angular.module("privacyideaApp")
         $rootScope.showInfo = false;
     };
 
-
     $scope.createDefaultRealm = function () {
-        var resolver_params = {type: "passwdresolver", filename: "/etc/passwd"};
-        var realm_params = {resolvers: "deflocal"};
+        const resolver_params = {type: "passwdresolver", filename: "/etc/passwd"};
+        const realm_params = {resolvers: "deflocal"};
         ConfigFactory.setResolver("deflocal",
             resolver_params,
             function(data) {
@@ -633,7 +633,6 @@ angular.module("privacyideaApp")
                         });
                 }
         });
-
     };
 
     $scope.reload = function() {
@@ -662,7 +661,7 @@ angular.module("privacyideaApp")
 
     $scope.newpin = "";
     $scope.changePin = function () {
-        TokenFactory.setpin($scope.pin_change_serial,
+        TokenFactory.setPin($scope.pin_change_serial,
             "otppin", $scope.newpin, function () {
             inform.add(gettextCatalog.getString("PIN changed successfully."),
                 {type: "info"});

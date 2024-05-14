@@ -238,3 +238,15 @@ def get_container_classes_descriptions():
     for container_type, container_class in classes.items():
         ret[container_type] = f"{container_type.capitalize()}: {container_class.get_class_description()}"
     return ret
+
+
+def get_container_token_types():
+    """
+    Returns a dictionary of {"type": "tokentype0, tokentype1, ..."} entries for all container types.
+    Used to list the supported token types for each container type.
+    """
+    ret = {}
+    classes = get_container_classes()
+    for container_type, container_class in classes.items():
+        ret[container_type] = container_class.get_supported_token_types()
+    return ret

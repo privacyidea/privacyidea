@@ -1,44 +1,44 @@
 function date_object_to_string(date_obj) {
-    var s = "";
+    let s = "";
     if (date_obj) {
-        var Y = date_obj.getFullYear();
-        var D = date_obj.getDate();
+        const Y = date_obj.getFullYear();
+        let D = date_obj.getDate();
         D = (D > 9 ? '' : '0') + D;
-        var M = date_obj.getMonth() + 1;
+        let M = date_obj.getMonth() + 1;
         M = (M > 9 ? '' : '0') + M;
-        var h = date_obj.getHours();
+        let h = date_obj.getHours();
         h = (h > 9 ? '' : '0') + h;
-        var m = date_obj.getMinutes();
+        let m = date_obj.getMinutes();
         m = (m > 9 ? '' : '0') + m;
 
-        var tz = date_obj.getTimezoneOffset();
-        var tz_abs = Math.abs(tz);
-        var hours = Math.floor(tz_abs / 60);
+        const tz = date_obj.getTimezoneOffset();
+        const tz_abs = Math.abs(tz);
+        let hours = Math.floor(tz_abs / 60);
         hours = (hours > 9 ? '' : '0') + hours;
-        var minutes = tz_abs % 60;
+        let minutes = tz_abs % 60;
         minutes = (minutes > 9 ? '' : '0') + minutes;
-        var sign = "-";
+        let sign = "-";
         if (tz < 0) {
             // The offset for +0100 is -60!
             sign = "+";
         }
-        var o = sign + hours + minutes;
+        const o = sign + hours + minutes;
         s = Y + "-" + M + "-" + D + "T" + h + ":" + m + o;
     }
     return s;
 }
 
 function string_to_date_object(s) {
-    date_obj = null;
+    let date_obj = null;
     if (s) {
         if (s.substring(2, 3) === "/") {
-            var day = s.substring(0, 2);
-            var month = s.substring(3, 5);
-            var rest = s.substring(6);
+            const day = s.substring(0, 2);
+            const month = s.substring(3, 5);
+            const rest = s.substring(6);
             s = month + "/" + day + "/" + rest;
         }
-        var date_obj = new Date();
-        var d = Date.parse(s);
+        date_obj = new Date();
+        const d = Date.parse(s);
         date_obj.setTime(d);
     }
     return date_obj;
@@ -58,23 +58,36 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
               MachineFactory, inform,
               gettextCatalog, ContainerFactory) {
 
-
-        ContainerFactory.getContainers(function (data) {
-            $scope.containerList = data.result.value;
-            for (let i = 0; i < $scope.containerList.length; i++) {
-                $scope.containerList[i].displayString = "(" + $scope.containerList[i].type + ") "
-                    + $scope.containerList[i].serial + ": " + $scope.containerList[i].description;
-            }
-            if ($scope.containerList.length > 0) {
-                $scope.containerSerial = $scope.containerList[0].serial
-            }
-        })
-        $scope.addTokenToContainer = function () {
-            let params = {};
-            params["serial"] = $scope.containerSerial;
-            params["tokenSerial"] = $stateParams.tokenSerial;
-            ContainerFactory.addTokenToContainer(params, function (data) {});
-        }
+        // Container
+       /* $scope.container = {
+            tokenIsInContainer: true,
+        }*/
+        $scope.tokenIsInContainer = false;
+        $scope.$watch('containerSerial', function () {
+            $scope.showAddToContainer = ($scope.containerSerial && $scope.containerSerial !== "createnew");
+        });
+        $scope.addToContainer = function () {
+            ContainerFactory.addTokenToContainer({
+                serial: $scope.containerSerial,
+                tokenSerial: $scope.tokenSerial
+            }, function (data) {
+                if (data.result.value) {
+                    $scope.tokenIsInContainer = true;
+                }
+            });
+        };
+        $scope.removeFromContainer = function () {
+            ContainerFactory.removeTokenFromContainer({
+                serial: $scope.containerSerial,
+                tokenSerial: $scope.tokenSerial
+            }, function (data) {
+                if (data.result.value) {
+                    $scope.tokenIsInContainer = false;
+                    $scope.containerSerial = "createnew";
+                }
+            });
+        };
+        // End container
 
         $scope.tokenSerial = $stateParams.tokenSerial;
         // This is the parent object
@@ -92,7 +105,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         $scope.testTokenPlaceholder = gettextCatalog.getString('Enter PIN and OTP to check the' +
             ' token.');
         ConfigFactory.getSystemConfig(function (data) {
-            prepend = data.result.value.PrependPin;
+            let prepend = data.result.value.PrependPin;
             //debug: console.log(prepend);
             if (!$scope.isChecked(prepend)) {
                 $scope.testTokenPlaceholder = gettextCatalog.getString('Enter OTP + PIN to' +
@@ -105,26 +118,31 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         // define functions
         $scope.get = function () {
             TokenFactory.getTokenForSerial($scope.tokenSerial, function (data) {
+                let blob;
                 $scope.token = data.result.value.tokens[0];
                 $scope.max_auth_count = parseInt($scope.token.info.count_auth_max);
                 $scope.max_success_auth_count = parseInt($scope.token.info.count_auth_success_max);
                 $scope.validity_period_start = string_to_date_object($scope.token.info.validity_period_start);
                 $scope.validity_period_end = string_to_date_object($scope.token.info.validity_period_end);
+                if ($scope.token["container_serial"]) {
+                    $scope.tokenIsInContainer = true;
+                    $scope.containerSerial = $scope.token.container_serial;
+                }
                 //debug: console.log($scope.token);
                 // Add a certificateBlob, if it exists
                 if ($scope.token.info.certificate) {
-                    var blob = new Blob([$scope.token.info.certificate],
+                    blob = new Blob([$scope.token.info.certificate],
                         {type: 'text/plain'});
                     $scope.certificateBlob = (window.URL || window.webkitURL).createObjectURL(blob);
                 }
                 if ($scope.token.info.pkcs12) {
-                    var bytechars = atob($scope.token.info.pkcs12);
-                    var byteNumbers = new Array(bytechars.length);
-                    for (var i = 0; i < bytechars.length; i++) {
+                    const bytechars = atob($scope.token.info.pkcs12);
+                    const byteNumbers = new Array(bytechars.length);
+                    for (let i = 0; i < bytechars.length; i++) {
                         byteNumbers[i] = bytechars.charCodeAt(i);
                     }
-                    var byteArray = new Uint8Array(byteNumbers);
-                    var blob = new Blob([byteArray], {type: 'application/x-pkcs12'});
+                    const byteArray = new Uint8Array(byteNumbers);
+                    blob = new Blob([byteArray], {type: 'application/x-pkcs12'});
                     $scope.pkcs12Blob = (window.URL || window.webkitURL).createObjectURL(blob);
                 }
                 $scope.changeApplication();
@@ -134,7 +152,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         // initialize
         $scope.get();
 
-        $scope.return_to = function () {
+        $scope.returnTo = function () {
             // After deleting the token, we return here.
             // history.back();
             $state.go($rootScope.previousState.state,
@@ -162,8 +180,8 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         $scope.set = function (key, value) {
             TokenFactory.set($scope.tokenSerial, key, value, $scope.get);
         };
-        $scope.setdescription = function (description) {
-            TokenFactory.set_description($scope.tokenSerial, description, $scope.get);
+        $scope.setDescription = function (description) {
+            TokenFactory.setDescription($scope.tokenSerial, description, $scope.get);
         };
         $scope.reset = function () {
             TokenFactory.reset($scope.tokenSerial, $scope.get);
@@ -198,24 +216,24 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         };
 
         $scope.saveTokenGroups = function () {
-            var tokengroups = [];
-            for (var tokengroup in $scope.selectedTokenGroups) {
+            const tokengroups = [];
+            for (const tokengroup in $scope.selectedTokenGroups) {
                 if ($scope.selectedTokenGroups[tokengroup] === true) {
                     tokengroups.push(tokengroup);
                 }
             }
-            TokenFactory.settokengroups($scope.tokenSerial, tokengroups, $scope.get);
+            TokenFactory.setTokenGroups($scope.tokenSerial, tokengroups, $scope.get);
             $scope.cancelEditTokenGroups();
         };
 
         $scope.saveRealm = function () {
-            var realms = [];
-            for (var realm in $scope.selectedRealms) {
+            const realms = [];
+            for (const realm in $scope.selectedRealms) {
                 if ($scope.selectedRealms[realm] === true) {
                     realms.push(realm);
                 }
             }
-            TokenFactory.setrealm($scope.tokenSerial, realms, $scope.get);
+            TokenFactory.setRealm($scope.tokenSerial, realms, $scope.get);
             $scope.cancelEditRealm();
         };
 
@@ -226,9 +244,9 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         };
 
         $scope.saveTokenInfo = function () {
-            var start = date_object_to_string($scope.validity_period_start);
-            var end = date_object_to_string($scope.validity_period_end);
-            TokenFactory.set_dict($scope.tokenSerial,
+            const start = date_object_to_string($scope.validity_period_start);
+            const end = date_object_to_string($scope.validity_period_end);
+            TokenFactory.setDict($scope.tokenSerial,
                 {
                     count_auth_max: $scope.max_auth_count,
                     count_auth_success_max: $scope.max_success_auth_count,
@@ -249,7 +267,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         };
 
         $scope.deleteTokenAsk = function () {
-            var tokenType = $scope.token.info.tokenkind;
+            const tokenType = $scope.token.info.tokenkind;
             if (tokenType == "hardware") {
                 $('#dialogTokenDelete').modal();
             } else {
@@ -258,11 +276,11 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         };
 
         $scope.delete = function () {
-            TokenFactory.delete($scope.tokenSerial, $scope.return_to);
+            TokenFactory.delete($scope.tokenSerial, $scope.returnTo);
         };
 
         $scope.setRandomPin = function () {
-            TokenFactory.setrandompin($scope.tokenSerial, function (data) {
+            TokenFactory.setRandomPin($scope.tokenSerial, function (data) {
                 if (data.result.value >= 1) {
                     inform.add(gettextCatalog.getString("PIN set successfully."),
                         {type: "info", ttl: 5000})
@@ -275,7 +293,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         };
 
         $scope.setPin = function () {
-            TokenFactory.setpin($scope.tokenSerial, "otppin",
+            TokenFactory.setPin($scope.tokenSerial, "otppin",
                 $scope.pin1, function (data) {
                     if (data.result.value >= 1) {
                         inform.add(gettextCatalog.getString("PIN set successfully."),
@@ -314,7 +332,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         };
 
         $scope.sendVerifyResponse = function () {
-            var params = {
+            const params = {
                 "serial": $scope.token.serial,
                 "verify": $scope.token.verifyResponse,
                 "type": $scope.token.tokentype
@@ -332,12 +350,12 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             });
         };
 
-        $scope.testOtp = function (otponly) {
-            var params = {
+        $scope.testOtp = function (otpOnly) {
+            const params = {
                 serial: $scope.tokenSerial,
                 pass: $scope.testPassword
             };
-            if (otponly) {
+            if (otpOnly) {
                 params["otponly"] = "1";
             }
             ValidateFactory.check(params, function (data) {
@@ -375,10 +393,10 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
 
             $scope.attachMachine = function () {
                 // newToken.serial, application
-                var params = $scope.form.options;
+                const params = $scope.form.options;
                 // First we set all the application specific option than add the
                 // needed standard values
-                var machineObject = fixMachine($scope.newMachine);
+                const machineObject = fixMachine($scope.newMachine);
                 params["serial"] = $scope.tokenSerial;
                 params["application"] = $scope.form.application;
                 if ($scope.form.application === "offline") {
@@ -409,7 +427,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             };
 
             $scope.saveOptions = function (mtid, options) {
-                var params = options;
+                const params = options;
                 params["mtid"] = mtid;
                 MachineFactory.saveOptions(params, function (data) {
                     $scope.getMachines();
@@ -419,11 +437,11 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             $scope.getMachines = function () {
                 MachineFactory.getMachineTokens({serial: $scope.tokenSerial},
                     function (data) {
-                        machinelist = data.result.value;
+                        let machinelist = data.result.value;
                         //debug: console.log(machinelist);
                         $scope.machineCount = machinelist.length;
-                        var start = ($scope.params.page - 1) * $scope.machinesPerPage;
-                        var stop = start + $scope.machinesPerPage;
+                        const start = ($scope.params.page - 1) * $scope.machinesPerPage;
+                        const stop = start + $scope.machinesPerPage;
                         $scope.machinedata = machinelist.slice(start, stop);
                     });
             };
@@ -438,8 +456,8 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                     // read the application definition from the server
                     MachineFactory.getApplicationDefinition(function (data) {
                         $scope.Applications = data.result.value;
-                        var applications = [];
-                        for (var k in $scope.Applications) {
+                        const applications = [];
+                        for (const k in $scope.Applications) {
                             // check if this application provides options for current tokentype
                             if ($scope.Applications[k].options.hasOwnProperty($scope.token.tokentype.toLowerCase())) {
                                 applications.push(k);
