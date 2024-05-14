@@ -281,7 +281,7 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                             if (value.multiple === true) {
                                 let vals = $scope.actions.find(x => x.name === key).allowedValues;
                                 policyActions[key].split(' ').forEach(function(n) {
-                                    vals.find(x => x.name === n).ticked = true;
+                                    (vals.find(x => x.name === n) || {}).ticked = true;
                                 })
                             }
                         }
@@ -1248,8 +1248,8 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
   };
 
   $scope.$watch(
-    'params.hasSpecialErrorHandler;', 
-    function (incomingValue) { 
+    'params.hasSpecialErrorHandler;',
+    function (incomingValue) {
         const value = (incomingValue + '').toLowerCase()
         $scope.params.hasSpecialErrorHandler = value === 'true'
     });
