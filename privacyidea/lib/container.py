@@ -18,7 +18,7 @@ from privacyidea.models import TokenContainer, TokenContainerTemplate, TokenCont
 log = logging.getLogger(__name__)
 
 
-def delete_container_by_id(container_id):
+def delete_container_by_id(container_id: int):
     """
     Delete the container with the given id. If it does not exist, raise a ResourceNotFoundError.
     Returns the id of the deleted container on success
@@ -30,7 +30,7 @@ def delete_container_by_id(container_id):
     return container.delete()
 
 
-def delete_container_by_serial(serial):
+def delete_container_by_serial(serial: str):
     """
     Delete the container with the given serial. If it does not exist, raise a ResourceNotFoundError.
     Returns the id of the deleted container on success
@@ -39,7 +39,7 @@ def delete_container_by_serial(serial):
     return container.delete()
 
 
-def _gen_serial(container_type):
+def _gen_serial(container_type: str):
     serial_len = int(get_from_config("SerialLength") or 8)
     prefix = "CONT"
     for ctype, cls in get_container_classes().items():
@@ -60,29 +60,6 @@ def _gen_serial(container_type):
     return serial
 
 
-def create_container(container_type: str, serial=None, tokens: List[TokenClass] = None,
-                     users: List[User] = None, description=""):
-    """
-    Create a new container with the given params.
-    Returns the container
-    """
-    classes = get_container_classes()
-    if container_type.lower() not in classes.keys():
-        raise ParameterError(f"Unknown container type {container_type}. It must be one of {classes.keys()}.")
-
-    if serial is None:
-        serial = _gen_serial(container_type)
-
-    db_container = TokenContainer(serial=serial, container_type=container_type.lower(),
-                                  tokens=tokens, description=description)
-    db_container.save()
-    container = create_container_from_db_object(db_container)
-    if users:
-        for u in users:
-            container.add_user(u)
-    return container
-
-
 def create_container_from_db_object(db_container: TokenContainer):
     """
     Create a TokenContainerClass object from the given db object
@@ -99,7 +76,7 @@ def create_container_from_db_object(db_container: TokenContainer):
 
 
 @log_with(log)
-def find_container_by_id(container_id):
+def find_container_by_id(container_id: int):
     """
     Returns the TokenContainerClass object for the given container id or raises a ResourceNotFoundError
     """
@@ -110,7 +87,7 @@ def find_container_by_id(container_id):
     return TokenContainerClass(db_container)
 
 
-def find_container_by_serial(serial):
+def find_container_by_serial(serial: str):
     """
     Returns the TokenContainerClass object for the given container serial or raises a ResourceNotFoundError
     """
@@ -140,7 +117,7 @@ def find_containers_for_user(user: User):
     return [TokenContainerClass(c) for c in containers]
 
 
-def find_container_for_token(serial):
+def find_container_for_token(serial: str):
     """
     Returns a list of TokenContainerClass objects for the given token
     """

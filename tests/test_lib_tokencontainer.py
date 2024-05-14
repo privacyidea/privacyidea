@@ -1,7 +1,7 @@
-from privacyidea.lib.container import create_container, delete_container_by_id, find_container_by_id, \
-    find_container_by_serial
+from privacyidea.lib.container import delete_container_by_id, find_container_by_id, \
+    find_container_by_serial, init_container
 from privacyidea.lib.container import get_container_classes
-from privacyidea.lib.error import ResourceNotFoundError, ParameterError
+from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token
@@ -12,7 +12,8 @@ from .base import MyTestCase
 class TokenContainerManagementTestCase(MyTestCase):
 
     def test_01_create_empty_container(self):
-        container = create_container("Generic", description="test container")
+        serial = init_container({"type": "Generic", "description": "test container"})
+        container = find_container_by_serial(serial)
         self.assertEqual("test container", container.description)
         self.assertIsNotNone(container.serial)
         self.assertTrue(len(container.tokens) == 0)
@@ -25,7 +26,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertRaises(ResourceNotFoundError, find_container_by_id, 11)
         self.assertRaises(ResourceNotFoundError, find_container_by_serial, "thisdoesnotexist")
         # Unknown container type raises exception
-        self.assertRaises(ParameterError, create_container, "doesnotexist")
+        self.assertRaises(EnrollmentError, init_container, {"type": "doesnotexist"})
 
     def test_03_container_with_tokens_users(self):
         # Create users and tokens first
@@ -38,19 +39,23 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
+        # Create a container with tokens and users
+        serial = init_container({"type": "generic", "description":"test container"})
+        container = find_container_by_serial(serial)
         user_root = User(login="root", realm=self.realm1, resolver=self.resolvername1)
         user_statd = User(login="statd", realm=self.realm1, resolver=self.resolvername1)
         users = [user_root, user_statd]
+        for u in users:
+            container.add_user(u)
         tokens = []
         params = {"genkey": "1"}
         for i in range(5):
             t = init_token(params, user=user_root)
             tokens.append(t)
+            container.add_token(t)
         all_serials = [t.get_serial() for t in tokens]
 
-        # Create a container with tokens and users
-        container = create_container("generic", tokens=tokens, users=users, description="test container")
-        self.assertEqual(5, len(container.tokens))
+        self.assertEqual(5, len(container.get_tokens()))
         self.assertEqual("test container", container.description)
         self.assertEqual(2, len(container.get_users()))
 
@@ -58,9 +63,11 @@ class TokenContainerManagementTestCase(MyTestCase):
         to_remove = [t for t in tokens[0:2]]
         to_remove_serials = [t.get_serial() for t in to_remove]
         self.assertEqual(2, len(to_remove_serials))
-        container.remove_tokens(to_remove_serials)
+        for serial in to_remove_serials:
+            container.remove_token(serial)
         self.assertEqual(3, len(container.tokens))
-        container.add_tokens(to_remove)
+        for token in to_remove:
+            container.add_token(token)
         self.assertEqual(5, len(container.tokens))
         for serial in [t.get_serial() for t in container.tokens]:
             self.assertTrue(serial in all_serials)

@@ -45,10 +45,10 @@ class TokenContainerClass:
         return self._db_container.type
 
     def remove_token(self, serial: str):
-        token_id = Token.query.filter(Token.serial == serial).first().id
-        count = TokenContainerToken.query.filter_by(container_id=self._db_container.id, token_id=token_id).delete()
-        db.session.commit()
-        return count > 0
+        token = Token.query.filter(Token.serial == serial).first()
+        self._db_container.tokens.remove(token)
+        self._db_container.save()
+        self.tokens = [t for t in self.tokens if t.get_serial() != serial]
 
     def add_token(self, token: TokenClass):
         if not token.get_type() in self.get_supported_token_types():
