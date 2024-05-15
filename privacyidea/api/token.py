@@ -420,6 +420,7 @@ def list_api():
     param = request.all_data
     user = request.User
     serial = getParam(param, "serial", optional)
+    serial_list = request.args.getlist("serial_list")
     page = int(getParam(param, "page", optional, default=1))
     tokentype = getParam(param, "type", optional)
     description = getParam(param, "description", optional)
@@ -435,6 +436,7 @@ def list_api():
     tokeninfokey = getParam(param, "infokey", optional)
     tokeninfovalue = getParam(param, "infovalue", optional)
     rollout_state = getParam(param, "rollout_state", optional)
+    container_serial = getParam(param, "container_serial", optional)
     tokeninfo = None
     if tokeninfokey and tokeninfovalue:
         tokeninfo = {tokeninfokey: tokeninfovalue}
@@ -452,7 +454,7 @@ def list_api():
     hidden_tokeninfo = getParam(request.all_data, 'hidden_tokeninfo', default=None)
 
     # get list of tokens as a dictionary
-    tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,
+    tokens = get_tokens_paginate(serial=serial, serial_list=serial_list, realm=realm, page=page,
                                  user=user, assigned=assigned, psize=psize,
                                  active=active, sortby=sort, sortdir=sdir,
                                  tokentype=tokentype,
@@ -461,7 +463,7 @@ def list_api():
                                  userid=userid, allowed_realms=allowed_realms,
                                  tokeninfo=tokeninfo,
                                  rollout_state=rollout_state,
-                                 hidden_tokeninfo=hidden_tokeninfo)
+                                 hidden_tokeninfo=hidden_tokeninfo, container_serial=container_serial)
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)

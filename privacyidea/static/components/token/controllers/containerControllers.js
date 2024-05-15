@@ -1,5 +1,5 @@
 myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
-                                                'AuthFactory', 'ConfigFactory',
+    'AuthFactory', 'ConfigFactory',
 
     function createContainerController($scope, $http, $q, ContainerFactory, $stateParams, AuthFactory, ConfigFactory) {
         $scope.formData = {
@@ -73,21 +73,104 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                 params["description"] = $scope.form.description
             }
 
-            ContainerFactory.createContainer(params, function(data) {
+            ContainerFactory.createContainer(params, function (data) {
                 // TODO where to go after creation?
             })
         }
     }]);
 
-myApp.controller("containerListController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory', 'ConfigFactory',
-    function containerListController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory) {
+myApp.controller("containerListController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory', 'ConfigFactory', 'TokenFactory', '$rootScope',
+    function containerListController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory, $rootScope) {
+        $scope.loggedInUser = AuthFactory.getUser();
+        $scope.params = {sortdir: "asc"};
         $scope.containers = []
-        ContainerFactory.getContainers(function (data) {
-            $scope.containers = data.result.value
-        })
+
+        // Get all containers
+        $scope.get = function () {
+
+            $scope.params.sortby = $scope.sortby;
+            if ($scope.reverse) {
+                $scope.params.sortdir = "desc";
+            } else {
+                $scope.params.sortdir = "asc";
+            }
+
+            ContainerFactory.getContainers($scope.params,
+                function (data) {
+                    $scope.containers = data.result.value
+                })
+
+        }
+        $scope.get()
+
+        // single token function
+        $scope.reset = function (serial) {
+            TokenFactory.reset(serial, $scope.get);
+        };
+        $scope.disable = function (serial) {
+            TokenFactory.disable(serial, $scope.get);
+        };
+        $scope.enable = function (serial) {
+            TokenFactory.enable(serial, $scope.get);
+        };
+
+        // Expand token view
+        $scope.expandedRows = []
+        $scope.expandTokenView = function (containerRow) {
+            if (containerRow < 0) {
+                for (let i = 0; i < $scope.containers.length; i++) {
+                    if ($scope.containers[i].tokens_paginated.count > 0) {
+                        $scope.expandedRows.push(i)
+                    }
+                }
+            } else {
+                $scope.expandedRows.push(containerRow)
+            }
+        }
+
+        // Collapse token view
+        $scope.collapseTokenView = function (containerRow) {
+            if (containerRow < 0) {
+                while ($scope.expandedRows.length > 0) {
+                    $scope.expandedRows.pop()
+                }
+            } else {
+                $scope.expandedRows.splice($scope.expandedRows.indexOf(containerRow), 1)
+            }
+        }
+
     }]);
 
-myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams', '$q', 'ContainerFactory', 'AuthFactory', 'ConfigFactory',
-    function containerDetailsController($scope, $http, $stateParams, $q, ContainerFactory, AuthFactory, ConfigFactory) {
+myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams', '$q', 'ContainerFactory', 'AuthFactory', 'ConfigFactory', 'TokenFactory', '$state', '$rootScope',
+    function containerDetailsController($scope, $http, $stateParams, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory, $state, $rootScope) {
         $scope.containerSerial = $stateParams.containerSerial
+        $scope.loggedInUser = AuthFactory.getUser();
+        $scope.newToken = {"serial": "", pin: ""};
+
+        $scope.container = {}
+        $scope.containerOwner = {}
+        ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
+            $scope.container = data.result.value[0]
+            $scope.containerOwner = $scope.container.users[0]
+        })
+
+        $scope.params.container_serial = $scope.containerSerial
+        $scope.tokendata = {}
+        TokenFactory.getTokens(
+            function (data) {
+                $scope.tokendata = data.result.value
+            }, $scope.params)
+
+        $scope.enrollToken = function () {
+            // go to token.enroll with the users data of the container owner
+            $scope.userParams = {}
+            if ($scope.containerOwner) {
+                $scope.userParams = {
+                    realmname: $scope.containerOwner.user_realm,
+                    username: $scope.containerOwner.user_name
+                }
+            }
+            $state.go("token.enroll", $scope.userParams);
+            $rootScope.returnTo = "token.containerdetails({containerSerial:$scope.containerSerial})";
+        };
     }]);

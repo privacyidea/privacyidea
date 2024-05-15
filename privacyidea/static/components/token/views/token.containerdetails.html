@@ -1,1 +1,134 @@
-<h3 name="Container Details"><translate>Container details for {{ containerSerial }} </translate></h3>
+<h3 name="Container Details">
+    <translate>Container details for {{ containerSerial }} </translate>
+</h3>
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <tr>
+            <td translate>Type</td>
+            <td>{{ container.type }}</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td translate>Description</td>
+            <td>{{ container.description }}</td>
+            <td>
+
+            </td>
+        </tr>
+    </table>
+</div>
+
+<!-- =================== USER ASSIGN ================= -->
+
+<div ng-show="loggedInUser.role == 'admin'">
+    <h4 ng-show="containerOwner" translate>Assigned User</h4>
+    <table ng-show="containerOwner"
+           class="table table-striped table-bordered">
+        <tr>
+            <td translate>Username</td>
+            <td><a ui-sref="user.details({username: containerOwner.user_name,
+            realmname: containerOwner.user_realm,
+            resolvername: containerOwner.user_resolver})">
+                {{ containerOwner.user_name }}
+            </a></td>
+            <td>
+                <button ng-hide="token.locked"
+                        id="unassignAdminButton"
+                        ng-click="unassign()"
+                        class="btn btn-warning">
+                    <span class="glyphicon glyphicon-resize-full"></span>
+                    <span translate>Unassign User</span>
+                </button>
+            </td>
+        </tr>
+        <tr>
+            <td translate>Realm</td>
+            <td><a ui-sref="config.realms.list">{{ containerOwner.user_realm }}</a>
+            </td>
+        </tr>
+        <tr>
+            <td translate>Resolver</td>
+            <td><a ui-sref="config.resolvers.list">{{ containerOwner.user_resolver }}</a>
+            </td>
+        </tr>
+        <tr>
+            <td translate>User Id</td>
+            <td>{{ containerOwner.user_id }}</td>
+        </tr>
+    </table>
+</div>
+<div ng-show="loggedInUser.role== 'user' && !token.locked
+        && checkRight('unassign')">
+    <button ng-click="unassign()"
+            id="unassignUserButton"
+            class="btn btn-warning">
+        <span class="glyphicon glyphicon-resize-full"></span>
+        <span translate>Unassign Token</span>
+    </button>
+</div>
+
+<h3 translate>Tokens in container</h3>
+<!-- Tokens in container -->
+<div uib-pagination ng-show="tokendata.count > 5"
+     total-items="tokendata.count" ng-model="params.page"
+     items-per-page="{{ tokensPerPage }}"
+     max-size="5"
+     boundary-links="true" ng-change="pageChanged()"></div>
+
+<div class="table-responsive form-group">
+    <table class="table table-bordered table-striped">
+        <thead>
+        <tr>
+            <th translate>serial</th>
+            <th translate>type</th>
+            <th translate>Active</th>
+            <th translate>window</th>
+            <th translate>description</th>
+            <th translate>failcounter</th>
+            <th translate>maxfail</th>
+            <th translate>otplen</th>
+            <th>Container</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="token in tokendata.tokens">
+            <td><a ui-sref="token.details({tokenSerial:token.serial,
+            currentToken:token})"
+                   ng-click="$rootScope.returnTo=user.list;">
+                {{ token.serial }}</a></td>
+            <td>{{ token.tokentype }}</td>
+            <td>
+                <span class="label label-success" ng-show="token.active">
+                    active
+                </span>
+                <span class="label label-danger" ng-hide="token.active">
+                    disabled
+                </span>
+            </td>
+            <td>{{ token.count_window }}</td>
+            <td>{{ token.description }}</td>
+            <td><span class="label"
+                      ng-class="{'label-success': token.failcount<=0,
+                                    'label-warning': token.failcount>0,
+                                    'label-danger': token.failcount>=token.maxfail}">
+                    {{ token.failcount }}
+                </span>
+            </td>
+            <td>{{ token.maxfail }}</td>
+            <td>{{ token.otplen }}</td>
+            <td>
+                <a ui-sref="token.containerdetails({containerSerial: token.container_serial})">{{ token.container_serial }}</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+<div class="text-center">
+    <button ng-click="enrollToken()" class="btn btn-primary"
+            ng-disabled="!checkEnroll()"
+            id="enrollButton"
+            translate>Enroll New Token
+    </button>
+</div>

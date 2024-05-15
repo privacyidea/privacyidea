@@ -1,28 +1,55 @@
+<div class="row">
+    <label>
+        <button class="btn btn-default"
+                ng-disabled="expandedRows.length == containers.length"
+                ng-click="expandTokenView(-1)">
+            Expand all containers
+        </button>
+    </label>
+    <label class="col">
+        <button class="btn btn-default"
+                ng-disabled="expandedRows.length == 0"
+                ng-click="collapseTokenView(-1)">
+            Collapse all containers
+        </button>
+    </label>
+</div>
+
+
 <div class="table-responsive">
-<table class="table table-bordered table-striped" id="tableContainerList">
-<thead>
-<tr>
-    <th class="pifilter">
-        <button class="btn btn-default unsorted"
+    <table class="table table-bordered table-striped" id="tableContainerList">
+        <thead>
+        <tr>
+            <th class="pifilter">
+                <button class="btn btn-default unsorted"
                         pi-sort-by="serial"
                         translate>serial
-        </button>
-    </th>
-    <th>
-        Type
-    </th>
-    <th>
-        Description
-    </th>
+                </button>
+            </th>
+            <th>
+                Type
+            </th>
+            <th>
+                Description
+            </th>
 
-    <th>
-        User
-    </th>
-</tr>
-</thead>
-    <tbody>
-        <tr ng-repeat="container in containers">
+            <th>
+                User
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat-start="container in containers track by $index">
             <td>
+                <button class="btn btn-default"
+                        ng-if="expandedRows.includes($index)"
+                        ng-click="collapseTokenView($index)">-
+                </button>
+                <button class="btn btn-default"
+                        ng-if="!expandedRows.includes($index)"
+                        ng-disabled="container.tokens_paginated.count == 0"
+                        ng-click="expandTokenView($index)">+
+                </button>
                 <a ui-sref="token.containerdetails({containerSerial: container.serial})">{{ container.serial }}</a>
             </td>
             <td>
@@ -36,9 +63,103 @@
                             realmname: container.users[0].user_realm,
                             resolvername: token.resolver,
                             editable: false})">
-                {{ container.users[0].user_name }}</a>
+                    {{ container.users[0].user_name }}</a>
             </td>
         </tr>
-    </tbody>
-</table>
+        <!-- Tokens of each container -->
+        <tr ng-if="expandedRows.includes($index)" ng-repeat-end="">
+            <td colspan="5">
+                <b>Contained Tokens:</b>
+                <table class="table table-bordered table-striped" id="tableContainerTokenList"
+                       ng-if="container.tokens_paginated.count > 0">
+                    <thead>
+                    <tr>
+                        <th translate>serial
+                        </th>
+                        <th translate>type
+                        </th>
+                        <th translate>active
+                        </th>
+                        <th translate>description
+                        </th>
+                        <th translate>failcounter
+                        </th>
+                        <th translate>rollout state
+                        </th>
+                        <th ng-show="loggedInUser.role == 'admin'" translate>user</th>
+                        <th ng-show="loggedInUser.role == 'admin'" translate>realm</th>
+                        <th ng-show="loggedInUser.role == 'admin'">
+                            <translate>Token realms</translate>
+                        </th>
+                        <th ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist"
+                            translate>UserId
+                        </th>
+                        <th ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist"
+                            translate>Resolver
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr ng-repeat="token in container.tokens_paginated.tokens">
+                        <td><a ui-sref="token.details({tokenSerial:token.serial,
+            currentToken:token})"
+                               ng-click="$rootScope.returnTo=token.list;">
+                            {{ token.serial }}</a></td>
+                        <td>{{ token.tokentype }}</td>
+                        <td>
+                <span class="label label-success" ng-show="token.active"
+                      ng-click="disable(token.serial)"
+                      title="{{ 'Disable token'|translate }}"
+                      translate>active
+                </span>
+                            <span class="label label-danger" ng-hide="token.active"
+                                  ng-click="enable(token.serial)"
+                                  title="{{ 'Enable token'|translate }}"
+                                  translate>disabled
+                </span>
+                        </td>
+                        <!--<td>{{ token.count_window }}</td>-->
+                        <td>{{ token.description }}</td>
+
+                        <td><span class="label"
+                                  title="{{ 'Reset Failcounter'|translate }}"
+                                  ng-click="reset(token.serial)"
+                                  ng-class="{'label-success': token.failcount<=0,
+                                   'label-warning': token.failcount>0,
+                                   'label-danger': token.failcount>=token.maxfail}">
+                            {{ token.failcount }}
+                            </span>
+                        </td>
+                        <!--<td>{{ token.maxfail }}</td>-->
+                        <!--<td>{{ token.otplen }}</td>-->
+                        <td>{{ token.rollout_state }}</td>
+                        <td ng-show="loggedInUser.role == 'admin'">
+                            <a ui-sref="user.details({username: token.username,
+                            realmname: token.user_realm,
+                            resolvername: token.resolver,
+                            editable: token.user_editable})">
+                                {{ token.username }}</a>
+                        </td>
+                        <td ng-show="loggedInUser.role == 'admin'">
+                            <a ui-sref="config.realms.list">{{ token.user_realm }}</a>
+                        </td>
+
+                        <td ng-show="loggedInUser.role == 'admin'">
+                            <a ui-sref="config.realms.list" ng-repeat="t_realm in token.realms">
+                                {{ t_realm }}</a>&nbsp;
+                        </td>
+
+                        <td ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist">
+                            {{ token.user_id }}
+                        </td>
+                        <td ng-show="loggedInUser.role == 'admin' && user_details_in_tokenlist">
+                            <a ui-sref="config.resolvers.list">{{ token.resolver }}</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+
+    </table>
 </div>

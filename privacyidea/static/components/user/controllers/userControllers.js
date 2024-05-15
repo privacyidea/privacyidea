@@ -25,435 +25,459 @@
  */
 angular.module("privacyideaApp")
     .controller("userAddController", ['$scope', 'userUrl', '$state',
-                                      '$location', 'ConfigFactory',
-                                      'UserFactory', 'inform', 'gettextCatalog',
-                                      function ($scope, userUrl, $state,
-                                                $location, ConfigFactory,
-                                                UserFactory, inform,
-                                                gettextCatalog){
+        '$location', 'ConfigFactory',
+        'UserFactory', 'inform', 'gettextCatalog',
+        function ($scope, userUrl, $state,
+                  $location, ConfigFactory,
+                  UserFactory, inform,
+                  gettextCatalog) {
 
-        $scope.formInit = {};
-        $scope.User = {};
-        $scope.editUser = true;
+            $scope.formInit = {};
+            $scope.User = {};
+            $scope.editUser = true;
 
-        /// Translation in dynamic user creation
-        var myString = gettextCatalog.getString("password");
+            /// Translation in dynamic user creation
+            var myString = gettextCatalog.getString("password");
 
-        ConfigFactory.getEditableResolvers(function (data){
-            var resolvers = data.result.value;
-            var resolvernames = [];
-            for (var rname in resolvers) {
-                resolvernames.push(rname);
-            }
-            $scope.formInit.resolvernames = resolvernames;
-            if (resolvernames.length > 0) {
-                $scope.resolvername = resolvernames[0];
-                $scope.userAttributes = $scope.getUserAttributes(resolvers);
-                //debug: console.log("Getting View Attributes for " + $scope.resolvername);
-                $scope.getUserAttributesView($scope.resolvername, $scope.userAttributes);
-            }
-        });
-
-        $scope.createUser = function () {
-            //debug: console.log($scope.User);
-            UserFactory.createUser($scope.resolvername, $scope.User,
-                function (data) {
-                    //debug: console.log(data.result);
-                    inform.add(gettextCatalog.getString("User created."),
-                                {type: "info"});
-
-                    // reload the users
-                    $scope._getUsers();
-                    $location.path("/user/list");
+            ConfigFactory.getEditableResolvers(function (data) {
+                var resolvers = data.result.value;
+                var resolvernames = [];
+                for (var rname in resolvers) {
+                    resolvernames.push(rname);
+                }
+                $scope.formInit.resolvernames = resolvernames;
+                if (resolvernames.length > 0) {
+                    $scope.resolvername = resolvernames[0];
+                    $scope.userAttributes = $scope.getUserAttributes(resolvers);
+                    //debug: console.log("Getting View Attributes for " + $scope.resolvername);
+                    $scope.getUserAttributesView($scope.resolvername, $scope.userAttributes);
+                }
             });
-        };
 
-        // listen to the reload broadcast
-        $scope.$on("piReload", $scope.getEditableResolvers);
-    }]);
+            $scope.createUser = function () {
+                //debug: console.log($scope.User);
+                UserFactory.createUser($scope.resolvername, $scope.User,
+                    function (data) {
+                        //debug: console.log(data.result);
+                        inform.add(gettextCatalog.getString("User created."),
+                            {type: "info"});
+
+                        // reload the users
+                        $scope._getUsers();
+                        $location.path("/user/list");
+                    });
+            };
+
+            // listen to the reload broadcast
+            $scope.$on("piReload", $scope.getEditableResolvers);
+        }]);
 
 angular.module("privacyideaApp")
     .controller("userPasswordController", ['$scope', 'userUrl', 'UserFactory',
-                                           'inform', 'gettextCatalog',
-                                           function ($scope, userUrl,
-                                                     UserFactory, inform,
-                                                     gettextCatalog) {
+        'inform', 'gettextCatalog',
+        function ($scope, userUrl,
+                  UserFactory, inform,
+                  gettextCatalog) {
 
-        // The user can fetch his own information.
-        $scope.getUserDetails = function () {
-            UserFactory.getUserDetails({}, function (data) {
-                $scope.User = data.result.value[0];
-                $scope.User.password = "";
-            });
-        };
-        $scope.getUserDetails();
-
-        // Set the password
-        $scope.setPassword = function () {
-            ////debug: console.log($scope.User);
-            UserFactory.updateUser($scope.User.resolver,
-                {username: $scope.User.username,
-                 password: $scope.User.password}, function (data) {
-                    inform.add(gettextCatalog.getString("Password set successfully."),
-                               {type: "info"});
+            // The user can fetch his own information.
+            $scope.getUserDetails = function () {
+                UserFactory.getUserDetails({}, function (data) {
+                    $scope.User = data.result.value[0];
                     $scope.User.password = "";
-                    $scope.password2 = "";
                 });
-        };
+            };
+            $scope.getUserDetails();
 
-        // listen to the reload broadcast
-        $scope.$on("piReload", $scope.getUserDetails);
-    }]);
+            // Set the password
+            $scope.setPassword = function () {
+                ////debug: console.log($scope.User);
+                UserFactory.updateUser($scope.User.resolver,
+                    {
+                        username: $scope.User.username,
+                        password: $scope.User.password
+                    }, function (data) {
+                        inform.add(gettextCatalog.getString("Password set successfully."),
+                            {type: "info"});
+                        $scope.User.password = "";
+                        $scope.password2 = "";
+                    });
+            };
+
+            // listen to the reload broadcast
+            $scope.$on("piReload", $scope.getUserDetails);
+        }]);
 
 angular.module("privacyideaApp")
     .controller("userDetailsController", ['$scope', 'userUrl', 'realmUrl',
-                                          'tokenUrl', '$rootScope',
-                                          'TokenFactory', 'UserFactory',
-                                          '$state', 'ConfigFactory',
-                                          'instanceUrl',  '$location', 'inform',
-                                          'gettextCatalog',
-                                          function ($scope, userUrl, realmUrl,
-                                                    tokenUrl, $rootScope,
-                                                    TokenFactory, UserFactory,
-                                                    $state, ConfigFactory,
-                                                    instanceUrl,  $location,
-                                                    inform, gettextCatalog) {
-        $scope.tokensPerPage = 5;
-        $scope.newToken = {"serial": "", pin: ""};
-        $scope.params = {page: 1};
-        $scope.instanceUrl = instanceUrl;
-        $scope.editUser = false;
-        $scope.hideUsernmae = true;
-        // scroll to the top of the page
-        document.body.scrollTop = document.documentElement.scrollTop = 0;
+        'tokenUrl', '$rootScope',
+        'TokenFactory', 'UserFactory', 'ContainerFactory',
+        '$state', 'ConfigFactory',
+        'instanceUrl', '$location', 'inform',
+        'gettextCatalog',
+        function ($scope, userUrl, realmUrl,
+                  tokenUrl, $rootScope,
+                  TokenFactory, UserFactory, ContainerFactory,
+                  $state, ConfigFactory,
+                  instanceUrl, $location,
+                  inform, gettextCatalog) {
+            $scope.tokensPerPage = 5;
+            $scope.newToken = {"serial": "", pin: ""};
+            $scope.params = {page: 1};
+            $scope.instanceUrl = instanceUrl;
+            $scope.editUser = false;
+            $scope.hideUsernmae = true;// scroll to the top of the page
+            document.body.scrollTop = document.documentElement.scrollTop = 0;
 
-        $scope._getUserToken = function () {
-            TokenFactory.getTokenForUser({
-                user: $scope.username,
-                realm: $scope.realmname,
-                pagesize: $scope.tokensPerPage,
-                page: $scope.params.page
-            }, function (data) {
-                $scope.tokendata = data.result.value;
-                //debug: console.log("Token for user " + $scope.username);
-            });
-        };
-
-        // Change the pagination
-        $scope.pageChanged = function () {
-            //debug: console.log('Page changed to: ' + $scope.params.page);
-            $scope._getUserToken();
-        };
-
-        $scope.getResolverDetails = function(resolvername) {
-            ConfigFactory.getResolver(resolvername, function (data){
-                var resolvers = data.result.value;
-                $scope.userAttributes = $scope.getUserAttributes(resolvers);
-                $scope.getUserAttributesView(resolvername, $scope.userAttributes);
-            });
-        };
-
-        $scope.getUserDetails = function () {
-            UserFactory.getUserDetails({
-                username: $scope.username,
-                realm: $scope.realmname
-            }, function (data) {
-                $scope.User = data.result.value[0];
-                $scope.User.password = "";
-                $scope.getResolverDetails($scope.User.resolver);
-            });
-        };
-
-        $scope.getEditableAttributes = function () {
-            UserFactory.getEditableAttributes({
-                user: $scope.username,
-                resolver: $scope.resolver,
-                realm: $scope.realmname
-            }, function(data) {
-                $scope.allowed_custom_attributes = data.result.value;
-            });
-        };
-
-        $scope.addCustomAttribute = function() {
-            var key = $scope.selected_attr_key;
-            var value = $scope.selected_attr_value;
-            if ($scope.selected_attr_key === '*') {
-                key = $scope.new_custom_attribute_key;
-            }
-            if ($scope.selected_attr_value === '*') {
-                value = $scope.new_custom_attribute_value;
-            }
-            UserFactory.setCustomAttribute($scope.username, $scope.realmname, key, value,
-                function(data) {
-                    $scope.getUserDetails();
-                    $scope.getCustomAttributes();
+            $scope._getUserToken = function () {
+                TokenFactory.getTokenForUser({
+                    user: $scope.username,
+                    realm: $scope.realmname,
+                    pagesize: $scope.tokensPerPage,
+                    page: $scope.params.page
+                }, function (data) {
+                    $scope.tokendata = data.result.value;
+                    //debug: console.log("Token for user " + $scope.username);
                 });
-        };
+            };
 
-        $scope.getCustomAttributes = function() {
-            UserFactory.getCustomAttributes($scope.username, $scope.realmname,
-                function(data) {
-                    $scope.custom_attributes = data.result.value;
+            $scope.getUserContainer = function () {
+                ContainerFactory.getContainerForUser({
+                    user: $scope.username,
+                    realm: $scope.realmname,
+                }, function (data) {
+                    $scope.containerdata = data.result.value;
                 });
-        };
+            };
 
-        $scope.deleteCustomAttribute = function(key) {
-            UserFactory.deleteCustomAttribute($scope.username, $scope.realmname, key,
-                function(data) {
-                    $scope.getUserDetails();
-                    $scope.getCustomAttributes();
-                });
-        }
-
-        $scope.onCustomAttributeKeyChange = function() {
-            $scope.new_custom_attribute_value = "";
-            $scope.selected_attr_value = "";
-            $scope.allowed_values = $scope.allowed_custom_attributes['set'][$scope.selected_attr_key]
-            $scope.customAttributeValueSelectVisible = true;
-            if ($scope.allowed_values.length === 1) {
-                // If there is only one value, set it!
-                $scope.selected_attr_value = $scope.allowed_values[0];
-                // if this value is "*", then we hide the
-                $scope.customAttributeValueSelectVisible = false;
-            }
-        }
-
-        $scope.updateUser = function () {
-            UserFactory.updateUser($scope.resolvername, $scope.User,
-            function (data) {
-                if (data.result.value==true) {
-                    inform.add(gettextCatalog.getString("User updated " +
-                        "successfully."),
-                                {type: "info"});
-                    // in case we changed the username:
-                    $scope.username = $scope.User.username;
-                    $state.go("user.details", {realmname:$scope.realmname,
-                                               username:$scope.username});
-                    // we also need to update the user list
-                    $scope._getUsers();
-                    // ...and update the user details
-                    $scope.getUserDetails();
-                } else {
-                    inform.add(gettextCatalog.getString("Failed to update user."), {type: "danger"});
-                }
-            });
-        };
-
-        $scope.deleteUserAsk = function() {
-            $('#dialogUserDelete').modal();
-        };
-        $scope.deleteUser = function () {
-            UserFactory.deleteUser($scope.resolvername, $scope.User.username,
-            function (data) {
-                if (data.result.value==true) {
-                    inform.add(gettextCatalog.getString("User deleted " +
-                        "successfully."),
-                                {type: "info"});
-                    $scope._getUsers();
-                    $location.path("/user/list");
-                }  else {
-                    inform.add(gettextCatalog.getString("Failed to delete user."), {type: "danger"});
-                }
-            });
-        };
-
-        $scope.assignToken = function () {
-            TokenFactory.assign({
-                serial: fixSerial($scope.newToken.serial),
-                realm: $scope.realmname,
-                user: $scope.username,
-                pin: $scope.newToken.pin
-            }, function () {
+            // Change the pagination
+            $scope.pageChanged = function () {
+                //debug: console.log('Page changed to: ' + $scope.params.page);
                 $scope._getUserToken();
-                $('html,body').scrollTop(0);
-                $scope.newToken = {"serial": "", pin: ""};
-            });
-        };
+            };
 
-        $scope.enrollToken = function() {
-            // go to token.enroll with the users data
-            $state.go("token.enroll", {realmname:$scope.realmname,
-                                       username:$scope.username});
-            $rootScope.returnTo="user.details({realmname:$scope.realmname, username:$scope.username})";
-        };
+            $scope.getResolverDetails = function (resolvername) {
+                ConfigFactory.getResolver(resolvername, function (data) {
+                    var resolvers = data.result.value;
+                    $scope.userAttributes = $scope.getUserAttributes(resolvers);
+                    $scope.getUserAttributesView(resolvername, $scope.userAttributes);
+                });
+            };
 
-        $scope.getUserDetails();
-        $scope._getUserToken();
-        $scope.getEditableAttributes();
-        $scope.getCustomAttributes();
+            $scope.getUserDetails = function () {
+                UserFactory.getUserDetails({
+                    username: $scope.username,
+                    realm: $scope.realmname
+                }, function (data) {
+                    $scope.User = data.result.value[0];
+                    $scope.User.password = "";
+                    $scope.getResolverDetails($scope.User.resolver);
+                });
+            };
 
-        // listen to the reload broadcast
-        $scope.$on("piReload", function() {
+            $scope.getEditableAttributes = function () {
+                UserFactory.getEditableAttributes({
+                    user: $scope.username,
+                    resolver: $scope.resolver,
+                    realm: $scope.realmname
+                }, function (data) {
+                    $scope.allowed_custom_attributes = data.result.value;
+                });
+            };
+
+            $scope.addCustomAttribute = function () {
+                var key = $scope.selected_attr_key;
+                var value = $scope.selected_attr_value;
+                if ($scope.selected_attr_key === '*') {
+                    key = $scope.new_custom_attribute_key;
+                }
+                if ($scope.selected_attr_value === '*') {
+                    value = $scope.new_custom_attribute_value;
+                }
+                UserFactory.setCustomAttribute($scope.username, $scope.realmname, key, value,
+                    function (data) {
+                        $scope.getUserDetails();
+                        $scope.getCustomAttributes();
+                    });
+            };
+
+            $scope.getCustomAttributes = function () {
+                UserFactory.getCustomAttributes($scope.username, $scope.realmname,
+                    function (data) {
+                        $scope.custom_attributes = data.result.value;
+                    });
+            };
+
+            $scope.deleteCustomAttribute = function (key) {
+                UserFactory.deleteCustomAttribute($scope.username, $scope.realmname, key,
+                    function (data) {
+                        $scope.getUserDetails();
+                        $scope.getCustomAttributes();
+                    });
+            }
+
+            $scope.onCustomAttributeKeyChange = function () {
+                $scope.new_custom_attribute_value = "";
+                $scope.selected_attr_value = "";
+                $scope.allowed_values = $scope.allowed_custom_attributes['set'][$scope.selected_attr_key]
+                $scope.customAttributeValueSelectVisible = true;
+                if ($scope.allowed_values.length === 1) {
+                    // If there is only one value, set it!
+                    $scope.selected_attr_value = $scope.allowed_values[0];
+                    // if this value is "*", then we hide the
+                    $scope.customAttributeValueSelectVisible = false;
+                }
+            }
+
+            $scope.updateUser = function () {
+                UserFactory.updateUser($scope.resolvername, $scope.User,
+                    function (data) {
+                        if (data.result.value == true) {
+                            inform.add(gettextCatalog.getString("User updated " +
+                                    "successfully."),
+                                {type: "info"});
+                            // in case we changed the username:
+                            $scope.username = $scope.User.username;
+                            $state.go("user.details", {
+                                realmname: $scope.realmname,
+                                username: $scope.username
+                            });
+                            // we also need to update the user list
+                            $scope._getUsers();
+                            // ...and update the user details
+                            $scope.getUserDetails();
+                            $scope.getUserContainer()
+                        } else {
+                            inform.add(gettextCatalog.getString("Failed to update user."), {type: "danger"});
+                        }
+                    });
+            };
+
+            $scope.deleteUserAsk = function () {
+                $('#dialogUserDelete').modal();
+            };
+            $scope.deleteUser = function () {
+                UserFactory.deleteUser($scope.resolvername, $scope.User.username,
+                    function (data) {
+                        if (data.result.value == true) {
+                            inform.add(gettextCatalog.getString("User deleted " +
+                                    "successfully."),
+                                {type: "info"});
+                            $scope._getUsers();
+                            $location.path("/user/list");
+                        } else {
+                            inform.add(gettextCatalog.getString("Failed to delete user."), {type: "danger"});
+                        }
+                    });
+            };
+
+            $scope.assignToken = function () {
+                TokenFactory.assign({
+                    serial: fixSerial($scope.newToken.serial),
+                    realm: $scope.realmname,
+                    user: $scope.username,
+                    pin: $scope.newToken.pin
+                }, function () {
+                    $scope._getUserToken();
+                    $('html,body').scrollTop(0);
+                    $scope.newToken = {"serial": "", pin: ""};
+                });
+            };
+
+            $scope.enrollToken = function () {
+                // go to token.enroll with the users data
+                $state.go("token.enroll", {
+                    realmname: $scope.realmname,
+                    username: $scope.username
+                });
+                $rootScope.returnTo = "user.details({realmname:$scope.realmname, username:$scope.username})";
+            };
+
             $scope.getUserDetails();
             $scope._getUserToken();
+            $scope.getEditableAttributes();
             $scope.getCustomAttributes();
-        });
-    }]);
+            $scope.getUserContainer();
+
+            // listen to the reload broadcast
+            $scope.$on("piReload", function () {
+                $scope.getUserDetails();
+                $scope._getUserToken();
+                $scope.getCustomAttributes();
+                $scope.getUserContainer();
+            });
+        }
+
+    ])
+;
 
 angular.module("privacyideaApp")
     .controller("userController", ['$scope', '$location', 'userUrl', 'realmUrl',
-                                   '$rootScope', 'ConfigFactory', 'UserFactory',
-                                   'gettextCatalog', 'AuthFactory',
-                                   function ($scope, $location, userUrl,
-                                             realmUrl, $rootScope, ConfigFactory,
-                                             UserFactory, gettextCatalog,
-                                             AuthFactory) {
+        '$rootScope', 'ConfigFactory', 'UserFactory',
+        'gettextCatalog', 'AuthFactory',
+        function ($scope, $location, userUrl,
+                  realmUrl, $rootScope, ConfigFactory,
+                  UserFactory, gettextCatalog,
+                  AuthFactory) {
 
-        $scope.usersPerPage = $scope.user_page_size;
-        $scope.params = {page: 1,
-                        usernameFilter: "",
-                        surnameFilter: "",
-                        givennameFilter: "",
-                        emailFilter: ""};
-        $scope.loggedInUser = AuthFactory.getUser();
-        // scroll to the top of the page
-        document.body.scrollTop = document.documentElement.scrollTop = 0;
-        // go to the list view by default
-        if ($location.path() == "/user") {
-            $location.path("/user/list");
-        }
-
-        $scope._getUsers = function (live_search) {
-            if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
-                // We shall only search, if either we do not search on enter or
-                // if we search_on_enter and the enter key is pressed.
-                var params = {realm: $scope.selectedRealm};
-                if ($scope.params.usernameFilter) {
-                    params.username = "*" + $scope.params.usernameFilter + "*";
-                }
-                if ($scope.params.surnameFilter) {
-                    params.surname = "*" + $scope.params.surnameFilter + "*";
-                }
-                if ($scope.params.givennameFilter) {
-                    params.givenname = "*" + $scope.params.givennameFilter + "*";
-                }
-                if ($scope.params.emailFilter) {
-                    params.email = "*" + $scope.params.emailFilter + "*";
-                }
-                UserFactory.getUsers(params,
-                    function (data) {
-                        //debug: console.log("success");
-                        var userlist = data.result.value;
-                        // The userlist is the complete list of the users.
-                        $scope.usercount = userlist.length;
-                        var start = ($scope.params.page - 1) * $scope.usersPerPage;
-                        var stop = start + $scope.usersPerPage;
-                        $scope.userlist = userlist.slice(start, stop);
-                        //debug: console.log($scope.userlist);
-                    });
+            $scope.usersPerPage = $scope.user_page_size;
+            $scope.params = {
+                page: 1,
+                usernameFilter: "",
+                surnameFilter: "",
+                givennameFilter: "",
+                emailFilter: ""
+            };
+            $scope.loggedInUser = AuthFactory.getUser();
+            // scroll to the top of the page
+            document.body.scrollTop = document.documentElement.scrollTop = 0;
+            // go to the list view by default
+            if ($location.path() == "/user") {
+                $location.path("/user/list");
             }
-        };
 
-        // Change the pagination
-        $scope.pageChanged = function () {
-            //debug: console.log('Page changed to: ' + $scope.params.page);
-            $scope._getUsers();
-        };
-
-        $scope.getRealms = function () {
-            ConfigFactory.getRealms(function (data) {
-                $scope.realms = data.result.value;
-                num_realms = Object.keys($scope.realms).length;
-                angular.forEach($scope.realms, function (realm, realmname) {
-                    if (num_realms === 1) {
-                        // If the admin is allowed to see only one realm, we make this the
-                        // default realm in the UI
-                        realm.default = true;
+            $scope._getUsers = function (live_search) {
+                if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
+                    // We shall only search, if either we do not search on enter or
+                    // if we search_on_enter and the enter key is pressed.
+                    var params = {realm: $scope.selectedRealm};
+                    if ($scope.params.usernameFilter) {
+                        params.username = "*" + $scope.params.usernameFilter + "*";
                     }
-                    if (realm.default) {
-                        $scope.defaultRealm = realmname;
-                        if (!$scope.selectedRealm) {
-                            $scope.selectedRealm = $scope.defaultRealm;
-                            // Only load the users, if we know, what the
-                            // default realm is
-                            $scope._getUsers();
+                    if ($scope.params.surnameFilter) {
+                        params.surname = "*" + $scope.params.surnameFilter + "*";
+                    }
+                    if ($scope.params.givennameFilter) {
+                        params.givenname = "*" + $scope.params.givennameFilter + "*";
+                    }
+                    if ($scope.params.emailFilter) {
+                        params.email = "*" + $scope.params.emailFilter + "*";
+                    }
+                    UserFactory.getUsers(params,
+                        function (data) {
+                            //debug: console.log("success");
+                            var userlist = data.result.value;
+                            // The userlist is the complete list of the users.
+                            $scope.usercount = userlist.length;
+                            var start = ($scope.params.page - 1) * $scope.usersPerPage;
+                            var stop = start + $scope.usersPerPage;
+                            $scope.userlist = userlist.slice(start, stop);
+                            //debug: console.log($scope.userlist);
+                        });
+                }
+            };
+
+            // Change the pagination
+            $scope.pageChanged = function () {
+                //debug: console.log('Page changed to: ' + $scope.params.page);
+                $scope._getUsers();
+            };
+
+            $scope.getRealms = function () {
+                ConfigFactory.getRealms(function (data) {
+                    $scope.realms = data.result.value;
+                    num_realms = Object.keys($scope.realms).length;
+                    angular.forEach($scope.realms, function (realm, realmname) {
+                        if (num_realms === 1) {
+                            // If the admin is allowed to see only one realm, we make this the
+                            // default realm in the UI
+                            realm.default = true;
                         }
+                        if (realm.default) {
+                            $scope.defaultRealm = realmname;
+                            if (!$scope.selectedRealm) {
+                                $scope.selectedRealm = $scope.defaultRealm;
+                                // Only load the users, if we know, what the
+                                // default realm is
+                                $scope._getUsers();
+                            }
+                        }
+                    });
+                });
+            };
+
+            if ($scope.loggedInUser.role === "admin") {
+                $scope.getRealms();
+            }
+
+            $scope.changeRealm = function () {
+                $scope.params = {page: 1};
+                $scope._getUsers();
+            };
+
+            $scope.getUserAttributes = function (resolvers) {
+                /*
+                 This function returns a list with all possible user attributes
+                 in these resolvers. Possible attributes are a dictionary with
+                  the keys data, label, name, required, type.
+                */
+                var allResolverAttributes = [];
+
+                for (var rname in resolvers) {
+                    var resolver = resolvers[rname];
+                    switch (resolver.type) {
+                        case "ldapresolver":
+                            var userinfo = JSON.parse(resolver.data.USERINFO);
+                            break;
+                        case "sqlresolver":
+                            var userinfo = JSON.parse(resolver.data.Map);
+                            delete userinfo["userid"];
+                            break;
+                    }
+                    var fields = [];
+                    var r = {};
+                    angular.forEach(userinfo, function (value, key) {
+                        field = {
+                            "type": "text",
+                            "name": key,
+                            "label": gettextCatalog.getString(key),
+                            "data": "",
+                            "required": true
+                        };
+                        switch (key) {
+                            case "username":
+                                this.push(field);
+                                break;
+                            case "email":
+                                field["type"] = "email";
+                                this.push(field);
+                                break;
+                            case "password":
+                                field["type"] = "password";
+                                this.push(field);
+                                break;
+                            default:
+                                field["required"] = false;
+                                this.push(field);
+                                break;
+                        }
+                    }, fields);
+                    r[rname] = fields;
+                    allResolverAttributes.push(r);
+                }
+                return allResolverAttributes;
+            };
+
+            $scope.getUserAttributesView = function (resolvername, userAttributes) {
+                /*
+                This function returns the display information of the user attributes
+                */
+
+                var userFields = [];
+                angular.forEach(userAttributes, function (value, key) {
+                    if (value.hasOwnProperty(resolvername)) {
+                        userFields = value[resolvername];
                     }
                 });
-            });
-        };
 
-        if ($scope.loggedInUser.role === "admin") {
-            $scope.getRealms();
-        }
+                var start = 0;
+                var middle = Math.ceil(userFields.length / 2);
+                var end = userFields.length + 1;
+                $scope.leftColumn = userFields.slice(start, middle);
+                $scope.rightColumn = userFields.slice(middle, end);
+            };
 
-        $scope.changeRealm = function () {
-            $scope.params = {page: 1};
-            $scope._getUsers();
-        };
-
-        $scope.getUserAttributes = function(resolvers) {
-            /*
-             This function returns a list with all possible user attributes
-             in these resolvers. Possible attributes are a dictionary with
-              the keys data, label, name, required, type.
-            */
-            var allResolverAttributes = [];
-
-            for (var rname in resolvers) {
-                var resolver = resolvers[rname];
-                switch (resolver.type){
-                    case "ldapresolver":
-                        var userinfo = JSON.parse(resolver.data.USERINFO);
-                        break;
-                    case "sqlresolver":
-                        var userinfo = JSON.parse(resolver.data.Map);
-                        delete userinfo["userid"];
-                        break;
-                }
-                var fields = [];
-                var r ={};
-                angular.forEach(userinfo, function (value, key) {
-                    field = {"type" : "text",
-                             "name" : key,
-                             "label" : gettextCatalog.getString(key),
-                             "data" : "",
-                             "required": true};
-                    switch(key){
-                        case "username":
-                            this.push(field);
-                            break;
-                        case "email":
-                            field["type"] = "email";
-                            this.push(field);
-                            break;
-                        case "password":
-                            field["type"] = "password";
-                            this.push(field);
-                            break;
-                        default:
-                            field["required"] = false;
-                            this.push(field);
-                            break;
-                    }
-                }, fields);
-                r[rname] = fields;
-                allResolverAttributes.push(r);
-           }
-           return allResolverAttributes;
-        };
-
-        $scope.getUserAttributesView = function(resolvername, userAttributes){
-           /*
-           This function returns the display information of the user attributes
-           */
-
-           var userFields = [];
-           angular.forEach(userAttributes, function(value, key){
-               if (value.hasOwnProperty(resolvername)){
-                   userFields = value[resolvername];
-               }
+            $scope.$on("piReload", function () {
+                $scope._getUsers(false);
             });
 
-            var start = 0;
-            var middle = Math.ceil(userFields.length / 2);
-            var end = userFields.length + 1;
-            $scope.leftColumn = userFields.slice(start, middle);
-            $scope.rightColumn = userFields.slice(middle, end);
-        };
-
-        $scope.$on("piReload", function () {
-            $scope._getUsers(false);
-        });
-
-    }]);
+        }]);
