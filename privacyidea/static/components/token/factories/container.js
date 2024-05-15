@@ -95,5 +95,15 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                     AuthFactory.authError(error.data);
                 });
             },
+            getContainerForUser: function (params, callback) {
+                $http.get(containerUrl + "/", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                    params: params
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
+            },
         }
     }]);
