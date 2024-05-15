@@ -1,4 +1,3 @@
-//angular.module("ContainerModule", ["privacyideaAuth"])
 myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q', '$state', '$rootScope',
     function (AuthFactory, $http, containerUrl, $q, $state, $rootScope) {
         let canceller = $q.defer();
@@ -41,8 +40,43 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
             },
             addTokenToContainer: function (params, callback) {
                 $http.post(containerUrl + "/" + params["serial"] + "/add", {serial: params["tokenSerial"]},
-                    {headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                    }).then(function (response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
+                    {
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
             },
+            removeTokenFromContainer: function (params, callback) {
+                $http.post(containerUrl + "/" + params["serial"] + "/remove", {serial: params["tokenSerial"]},
+                    {
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            assignUser: function (params, callback) {
+                $http.post(containerUrl + "/assign", params,
+                    {
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            unassignUser: function (params, callback) {
+                $http.post(containerUrl + "/unassign", params,
+                    {
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            }
         }
     }]);

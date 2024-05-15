@@ -1,7 +1,9 @@
 <h3 ng-if="$state.includes('token.enroll')" translate>Enroll a new token</h3>
 <div ng-if="$state.includes('token.rollover')">
-    <div class="alert alert-danger" role="alert" translate>You are about to rollover your token! This will invalidate your existing token
-        and create a new token with a new secret key!</div>
+    <div class="alert alert-danger" role="alert" translate>You are about to rollover your token! This will invalidate
+        your existing token
+        and create a new token with a new secret key!
+    </div>
     <h3 translate>Rollover token {{ form.serial }}</h3>
 </div>
 
@@ -36,7 +38,7 @@
                    autocomplete="new-password"
                    placeholder="{{ 'Some nice words...'|translate }}"
                    ng-model="form.description"
-                   ng-required="require_description.includes(form.type)" />
+                   ng-required="require_description.includes(form.type)"/>
         </div>
 
         <!-- User Assignment -->
@@ -67,6 +69,22 @@
                    placeholder="{{ 'Repeat PIN or password'|translate }}">
         </div>
 
+        <!-- ============ Container ====================== -->
+        <h4>Assign Container</h4>
+        <div select-or-create-container container-serial="form.containerSerial" disable-selection="tokenIsInContainer"
+             enable-user-assignment="newUser.user" user-name="newUser.user" user-realm="newUser.realm">
+        </div>
+        <div class="text-center" ng-show="showAddToContainer && !tokenIsInContainer">
+            <button type="button" class="btn btn-primary" ng-click="addToContainer()">
+                <span translate>Add to Container</span>
+            </button>
+        </div>
+        <div class="text-center" ng-show="tokenIsInContainer">
+            <button type="button" class="btn btn-primary" ng-click="removeFromContainer()">
+                <span translate>Remove from Container</span>
+            </button>
+        </div>
+
         <!-- Extended attributes -->
         <uib-accordion ng-hide="$state.includes('token.wizard') ||
                         loggedInUser.role=='user'">
@@ -74,9 +92,9 @@
                  class="panel-default"
                  is-open="isOpen">
                 <uib-accordion-heading ng-click="isOpen=!isOpen">
-                    <div >{{ 'Extended Attributes'|translate }}
+                    <div>{{ 'Extended Attributes' | translate }}
                         <span class="pull-right glyphicon" aria-hidden="true"
-                           ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
+                              ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
                         </span>
                     </div>
                 </uib-accordion-heading>
@@ -86,15 +104,15 @@
                            translate>Validity Start
                     </label>
                     <p class="input-group col-sm-12">
-                            <input type="text" class="form-control"
-                                   name="validity_start"
-                                   uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
-                                   ng-model="form.validity_period_start"
-                                   is-open="startOpened"
-                                   min-date="today"
-                                   show-button-bar="false"
-                                   close-text="Close"/>
-                          <span class="input-group-btn">
+                        <input type="text" class="form-control"
+                               name="validity_start"
+                               uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
+                               ng-model="form.validity_period_start"
+                               is-open="startOpened"
+                               min-date="today"
+                               show-button-bar="false"
+                               close-text="Close"/>
+                        <span class="input-group-btn">
                             <button type="button" class="btn btn-default"
                                     ng-click="startOpened = openDate($event)">
                                 <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
@@ -107,15 +125,15 @@
                            translate>Validity End
                     </label>
                     <p class="input-group col-sm-12">
-                            <input type="text" class="form-control"
-                                   name="validity_end"
-                                   uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
-                                   ng-model="form.validity_period_end"
-                                   is-open="endOpened"
-                                   show-button-bar="false"
-                                   min-date="today"
-                                   close-text="Close"/>
-                          <span class="input-group-btn">
+                        <input type="text" class="form-control"
+                               name="validity_end"
+                               uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
+                               ng-model="form.validity_period_end"
+                               is-open="endOpened"
+                               show-button-bar="false"
+                               min-date="today"
+                               close-text="Close"/>
+                        <span class="input-group-btn">
                             <button type="button" class="btn btn-default"
                                     ng-click="endOpened = openDate($event)"><i
                                     class="glyphicon glyphicon-calendar"></i>
@@ -134,7 +152,7 @@
         <!-- pass the rollover info in the form -->
         <input type="checkbox" ng-show="false" name="rollover"
                ng-init="form.rollover = $state.includes('token.rollover')"
-               ng-model="form.rollover" />
+               ng-model="form.rollover"/>
 
         <div class="text-center">
             <button type="button" ng-click="enrollToken()"
@@ -162,7 +180,7 @@
                 {{ enrolledToken.serial }}</a>
             for user
             <a ui-sref="user.details({username:newUser.user, realmname:newUser.realm})"
-                    >{{ newUser.user }}</a> in realm
+            >{{ newUser.user }}</a> in realm
             {{ newUser.realm }}.
         </span>
         <span ng-show="!newUser.user || loggedInUser.role != 'admin'" translate
@@ -195,7 +213,8 @@
         </div>
         <div class="text-center">
             <button type="button" ng-click="sendVerifyResponse()"
-                    class="btn btn-primary" translate>Verify Token</button>
+                    class="btn btn-primary" translate>Verify Token
+            </button>
         </div>
     </div>
 

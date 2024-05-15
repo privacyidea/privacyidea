@@ -8,7 +8,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
-from privacyidea.models import TokenContainerOwner, Realm
+from privacyidea.models import TokenContainerOwner, Realm, Token, TokenContainerToken, db
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class TokenContainerClass:
         return self._db_container.description
 
     @description.setter
-    def description(self, value):
+    def description(self, value: str):
         self._db_container.description = value
         self._db_container.save()
 
@@ -44,10 +44,12 @@ class TokenContainerClass:
     def type(self):
         return self._db_container.type
 
-    def remove_token(self, serial):
-        self.tokens = [t for t in self.tokens if t.get_serial() is not serial]
-        self._db_container.tokens = [t.token for t in self.tokens]
-        self._db_container.save()
+    def remove_token(self, serial: str):
+        token = Token.query.filter(Token.serial == serial).first()
+        if token:
+            self._db_container.tokens.remove(token)
+            self._db_container.save()
+            self.tokens = [t for t in self.tokens if t.get_serial() != serial]
 
     def add_token(self, token: TokenClass):
         if not token.get_type() in self.get_supported_token_types():
@@ -77,9 +79,11 @@ class TokenContainerClass:
 
     def remove_user(self, user: User):
         (user_id, resolver_type, resolver_name) = user.get_user_identifiers()
-        return TokenContainerOwner.query.filter_by(container_id=self._db_container.id,
-                                                   user_id=user.login,
-                                                   resolver=resolver_name).delete()
+        count = TokenContainerOwner.query.filter_by(container_id=self._db_container.id,
+                                                    user_id=user.login,
+                                                    resolver=resolver_name).delete()
+        db.session.commit()
+        return count > 0
 
     def get_users(self):
         db_container_owners: List[TokenContainerOwner] = TokenContainerOwner.query.filter_by(

@@ -57,6 +57,8 @@
 #
 
 from flask import (Blueprint, request, g, current_app)
+
+from ..lib.container import find_container_by_serial
 from ..lib.log import log_with
 from .lib.utils import optional, send_result, send_csv_result, required, getParam
 from ..lib.user import get_user_from_param
@@ -74,7 +76,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups)
 from werkzeug.datastructures import FileStorage
 from cgi import FieldStorage
-from privacyidea.lib.error import (ParameterError, TokenAdminError)
+from privacyidea.lib.error import (ParameterError, TokenAdminError, ResourceNotFoundError)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
@@ -317,6 +319,15 @@ def init():
         # init details like the google URL to the response
         init_details = tokenobject.get_init_detail(param, user)
         response_details.update(init_details)
+        # Check if a containerSerial is set and assign the token to the container
+        if "containerSerial" in param:
+            container_serial = param.get("containerSerial")
+            # TODO should this be caught here? The enrollment should not be blocked by the error?
+            try:
+                find_container_by_serial(container_serial).add_token(tokenobject)
+            except ResourceNotFoundError:
+                log.error(f"Container with serial {container_serial} not found while enrolling token "
+                          f"{tokenobject.get_serial()}.")
 
     g.audit_object.log({'user': user.login,
                         'realm': user.realm,
