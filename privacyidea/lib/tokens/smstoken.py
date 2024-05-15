@@ -67,7 +67,7 @@ from privacyidea.lib import _
 
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
 from privacyidea.models import Challenge
-from privacyidea.lib.decorators import check_token_locked, check_token_otp_lenght
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 import logging
 
 
@@ -367,8 +367,8 @@ class SmsTokenClass(HotpTokenClass):
         return success, return_message, transactionid, reply_dict
 
     @log_with(log)
+    @check_token_otp_length
     @check_token_locked
-    @check_token_otp_lenght
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         check the otpval of a token against a given counter

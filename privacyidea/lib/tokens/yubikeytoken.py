@@ -59,7 +59,7 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import (modhex_decode, hexlify_and_unicode, checksum,
                                    to_bytes, b64encode_and_unicode)
 import binascii
-from privacyidea.lib.decorators import check_token_locked, check_token_otp_lenght
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.api.lib.utils import getParam
 import datetime
 import base64
@@ -237,8 +237,8 @@ class YubikeyTokenClass(TokenClass):
 
 
     @log_with(log)
+    @check_token_otp_length
     @check_token_locked
-    @check_token_otp_lenght
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         validate the token otp against a given otpvalue
@@ -283,7 +283,7 @@ class YubikeyTokenClass(TokenClass):
             otp_bin = modhex_decode(yubi_otp)
         except KeyError:
             # The OTP value is no yubikey aes otp value and can not be decoded
-            log.debug("OTP could not be decode")
+            log.debug("OTP could not be decoded")
             return -4
 
         msg_bin = secret.aes_ecb_decrypt(otp_bin)
