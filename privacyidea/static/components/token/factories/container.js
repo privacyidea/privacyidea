@@ -1,4 +1,3 @@
-//angular.module("ContainerModule", ["privacyideaAuth"])
 myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q', '$state', '$rootScope',
     function (AuthFactory, $http, containerUrl, $q, $state, $rootScope) {
         let canceller = $q.defer();
@@ -19,7 +18,11 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
             getContainerForSerial: function (serial, callback) {
                 $http.get(containerUrl + "/?serial=" + serial, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
-                }).then(function (response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
+                }).then(function (response) {
+                    callback(response.data)
+                }, function(error) {
+                    AuthFactory.authError(error.data)
+                });
             },
             getContainerTypes: function (callback) {
                 canceller.resolve();
@@ -84,7 +87,7 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 }, function (error) {
                     AuthFactory.authError(error.data)
                 });
-            }
+            },
             getContainerForUser: function (params, callback) {
                 $http.get(containerUrl + "/", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},

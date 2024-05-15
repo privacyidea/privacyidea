@@ -44,9 +44,7 @@ def list_containers():
             users.append(tmp_users)
         tmp["users"] = users
 
-        token_serials: list = []
-        for token in container.get_tokens():
-            token_serials.append(token.get_serial())
+        token_serials = [token.get_serial() for token in container.get_tokens()]
         if len(token_serials) > 0:
             tokens = get_tokens_paginate(serial_list=token_serials)
         else:

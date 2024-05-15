@@ -87,18 +87,6 @@ def find_container_by_id(container_id: int):
     return TokenContainerClass(db_container)
 
 
-@log_with(log)
-def find_token_by_id(token_id):
-    """
-    Returns the TokenContainerClass object for the given container id or raises a ResourceNotFoundError
-    """
-    db_container = Token.query.filter(Token.id == token_id).first()
-    if not db_container:
-        raise ResourceNotFoundError(f"Unable to find token with id {token_id}.")
-
-    return TokenClass(db_container)
-
-
 def find_container_by_serial(serial: str):
     """
     Returns the TokenContainerClass object for the given container serial or raises a ResourceNotFoundError
