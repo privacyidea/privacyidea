@@ -59,9 +59,6 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
               gettextCatalog, ContainerFactory) {
 
         // Container
-       /* $scope.container = {
-            tokenIsInContainer: true,
-        }*/
         $scope.tokenIsInContainer = false;
         $scope.$watch('containerSerial', function () {
             $scope.showAddToContainer = ($scope.containerSerial && $scope.containerSerial !== "createnew");

@@ -141,7 +141,7 @@ def remove_token(container_serial):
     token = get_one_token(serial=serial)
     res = False
     if token:
-        count = container.remove_token(token.get_serial())
+        container.remove_token(token.get_serial())
         res = True
     return send_result(res)
 
