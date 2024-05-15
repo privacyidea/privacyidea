@@ -8,7 +8,7 @@ from privacyidea.lib.container import get_container_classes, create_container_te
     get_container_token_types
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.token import get_one_token
+from privacyidea.lib.token import get_one_token, get_tokens_paginate
 from privacyidea.lib.user import get_user_from_param, get_username
 
 container_blueprint = Blueprint('container_blueprint', __name__)
@@ -25,8 +25,12 @@ def list_containers():
     """
     Get all containers
     """
+    param = request.all_data
     user = request.User
-    containers = get_all_containers(user)
+    serial = getParam(param, "serial", optional=True)
+    sortby = getParam(param, "sortby", optional=True, default="serial")
+    sortdir = getParam(param, "sortdir", optional=True, default="asc")
+    containers = get_all_containers(user=user, serial=serial, sortby=sortby, sortdir=sortdir)
     res: list = []
     for container in containers:
         tmp: dict = {"type": container.type, "serial": container.serial, "description": container.description}
@@ -36,15 +40,16 @@ def list_containers():
             tmp_users["user_name"] = get_username(user.login, user.resolver)
             tmp_users["user_realm"] = user.realm
             tmp_users["user_resolver"] = user.resolver
+            tmp_users["user_id"] = user.login
             users.append(tmp_users)
         tmp["users"] = users
 
-        tmp_tokens: dict = {}
-        tokens: list = []
-        for token in container.get_tokens():
-            tmp_tokens[token.get_type()] = token.get_serial()
-            tokens.append(tmp_tokens)
-        tmp["tokens"] = tokens
+        token_serials = [token.get_serial() for token in container.get_tokens()]
+        if len(token_serials) > 0:
+            tokens = get_tokens_paginate(serial_list=token_serials)
+        else:
+            tokens = {"count": 0}
+        tmp["tokens_paginated"] = tokens
 
         res.append(tmp)
     return send_result(res)

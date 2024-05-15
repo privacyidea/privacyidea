@@ -98,8 +98,35 @@ def find_container_by_serial(serial: str):
     return TokenContainerClass(db_container)
 
 
-def get_all_containers(user=None):
-    db_containers = TokenContainer.query.all()
+def get_all_containers(user: User = None, serial=None, sortby='serial', sortdir='asc'):
+    """
+    Returns a list of all TokenContainerClass objects for the given user or all containers if no user is given
+    """
+    # TODO add user role policy
+
+    sql_query = TokenContainer.query
+    if user:
+        # Get all containers for the given user
+        sql_query = sql_query.join(TokenContainer.owners).filter(TokenContainerOwner.user_id == user.uid)
+    if serial:
+        sql_query = sql_query.filter(TokenContainer.serial == serial)
+
+    if isinstance(sortby, str):
+        # check that the sort column exists and convert it to a Token column
+        cols = TokenContainer.__table__.columns
+        if sortby in cols:
+            sortby = cols.get(sortby)
+        else:
+            log.warning('Unknown sort column "{0!s}". Using "serial" '
+                        'instead.'.format(sortby))
+            sortby = TokenContainer.serial
+
+    if sortdir == "desc":
+        sql_query = sql_query.order_by(sortby.desc())
+    else:
+        sql_query = sql_query.order_by(sortby.asc())
+
+    db_containers = sql_query.all()
     containers: List[TokenContainerClass] = []
     container_classes = get_container_classes()
     for db_container in db_containers:
@@ -109,15 +136,7 @@ def get_all_containers(user=None):
     return containers
 
 
-def find_containers_for_user(user: User):
-    """
-    Returns a list of TokenContainerClass objects for the given user
-    """
-    containers = TokenContainer.query.join(TokenContainer.owners).filter(TokenContainerOwner.user_id == user.id).all()
-    return [TokenContainerClass(c) for c in containers]
-
-
-def find_container_for_token(serial: str):
+def find_container_for_token(serial):
     """
     Returns a list of TokenContainerClass objects for the given token
     """
