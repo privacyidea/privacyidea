@@ -1,18 +1,25 @@
+//angular.module("ContainerModule", ["privacyideaAuth"])
 myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q', '$state', '$rootScope',
     function (AuthFactory, $http, containerUrl, $q, $state, $rootScope) {
         let canceller = $q.defer();
         return {
-            getContainers: function (callback) {
+            getContainers: function (params, callback) {
                 canceller.resolve();
                 canceller = $q.defer();
                 $http.get(containerUrl + "/", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                    params: params,
                     timeout: canceller.promise
                 }).then(function (response) {
                     callback(response.data);
                 }, function (error) {
                     AuthFactory.authError(error.data);
                 });
+            },
+            getContainerForSerial: function (serial, callback) {
+                $http.get(containerUrl + "/?serial=" + serial, {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) { callback(response.data) }, function(error) { AuthFactory.authError(error.data) });
             },
             getContainerTypes: function (callback) {
                 canceller.resolve();
@@ -78,5 +85,15 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                     AuthFactory.authError(error.data)
                 });
             }
+            getContainerForUser: function (params, callback) {
+                $http.get(containerUrl + "/", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                    params: params
+                }).then(function (response) {
+                    callback(response.data);
+                }, function (error) {
+                    AuthFactory.authError(error.data);
+                });
+            },
         }
     }]);

@@ -80,7 +80,8 @@ from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_se
 from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.log import log_with
 from privacyidea.models import (Token, Realm, TokenRealm, Challenge,
-                                MachineToken, TokenInfo, TokenOwner, TokenTokengroup, Tokengroup)
+                                MachineToken, TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
+                                TokenContainerToken)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
@@ -161,9 +162,10 @@ def create_tokenclass_object(db_token):
 
 
 def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
-                        serial_exact=None, serial_wildcard=None, active=None, resolver=None,
+                        serial_exact=None, serial_wildcard=None, serial_list=None, active=None, resolver=None,
                         rollout_state=None, description=None, revoked=None,
-                        locked=None, userid=None, tokeninfo=None, maxfail=None, allowed_realms=None):
+                        locked=None, userid=None, tokeninfo=None, maxfail=None, allowed_realms=None,
+                        container_serial=None):
     """
     This function create the sql query for getting tokens. It is used by
     get_tokens and get_tokens_paginate.
@@ -255,6 +257,10 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         # exact match for serial
         sql_query = sql_query.filter(Token.serial == serial_exact)
 
+    if serial_list is not None and len(serial_list) > 0:
+        # filter for all serials in the list
+        sql_query = sql_query.filter(Token.serial.in_(serial_list))
+
     if user is not None and not user.is_empty():
         # filter for the rest of the user.
         if user.resolver:
@@ -313,6 +319,13 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
         sql_query = sql_query.filter(TokenInfo.Key == list(tokeninfo)[0])
         sql_query = sql_query.filter(clob_to_varchar(TokenInfo.Value) == list(tokeninfo.values())[0])
         sql_query = sql_query.filter(TokenInfo.token_id == Token.id)
+
+    if container_serial is not None:
+        container_id = TokenContainer.query.filter(TokenContainer.serial == container_serial).first().id
+        token_container_token = TokenContainerToken.query.filter(
+            TokenContainerToken.container_id == container_id).all()
+        token_ids = [token_id.token_id for token_id in token_container_token]
+        sql_query = sql_query.filter(Token.id.in_(token_ids))
 
     return sql_query
 
@@ -448,10 +461,10 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
 
 @log_with(log)
 def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
-                        serial=None, active=None, resolver=None, rollout_state=None,
+                        serial=None, serial_list=None, active=None, resolver=None, rollout_state=None,
                         sortby=Token.serial, sortdir="asc", psize=15,
                         page=1, description=None, userid=None, allowed_realms=None,
-                        tokeninfo=None, hidden_tokeninfo=None):
+                        tokeninfo=None, hidden_tokeninfo=None, container_serial=None):
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -465,6 +478,8 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :param user: The user, whose token should be displayed
     :type user: User object
     :param serial: a pattern for matching the serial
+    :param serial_list: a list of serial numbers of the tokens
+    :type serial_list: list of strings
     :param active: Returns active (True) or inactive (False) tokens
     :param resolver: A resolver name, which may contain "*" for filtering.
     :type resolver: basestring
@@ -485,16 +500,18 @@ def get_tokens_paginate(tokentype=None, realm=None, assigned=None, user=None,
     :type allowed_realms: list
     :param tokeninfo: Return tokens with the given tokeninfo. The tokeninfo
         is a key/value dictionary
+    :param container_serial: The serial number of a container
+    :type container_serial: basestring
     :return: dict with tokens, prev, next and count
     :rtype: dict
     """
     sql_query = _create_token_query(tokentype=tokentype, realm=realm,
                                     assigned=assigned, user=user,
-                                    serial_wildcard=serial, active=active,
+                                    serial_wildcard=serial, serial_list=serial_list, active=active,
                                     resolver=resolver, tokeninfo=tokeninfo,
                                     rollout_state=rollout_state,
                                     description=description, userid=userid,
-                                    allowed_realms=allowed_realms)
+                                    allowed_realms=allowed_realms, container_serial=container_serial)
 
     if isinstance(sortby, str):
         # check that the sort column exists and convert it to a Token column
