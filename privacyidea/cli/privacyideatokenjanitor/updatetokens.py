@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # 2023-11-03 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
 #            Migrate to click
 # 2020-11-11 Timo Sturm <timo.sturm@netknights.it>
@@ -53,23 +51,23 @@ updatetokens_cli = AppGroup("update")
 
 
 @updatetokens_cli.command("update")
-@click.option('--yaml',
-              help='Specify the YAML file with the previously exported tokens.')
+@click.argument('yaml', type=click.File())
 def updatetokens(yaml):
     """
-    This can update existing tokens in the privacyIDEA system. You can specify a yaml file with the tokendata.
+    Update existing tokens in the privacyIDEA system. You must specify a YAML
+    file with the tokendata.
     Can be used to reencrypt data, when changing the encryption key.
     """
-    print("Loading YAML data. This may take a while.")
-    token_list = yaml_safe_load(open(yaml, 'r').read())
+    click.echo("Loading YAML data. This may take a while.")
+    token_list = yaml_safe_load(yaml.read())
     for tok in token_list:
         del (tok["owner"])
         tok_objects = get_tokens(serial=tok.get("serial"))
         if len(tok_objects) == 0:
             sys.stderr.write("\nCan not find token {0!s}. Not updating.\n".format(tok.get("serial")))
         else:
-            print("Updating token {0!s}.".format(tok.get("serial")))
+            click.echo("Updating token {0!s}.".format(tok.get("serial")))
             try:
                 tok_objects[0].update(tok)
-            except Exception as e:
-                sys.stderr.write("\nFailed to update token {0!s}.".format(tok.get("serial")))
+            except Exception as _e:
+                click.echo("\nFailed to update token {0!s}.".format(tok.get("serial")), err=True)

@@ -46,10 +46,12 @@ setup_cli = AppGroup("setup", short_help="privacyIDEA server setup",
 @click.option("-o", "--outfile", type=click.File("w"), default=sys.stdout,
               help="The file to which the encrypted encryption key will be "
                    "written to (default: stdout)")
-@click.password_option()
+@click.password_option(help="The password to encrypt the encryption key. "
+                            "If this option is not given the user will be "
+                            "prompted for the password.")
 def encrypt_enckey(encfile, outfile, password):
     """
-    You will be asked for a password and the encryption key in the specified
+    You will be asked for a password and the given encryption key in the specified
     file will be encrypted with an AES key derived from your password.
 
     The encryption key in the file is a 96 bit binary key.
@@ -78,6 +80,7 @@ def create_enckey(ctx, enckey_b64):
 
     If the key of the given configuration does not yet exist, it will be created.
     Optionally a base64 encoded key can be passed with the "--enckey_b64" option.
+
     Warning: passing the encryption key as a parameter is considered harmful!
     """
     enc_file = pathlib.Path(current_app.config.get("PI_ENCFILE"))
@@ -184,16 +187,21 @@ def create_audit_keys(ctx, keysize):
 
 
 @setup_cli.command("create_tables")
-@click.option("-s", "--stamp", is_flag=True,
-              help='Stamp database to current head revision.')
-def create_tables(stamp=True):
+@click.option("-n", "--no-stamp", is_flag=True, default=False,
+              show_default=True, help='Do not stamp the database to a revision.')
+@click.option("-s", "--stamp", is_flag=True, default=False, hidden=True)
+def create_tables(no_stamp, stamp):
     """
     Initially create the tables in the database. The database must exist
     (an SQLite database will be created).
     """
-    print(db)
-    db.create_all()
+    click.echo(f"Using connect string {db}")
     if stamp:
+        click.secho("The parameter \"--stamp\" is deprecated, the database "
+                    "will be stamped by default. Use parameter \"--no-stamp\" "
+                    "to prevent this.", fg="yellow")
+    db.create_all()
+    if not no_stamp:
         # get the path to the migration directory from the distribution
         p = [x.locate() for x in metadata.files('privacyidea') if
              'migrations/env.py' in str(x)]

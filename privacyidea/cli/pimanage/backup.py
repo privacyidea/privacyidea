@@ -16,7 +16,7 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+"""Create/Restore database backup"""
 import os
 import sys
 import shutil
@@ -37,7 +37,7 @@ from flask.cli import AppGroup
 
 MYSQL_DIALECTS = ["mysql", "pymysql", "mysql+pymysql", "mariadb+pymysql"]
 
-backup_cli = AppGroup("backup", help="Backup/Restore server")
+backup_cli = AppGroup("backup", help="Create/Restore database backup of privacyIDEA installation")
 
 
 @backup_cli.command("create", short_help="Create a new backup of the database and configuration")
@@ -66,7 +66,7 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
     backups are stored securely.
 
     You can also include a given FreeRADIUS configuration into the backup.
-    Just specify a directory using 'radius_directory'.
+    Just specify a directory using 'radius_dir'.
     """
     # TODO: Add requirement for the config file and remove app initialization.
     #  Currently, when calling this function, the Flask app gets initialized
