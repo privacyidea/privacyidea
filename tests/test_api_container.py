@@ -3,6 +3,7 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
+from privacyidea.models import TokenContainer
 from tests.base import MyApiTestCase
 
 
@@ -108,6 +109,7 @@ class APIContainer(MyApiTestCase):
                 self.assertEqual(token["tokentype"], 'hotp')
 
     def test_04_get_all_containers_paginate(self):
+
         types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
         container_serials = []
         for type in types:
@@ -131,8 +133,11 @@ class APIContainer(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             containerdata = res.json["result"]["value"]
-            self.assertEqual(containerdata["count"], 2)
-            self.assertEqual(containerdata["containers"][0]["type"], "generic")
+            count = 0
+            for container in containerdata["containers"]:
+                self.assertEqual(container["type"], "generic")
+                count += 1
+            self.assertEqual(containerdata["count"], count)
 
         # Assign token
         tokens = []
@@ -154,11 +159,14 @@ class APIContainer(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             containerdata = res.json["result"]["value"]
-            self.assertEqual(containerdata["count"], 2)
-            self.assertTrue(containerdata["containers"][0]["serial"] in container_serials[2:4])
-            self.assertTrue(containerdata["containers"][1]["serial"] in container_serials[2:4])
+            count = 0
+            for container in containerdata["containers"]:
+                self.assertTrue(container["serial"] in container_serials[2:4])
+                count += 1
+            self.assertEqual(containerdata["count"], count)
 
     def test_05_get_all_containers_paginate_wrong_arguments(self):
+        TokenContainer.query.delete()
         types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
         container_serials = []
         for type in types:

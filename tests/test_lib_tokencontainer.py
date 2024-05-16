@@ -6,6 +6,7 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
+from privacyidea.models import TokenContainer
 from .base import MyTestCase
 
 
@@ -83,6 +84,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
 
     def test_04_get_all_containers_paginate(self):
+        TokenContainer.query.delete()
         types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
         container_serials = []
         for type in types:
@@ -91,13 +93,14 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Filter for container serial
         containerdata = get_all_containers_paginate(serial=container_serials[3])
-        self.assertEqual(containerdata["count"], 1)
+        self.assertEqual(1, containerdata["count"])
         self.assertEqual(containerdata["containers"][0].serial, container_serials[3])
 
         # filter for type
         containerdata = get_all_containers_paginate(type="generic")
-        self.assertEqual(containerdata["count"], 2)
-        self.assertEqual(containerdata["containers"][0].type, "generic")
+        for container in containerdata["containers"]:
+            self.assertEqual(container.type, "generic")
+        self.assertEqual(2, containerdata["count"])
 
         # Assign token
         tokens = []
@@ -114,9 +117,9 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Filter for token serial
         containerdata = get_all_containers_paginate(token_serial=token_serials[1])
-        self.assertEqual(containerdata["count"], 2)
-        self.assertTrue(containerdata["containers"][0].serial in container_serials[2:4])
-        self.assertTrue(containerdata["containers"][1].serial in container_serials[2:4])
+        for container in containerdata["containers"]:
+            self.assertTrue(container.serial in container_serials[2:4])
+        self.assertEqual(2, containerdata["count"])
 
 
     def test_99_container_classes(self):
