@@ -82,7 +82,6 @@ class TokenContainerManagementTestCase(MyTestCase):
             container.add_user(u)
         self.assertEqual(2, len(container.get_users()))
 
-
     def test_04_get_all_containers_paginate(self):
         TokenContainer.query.delete()
         types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
@@ -120,7 +119,6 @@ class TokenContainerManagementTestCase(MyTestCase):
         for container in containerdata["containers"]:
             self.assertTrue(container.serial in container_serials[2:4])
         self.assertEqual(2, containerdata["count"])
-
 
     def test_99_container_classes(self):
         classes = get_container_classes()

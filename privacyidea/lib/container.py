@@ -98,7 +98,8 @@ def find_container_by_serial(serial: str):
     return TokenContainerClass(db_container)
 
 
-def _create_container_query(user: User = None, serial=None, type=None, token_serial=None, sortby='serial', sortdir='asc'):
+def _create_container_query(user: User = None, serial=None, type=None, token_serial=None, sortby='serial',
+                            sortdir='asc'):
     """
     Returns a sql query for getting containers
     """
