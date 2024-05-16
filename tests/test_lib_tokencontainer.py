@@ -1,5 +1,5 @@
 from privacyidea.lib.container import delete_container_by_id, find_container_by_id, \
-    find_container_by_serial, init_container
+    find_container_by_serial, init_container, get_all_containers_paginate
 from privacyidea.lib.container import get_container_classes
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError
 from privacyidea.lib.realm import set_realm
@@ -80,6 +80,44 @@ class TokenContainerManagementTestCase(MyTestCase):
         for u in users:
             container.add_user(u)
         self.assertEqual(2, len(container.get_users()))
+
+
+    def test_04_get_all_containers_paginate(self):
+        types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
+        container_serials = []
+        for type in types:
+            serial = init_container({"type": type, "description": "test container"})
+            container_serials.append(serial)
+
+        # Filter for container serial
+        containerdata = get_all_containers_paginate(serial=container_serials[3])
+        self.assertEqual(containerdata["count"], 1)
+        self.assertEqual(containerdata["containers"][0].serial, container_serials[3])
+
+        # filter for type
+        containerdata = get_all_containers_paginate(type="generic")
+        self.assertEqual(containerdata["count"], 2)
+        self.assertEqual(containerdata["containers"][0].type, "generic")
+
+        # Assign token
+        tokens = []
+        params = {"genkey": "1"}
+        for i in range(3):
+            t = init_token(params)
+            tokens.append(t)
+        token_serials = [t.get_serial() for t in tokens]
+
+        for serial in container_serials[2:4]:
+            container = find_container_by_serial(serial)
+            for token in tokens:
+                container.add_token(token)
+
+        # Filter for token serial
+        containerdata = get_all_containers_paginate(token_serial=token_serials[1])
+        self.assertEqual(containerdata["count"], 2)
+        self.assertTrue(containerdata["containers"][0].serial in container_serials[2:4])
+        self.assertTrue(containerdata["containers"][1].serial in container_serials[2:4])
+
 
     def test_99_container_classes(self):
         classes = get_container_classes()
