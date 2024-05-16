@@ -9,7 +9,7 @@
      boundary-links="true" ng-change="pageChanged()">
 </div>
 
-<span translate>total containers: {{ containerdata.count }}</span>
+<span translate>Total Containers: {{ containerdata.count }}</span>
 
 <div class="row">
     <label>
@@ -36,7 +36,7 @@
             <th class="pifilter">
                 <button class="btn btn-default unsorted"
                         pi-sort-by="serial"
-                        translate>serial
+                        translate>Serial
                 </button>
             </th>
             <th>
@@ -82,8 +82,8 @@
         <!-- Tokens of each container -->
         <tr ng-if="expandedRows.includes($index)" ng-repeat-end="">
             <td colspan="5">
-                <span translate><b>contained tokens: </b></span>
-                <table class="table table-bordered table-striped" id="tableContainerTokenList"
+                <span style="margin-left:20px" translate><b>Contained Tokens: </b></span>
+                <table class="table table-bordered table-striped" style="margin-left:20px"  id="tableContainerTokenList"
                        ng-if="container.tokens.length > 0">
                     <tbody>
                     <tr ng-repeat="token in container.tokens">
