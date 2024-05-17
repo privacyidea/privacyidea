@@ -79,25 +79,34 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         }
     }]);
 
-myApp.controller("containerListController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory', 'ConfigFactory', 'TokenFactory', '$rootScope',
-    function containerListController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory, $rootScope) {
+myApp.controller("containerListController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
+    'ConfigFactory', 'TokenFactory',
+    function containerListController($scope, $http, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory) {
+        $scope.containersPerPage = $scope.token_page_size;
         $scope.loggedInUser = AuthFactory.getUser();
         $scope.params = {sortdir: "asc"};
-        $scope.containers = []
+        $scope.containerdata = []
+
+        // Change the pagination
+        $scope.pageChanged = function () {
+            //debug: console.log('Page changed to: ' + $scope.params.page);
+            $scope.get();
+        };
 
         // Get all containers
         $scope.get = function () {
-
+            $scope.expandedRows = []
             $scope.params.sortby = $scope.sortby;
             if ($scope.reverse) {
                 $scope.params.sortdir = "desc";
             } else {
                 $scope.params.sortdir = "asc";
             }
+            $scope.params.pagesize = $scope.token_page_size;
 
             ContainerFactory.getContainers($scope.params,
                 function (data) {
-                    $scope.containers = data.result.value
+                    $scope.containerdata = data.result.value
                 })
 
         }
@@ -118,8 +127,8 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
         $scope.expandedRows = []
         $scope.expandTokenView = function (containerRow) {
             if (containerRow < 0) {
-                for (let i = 0; i < $scope.containers.length; i++) {
-                    if ($scope.containers[i].tokens_paginated.count > 0) {
+                for (let i = 0; i < $scope.containerdata.containers.length; i++) {
+                    if ($scope.containerdata.containers[i].tokens.length > 0) {
                         $scope.expandedRows.push(i)
                     }
                 }
@@ -150,16 +159,9 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.container = {}
         $scope.containerOwner = {}
         ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
-            $scope.container = data.result.value[0]
+            $scope.container = data.result.value.containers[0]
             $scope.containerOwner = $scope.container.users[0]
         })
-
-        $scope.params.container_serial = $scope.containerSerial
-        $scope.tokendata = {}
-        TokenFactory.getTokens(
-            function (data) {
-                $scope.tokendata = data.result.value
-            }, $scope.params)
 
         $scope.enrollToken = function () {
             // go to token.enroll with the users data of the container owner

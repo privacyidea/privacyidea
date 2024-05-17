@@ -121,8 +121,10 @@ angular.module("privacyideaApp")
                   instanceUrl, $location,
                   inform, gettextCatalog) {
             $scope.tokensPerPage = 5;
+            $scope.containersPerPage = 5;
             $scope.newToken = {"serial": "", pin: ""};
             $scope.params = {page: 1};
+            $scope.containerParams = {page: 1};
             $scope.instanceUrl = instanceUrl;
             $scope.editUser = false;
             $scope.hideUsernmae = true;// scroll to the top of the page
@@ -144,6 +146,8 @@ angular.module("privacyideaApp")
                 ContainerFactory.getContainerForUser({
                     user: $scope.username,
                     realm: $scope.realmname,
+                    pagesize: $scope.containersPerPage,
+                    page: $scope.containerParams.page
                 }, function (data) {
                     $scope.containerdata = data.result.value;
                 });
@@ -153,6 +157,7 @@ angular.module("privacyideaApp")
             $scope.pageChanged = function () {
                 //debug: console.log('Page changed to: ' + $scope.params.page);
                 $scope._getUserToken();
+                $scope.getUserContainer();
             };
 
             $scope.getResolverDetails = function (resolvername) {
