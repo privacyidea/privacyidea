@@ -657,12 +657,12 @@ class PushTokenClass(TokenClass):
                                           hashes.SHA256())
                         # The signature was valid
                         log.debug("Found matching challenge {0!s}.".format(chal))
+                        result = True
                         if decline:
                             chal.set_data("challenge_declined")
                         else:
                             # Verify the presence_answer. The correct choice is stored in the "data"
                             # field of the challenge.
-                            result = True
                             if presence_answer and presence_answer != chal.get_data():
                                 result = False
                                 # TODO: should we somehow invalidate the challenge by e.g. shuffling the data?
