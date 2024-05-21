@@ -142,7 +142,7 @@ pyyaml==6.0.1
     # via privacyIDEA (setup.py)
 redis==5.0.1
     # via huey
-requests==2.31.0
+requests==2.32.0
     # via privacyIDEA (setup.py)
 rsa==4.9
     # via google-auth
