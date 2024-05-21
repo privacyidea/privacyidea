@@ -632,6 +632,7 @@ class PushTokenClass(TokenClass):
             challenge = getParam(request_data, "nonce")
             signature = getParam(request_data, "signature")
             decline = is_true(getParam(request_data, "decline", default=False))
+            presence_answer = getParam(request_data, "presence_answer", optional=True)
 
             # get the token_obj for the given serial:
             token_obj = get_one_token(serial=serial, tokentype="push")
@@ -647,6 +648,8 @@ class PushTokenClass(TokenClass):
                     sign_data = "{0!s}|{1!s}".format(challenge, serial)
                     if decline:
                         sign_data += "|decline"
+                    if presence_answer:
+                        sign_data += "|{0!s}".format(presence_answer)
                     try:
                         pubkey_obj.verify(b32decode(signature),
                                           sign_data.encode("utf8"),
@@ -657,12 +660,19 @@ class PushTokenClass(TokenClass):
                         if decline:
                             chal.set_data("challenge_declined")
                         else:
-                            chal.set_otp_status(True)
+                            # Verify the presence_answer. The correct choice is stored in the "data"
+                            # field of the challenge.
+                            result = True
+                            if presence_answer and presence_answer != chal.get_data():
+                                result = False
+                                # TODO: should we somehow invalidate the challenge by e.g. shuffling the data?
+                            else:
+                                chal.set_otp_status(True)
                             chal.save()
-                        result = True
                     except InvalidSignature as _e:
                         pass
         elif all(k in request_data for k in ('new_fb_token', 'timestamp', 'signature')):
+            log.debug("Updating the firebase token of the smartphone.")
             timestamp = getParam(request_data, 'timestamp', optional=False)
             signature = getParam(request_data, 'signature', optional=False)
             # first check if the timestamp is in the required span
