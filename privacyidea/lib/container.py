@@ -9,6 +9,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError
 from privacyidea.lib.log import log_with
+from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
@@ -84,7 +85,7 @@ def find_container_by_id(container_id: int):
     if not db_container:
         raise ResourceNotFoundError(f"Unable to find container with id {container_id}.")
 
-    return TokenContainerClass(db_container)
+    return create_container_from_db_object(db_container)
 
 
 def find_container_by_serial(serial: str):
@@ -95,7 +96,7 @@ def find_container_by_serial(serial: str):
     if not db_container:
         raise ResourceNotFoundError(f"Unable to find container with serial {serial}.")
 
-    return TokenContainerClass(db_container)
+    return create_container_from_db_object(db_container)
 
 
 def get_all_containers(user: User = None, serial=None, sortby='serial', sortdir='asc'):
@@ -224,6 +225,18 @@ def init_container(params):
     return serial
 
 
+def add_tokens_to_container(container_serial, token_serials):
+    """
+    Add the given tokens to the container with the given serial
+    """
+    container = find_container_by_serial(container_serial)
+    db_tokens = Token.query.filter(Token.serial.in_(token_serials)).all()
+    tokens = [create_tokenclass_object(db_token) for db_token in db_tokens]
+    for token in tokens:
+        container.add_token(token)
+    return True
+
+
 def get_container_classes_descriptions():
     """
     Returns a dictionary of {"type": "Type: description"} entries for all container types.
@@ -238,7 +251,7 @@ def get_container_classes_descriptions():
 
 def get_container_token_types():
     """
-    Returns a dictionary of {"type": "tokentype0, tokentype1, ..."} entries for all container types.
+    Returns a dictionary of {"type": ["tokentype0, tokentype1, ..."]} entries for all container types.
     Used to list the supported token types for each container type.
     """
     ret = {}

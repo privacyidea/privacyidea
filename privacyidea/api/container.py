@@ -5,7 +5,7 @@ from flask import Blueprint, jsonify, request
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import get_container_classes, create_container_template, \
     find_container_by_serial, init_container, get_all_containers, get_container_classes_descriptions, \
-    get_container_token_types
+    get_container_token_types, add_tokens_to_container
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import get_one_token, get_tokens_paginate
@@ -123,14 +123,16 @@ def add_token(container_serial):
     """
     Add a token to a container
     :jsonparam: serial: Serial of the token to add
+    :jsonparam: serial_list: List of serials of the tokens to add. Comma separated.
     """
-    container = find_container_by_serial(container_serial)
-    serial = getParam(request.all_data, "serial", required, allow_empty=False)
-    token = get_one_token(serial=serial)
-    res = False
-    if token:
-        container.add_token(token)
-        res = True
+    serial = getParam(request.all_data, "serial", True, allow_empty=True)
+    serials = getParam(request.all_data, "serial_list")
+    if not serial and not serials:
+        raise ParameterError("Either serial or serial_list is required")
+    serials.append(serial)
+
+    res = add_tokens_to_container(container_serial, serials)
+
     return send_result(res)
 
 
@@ -140,9 +142,16 @@ def remove_token(container_serial):
     """
     Remove a token from a container
     :jsonparam: serial: Serial of the token to remove
+    :jsonparam: serial_list: List of serials of the tokens to remove. Comma separated.
     """
     container = find_container_by_serial(container_serial)
-    serial = getParam(request.all_data, "serial", required, allow_empty=False)
+    serial = getParam(request.all_data, "serial", required, allow_empty=True)
+    serials = request.args.getlist("serial_list")
+    if not serial and not serials:
+        raise ParameterError("Either serial or serial_list is required")
+
+    serials.append(serial)
+
     token = get_one_token(serial=serial)
     res = False
     if token:
@@ -152,20 +161,29 @@ def remove_token(container_serial):
 
 
 @container_blueprint.route('types', methods=['GET'])
-@log_with(log)
-def get_types():
-    descriptions = get_container_classes_descriptions()
-    return send_result(descriptions)
-
-
 @container_blueprint.route('tokentypes', methods=['GET'])
 @log_with(log)
-def get_token_types():
+def get_types():
     """
-    Get the supported token types for each container type
+    {
+        type: { description: "Description", token_types: ["hotp", "totp", "push", "daypassword", "sms"] },
+        type: { description: "Description", token_types: ["hotp", "totp", "push", "daypassword", "sms"] }
+    }
     """
-    res = get_container_token_types()
+    descriptions = get_container_classes_descriptions()
+    ttypes = get_container_token_types()
+    res = {ctype: {"description": desc, "token_types": ttypes.get(ctype, [])} for ctype, desc in descriptions.items()}
     return send_result(res)
+
+
+# @container_blueprint.route('tokentypes', methods=['GET'])
+# @log_with(log)
+# def get_token_types():
+#     """
+#     Get the supported token types for each container type
+#     """
+#     ttypes = get_container_token_types()
+#     return send_result(res)
 
 
 ######################## vvv TEMPLATES vvv ##########################
@@ -201,7 +219,6 @@ def set_template(container_type):
         raise ParameterError("Invalid container type")
 
     json = request.json
-    print(json)
     template_id = json.get('template_id')
 
 
@@ -212,6 +229,5 @@ def create_template_with_name(container_type, template_name):
     Set the template for the given container type
     """
     json = request.json
-    print(json)
     template_id = create_container_template(container_type, template_name, json)
     return template_id

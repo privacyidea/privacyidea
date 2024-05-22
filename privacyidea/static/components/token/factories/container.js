@@ -58,6 +58,16 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                     AuthFactory.authError(error.data)
                 });
             },
+            addAllTokenToContainer: function (params, callback) {
+                $http.post(containerUrl + "/" + params["container_serial"] + "/add", {serial_list: params["serial_list"]},
+                    {
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
             removeTokenFromContainer: function (params, callback) {
                 $http.post(containerUrl + "/" + params["serial"] + "/remove", {serial: params["tokenSerial"]},
                     {
