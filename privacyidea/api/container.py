@@ -129,9 +129,13 @@ def add_token(container_serial):
     serials = getParam(request.all_data, "serial_list")
     if not serial and not serials:
         raise ParameterError("Either serial or serial_list is required")
-    serials.append(serial)
+    token_serials = []
+    if serials:
+        token_serials.append(serials)
+    if serial:
+        token_serials.append(serial)
 
-    res = add_tokens_to_container(container_serial, serials)
+    res = add_tokens_to_container(container_serial, token_serials)
 
     return send_result(res)
 

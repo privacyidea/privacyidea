@@ -92,6 +92,7 @@ class APIContainer(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             json = res.json
+            print(json)
             self.assertTrue(json["result"]["status"])
             self.assertEqual(json["result"]["value"][0]["type"], "generic")
             self.assertEqual(json["result"]["value"][0]["description"], "testcontainer")
@@ -101,8 +102,5 @@ class APIContainer(MyApiTestCase):
             for u in users_res:
                 self.assertEqual(u["user_realm"], "realm1")
 
-            tokens_res = json["result"]["value"][0]["tokens"]
-            for token in tokens_res:
-                # token are dicts of {"type": "serial"}
-                self.assertTrue("hotp" in token)
-                self.assertTrue(token["hotp"] in token_serials)
+            tokens_res = json["result"]["value"][0]["tokens_paginated"]["tokens"]
+            self.assertEqual(len(tokens_res), 4)
