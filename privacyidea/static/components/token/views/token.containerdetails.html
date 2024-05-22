@@ -69,13 +69,9 @@
     </button>
 </div>
 
+<!-- =================== Tokens ================= -->
+
 <h3 translate>Tokens in container</h3>
-<!-- Tokens in container -->
-<div uib-pagination ng-show="tokendata.count > 5"
-     total-items="tokendata.count" ng-model="params.page"
-     items-per-page="{{ tokensPerPage }}"
-     max-size="5"
-     boundary-links="true" ng-change="pageChanged()"></div>
 
 <div class="table-responsive form-group">
     <table class="table table-bordered table-striped">
@@ -93,7 +89,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr ng-repeat="token in tokendata.tokens">
+        <tr ng-repeat="token in container.tokens">
             <td><a ui-sref="token.details({tokenSerial:token.serial,
             currentToken:token})"
                    ng-click="$rootScope.returnTo=user.list;">

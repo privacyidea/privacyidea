@@ -1,8 +1,9 @@
-from privacyidea.lib.container import init_container
+from privacyidea.lib.container import init_container, find_container_by_serial
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
+from privacyidea.models import TokenContainer
 from tests.base import MyApiTestCase
 
 
@@ -94,13 +95,117 @@ class APIContainer(MyApiTestCase):
             json = res.json
             print(json)
             self.assertTrue(json["result"]["status"])
-            self.assertEqual(json["result"]["value"][0]["type"], "generic")
-            self.assertEqual(json["result"]["value"][0]["description"], "testcontainer")
-            self.assertTrue(len(json["result"]["value"][0]["serial"]) > 0)
+            self.assertEqual(json["result"]["value"]["containers"][0]["type"], "generic")
+            self.assertEqual(json["result"]["value"]["containers"][0]["description"], "testcontainer")
+            self.assertTrue(len(json["result"]["value"]["containers"][0]["serial"]) > 0)
 
-            users_res = json["result"]["value"][0]["users"]
+            users_res = json["result"]["value"]["containers"][0]["users"]
             for u in users_res:
                 self.assertEqual(u["user_realm"], "realm1")
 
             tokens_res = json["result"]["value"][0]["tokens_paginated"]["tokens"]
             self.assertEqual(len(tokens_res), 4)
+
+    def test_04_get_all_containers_paginate(self):
+
+        types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
+        container_serials = []
+        for type in types:
+            serial = init_container({"type": type, "description": "test container"})
+            container_serials.append(serial)
+
+        # Filter for container serial
+        with self.app.test_request_context('/container/',
+                                           method='GET',
+                                           data={"serial": container_serials[3]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            containerdata = res.json["result"]["value"]
+            self.assertEqual(containerdata["count"], 1)
+            self.assertEqual(containerdata["containers"][0]["serial"], container_serials[3])
+
+        # filter for type
+        with self.app.test_request_context('/container/',
+                                           method='GET',
+                                           data={"type": "generic"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            containerdata = res.json["result"]["value"]
+            count = 0
+            for container in containerdata["containers"]:
+                self.assertEqual(container["type"], "generic")
+                count += 1
+            self.assertEqual(containerdata["count"], count)
+
+        # Assign token
+        tokens = []
+        params = {"genkey": "1"}
+        for i in range(3):
+            t = init_token(params)
+            tokens.append(t)
+        token_serials = [t.get_serial() for t in tokens]
+
+        for serial in container_serials[2:4]:
+            container = find_container_by_serial(serial)
+            for token in tokens:
+                container.add_token(token)
+
+        # Filter for token serial
+        with self.app.test_request_context('/container/',
+                                           method='GET',
+                                           data={'token_serial': token_serials[1]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            containerdata = res.json["result"]["value"]
+            count = 0
+            for container in containerdata["containers"]:
+                self.assertTrue(container["serial"] in container_serials[2:4])
+                count += 1
+            self.assertEqual(containerdata["count"], count)
+
+    def test_05_get_all_containers_paginate_wrong_arguments(self):
+        TokenContainer.query.delete()
+        types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
+        container_serials = []
+        for type in types:
+            serial = init_container({"type": type, "description": "test container"})
+            container_serials.append(serial)
+
+        # Filter for container serial
+        with self.app.test_request_context('/container/',
+                                           method='GET',
+                                           data={"serial": 'wrong_serial'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            containerdata = res.json["result"]["value"]
+            self.assertEqual(0, containerdata["count"])
+
+        # filter for type
+        with self.app.test_request_context('/container/',
+                                           method='GET',
+                                           data={"type": "wrong_type"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            containerdata = res.json["result"]["value"]
+            self.assertEqual(0, containerdata["count"])
+
+        # Assign token
+        tokens = []
+        params = {"genkey": "1"}
+        for i in range(3):
+            t = init_token(params)
+            tokens.append(t)
+
+        for serial in container_serials[2:4]:
+            container = find_container_by_serial(serial)
+            for token in tokens:
+                container.add_token(token)
+
+        # Filter for token serial
+        with self.app.test_request_context('/container/',
+                                           method='GET',
+                                           data={'token_serial': 'wrong_token_serial'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            containerdata = res.json["result"]["value"]
+            self.assertEqual(len(container_serials), containerdata["count"])
