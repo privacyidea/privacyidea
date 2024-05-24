@@ -1,5 +1,5 @@
 from privacyidea.lib.container import delete_container_by_id, find_container_by_id, \
-    find_container_by_serial, init_container, get_all_containers_paginate
+    find_container_by_serial, init_container, get_all_containers
 from privacyidea.lib.container import get_container_classes
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError
 from privacyidea.lib.realm import set_realm
@@ -91,12 +91,12 @@ class TokenContainerManagementTestCase(MyTestCase):
             container_serials.append(serial)
 
         # Filter for container serial
-        containerdata = get_all_containers_paginate(serial=container_serials[3])
+        containerdata = get_all_containers(serial=container_serials[3])
         self.assertEqual(1, containerdata["count"])
         self.assertEqual(containerdata["containers"][0].serial, container_serials[3])
 
         # filter for type
-        containerdata = get_all_containers_paginate(type="generic")
+        containerdata = get_all_containers(type="generic")
         for container in containerdata["containers"]:
             self.assertEqual(container.type, "generic")
         self.assertEqual(2, containerdata["count"])
@@ -115,7 +115,7 @@ class TokenContainerManagementTestCase(MyTestCase):
                 container.add_token(token)
 
         # Filter for token serial
-        containerdata = get_all_containers_paginate(token_serial=token_serials[1])
+        containerdata = get_all_containers(token_serial=token_serials[1])
         for container in containerdata["containers"]:
             self.assertTrue(container.serial in container_serials[2:4])
         self.assertEqual(2, containerdata["count"])

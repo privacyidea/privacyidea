@@ -484,10 +484,10 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
             });
 
             scope.getContainers = function () {
-                $http.get(containerUrl + "/", {
+                $http.get(containerUrl + "/?no_token=1", {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()},
                 }).then(function (response) {
-                    containerList = response.data.result.value;
+                    containerList = response.data.result.value.containers;
                     scope.setContainerSelection(containerList);
                     scope.newContainer.types = scope.getContainerTypesForTokenType();
                 }, function (error) {

@@ -5,7 +5,7 @@ from flask import Blueprint, jsonify, request
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import get_container_classes, create_container_template, \
     find_container_by_serial, init_container, get_container_classes_descriptions, \
-    get_container_token_types, get_all_containers_paginate, add_tokens_to_container
+    get_container_token_types, get_all_containers, add_tokens_to_container
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import get_one_token, get_tokens, \
@@ -24,23 +24,36 @@ API for managing token containers
 @log_with(log)
 def list_containers():
     """
-    Get all containers
+    Get containers depending on the query parameters. If pagesize and page are not provided, all containers are returned
+    at once.
+
+    :query user: Username of a user assigned to the containers
+    :query serial: Serial of a single the container
+    :query type: Type of the containers to return
+    :query token_serial: Serial of a token assigned to the container
+    :query sortby: Sort by a container attribute (serial or type)
+    :query sortdir: Sort direction (asc or desc)
+    :query pagesize: Number of containers per page
+    :query page: Page number
+    :query no_token: no_token=1: Do not return tokens assigned to the container
     """
     param = request.all_data
     user = request.User
     serial = getParam(param, "serial", optional=True)
-    type = getParam(param, "type", optional=True)
+    ctype = getParam(param, "type", optional=True)
     token_serial = getParam(param, "token_serial", optional=True)
     sortby = getParam(param, "sortby", optional=True, default="serial")
     sortdir = getParam(param, "sortdir", optional=True, default="asc")
-    psize = int(getParam(param, "pagesize", optional=True, default=15))
-    page = int(getParam(param, "page", optional=True, default=1))
-    containers_paginated = get_all_containers_paginate(user=user, serial=serial, type=type, token_serial=token_serial,
-                                                       sortby=sortby, sortdir=sortdir,
-                                                       pagesize=psize, page=page)
+    psize = int(getParam(param, "pagesize", optional=True) or 0)
+    page = int(getParam(param, "page", optional=True) or 0)
+    no_token = getParam(param, "no_token", optional=True, default=False)
+
+    result = get_all_containers(user=user, serial=serial, ctype=ctype, token_serial=token_serial,
+                                sortby=sortby, sortdir=sortdir,
+                                pagesize=psize, page=page)
 
     res: list = []
-    for container in containers_paginated["containers"]:
+    for container in result["containers"]:
         tmp: dict = {"type": container.type, "serial": container.serial, "description": container.description}
         tmp_users: dict = {}
         users: list = []
@@ -52,16 +65,17 @@ def list_containers():
             users.append(tmp_users)
         tmp["users"] = users
 
-        token_serials = [token.get_serial() for token in container.get_tokens()]
-        tokens_dict_list = []
-        if len(token_serials) > 0:
-            tokens = get_tokens(serial_list=token_serials)
-            tokens_dict_list = convert_token_objects_to_dicts(tokens)
-        tmp["tokens"] = tokens_dict_list
+        if not no_token:
+            token_serials = [token.get_serial() for token in container.get_tokens()]
+            tokens_dict_list = []
+            if len(token_serials) > 0:
+                tokens = get_tokens(serial_list=token_serials)
+                tokens_dict_list = convert_token_objects_to_dicts(tokens)
+            tmp["tokens"] = tokens_dict_list
 
         res.append(tmp)
-    containers_paginated["containers"] = res
-    return send_result(containers_paginated)
+    result["containers"] = res
+    return send_result(result)
 
 
 @container_blueprint.route('assign', methods=['POST'])

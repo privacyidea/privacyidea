@@ -99,7 +99,7 @@ def find_container_by_serial(serial: str):
     return create_container_from_db_object(db_container)
 
 
-def _create_container_query(user: User = None, serial=None, type=None, token_serial=None, sortby='serial',
+def _create_container_query(user: User = None, serial=None, ctype=None, token_serial=None, sortby='serial',
                             sortdir='asc'):
     """
     Returns a sql query for getting containers
@@ -111,8 +111,8 @@ def _create_container_query(user: User = None, serial=None, type=None, token_ser
     if serial:
         sql_query = sql_query.filter(TokenContainer.serial == serial)
 
-    if type:
-        sql_query = sql_query.filter(TokenContainer.type == type)
+    if ctype:
+        sql_query = sql_query.filter(TokenContainer.type == ctype)
     if token_serial:
         token = Token.query.filter(Token.serial == token_serial).first()
         if token:
@@ -120,8 +120,7 @@ def _create_container_query(user: User = None, serial=None, type=None, token_ser
             container_ids = [t.container_id for t in token_container_token]
             sql_query = sql_query.filter(TokenContainer.id.in_(container_ids))
         else:
-            log.warning(
-                'Unknown token serial "{0!s}". Containers are not filtered by "token_serial"'.format(token_serial))
+            log.warning(f'Unknown token serial {token_serial}. Containers are not filtered by "token_serial".')
 
     if isinstance(sortby, str):
         # check that the sort column exists and convert it to a Token column
@@ -129,8 +128,7 @@ def _create_container_query(user: User = None, serial=None, type=None, token_ser
         if sortby in cols:
             sortby = cols.get(sortby)
         else:
-            log.warning('Unknown sort column "{0!s}". Using "serial" '
-                        'instead.'.format(sortby))
+            log.warning(f'Unknown sort column "{sortby}". Using "serial" instead.')
             sortby = TokenContainer.serial
 
     if sortdir == "desc":
@@ -141,65 +139,57 @@ def _create_container_query(user: User = None, serial=None, type=None, token_ser
     return sql_query
 
 
-def get_all_containers(user: User = None, serial=None, type=None, token_serial=None, sortby='serial', sortdir='asc'):
-    """
-    Returns a list of all TokenContainerClass objects for the given user or all containers if no user is given
-    """
-    # TODO add user role policy
-
-    sql_query = _create_container_query(user=user, serial=serial, type=type, token_serial=token_serial, sortby=sortby,
-                                        sortdir=sortdir)
-
-    db_containers = sql_query.all()
-
-    container_list = [create_container_class_object(db_container) for db_container in db_containers]
-
-    return container_list
-
-
-def get_all_containers_paginate(user: User = None, serial=None, type=None, token_serial=None, sortby='serial',
-                                sortdir='asc', page=1, pagesize=15):
+def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=None, sortby='serial',
+                       sortdir='asc', page=0, pagesize=0):
     """
     This function is used to retrieve a container list, that can be displayed in
-    the Web UI. It supports pagination.
+    the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).
     Each retrieved page will also contain a "next" and a "prev", indicating
     the next or previous page. If either does not exist, it is None.
 
     :param user: The user for which to retrieve the containers
     :param serial: Filter by container serial
-    :param type: Filter by container type
+    :param ctype: Filter by container type
     :param token_serial: Filter by token serial
     :param sortby: A Token column or a string. Default is "serial"
     :param sortdir: "asc" or "desc". Default is "asc"
     :param page: The number of the page to view. Starts with 1 ;-)
     :type page: int
-    :param psize: The size of the page
-    :type psize: int
+    :param pagesize: The size of the page
+    :type pagesize: int
     """
     # TODO add user role policy
 
-    sql_query = _create_container_query(user=user, serial=serial, type=type, token_serial=token_serial, sortby=sortby,
-                                        sortdir=sortdir)
+    sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial,
+                                        sortby=sortby, sortdir=sortdir)
+    ret = {}
+    # paginate if requested
+    if page > 0 or pagesize > 0:
+        if page < 1:
+            page = 1
+        if pagesize < 1:
+            pagesize = 10
 
-    # paginate containers
-    pagination = sql_query.paginate(page, per_page=pagesize, error_out=False)
-    db_containers = pagination.items
+        pagination = sql_query.paginate(page, per_page=pagesize, error_out=False)
+        db_containers = pagination.items
 
-    prev = None
-    if pagination.has_prev:
-        prev = page - 1
-    next = None
-    if pagination.has_next:
-        next = page + 1
+        prev = None
+        if pagination.has_prev:
+            prev = page - 1
+        nxt = None
+        if pagination.has_next:
+            nxt = page + 1
+
+        ret["prev"] = prev
+        ret["next"] = nxt
+        ret["current"] = page
+        ret["count"] = pagination.total
+    else:  # no pagination
+        db_containers = sql_query.all()
 
     container_list = [create_container_class_object(db_container) for db_container in db_containers]
+    ret["containers"] = container_list
 
-    ret = {
-        "containers": container_list,
-        "prev": prev,
-        "next": next,
-        "current": page,
-        "count": pagination.total}
     return ret
 
 
