@@ -140,8 +140,8 @@ class TokenContainerClass:
     @staticmethod
     def get_state_types():
         state_types_exclusions = {
-            "active": ["deactive"],
-            "deactive": ["active"],
+            "active": ["disabled"],
+            "disabled": ["active"],
             "lost": [],
             "damaged": []
         }
