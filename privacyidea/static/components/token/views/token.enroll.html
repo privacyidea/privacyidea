@@ -59,8 +59,8 @@
                     (!$state.includes('token.wizard') || getRightsValue('otp_pin_minlength'))&&
                     checkRight('enrollpin')">
             <label for="otppin" translate>PIN/Password</label>
-            <input name="otppin" ng-model="newUser.pin"
-                   type=password class="form-control"
+            <input class="form-control" type=password id="otppin" name="otppin"
+                   ng-model="newUser.pin"
                    equals="{{ pin2 }}"
                    placeholder="{{ 'Type a PIN or password'|translate }}">
             <input name="otppin2" ng-model="pin2"
@@ -72,7 +72,7 @@
         <!-- ============ Container ====================== -->
         <h4>Assign Container</h4>
         <div select-or-create-container container-serial="form.containerSerial" disable-selection="tokenIsInContainer"
-             enable-user-assignment="newUser.user" user-name="newUser.user" user-realm="newUser.realm">
+             enable-user-assignment="newUser.user" user-name="newUser.user" user-realm="newUser.realm" token-types="[form.type]">
         </div>
         <div class="text-center" ng-show="showAddToContainer && !tokenIsInContainer">
             <button type="button" class="btn btn-primary" ng-click="addToContainer()">
@@ -105,7 +105,7 @@
                     </label>
                     <p class="input-group col-sm-12">
                         <input type="text" class="form-control"
-                               name="validity_start"
+                               id="validity_start" name="validity_start"
                                uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                ng-model="form.validity_period_start"
                                is-open="startOpened"
@@ -126,7 +126,7 @@
                     </label>
                     <p class="input-group col-sm-12">
                         <input type="text" class="form-control"
-                               name="validity_end"
+                               id="validity_end" name="validity_end"
                                uib-datepicker-popup="yyyy-MM-ddTHH:mmZ"
                                ng-model="form.validity_period_end"
                                is-open="endOpened"

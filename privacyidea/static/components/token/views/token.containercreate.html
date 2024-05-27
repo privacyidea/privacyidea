@@ -4,9 +4,8 @@
         <div class="form-group">
             <select class="form-control"
                 id="containertype"
-                ng-change="changeContainerType()"
                 ng-model="form.containerType"
-                ng-options="type as desc for (type, desc) in formData.containerTypes">
+                ng-options="type as attr.description for (type, attr) in formData.containerTypes">
         </select>
         </div>
 
