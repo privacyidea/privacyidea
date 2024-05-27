@@ -26,7 +26,7 @@ register.
 
 The methods are tested in the file tests/test_api_register.py
 """
-from flask import (Blueprint, request, g, current_app)
+from flask import (Blueprint, request, g)
 from .lib.utils import send_result, getParam
 from .lib.utils import required
 import logging
@@ -38,7 +38,7 @@ from privacyidea.lib.policy import Match
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.error import RegistrationError
 from privacyidea.api.lib.prepolicy import required_email, prepolicy
-from privacyidea.lib.smtpserver import get_smtpserver, send_email_identifier
+from privacyidea.lib.smtpserver import send_email_identifier
 
 DEFAULT_BODY="""
 Your registration token is {regkey}.
@@ -140,7 +140,7 @@ def register_post():
     if user.exist():
         raise RegistrationError("The username is already registered!")
     # Create user
-    uid = create_user(resolvername, {"username": username,
+    create_user(resolvername, {"username": username,
                                      "email": email,
                                      "phone": phone,
                                      "mobile": mobile,

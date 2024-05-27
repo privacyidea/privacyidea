@@ -44,7 +44,7 @@ import logging
 import crypt
 import codecs
 
-from privacyidea.lib.utils import to_bytes, convert_column_to_unicode
+from privacyidea.lib.utils import convert_column_to_unicode
 from .UserIdResolver import UserIdResolver
 
 log = logging.getLogger(__name__)

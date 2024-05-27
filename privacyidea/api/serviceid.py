@@ -181,7 +181,7 @@ def delete_serviceid_api(name=None):
         }
 
     """
-    ret = delete_serviceid(name)
+    delete_serviceid(name)
     g.audit_object.log({"success": True,
                         "info": name})
 

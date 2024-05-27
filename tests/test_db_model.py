@@ -14,7 +14,7 @@ from privacyidea.models import (Token,
                                 MachineResolverConfig, MachineToken, Admin,
                                 CAConnector, CAConnectorConfig, SMTPServer,
                                 PasswordReset, EventHandlerOption,
-                                EventHandler, SMSGatewayOption, SMSGateway,
+                                EventHandler, SMSGateway,
                                 EventHandlerCondition, PrivacyIDEAServer,
                                 ClientApplication, Subscription, UserCache,
                                 EventCounter, PeriodicTask, PeriodicTaskLastRun,
@@ -126,7 +126,7 @@ class TokenModelTestCase(MyTestCase):
         otpkey = "123456"
 
         # create token and also assign the user and realm
-        tneu = Token(serial="serial2",
+        Token(serial="serial2",
                      otpkey=otpkey,
                      userid=1009,
                      resolver="resolver1",
@@ -202,7 +202,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(t3.otplen == 8)
         self.assertTrue(t3.description == "De scription")
         self.assertTrue(t3.info_list[0].Value == "value")
-        t3info = t3.get_info()
+        t3.get_info()
         self.assertTrue(t3.get_info().get("info") == "value")
 
         # test the string represenative
@@ -587,7 +587,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(s2.server, "1.2.3.4")
 
         # Update the server
-        r = SMTPServer(identifier="myserver", server="100.2.3.4",
+        SMTPServer(identifier="myserver", server="100.2.3.4",
                        username="user", password="password", tls=True,
                        description="test", port=123).save()
         modified_server = SMTPServer.query.filter_by(
@@ -641,7 +641,7 @@ class TokenModelTestCase(MyTestCase):
         id = eh1.id
 
         # update eventhandler
-        eh2 = EventHandler("ev1", event_update, handlermodule=handlermodule,
+        EventHandler("ev1", event_update, handlermodule=handlermodule,
                            action=action, condition=condition,
                            options=options, ordering=0, id=id)
         self.assertEqual(eh1.event, event_update)
@@ -717,7 +717,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(c, None)
 
     def test_22_subscription(self):
-        sid = Subscription(application="otrs", for_name="customer",
+        Subscription(application="otrs", for_name="customer",
                            for_email="customer@example.com", for_phone="12345",
                            by_name="provider", by_email="p@example.com",
                            level="Gold").save()
@@ -731,7 +731,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(s.level, "Gold")
 
         # Update the entry
-        sid = Subscription(application="otrs", for_phone="11111",
+        Subscription(application="otrs", for_phone="11111",
                            by_url="https://support.com",
                            signature="1234567890", level="Silver").save()
         s = Subscription.query.filter(
@@ -796,7 +796,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertFalse(pi2.tls)
 
         # Update the server
-        r = PrivacyIDEAServer(identifier="myserver",
+        PrivacyIDEAServer(identifier="myserver",
                               url="https://pi2.example.com", tls=True,
                               description="test").save()
         modified_server = PrivacyIDEAServer.query.filter_by(
@@ -1055,13 +1055,13 @@ class TokengroupTestCase(MyTestCase):
         self.assertEqual(tok2.serial, "tok2")
 
         # assign tokens to token groups
-        t = TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe1").save()
-        t = TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe2").save()
-        t = TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
+        TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe1").save()
+        TokenTokengroup(token_id=tok1.id, tokengroupname="gruppe2").save()
+        TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
         ttg = TokenTokengroup.query.all()
         self.assertEqual(len(ttg), 3)
         # It does not change anything, if we try to save the same assignment!
-        t = TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
+        TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
         ttg = TokenTokengroup.query.all()
         self.assertEqual(len(ttg), 3)
 

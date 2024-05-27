@@ -396,7 +396,7 @@ class PushTokenTestCase(MyTestCase):
                                                self.firebase_config_name))
         # create push token
         tokenobj = self._create_push_token()
-        serial = tokenobj.get_serial()
+        tokenobj.get_serial()
         # set PIN
         tokenobj.set_pin("pushpin")
         tokenobj.add_user(User("cornelius", self.realm1))

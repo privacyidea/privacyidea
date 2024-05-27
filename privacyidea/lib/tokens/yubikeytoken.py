@@ -58,7 +58,6 @@ from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import (modhex_decode, hexlify_and_unicode, checksum,
                                    to_bytes, b64encode_and_unicode)
-import binascii
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.api.lib.utils import getParam
 import datetime
@@ -301,11 +300,11 @@ class YubikeyTokenClass(TokenClass):
         log.debug("prefix: {0!r}".format(yubi_prefix))
         # usage_counter can go from 1 – 0x7fff
         usage_counter = msg_hex[12:16]
-        timestamp = msg_hex[16:22]
+        msg_hex[16:22]
         # session counter can go from 00 to 0xff
         session_counter = msg_hex[22:24]
-        random = msg_hex[24:28]
-        crc = msg_hex[28:]
+        msg_hex[24:28]
+        msg_hex[28:]
         log.debug("decrypted: usage_count: {0!r}, session_count: {1!r}".format(usage_counter, session_counter))
 
         # create the counter as integer

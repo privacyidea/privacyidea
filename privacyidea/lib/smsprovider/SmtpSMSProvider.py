@@ -34,7 +34,6 @@ The code is tested in tests/test_lib_smsprovider
 """
 from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider, SMSError
 from privacyidea.lib.smtpserver import send_email_identifier, send_email_data
-from privacyidea.lib import _
 import logging
 log = logging.getLogger(__name__)
 

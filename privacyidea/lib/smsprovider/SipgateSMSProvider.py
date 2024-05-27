@@ -26,7 +26,6 @@ __doc__="""This module provides sending SMS via sipgate
 The code is tested in tests/test_lib_smsprovider
 """
 from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider, SMSError
-from privacyidea.lib import _
 import logging
 import requests
 log = logging.getLogger(__name__)
@@ -107,7 +106,6 @@ class SipgateSMSProvider(ISMSProvider):
 
         :return: dict
         """
-        from privacyidea.lib.smtpserver import get_smtpservers
         params = {"options_allowed": False,
                   "headers_allowed": False,
                   "parameters": {

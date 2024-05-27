@@ -183,7 +183,6 @@ class QuestionnaireTokenClass(TokenClass):
         :return: true or false
         :rtype: bool
         """
-        request_is_challenge = False
         options = options or {}
         pin_match = self.check_pin(passw, user=user, options=options)
         return pin_match

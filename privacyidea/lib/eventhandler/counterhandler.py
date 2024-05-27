@@ -30,7 +30,6 @@ from privacyidea.lib import _
 from privacyidea.lib.counter import increase, decrease, reset
 import logging
 from privacyidea.lib.utils import is_true
-import traceback
 
 log = logging.getLogger(__name__)
 

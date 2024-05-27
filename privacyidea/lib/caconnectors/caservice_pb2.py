@@ -152,7 +152,7 @@ GetCSRStatusReply = _reflection.GeneratedProtocolMessageType('GetCSRStatusReply'
 _sym_db.RegisterMessage(GetCSRStatusReply)
 
 _CASERVICE = DESCRIPTOR.services_by_name['CAService']
-if _descriptor._USE_C_DESCRIPTORS == False:
+if _descriptor._USE_C_DESCRIPTORS is False:
 
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\252\002\004Grpc'

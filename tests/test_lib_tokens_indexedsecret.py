@@ -7,7 +7,7 @@ from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.indexedsecrettoken import IndexedSecretTokenClass, PIIXACTION
-from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, ACTION, PolicyClass
+from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyClass
 from privacyidea.models import Token
 from privacyidea.lib.token import init_token, remove_token
 
@@ -62,7 +62,7 @@ class IndexedSecretTokenTestCase(MyTestCase):
         token = IndexedSecretTokenClass(db_token)
         token.update({"otpkey": my_secret})
         token.save()
-        serial = token.get_serial()
+        token.get_serial()
         self.assertTrue(token.token.serial == self.serial1, token)
         self.assertTrue(token.token.tokentype == "indexedsecret", token.token)
         self.assertTrue(token.type == "indexedsecret", token.type)

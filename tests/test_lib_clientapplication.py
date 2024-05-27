@@ -64,7 +64,7 @@ class ClientApplicationTestCase(MyTestCase):
         # create some fake timestamps
         t1 = datetime.now()
         t2 = t1 + timedelta(minutes=5)
-        t3 = t2 + timedelta(minutes=5)
+        t2 + timedelta(minutes=5)
 
         with _fake_time(t1):
             with _set_node("pinode1"):
@@ -123,5 +123,3 @@ class ClientApplicationTestCase(MyTestCase):
         self.assertIn({"clienttype": "PAM", "hostname": None, "lastseen": t2}, apps["1.2.3.4"])
         self.assertIn({"clienttype": "RADIUS", "hostname": None, "lastseen": t2}, apps["1.2.3.4"])
         self.assertEqual(apps["2.3.4.5"], [{"clienttype": "PAM", "hostname": None, "lastseen": t1}])
-
-

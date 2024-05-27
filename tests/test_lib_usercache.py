@@ -95,8 +95,8 @@ class UserCacheTestCase(MyTestCase):
         resolver = "resolver1"
         uid = "1"
 
-        expiration_delta = get_cache_time()
-        r = UserCache(username, username, resolver, uid, datetime.now()).save()
+        get_cache_time()
+        UserCache(username, username, resolver, uid, datetime.now()).save()
         u_name = get_username(uid, resolver)
         self.assertEqual(u_name, username)
 
@@ -157,7 +157,7 @@ class UserCacheTestCase(MyTestCase):
         # At the same time the cache is filled. Implicitly we test the
         # _get_resolvers!
         user = User(self.username, self.realm1, self.resolvername1)
-        uids = user.get_user_identifiers()
+        user.get_user_identifiers()
         self.assertEqual(user.login, self.username)
         self.assertEqual(user.uid, self.uid)
 
@@ -194,7 +194,7 @@ class UserCacheTestCase(MyTestCase):
         # similar case for the `User` class
         # The `User` class also tries to fetch the UID from the cache
         with self.assertRaises(UserError):
-            user3 = User(self.username, self.realm1, self.resolvername1)
+            User(self.username, self.realm1, self.resolvername1)
 
 
     def test_04_delete_cache(self):
@@ -348,7 +348,7 @@ class UserCacheTestCase(MyTestCase):
         # This should have removed the entry from the cache
         self.assertEqual(UserCache.query.count(), 0)
         # But now it gets added again
-        user2 = User(login="wordpressuser", realm=self.sql_realm)
+        User(login="wordpressuser", realm=self.sql_realm)
         self.assertEqual(UserCache.query.count(), 1)
         # Change it back for the other tests
         user.update_user_info({"givenname": ""})

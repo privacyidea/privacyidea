@@ -17,8 +17,7 @@ from privacyidea.lib.policydecorators import (auth_otppin,
                                               auth_user_passthru,
                                               auth_user_has_no_token,
                                               login_mode, config_lost_token,
-                                              challenge_response_allowed,
-                                              auth_user_timelimit, auth_cache,
+                                              auth_cache,
                                               auth_lastauth, reset_all_user_tokens)
 from privacyidea.lib.user import User
 from privacyidea.lib.resolver import save_resolver, delete_resolver
@@ -30,8 +29,6 @@ from privacyidea.lib.radiusserver import add_radius
 from flask import g
 import datetime
 from . import radiusmock
-import binascii
-import hashlib
 from privacyidea.models import AuthCache
 from privacyidea.lib.authcache import delete_from_cache, _hash_password
 from datetime import timedelta

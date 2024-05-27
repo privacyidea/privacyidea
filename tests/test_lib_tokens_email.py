@@ -9,7 +9,7 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.emailtoken import EmailTokenClass, EMAILACTION
-from privacyidea.models import (Token, Config, Challenge)
+from privacyidea.models import (Token, Config)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin,
                                     delete_privacyidea_config)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass

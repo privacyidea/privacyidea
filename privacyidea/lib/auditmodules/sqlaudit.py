@@ -45,7 +45,7 @@ from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import truncate_comma_list, is_true
-from sqlalchemy import MetaData, cast, String
+from sqlalchemy import MetaData
 from sqlalchemy import asc, desc, and_, or_
 from sqlalchemy.sql.expression import FunctionElement
 from sqlalchemy.ext.compiler import compiles
@@ -286,7 +286,7 @@ class Audit(AuditBase):
             if "tokentype" in self.audit_data:
                 log.warning("We have a wrong 'tokentype' key. This should not happen. Fix it!. "
                             "Error occurs in action: {0!r}.".format(self.audit_data.get("action")))
-                if not "token_type" in self.audit_data:
+                if "token_type" not in self.audit_data:
                     self.audit_data["token_type"] = self.audit_data.get("tokentype")
             if self.audit_data.get("startdate"):
                 duration = datetime.datetime.now() - self.audit_data.get("startdate")

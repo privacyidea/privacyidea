@@ -27,7 +27,7 @@ Currently the decorator is only tested in tests/test_lib_token.py
 import logging
 
 from privacyidea.lib.policy import Match
-from privacyidea.lib.policy import ACTION, SCOPE, check_pin, SCOPE
+from privacyidea.lib.policy import ACTION, check_pin, SCOPE
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import pass_hash, verify_pass_hash, get_rand_digit_str
 from privacyidea.models import Challenge
@@ -144,7 +144,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                     check_pin(g, args[1], token_obj.token.tokentype, user_obj)
                     # We need to ask for a 2nd time
                     challenge.set_otp_status(True)
-                    seed = get_rand_digit_str(SEED_LENGTH)
+                    get_rand_digit_str(SEED_LENGTH)
                     reply_dict = _create_challenge(token_obj, CHALLENGE_TYPE.PIN_RESET,
                                                    _("Please enter the new PIN again"),
                                                    pass_hash(args[1]))

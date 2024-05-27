@@ -29,7 +29,7 @@ from passlib.hash import pbkdf2_sha512
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.config import get_prepend_pin
 from privacyidea.lib.policy import TYPE
-from privacyidea.lib.utils import get_plugin_info_from_useragent, get_computer_name_from_user_agent
+from privacyidea.lib.utils import get_computer_name_from_user_agent
 
 log = logging.getLogger(__name__)
 ROUNDS = 6549

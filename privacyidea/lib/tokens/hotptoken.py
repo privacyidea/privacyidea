@@ -54,7 +54,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import (TokenClass,
                                         TWOSTEP_DEFAULT_DIFFICULTY,
                                         TWOSTEP_DEFAULT_CLIENTSIZE,
-                                        TOKENKIND, ROLLOUTSTATE)
+                                        TOKENKIND)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.error import ParameterError
@@ -258,7 +258,7 @@ class HotpTokenClass(TokenClass):
             extra_data.update({'pin': True})
         if otpkey:
             tok_type = self.type.lower()
-            if user is not None:                               
+            if user is not None:
                 try:
                     key_bin = binascii.unhexlify(otpkey)
                     # also strip the padding =, as it will get problems with the google app.

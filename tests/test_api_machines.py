@@ -6,7 +6,6 @@ import passlib
 
 from privacyidea.lib.user import User
 from .base import MyApiTestCase
-import json
 from privacyidea.lib.token import init_token, get_tokens, remove_token
 from privacyidea.lib.machine import attach_token, detach_token, ANY_MACHINE, NO_RESOLVER
 from privacyidea.lib.policy import (set_policy, delete_policy, ACTION, SCOPE)

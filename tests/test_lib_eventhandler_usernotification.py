@@ -80,7 +80,7 @@ class UserNotificationTestCase(MyTestCase):
         smtpmock.setdata(response={"recp@example.com": (200, "OK")},
                          support_tls=False)
 
-        tok = init_token({"serial": "SomeSerial", "description": "It works", "type": "spass"},
+        init_token({"serial": "SomeSerial", "description": "It works", "type": "spass"},
                          user=User("cornelius", "realm1"))
 
         g = FakeFlaskG()
@@ -458,7 +458,7 @@ class UserNotificationTestCase(MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
+        init_token({"serial": "oath1234", "type": "spass"},
                          user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
@@ -504,7 +504,7 @@ class UserNotificationTestCase(MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
+        init_token({"serial": "oath1234", "type": "spass"},
                          user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
@@ -531,7 +531,7 @@ class UserNotificationTestCase(MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
+        init_token({"serial": "oath1234", "type": "spass"},
                          user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
@@ -1159,7 +1159,7 @@ class UserNotificationTestCase(MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
+        init_token({"serial": "oath1234", "type": "spass"},
                          user=user)
 
         env = builder.get_environ()

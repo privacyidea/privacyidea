@@ -158,14 +158,14 @@ class Connection(object):
 
         # Check to see if the user exists in the directory
         try:
-            index = self._find_user(dn)
+            self._find_user(dn)
         except StopIteration:
             # If we get here the user doesn't exist so continue
             # Create a entry object for the new user
             entry = {}
             entry['dn'] = dn
             entry['attributes'] = attributes
-            if object_class != None:
+            if object_class is not None:
                 entry['attributes'].update( {'objectClass': object_class} )
         else:
             # User already exists
@@ -448,7 +448,7 @@ class Connection(object):
         deDuped = list()
         for entry in results:
             dn = entry.get("dn")
-            if not dn in found:
+            if dn not in found:
                 found[dn] = 1
                 deDuped.append(entry)
 
@@ -637,7 +637,7 @@ class Connection(object):
             s_filter = expr.parseString(search_filter).asList()[0]
         except pyparsing.ParseBaseException as exx:
             # Just for debugging purposes
-            s = "{!s}".format(exx)
+            "{!s}".format(exx)
 
         for item in s_filter:
             if item[0] in self.operation:
@@ -671,7 +671,7 @@ class Ldap3Mock(object):
                 with open(DIRECTORY, 'w+') as f:
                     f.write(str(directory))
                     self.directory = directory
-            except OSError as e:
+            except OSError:
                 raise
 
     def set_exception(self, exc=True):
@@ -682,7 +682,7 @@ class Ldap3Mock(object):
             with open(directory, 'r') as f:
                 data = f.read()
                 return literal_eval(data)
-        except OSError as e:
+        except OSError:
             raise
 
     @property

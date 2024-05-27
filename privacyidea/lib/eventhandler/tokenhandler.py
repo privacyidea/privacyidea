@@ -502,33 +502,33 @@ class TokenEventHandler(BaseEventHandler):
                         try:
                             set_failcounter(serial,
                                             int(handler_options.get("fail counter")))
-                        except Exception as exx:
+                        except Exception:
                             log.warning("Misconfiguration: Failed to set fail "
                                         "counter!")
                     elif action.lower() == ACTION_TYPE.SET_MAXFAIL:
                         try:
                             set_max_failcount(serial,
                                               int(handler_options.get("max failcount")))
-                        except Exception as exx:
+                        except Exception:
                             log.warning("Misconfiguration: Failed to set max failcount!")
                     elif action.lower() == ACTION_TYPE.CHANGE_FAILCOUNTER:
                         try:
                             token_obj = get_one_token(serial=serial)
                             token_obj.set_failcount(
                                 token_obj.token.failcount + int(handler_options.get("change fail counter")))
-                        except Exception as exx:
+                        except Exception:
                             log.warning("Misconfiguration: Failed to increase or decrease fail "
                                         "counter!")
                     elif action.lower() == ACTION_TYPE.ADD_TOKENGROUP:
                         try:
                             assign_tokengroup(serial, handler_options.get("tokengroup"))
-                        except Exception as exx:
+                        except Exception:
                             log.warning("Misconfiguration: Failed to add tokengroup "
                                         "to token {0!s}!".format(serial))
                     elif action.lower() == ACTION_TYPE.REMOVE_TOKENGROUP:
                         try:
                             unassign_tokengroup(serial, handler_options.get("tokengroup"))
-                        except Exception as exx:
+                        except Exception:
                             log.warning("Misconfiguration: Failed to remove tokengroup "
                                         "from token {0!s}!".format(serial))
                     elif action.lower() == ACTION_TYPE.ATTACH_APPLICATION:
@@ -537,22 +537,22 @@ class TokenEventHandler(BaseEventHandler):
                             application = handler_options.get("application")
                             application_options = {}
                             count = handler_options.get("count", None)
-                            if not (count is None):
+                            if count is not None:
                                 application_options.update({"count": count})
                             rounds = handler_options.get("rounds", None)
-                            if not (rounds is None):
+                            if rounds is not None:
                                 application_options.update({"rounds": rounds})
                             slot = handler_options.get("slot", None)
-                            if not (slot is None):
+                            if slot is not None:
                                 application_options.update({"slot": slot})
                             partition = handler_options.get("partition", None)
-                            if not (partition is None):
+                            if partition is not None:
                                 application_options.update({"partition": partition})
                             user = handler_options.get("user", None)
-                            if not (user is None):
+                            if user is not None:
                                 application_options.update({"user": user})
-                            mt = attach_token(serial, application, machine_id=machine, options=application_options)
-                        except Exception as exx:
+                            attach_token(serial, application, machine_id=machine, options=application_options)
+                        except Exception:
                             log.warning("Misconfiguration: Failed to attach token to machine."
                                         " Token serial: {!0s}".format(serial))
 

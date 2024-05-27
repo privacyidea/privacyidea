@@ -1067,7 +1067,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         user = User("timelimituser", realm=self.realm2)
         pin = "spass"
         # create a token
-        token = init_token({"type": "spass", "pin": pin}, user=user)
+        init_token({"type": "spass", "pin": pin}, user=user)
 
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,
@@ -1116,7 +1116,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         user = User("timelimituser", realm=self.realm2)
         pin = "spass"
         # create a token
-        token = init_token({"type": "spass", "pin": pin}, user=user)
+        init_token({"type": "spass", "pin": pin}, user=user)
 
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,

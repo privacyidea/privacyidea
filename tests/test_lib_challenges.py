@@ -4,7 +4,6 @@ This test file tests the lib.challange methods.
 This tests the token functions on an interface level
 """
 from .base import MyTestCase
-from privacyidea.lib.error import (TokenAdminError, ParameterError)
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE,
                                     ACTION)
@@ -57,7 +56,7 @@ class ChallengeTestCase(MyTestCase):
         transaction_id1 = r[1].get("transaction_id")
         r = check_serial_pass(token.token.serial, "pin")
         self.assertEqual(r[0], False)
-        transaction_id2 = r[1].get("transaction_id")
+        r[1].get("transaction_id")
         # two challenges, but no answered challenges
         challenges = get_challenges(serial="CHAL2")
         self.assertEqual(len(challenges), 2)

@@ -36,10 +36,9 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.token import get_token_owner, get_tokens
-from privacyidea.lib.user import User, UserError
+from privacyidea.lib.user import User
 from privacyidea.lib.counter import read as counter_read
-from privacyidea.lib.utils import (compare_condition, compare_value_value,
-                                   compare_generic_condition,
+from privacyidea.lib.utils import (compare_condition, compare_generic_condition,
                                    parse_time_offset_from_now, is_true,
                                    check_ip_in_policy, AUTH_RESPONSE)
 import datetime

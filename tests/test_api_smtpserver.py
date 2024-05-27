@@ -1,5 +1,4 @@
 from .base import MyApiTestCase
-import json
 from . import smtpmock
 
 
@@ -88,4 +87,3 @@ class SMTPServerTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             data = res.json
             self.assertEqual(data.get("result").get("value"), True)
-

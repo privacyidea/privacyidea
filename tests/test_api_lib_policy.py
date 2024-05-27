@@ -178,11 +178,11 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.setUp_user_realms()
         # setup realm2
         self.setUp_user_realm2()
-        tokenobject = init_token({"serial": "POL001", "type": "hotp",
+        init_token({"serial": "POL001", "type": "hotp",
                                   "otpkey": "1234567890123456"})
         r = set_realms("POL001", [self.realm1])
 
-        tokenobject = init_token({"serial": "POL002", "type": "hotp",
+        init_token({"serial": "POL002", "type": "hotp",
                                   "otpkey": "1234567890123456"})
         r = set_realms("POL002", [self.realm2])
 
@@ -346,7 +346,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
         self.setUp_user_realms()
-        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
+        init_token({"serial": "NEW001", "type": "hotp",
                                   "otpkey": "1234567890123456"},
                                  user=User(login="cornelius",
                                            realm=self.realm1))
@@ -448,7 +448,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
         self.setUp_user_realms()
-        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
+        init_token({"serial": "NEW001", "type": "hotp",
                                   "otpkey": "1234567890123456"},
                                   user=User(login="cornelius",
                                             realm=self.realm1))
@@ -458,7 +458,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(check_max_token_user(req))
 
         # Now the user gets his second token
-        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
+        init_token({"serial": "NEW002", "type": "hotp",
                                   "otpkey": "1234567890123456"},
                                   user=User(login="cornelius",
                                             realm=self.realm1))
@@ -562,7 +562,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policy_object = PolicyClass()
         self.setUp_user_realms()
         # Add the first token into the realm
-        tokenobject = init_token({"serial": "NEW001", "type": "hotp",
+        init_token({"serial": "NEW001", "type": "hotp",
                                   "otpkey": "1234567890123456"})
         set_realms("NEW001", [self.realm1])
         # check the realm, only one token is in it the policy condition will
@@ -572,7 +572,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(check_max_token_realm(req))
 
         # add a second token to the realm
-        tokenobject = init_token({"serial": "NEW002", "type": "hotp",
+        init_token({"serial": "NEW002", "type": "hotp",
                                   "otpkey": "1234567890123456"})
         set_realms("NEW002", [self.realm1])
         tokenobject_list = get_tokens(realm=self.realm1)
@@ -3792,7 +3792,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
     def test_05_autoassign_any_pin(self):
         # init a token, that does has no uwser
         self.setUp_user_realms()
-        tokenobject = init_token({"serial": "UASSIGN1", "type": "hotp",
+        init_token({"serial": "UASSIGN1", "type": "hotp",
                                   "otpkey": "3132333435363738393031"
                                             "323334353637383930"},
                                  tokenrealms=[self.realm1])
@@ -3852,7 +3852,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
     def test_05_autoassign_userstore(self):
         # init a token, that does has no user
         self.setUp_user_realms()
-        tokenobject = init_token({"serial": "UASSIGN2", "type": "hotp",
+        init_token({"serial": "UASSIGN2", "type": "hotp",
                                   "otpkey": "3132333435363738393031"
                                             "323334353637383930"},
                                  tokenrealms=[self.realm1])
@@ -3860,7 +3860,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # unassign all tokens from the user autoassignuser
         try:
             unassign_token(None, user=user_obj)
-        except Exception as e:
+        except Exception:
             print("no need to unassign token")
 
         # The request with an OTP value and a PIN of a user, who has no token assigned
@@ -3919,7 +3919,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                                   "user": "cornelius"})
 
         # Set the Machine and MachineToken
-        resolver1 = save_resolver({"name": "reso1",
+        save_resolver({"name": "reso1",
                                    "type": "hosts",
                                    "filename": HOSTSFILE})
 
@@ -4335,7 +4335,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Add a subscription
         from privacyidea.models import Subscription
-        s = Subscription(application="privacyidea",
+        Subscription(application="privacyidea",
                          for_name="testuser",
                          for_email="admin@example.com",
                          for_phone="0",

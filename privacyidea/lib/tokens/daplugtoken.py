@@ -218,7 +218,6 @@ class DaplugTokenClass(HotpTokenClass):
         # convert the response
         rdict = {'type': self.get_class_type(),
                  'otp': {}}
-        otp_dict = {}
         for k, v in res[2].get('otp').items():
             rdict['otp'][k] = _digi2daplug(v)
 
@@ -253,7 +252,7 @@ class DaplugTokenClass(HotpTokenClass):
         # For splitting the value we use 12 characters.
         # For internal calculation we use 6 digits.
         otplen *= 2
-        
+
         if get_prepend_pin():
             pin = passw[0:-otplen]
             otpval = passw[-otplen:]

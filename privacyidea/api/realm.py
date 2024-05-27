@@ -57,7 +57,6 @@ from ..lib.utils import reduce_realms
 from flask import g
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.policy import CONDITION_CHECK
-from flask_babel import gettext as _
 import logging
 
 log = logging.getLogger(__name__)

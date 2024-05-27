@@ -23,11 +23,10 @@ The monitoring database is a time series database. It is supposed to store
 tuples of (timestamp, status key, status value)
 
 A monitoring module needs to provide the possibility to write new data,
-return all available keys, return the last data. 
+return all available keys, return the last data.
 """
 import logging
 log = logging.getLogger(__name__)
-from privacyidea.lib.log import log_with
 
 
 class Monitoring(object):
@@ -91,7 +90,3 @@ class Monitoring(object):
         :return: None
         """
         pass
-
-
-
-

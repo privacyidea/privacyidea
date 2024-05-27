@@ -23,7 +23,7 @@ This module is tested in tests/test_api_periodictask.py"""
 import json
 import logging
 
-from flask import Blueprint, g, request, current_app
+from flask import Blueprint, g, request
 
 from privacyidea.lib.config import get_privacyidea_nodes
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT

@@ -119,7 +119,7 @@ class ApplicationSpecificPasswordTokenClass(PasswordTokenClass):
 
     @property
     def service_id(self):
-        r = self.get_tokeninfo()
+        self.get_tokeninfo()
         service_id = self.get_tokeninfo(TOKENINFO_KEY)
         return service_id
 

@@ -44,7 +44,7 @@ The functions of this module are tested in tests/test_lib_policy_decorator.py
 import logging
 import re
 from privacyidea.lib.policy import Match
-from privacyidea.lib.error import PolicyError, privacyIDEAError
+from privacyidea.lib.error import PolicyError
 import functools
 from privacyidea.lib.policy import ACTION, SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.user import User
@@ -139,9 +139,9 @@ def challenge_response_allowed(func):
 
 def auth_cache(wrapped_function, user_object, passw, options=None):
     """
-    Decorate lib.token:check_user_pass. Verify, if the authentication can 
+    Decorate lib.token:check_user_pass. Verify, if the authentication can
     be found in the auth_cache.
-    
+
     :param wrapped_function: usually "check_user_pass"
     :param user_object: User who tries to authenticate
     :param passw: The PIN and OTP
@@ -540,7 +540,7 @@ def auth_otppin(wrapped_function, *args, **kwds):
     if g:
         token = args[0]
         pin = args[1]
-        clientip = options.get("clientip")
+        options.get("clientip")
         user_object = kwds.get("user")
         if not user_object:
             # No user in the parameters, so we need to determine the owner of

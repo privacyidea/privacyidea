@@ -216,7 +216,7 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertTrue("challenge" in u2f_sign_request)
             challenge = u2f_sign_request.get("challenge")
             self.assertTrue("keyHandle" in u2f_sign_request)
-            key_handle = u2f_sign_request.get("keyHandle")
+            u2f_sign_request.get("keyHandle")
             self.assertEqual(u2f_sign_request.get("version"), "U2F_V2")
 
         # private key from the registration example
@@ -447,7 +447,7 @@ class APIU2fTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
-            detail = res.json.get("detail")
+            res.json.get("detail")
             self.assertEqual(result.get("status"), True)
             self.assertEqual(result.get("value"), True)
 

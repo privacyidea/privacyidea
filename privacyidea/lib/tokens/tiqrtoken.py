@@ -331,10 +331,10 @@ class TiqrTokenClass(OcraTokenClass):
             return "plain", res
         elif action == API_ACTIONS.AUTHENTICATION:
             res = "FAIL"
-            userId = getParam(params, "userId", required)
+            getParam(params, "userId", required)
             session = getParam(params, "sessionKey", required)
             passw = getParam(params, "response", required)
-            operation = getParam(params, "operation", required)
+            getParam(params, "operation", required)
             res = "INVALID_CHALLENGE"
             # The sessionKey is stored in the db_challenge.transaction_id
             # We need to get the token serial for this sessionKey

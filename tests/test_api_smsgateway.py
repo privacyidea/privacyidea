@@ -14,7 +14,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
+            res.json.get("detail")
             self.assertEqual(result.get("value"), [])
 
         # check that we have an entry in the audit log
@@ -35,7 +35,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
+            res.json.get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # check the gateway
@@ -47,7 +47,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
+            res.json.get("detail")
             sms_gw = result.get("value")[0]
             self.assertEqual(sms_gw.get("description"), "myGateway")
             self.assertEqual(sms_gw.get("name"), "myGW")
@@ -73,7 +73,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
+            res.json.get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # check the gateway
@@ -84,7 +84,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
+            res.json.get("detail")
             sms_gw = result.get("value")[0]
             self.assertEqual(sms_gw.get("description"), "new description")
 
@@ -97,7 +97,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
+            res.json.get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # list empty gateways
@@ -107,7 +107,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
+            res.json.get("detail")
             self.assertEqual(result.get("value"), [])
 
     def test_02_test_options(self):

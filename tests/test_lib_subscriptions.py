@@ -8,8 +8,7 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            get_subscription,
                                            raise_exception_probability,
                                            check_subscription,
-                                           SubscriptionError,
-                                           SUBSCRIPTION_DATE_FORMAT)
+                                           SubscriptionError)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
 import mock

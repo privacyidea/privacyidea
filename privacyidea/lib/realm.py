@@ -35,7 +35,6 @@ database. It depends on the lib.resolver.
 It is independent of any user or token libraries and can be tested standalone
 in tests/test_lib_realm.py
 '''
-import uuid
 
 from ..models import (Realm,
                       ResolverRealm,

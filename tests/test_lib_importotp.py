@@ -2,7 +2,6 @@
 This test file tests the lib.importotp
 
 """
-import pytest
 
 from .base import MyTestCase
 from privacyidea.lib.importotp import (parseOATHcsv, parseYubicoCSV,

@@ -43,7 +43,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import check_realm_pass
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
-from privacyidea.lib.policy import ACTION, SCOPE, GROUP, get_action_values_from_options
+from privacyidea.lib.policy import ACTION, SCOPE, GROUP
 from privacyidea.lib.challenge import get_challenges, Challenge
 import json
 import datetime

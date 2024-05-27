@@ -10,11 +10,10 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.tokens.smstoken import SmsTokenClass, SMSACTION
-from privacyidea.models import (Token, Config, Challenge)
+from privacyidea.models import (Token, Config)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 from privacyidea.lib import _
-import datetime
 import mock
 import responses
 from testfixtures import log_capture

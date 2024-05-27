@@ -1,5 +1,4 @@
 from .base import MyApiTestCase
-import json
 from . import radiusmock
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.radiusserver import delete_radius

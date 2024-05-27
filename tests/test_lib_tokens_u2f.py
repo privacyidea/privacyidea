@@ -314,7 +314,7 @@ class MultipleU2FTokenTestCase(MyTestCase):
         self.token1 = init_token({'type': 'u2f'})
         self.serial1 = self.token1.token.serial
         # finish init step 1
-        res = self.token1.get_init_detail()
+        self.token1.get_init_detail()
         # init step 2
         self.token1 = init_token({"type": "u2f",
                                   "serial": self.serial1,
@@ -326,7 +326,7 @@ class MultipleU2FTokenTestCase(MyTestCase):
         self.token2 = init_token({'type': 'u2f'})
         self.serial2 = self.token2.token.serial
         # finish init step 1
-        res = self.token2.get_init_detail()
+        self.token2.get_init_detail()
         # init step 2
         self.token2 = init_token({"type": "u2f",
                                   "serial": self.serial2,

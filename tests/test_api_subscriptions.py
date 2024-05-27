@@ -1,4 +1,3 @@
-import json
 from .base import MyApiTestCase
 
 SUB_FILE = "tests/testdata/test.sub"
@@ -65,4 +64,3 @@ class APISubscriptionsTestCase(MyApiTestCase):
             result = res.json.get("result")
             value = result.get("value")
             self.assertEqual(len(value), 0)
-

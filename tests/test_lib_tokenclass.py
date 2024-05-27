@@ -9,8 +9,7 @@ from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.policy import ACTION
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT)
-from privacyidea.lib.config import (set_privacyidea_config,
-                                    delete_privacyidea_config)
+from privacyidea.lib.config import (set_privacyidea_config)
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
 from privacyidea.lib.error import TokenAdminError

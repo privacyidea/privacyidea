@@ -313,7 +313,7 @@ class DefaultSecurityModule(SecurityModule):
 
             try:
                 keys = self.password_decrypt(cipher, password)
-            except UnicodeDecodeError as e:
+            except UnicodeDecodeError:
                 raise HSMException("Error decrypting the encryption key. You "
                                    "probably provided the wrong password.")
             secret = keys[slot_id*32:(slot_id+1)*32]

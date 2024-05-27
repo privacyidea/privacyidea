@@ -18,7 +18,6 @@
 
 import logging
 
-from flask import current_app
 
 from privacyidea.lib.error import ServerError
 from privacyidea.lib.framework import get_app_local_store

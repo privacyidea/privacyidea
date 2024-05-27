@@ -9,7 +9,7 @@ import responses
 import os
 import mock
 
-from mock import patch, MagicMock
+from mock import patch
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import USER_TYPE
@@ -1168,7 +1168,7 @@ class RequestManglerTestCase(MyTestCase):
         self.assertEqual(set(pos), {"post", "pre"})
 
         g = FakeFlaskG()
-        audit_object = FakeAudit()
+        FakeAudit()
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "SPASS01"},
                                  headers={})
@@ -1208,7 +1208,7 @@ class RequestManglerTestCase(MyTestCase):
 
     def test_02_set_parameter(self):
         g = FakeFlaskG()
-        audit_object = FakeAudit()
+        FakeAudit()
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "SPASS01"},
                                  headers={})
@@ -1357,7 +1357,7 @@ class ResponseManglerTestCase(MyTestCase):
         self.assertEqual(set(pos), {"post"})
 
         g = FakeFlaskG()
-        audit_object = FakeAudit()
+        FakeAudit()
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "SPASS01"},
                                  headers={})
@@ -1465,7 +1465,7 @@ class ResponseManglerTestCase(MyTestCase):
 
     def test_02_set_response(self):
         g = FakeFlaskG()
-        audit_object = FakeAudit()
+        FakeAudit()
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "SPASS01"},
                                  headers={})
@@ -2444,7 +2444,7 @@ class TokenEventTestCase(MyTestCase):
         # setup realms
         self.setUp_user_realms()
         # create a tokengroup
-        from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
+        from privacyidea.lib.tokengroup import set_tokengroup
         set_tokengroup("group1")
 
         init_token({"serial": "SPASS01", "type": "spass"},

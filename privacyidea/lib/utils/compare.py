@@ -59,8 +59,8 @@ def parse_comma_separated_string(input_string):
     try:
         reader = csv.reader([input_string], strict=True, skipinitialspace=True, doublequote=False, escapechar="\\")
         rows = list(reader)
-    except csv.Error as exx:
-        raise CompareError("Malformed comma-separated value: {!r}".format(input_string, exx))
+    except csv.Error:
+        raise CompareError("Malformed comma-separated value: {!r}".format(input_string, ))
     return rows[0]
 
 
