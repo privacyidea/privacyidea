@@ -46,14 +46,14 @@ class APIContainer(MyApiTestCase):
     def test_04_get_all_containers_paginate(self):
         types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
         container_serials = []
-        for type in types:
-            serial = init_container({"type": type, "description": "test container"})
+        for t in types:
+            serial = init_container({"type": t, "description": "test container"})
             container_serials.append(serial)
 
         # Filter for container serial
         with self.app.test_request_context('/container/',
                                            method='GET',
-                                           data={"serial": container_serials[3]},
+                                           data={"serial": container_serials[3], "pagesize": 15},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             containerdata = res.json["result"]["value"]
@@ -63,7 +63,7 @@ class APIContainer(MyApiTestCase):
         # filter for type
         with self.app.test_request_context('/container/',
                                            method='GET',
-                                           data={"type": "generic"},
+                                           data={"type": "generic", "pagesize": 15},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             containerdata = res.json["result"]["value"]
@@ -89,7 +89,7 @@ class APIContainer(MyApiTestCase):
         # Filter for token serial
         with self.app.test_request_context('/container/',
                                            method='GET',
-                                           data={'token_serial': token_serials[1]},
+                                           data={'token_serial': token_serials[1], "pagesize": 15},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             containerdata = res.json["result"]["value"]
@@ -110,7 +110,7 @@ class APIContainer(MyApiTestCase):
         # Filter for container serial
         with self.app.test_request_context('/container/',
                                            method='GET',
-                                           data={"serial": 'wrong_serial'},
+                                           data={"serial": "wrong_serial", "pagesize": 15},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             containerdata = res.json["result"]["value"]
@@ -119,7 +119,7 @@ class APIContainer(MyApiTestCase):
         # filter for type
         with self.app.test_request_context('/container/',
                                            method='GET',
-                                           data={"type": "wrong_type"},
+                                           data={"type": "wrong_type", "pagesize": 15},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             containerdata = res.json["result"]["value"]
@@ -140,7 +140,7 @@ class APIContainer(MyApiTestCase):
         # Filter for token serial
         with self.app.test_request_context('/container/',
                                            method='GET',
-                                           data={'token_serial': 'wrong_token_serial'},
+                                           data={"token_serial": "wrong_token_serial", "pagesize": 15},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             containerdata = res.json["result"]["value"]
