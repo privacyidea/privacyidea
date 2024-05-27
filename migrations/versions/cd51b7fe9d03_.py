@@ -72,9 +72,7 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table('tokencontainerstate')
+    op.drop_table('tokencontainerstates')
     op.drop_table('tokencontainerinfo')
-    op.drop_column('tokencontainer', 'info_list')
-    op.drop_column('tokencontainer', 'states')
     op.drop_column('tokencontainer', 'last_seen')
     op.drop_column('tokencontainer', 'last_updated')
