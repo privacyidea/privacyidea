@@ -9,6 +9,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError
 from privacyidea.lib.log import log_with
+from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
@@ -84,7 +85,7 @@ def find_container_by_id(container_id: int):
     if not db_container:
         raise ResourceNotFoundError(f"Unable to find container with id {container_id}.")
 
-    return TokenContainerClass(db_container)
+    return create_container_from_db_object(db_container)
 
 
 def find_container_by_serial(serial: str):
@@ -95,15 +96,14 @@ def find_container_by_serial(serial: str):
     if not db_container:
         raise ResourceNotFoundError(f"Unable to find container with serial {serial}.")
 
-    return TokenContainerClass(db_container)
+    return create_container_from_db_object(db_container)
 
 
-def get_all_containers(user: User = None, serial=None, sortby='serial', sortdir='asc'):
+def _create_container_query(user: User = None, serial=None, ctype=None, token_serial=None, sortby='serial',
+                            sortdir='asc'):
     """
-    Returns a list of all TokenContainerClass objects for the given user or all containers if no user is given
+    Returns a sql query for getting containers
     """
-    # TODO add user role policy
-
     sql_query = TokenContainer.query
     if user:
         # Get all containers for the given user
@@ -111,14 +111,24 @@ def get_all_containers(user: User = None, serial=None, sortby='serial', sortdir=
     if serial:
         sql_query = sql_query.filter(TokenContainer.serial == serial)
 
+    if ctype:
+        sql_query = sql_query.filter(TokenContainer.type == ctype)
+    if token_serial:
+        token = Token.query.filter(Token.serial == token_serial).first()
+        if token:
+            token_container_token = TokenContainerToken.query.filter(TokenContainerToken.token_id == token.id).all()
+            container_ids = [t.container_id for t in token_container_token]
+            sql_query = sql_query.filter(TokenContainer.id.in_(container_ids))
+        else:
+            log.warning(f'Unknown token serial {token_serial}. Containers are not filtered by "token_serial".')
+
     if isinstance(sortby, str):
         # check that the sort column exists and convert it to a Token column
         cols = TokenContainer.__table__.columns
         if sortby in cols:
             sortby = cols.get(sortby)
         else:
-            log.warning('Unknown sort column "{0!s}". Using "serial" '
-                        'instead.'.format(sortby))
+            log.warning(f'Unknown sort column "{sortby}". Using "serial" instead.')
             sortby = TokenContainer.serial
 
     if sortdir == "desc":
@@ -126,14 +136,73 @@ def get_all_containers(user: User = None, serial=None, sortby='serial', sortdir=
     else:
         sql_query = sql_query.order_by(sortby.asc())
 
-    db_containers = sql_query.all()
-    containers: List[TokenContainerClass] = []
+    return sql_query
+
+
+def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=None, sortby='serial',
+                       sortdir='asc', page=0, pagesize=0):
+    """
+    This function is used to retrieve a container list, that can be displayed in
+    the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).
+    Each retrieved page will also contain a "next" and a "prev", indicating
+    the next or previous page. If either does not exist, it is None.
+
+    :param user: The user for which to retrieve the containers
+    :param serial: Filter by container serial
+    :param ctype: Filter by container type
+    :param token_serial: Filter by token serial
+    :param sortby: A Token column or a string. Default is "serial"
+    :param sortdir: "asc" or "desc". Default is "asc"
+    :param page: The number of the page to view. Starts with 1 ;-)
+    :type page: int
+    :param pagesize: The size of the page
+    :type pagesize: int
+    """
+    # TODO add user role policy
+
+    sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial,
+                                        sortby=sortby, sortdir=sortdir)
+    ret = {}
+    # paginate if requested
+    if page > 0 or pagesize > 0:
+        if page < 1:
+            page = 1
+        if pagesize < 1:
+            pagesize = 10
+
+        pagination = sql_query.paginate(page, per_page=pagesize, error_out=False)
+        db_containers = pagination.items
+
+        prev = None
+        if pagination.has_prev:
+            prev = page - 1
+        nxt = None
+        if pagination.has_next:
+            nxt = page + 1
+
+        ret["prev"] = prev
+        ret["next"] = nxt
+        ret["current"] = page
+        ret["count"] = pagination.total
+    else:  # no pagination
+        db_containers = sql_query.all()
+
+    container_list = [create_container_class_object(db_container) for db_container in db_containers]
+    ret["containers"] = container_list
+
+    return ret
+
+
+def create_container_class_object(db_container):
+    """
+    Create a TokenContainerClass object from the given db object
+    """
+    container = None
     container_classes = get_container_classes()
-    for db_container in db_containers:
-        for ctype, cls in container_classes.items():
-            if ctype.lower() == db_container.type.lower():
-                containers.append(cls(db_container))
-    return containers
+    for ctype, cls in container_classes.items():
+        if ctype.lower() == db_container.type.lower():
+            container = cls(db_container)
+    return container
 
 
 def find_container_for_token(serial):
@@ -224,6 +293,18 @@ def init_container(params):
     return serial
 
 
+def add_tokens_to_container(container_serial, token_serials):
+    """
+    Add the given tokens to the container with the given serial
+    """
+    container = find_container_by_serial(container_serial)
+    db_tokens = Token.query.filter(Token.serial.in_(token_serials)).all()
+    tokens = [create_tokenclass_object(db_token) for db_token in db_tokens]
+    for token in tokens:
+        container.add_token(token)
+    return True
+
+
 def get_container_classes_descriptions():
     """
     Returns a dictionary of {"type": "Type: description"} entries for all container types.
@@ -238,7 +319,7 @@ def get_container_classes_descriptions():
 
 def get_container_token_types():
     """
-    Returns a dictionary of {"type": "tokentype0, tokentype1, ..."} entries for all container types.
+    Returns a dictionary of {"type": ["tokentype0, tokentype1, ..."]} entries for all container types.
     Used to list the supported token types for each container type.
     """
     ret = {}

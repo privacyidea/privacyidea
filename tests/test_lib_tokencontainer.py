@@ -1,11 +1,12 @@
 from privacyidea.lib.container import delete_container_by_id, find_container_by_id, \
-    find_container_by_serial, init_container
+    find_container_by_serial, init_container, get_all_containers
 from privacyidea.lib.container import get_container_classes
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
+from privacyidea.models import TokenContainer
 from .base import MyTestCase
 
 
@@ -80,6 +81,44 @@ class TokenContainerManagementTestCase(MyTestCase):
         for u in users:
             container.add_user(u)
         self.assertEqual(2, len(container.get_users()))
+
+    def test_04_get_all_containers_paginate(self):
+        TokenContainer.query.delete()
+        types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
+        container_serials = []
+        for t in types:
+            serial = init_container({"type": t, "description": "test container"})
+            container_serials.append(serial)
+
+        # Filter for container serial
+        containerdata = get_all_containers(serial=container_serials[3], pagesize=15)
+        self.assertEqual(1, containerdata["count"])
+        self.assertEqual(containerdata["containers"][0].serial, container_serials[3])
+
+        # filter for type
+        containerdata = get_all_containers(ctype="generic", pagesize=15)
+        for container in containerdata["containers"]:
+            self.assertEqual(container.type, "generic")
+        self.assertEqual(2, containerdata["count"])
+
+        # Assign token
+        tokens = []
+        params = {"genkey": "1"}
+        for i in range(3):
+            t = init_token(params)
+            tokens.append(t)
+        token_serials = [t.get_serial() for t in tokens]
+
+        for serial in container_serials[2:4]:
+            container = find_container_by_serial(serial)
+            for token in tokens:
+                container.add_token(token)
+
+        # Filter for token serial
+        containerdata = get_all_containers(token_serial=token_serials[1], pagesize=15)
+        for container in containerdata["containers"]:
+            self.assertTrue(container.serial in container_serials[2:4])
+        self.assertEqual(2, containerdata["count"])
 
     def test_99_container_classes(self):
         classes = get_container_classes()

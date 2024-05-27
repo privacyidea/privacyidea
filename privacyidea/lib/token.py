@@ -268,7 +268,7 @@ def _create_token_query(tokentype=None, realm=None, assigned=None, user=None,
             sql_query = sql_query.filter(TokenOwner.resolver == user.resolver)
         (uid, _rtype, _resolver) = user.get_user_identifiers()
         if uid:
-            if type(uid) == int:
+            if uid is int:
                 uid = str(uid)
             sql_query = sql_query.filter(TokenOwner.token_id == Token.id)
             sql_query = sql_query.filter(TokenOwner.user_id == uid)
@@ -371,10 +371,52 @@ def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, us
             break
 
 
+def convert_token_objects_to_dicts(tokens, hidden_tokeninfo=None):
+    """
+    Convert a list of token objects to a list of dictionaries.
+
+    :param tokens: A list of token objects
+    :type tokens: list
+    :return: A list of dictionaries
+    :rtype: list
+    """
+    token_dict_list = []
+    for tokenobject in tokens:
+        if isinstance(tokenobject, TokenClass):
+            token_dict = tokenobject.get_as_dict()
+            # add user information
+            # In certain cases the LDAP or SQL server might not be reachable.
+            # Then an exception is raised
+            token_dict["username"] = ""
+            token_dict["user_realm"] = ""
+            try:
+                userobject = tokenobject.user
+                if userobject:
+                    token_dict["username"] = userobject.login
+                    token_dict["user_realm"] = userobject.realm
+                    token_dict["user_editable"] = get_resolver_object(
+                        userobject.resolver).editable
+            except Exception as exx:
+                log.error("User information can not be retrieved: {0!s}".format(exx))
+                log.debug(traceback.format_exc())
+                token_dict["username"] = "**resolver error**"
+
+            # check if token is in a container
+            token_dict["container_serial"] = ""
+            from privacyidea.lib.container import find_container_for_token
+            container = find_container_for_token(tokenobject.get_serial())
+            if container:
+                token_dict["container_serial"] = container.serial
+
+            token_dict_list.append(token_dict)
+
+    return token_dict_list
+
+
 @log_with(log)
 # @cache.memoize(10)
 def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
-               serial=None, serial_wildcard=None, active=None, resolver=None, rollout_state=None,
+               serial=None, serial_wildcard=None, serial_list=None, active=None, resolver=None, rollout_state=None,
                count=False, revoked=None, locked=None, tokeninfo=None,
                maxfail=None):
     """
@@ -428,7 +470,7 @@ def get_tokens(tokentype=None, realm=None, assigned=None, user=None,
     token_list = []
     sql_query = _create_token_query(tokentype=tokentype, realm=realm,
                                     assigned=assigned, user=user,
-                                    serial_exact=serial, serial_wildcard=serial_wildcard,
+                                    serial_exact=serial, serial_wildcard=serial_wildcard, serial_list=serial_list,
                                     active=active, resolver=resolver,
                                     rollout_state=rollout_state,
                                     revoked=revoked, locked=locked,
