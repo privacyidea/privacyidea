@@ -23,8 +23,8 @@ def upgrade():
     try:
         op.create_table('tokencontainerstates',
                         sa.Column("id", sa.Integer, sa.Identity(), primary_key=True),
-                        sa.Column(sa.Integer(), sa.ForeignKey("tokencontainer.id")),
-                        sa.Column(sa.Unicode(100), default='active', nullable=False),
+                        sa.Column("container_id", sa.Integer(), sa.ForeignKey("tokencontainer.id")),
+                        sa.Column("state", sa.Unicode(100), default='active', nullable=False),
                         mysql_row_format='DYNAMIC'
                         )
     except Exception as exx:
@@ -33,41 +33,17 @@ def upgrade():
 
     try:
         op.create_table('tokencontainerinfo',
-                        sa.Column(sa.Integer, Sequence("containerinfo_seq"), primary_key=True),
-                        sa.Column(sa.Unicode(255), nullable=False),
-                        sa.Column(sa.UnicodeText(), default=''),
-                        sa.Column(sa.Unicode(100), default=''),
-                        sa.Column(sa.Unicode(2000), default=''),
-                        sa.Column(sa.Integer(),
+                        sa.Column("id", sa.Integer, Sequence("containerinfo_seq"), primary_key=True),
+                        sa.Column("key", sa.Unicode(255), nullable=False),
+                        sa.Column("value", sa.UnicodeText(), default=''),
+                        sa.Column("type", sa.Unicode(100), default=''),
+                        sa.Column("description", sa.Unicode(2000), default=''),
+                        sa.Column("container_id", sa.Integer(),
                                   sa.ForeignKey('tokencontainer.id'), index=True),
                         mysql_row_format='DYNAMIC'
                         )
     except Exception as exx:
         print("Could not add table 'tokencontainerstates' - probably already exists!")
-        print(exx)
-
-    try:
-        op.add_column('tokencontainer',
-                      sa.relationship('TokenContainerStates', lazy='dynamic', backref='tokencontainer'))
-    except (OperationalError, ProgrammingError) as exx:
-        if "already exists" in str(exx.orig).lower():
-            print("Ok, column 'states' already exists.")
-        else:
-            print(exx)
-    except Exception as exx:
-        print("Could not add column 'states' to table 'tokencontainer'")
-        print(exx)
-
-    try:
-        op.add_column('tokencontainer', sa.relationship('TokenContainerInfo', lazy='select',
-                                                        backref='tokencontainer'))
-    except (OperationalError, ProgrammingError) as exx:
-        if "already exists" in str(exx.orig).lower():
-            print("Ok, column 'info_list' already exists.")
-        else:
-            print(exx)
-    except Exception as exx:
-        print("Could not add column 'info_list' to table 'tokencontainer'")
         print(exx)
 
     try:
@@ -96,7 +72,7 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table('tokencontainerstates')
+    op.drop_table('tokencontainerstate')
     op.drop_table('tokencontainerinfo')
     op.drop_column('tokencontainer', 'info_list')
     op.drop_column('tokencontainer', 'states')
