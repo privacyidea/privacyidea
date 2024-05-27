@@ -50,7 +50,7 @@ def list_containers():
         tmp_users: dict = {}
         users: list = []
         for user in container.get_users():
-            tmp_users["user_name"] = get_username(user.login, user.resolver)
+            tmp_users["user_name"] = get_username(user.uid, user.resolver)
             tmp_users["user_realm"] = user.realm
             tmp_users["user_resolver"] = user.resolver
             tmp_users["user_id"] = user.login
