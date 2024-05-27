@@ -5,7 +5,7 @@ from flask import Blueprint, jsonify, request
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import get_container_classes, create_container_template, \
     find_container_by_serial, init_container, get_container_classes_descriptions, \
-    get_container_token_types, get_all_containers, remove_tokens_from_container
+    get_container_token_types, get_all_containers, remove_tokens_from_container, add_tokens_to_container
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
@@ -78,10 +78,7 @@ def list_containers():
                 tokens_dict_list = convert_token_objects_to_dicts(tokens)
             tmp["tokens"] = tokens_dict_list
 
-        states: list = []
-        for token_container_state in container.get_states():
-            states.append(token_container_state.state)
-        tmp["states"] = states
+        tmp["states"] = [token_container_states.state for token_container_states in container.get_states()]
 
         infos: dict = {}
         for info in container.get_containerinfo():
