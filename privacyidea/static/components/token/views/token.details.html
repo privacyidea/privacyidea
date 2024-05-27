@@ -577,6 +577,10 @@
 
 <!-- ============ Container ====================== -->
 <h4>Assign Container</h4>
+<div ng-show="tokenIsInContainer" translate>
+    The token is currently assigned to container
+    <a ui-sref="token.containerdetails({containerSerial: containerSerial})">{{ containerSerial}}</a>.
+</div>
 <div select-or-create-container container-serial="containerSerial" disable-selection="tokenIsInContainer"
      enable-user-assignment="token.user_id" user-name="token.username" user-realm="token.user_realm">
 </div>
