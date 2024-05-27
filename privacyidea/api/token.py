@@ -591,6 +591,10 @@ def enable_api(serial=None):
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
     serial_list = getParam(request.all_data, "serial_list", optional)
+
+    if not serial and not serial_list:
+        raise ParameterError("Either serial or serial_list is required")
+
     token_serials = []
     if serial_list:
         token_serials = serial_list
@@ -631,6 +635,10 @@ def disable_api(serial=None):
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
     serial_list = getParam(request.all_data, "serial_list", optional)
+
+    if not serial and not serial_list:
+        raise ParameterError("Either serial or serial_list is required")
+
     token_serials = []
     if serial_list:
         token_serials = serial_list
@@ -644,8 +652,6 @@ def disable_api(serial=None):
         res += enable_token(serial, enable=False, user=user)
         g.audit_object.log({"success": True})
     return send_result(res)
-
-    g.audit_object.log({"serial": serial})
 
 
 

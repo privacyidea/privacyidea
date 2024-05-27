@@ -116,7 +116,7 @@ class TokenContainerClass:
         users: List[User] = []
         for owner in db_container_owners:
             realm = Realm.query.filter_by(id=owner.realm_id).first()
-            user = User(login=owner.user_id, realm=realm.name, resolver=owner.resolver)
+            user = User(uid=owner.user_id, realm=realm.name, resolver=owner.resolver)
             users.append(user)
 
         return users
