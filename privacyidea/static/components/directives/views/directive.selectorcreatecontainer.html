@@ -16,7 +16,7 @@
                 id="containerType"
                 ng-change="changeContainerType()"
                 ng-model="newContainer.type"
-                ng-options="type as desc for (type, desc) in newContainer.types">
+                ng-options="type as attr.description for (type, attr) in newContainer.types">
         </select>
         <!-- Description -->
         <label for="description" translate>Description</label>

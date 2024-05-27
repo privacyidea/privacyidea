@@ -70,12 +70,12 @@
     <div class="panel-body">
         <div class="text-center">
             Allowed custom attributes:
-            {{ allowed_custom_attributes }}
+            {{ allowedCustomAttributes }}
         </div>
     </div>
     -->
 
-    <div ng-show="allowed_custom_attributes.hasOwnProperty('set') || allowed_custom_attributes.hasOwnProperty('delete')">
+    <div ng-show="allowedCustomAttributes.hasOwnProperty('set') || allowedCustomAttributes.hasOwnProperty('delete')">
         <h3 translate>Custom attributes for user {{ username }}</h3>
         <table class="table table-hover">
             <tr ng-repeat="(attribute_key, attribute_value) in custom_attributes">
@@ -87,13 +87,13 @@
                 </td>
                 <td class=col-sm-2>
                     <button ng-click="deleteCustomAttribute(attribute_key)"
-                            ng-show="allowed_custom_attributes['delete'].includes(attribute_key) || allowed_custom_attributes['delete'].includes('*')"
+                            ng-show="allowedCustomAttributes['delete'].includes(attribute_key) || allowedCustomAttributes['delete'].includes('*')"
                             class="btn btn-danger">Delete
                     </button>
                 </td>
             </tr>
         </table>
-        <div ng-show="allowed_custom_attributes.hasOwnProperty('set')">
+        <div ng-show="allowedCustomAttributes.hasOwnProperty('set')">
             <h4 translate>Add custom attribute</h4>
             <table class="table table-hover">
                 <tr>
@@ -101,14 +101,14 @@
                         <select class="form-control"
                                 id="attr_key"
                                 ng-change="onCustomAttributeKeyChange()"
-                                ng-model="selected_attr_key"
-                                ng-options="attribute_key as attribute_key for (attribute_key, attribute_values) in allowed_custom_attributes['set']"
+                                ng-model="selectedAttrKey"
+                                ng-options="attribute_key as attribute_key for (attribute_key, attribute_values) in allowedCustomAttributes['set']"
                         >
                         </select>
                         <label class="sr-only" for="new_custom_attribute_key" translate="Custom attribute name"></label>
                         <input class="form-control"
-                               ng-show="selected_attr_key==='*'"
-                               ng-model="new_custom_attribute_key"
+                               ng-show="selectedAttrKey==='*'"
+                               ng-model="newCustomAttributeKey"
                                id="new_custom_attribute_key"
                                placeholder="Custom attribute name">
                     </td>
@@ -116,17 +116,17 @@
                         <select class="form-control"
                                 ng-show="customAttributeValueSelectVisible"
                                 id="attr_value"
-                                ng-model="selected_attr_value"
+                                ng-model="selectedAttrValue"
                                 ng-options="attribute_value as attribute_value for attribute_value in allowed_values"
                         >
                         </select>
                         <input class="form-control"
-                               ng-show="selected_attr_value==='*'"
-                               ng-model="new_custom_attribute_value">
+                               ng-show="selectedAttrValue==='*'"
+                               ng-model="newCustomAttributeValue">
                     </td>
                     <td class="col-sm-2">
                         <button ng-click="addCustomAttribute()"
-                                ng-enables="new_custom_attribute_key || selected_attr_key"
+                                ng-enables="newCustomAttributeKey || selectedAttrKey"
                                 class="btn btn-success">Add
                         </button>
                     </td>
@@ -136,9 +136,10 @@
     </div>
 
     <!-- ===================== Tokens ===================== -->
-    <h3 translate>Tokens for user {{ username }}</h3>
+    <h3 ng-show="showTokenOfUser" translate>Tokens for user {{ username }}</h3>
+    <h3 ng-show="!showTokenOfUser" translate>Token of {{username}} without a container</h3>
     <!-- Tokens for user -->
-    <div uib-pagination ng-show="tokendata.count > 5"
+    <div uib-pagination ng-show="tokendata.count > 5 && showTokenOfUser"
          total-items="tokendata.count" ng-model="params.page"
          previous-text="{{ 'Previous'|translate }}"
          next-text="{{ 'Next'|translate }}"
@@ -148,18 +149,18 @@
          max-size="5"
          boundary-links="true" ng-change="pageChanged()"></div>
 
-    <div class="table-responsive form-group">
+    <div class="table-responsive form-group" ng-show="showTokenOfUser">
         <table class="table table-bordered table-striped">
             <thead>
             <tr>
-                <th translate>serial</th>
-                <th translate>type</th>
+                <th translate>Serial</th>
+                <th translate>Type</th>
                 <th translate>Active</th>
-                <th translate>window</th>
-                <th translate>description</th>
-                <th translate>failcounter</th>
-                <th translate>maxfail</th>
-                <th translate>otplen</th>
+                <th translate>Window</th>
+                <th translate>Description</th>
+                <th translate>Failcounter</th>
+                <th translate>Maxfail</th>
+                <th translate>Otplen</th>
                 <th>Container</th>
             </tr>
             </thead>
@@ -190,17 +191,82 @@
                 <td>{{ token.maxfail }}</td>
                 <td>{{ token.otplen }}</td>
                 <td>
-                    <a ui-sref="token.containerdetails({containerSerial: token.container_serial})">{{ token.container_serial }}</a>
+                    <a ui-sref="token.containerdetails({containerSerial: token.container_serial})">{{ token.container_serial
+                        }}</a>
                 </td>
             </tr>
             </tbody>
         </table>
     </div>
+
+    <div class="table-responsive form-group" ng-show="!showTokenOfUser">
+        <table class="table table-bordered table-striped">
+            <thead>
+            <tr>
+                <th translate>Selection</th>
+                <th translate>Serial</th>
+                <th translate>Type</th>
+                <th translate>Active</th>
+                <th translate>Description</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="token in tokenWithoutContainer">
+                <td>
+                    <input type="checkbox" ng-model="tokenSelection[token.serial][token.tokentype]">
+                </td>
+                <td><a ui-sref="token.details({tokenSerial:token.serial,
+            currentToken:token})"
+                       ng-click="$rootScope.returnTo=user.list;">
+                    {{ token.serial }}</a></td>
+                <td>{{ token.tokentype }}</td>
+                <td>
+                <span class="label label-success" ng-show="token.active">
+                    active
+                </span>
+                    <span class="label label-danger" ng-hide="token.active">
+                    disabled
+                </span>
+                </td>
+                <td>{{ token.description }}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div select-or-create-container
+         ng-show="!showTokenOfUser"
+         container-serial="containerSerial"
+         enable-user-assignment=true
+         check-user-assignment=true
+         user-name="username"
+         user-realm="realmname"
+         token-types="selectedTokenTypes">
+    </div>
     <div class="text-center">
-        <button ng-click="enrollToken()" class="btn btn-primary"
+        <button class="btn btn-primary"
+                ng-click="enrollToken()"
+                ng-show="showTokenOfUser"
                 ng-disabled="!checkEnroll()"
                 id="enrollButton"
                 translate>Enroll New Token
+        </button>
+        <button class="btn btn-primary"
+                ng-click="addTokensToContainerMode()"
+                ng-show="showTokenOfUser"
+                id="putInContainerButton"
+                translate>Add Tokens to Container
+        </button>
+        <button class="btn btn-success"
+                ng-click="addTokensToContainerAction()"
+                ng-show="!showTokenOfUser"
+                ng-disabled="!containerSelected"
+                translate>Add Tokens
+        </button>
+        <button class="btn btn-danger"
+                ng-click="cancelAddTokensToContainerMode()"
+                ng-show="!showTokenOfUser"
+                translate>Cancel
         </button>
     </div>
 
@@ -224,7 +290,7 @@
     </ng-include>
 
     <!-- ===================== Containers ===================== -->
-    <h3 ng-if="containerdata.count > 0"> translate>Containers for user {{ username }}</h3>
+    <h3 ng-show="containerdata.length > 0" translate>Containers for user {{ username }}</h3>
 
     <div uib-pagination ng-show="containerdata.count > containersPerPage"
          total-items="containerdata.count" ng-model="containerParams.page"
@@ -237,34 +303,37 @@
          boundary-links="true" ng-change="pageChanged()">
     </div>
 
-    <div class="table-responsive" ng-if="containerdata.count > 0">
-        <table class="table table-bordered table-striped" id="tableContainerList">
-            <thead>
-            <tr>
-                <th translate>
-                    serial
-                </th>
-                <th translate>
-                    Type
-                </th>
-                <th translate>
-                    Description
-                </th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr ng-repeat="container in containerdata.containers">
-                <td>
-                    <a ui-sref="token.containerdetails({containerSerial: container.serial})">{{ container.serial }}</a>
-                </td>
-                <td class="capitalize">
-                    {{ container.type }}
-                </td>
-                <td>
-                    {{ container.description }}
-                </td>
-            </tr>
-            </tbody>
-        </table>
+    <div class="table-responsive" ng-show="containerdata.length > 0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped" id="tableContainerList">
+                <thead>
+                <tr>
+                    <th translate>
+                        serial
+                    </th>
+                    <th translate>
+                        Type
+                    </th>
+                    <th translate>
+                        Description
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="container in containerdata">
+                    <td>
+                        <a ui-sref="token.containerdetails({containerSerial: container.serial})">{{ container.serial
+                            }}</a>
+                    </td>
+                    <td class="capitalize">
+                        {{ container.type }}
+                    </td>
+                    <td>
+                        {{ container.description }}
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>

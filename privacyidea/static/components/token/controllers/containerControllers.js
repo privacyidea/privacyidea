@@ -1,6 +1,5 @@
 myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
     'AuthFactory', 'ConfigFactory',
-
     function createContainerController($scope, $http, $q, ContainerFactory, $stateParams, AuthFactory, ConfigFactory) {
         $scope.formData = {
             containerTypes: {},
@@ -12,10 +11,6 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         ContainerFactory.getContainerTypes(function (data) {
             $scope.formData.containerTypes = data.result.value
         })
-
-        $scope.changeContainerType = function () {
-
-        }
 
         // User+Realm: Get the realms and fill the realm dropdown box
         if (AuthFactory.getRole() === 'admin') {
@@ -147,7 +142,6 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
                 $scope.expandedRows.splice($scope.expandedRows.indexOf(containerRow), 1)
             }
         }
-
     }]);
 
 myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams', '$q', 'ContainerFactory', 'AuthFactory', 'ConfigFactory', 'TokenFactory', '$state', '$rootScope',
