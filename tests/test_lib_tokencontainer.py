@@ -86,17 +86,17 @@ class TokenContainerManagementTestCase(MyTestCase):
         TokenContainer.query.delete()
         types = ["Smartphone", "generic", "Yubikey", "Smartphone", "generic", "Yubikey"]
         container_serials = []
-        for type in types:
-            serial = init_container({"type": type, "description": "test container"})
+        for t in types:
+            serial = init_container({"type": t, "description": "test container"})
             container_serials.append(serial)
 
         # Filter for container serial
-        containerdata = get_all_containers(serial=container_serials[3])
+        containerdata = get_all_containers(serial=container_serials[3], pagesize=15)
         self.assertEqual(1, containerdata["count"])
         self.assertEqual(containerdata["containers"][0].serial, container_serials[3])
 
         # filter for type
-        containerdata = get_all_containers(type="generic")
+        containerdata = get_all_containers(ctype="generic", pagesize=15)
         for container in containerdata["containers"]:
             self.assertEqual(container.type, "generic")
         self.assertEqual(2, containerdata["count"])
@@ -115,7 +115,7 @@ class TokenContainerManagementTestCase(MyTestCase):
                 container.add_token(token)
 
         # Filter for token serial
-        containerdata = get_all_containers(token_serial=token_serials[1])
+        containerdata = get_all_containers(token_serial=token_serials[1], pagesize=15)
         for container in containerdata["containers"]:
             self.assertTrue(container.serial in container_serials[2:4])
         self.assertEqual(2, containerdata["count"])
