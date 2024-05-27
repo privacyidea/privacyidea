@@ -189,6 +189,10 @@
             <a ui-sref="token.details({tokenSerial:enrolledToken.serial})">
                 {{ enrolledToken.serial }}</a>.
         </span>
+        <span ng-show="enrolledToken.containerSerial" translate>
+            The token has been enrolled in the container
+            <a ui-sref="token.containerdetails({containerSerial: enrolledToken.containerSerial})">{{ enrolledToken.containerSerial}}</a>.
+        </span>
     </p>
 
     <div ng-if="$state.includes('token.wizard')"

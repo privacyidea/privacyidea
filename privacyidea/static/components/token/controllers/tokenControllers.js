@@ -437,6 +437,9 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             $scope.webAuthnToken = {};
             $scope.enrolledToken = data.detail;
             $scope.click_wait = false;
+            if ($scope.form.containerSerial !== null && $scope.form.containerSerial !== "createnew") {
+                $scope.enrolledToken.containerSerial = $scope.form.containerSerial;
+            }
             if ($scope.enrolledToken.otps) {
                 const otps_count = Object.keys($scope.enrolledToken.otps).length;
                 $scope.otp_row_count = parseInt(otps_count / 5 + 0.5);
