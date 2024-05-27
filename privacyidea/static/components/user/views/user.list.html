@@ -1,5 +1,9 @@
 <div uib-pagination ng-show="usercount > usersPerPage"
      total-items="usercount" ng-model="params.page"
+     previous-text="{{ 'Previous'|translate }}"
+     next-text="{{ 'Next'|translate }}"
+     last-text="{{ 'Last'|translate }}"
+     first-text="{{ 'First'|translate }}"
      items-per-page="{{ usersPerPage }}"
      max-size="5"
      boundary-links="true" ng-change="pageChanged()"></div>

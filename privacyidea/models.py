@@ -38,7 +38,7 @@
 import binascii
 import logging
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from dateutil.tz import tzutc
 from json import loads, dumps
@@ -3332,17 +3332,61 @@ class TokenContainer(MethodsMixin, db.Model):
     description = db.Column(db.Unicode(1024), default='')
     tokens = db.relationship('Token', secondary='tokencontainertoken',
                              back_populates='container')
-
     serial = db.Column(db.Unicode(40), default='', unique=True, nullable=False, index=True)
-
     owners = db.relationship('TokenContainerOwner', lazy='dynamic', backref='container')
+    last_seen = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    last_updated = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    states = db.relationship('TokenContainerState', lazy='dynamic', backref='tokencontainer')
+    info_list = db.relationship('TokenContainerInfo', lazy='select', backref='tokencontainer')
 
-    def __init__(self, serial, container_type="Generic", tokens=None, description=""):
+    def __init__(self, serial, container_type="Generic", tokens=None, description="", states=None):
         self.serial = serial
         self.type = container_type
         self.description = description
         if tokens:
             self.tokens = [t.token for t in tokens]
+        if states:
+            self.states = states
+
+    def set_info(self, info):
+        """
+        Set the additional container info for this container
+
+        Entries that end with ".type" are used as type for the keys.
+        I.e. two entries sshkey="XYZ" and sshkey.type="password" will store
+        the key sshkey as type "password".
+
+        :param info: The key-values to set for this container
+        :type info: dict
+        """
+        if not self.id:
+            # If there is no ID to reference the container, we need to save the
+            # container
+            self.save()
+        types = {}
+        for k, v in info.items():
+            if k.endswith(".type"):
+                types[".".join(k.split(".")[:-1])] = v
+        for k, v in info.items():
+            if not k.endswith(".type"):
+                TokenContainerInfo(self.id, k, v,
+                                   Type=types.get(k)).save(persistent=False)
+        db.session.commit()
+
+    def del_info(self, key=None):
+        """
+        Deletes containerinfo for a given container.
+        If the key is omitted, all Containerinfo is deleted.
+
+        :param key: searches for the given key to delete the entry
+        :return:
+        """
+        if key:
+            containerinfos = TokenContainerInfo.query.filter_by(container_id=self.id, Key=key)
+        else:
+            containerinfos = TokenContainerInfo.query.filter_by(container_id=self.id)
+        for ci in containerinfos:
+            ci.delete()
 
 
 class TokenContainerTemplate(MethodsMixin, db.Model):
@@ -3412,6 +3456,75 @@ class TokenContainerOwner(MethodsMixin, db.Model):
             ret = to.id
             # There is nothing to update
 
+        if persistent:
+            db.session.commit()
+        return ret
+
+
+class TokenContainerState(MethodsMixin, db.Model):
+    __tablename__ = 'tokencontainerstate'
+    __table_args__ = {'mysql_row_format': 'DYNAMIC'}
+    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
+    container_id = db.Column(db.Integer(), db.ForeignKey("tokencontainer.id"))
+    state = db.Column(db.Unicode(100), default='active', nullable=False)
+
+    def __init__(self, container_id=None, state="active"):
+        self.container_id = container_id
+        self.state = state
+
+
+class TokenContainerInfo(MethodsMixin, db.Model):
+    """
+    The table "tokencontainerinfo" is used to store additional, long information that
+    is specific to the containertype.
+
+    The tokencontainerinfo is reference by the foreign key to the "tokencontainer" table.
+    """
+    __tablename__ = 'tokencontainerinfo'
+    id = db.Column(db.Integer, Sequence("containerinfo_seq"), primary_key=True)
+    key = db.Column(db.Unicode(255), nullable=False)
+    value = db.Column(db.UnicodeText(), default='')
+    type = db.Column(db.Unicode(100), default='')
+    description = db.Column(db.Unicode(2000), default='')
+    container_id = db.Column(db.Integer(),
+                             db.ForeignKey('tokencontainer.id'), index=True)
+    __table_args__ = (db.UniqueConstraint('container_id',
+                                          'key',
+                                          name='tiix_2'),
+                      {'mysql_row_format': 'DYNAMIC'})
+
+    def __init__(self, container_id, key, value,
+                 type=None,
+                 description=None):
+        """
+        Create a new tokencontainerinfo for a given token_id
+        """
+        self.container_id = container_id
+        self.key = key
+        self.value = convert_column_to_unicode(value)
+        self.type = type
+        self.description = description
+
+    def save(self, persistent=True):
+        ti_func = TokenContainerInfo.query.filter_by(container_id=self.container_id,
+                                                     key=self.key).first
+        ti = ti_func()
+        if ti is None:
+            # create a new one
+            db.session.add(self)
+            db.session.commit()
+            if get_app_config_value(SAFE_STORE, False):
+                ti = ti_func()
+                ret = ti.id
+            else:
+                ret = self.id
+        else:
+            # update
+            TokenContainerInfo.query.filter_by(container_id=self.container_id,
+                                               key=self.key).update({'value': self.value,
+                                                                     'description': self.description,
+                                                                     'type': self.type})
+            ret = ti.id
         if persistent:
             db.session.commit()
         return ret

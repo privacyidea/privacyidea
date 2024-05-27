@@ -20,7 +20,7 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data)
-                }, function(error) {
+                }, function (error) {
                     AuthFactory.authError(error.data)
                 });
             },
@@ -68,6 +68,16 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                     AuthFactory.authError(error.data)
                 });
             },
+            removeAllTokensFromContainer: function (params, callback) {
+                $http.post(containerUrl + "/" + params["serial"] + "/remove", {serial_list: params["serial_list"]},
+                    {
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
             assignUser: function (params, callback) {
                 $http.post(containerUrl + "/assign", params,
                     {
@@ -98,15 +108,56 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                     AuthFactory.authError(error.data);
                 });
             },
-            getContainerForUser: function (params, callback) {
-                $http.get(containerUrl + "/", {
-                    headers: {'PI-Authorization': AuthFactory.getAuthToken()},
-                    params: params
-                }).then(function (response) {
-                    callback(response.data);
+            deleteContainer: function (serial, callback) {
+                $http.delete(containerUrl + "/" + serial,
+                    {
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function (response) {
+                    callback(response.data)
                 }, function (error) {
-                    AuthFactory.authError(error.data);
+                    AuthFactory.authError(error.data)
                 });
             },
+            setDescription: function (serial, description, callback) {
+                $http.post(containerUrl + "/description/" + serial,
+                    {"description": description},
+                    {
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            updateLastSeen: function (serial, callback) {
+                $http.post(containerUrl + "/lastSeen/" + serial,
+                    {},
+                    {
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            setStates: function (params, callback) {
+                $http.post(containerUrl + "/states", params,
+                    {
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            getStateTypes: function (callback) {
+                $http.get(containerUrl + "/statetypes", {
+                    headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            }
         }
     }]);

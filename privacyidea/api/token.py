@@ -580,6 +580,7 @@ def enable_api(serial=None):
 
     :jsonparam basestring serial: the serial number of the single token to
         enable
+    :jsonparam basestring serial_list: a list of serial numbers of the tokens to enable
     :jsonparam basestring user: The login name of the user
     :jsonparam basestring realm: the realm name of the user
     :return: In case of success it returns the number of enabled
@@ -589,10 +590,19 @@ def enable_api(serial=None):
     user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
-    g.audit_object.log({"serial": serial})
+    serial_list = getParam(request.all_data, "serial_list", optional)
+    token_serials = []
+    if serial_list:
+        token_serials = serial_list
+    if serial:
+        token_serials.append(serial)
 
-    res = enable_token(serial, enable=True, user=user)
-    g.audit_object.log({"success": True})
+    res = 0
+    for serial in token_serials:
+        g.audit_object.log({"serial": serial})
+
+        res += enable_token(serial, enable=True, user=user)
+        g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -610,6 +620,7 @@ def disable_api(serial=None):
 
     :jsonparam basestring serial: the serial number of the single token to
         disable
+    :jsonparam basestring serial_list: a list of serial numbers of the tokens to enable
     :jsonparam basestring user: The login name of the user
     :jsonparam basestring realm: the realm name of the user
     :return: In case of success it returns the number of disabled
@@ -619,11 +630,23 @@ def disable_api(serial=None):
     user = request.User
     if not serial:
         serial = getParam(request.all_data, "serial", optional)
+    serial_list = getParam(request.all_data, "serial_list", optional)
+    token_serials = []
+    if serial_list:
+        token_serials = serial_list
+    if serial:
+        token_serials.append(serial)
+
+    res = 0
+    for serial in token_serials:
+        g.audit_object.log({"serial": serial})
+
+        res += enable_token(serial, enable=False, user=user)
+        g.audit_object.log({"success": True})
+    return send_result(res)
+
     g.audit_object.log({"serial": serial})
 
-    res = enable_token(serial, enable=False, user=user)
-    g.audit_object.log({"success": True})
-    return send_result(res)
 
 
 @token_blueprint.route('/<serial>', methods=['DELETE'])

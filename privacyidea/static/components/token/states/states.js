@@ -86,10 +86,10 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
                     controller: "tokenGetSerialController"
                 })
                 .state('token.enroll', {
-                    url: "/enroll/:realmname/:username",
+                    url: "/enroll/:realmname/:username/:containerSerial",
                     templateUrl: tokenPath + "token.enroll.html" + versioningSuffixProviderProvider.$get().$get(),
                     controller: "tokenEnrollController",
-                    params: {realmname: null, username: null},
+                    params: {realmname: null, username: null, containerSerial: null},
                 })
                 .state('token.rollover', {
                     url: "/rollover/:tokenType/:tokenSerial",

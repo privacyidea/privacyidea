@@ -180,7 +180,7 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             type: $scope.default_tokentype,
             hashlib: "sha1",
             'radius.system_settings': true,
-            containerSerial: ""
+            containerSerial: $stateParams.containerSerial,
         };
         if ($state.includes('token.rollover')) {
             $scope.form.serial = $stateParams.tokenSerial;
