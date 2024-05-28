@@ -235,8 +235,8 @@ class PushTokenTestCase(MyTestCase):
         tokenobj.add_user(User("cornelius", self.realm1))
 
         # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
-        with (mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
-                        '.from_service_account_file') as mySA):
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
+                        '.from_service_account_file') as mySA:
             # alternative: side_effect instead of return_value
             mySA.return_value = _create_credential_mock()
 
