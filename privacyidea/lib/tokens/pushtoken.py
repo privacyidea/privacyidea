@@ -95,7 +95,7 @@ class PUSH_ACTION(object):
     SSL_VERIFY = "push_ssl_verify"
     WAIT = "push_wait"
     ALLOW_POLLING = "push_allow_polling"
-    REQUIRE_PRESENCE = "require_presence"
+    REQUIRE_PRESENCE = "push_require_presence"
 
 
 class PushAllowPolling(object):
@@ -236,7 +236,7 @@ def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, 
     # value to string
     sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**smartphone_data)
     if is_true(require_presence):
-        smartphone_data["require_presence"] = AVAILABLE_PRESENCE_OPTIONS
+        smartphone_data["require_presence"] = ",".join(AVAILABLE_PRESENCE_OPTIONS)
         smartphone_data["version"] = "2"
         sign_string += "|{0!s}".format(smartphone_data["require_presence"])
 
