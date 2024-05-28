@@ -705,7 +705,7 @@ class PushTokenClass(TokenClass):
     def _api_endpoint_get(cls, g, request_data):
         """ Handle all GET requests to the api endpoint.
 
-        Currently this is only used for polling.
+        Currently, this is only used for polling.
         :param g: The Flask context
         :param request_data: Dictionary containing the parameters of the request
         :type request_data: dict
@@ -713,7 +713,7 @@ class PushTokenClass(TokenClass):
                   matching challenge exists, 'False' otherwise.
         :rtype: bool
         """
-        # By default we allow polling if the policy is not set.
+        # By default, we allow polling if the policy is not set.
         allow_polling = get_action_values_from_options(
             SCOPE.AUTH, PUSH_ACTION.ALLOW_POLLING,
             options={'g': g}) or PushAllowPolling.ALLOW
@@ -762,10 +762,11 @@ class PushTokenClass(TokenClass):
                 # check if the challenge is active and not already answered
                 _cnt, answered = chal.get_otp_status()
                 if not answered and chal.is_valid():
-                    # then return the necessary smartphone data to answer
-                    # the challenge
+                    # Ensure, if we require presence, that the user has to confirm with the correct button
+                    require_presence = "1" if chal.get_data() else "0"
+                    # then return the necessary smartphone data to answer the challenge
                     sp_data = _build_smartphone_data(tok, chal.challenge,
-                                                     registration_url, pem_privkey, options)
+                                                     registration_url, pem_privkey, options, require_presence)
                     challenges.append(sp_data)
             # return the challenges as a list in the result value
             result = challenges
@@ -920,6 +921,7 @@ class PushTokenClass(TokenClass):
         require_presence = getParam({"require_presence": require_presence}, "require_presence",
                                     allowed_values=["0", "1"], default="0")
 
+        # The challenge having data indicates, that this a require_presence.
         data = secrets.choice("".join(AVAILABLE_PRESENCE_OPTIONS)) if is_true(require_presence) else None
         # Initially we assume there is no error from Firebase
         res = True
