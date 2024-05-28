@@ -921,8 +921,16 @@ class PushTokenClass(TokenClass):
         require_presence = getParam({"require_presence": require_presence}, "require_presence",
                                     allowed_values=["0", "1"], default="0")
 
-        # The challenge having data indicates, that this a require_presence.
-        data = secrets.choice("".join(AVAILABLE_PRESENCE_OPTIONS)) if is_true(require_presence) else None
+        data = None
+        if is_true(require_presence):
+            # The challenge having data indicates, that this a require_presence.
+            if transactionid is None:
+                # Create a new challenge data
+                data = secrets.choice("".join(AVAILABLE_PRESENCE_OPTIONS))
+            else:
+                # If the user has more than one token and more than one challenge is created, we need to ensure, that
+                # all challenge data is the same.
+                data = get_challenges(transaction_id=transactionid)[0].data
         # Initially we assume there is no error from Firebase
         res = True
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
