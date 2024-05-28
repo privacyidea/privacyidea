@@ -10,7 +10,7 @@ from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               DEFAULT_CHALLENGE_TEXT, strip_key,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
-                                              PUBLIC_KEY_SERVER,
+                                              PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY)
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.token import get_tokens, remove_token, init_token
@@ -235,8 +235,8 @@ class PushTokenTestCase(MyTestCase):
         tokenobj.add_user(User("cornelius", self.realm1))
 
         # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
-        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
-                        '.from_service_account_file') as mySA:
+        with (mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
+                        '.from_service_account_file') as mySA):
             # alternative: side_effect instead of return_value
             mySA.return_value = _create_credential_mock()
 
@@ -362,6 +362,9 @@ class PushTokenTestCase(MyTestCase):
             # Check that the challenge is created if the request to firebase
             # succeeded even though polling is disabled
             # add responses, to simulate the successful communication to firebase
+            # We also add the presence_required policy.
+            set_policy('push_presence', SCOPE.AUTH,
+                       action='{0!s}=1'.format(PUSH_ACTION.REQUIRE_PRESENCE))
             responses.replace(responses.POST,
                               'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
                               body="""{}""",
@@ -376,12 +379,16 @@ class PushTokenTestCase(MyTestCase):
                 jsonresp = res.json
                 self.assertTrue(jsonresp.get("result").get("status"))
             self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 1)
-            get_challenges(serial=tokenobj.token.serial)[0].delete()
+            chal = get_challenges(serial=tokenobj.token.serial)[0]
+            # Check in the challenge for a require_presence value, this indicates, that the challenges was created
+            self.assertIn(chal.data, AVAILABLE_PRESENCE_OPTIONS)
+            chal.delete()
 
         remove_token(serial=serial)
         delete_smsgateway(self.firebase_config_name)
         delete_policy('push_poll')
         delete_policy('push1')
+        delete_policy('push_presence')
 
     @responses.activate
     def test_03b_api_authenticate_client(self):
@@ -739,7 +746,6 @@ class PushTokenTestCase(MyTestCase):
             jsonresp = res.json
             # Result-Value is True
             self.assertTrue(jsonresp.get("result").get("value"))
-
 
     def test_04_decline_auth_request(self):
         # get enrolled push token

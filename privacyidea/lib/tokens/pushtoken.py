@@ -235,7 +235,7 @@ def _build_smartphone_data(token_obj, challenge, registration_url, pem_privkey, 
     # Create the signature.
     # value to string
     sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**smartphone_data)
-    if require_presence == "1":
+    if is_true(require_presence):
         smartphone_data["require_presence"] = AVAILABLE_PRESENCE_OPTIONS
         smartphone_data["version"] = "2"
         sign_string += "|{0!s}".format(smartphone_data["require_presence"])
@@ -920,7 +920,7 @@ class PushTokenClass(TokenClass):
         require_presence = getParam({"require_presence": require_presence}, "require_presence",
                                     allowed_values=["0", "1"], default="0")
 
-        data = secrets.choice("".join(AVAILABLE_PRESENCE_OPTIONS)) if require_presence == "1" else None
+        data = secrets.choice("".join(AVAILABLE_PRESENCE_OPTIONS)) if is_true(require_presence) else None
         # Initially we assume there is no error from Firebase
         res = True
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
@@ -928,14 +928,15 @@ class PushTokenClass(TokenClass):
             challenge = b32encode_and_unicode(geturandom())
             if options.get("session") != CHALLENGE_SESSION.ENROLLMENT:
                 if fb_identifier != POLL_ONLY:
-                    # We only push to Firebase if this tokens does NOT POLL_ONLY.
+                    # We only push to Firebase if this token does NOT POLL_ONLY.
                     fb_gateway = create_sms_instance(fb_identifier)
                     registration_url = get_action_values_from_options(
                         SCOPE.ENROLL, PUSH_ACTION.REGISTRATION_URL, options=options)
                     pem_privkey = self.get_tokeninfo(PRIVATE_KEY_SERVER)
                     smartphone_data = _build_smartphone_data(self,
                                                              challenge, registration_url,
-                                                             pem_privkey, options)
+                                                             pem_privkey, options, require_presence)
+                    log.debug("Sending to firebase the smartphone_data: {0!s}".format(smartphone_data))
                     res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
 
             # Create the challenge in the challenge table if either the message

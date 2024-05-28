@@ -2036,6 +2036,34 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("push1")
 
+    def test_24c_push_require_presence(self):
+
+        # We send a fake require_presence, that is not in the policies
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "hans",
+                                       'pass': "pin",
+                                       'push_require_presence': "0"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        req.all_data = {"push_require_presence": "0"}
+        g.policy_object = PolicyClass()
+        pushtoken_validate(req, None)
+        self.assertEqual(req.all_data.get(PUSH_ACTION.REQUIRE_PRESENCE), "0")
+
+        # Now we use the policy, to set the push_wait seconds
+        set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=1".format(PUSH_ACTION.REQUIRE_PRESENCE))
+        req.all_data = {}
+        g.policy_object = PolicyClass()
+        pushtoken_validate(req, None)
+        self.assertEqual(req.all_data.get(PUSH_ACTION.REQUIRE_PRESENCE), "1")
+
+        delete_policy("push1")
+
     def test_25_admin_token_list(self):
         # The tokenlist policy can result in a None filter, an empty [] filter or
         # a filter with realms ["realm1", "realm2"].
