@@ -67,7 +67,7 @@ from privacyidea.lib import _
 
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
 from privacyidea.models import Challenge
-from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
+from privacyidea.lib.decorators import check_token_locked
 import logging
 
 
@@ -367,7 +367,6 @@ class SmsTokenClass(HotpTokenClass):
         return success, return_message, transactionid, reply_dict
 
     @log_with(log)
-    @check_token_otp_length
     @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
@@ -518,8 +517,8 @@ class SmsTokenClass(HotpTokenClass):
     def _get_sms_text(options):
         """
         This returns the SMSTEXT from the policy "smstext"
-        
-        options contains data like clientip, g, user and also the Request 
+
+        options contains data like clientip, g, user and also the Request
         parameters like "challenge" or "pass".
 
         :param options: contains user and g object.

@@ -58,7 +58,6 @@ from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import (modhex_decode, hexlify_and_unicode, checksum,
                                    to_bytes, b64encode_and_unicode)
-import binascii
 from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.api.lib.utils import getParam
 import datetime
@@ -232,9 +231,7 @@ class YubikeyTokenClass(TokenClass):
         pin_match = self.check_pin(passw, user=user, options=options)
         if pin_match is True:
             trigger_challenge = True
-
         return trigger_challenge
-
 
     @log_with(log)
     @check_token_otp_length
@@ -452,7 +449,7 @@ h={h}
         if prefix[:2] != "vv" and prefix[:2] != "cc":
             try:
                 # Keep the backward compatibility
-                serialnum = "UBAM" + modhex_decode(prefix)
+                serialnum = "UBAM" + str(modhex_decode(prefix))
                 for i in range(1, 3):
                     s = "{0!s}_{1!s}".format(serialnum, i)
                     toks = get_tokens(serial=s, tokentype='yubikey')
@@ -465,8 +462,7 @@ h={h}
             # If we did not find the token via the serial number, we also
             # search for the yubikey.prefix in the tokeninfo.
             token_candidate_list = get_tokens(tokentype='yubikey',
-                                              tokeninfo={"yubikey.prefix":
-                                                             prefix})
+                                              tokeninfo={"yubikey.prefix": prefix})
             token_list.extend(token_candidate_list)
 
         if not token_list:

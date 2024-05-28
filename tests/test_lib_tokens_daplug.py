@@ -3,12 +3,12 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-PWFILE = "tests/testdata/passwords"
-
+from testfixtures import log_capture
 from .base import MyTestCase
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.user import (User)
+from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.daplugtoken import (DaplugTokenClass, _digi2daplug)
 from privacyidea.models import (Token,
@@ -17,6 +17,8 @@ from privacyidea.models import (Token,
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 import datetime
 from dateutil.tz import tzlocal
+
+PWFILE = "tests/testdata/passwords"
 
 
 class DaplugTokenTestCase(MyTestCase):
@@ -318,17 +320,28 @@ class DaplugTokenTestCase(MyTestCase):
         token.inc_otp_counter(counter=20)
         self.assertTrue(token.token.count == 21, token.token.count)
 
-    def test_13_check_otp(self):
+    @log_capture()
+    def test_13_check_otp(self, capture):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DaplugTokenClass(db_token)
         token.update({"otpkey": self.otpkey,
                       "pin": "test",
                       "otplen": 6})
         # OTP does not exist
-        self.assertEqual(token.check_otp_exist(_digi2daplug("222333")), -1)
+        self.assertEqual(-1, token.check_otp(_digi2daplug("222333")))
         # OTP does exist
-        res = token.check_otp_exist(_digi2daplug("969429"))
-        self.assertEqual(res, 3, res)
+        self.assertEqual(3, token.check_otp(_digi2daplug("969429")))
+        # Check OTP length
+        self.assertEqual(token.check_otp(_digi2daplug("12345")), -1)
+        capture.check_present(
+            ('privacyidea.lib.decorators', 'INFO',
+             f'OTP value for token {self.serial1} (type: {token.type}) has wrong length (5 != 6)')
+        )
+        self.assertEqual(token.check_otp(_digi2daplug("1234567")), -1)
+        capture.check_present(
+            ('privacyidea.lib.decorators', 'INFO',
+             f'OTP value for token {self.serial1} (type: {token.type}) has wrong length (7 != 6)')
+        )
 
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -422,23 +435,22 @@ class DaplugTokenTestCase(MyTestCase):
     def test_18_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = DaplugTokenClass(db_token)
-        resp = token.is_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                            "test"+_digi2daplug("123456"))
+        resp = token.is_challenge_response(user=User(login="cornelius",
+                                                     realm=self.realm1),
+                                           passw="test"+_digi2daplug("123456"))
         self.assertFalse(resp, resp)
 
         transaction_id = "123456789"
-        C = Challenge(self.serial1, transaction_id=transaction_id, challenge="Who are you?")
-        C.save()
-        resp = token.is_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                            "test"+_digi2daplug("123456"),
-                                            options={"transaction_id":
-                                                         transaction_id})
+        chall = Challenge(self.serial1, transaction_id=transaction_id, challenge="Who are you?")
+        chall.save()
+        resp = token.is_challenge_response(user=User(login="cornelius",
+                                                     realm=self.realm1),
+                                           passw="test"+_digi2daplug("123456"),
+                                           options={"transaction_id": transaction_id})
         self.assertTrue(resp, resp)
 
         # test if challenge is valid
-        C.is_valid()
+        chall.is_valid()
 
     def test_19_pin_otp_functions(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

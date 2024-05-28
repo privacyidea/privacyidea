@@ -3,8 +3,9 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-PWFILE = "tests/testdata/passwords"
+import logging
 
+from testfixtures import LogCapture
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
@@ -19,6 +20,8 @@ from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 import datetime
 import binascii
 import time
+
+PWFILE = "tests/testdata/passwords"
 
 
 class TOTPTokenTestCase(MyTestCase):
@@ -303,11 +306,22 @@ class TOTPTokenTestCase(MyTestCase):
                       "otplen": 6})
         token.set_otp_count(47251644)
         # OTP does not exist
-        self.assertTrue(token.check_otp_exist("222333") == -1)
+        self.assertTrue(token.check_otp("222333") == -1)
         # OTP does exist
-        res = token.check_otp_exist("722053", options={"initTime": 47251645 * 30})
+        res = token.check_otp("722053", options={"initTime": 47251645 * 30})
         # Found the counter 47251647
-        self.assertTrue(res == 47251647, res)
+        self.assertEqual(47251647, res)
+        with LogCapture(level=logging.INFO) as lc:
+            self.assertEqual(-1, token.check_otp("1234567"))
+            lc.check_present(
+                ('privacyidea.lib.decorators', 'INFO',
+                 f'OTP value for token {token.token.serial} (type: {token.type}) '
+                 f'has wrong length (7 != 6)'))
+            self.assertEqual(-1, token.check_otp("12345"))
+            lc.check_present(
+                ('privacyidea.lib.decorators', 'INFO',
+                 f'OTP value for token {token.token.serial} (type: {token.type}) '
+                 f'has wrong length (5 != 6)'))
 
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -404,22 +418,22 @@ class TOTPTokenTestCase(MyTestCase):
     def test_18_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
-        resp = token.is_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                           "test123456")
+        resp = token.is_challenge_response(user=User(login="cornelius",
+                                                     realm=self.realm1),
+                                           passw="test123456")
         self.assertFalse(resp, resp)
 
         transaction_id = "123456789"
-        C = Challenge(self.serial1, transaction_id=transaction_id, challenge="Who are you?")
-        C.save()
-        resp = token.is_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                           "test123456",
+        chall = Challenge(self.serial1, transaction_id=transaction_id, challenge="Who are you?")
+        chall.save()
+        resp = token.is_challenge_response(user=User(login="cornelius",
+                                                     realm=self.realm1),
+                                           passw="test123456",
                                            options={"transaction_id": transaction_id})
         self.assertTrue(resp, resp)
 
         # test if challenge is valid
-        C.is_valid()
+        chall.is_valid()
 
     def test_19_pin_otp_functions(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

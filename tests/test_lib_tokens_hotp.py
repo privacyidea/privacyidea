@@ -4,7 +4,7 @@ This test file tests the lib.tokenclass
 The lib.tokenclass depends on the DB model and lib.user
 """
 import warnings
-
+from testfixtures import log_capture
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.resolver import (save_resolver)
@@ -327,20 +327,31 @@ class HOTPTokenTestCase(MyTestCase):
         token.inc_otp_counter(counter=20)
         self.assertTrue(token.token.count == 21, token.token.count)
 
-    def test_13_check_otp(self):
+    @log_capture()
+    def test_13_check_otp(self, capture):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = HotpTokenClass(db_token)
         token.update({"otpkey": self.otpkey,
                       "pin": "test",
                       "otplen": 6})
         # OTP does not exist
-        self.assertTrue(token.check_otp_exist("222333") == -1)
+        self.assertEqual(-1, token.check_otp("222333"))
         # OTP does exist
-        res = token.check_otp_exist("969429")
-        self.assertTrue(res == 3, res)
+        self.assertEqual(3, token.check_otp("969429"))
         # check is_previous_otp
         r = token.is_previous_otp("969429")
         self.assertTrue(r)
+        # Check OTP length
+        self.assertEqual(-1, token.check_otp("12345"))
+        capture.check_present(
+            ('privacyidea.lib.decorators', 'INFO',
+             f'OTP value for token {self.serial1} (type: {token.type}) has wrong length (5 != 6)')
+        )
+        self.assertEqual(-1, token.check_otp("1234567"))
+        capture.check_present(
+            ('privacyidea.lib.decorators', 'INFO',
+             f'OTP value for token {self.serial1} (type: {token.type}) has wrong length (7 != 6)')
+        )
 
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

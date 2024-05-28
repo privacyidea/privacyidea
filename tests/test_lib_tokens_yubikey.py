@@ -2,6 +2,9 @@
 This test file tests the lib.tokens.yubikeytoken
 
 """
+import logging
+
+from testfixtures import LogCapture
 from .base import MyTestCase
 from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass,
                                                  yubico_api_signature,
@@ -248,12 +251,27 @@ class YubikeyTokenTestCase(MyTestCase):
                             "otplen": len(self.valid_otps[0])})
         r = token.check_otp(self.valid_otps[0])
         self.assertGreater(r, 0, r)
-        r = token.check_otp(self.valid_otps[1][:-1])
-        self.assertEqual(-1, r, r)
-        r = token.check_otp(self.valid_otps[2] + "a")
-        self.assertEqual(-1, r, r)
-        r = token.check_otp(self.valid_otps[3] + "k")
-        self.assertEqual(-1, r, r)
+        with LogCapture(level=logging.INFO) as lc:
+            self.assertEqual(-1, token.check_otp(self.valid_otps[1][:-1]))
+            # we have OTPs with 16 chars of public uid and 32 chars of OTP
+            lc.check_present(
+                ('privacyidea.lib.decorators', 'INFO',
+                 f'OTP value for token {token.token.serial} (type: {token.type}) '
+                 f'has wrong length (47 != 48)'))
+            self.assertEqual(-1, token.check_otp(self.valid_otps[2] + "a"))
+            lc.check_present(
+                ('privacyidea.lib.decorators', 'INFO',
+                 f'OTP value for token {token.token.serial} (type: {token.type}) '
+                 f'has wrong length (49 != 48)'))
+            # trigger a CRC-Checksum failure
+            self.assertEqual(-3, token.check_otp(self.valid_otps[3][:-1] + "k"))
+            lc.check_present(
+                ('privacyidea.lib.tokens.yubikeytoken', 'INFO',
+                 f'CRC checksum for token {token.token.serial!r} failed'))
+            # trigger a modhex-decode error
+            self.assertEqual(-4, token.check_otp(self.valid_otps[3][:-1] + "a"))
+        # check an all-caps Yubikey-OTP
+        self.assertLessEqual(0, token.check_otp(self.valid_otps[4].upper()))
         token.delete_token()
 
     def test_97_wrong_tokenid(self):

@@ -48,22 +48,21 @@ def check_token_locked(func):
 
 def check_token_otp_length(func):
     """
-    Decorator to check if a token otp has the correct length.
+    Decorator to check if a given otp value has the correct length.
     The decorator is to be used in token class method check_otp.
 
-    If the otp has a wrong length it returns -1 and logs the info.
+    If the given otp value has a wrong length it returns -1 and logs the info.
     """
     @functools.wraps(func)
     def token_otp_lenght_wrapper(*args, **kwds):
         token = args[0]
-        tokentype = token.type
         if len(args[1]) != token.token.otplen:
-            log.info(f"{tokentype} OPT value has a wrong length")
+            log.info(f"OTP value for token {token.token.serial} (type: {token.type}) "
+                     f"has wrong length ({len(args[1])} != {token.token.otplen})")
             return -1
         f_result = func(*args, **kwds)
         return f_result
     return token_otp_lenght_wrapper
-
 
 
 def check_user_or_serial(func):
@@ -144,4 +143,3 @@ def check_copy_serials(func):
         return f_result
 
     return check_serial_wrapper
-
