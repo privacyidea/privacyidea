@@ -436,6 +436,8 @@ def list_api():
     :query rollout_state: only list tokens with the given rollout_state
     :query infokey: only list tokens, where the infokey has the given infovalue
     :query infovalue: only list tokens, where the infokey has the given infovalue
+    :query hidden_tokeninfo: A list of token-info keys which should be removed
+        from the response. Will be overwritten by the "hide_tokeninfo" policy.
     :query container_serial: only list tokens, which are assigned to the container with the given serial
                             or tokens without container if the value is an empty string ""
 
@@ -481,7 +483,7 @@ def list_api():
     g.audit_object.log({'info': "realm: {0!s}".format(allowed_realms)})
 
     # get hide_tokeninfo setting from all_data
-    hidden_tokeninfo = getParam(request.all_data, 'hidden_tokeninfo', default=None)
+    hidden_tokeninfo = getParam(param, 'hidden_tokeninfo', default=None)
 
     # get list of tokens as a dictionary
     tokens = get_tokens_paginate(serial=serial, realm=realm, page=page,

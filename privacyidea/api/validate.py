@@ -119,7 +119,7 @@ from ..lib.framework import get_app_config_value
 
 log = logging.getLogger(__name__)
 
-validate_blueprint = Blueprint('validate_blueprint', __name__)
+validate_blueprint = Blueprint('validate_blueprint', __name__, url_prefix='/validate')
 
 
 @validate_blueprint.before_request

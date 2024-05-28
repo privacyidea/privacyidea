@@ -22,14 +22,13 @@ import logging
 import os
 
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import get_token_owner, get_tokens_from_serial_or_user, get_realms_of_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
-from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken, TokenContainerRealm,
-                                Realm)
+from privacyidea.models import (db, TokenContainer, TokenContainerOwner, Token,
+                                TokenContainerToken, TokenContainerRealm, Realm)
 
 log = logging.getLogger(__name__)
 
@@ -234,7 +233,8 @@ def get_all_containers(user: User = None, serial=None, ctype=None, token_serial=
         if pagesize < 1:
             pagesize = 10
 
-        pagination = sql_query.paginate(page, per_page=pagesize, error_out=False)
+        pagination = db.paginate(sql_query, page=page, per_page=pagesize,
+                                 error_out=False)
         db_containers = pagination.items
 
         prev = None

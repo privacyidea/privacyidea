@@ -6,11 +6,10 @@ lib/eventhandler/logging.py
 from mock import mock
 from datetime import datetime
 from werkzeug.test import EnvironBuilder
-from flask import Request
+from flask import Request, Response
 from testfixtures import log_capture
 
 from privacyidea.lib.token import init_token
-from privacyidea.app import PiResponseClass as Response
 from privacyidea.lib.eventhandler.logginghandler import LoggingEventHandler
 from privacyidea.lib.user import User
 from .base import MyTestCase, FakeFlaskG, FakeAudit
@@ -33,7 +32,8 @@ class LoggingTestCase(MyTestCase):
         env = EnvironBuilder(method='POST', headers={}, path='/auth').get_environ()
         req = Request(env)
         req.all_data = {}
-        resp = Response(response="""{"result": {"value": true}}""")
+        resp = Response(response="""{"result": {"value": true}}""",
+                        mimetype='application/json')
         options = {
             "g": g,
             "request": req,
@@ -58,7 +58,8 @@ class LoggingTestCase(MyTestCase):
         req = Request(env)
         req.all_data = {}
         req.User = User("cornelius", self.realm1)
-        resp = Response(response="""{"result": {"value": true}}""")
+        resp = Response(response="""{"result": {"value": true}}""",
+                        mimetype="application/json")
         options = {
             "g": g,
             "request": req,
@@ -88,7 +89,8 @@ class LoggingTestCase(MyTestCase):
         req = Request(env)
         req.all_data = {}
         req.User = User("cornelius", self.realm1)
-        resp = Response(response="""{"result": {"value": true}}""")
+        resp = Response(response="""{"result": {"value": true}}""",
+                        mimetype="application/json")
         options = {
             "g": g,
             "request": req,
@@ -131,7 +133,8 @@ class LoggingTestCase(MyTestCase):
         req.user_agent = UserAgentMock()
         req.all_data = {'serial': 'testserial'}
         req.User = User("cornelius", 'sqliterealm')
-        resp = Response(response="""{"result": {"value": true}}""")
+        resp = Response(response="""{"result": {"value": true}}""",
+                        mimetype="application/json")
         options = {
             "g": g,
             "request": req,
