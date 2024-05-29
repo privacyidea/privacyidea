@@ -88,7 +88,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
 
         $scope.tokenSerial = $stateParams.tokenSerial;
         // This is the parent object
-        $scope.selectedToken.serial = $scope.tokenSerial;
+        $scope.selectedToken = {'serial': $scope.tokenSerial};
         $scope.editCountWindow = false;
         $scope.selectedRealms = {};
         $scope.selectedTokenGroups = {};

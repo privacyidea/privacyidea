@@ -58,7 +58,8 @@ angular.module('privacyideaApp.tokenStates', ['ui.router', 'privacyideaApp.versi
             $stateProvider
                 .state('token', {
                     url: "/token",
-                    templateUrl: tokenPath + "token.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: tokenPath + "token.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "tokenMenuController"
                 })
                 .state('token.list', {
                     url: "/list",
