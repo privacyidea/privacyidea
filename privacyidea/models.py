@@ -1059,7 +1059,7 @@ class NodeName(db.Model, TimestampMethodsMixin):
     #  <https://docs.sqlalchemy.org/en/20/core/custom_types.html#backend-agnostic-guid-type>
     id = db.Column(db.Unicode(36), primary_key=True)
     name = db.Column(db.Unicode(100), index=True)
-    lastseen = db.Column(db.DateTime(False), index=True, default=datetime.now(tz=tzutc()))
+    lastseen = db.Column(db.DateTime(), index=True, default=datetime.now(tz=tzutc()))
 
 
 class Resolver(TimestampMethodsMixin, db.Model):
@@ -1174,15 +1174,13 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
     # find a user first in a resolver with a higher priority (i.e. lower number)
     priority = db.Column(db.Integer)
     # TODO: with SQLAlchemy 2.0 db.UUID will be generally available
-    node_uuid = db.Column(db.Unicode(36), db.ForeignKey("nodename.id"), default='')
+    node_uuid = db.Column(db.Unicode(36), default='')
     resolver = db.relationship(Resolver,
                                lazy="joined",
                                back_populates="realm_list")
     realm = db.relationship(Realm,
                             lazy="joined",
                             back_populates="resolver_list")
-    node = db.relationship(NodeName,
-                           lazy="joined")
     __table_args__ = (db.UniqueConstraint('resolver_id',
                                           'realm_id',
                                           'node_uuid',
@@ -1212,12 +1210,19 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
                                  .filter_by(name=realm_name)\
                                  .first().id
         if node_uuid:
-            self.node_uuid = node_uuid
+            # Check if the node is already defined in the NodeName table
+            if db.session.scalar(db.select(db.func.count(NodeName.id)).filter(NodeName.id == node_uuid)) > 0:
+                self.node_uuid = node_uuid
+            else:
+                # Did not find a NodeName entry, adding a new one only if node_name is set
+                if node_name:
+                    self.node_uuid = NodeName(node_uuid, node_name).save().id
+
         elif node_name:
             # We need to get the last seen entry with the corresponding node name
-            self.node_uuid = NodeName.query.filter_by(name=node_name)\
+            self.node_uuid = db.session.scalar(db.select(NodeName).filter(NodeName.name == node_name)\
                 .order_by(desc(NodeName.lastseen))\
-                .first().id
+                .first()).id
 
 
 class TokenOwner(MethodsMixin, db.Model):

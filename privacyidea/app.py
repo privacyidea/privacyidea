@@ -33,7 +33,8 @@ from flaskext.versioned import Versioned
 import sqlalchemy as sa
 
 # we need this import to add the before/after request function to the blueprints
-import privacyidea.api.before_after
+# noinspection PyUnresolvedReferences
+import privacyidea.api.before_after  # noqa: F401
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.api.token import token_blueprint
 from privacyidea.api.system import system_blueprint
@@ -248,7 +249,7 @@ def create_app(config_name="development",
             # check if we can get the UUID from an external file
             pi_uuid_file = app.config.get('PI_UUID_FILE', DEFAULT_UUID_FILE)
             try:
-                with open(pi_uuid_file, 'r') as f:
+                with open(pi_uuid_file) as f:
                     pi_uuid = uuid.UUID(f.read().strip())
             except Exception as e:  # pragma: no cover
                 logging.getLogger(__name__).debug(f"Could not determine UUID "
@@ -256,7 +257,7 @@ def create_app(config_name="development",
 
                 # we try to get the unique installation id (See <https://0pointer.de/blog/projects/ids.html>)
                 try:
-                    with open("/etc/machine-id", 'r') as f:
+                    with open("/etc/machine-id") as f:
                         pi_uuid = uuid.UUID(f.read().strip())
                 except Exception as e:  # pragma: no cover
                     logging.getLogger(__name__).debug(f"Could not determine the machine "

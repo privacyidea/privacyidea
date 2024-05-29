@@ -28,13 +28,13 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-'''
+"""
 These are the library functions to create, modify and delete realms in the
 database. It depends on the lib.resolver.
 
 It is independent of any user or token libraries and can be tested standalone
 in tests/test_lib_realm.py
-'''
+"""
 import uuid
 
 from ..models import (Realm,
@@ -51,7 +51,7 @@ log = logging.getLogger(__name__)
 @log_with(log)
 #@cache.memoize(10)
 def get_realms(realmname=None):
-    '''
+    """
     Either return all defined realms or a specific realm.
 
     :param realmname: the realm, that is of interest. If not given, all realms
@@ -59,7 +59,7 @@ def get_realms(realmname=None):
     :type realmname: string
     :return: a dict with realm description like
     :rtype: dict
-    '''
+    """
     config_object = get_config_object()
     realms = config_object.realm
     if realmname:
