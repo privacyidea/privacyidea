@@ -11,7 +11,7 @@
 </div>
 <div class="navbar navbar-default">
     <div class="container">
-        <a class="navbar-brand" ui-sref="token.list" ng-show="loggedInUser.role">
+        <a class="navbar-brand" ui-sref="token" ng-show="loggedInUser.role">
             <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
                  class="pilogo" alt="privacyIDEA">
         </a>
@@ -40,7 +40,7 @@
 
                 <li ng-class="{ 'active': $state.includes('token')}"
                     ng-show="loggedInUser.role && checkMainMenu('tokens')">
-                    <a ui-sref="token.list">
+                    <a ui-sref="token">
                     <span class="glyphicon glyphicon-phone"
                           aria-hidden="true"></span>
                         <translate>Tokens</translate>

@@ -18,6 +18,27 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
+myApp.controller("tokenMenuController", ['$scope', '$location', '$rootScope', 'AuthFactory', 'ConfigFactory',
+    function ($scope, $location, $rootScope, AuthFactory, ConfigFactory) {
+
+        // set default path
+        if ($location.path() === "/token") {
+            $location.path("/token/list");
+            $scope.tokenMenu = true;
+        }
+
+        // watch the location to change the side menu from token to container
+        $rootScope.$on('$locationChangeSuccess', function () {
+            if ($location.path().includes("container"))  {
+                $scope.tokenMenu = false;
+            }
+            else{
+                $scope.tokenMenu = true;
+            }
+        })
+    }]);
+
 myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
     '$location', 'AuthFactory', 'instanceUrl',
     '$rootScope',
