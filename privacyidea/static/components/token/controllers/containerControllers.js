@@ -248,13 +248,13 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 , $scope.get);
         }
 
-        $scope.editContainernfo = 0;
+        $scope.editContainernfo = false;
         $scope.startEditContainerInfo = function () {
-            $scope.editContainernfo = 1;
+            $scope.editContainernfo = true;
         };
 
         $scope.saveContainerInfo = function () {
-            $scope.editContainernfo = 0;
+            $scope.editContainernfo = false;
         };
 
         if ($scope.loggedInUser.role === "admin") {
@@ -270,7 +270,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         ContainerFactory.updateLastSeen($scope.containerSerial);
 
         // ------------------- Token Actions -------------------------------
-
         $scope.getAllTokenSerials = function () {
             let tokenSerials = [];
             angular.forEach($scope.container.tokens, function (token) {

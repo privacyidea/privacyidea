@@ -9,7 +9,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
-from privacyidea.models import TokenContainerOwner, Realm, Token, db, TokenContainerState
+from privacyidea.models import TokenContainerOwner, Realm, Token, db, TokenContainerStates
 
 log = logging.getLogger(__name__)
 
@@ -126,7 +126,7 @@ class TokenContainerClass:
 
     def set_states(self, value: List[str]):
         # Remove old state entries
-        TokenContainerState.query.filter_by(container_id=self._db_container.id).delete()
+        TokenContainerStates.query.filter_by(container_id=self._db_container.id).delete()
 
         # Set new states
         state_types = self.get_state_types().keys()
@@ -134,11 +134,11 @@ class TokenContainerClass:
             if state not in state_types:
                 raise ParameterError(f"State {state} not supported. Supported states are {state_types}.")
             else:
-                TokenContainerState(container_id=self._db_container.id, state=state).save()
+                TokenContainerStates(container_id=self._db_container.id, state=state).save()
         self.update_last_updated()
 
-    @staticmethod
-    def get_state_types():
+    @classmethod
+    def get_state_types(cls):
         state_types_exclusions = {
             "active": ["disabled"],
             "disabled": ["active"],

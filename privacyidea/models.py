@@ -3336,7 +3336,7 @@ class TokenContainer(MethodsMixin, db.Model):
     owners = db.relationship('TokenContainerOwner', lazy='dynamic', backref='container')
     last_seen = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     last_updated = db.Column(db.DateTime, default=datetime.now(timezone.utc))
-    states = db.relationship('TokenContainerState', lazy='dynamic', backref='tokencontainer')
+    states = db.relationship('TokenContainerStates', lazy='dynamic', backref='tokencontainer')
     info_list = db.relationship('TokenContainerInfo', lazy='select', backref='tokencontainer')
 
     def __init__(self, serial, container_type="Generic", tokens=None, description="", states=None):
@@ -3461,8 +3461,8 @@ class TokenContainerOwner(MethodsMixin, db.Model):
         return ret
 
 
-class TokenContainerState(MethodsMixin, db.Model):
-    __tablename__ = 'tokencontainerstate'
+class TokenContainerStates(MethodsMixin, db.Model):
+    __tablename__ = 'tokencontainerstates'
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
     container_id = db.Column(db.Integer(), db.ForeignKey("tokencontainer.id"))
@@ -3490,7 +3490,7 @@ class TokenContainerInfo(MethodsMixin, db.Model):
                              db.ForeignKey('tokencontainer.id'), index=True)
     __table_args__ = (db.UniqueConstraint('container_id',
                                           'key',
-                                          name='tiix_2'),
+                                          name='container_id_constraint'),
                       {'mysql_row_format': 'DYNAMIC'})
 
     def __init__(self, container_id, key, value,

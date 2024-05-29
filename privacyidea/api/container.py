@@ -1,6 +1,6 @@
 import logging
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
 
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import get_container_classes, create_container_template, \
@@ -8,6 +8,7 @@ from privacyidea.lib.container import get_container_classes, create_container_te
     get_container_token_types, get_all_containers, remove_tokens_from_container, add_tokens_to_container
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ParameterError
+from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import get_one_token, get_tokens, \
     convert_token_objects_to_dicts
@@ -156,6 +157,7 @@ def delete(container_serial):
 
 @container_blueprint.route('<string:container_serial>/add', methods=['POST'])
 @log_with(log)
+#@event("container_add", request, g)
 def add_token(container_serial):
     """
     Add a token to a container
@@ -262,7 +264,7 @@ def get_state_types():
     return send_result(state_types_exclusions)
 
 
-@container_blueprint.route('/lastSeen/<serial>', methods=['POST'])
+@container_blueprint.route('/lastseen/<serial>', methods=['POST'])
 @log_with(log)
 def update_last_seen(serial):
     """

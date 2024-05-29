@@ -486,6 +486,11 @@ myApp.controller("tokenEnrollController", ["$scope", "TokenFactory", "$timeout",
             // convert the date object to a string
             $scope.form.validity_period_start = date_object_to_string($scope.form.validity_period_start);
             $scope.form.validity_period_end = date_object_to_string($scope.form.validity_period_end);
+
+            if ($scope.form.containerSerial === "createnew") {
+                delete $scope.form.containerSerial
+            }
+
             TokenFactory.enroll($scope.newUser,
                 $scope.form, $scope.callback,
                 function (data) {
