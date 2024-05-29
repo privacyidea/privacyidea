@@ -2388,6 +2388,7 @@ th {
 .table > thead > tr > th {
   vertical-align: bottom;
   border-bottom: 2px solid #ddd;
+  text-transform: capitalize;
 }
 .table > caption + thead > tr:first-child > th,
 .table > colgroup + thead > tr:first-child > th,
@@ -2536,6 +2537,10 @@ th {
 .table-hover > tbody > tr:hover > .danger,
 .table-hover > tbody > tr.danger:hover > th {
   background-color: #ebcccc;
+}
+.table > thead > tr > th.capitalize,
+.table > tbody > tr > td.capitalize{
+    text-transform: capitalize;
 }
 .table-responsive {
   min-height: 0.01%;
@@ -3121,6 +3126,9 @@ select[multiple].input-lg {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+.btn-capitalize {
+    text-transform: capitalize;
 }
 .btn:focus,
 .btn:active:focus,
@@ -4051,6 +4059,7 @@ select[multiple].input-group-sm > .input-group-btn > .btn {
   padding-left: 0;
   margin-bottom: 0;
   list-style: none;
+  text-transform: capitalize;
 }
 .nav > li {
   position: relative;

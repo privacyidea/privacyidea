@@ -282,13 +282,15 @@ def init_container(params):
     db_container = TokenContainer(serial=serial, container_type=ctype.lower(), description=desc)
     db_container.save()
 
+    container = create_container_from_db_object(db_container)
     user = params.get("user")
     realm = params.get("realm")
     if user and not realm or realm and not user:
         log.error(f"Assigning a container to user on creation requires both user and realm parameters!")
     elif user and realm:
-        container = create_container_from_db_object(db_container)
         container.add_user(User(login=user, realm=realm))
+
+    container.set_states(['active'])
 
     return serial
 
@@ -327,3 +329,15 @@ def get_container_token_types():
     for container_type, container_class in classes.items():
         ret[container_type] = container_class.get_supported_token_types()
     return ret
+
+
+def remove_tokens_from_container(container_serial, token_serials):
+    """
+    Remove the given tokens from the container with the given serial
+    """
+    container = find_container_by_serial(container_serial)
+    res = False
+    for token_serial in token_serials:
+        container.remove_token(token_serial)
+        res = True
+    return res

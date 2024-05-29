@@ -149,24 +149,245 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.containerSerial = $stateParams.containerSerial
         $scope.loggedInUser = AuthFactory.getUser();
         $scope.newToken = {"serial": "", pin: ""};
+        $scope.tokenAction = "";
 
         $scope.container = {}
         $scope.containerOwner = {}
-        ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
-            $scope.container = data.result.value.containers[0]
-            $scope.containerOwner = $scope.container.users[0]
-        })
+        $scope.get = function () {
+            ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
+                $scope.container = data.result.value.containers[0]
+                $scope.containerOwner = $scope.container.users[0]
+                $scope.container.last_seen = new Date($scope.container.last_seen)
+                $scope.container.last_updated = new Date($scope.container.last_updated);
+
+                angular.forEach($scope.container.states, function (state) {
+                    $scope.excludeStates(state);
+                })
+            })
+        }
+        $scope.get()
+
+        // Get possible container states
+        $scope.stateTypes = []
+        $scope.containerStates = {}
+        ContainerFactory.getStateTypes(function (data) {
+            $scope.stateTypes = data.result.value
+            angular.forEach($scope.stateTypes, function (state) {
+                $scope.containerStates[state] = false
+            })
+        });
+
+        $scope.excludeStates = function (state) {
+            // Deselect excluded states based on the selected state
+            $scope.containerStates[state] = true
+            angular.forEach($scope.stateTypes[state], function (disableType) {
+                $scope.containerStates[disableType] = false
+            })
+        }
+
+        $scope.$watch("containerStates", function (newValue, oldValue) {
+            for (let [key, value] of Object.entries(newValue)) {
+                if (value && !oldValue[key]) {
+                    $scope.excludeStates(key);
+                    $scope.changed = true;
+                }
+            }
+        }, true); // true = deep watch
+
+        $scope.saveStates = function () {
+            let states = []
+            angular.forEach($scope.containerStates, function (value, key) {
+                if (value) {
+                    states.push(key)
+                }
+            })
+            let params = {"serial": $scope.containerSerial, "states": states}
+            ContainerFactory.setStates(params, $scope.get)
+            $scope.changed = false;
+        }
+
+        $scope.returnTo = function () {
+            // After deleting the container, we return here.
+            $state.go($rootScope.previousState.state,
+                $rootScope.previousState.params);
+        };
+
+        $scope.deleteContainerButton = false;
+        $scope.deleteContainerMode = function (deleteAllTokens) {
+            if (deleteAllTokens) {
+                $scope.selectAllTokens(true);
+                $scope.deleteTokens();
+            }
+            ContainerFactory.deleteContainer($scope.containerSerial, $scope.returnTo)
+        }
+
+        $scope.setDescription = function (description) {
+            ContainerFactory.setDescription($scope.containerSerial, description, $scope.get)
+        }
+
+        $scope.newUser = {user: "", realm: $scope.defaultRealm};
+        $scope.assignUser = function () {
+            ContainerFactory.assignUser(
+                {
+                    serial: $scope.containerSerial,
+                    user: fixUser($scope.newUser.user),
+                    realm: $scope.newUser.realm,
+                    pin: $scope.newUser.pin
+                }
+                , $scope.get);
+        }
+
+        $scope.unassignUser = function () {
+            ContainerFactory.unassignUser(
+                {
+                    serial: $scope.containerSerial,
+                    user: fixUser($scope.containerOwner.user_name),
+                    realm: $scope.containerOwner.realm,
+                    pin: $scope.containerOwner.pin
+                }
+                , $scope.get);
+        }
+
+        $scope.editContainernfo = false;
+        $scope.startEditContainerInfo = function () {
+            $scope.editContainernfo = true;
+        };
+
+        $scope.saveContainerInfo = function () {
+            $scope.editContainernfo = false;
+        };
+
+        if ($scope.loggedInUser.role === "admin") {
+            // These are functions that can only be used by administrators.
+            // If the user is admin, we can fetch all realms
+            // If the loggedInUser is only a user, we do not need the realm list,
+            // as we do not assign a user
+            ConfigFactory.getRealms(function (data) {
+                $scope.realms = data.result.value;
+            });
+        }
+
+        ContainerFactory.updateLastSeen($scope.containerSerial);
+
+        // ------------------- Token Actions -------------------------------
+        $scope.getAllTokenSerials = function () {
+            let tokenSerials = [];
+            angular.forEach($scope.container.tokens, function (token) {
+                tokenSerials.push(token.serial);
+            });
+            return tokenSerials;
+        };
 
         $scope.enrollToken = function () {
             // go to token.enroll with the users data of the container owner
-            $scope.userParams = {}
+            $scope.enrollParams = {}
             if ($scope.containerOwner) {
-                $scope.userParams = {
+                $scope.enrollParams = {
                     realmname: $scope.containerOwner.user_realm,
-                    username: $scope.containerOwner.user_name
+                    username: $scope.containerOwner.user_name,
                 }
             }
-            $state.go("token.enroll", $scope.userParams);
+            $scope.enrollParams.containerSerial = $scope.containerSerial
+            $state.go("token.enroll", $scope.enrollParams);
             $rootScope.returnTo = "token.containerdetails({containerSerial:$scope.containerSerial})";
         };
+
+        $scope.disableAllTokens = function () {
+            let tokenSerialList = $scope.getAllTokenSerials();
+            if (tokenSerialList.length > 0) {
+                TokenFactory.disableMultiple({'serial_list': tokenSerialList}, $scope.get);
+            }
+        };
+
+        $scope.enableAllTokens = function () {
+            let tokenSerialList = $scope.getAllTokenSerials();
+            if (tokenSerialList.length > 0) {
+                TokenFactory.enableMultiple({'serial_list': tokenSerialList}, $scope.get);
+            }
+        };
+
+        // Selection looks like this {"TOTP0001B29F":true, "OATH0002EB1F":false}
+        $scope.tokenSelection = {};
+        $scope.getSelectedTokens = function () {
+            let selectedTokens = [];
+            for (let [key, value] of Object.entries($scope.tokenSelection)) {
+                if (value) {
+                    selectedTokens.push(key);
+                }
+            }
+            return selectedTokens;
+        };
+
+        $scope.allTokensSelected = false;
+        $scope.$watch("allTokensSelected", function (newValue, oldValue) {
+            $scope.selectAllTokens(newValue);
+        }, true); // true = deep watch
+
+        $scope.selectAllTokens = function (value) {
+            angular.forEach($scope.container.tokens, function (token) {
+                $scope.tokenSelection[token.serial] = value;
+            });
+        };
+
+        $scope.performTokenAction = function () {
+            let res = false;
+            if ($scope.tokenAction == 'remove') {
+                res = $scope.removeTokens();
+            } else if ($scope.tokenAction == 'delete') {
+                res = $scope.deleteTokens();
+            }
+
+            if (res) {
+                $scope.tokenAction = '';
+                $scope.tokenSelection = {};
+            }
+        };
+
+        $scope.cancelTokenAction = function () {
+            $scope.tokenAction = '';
+            $scope.tokenSelection = {};
+        }
+
+        $scope.removeTokens = function () {
+            // Remove the selected tokens
+            let res = false;
+            let selectedTokens = $scope.getSelectedTokens();
+            if (selectedTokens.length > 0) {
+                ContainerFactory.removeAllTokensFromContainer({
+                    'serial': $scope.containerSerial,
+                    'serial_list': selectedTokens
+                }, $scope.get);
+                res = true;
+            }
+            return res;
+        };
+
+        $scope.deleteTokens = function () {
+            let res = false;
+            let selectedTokens = $scope.getSelectedTokens();
+            if (selectedTokens.length > 0) {
+                angular.forEach(selectedTokens, function (token, index) {
+                    if (index == selectedTokens.length - 1) {
+                        // last token: update container with callback
+                        TokenFactory.delete(token, $scope.get);
+                    } else {
+                        TokenFactory.delete(token);
+                    }
+                });
+                res = true;
+            }
+            return res;
+        };
+
+        // single token function
+        $scope.resetFailcount = function (serial) {
+            TokenFactory.reset(serial, $scope.get);
+        };
+        $scope.disableToken = function (serial) {
+            TokenFactory.disable(serial, $scope.get);
+        };
+        $scope.enableToken = function (serial) {
+            TokenFactory.enable(serial, $scope.get);
+        };
+
     }]);

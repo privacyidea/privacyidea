@@ -129,7 +129,7 @@ angular.module("privacyideaApp")
             $scope.editUser = false;
             $scope.hideUsernmae = true;// scroll to the top of the page
             document.body.scrollTop = document.documentElement.scrollTop = 0;
-
+            $scope.enableAddTokenToContainer = false;
             $scope._getUserToken = function () {
                 TokenFactory.getTokenForUser({
                     user: $scope.username,
@@ -139,6 +139,7 @@ angular.module("privacyideaApp")
                 }, function (data) {
                     $scope.tokendata = data.result.value;
                     //debug: console.log("Token for user " + $scope.username);
+                    $scope.enableAddTokenToContainer = $scope.tokendata.tokens.length > 0;
                 });
             };
 
@@ -337,7 +338,7 @@ angular.module("privacyideaApp")
             }, true); // true = deep watch
 
             // Button actions
-            $scope.addTokensToContainerMode = function (serial) {
+            $scope.addTokensToContainerMode = function () {
                 $scope.showTokenOfUser = false;
                 $scope.tokenWithoutContainer = [];
                 for (let token of $scope.tokendata.tokens) {

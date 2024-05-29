@@ -1,12 +1,14 @@
 import logging
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
 
 from privacyidea.api.lib.utils import send_result, getParam, required
 from privacyidea.lib.container import get_container_classes, create_container_template, \
     find_container_by_serial, init_container, get_container_classes_descriptions, \
-    get_container_token_types, get_all_containers, add_tokens_to_container
+    get_container_token_types, get_all_containers, remove_tokens_from_container, add_tokens_to_container
+from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.error import ParameterError
+from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import get_one_token, get_tokens, \
     convert_token_objects_to_dicts
@@ -54,11 +56,15 @@ def list_containers():
 
     res: list = []
     for container in result["containers"]:
-        tmp: dict = {"type": container.type, "serial": container.serial, "description": container.description}
+        tmp: dict = {"type": container.type,
+                     "serial": container.serial,
+                     "description": container.description,
+                     "last_seen": container.last_seen,
+                     "last_updated": container.last_updated}
         tmp_users: dict = {}
         users: list = []
         for user in container.get_users():
-            tmp_users["user_name"] = get_username(user.login, user.resolver)
+            tmp_users["user_name"] = get_username(user.uid, user.resolver)
             tmp_users["user_realm"] = user.realm
             tmp_users["user_resolver"] = user.resolver
             tmp_users["user_id"] = user.login
@@ -72,6 +78,15 @@ def list_containers():
                 tokens = get_tokens(serial_list=token_serials)
                 tokens_dict_list = convert_token_objects_to_dicts(tokens)
             tmp["tokens"] = tokens_dict_list
+
+        tmp["states"] = [token_container_states.state for token_container_states in container.get_states()]
+
+        infos: dict = {}
+        for info in container.get_containerinfo():
+            if info.type:
+                infos[info.key + ".type"] = info.type
+            infos[info.key] = info.value
+        tmp["info"] = infos
 
         res.append(tmp)
     result["containers"] = res
@@ -108,7 +123,7 @@ def unassign():
     user = get_user_from_param(request.all_data, required)
     serial = getParam(request.all_data, "serial", required, allow_empty=False)
     container = find_container_by_serial(serial)
-    res = container.remove(user)
+    res = container.remove_user(user)
     return send_result(res)
 
 
@@ -142,6 +157,7 @@ def delete(container_serial):
 
 @container_blueprint.route('<string:container_serial>/add', methods=['POST'])
 @log_with(log)
+# @event("container_add", request, g)
 def add_token(container_serial):
     """
     Add a token to a container
@@ -169,19 +185,17 @@ def remove_token(container_serial):
     :jsonparam: serial: Serial of the token to remove
     :jsonparam: serial_list: List of serials of the tokens to remove. Comma separated.
     """
-    container = find_container_by_serial(container_serial)
-    serial = getParam(request.all_data, "serial", required, allow_empty=True)
-    serials = request.args.getlist("serial_list")
+    serial = getParam(request.all_data, "serial", optional=True, allow_empty=True)
+    serials = getParam(request.all_data, "serial_list", optional=True, allow_empty=True)
     if not serial and not serials:
         raise ParameterError("Either serial or serial_list is required")
+    token_serials = []
+    if serials:
+        token_serials = serials
+    if serial:
+        token_serials.append(serial)
 
-    serials.append(serial)
-
-    token = get_one_token(serial=serial)
-    res = False
-    if token:
-        container.remove_token(token.get_serial())
-        res = True
+    res = remove_tokens_from_container(container_serial, token_serials)
     return send_result(res)
 
 
@@ -199,6 +213,67 @@ def get_types():
     ttypes = get_container_token_types()
     res = {ctype: {"description": desc, "token_types": ttypes.get(ctype, [])} for ctype, desc in descriptions.items()}
     return send_result(res)
+
+
+@container_blueprint.route('/description/<serial>', methods=['POST'])
+@log_with(log)
+def set_description(serial):
+    """
+    Set the description of a container
+    :jsonparam: serial: Serial of the container
+    :jsonparam: description: New description to be set
+    """
+    container = find_container_by_serial(serial)
+    new_description = getParam(request.all_data, "description", optional=required, allow_empty=False)
+    res = False
+    if new_description:
+        container.description = new_description
+        res = True
+    return send_result(res)
+
+
+@container_blueprint.route('/states', methods=['POST'])
+@log_with(log)
+def set_states():
+    """
+    Set the states of a container
+    :jsonparam: serial: Serial of the container
+    :jsonparam: states: string list
+    """
+    serial = getParam(request.all_data, "serial", required, allow_empty=False)
+    states = getParam(request.all_data, "states", required, allow_empty=False)
+    container = find_container_by_serial(serial)
+
+    res = False
+    if states:
+        container.set_states(states)
+        res = True
+
+    return send_result(res)
+
+
+@container_blueprint.route('statetypes', methods=['GET'])
+@log_with(log)
+def get_state_types():
+    """
+    Get the supported state types as dictionary
+    The types are the keys and the value is a list containing all states that are excluded when the key state is
+    selected
+    """
+    state_types_exclusions = TokenContainerClass.get_state_types()
+    return send_result(state_types_exclusions)
+
+
+@container_blueprint.route('/lastseen/<serial>', methods=['POST'])
+@log_with(log)
+def update_last_seen(serial):
+    """
+    Updates the date and time for the last_seen property
+    :jsonparam: serial: Serial of the container
+    """
+    container = find_container_by_serial(serial)
+    container.update_last_seen()
+    return send_result(True)
 
 
 # @container_blueprint.route('tokentypes', methods=['GET'])

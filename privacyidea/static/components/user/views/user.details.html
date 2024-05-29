@@ -141,6 +141,10 @@
     <!-- Tokens for user -->
     <div uib-pagination ng-show="tokendata.count > 5 && showTokenOfUser"
          total-items="tokendata.count" ng-model="params.page"
+         previous-text="{{ 'Previous'|translate }}"
+         next-text="{{ 'Next'|translate }}"
+         last-text="{{ 'Last'|translate }}"
+         first-text="{{ 'First'|translate }}"
          items-per-page="{{ tokensPerPage }}"
          max-size="5"
          boundary-links="true" ng-change="pageChanged()"></div>
@@ -168,10 +172,10 @@
                     {{ token.serial }}</a></td>
                 <td>{{ token.tokentype }}</td>
                 <td>
-                <span class="label label-success" ng-show="token.active">
+                <span class="label label-success" ng-show="token.active" translate>
                     active
                 </span>
-                    <span class="label label-danger" ng-hide="token.active">
+                    <span class="label label-danger" ng-hide="token.active" translate>
                     disabled
                 </span>
                 </td>
@@ -250,6 +254,7 @@
         <button class="btn btn-primary"
                 ng-click="addTokensToContainerMode()"
                 ng-show="showTokenOfUser"
+                ng-disabled="!enableAddTokenToContainer"
                 id="putInContainerButton"
                 translate>Add Tokens to Container
         </button>
@@ -321,7 +326,7 @@
                         <a ui-sref="token.containerdetails({containerSerial: container.serial})">{{ container.serial
                             }}</a>
                     </td>
-                    <td>
+                    <td class="capitalize">
                         {{ container.type }}
                     </td>
                     <td>
