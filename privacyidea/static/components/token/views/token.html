@@ -190,7 +190,8 @@
             </div>
         </div>
 
-        <div ui-view class="col-lg-9 slide panel">
+        <div ng-class="{'col-lg-9': !token_wizard || !tokenMenu, 'col-lg-12': token_wizard && tokenMenu}"
+             ui-view class="slide panel">
         </div>
     </div>
 
