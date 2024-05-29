@@ -157,7 +157,7 @@ def delete(container_serial):
 
 @container_blueprint.route('<string:container_serial>/add', methods=['POST'])
 @log_with(log)
-#@event("container_add", request, g)
+# @event("container_add", request, g)
 def add_token(container_serial):
     """
     Add a token to a container
