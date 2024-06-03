@@ -380,6 +380,7 @@ class SmsTokenClass(HotpTokenClass):
         :rtype: int
         """
         options = options or {}
+
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
         if ret < 0 and is_true(get_from_config("sms.concurrent_challenges")):
             if safe_compare(options.get("data"), anOtpVal):
@@ -516,8 +517,8 @@ class SmsTokenClass(HotpTokenClass):
     def _get_sms_text(options):
         """
         This returns the SMSTEXT from the policy "smstext"
-        
-        options contains data like clientip, g, user and also the Request 
+
+        options contains data like clientip, g, user and also the Request
         parameters like "challenge" or "pass".
 
         :param options: contains user and g object.
