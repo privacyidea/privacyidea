@@ -23,6 +23,7 @@ API for managing token containers
 
 
 @container_blueprint.route('/', methods=['GET'])
+@event('container_list', request, g)
 @log_with(log)
 def list_containers():
     """
@@ -94,6 +95,7 @@ def list_containers():
 
 
 @container_blueprint.route('assign', methods=['POST'])
+@event('container_assign', request, g)
 @log_with(log)
 def assign():
     """
@@ -111,6 +113,7 @@ def assign():
 
 
 @container_blueprint.route('unassign', methods=['POST'])
+@event('container_unassign', request, g)
 @log_with(log)
 def unassign():
     """
@@ -128,6 +131,7 @@ def unassign():
 
 
 @container_blueprint.route('init', methods=['POST'])
+@event('container_init', request, g)
 @log_with(log)
 def init():
     """
@@ -145,6 +149,7 @@ def init():
 
 
 @container_blueprint.route('<string:container_serial>', methods=['DELETE'])
+@event('container_delete', request, g)
 @log_with(log)
 def delete(container_serial):
     """
@@ -157,7 +162,7 @@ def delete(container_serial):
 
 @container_blueprint.route('<string:container_serial>/add', methods=['POST'])
 @log_with(log)
-# @event("container_add", request, g)
+@event('container_add_token', request, g)
 def add_token(container_serial):
     """
     Add a token to a container
@@ -178,6 +183,7 @@ def add_token(container_serial):
 
 
 @container_blueprint.route('<string:container_serial>/remove', methods=['POST'])
+@event('container_remove_token', request, g)
 @log_with(log)
 def remove_token(container_serial):
     """
@@ -216,6 +222,7 @@ def get_types():
 
 
 @container_blueprint.route('/description/<serial>', methods=['POST'])
+@event('container_set_description', request, g)
 @log_with(log)
 def set_description(serial):
     """
@@ -233,6 +240,7 @@ def set_description(serial):
 
 
 @container_blueprint.route('/states', methods=['POST'])
+@event('container_set_states', request, g)
 @log_with(log)
 def set_states():
     """
@@ -265,6 +273,7 @@ def get_state_types():
 
 
 @container_blueprint.route('/lastseen/<serial>', methods=['POST'])
+@event('container_update_last_seen', request, g)
 @log_with(log)
 def update_last_seen(serial):
     """

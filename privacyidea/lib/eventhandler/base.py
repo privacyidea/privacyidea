@@ -31,8 +31,10 @@ The event handler module is bound to an event together with
 * an action
 * optional options ;-)
 """
+
 from privacyidea.lib import _
 from privacyidea.lib.config import get_token_types
+from privacyidea.lib.container import find_container_by_serial
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.auth import ROLE
@@ -331,8 +333,8 @@ class BaseEventHandler(object):
         events = ["*"]
         return events
 
-    @staticmethod
-    def _get_tokenowner(request):
+    @classmethod
+    def _get_tokenowner(cls, request):
         user = User()
         if hasattr(request, "User"):
             user = request.User
@@ -353,6 +355,37 @@ class BaseEventHandler(object):
                 user = User()
 
         return user
+
+    @classmethod
+    def _get_container_owners(cls, request):
+        users = []
+        if hasattr(request, "User"):
+            user = request.User
+            users.append(user)
+            serial = request.all_data.get("container_serial")
+            if user.is_empty() and serial:
+                # maybe the user is empty, but a serial was passed.
+                # Then we determine the user by the serial
+                container = find_container_by_serial(serial)
+                users = container.get_users()
+
+        return users
+
+    @classmethod
+    def _get_users_from_request(cls, request):
+        """
+        Extracts the user information from the request or searches for the container owners or token owner.
+        If no user is found, an empty user is returned.
+
+        :param request: The request object
+        :return: List of user objects
+        """
+        users = cls._get_container_owners(request)
+        if len(users) == 0:
+            user = cls._get_tokenowner(request)
+            if not user.is_empty():
+                users.append(user)
+        return users
 
     @staticmethod
     def _get_response_content(response):
@@ -451,7 +484,7 @@ class BaseEventHandler(object):
                 locked = token_obj.get_failcount() >= \
                          token_obj.get_max_failcount()
                 if (conditions.get("token_locked") in ["True", True]) != \
-                      locked:
+                        locked:
                     return False
             else:
                 # check all tokens of the user, if any token is maxfail
@@ -545,7 +578,7 @@ class BaseEventHandler(object):
             if CONDITION.TOKEN_VALIDITY_PERIOD in conditions:
                 valid = token_obj.check_validity_period()
                 if (conditions.get(CONDITION.TOKEN_VALIDITY_PERIOD)
-                       in ["True", True]) != valid:
+                    in ["True", True]) != valid:
                     return False
 
             if CONDITION.OTP_COUNTER in conditions:
@@ -555,7 +588,7 @@ class BaseEventHandler(object):
 
             if CONDITION.LAST_AUTH in conditions:
                 if token_obj.check_last_auth_newer(conditions.get(
-                    CONDITION.LAST_AUTH)):
+                        CONDITION.LAST_AUTH)):
                     return False
 
             if CONDITION.COUNT_AUTH in conditions:

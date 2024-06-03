@@ -176,6 +176,14 @@ class TokenContainerClass:
 
         return self._db_container.info_list
 
+    def delete_containerinfo(self, key=None):
+        """
+        Delete the tokencontainerinfo from the DB
+
+        :param key: key to delete, if None all keys are deleted
+        """
+        self._db_container.del_info(key)
+
     @classmethod
     def get_class_type(cls):
         return "generic"
