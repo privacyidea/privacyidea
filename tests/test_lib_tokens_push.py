@@ -1399,7 +1399,7 @@ class PushTokenTestCase(MyTestCase):
         # create 2nd push token
         tokenobj2 = self._create_push_token()
         serial2 = tokenobj2.get_serial()
-        self.assertNotEquals(serial1, serial2)
+        self.assertNotEqual(serial1, serial2)
         # set PIN
         tokenobj1.set_pin("pushpin")
         tokenobj1.add_user(User("cornelius", self.realm1))
