@@ -17,5 +17,6 @@ work with user.py
 """
 
 from privacyidea.lib.framework import _
+from privacyidea.lib.framework import _l
 
-__all__ = ['_']
+__all__ = ['_', '_l']
