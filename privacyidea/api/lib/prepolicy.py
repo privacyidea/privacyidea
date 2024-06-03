@@ -1459,10 +1459,11 @@ def pushtoken_disable_wait(request, action):
     request.all_data[PUSH_ACTION.WAIT] = False
 
 
-def pushtoken_wait(request, action):
+def pushtoken_validate(request, action):
     """
     This is a auth specific wrapper to decorate /validate/check
     According to the policy scope=SCOPE.AUTH, action=push_wait
+    and scope=SCOPE.AUTH, action=push_require_presence
 
     :param request:
     :param action:
@@ -1476,6 +1477,13 @@ def pushtoken_wait(request, action):
         request.all_data[PUSH_ACTION.WAIT] = int(list(waiting)[0])
     else:
         request.all_data[PUSH_ACTION.WAIT] = False
+
+    require_presence = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.REQUIRE_PRESENCE,
+                       user_object=user_object if user_object else None).action_values(unique=True)
+    if len(require_presence) >= 1:
+        request.all_data[PUSH_ACTION.REQUIRE_PRESENCE] = list(require_presence)[0]
+    else:
+        request.all_data[PUSH_ACTION.REQUIRE_PRESENCE] = "0"
 
 
 def pushtoken_add_config(request, action):

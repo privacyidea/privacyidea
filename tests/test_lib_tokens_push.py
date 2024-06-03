@@ -10,7 +10,7 @@ from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               DEFAULT_CHALLENGE_TEXT, strip_key,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
-                                              PUBLIC_KEY_SERVER,
+                                              PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY)
 from privacyidea.lib.smsprovider.FirebaseProvider import FIREBASE_CONFIG
 from privacyidea.lib.token import get_tokens, remove_token, init_token
@@ -362,6 +362,9 @@ class PushTokenTestCase(MyTestCase):
             # Check that the challenge is created if the request to firebase
             # succeeded even though polling is disabled
             # add responses, to simulate the successful communication to firebase
+            # We also add the presence_required policy.
+            set_policy('push_presence', SCOPE.AUTH,
+                       action='{0!s}=1'.format(PUSH_ACTION.REQUIRE_PRESENCE))
             responses.replace(responses.POST,
                               'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
                               body="""{}""",
@@ -376,12 +379,16 @@ class PushTokenTestCase(MyTestCase):
                 jsonresp = res.json
                 self.assertTrue(jsonresp.get("result").get("status"))
             self.assertEqual(len(get_challenges(serial=tokenobj.token.serial)), 1)
-            get_challenges(serial=tokenobj.token.serial)[0].delete()
+            chal = get_challenges(serial=tokenobj.token.serial)[0]
+            # Check in the challenge for a require_presence value, this indicates, that the challenges was created
+            self.assertIn(chal.data, AVAILABLE_PRESENCE_OPTIONS)
+            chal.delete()
 
         remove_token(serial=serial)
         delete_smsgateway(self.firebase_config_name)
         delete_policy('push_poll')
         delete_policy('push1')
+        delete_policy('push_presence')
 
     @responses.activate
     def test_03b_api_authenticate_client(self):
@@ -739,7 +746,6 @@ class PushTokenTestCase(MyTestCase):
             jsonresp = res.json
             # Result-Value is True
             self.assertTrue(jsonresp.get("result").get("value"))
-
 
     def test_04_decline_auth_request(self):
         # get enrolled push token
@@ -1375,3 +1381,131 @@ class PushTokenTestCase(MyTestCase):
         tok.delete_token()
         tok2.delete_token()
         delete_smsgateway(self.firebase_config_name)
+
+    @responses.activate
+    def test_20_api_authenticate_two_tokens(self):
+        # Test the /validate/check endpoints, user has two push tokens, require presence
+        self.setUp_user_realms()
+        # create FireBase Service and policies
+        set_smsgateway(self.firebase_config_name,
+                       'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                       "myFB", FB_CONFIG_VALS)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
+                                               self.firebase_config_name))
+        # create push token
+        tokenobj1 = self._create_push_token()
+        serial1 = tokenobj1.get_serial()
+        # create 2nd push token
+        tokenobj2 = self._create_push_token()
+        serial2 = tokenobj2.get_serial()
+        self.assertNotEqual(serial1, serial2)
+        # set PIN
+        tokenobj1.set_pin("pushpin")
+        tokenobj1.add_user(User("cornelius", self.realm1))
+        tokenobj2.set_pin("pushpin")
+        tokenobj2.add_user(User("cornelius", self.realm1))
+
+        # set the policy for require presence
+        set_policy('push_presence', SCOPE.AUTH,
+                   action='{0!s}=1'.format(PUSH_ACTION.REQUIRE_PRESENCE))
+
+        cached_fbtoken = {
+            'firebase_token': {
+                FB_CONFIG_VALS[FIREBASE_CONFIG.JSON_CONFIG]: _create_credential_mock()}}
+        self.app.config.setdefault('_app_local_store', {}).update(cached_fbtoken)
+        # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
+        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account'
+                        '.Credentials.from_service_account_file') as mySA:
+            # add responses, to simulate the communication to firebase
+            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects'
+                                          '/test-123456/messages:send',
+                          body="""{}""",
+                          content_type="application/json")
+
+            # Send the first authentication request to trigger the challenge. For two tokens
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "realm": self.realm1,
+                                                     "pass": "pushpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                jsonresp = res.json
+                self.assertFalse(jsonresp.get("result").get("value"))
+                self.assertTrue(jsonresp.get("result").get("status"))
+                multi_challenge = jsonresp.get("detail").get("multi_challenge")
+                # Ensure, that both messages are the same, i.e. the user is requested to press the same button
+                self.assertEqual(multi_challenge[0].get("message"),
+                                 multi_challenge[1].get("message"),
+                                 multi_challenge)
+                self.assertIn("Please press:", multi_challenge[0].get("message"))
+                transaction_id = jsonresp.get("detail").get("transaction_id")
+
+            # Our ServiceAccountCredentials mock has not been called because we use a cached token
+            mySA.assert_not_called()
+            self.assertIn(FIREBASE_FILE, get_app_local_store()["firebase_token"])
+            # remove cached Credentials
+            get_app_local_store().pop("firebase_token")
+
+        # The mobile device has not communicated with the backend, yet.
+        # The user is not authenticated!
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            jsonresp = res.json
+            # Result-Value is false, the user has not answered the challenge, yet
+            self.assertFalse(jsonresp.get("result").get("value"))
+
+        # As the challenge has not been answered yet, the /validate/polltransaction endpoint returns false
+        with self.app.test_request_context('/validate/polltransaction', method='GET',
+                                           data={'transaction_id': transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+
+        # Now the smartphone communicates with the backend and the challenge in the database table
+        # is marked as answered successfully.
+        challengeobject_list = get_challenges(serial=tokenobj1.token.serial,
+                                              transaction_id=transaction_id)
+        challengeobject_list[0].set_otp_status(True)
+
+        # As the challenge has been answered, the /validate/polltransaction endpoint returns true
+        with self.app.test_request_context('/validate/polltransaction', method='GET',
+                                           data={'transaction_id': transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertTrue(res.json["result"]["value"])
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "",
+                                                 "state": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            jsonresp = res.json
+            # Result-Value is True, since the challenge is marked resolved in the DB
+        self.assertTrue(jsonresp.get("result").get("value"))
+
+        # As the challenge does not exist anymore, the /validate/polltransaction endpoint returns false
+        with self.app.test_request_context('/validate/polltransaction', method='GET',
+                                           data={'transaction_id': transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertFalse(res.json["result"]["value"])
+        self.assertEqual(get_challenges(serial=tokenobj1.token.serial), [])
+
+        delete_policy("push_config")
+        delete_policy("push_presence")
+        remove_token(serial1)
+        remove_token(serial2)
