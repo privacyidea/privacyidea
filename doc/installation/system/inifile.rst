@@ -177,6 +177,12 @@ is not set, the value from ``PI_NODE`` or ``localnode`` will be used.
 
 You can run the database for the audit module on another database or even
 server. For this you can specify the database URI via ``PI_AUDIT_SQL_URI``.
+
+.. note:: If you run the Audit database on a different URI, the schema update script
+   will not update the Audit schema automatically during update. Then check the
+   READ_BEFORE_UPDATE.md, if the Audit data has been changed. Then you need to adapt
+   the Audit table manually.
+
 With ``PI_AUDIT_SQL_OPTIONS`` You can pass a dictionary of options to the
 database engine. If ``PI_AUDIT_SQL_OPTIONS`` is not set,
 ``SQLALCHEMY_ENGINE_OPTIONS`` will be used.
