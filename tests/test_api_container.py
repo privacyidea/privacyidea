@@ -19,7 +19,7 @@ class APIContainer(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result["status"])
-            cserial = result["value"]["serial"]
+            cserial = result["value"]["container_serial"]
             self.assertTrue(len(cserial) > 1)
         # Delete the container
         with self.app.test_request_context(f"container/{cserial}", method='DELETE', headers={'Authorization': self.at}):

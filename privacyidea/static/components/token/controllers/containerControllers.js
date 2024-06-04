@@ -151,6 +151,17 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.newToken = {"serial": "", pin: ""};
         $scope.tokenAction = "";
 
+        // Get possible container states
+        $scope.stateTypes = []
+        $scope.containerStates = {}
+        ContainerFactory.getStateTypes(function (data) {
+            $scope.stateTypes = data.result.value
+            angular.forEach($scope.stateTypes, function (state) {
+                $scope.containerStates[state] = false
+            })
+        });
+
+        // Get container details
         $scope.container = {}
         $scope.containerOwner = {}
         $scope.get = function () {
@@ -166,16 +177,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
             })
         }
         $scope.get()
-
-        // Get possible container states
-        $scope.stateTypes = []
-        $scope.containerStates = {}
-        ContainerFactory.getStateTypes(function (data) {
-            $scope.stateTypes = data.result.value
-            angular.forEach($scope.stateTypes, function (state) {
-                $scope.containerStates[state] = false
-            })
-        });
 
         $scope.excludeStates = function (state) {
             // Deselect excluded states based on the selected state

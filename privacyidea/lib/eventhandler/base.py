@@ -398,7 +398,7 @@ class BaseEventHandler(object):
         return users
 
     @classmethod
-    def _get_container_serial(cls, request, content, g):
+    def _get_container_serial(cls, request, content, g=None):
         """
         Get the container serial from the request, content or audit object.
 
@@ -421,7 +421,7 @@ class BaseEventHandler(object):
                 if not cls._serial_is_from_container(container_serial):
                     container_serial = None
 
-        if not container_serial:
+        if not container_serial and g:
             # get serial from audit object
             container_serial = g.audit_object.audit_data.get("container_serial")
             if not cls._serial_is_from_container(container_serial):
@@ -543,11 +543,12 @@ class BaseEventHandler(object):
             tokenresolvers = list(set(tokenresolvers))
 
         # Get container
-        container_serial = self._get_container_serial(request, content, g)
-        if not container_serial:
-            container_serial = token_obj.container_serial
+        container_serial = self._get_container_serial(request, content)
+        container = None
         if container_serial:
             container = find_container_by_serial(container_serial)
+        elif serial and token_obj:
+            container = find_container_for_token(serial)
 
         if CONDITION.CLIENT_IP in conditions:
             if g and g.client_ip:
