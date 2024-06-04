@@ -34,7 +34,8 @@ The event handler module is bound to an event together with
 
 from privacyidea.lib import _
 from privacyidea.lib.config import get_token_types
-from privacyidea.lib.container import find_container_by_serial
+from privacyidea.lib.container import find_container_by_serial, find_container_for_token, get_all_containers
+from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.auth import ROLE
@@ -81,6 +82,7 @@ class CONDITION(object):
     RESOLVER = "resolver"
     CLIENT_IP = "client_ip"
     ROLLOUT_STATE = "rollout_state"
+    CONTAINER_STATE = "container_state"
 
 
 class GROUP(object):
@@ -92,6 +94,7 @@ class GROUP(object):
     GENERAL = "general"
     USER = "user"
     COUNTER = "counter"
+    CONTAINER = "container"
 
 
 class BaseEventHandler(object):
@@ -143,6 +146,7 @@ class BaseEventHandler(object):
         """
         realms = get_realms()
         resolvers = get_resolver_list()
+        container_states = list(TokenContainerClass.get_state_types().keys())
         cond = {
             CONDITION.ROLLOUT_STATE: {
                 "type": "str",
@@ -316,6 +320,12 @@ class BaseEventHandler(object):
                 "type": "str",
                 "desc": _("Trigger the action, if the client IP matches."),
                 "group": GROUP.GENERAL
+            },
+            CONDITION.CONTAINER_STATE: {
+                "type": "str",
+                "desc": _("The container state has a certain value."),
+                "value": container_states,
+                "group": GROUP.CONTAINER
             }
         }
         return cond
@@ -387,6 +397,98 @@ class BaseEventHandler(object):
                 users.append(user)
         return users
 
+    @classmethod
+    def _get_container_serial(cls, request, content, g):
+        """
+        Get the container serial from the request, content or audit object.
+
+        :param request: The request object
+        :param content: The content of the response
+        :param g: The g object
+        :return: The container serial or None if no serial could be found
+        """
+
+        # get serial from request
+        container_serial = request.all_data.get("container_serial")
+        if not cls._serial_is_from_container(container_serial):
+            container_serial = None
+
+        if not container_serial:
+            # get serial from response
+            value = content.get("result", {}).get('value', {})
+            if isinstance(value, dict):
+                container_serial = value.get("container_serial")
+                if not cls._serial_is_from_container(container_serial):
+                    container_serial = None
+
+        if not container_serial:
+            # get serial from audit object
+            container_serial = g.audit_object.audit_data.get("container_serial")
+            if not cls._serial_is_from_container(container_serial):
+                container_serial = None
+
+        return container_serial
+
+    @classmethod
+    def _get_container_serial_from_token(cls, request, content, g):
+        """
+        Trys to get a token serial. If a token is found, it tries to get the container serial from this token.
+
+        :param request: The request object
+        :param content: The content of the response
+        :param g: The g object
+        :return: The container serial or None if no serial could be found
+        """
+        serial = request.all_data.get("serial")
+        container_serial = cls._get_container_serial_from_token(serial)
+
+        if not container_serial:
+            serial = content.get("result", {}).get('serial', {})
+            container_serial = cls._get_container_serial_from_token(serial)
+
+        if not container_serial:
+            serial = g.audit_object.audit_data.get("serial")
+            container_serial = cls._get_container_serial_from_token(serial)
+
+        return container_serial
+
+    @classmethod
+    def _serial_is_from_container(cls, serial):
+        """
+        Validates whether the given serial is from a container.
+
+        :param serial: The serial to validate
+        :return: True if a container with the given serial exists, False otherwise
+        """
+        container_exists = False
+
+        if serial:
+            # Check if a container exists with this serial
+            containers = get_all_containers(serial=serial, pagesize=0, page=0)['containers']
+            if len(containers) > 0:
+                container_exists = True
+
+        return container_exists
+
+    @classmethod
+    def _get_container_serial_from_token(cls, token_serial):
+        """
+        Trys to get the container serial from a token.
+
+        :param token_serial: Serial of a token
+        :return: container serial or None if the token is not part of a container or the token does not exist
+        """
+        container_serial = None
+        if token_serial:
+            tokens = get_tokens(serial=token_serial)
+            if len(tokens) > 0:
+                token = tokens[0]
+                container = find_container_for_token(token.get_serial())
+                if container:
+                    container_serial = container.serial
+
+        return container_serial
+
     @staticmethod
     def _get_response_content(response):
         content = {}
@@ -439,6 +541,13 @@ class BaseEventHandler(object):
                 resolvers = all_realms.get(tokenrealm, {}).get("resolver", {})
                 tokenresolvers.extend([r.get("name") for r in resolvers])
             tokenresolvers = list(set(tokenresolvers))
+
+        # Get container
+        container_serial = self._get_container_serial(request, content, g)
+        if not container_serial:
+            container_serial = token_obj.container_serial
+        if container_serial:
+            container = find_container_by_serial(container_serial)
 
         if CONDITION.CLIENT_IP in conditions:
             if g and g.client_ip:
@@ -633,6 +742,15 @@ class BaseEventHandler(object):
             if CONDITION.ROLLOUT_STATE in conditions:
                 cond = conditions.get(CONDITION.ROLLOUT_STATE)
                 if not cond == token_obj.token.rollout_state:
+                    return False
+
+        # Container specific conditions
+        if container:
+
+            if CONDITION.CONTAINER_STATE in conditions:
+                cond = conditions.get(CONDITION.CONTAINER_STATE)
+                container_states = [token_container_states.state for token_container_states in container.get_states()]
+                if cond not in container_states:
                     return False
 
         return True

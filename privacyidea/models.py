@@ -3373,21 +3373,6 @@ class TokenContainer(MethodsMixin, db.Model):
                                    type=types.get(k)).save(persistent=False)
         db.session.commit()
 
-    def del_info(self, key=None):
-        """
-        Deletes containerinfo for a given container.
-        If the key is omitted, all Containerinfo is deleted.
-
-        :param key: searches for the given key to delete the entry
-        :return:
-        """
-        if key:
-            containerinfos = TokenContainerInfo.query.filter_by(container_id=self.id, Key=key)
-        else:
-            containerinfos = TokenContainerInfo.query.filter_by(container_id=self.id)
-        for ci in containerinfos:
-            ci.delete()
-
 
 class TokenContainerTemplate(MethodsMixin, db.Model):
     __tablename__ = 'tokencontainertemplate'

@@ -132,13 +132,9 @@ class ContainerEventHandler(BaseEventHandler):
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
 
-        # TODO: Differentiate container and token serials in all requests or by the serials themselves
-        # serial = request.all_data.get("container_serial") or \
-        #          request.all_data.get("serial") or \
-        #          content.get("result", {}).get('value', {}).get("serial") or \
-        #          g.audit_object.audit_data.get("serial")
-        # container_serial = serial_is_from_container(serial)
-        container_serial = get_container_serial(request, content, g)
+        container_serial = self._get_container_serial(request, content, g)
+        if not container_serial:
+            container_serial = self._get_container_serial_from_token(request, content, g)
 
         if container_serial:
             log.info(f"{action} for container {container_serial}")
@@ -213,61 +209,3 @@ class ContainerEventHandler(BaseEventHandler):
                     container.add_user(user)
 
         return ret
-
-
-def get_container_serial(request, content, g):
-    """
-    Get the container serial from the request, content or audit object.
-    It checks if the serial is from a container or a token. In case it is from a token, it trys to get the container
-    serial from the token.
-
-    :param request: The request object
-    :param content: The content of the response
-    :param g: The g object
-    :return: The container serial or None if no serial could be found
-    """
-    # Get serial from request
-    serial = request.all_data.get("container_serial")
-
-    if not serial:
-        # get serial from request
-        serial = request.all_data.get("serial")
-        serial = serial_is_from_container(serial)
-
-    if not serial:
-        # get serial from response
-        serial = content.get("result", {}).get('value', {}).get("serial")
-        serial = serial_is_from_container(serial)
-
-    if not serial:
-        # get serial from audit object
-        serial = g.audit_object.audit_data.get("serial")
-        serial = serial_is_from_container(serial)
-
-    return serial
-
-
-def serial_is_from_container(serial):
-    """
-    Validates whether the given serial is from a container or a token. If it is from a token, it tries to get the
-    container serial from the token.
-
-    :param serial: The serial to validate
-    :return: The container serial or None if the serial is not from a container and the token also has no container
-    serial
-    """
-    container_serial = None
-    # Check if a container exists with this serial
-    containers = get_all_containers(serial=serial, pagesize=0, page=0)['containers']
-    if len(containers) > 0:
-        container_serial = serial
-    else:
-        # Check if a token exists with this serial and get the container serial
-        tokens = get_tokens(serial=serial)
-        if len(tokens) > 0:
-            token = tokens[0]
-            container = find_container_for_token(token.get_serial())
-            if container:
-                container_serial = container.serial
-
-    return container_serial

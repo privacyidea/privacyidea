@@ -207,7 +207,7 @@ def create_container_class_object(db_container):
 
 def find_container_for_token(serial):
     """
-    Returns a list of TokenContainerClass objects for the given token
+    Returns a TokenContainerClass objects for the given token
     """
     token_id = Token.query.filter(Token.serial == serial).one().id
     row = TokenContainerToken.query.filter(
@@ -278,7 +278,7 @@ def init_container(params):
         raise EnrollmentError(f"Type '{ctype}' is not a valid type!")
 
     desc = params.get("description") or ""
-    serial = params.get("serial") or _gen_serial(ctype)
+    serial = params.get("container_serial") or _gen_serial(ctype)
     db_container = TokenContainer(serial=serial, container_type=ctype.lower(), description=desc)
     db_container.save()
 

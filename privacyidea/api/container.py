@@ -42,7 +42,7 @@ def list_containers():
     """
     param = request.all_data
     user = request.User
-    serial = getParam(param, "serial", optional=True)
+    cserial = getParam(param, "container_serial", optional=True)
     ctype = getParam(param, "type", optional=True)
     token_serial = getParam(param, "token_serial", optional=True)
     sortby = getParam(param, "sortby", optional=True, default="serial")
@@ -51,7 +51,7 @@ def list_containers():
     page = int(getParam(param, "page", optional=True) or 0)
     no_token = getParam(param, "no_token", optional=True, default=False)
 
-    result = get_all_containers(user=user, serial=serial, ctype=ctype, token_serial=token_serial,
+    result = get_all_containers(user=user, serial=cserial, ctype=ctype, token_serial=token_serial,
                                 sortby=sortby, sortdir=sortdir,
                                 pagesize=psize, page=page)
 
@@ -106,7 +106,7 @@ def assign():
     :jsonparam realm: Realm of the user
     """
     user = get_user_from_param(request.all_data, required)
-    serial = getParam(request.all_data, "serial", required, allow_empty=False)
+    serial = getParam(request.all_data, "container_serial", required, allow_empty=False)
     container = find_container_by_serial(serial)
     res = container.add_user(user)
     return send_result(res)
@@ -124,7 +124,7 @@ def unassign():
     :jsonparam realm: Realm of the user
     """
     user = get_user_from_param(request.all_data, required)
-    serial = getParam(request.all_data, "serial", required, allow_empty=False)
+    serial = getParam(request.all_data, "container_serial", required, allow_empty=False)
     container = find_container_by_serial(serial)
     res = container.remove_user(user)
     return send_result(res)
@@ -144,7 +144,7 @@ def init():
     :jsonparam: realm: Optional realm to assign the container to. Requires user param to be present as well.
     """
     serial = init_container(request.all_data)
-    res = {"serial": serial}
+    res = {"container_serial": serial}
     return send_result(res)
 
 
@@ -221,16 +221,16 @@ def get_types():
     return send_result(res)
 
 
-@container_blueprint.route('/description/<serial>', methods=['POST'])
+@container_blueprint.route('/description/<container_serial>', methods=['POST'])
 @event('container_set_description', request, g)
 @log_with(log)
-def set_description(serial):
+def set_description(container_serial):
     """
     Set the description of a container
     :jsonparam: serial: Serial of the container
     :jsonparam: description: New description to be set
     """
-    container = find_container_by_serial(serial)
+    container = find_container_by_serial(container_serial)
     new_description = getParam(request.all_data, "description", optional=required, allow_empty=False)
     res = False
     if new_description:
@@ -248,9 +248,9 @@ def set_states():
     :jsonparam: serial: Serial of the container
     :jsonparam: states: string list
     """
-    serial = getParam(request.all_data, "serial", required, allow_empty=False)
+    container_serial = getParam(request.all_data, "container_serial", required, allow_empty=False)
     states = getParam(request.all_data, "states", required, allow_empty=False)
-    container = find_container_by_serial(serial)
+    container = find_container_by_serial(container_serial)
 
     res = False
     if states:
@@ -272,15 +272,15 @@ def get_state_types():
     return send_result(state_types_exclusions)
 
 
-@container_blueprint.route('/lastseen/<serial>', methods=['POST'])
+@container_blueprint.route('/lastseen/<container_serial>', methods=['POST'])
 @event('container_update_last_seen', request, g)
 @log_with(log)
-def update_last_seen(serial):
+def update_last_seen(container_serial):
     """
     Updates the date and time for the last_seen property
     :jsonparam: serial: Serial of the container
     """
-    container = find_container_by_serial(serial)
+    container = find_container_by_serial(container_serial)
     container.update_last_seen()
     return send_result(True)
 

@@ -9,7 +9,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.token import create_tokenclass_object
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
-from privacyidea.models import TokenContainerOwner, Realm, Token, db, TokenContainerStates
+from privacyidea.models import TokenContainerOwner, Realm, Token, db, TokenContainerStates, TokenContainerInfo
 
 log = logging.getLogger(__name__)
 
@@ -154,7 +154,7 @@ class TokenContainerClass:
         :param info: dictionary with key and value
         :type info: dict
         """
-        self._db_container.del_info()
+        self.delete_container_info()
         self._db_container.set_info(info)
 
     def add_containerinfo(self, key, value):
@@ -176,13 +176,18 @@ class TokenContainerClass:
 
         return self._db_container.info_list
 
-    def delete_containerinfo(self, key=None):
+    def delete_container_info(self, key=None):
         """
         Delete the tokencontainerinfo from the DB
 
         :param key: key to delete, if None all keys are deleted
         """
-        self._db_container.del_info(key)
+        if key:
+            container_infos = TokenContainerInfo.query.filter_by(container_id=self.id, Key=key)
+        else:
+            container_infos = TokenContainerInfo.query.filter_by(container_id=self.id)
+        for ci in container_infos:
+            ci.delete()
 
     @classmethod
     def get_class_type(cls):

@@ -16,7 +16,7 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             getContainerForSerial: function (serial, callback) {
-                $http.get(containerUrl + "/?serial=" + serial, {
+                $http.get(containerUrl + "/?container_serial=" + serial, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data)
@@ -49,7 +49,7 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             addTokenToContainer: function (params, callback) {
-                $http.post(containerUrl + "/" + params["serial"] + "/add", {serial: params["tokenSerial"]}, {
+                $http.post(containerUrl + "/" + params["container_serial"] + "/add", {serial: params["tokenSerial"]}, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data)
@@ -67,7 +67,7 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             removeTokenFromContainer: function (params, callback) {
-                $http.post(containerUrl + "/" + params["serial"] + "/remove", {serial: params["tokenSerial"]}, {
+                $http.post(containerUrl + "/" + params["container_serial"] + "/remove", {serial: params["tokenSerial"]}, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data)
@@ -76,7 +76,7 @@ myApp.factory("ContainerFactory", ['AuthFactory', '$http', 'containerUrl', '$q',
                 });
             },
             removeAllTokensFromContainer: function (params, callback) {
-                $http.post(containerUrl + "/" + params["serial"] + "/remove", {serial_list: params["serial_list"]}, {
+                $http.post(containerUrl + "/" + params["container_serial"] + "/remove", {serial_list: params["token_serial_list"]}, {
                     headers: {'PI-Authorization': AuthFactory.getAuthToken()}
                 }).then(function (response) {
                     callback(response.data)

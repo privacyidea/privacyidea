@@ -53,7 +53,7 @@ class APIContainer(MyApiTestCase):
         # Filter for container serial
         with self.app.test_request_context('/container/',
                                            method='GET',
-                                           data={"serial": container_serials[3], "pagesize": 15},
+                                           data={"container_serial": container_serials[3], "pagesize": 15},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             containerdata = res.json["result"]["value"]
@@ -110,7 +110,7 @@ class APIContainer(MyApiTestCase):
         # Filter for container serial
         with self.app.test_request_context('/container/',
                                            method='GET',
-                                           data={"serial": "wrong_serial", "pagesize": 15},
+                                           data={"container_serial": "wrong_serial", "pagesize": 15},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             containerdata = res.json["result"]["value"]
