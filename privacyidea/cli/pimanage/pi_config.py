@@ -42,8 +42,11 @@ from privacyidea.lib.realm import (get_realms, delete_realm, set_default_realm,
                                    get_default_realm)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list)
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
+from privacyidea.cli.pimanage.challenge import challenge_cli
 
-config_cli = AppGroup("config", help="privacyIDEA server configuration")
+config_cli = AppGroup("config", help="Manage the privacyIDEA server configuration")
+
+config_cli.add_command(challenge_cli)
 
 ca_cli = AppGroup("ca", help="Manage Certificate Authorities")
 

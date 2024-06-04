@@ -117,3 +117,23 @@ class PIManageBaseTestCase(CliTestCase):
         self.assertNotIn("create_tables", result.output, result)
         self.assertNotIn("dropdb", result.output, result)
         self.assertNotIn("drop_tables", result.output, result)
+        self.assertNotIn("realm", result.output, result)
+        self.assertNotIn("resolver", result.output, result)
+
+
+class PIManageConfigTestCase(CliTestCase):
+    def test_01_pimanage_config_help(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "-h"])
+        self.assertIn("Manage the privacyIDEA server configuration", result.output, result)
+        self.assertIn("ca", result.output, result)
+        self.assertIn("realm", result.output, result)
+        self.assertIn("resolver", result.output, result)
+        self.assertIn("event", result.output, result)
+        self.assertIn("policy", result.output, result)
+        self.assertIn("authcache", result.output, result)
+        self.assertIn("hsm", result.output, result)
+        self.assertIn("challenge", result.output, result)
+        self.assertIn("export", result.output, result)
+        self.assertIn("import", result.output, result)
+        self.assertNotIn("exporter", result.output, result)

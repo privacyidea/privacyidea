@@ -6,6 +6,9 @@
   to the database with a unique identifier for each installation
 * We added the columns "user_agent" and "version" to the table `pidea_audit`.
   If you are running the Audit table on a different database, then you need to add these columns manually!
+* Due to the rewrite of the CLI tools, some commands have been removed or changed.
+  For `pi-manage` these changes can be found here:
+  https://github.com/privacyidea/privacyidea/wiki/concept:-Migrate-to-click-framework#changes-of-the-commands
 
 ## Update from 3.8 to 3.9
 

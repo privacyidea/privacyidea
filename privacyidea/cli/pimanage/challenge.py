@@ -20,10 +20,7 @@
 import datetime
 import dateutil.tz
 import click
-from flask import current_app
 from flask.cli import AppGroup
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.orm import sessionmaker
 
 from privacyidea.models import Challenge, db
 from privacyidea.lib.sqlutils import delete_matching_rows
