@@ -142,6 +142,9 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
                 $scope.expandedRows.splice($scope.expandedRows.indexOf(containerRow), 1)
             }
         }
+
+        // listen to the reload broadcast
+        $scope.$on("piReload", $scope.get);
     }]);
 
 myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams', '$q', 'ContainerFactory', 'AuthFactory', 'ConfigFactory', 'TokenFactory', '$state', '$rootScope',
@@ -268,6 +271,9 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         }
 
         ContainerFactory.updateLastSeen($scope.containerSerial);
+
+        // listen to the reload broadcast
+        $scope.$on("piReload", $scope.get);
 
         // ------------------- Token Actions -------------------------------
         $scope.getAllTokenSerials = function () {
