@@ -1,9 +1,14 @@
-# Paul Lettich <paul.lettich@netknights.it>, 2023.
+# Paul Lettich <paul.lettich@netknights.it>, 2023, 2024.
+# Cornelius Kölbel <cornelius.koelbel@netknights.it>, 2024.
+# NNLemling <sebastian@lemling.de>, 2024.
+# "J. Lavoie" <j.lavoie@net-c.ca>, 2024.
+# Felix E <felix@eckhofer.com>, 2024.
+# pablo-knight <julio.storch@netknights.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2023-08-01 16:08+0000\n"
+"PO-Revision-Date: 2024-04-05 15:01+0000\n"
 "Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
@@ -12,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.0-dev\n"
+"X-Generator: Weblate 5.5-dev\n"
 
 # This is the level in the subscriptions
 #. level of subscription
@@ -188,13 +193,13 @@ msgstr ""
 "<p><b>Sie benutzen privacyIDEA nun mit mehr als 50 aktiven Token.</b></p>\n"
 "<p>Es freut uns sehr, dass Sie privacyIDEA Ihr Vertrauen schenken.</p>\n"
 "<p>Für den produktiven Unternehmenseinsatz raten wir, die <a target="
-"\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/"
-"\">privacyIDEA Enterprise Edition</a> einzusetzen.\n"
-"Die NetKnights GmbH bietet die <a target=\"netknights\" href=\"https://"
-"netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a> "
-"mit Support und Service Level Agreement. Weiterhin bietet NetKnights "
-"Dienstleistungen, Planungsunterstützung und beauftragte Weiterentwicklungen."
-"</p>"
+"\"netknights\" href=\"https://netknights.it/en/produkte/privacyidea/\""
+">privacyIDEA Enterprise Edition</a> einzusetzen.\n"
+"Die NetKnights GmbH bietet die <a target=\"netknights\" href=\"https"
+"://netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</"
+"a> mit Support und Service Level Agreement. Weiterhin bietet NetKnights "
+"Dienstleistungen, Planungsunterstützung und beauftragte "
+"Weiterentwicklungen.</p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:18
 msgid ""
@@ -1048,8 +1053,8 @@ msgid ""
 "Details for machine {{ machineid }} in Machine Resolver\n"
 "        {{ machineresolver }}"
 msgstr ""
-"Details zur Maschine {{ machineid }} im Maschinen-Resolver "
-"{{ machineresolver }}"
+"Details zur Maschine {{ machineid }} im Maschinen-Resolver {{ "
+"machineresolver }}"
 
 #: privacyidea/static/components/user/views/user.details.html:14
 msgid "Details for user {{ username }} in realm"
@@ -1088,8 +1093,8 @@ msgid ""
 "Do you really want to delete the Token {{ tokenSerial }} from user {{ token."
 "username }}?"
 msgstr ""
-"Wollen Sie wirklich den Token {{ tokenSerial }} des Benutzers {{ token."
-"username }} löschen?"
+"Wollen Sie wirklich den Token {{ tokenSerial }} des Benutzers {{ "
+"token.username }} löschen?"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:19
 msgid "Do you really want to delete the Token {{ tokenSerial }}?"
@@ -1829,8 +1834,7 @@ msgstr ""
 
 #: privacyidea/static/components/recovery/views/recovery.html:6
 msgid "If you forgot your password, you may set a new one."
-msgstr ""
-"Wenn Sie Ihr Passwort vergessen haben, können Sie es hier zurücksetzen."
+msgstr "Wenn Sie Ihr Passwort vergessen haben, können Sie es hier zurücksetzen."
 
 #: privacyidea/static/components/token/views/token.assign.html:3
 msgid ""
@@ -1862,7 +1866,7 @@ msgstr ""
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:172
 msgid "Inactive Events"
-msgstr "Inaktive Ereginisse"
+msgstr "Inaktive Ereignisse"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:135
 msgid "Inactive Policies"
@@ -3506,10 +3510,9 @@ msgid ""
 msgstr ""
 "Der HOTP-Token ist ein ereignis-basierte Token. Sie können den geheimen OTP-"
 "Schlüssel hier einfügen oder den Server einen Schlüssel generieren lassen. "
-"Diesen können Sie in Ihre Smartphone-App (z.B. dem privacyIDEA-"
-"Authenticator) importieren, indem Sie den QR-Code scannen. Beachten Sie, "
-"dass andere Authenticator-Apps möglicherweise nicht alle Parameter "
-"unterstützen."
+"Diesen können Sie in Ihre Smartphone-App (z.B. dem privacyIDEA-Authenticator)"
+" importieren, indem Sie den QR-Code scannen. Beachten Sie, dass andere "
+"Authenticator-Apps möglicherweise nicht alle Parameter unterstützen."
 
 #: privacyidea/static/components/login/views/login.html:94
 msgid ""
@@ -3751,8 +3754,8 @@ msgid ""
 "    You may set a trust anchor directory, which is a path to a directory\n"
 "    containing certificates to trust for WebAuthn authenticator attestation."
 msgstr ""
-"Der WebAuthn-Token ist ein Hardware Token, der mit dem Browser "
-"kommuniziert. \n"
+"Der WebAuthn-Token ist ein Hardware Token, der mit dem Browser kommuniziert. "
+"\n"
 " Sie müssen ein Verzeichnis für Vertrausenanker setzen. Dies ist der Pfad zu "
 "einem Verzeichnis, \n"
 "  das Zertifikate enthält, denen für die WebAuthn Attestation vertraut wird."
@@ -3844,12 +3847,12 @@ msgid ""
 "YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
 "        Yubico Validation Protocol</a>."
 msgstr ""
-"Die Authentifizierung kann von der normalen privacyIDEA <a href=\"http://"
-"privacyidea.readthedocs.org/en/latest/modules/api/validate.html\" target="
+"Die Authentifizierung kann von der normalen privacyIDEA <a href=\"http"
+"://privacyidea.readthedocs.org/en/latest/modules/api/validate.html\" target="
 "\"_blank\">validate API</a> aber auch vom <a href=\"http://privacyidea."
-"readthedocs.org/en/latest/modules/lib/tokentypes/yubikey.html#privacyidea."
-"lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" target=\"_blank"
-"\">Yubico Validation Protokoll</a> durchgeführt werden."
+"readthedocs.org/en/latest/modules/lib/tokentypes/yubikey.html#privacyidea.lib"
+".tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" target=\"_blank\""
+">Yubico Validation Protokoll</a> durchgeführt werden."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
 msgid ""
@@ -3964,8 +3967,8 @@ msgid ""
 "The password that needs to be combined with the OTP PIN:\n"
 "        <b>{{ lostResult.password }}</b>"
 msgstr ""
-"Das Passwort, das mit der alten OTP-PIN kombiniert werden muss: "
-"<b>{{ lostResult.password }}</b>"
+"Das Passwort, das mit der alten OTP-PIN kombiniert werden muss: <b>{{ "
+"lostResult.password }}</b>"
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:10
 msgid "The path to the directory containing the trust anchors."
@@ -4043,7 +4046,7 @@ msgid ""
 "must not be the word 'send_test_email'"
 msgstr ""
 "Der Name der Ressource darf nur Buchstaben, Zahlen und die Zeichen '_', '-' "
-"oder '.' enthalten. Das Wort 'send_test_email' ist nicht erlaubt."
+"oder '.' enthalten. Das Wort 'send_test_email' ist nicht erlaubt"
 
 #: privacyidea/static/app.js:90
 msgid ""
@@ -4051,7 +4054,7 @@ msgid ""
 "must not be the word 'test'"
 msgstr ""
 "Der Name der Ressource darf nur Buchstaben, Zahlen und die Zeichen '_', '-' "
-"oder '.' enthalten. Das Wort 'test' ist nicht erlaubt."
+"oder '.' enthalten. Das Wort 'test' ist nicht erlaubt"
 
 #: privacyidea/static/app.js:96
 msgid ""
@@ -4059,7 +4062,7 @@ msgid ""
 "must not be the word 'test_request'"
 msgstr ""
 "Der Name der Ressource darf nur Buchstaben, Zahlen und die Zeichen '_', '-' "
-"oder '.' enthalten. Das Wort 'test_request' ist nicht erlaubt."
+"oder '.' enthalten. Das Wort 'test_request' ist nicht erlaubt"
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:15
 msgid ""
@@ -4179,11 +4182,11 @@ msgid ""
 "newUser.realm})\">{{ newUser.user }}</a> in realm\n"
 "            {{ newUser.realm }}."
 msgstr ""
-"Der Token mit der Seriennummer <a ui-sref=\"token.details({tokenSerial:"
-"enrolledToken.serial})\">{{ enrolledToken.serial }}</a> wurde erfolgreich "
-"für den Benutzer\n"
-"<a ui-sref=\"user.details({username:newUser.user, realmname:newUser."
-"realm})\">{{ newUser.user }}</a> in Realm {{ newUser.realm }} ausgerollt."
+"Der Token mit der Seriennummer <a ui-sref=\"token."
+"details({tokenSerial:enrolledToken.serial})\">{{ enrolledToken.serial }}</a> "
+"wurde erfolgreich für den Benutzer\n"
+"<a ui-sref=\"user.details({username:newUser.user, realmname:newUser.realm})\""
+">{{ newUser.user }}</a> in Realm {{ newUser.realm }} ausgerollt."
 
 #: privacyidea/static/components/token/views/token.enroll.html:168
 msgid ""
@@ -4192,9 +4195,9 @@ msgid ""
 "serial})\">\n"
 "                {{ enrolledToken.serial }}</a>."
 msgstr ""
-"Der Token mit der Seriennummer  <a ui-sref=\"token.details({tokenSerial:"
-"enrolledToken.serial})\">{{ enrolledToken.serial }}</a>  wurde erfolgreich "
-"ausgerollt."
+"Der Token mit der Seriennummer  <a ui-sref=\"token."
+"details({tokenSerial:enrolledToken.serial})\">{{ enrolledToken.serial }}</"
+"a>  wurde erfolgreich ausgerollt."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
 msgid "The trust_anchor_dir must be an absolute path."
@@ -4404,8 +4407,7 @@ msgstr "Ein eindeutiger Name für diese Dienste-Kennzeichnung."
 msgid ""
 "This is the unique identifying name\n"
 "                of the RADIUS server definition."
-msgstr ""
-"Ein eindeutiger Name, der diese RADIUS Server-Konfiguration bezeichnet."
+msgstr "Ein eindeutiger Name, der diese RADIUS Server-Konfiguration bezeichnet."
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:22
 msgid ""
@@ -4703,8 +4705,7 @@ msgstr "Hochgeladene Token"
 msgid ""
 "Use @ sign to split the username\n"
 "            and the realm."
-msgstr ""
-"Verwende das @-Zeichen, um den Benutzernamen und den Realm abzutrennen."
+msgstr "Verwende das @-Zeichen, um den Benutzernamen und den Realm abzutrennen."
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:56
 msgid "Use HTTP proxy"
@@ -5065,16 +5066,16 @@ msgid ""
 msgstr ""
 "Ihre Subskription ist nicht mehr gültig. Entweder haben Sie die Anzahl der "
 "erlaubten Token überschritten oder Ihre Subskription ist abgelaufen. Bitte "
-"überprüfen Sie, ob Sie Ihre <a ui-sref=\"component.subscriptions"
-"\">Subskription</a> erneuern müssen."
+"überprüfen Sie, ob Sie Ihre <a ui-sref=\"component.subscriptions\""
+">Subskription</a> erneuern müssen."
 
 #: privacyidea/static/components/login/views/pinchange.html:5
 msgid ""
 "Your token PIN has expired. You need to set a new PIN\n"
 "                for token {{ pin_change_serial }}."
 msgstr ""
-"Ihre PIN ist abgelaufen. Sie müssen die PIN für den Token "
-"{{ pin_change_serial }} ändern."
+"Ihre PIN ist abgelaufen. Sie müssen die PIN für den Token {{ "
+"pin_change_serial }} ändern."
 
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:43
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:43

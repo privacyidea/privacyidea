@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2020-02-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add QR codes for Authenticator Apps
 #  2016-02-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -44,6 +42,7 @@ The functions of this module are tested in tests/test_api_lib_policy.py
 import datetime
 import logging
 import traceback
+from urllib.parse import quote
 from privacyidea.lib.error import PolicyError, ValidateError
 from flask import g, current_app, make_response
 from privacyidea.lib.policy import SCOPE, ACTION, AUTOASSIGNVALUE, AUTHORIZED
@@ -63,10 +62,15 @@ from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.user import User
 from privacyidea.lib.realm import get_default_realm
-from privacyidea.lib.subscriptions import subscription_status
-from privacyidea.lib.utils import create_img
+from privacyidea.lib.subscriptions import (subscription_status,
+                                           get_subscription,
+                                           check_subscription,
+                                           SubscriptionError,
+                                           EXPIRE_MESSAGE)
+from privacyidea.lib.utils import create_img, get_version
 from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib import _
 
 log = logging.getLogger(__name__)
 
@@ -79,6 +83,15 @@ DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_TIMEOUT_ACTION = "lockscreeen"
 DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
                               "policy-templates/master/templates/"
+BODY_TEMPLATE = _("""
+<--- Please describe your Problem in detail --->
+
+<--- Please provide as many additional information as possible --->
+
+privacyIDEA Version: {version}
+Subscriber: {subscriber_name}
+Subscriptions: {subscriptions}
+""")
 
 
 class postpolicy(object):
@@ -513,7 +526,8 @@ def offline_info(request, response):
         if serial:
             try:
                 auth_items = get_auth_items(serial=serial, application="offline",
-                                            challenge=request.all_data.get("pass"))
+                                            challenge=request.all_data.get("pass"),
+                                            user_agent=request.user_agent.string)
                 if auth_items:
                     content["auth_items"] = auth_items
                     response.set_data(json.dumps(content))
@@ -670,6 +684,31 @@ def get_webui_settings(request, response):
         content["result"]["value"]["qr_image_custom"] = qr_image_custom
         content["result"]["value"]["logout_redirect_url"] = logout_redirect_url
         content["result"]["value"]["require_description"] = require_description
+        if role == ROLE.ADMIN:
+            # Add a support mailto, for administrators with systemwrite rights.
+            subscriptions = get_subscription("privacyidea")
+            if len(subscriptions) == 1:
+                subscription = subscriptions[0]
+                try:
+                    version = get_version()
+                    subject = "Problem with {0!s}".format(version)
+                    check_subscription("privacyidea")
+                except SubscriptionError:
+                    subject = EXPIRE_MESSAGE
+                # Check policy, if the admin is allowed to save config
+                action_allowed = Match.generic(g, scope=role,
+                                               action=ACTION.SYSTEMWRITE,
+                                               adminuser=loginname,
+                                               adminrealm=realm).allowed()
+                if action_allowed:
+                    body = BODY_TEMPLATE.format(subscriptions=subscriptions,
+                                                version=version,
+                                                subscriber_name=subscription.get("for_name"))
+
+                    body = quote(body)
+                    content["result"]["value"]["supportmail"] = \
+                        ("mailto:{0!s}?subject={1!s}&body={2!s}").format(
+                            subscription.get("by_email"), subject, body)
         response.set_data(json.dumps(content))
     return response
 
@@ -759,8 +798,8 @@ def multichallenge_enroll_via_validate(request, response):
     :return:
     """
     content = response.json
-    # check, if the authentication was successful, then we need to do nothing
     result = content.get("result")
+    # check, if the authentication was successful, then we need to do nothing
     if result.get("value") and result.get("authentication") == "ACCEPT":
         user_obj = request.User
         if user_obj.login and user_obj.realm:
@@ -773,8 +812,16 @@ def multichallenge_enroll_via_validate(request, response):
                 #       Here: If the user has one token of this type.
                 if len(get_tokens(tokentype=tokentype, user=user_obj)) == 0:
                     if tokentype.lower() in get_multichallenge_enrollable_tokentypes():
+                        # Now get the alternative text from the policies
+                        text_pol = Match.user(g, scope=SCOPE.AUTH, action=ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT,
+                                              user_object=user_obj).action_values(unique=True,
+                                                                                  write_to_audit_log=False,
+                                                                                  allow_white_space_in_action=True)
+                        message = None
+                        if text_pol:
+                            message = list(text_pol)[0]
                         tclass = get_token_class(tokentype)
-                        tclass.enroll_via_validate(g, content, user_obj)
+                        tclass.enroll_via_validate(g, content, user_obj, message)
                         response.set_data(json.dumps(content))
 
     return response
@@ -787,6 +834,9 @@ def construct_radius_response(request, response):
     results in an empty response with a HTTP 204 status code.
     An unsuccessful authentication results in an empty response
     with a HTTP 400 status code.
+
+    This needs to be the last decorator, since the JSON response is then lost.
+
     :return:
     """
     if request.url_rule.rule == '/validate/radiuscheck':

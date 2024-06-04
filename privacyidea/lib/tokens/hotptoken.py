@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
 #  License: AGPLv3
@@ -63,7 +61,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
                                    hexlify_and_unicode, determine_logged_in_userparams)
-from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, Match
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenclass import CLIENTMODE
@@ -298,8 +296,12 @@ class HotpTokenClass(TokenClass):
                                                   "value": oath_url,
                                                   "img": create_img(oath_url)
                                                   }
+                except KeyError as ex:
+                    log.debug("{0!s}".format((traceback.format_exc())))
+                    log.error('Unknown Tag {0!s} in one of your policy definition'
+                              .format(ex))
                 except Exception as ex:  # pragma: no cover
-                    log.error("{0!s}".format((traceback.format_exc())))
+                    log.debug("{0!s}".format((traceback.format_exc())))
                     log.error('failed to set oath or google url: {0!r}'.format(ex))
 
         return response_detail
@@ -397,6 +399,7 @@ class HotpTokenClass(TokenClass):
         return otpval
 
     @log_with(log)
+    @check_token_otp_length
     @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
@@ -813,7 +816,7 @@ class HotpTokenClass(TokenClass):
         return r >= 0
 
     @classmethod
-    def enroll_via_validate(cls, g, content, user_obj):
+    def enroll_via_validate(cls, g, content, user_obj, message=None):
         """
         This class method is used in the policy ENROLL_VIA_MULTICHALLENGE.
         It enrolls a new token of this type and returns the necessary information
@@ -822,9 +825,10 @@ class HotpTokenClass(TokenClass):
         :param g: context object
         :param content: The content of a response
         :param user_obj: A user object
+        :param message: An alternative message displayed to the user during enrollment
         :return: None, the content is modified
         """
-        message = _("Please scan the QR code!")
+        message = message or _("Please scan the QR code and enter the OTP value!")
         token_obj = init_token({"type": cls.get_class_type(),
                                 "genkey": 1}, user=user_obj)
         content.get("result")["value"] = False

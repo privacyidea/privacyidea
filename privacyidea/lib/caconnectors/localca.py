@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2017-02-25 Cornelius Kölbeb <cornelius.koelbel@netknights.it>
 #             Add template functionality
 #  2015-04-22 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -508,7 +506,7 @@ class LocalCAConnector(BaseCAConnector):
 
         :param publish: Whether the CRL should be published at its CDPs
         :param check_validity: Onle create a new CRL, if the old one is about to
-            expire. Therfore the overlap period and the remaining runtime of
+            expire. Therefore, the overlap period and the remaining runtime of
             the CRL is checked. If the remaining runtime is smaller than the
             overlap period, we recreate the CRL.
         :return: the CRL location or None, if no CRL was created

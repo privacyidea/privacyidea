@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-05-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Use tags in email subject.
 #  2017-10-27 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -39,6 +37,7 @@ It can be bound to each event and can perform the action:
 
 The module is tested in tests/test_lib_eventhandler_usernotification.py
 """
+
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.smtpserver import send_email_identifier
 from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
@@ -82,6 +81,7 @@ class NOTIFY_TYPE(object):
     ADMIN_REALM = "admin realm"
     EMAIL = "email"
     NO_REPLY_TO = ""
+
 
 class UserNotificationEventHandler(BaseEventHandler):
     """
@@ -255,7 +255,7 @@ class UserNotificationEventHandler(BaseEventHandler):
         tokenowner = self._get_tokenowner(request)
         log.debug("Executing event for action {0!r}, user {1!r}, "
                   "logged_in_user {2!r}".format(action, tokenowner,
-                                                 logged_in_user))
+                                                logged_in_user))
 
         # Determine recipient
         recipient = None
@@ -390,10 +390,12 @@ class UserNotificationEventHandler(BaseEventHandler):
             googleurl_img = content.get("detail", {}).get("googleurl",
                                                           {}).get("img")
             tokentype = None
+            tokendescription = None
             if serial:
                 tokens = get_tokens(serial=serial)
                 if tokens:
                     tokentype = tokens[0].get_tokentype()
+                    tokendescription = tokens[0].token.description
             else:
                 token_objects = get_tokens(user=tokenowner)
                 serial = ','.join([tok.get_serial() for tok in token_objects])
@@ -407,6 +409,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                                    tokenowner=tokenowner,
                                    serial=serial,
                                    tokentype=tokentype,
+                                   tokendescription=tokendescription,
                                    registrationcode=registrationcode,
                                    escape_html=action.lower() == "sendmail" and
                                                handler_options.get("mimetype", "").lower() == "html")
@@ -422,7 +425,7 @@ class UserNotificationEventHandler(BaseEventHandler):
 
                 if attach_qrcode and googleurl_img:
                     # get the image part of the googleurl
-                    googleurl = urlopen(googleurl_img)  #  nosec B310   # no user input
+                    googleurl = urlopen(googleurl_img)  # nosec B310   # no user input
                     mail_body = MIMEMultipart('related')
                     mail_body.attach(MIMEText(body, mimetype))
                     mail_img = MIMEImage(googleurl.read())
@@ -437,15 +440,16 @@ class UserNotificationEventHandler(BaseEventHandler):
                                                 subject=subject, body=body,
                                                 reply_to=reply_to,
                                                 mimetype=mimetype)
-                except Exception as exx:
+                except Exception as exx:  # pragma: no cover
                     log.error("Failed to send email: {0!s}".format(exx))
+                    self.run_details = "{0!s}".format(exx)
                     ret = False
                 if ret:
                     log.info("Sent a notification email to user {0}".format(
                         recipient))
                 else:
-                    log.warning("Failed to send a notification email to user "
-                                "{0}".format(recipient))
+                    log.warning("Failed to send a notification email to user {0}".format(recipient))
+                    self.run_details = "Failed: {0!s}.".format(useremail)
 
             elif action.lower() == "savefile":
                 spooldir = get_app_config_value("PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY",

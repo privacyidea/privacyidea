@@ -1,5 +1,12 @@
 # Update Notes
 
+## Update from 3.9 to 3.10
+
+* The `PI_NODES` configuration option is not used anymore. The nodes will be added
+  to the database with a unique identifier for each installation
+* We added the columns "user_agent" and "version" to the table `pidea_audit`.
+  If you are running the Audit table on a different database, then you need to add these columns manually!
+
 ## Update from 3.8 to 3.9
 
 * The response of the API `POST /auth` has changed if the WebUI policy action
@@ -20,8 +27,11 @@
   ```
   Unless you are using this API call directly, this is not relevant for normal operation.
 
-The database table `serviceid` is added, there is no data migration
-necessary.
+* The database table `serviceid` is added, there is no data migration
+  necessary.
+
+* The SQL ORM SQLAlchemy is updated to version 1.4 which makes some changes
+  under the hood (i.e. Sequences are now supported with MariaDB > 10.3).
 
 Be sure to run the schema update script!
 
@@ -44,7 +54,8 @@ Several database changes have been added. These are all *adds* without data migr
 * New tables "tokengroup" and "tokentokengroup".
 * Sequence for the tables "customuserattribute" has been added.
 * The size of the "key_enc" column in the table "token" has been increased.
-* The "pidea_audit" table gets a new column "thread_id".
+* The "pidea_audit" table gets a new column "thread_id". If you are running the Audit table on a different
+  database, then you need to add this column manually!
 
 Be sure to run the schema update script!
 
@@ -72,7 +83,8 @@ Be sure to run the schema update script!
 ## Update from 3.4 to 3.5
 
 * The audit log table now also records the start date and the duration
-  of a request.
+  of a request.  If you are running the Audit table on a different
+  database, then you need to add this column manually!
 
 * The authcache database table gets a longer column "authentication"
   to cope with the longer Argon2 hashes.

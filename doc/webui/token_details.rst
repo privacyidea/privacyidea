@@ -1,3 +1,5 @@
+:orphan:
+
 .. _token_details:
 
 Functionality of the Tokens view
@@ -68,7 +70,7 @@ You can change the following token settings.
 
 **TokenDesc**
 
-   The token description is also displayed in the tokenview. You can 
+   The token description is also displayed in the tokenview. You can
    set a description to make it easier to identify a token.
 
 .. _countwindow:
@@ -78,10 +80,10 @@ You can change the following token settings.
    The ``CountWindow``  is the look ahead window of event based tokens.
    If the user pressed the button on an event based token the counter
    in the token is increased. If the user does not use this otp value
-   to authenticate, the server does not know, that the counter in the 
-   token was increased. 
+   to authenticate, the server does not know, that the counter in the
+   token was increased.
    This way the counter in the token can get
-   out of sync with the server. 
+   out of sync with the server.
 
 .. index:: syncwindow, out of sync
 
@@ -89,7 +91,7 @@ You can change the following token settings.
 
    If a token was out of sync (see ``CountWindow``), then it needs to
    be synchronized. This is done by entering two consecutive OTP values.
-   The server searches these two values within the next ``CountWindow`` 
+   The server searches these two values within the next ``CountWindow``
    (default 1000) values.
 
 .. index:: OTP length
@@ -108,7 +110,7 @@ You can change the following token settings.
 
 **Tokeninfo - Auth max**
 
-   The administrator can set a value how often this token 
+   The administrator can set a value how often this token
    may be used for authentication. If the number of authentication
    try exceed this value, the token can not be used, until this
    ``Auth max`` value is increased.
@@ -128,8 +130,8 @@ You can change the following token settings.
 **Tokeninfo - Validity**
 
    A timestamp can be set. The token can only be used within the specified time.
-  
-.. note:: This way you can create temporary tokens for guests or 
+
+.. note:: This way you can create temporary tokens for guests or
    short time or season employees.
 
 Resync Token
@@ -137,7 +139,7 @@ Resync Token
 
 .. index:: resync token
 
-The administrator can select one token and then enter two consecutive 
+The administrator can select one token and then enter two consecutive
 OTP values to resynchonize the token if it was out of sync.
 
 Set token realm

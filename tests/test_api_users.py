@@ -1,4 +1,3 @@
-# coding: utf-8
 from .base import MyApiTestCase
 import json
 from privacyidea.lib.resolver import (save_resolver)
@@ -41,7 +40,7 @@ class APIUsersTestCase(MyApiTestCase):
         rid = save_resolver(parameters)
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(realm, [resolver])
+        (added, failed) = set_realm(realm, [{'name': resolver}])
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 1)
         with self.app.test_request_context('/user/',
@@ -100,7 +99,7 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(res.json['result']['status'], res.json)
             self.assertEqual(res.json['result']['value'], 1, res.json)
-        
+
         # create realm
         realm = "realm1"
         resolvers = "r1, r2"
@@ -114,7 +113,7 @@ class APIUsersTestCase(MyApiTestCase):
             value = result.get("result").get("value")
             self.assertTrue('r1' in value["added"], res.data)
             self.assertTrue('r2' in value["failed"], res.data)
-                   
+
         # get user list
         with self.app.test_request_context('/user/',
                                            query_string=urlencode({"realm":
@@ -167,7 +166,7 @@ class APIUsersTestCase(MyApiTestCase):
         rid = save_resolver(parameters)
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(realm, [resolver])
+        (added, failed) = set_realm(realm, [{'name': resolver}])
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 1)
 
@@ -274,7 +273,7 @@ class APIUsersTestCase(MyApiTestCase):
         rid = save_resolver(parameters)
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(realm, [resolver])
+        (added, failed) = set_realm(realm, [{'name': resolver}])
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 1)
 

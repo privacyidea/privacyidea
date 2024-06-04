@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
 #  License:  AGPLv3
@@ -139,9 +137,10 @@ class Audit(object):  # pragma: no cover
 
     @property
     def available_audit_columns(self):
-        return ['number', 'action', 'success', 'serial', 'date', 'startdate',
+        return ['number', 'action', 'success', 'authentication', 'serial', 'date', 'startdate',
                 'duration', 'token_type', 'user', 'realm', 'administrator',
                 'action_detail', 'info', 'privacyidea_server', 'client',
+                'user_agent', 'user_agent_version',
                 'log_level', 'policies', 'clearance_level', 'sig_check',
                 'missing_line', 'resolver', 'thread_id']
 

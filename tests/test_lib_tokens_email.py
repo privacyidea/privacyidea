@@ -1,7 +1,7 @@
 """
 This test file tests the lib.tokens.smstoken
 """
-
+from testfixtures import log_capture
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
@@ -47,8 +47,7 @@ class EmailTokenTestCase(MyTestCase):
                              "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(self.realm1,
-                                    [self.resolvername1])
+        (added, failed) = set_realm(self.realm1, [{'name': self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
@@ -278,7 +277,8 @@ class EmailTokenTestCase(MyTestCase):
         token.inc_otp_counter(counter=20)
         self.assertTrue(token.token.count == 21, token.token.count)
 
-    def test_13_check_otp(self):
+    @log_capture()
+    def test_13_check_otp(self, capture):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = EmailTokenClass(db_token)
         token.update({"otpkey": self.otpkey,
@@ -286,10 +286,20 @@ class EmailTokenTestCase(MyTestCase):
                       "otplen": 6,
                       "email": self.email})
         # OTP does not exist
-        self.assertTrue(token.check_otp_exist("222333") == -1)
+        self.assertEqual(-1, token.check_otp("222333"))
         # OTP does exist
-        res = token.check_otp_exist("969429")
-        self.assertTrue(res == 3, res)
+        self.assertEqual(3, token.check_otp("969429"))
+        # Check OTP length
+        self.assertEqual(-1, token.check_otp("12345"))
+        capture.check_present(
+            ('privacyidea.lib.decorators', 'INFO',
+             f'OTP value for token {self.serial1} (type: {token.type}) has wrong length (5 != 6)')
+        )
+        self.assertEqual(-1, token.check_otp("1234567"))
+        capture.check_present(
+            ('privacyidea.lib.decorators', 'INFO',
+             f'OTP value for token {self.serial1} (type: {token.type}) has wrong length (7 != 6)')
+        )
 
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

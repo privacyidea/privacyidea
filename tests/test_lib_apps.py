@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 This tests the file lib.apps, which contains functions to create
 the URLs for the smartphone enrollment
@@ -20,8 +19,8 @@ class AppsTestCase(MyTestCase):
 
         r = create_google_authenticator_url(tokentype="TOTP", key="123456",
                                             period=60)
-        self.assertTrue("otpauth://TOTP/mylabel?secret=CI2FM&period"
-                        "=60&digits=6&issuer=privacyIDEA" in r, r)
+        self.assertTrue("otpauth://totp/mylabel?secret=CI2FM&period"
+                        "=60&digits=6&creator=privacyidea&issuer=privacyIDEA" in r, r)
 
         r = create_oathtoken_url("12345678")
         self.assertEqual(r, "oathtoken:///addToken?name=mylabel&"

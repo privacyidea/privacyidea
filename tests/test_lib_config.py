@@ -3,7 +3,7 @@ This test file tests the lib.config
 
 The lib.config only depends on the database model.
 """
-from privacyidea.models import Config, PRIVACYIDEA_TIMESTAMP, save_config_timestamp, db
+from privacyidea.models import Config, save_config_timestamp, db, NodeName
 from .base import MyTestCase
 from privacyidea.lib.config import (get_resolver_list,
                                     get_resolver_classes,
@@ -22,11 +22,11 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_machine_resolver_class_dict,
                                     get_privacyidea_node, get_privacyidea_nodes,
                                     this, get_config_object, invalidate_config_object,
-                                    get_multichallenge_enrollable_tokentypes)
+                                    get_multichallenge_enrollable_tokentypes,
+                                    get_email_validators)
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
-from flask import current_app
 import importlib
 
 
@@ -224,6 +224,10 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual(a, None)
 
     def test_07_node_names(self):
+        db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1"))
+        db.session.add(NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2"))
+        db.session.commit()
+
         node = get_privacyidea_node()
         self.assertEqual(node, "Node1")
         nodes = get_privacyidea_nodes()
@@ -270,3 +274,10 @@ class ConfigTestCase(MyTestCase):
         self.assertNotIn("tan", ttypes)
         self.assertNotIn("daplug", ttypes)
         self.assertNotIn("paper", ttypes)
+
+    def test_11_get_email_validators(self):
+        ev = get_email_validators()
+        self.assertEqual(['tests.testdata.gmailvalidator', 'privacyidea.lib.utils.emailvalidation'], list(ev.keys()))
+        validate_email = get_email_validators().get("privacyidea.lib.utils.emailvalidation")
+        self.assertTrue(validate_email("valid@email.com"))
+        self.assertFalse(validate_email("invalid@email.k"))

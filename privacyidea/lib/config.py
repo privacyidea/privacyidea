@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2016-04-08 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Avoid consecutive if-statements
 #  2015-12-12 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -42,7 +40,8 @@ import traceback
 
 from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
-                      save_config_timestamp, Policy, EventHandler, CAConnector)
+                      save_config_timestamp, Policy, EventHandler, CAConnector,
+                      NodeName)
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
 from privacyidea.lib.utils import to_list
 from privacyidea.lib.utils.export import (register_import, register_export)
@@ -144,7 +143,8 @@ class SharedConfigClass(object):
                     for x in realm.resolver_list:
                         realmdef["resolver"].append({"priority": x.priority,
                                                      "name": x.resolver.name,
-                                                     "type": x.resolver.rtype})
+                                                     "type": x.resolver.rtype,
+                                                     "node": x.node_uuid})
                     realmconfig[realm.name] = realmdef
                 # Load all policies
                 for pol in Policy.query.all():
@@ -282,6 +282,7 @@ class SYSCONF(object):
     SPLITATSIGN = "splitAtSign"
     INCFAILCOUNTER = "IncFailCountOnFalsePin"
     RETURNSAML = "ReturnSamlAttributes"
+    RETURNSAMLONFAIL = "ReturnSamlAttributesOnFail"
     RESET_FAILCOUNTER_ON_PIN_ONLY = "ResetFailcounterOnPIN"
 
 
@@ -608,7 +609,7 @@ def get_resolver_class_dict():
     """
     get a dictionary of the resolver classes and a dictionary
     of the resolver types:
-    
+
     ({'privacyidea.lib.resolvers.PasswdIdResolver.IdResolver':
       <class 'privacyidea.lib.resolvers.PasswdIdResolver.IdResolver'>,
       'privacyidea.lib.resolvers.PasswdIdResolver.UserIdResolver':
@@ -753,6 +754,40 @@ def get_token_list():
         module_list.update(to_list(dynamic_token_modules))
 
     return module_list
+
+
+def get_email_validators():
+    """
+    Return a dict of available email validator modules and its functions
+
+    The list be configured in "PI_EMAIL_VALIDATOR_MODULES" in pi.cfg.
+
+    The return value looks like:
+    { "privacyidea.lib.utils.emailvalidation": func:validate_email }
+
+    :return: a dict
+    """
+    if "pi_email_validators" not in this.config:
+        validator_dict = {}
+        validator_list = to_list(get_app_config_value("PI_EMAIL_VALIDATOR_MODULES"))
+        # Add our default validator
+        validator_list.append("privacyidea.lib.utils.emailvalidation")
+        # Remove empty entries
+        validator_list = [x for x in validator_list if x]
+
+        for mod_name in validator_list:
+            if mod_name == '\\' or len(mod_name.strip()) == 0:
+                continue
+            try:
+                log.debug("import module: {0!s}".format(mod_name))
+                module = importlib.import_module(mod_name)
+                validator_dict[mod_name] = module.validate_email
+            except Exception as exx:  # pragma: no cover
+                log.warning('unable to load validate module with function "validate_email": '
+                            '{0!r} ({1!r})'.format(mod_name, exx))
+        this.config["pi_email_validators"] = validator_dict
+
+    return this.config["pi_email_validators"]
 
 
 @log_with(log)
@@ -971,13 +1006,13 @@ def set_prepend_pin(prepend=True):
 
 
 def return_saml_attributes():
-    r = get_from_config(key="ReturnSamlAttributes", default= False,
+    r = get_from_config(key=SYSCONF.RETURNSAML, default=False,
                         return_bool=True)
     return r
 
 
 def return_saml_attributes_on_fail():
-    r = get_from_config(key="ReturnSamlAttributesOnFail", default=False,
+    r = get_from_config(key=SYSCONF.RETURNSAMLONFAIL, default=False,
                         return_bool=True)
     return r
 
@@ -987,7 +1022,9 @@ def get_privacyidea_node(default='localnode'):
     This returns the node name of the privacyIDEA node as found in the pi.cfg
     file in PI_NODE.
     If it does not exist, the PI_AUDIT_SERVERNAME is used.
+
     :return: the distinct node name
+    :rtype: str
     """
     node_name = get_app_config_value("PI_NODE", get_app_config_value("PI_AUDIT_SERVERNAME", default))
     return node_name
@@ -996,13 +1033,16 @@ def get_privacyidea_node(default='localnode'):
 def get_privacyidea_nodes():
     """
     This returns the list of the nodes, including the own local node name
+
     :return: list of nodes
+    :rtype: list
     """
-    own_node_name = get_privacyidea_node()
-    nodes = get_app_config_value("PI_NODES", [])[:]
-    if own_node_name not in nodes:
-        nodes.append(own_node_name)
-    return nodes
+    node_names = []
+    nodes = db.session.query(NodeName).all()
+    for node in nodes:
+        node_names.append(node.name)
+
+    return node_names
 
 
 @register_export()

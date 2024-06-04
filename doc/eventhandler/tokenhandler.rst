@@ -175,7 +175,7 @@ Using the action ``set failcounter`` you can reset the fail counter by
 setting it to 0 or also "block" the token by setting the fail counter to what
 ever value the "max_fail" is, e.g. 10. Only integer values are allowed.
 
-See :ref:`failcounter`.
+See :term:`failcount`.
 
 change failcounter
 ..................
@@ -196,7 +196,7 @@ Using the action ``set max failcount`` you can set the maximum failcounter of a
 token to the specific value.
 Only integer values are allowed.
 
-See :ref:`failcounter`.
+See :term:`failcount`.
 
 set random pin
 ..............

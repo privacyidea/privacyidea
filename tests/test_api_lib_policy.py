@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This test file tests the api.lib.policy.py
 
@@ -23,6 +22,7 @@ from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from .base import (MyApiTestCase)
 
+from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
                                     PolicyClass, SCOPE, ACTION, REMOTE_USER,
                                     AUTOASSIGNVALUE, AUTHORIZED)
@@ -42,7 +42,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            papertoken_count, allowed_audit_realm,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
-                                           pushtoken_add_config, pushtoken_wait,
+                                           pushtoken_add_config, pushtoken_validate,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, pushtoken_disable_wait,
                                            webauthntoken_auth, webauthntoken_authz,
@@ -949,7 +949,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     @log_capture(level=logging.DEBUG)
     def test_09_pin_policies(self, capture):
-        create_realm("home", [self.resolvername1])
+        create_realm("home", [{'name': self.resolvername1}])
         g.logged_in_user = {"username": "user1",
                             "realm": "",
                             "role": "user"}
@@ -1042,7 +1042,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     @log_capture(level=logging.DEBUG)
     def test_09_pin_policies_admin(self, capture):
-        create_realm("home", [self.resolvername1])
+        create_realm("home", [{'name': self.resolvername1}])
         g.logged_in_user = {"username": "super",
                             "realm": "",
                             "role": "admin"}
@@ -1132,7 +1132,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_realm("home")
 
     def test_01b_token_specific_pin_policy(self):
-        create_realm("home", [self.resolvername1])
+        create_realm("home", [{'name': self.resolvername1}])
         g.logged_in_user = {"username": "super",
                             "realm": "",
                             "role": "admin"}
@@ -1923,7 +1923,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # We need this, to create the resolver3
         self.setUp_user_realm3()
         (added, failed) = create_realm(realm,
-                                       [self.resolvername1, self.resolvername3])
+                                       [
+                                           {'name': self.resolvername1},
+                                           {'name': self.resolvername3}])
         self.assertEqual(0, len(failed))
         self.assertEqual(2, len(added))
         # We have cornelius@myRealm in self.resolvername1
@@ -2004,14 +2006,14 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.User = User()
         req.all_data = {"push_wait": "120"}
         g.policy_object = PolicyClass()
-        pushtoken_wait(req, None)
+        pushtoken_validate(req, None)
         self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
 
         # Now we use the policy, to set the push_wait seconds
         set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=10".format(PUSH_ACTION.WAIT))
         req.all_data = {}
         g.policy_object = PolicyClass()
-        pushtoken_wait(req, None)
+        pushtoken_validate(req, None)
         self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), 10)
 
         delete_policy("push1")
@@ -2031,6 +2033,34 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.all_data = {"push_wait": "120"}
         pushtoken_disable_wait(req, None)
         self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
+
+        delete_policy("push1")
+
+    def test_24c_push_require_presence(self):
+
+        # We send a fake require_presence, that is not in the policies
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': "hans",
+                                       'pass': "pin",
+                                       'push_require_presence': "0"},
+                                 headers={})
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        req.all_data = {"push_require_presence": "0"}
+        g.policy_object = PolicyClass()
+        pushtoken_validate(req, None)
+        self.assertEqual(req.all_data.get(PUSH_ACTION.REQUIRE_PRESENCE), "0")
+
+        # Now we use the policy, to set the push_wait seconds
+        set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=1".format(PUSH_ACTION.REQUIRE_PRESENCE))
+        req.all_data = {}
+        g.policy_object = PolicyClass()
+        pushtoken_validate(req, None)
+        self.assertEqual(req.all_data.get(PUSH_ACTION.REQUIRE_PRESENCE), "1")
 
         delete_policy("push1")
 
@@ -3802,8 +3832,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         except Exception:
             print("no need to unassign token")
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -3862,8 +3891,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         except Exception as e:
             print("no need to unassign token")
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -3914,8 +3942,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.setUp_user_realms()
         serial = "offline01"
         tokenobject = init_token({"serial": serial, "type": "hotp",
-                                  "otpkey": "3132333435363738393031"
-                                            "323334353637383930",
+                                  "otpkey": "3132333435363738393031323334353637383930",
                                   "pin": "offline",
                                   "user": "cornelius"})
 
@@ -3928,8 +3955,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(mt.token.serial, serial)
         self.assertEqual(mt.token.machine_list[0].machine_id, "192.168.0.1")
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -3972,6 +3998,55 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # check that we can authenticate online with the correct value
         res = tokenobject.check_otp("295165")  # count = 100
         self.assertEqual(res, 100)
+
+    def test_06a_offline_auth_postpend_pin(self):
+        serial = "offline01"
+        # Do prepend_pin == False
+        set_privacyidea_config(SYSCONF.PREPENDPIN, False)
+        # The request with an OTP value and a PIN of a user, who has no token assigned
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        # Use: % oathtool -c 101 3132333435363738393031323334353637383930
+        # 329376
+        # Send the PIN behind the OTP value
+        req.all_data = {"user": "cornelius",
+                        "pass": "329376offline"}
+
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": True},
+               "version": "privacyIDEA test",
+               "detail": {"serial": serial},
+               "id": 1}
+        resp = jsonify(res)
+        new_response = offline_info(req, resp)
+        jresult = new_response.json
+        self.assertTrue(jresult.get("result").get("value"), jresult)
+        self.assertEqual(jresult.get("detail").get("serial"), serial)
+
+        # Check the hashvalues in the offline tree
+        auth_items = jresult.get("auth_items")
+        self.assertEqual(len(auth_items), 1)
+        response = auth_items.get("offline")[0].get("response")
+        self.assertEqual(len(response), 100)
+        # Check that the token counter has now increased to 201
+        tokenobject = get_tokens(serial=serial)[0]
+        self.assertEqual(tokenobject.token.count, 201)
+        # check that we cannot authenticate with an offline value
+        self.assertTrue(pbkdf2_sha512.verify("629694offline", response.get('102')))
+        self.assertTrue(pbkdf2_sha512.verify("492354offline", response.get('199')))
+        res = tokenobject.check_otp("492354")  # count = 199
+        self.assertEqual(res, -1)
+        # check that we can authenticate online with the correct value
+        res = tokenobject.check_otp("462985")  # count = 201
+        self.assertEqual(res, 201)
+        # Revert
+        set_privacyidea_config(SYSCONF.PREPENDPIN, True)
 
     def test_07_sign_response(self):
         builder = EnvironBuilder(method='POST',
@@ -4020,8 +4095,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_08_get_webui_settings(self):
         self.setUp_user_realms()
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -4173,8 +4247,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Test that policies like tokenpagesize are also user dependent
         self.setUp_user_realms()
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -4228,8 +4301,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Test admin_dashboard
         self.setUp_user_realms()
 
-        # The request with an OTP value and a PIN of a user, who has not
-        # token assigned
+        # The request with an OTP value and a PIN of a user, who has no token assigned
         builder = EnvironBuilder(method='POST',
                                  data={},
                                  headers={})
@@ -4262,6 +4334,51 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(jresult.get("result").get("value").get(ACTION.ADMIN_DASHBOARD))
 
         delete_policy("pol_dashboard")
+
+    def test_11_get_webui_settings_support_link(self):
+        # Test the link to the support
+        self.setUp_user_realms()
+
+        # The request with an OTP value and a PIN of a user, who has no token assigned
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {}
+
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": {"role": "admin",
+                                    "username": "cornelius"}},
+               "version": "privacyIDEA test",
+               "id": 1}
+        resp = jsonify(res)
+
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertNotIn("supportmail", jresult.get("result").get("value"))
+
+        # Add a subscription
+        from privacyidea.models import Subscription
+        s = Subscription(application="privacyidea",
+                         for_name="testuser",
+                         for_email="admin@example.com",
+                         for_phone="0",
+                         by_name="privacyIDEA project",
+                         by_email="privacyidea@example.com",
+                         date_from=datetime.utcnow(),
+                         date_till=datetime.utcnow() + timedelta(days=365),
+                         num_users=100,
+                         num_tokens=100,
+                         num_clients=100
+                         ).save()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertIn("privacyidea@example.com", jresult.get("result").get("value").get("supportmail"))
+        self.assertIn(EXPIRE_MESSAGE, jresult.get("result").get("value").get("supportmail"))
 
     def test_16_init_token_defaults(self):
         g.logged_in_user = {"username": "cornelius",

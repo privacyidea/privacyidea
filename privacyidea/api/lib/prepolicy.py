@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2020-01-28 Jean-Pierre Höhmann <jean-pierre.hoehmann@netknights.it>
 #             Add WebAuthn token
 #  2019-02-10 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -69,7 +67,7 @@ import logging
 
 from OpenSSL import crypto
 from privacyidea.lib import _
-from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError
+from privacyidea.lib.error import PolicyError, RegistrationError, TokenAdminError, ResourceNotFoundError, ParameterError
 from flask import g, current_app
 from privacyidea.lib.policy import SCOPE, ACTION, REMOTE_USER
 from privacyidea.lib.policy import Match, check_pin
@@ -87,6 +85,7 @@ from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
+from privacyidea.lib.token import get_one_token
 import functools
 import jwt
 import re
@@ -762,6 +761,8 @@ def verify_enrollment(request=None, action=None):
                 r = tokenobj.verify_enrollment(verify)
                 log.info("Result of enrollment verification for token {0!s}: {1!s}".format(serial, r))
                 if r:
+                    # TODO: we need to add the tokentype here or the second init_token() call fails
+                    request.all_data.update(type=tokenobj.get_tokentype())
                     tokenobj.token.rollout_state = ROLLOUTSTATE.ENROLLED
                 else:
                     from privacyidea.lib.error import ParameterError
@@ -1458,10 +1459,11 @@ def pushtoken_disable_wait(request, action):
     request.all_data[PUSH_ACTION.WAIT] = False
 
 
-def pushtoken_wait(request, action):
+def pushtoken_validate(request, action):
     """
     This is a auth specific wrapper to decorate /validate/check
     According to the policy scope=SCOPE.AUTH, action=push_wait
+    and scope=SCOPE.AUTH, action=push_require_presence
 
     :param request:
     :param action:
@@ -1475,6 +1477,13 @@ def pushtoken_wait(request, action):
         request.all_data[PUSH_ACTION.WAIT] = int(list(waiting)[0])
     else:
         request.all_data[PUSH_ACTION.WAIT] = False
+
+    require_presence = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.REQUIRE_PRESENCE,
+                       user_object=user_object if user_object else None).action_values(unique=True)
+    if len(require_presence) >= 1:
+        request.all_data[PUSH_ACTION.REQUIRE_PRESENCE] = list(require_presence)[0]
+    else:
+        request.all_data[PUSH_ACTION.REQUIRE_PRESENCE] = "0"
 
 
 def pushtoken_add_config(request, action):
@@ -2233,6 +2242,12 @@ def require_description(request=None, action=None):
     token_types = list(action_values.keys())
     type_value = request.all_data.get("type") or 'hotp'
     if type_value in token_types:
-        if not request.all_data.get("description"):
+        tok = None
+        serial = getParam(params, "serial")
+        if serial:
+            tok = get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True) or \
+                  get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True)
+        # only if no token exists, yet, we need to check the description
+        if not tok and not request.all_data.get("description"):
             log.warning(_("Missing description for {} token.".format(type_value)))
             raise PolicyError(_("Description required for {} token.".format(type_value)))

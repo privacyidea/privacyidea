@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # http://www.privacyidea.org
 # (c) Cornelius Kölbel, privacyidea.org
 #
@@ -47,7 +45,7 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import (get_token_class, get_from_config,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
 import json
 
 log = logging.getLogger(__name__)
@@ -76,7 +74,8 @@ def before_request():
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,
-                        "client_user_agent": request.user_agent.browser,
+                        "user_agent": get_plugin_info_from_useragent(request.user_agent.string)[0],
+                        "user_agent_version": get_plugin_info_from_useragent(request.user_agent.string)[0],
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "thread_id": "{0!s}".format(threading.current_thread().ident),

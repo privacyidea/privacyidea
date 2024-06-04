@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  Copyright (C) 2014 Cornelius Kölbel
 #  contact:  corny@cornelinux.de
 #
@@ -1042,7 +1041,8 @@ class IdResolver (UserIdResolver):
                                 'SERVERPOOL_SKIP': 'int',
                                 'SERVERPOOL_PERSISTENT': 'bool',
                                 'OBJECT_CLASSES': 'string',
-                                'DN_TEMPLATE': 'string'}
+                                'DN_TEMPLATE': 'string',
+                                'MULTIVALUEATTRIBUTES': 'string'}
         return {typ: descriptor}
 
     @classmethod

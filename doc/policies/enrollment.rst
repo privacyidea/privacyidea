@@ -16,7 +16,7 @@ REST API :ref:`rest_token` and specially the *init* and *assign*-methods.
 
 Technically the decorators in :ref:`code_api_policy` are used.
 
-The following actions are available in the scope 
+The following actions are available in the scope
 *enrollment*:
 
 max_token_per_realm
@@ -72,12 +72,12 @@ tokenissuer
 
 type: string
 
-This sets the issuer label for a newly enrolled Google Authenticator.
+This sets the issuer label for a newly enrolled Smartphone token.
 This policy takes a fixed string, to add additional information about the
 issuer of the soft token.
 
-Starting with version 2.20 you can use the tags ``{user}``, ``{realm}``, ``{serial}``
-and as new tags ``{givenname}`` and ``{surname}`` in the field issuer.
+You can use the tags ``{user}``, ``{realm}``, ``{serial}``, ``{givenname}``
+and ``{surname}`` in the issuer label.
 
 .. note:: A good idea is to set this to the instance name of your privacyIDEA
    installation or the name of your company.
@@ -87,23 +87,19 @@ tokenlabel
 
 type: string
 
-This sets the label for a newly enrolled Google Authenticator.
-Possible tags to be replaces are <u> for user, <r> for realm an
-<s> for the serial number.
+This sets the label for a newly enrolled Smartphone token.
+Possible tags to be replaced are ``{user}``, ``{realm}``, ``{serial}``,
+``{givenname}`` and ``{surname}``.
 
 The default behaviour is to use the serial number.
 
 .. note:: This is useful to identify the token in the Authenticator App.
 
-.. note:: Starting with version 2.19 the usage of ``<u>``, ``<s>`` and ``<r>``
-   is deprecated. Instead you should use ``{user}``, ``{realm}``,
-   ``{serial}`` and as new tags ``{givenname}`` and ``{surname}``.
-
-.. warning:: If you are only using ``<u>`` or ``{user}`` as tokenlabel and you
+.. warning:: If you are only using ``{user}`` as tokenlabel and you
    enroll the token without a user, this will result in an invalid QR code,
    since it will have an empty label.
-   You should rather use a label like "{user}@{realm}",
-   which would result in "@".
+   You should rather use a label like ``"{user}@{realm}"``,
+   which would result in ``"@"``.
 
 appimageurl
 ~~~~~~~~~~~
@@ -273,7 +269,7 @@ losttoken_PW_length
 type: int
 
 This is the length of the generated password for the lost token process.
- 
+
 losttoken_PW_contents
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -303,7 +299,7 @@ losttoken_valid
 
 type: int
 
-This is how many days the replacement token for the lost token should 
+This is how many days the replacement token for the lost token should
 be valid. After this many days the replacement can not be used anymore.
 
 yubikey_access_code
@@ -349,7 +345,7 @@ u2f_req
 type: string
 
 Only the specified U2F devices are allowed to be registered.
-The action can be specified like this:
+The action can be specified like this::
 
     u2f_req=subject/.*Yubico.*/
 
@@ -379,13 +375,13 @@ If you do not want to verify the validity period, you can check this action.
 .. _hotp-2step-difficulty:
 .. _totp-2step-difficulty:
 
-{type}_2step_clientsize, {type}_2step_serversize, {type}_2step_difficulty
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2step_clientsize, 2step_serversize, 2step_difficulty
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: string
 
-These are token type specific parameters. They control the key generation during the
-2step token enrollment (see :ref:`2step_enrollment`).
+These are token type specific parameters (with ``hotp_`` or ``totp_`` prefix).
+They control the key generation during the 2step token enrollment (see :ref:`2step_enrollment`).
 
 The ``serversize`` is the optional size (in bytes) of the server's key part.
 The ``clientsize`` is the size (in bytes) of the smartphone's key part.
@@ -399,11 +395,12 @@ This is new in version 2.21.
 .. _hotp-force-app-pin:
 .. _totp-force-app-pin:
 
-hotp_force_app_pin, totp_force_app_pin
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+force_app_pin
+~~~~~~~~~~~~~
 
 type: bool
 
+This is a token type specific parameter (with ``hotp_`` or ``totp_`` prefix).
 During enrollment of a privacyIDEA Authenticator smartphone app this policy is used
 to force the user to protect the token with a PIN.
 
@@ -467,7 +464,6 @@ verification during authentication, see :ref:`policy_push_ssl_verify_auth`.
 
 .. _policy_verify_enrollment:
 
-
 verify_enrollment
 ~~~~~~~~~~~~~~~~~
 
@@ -475,7 +471,7 @@ type: string
 
 This action takes a white space separated list of tokentypes.
 These tokens then need to be verified during enrollment.
-This is supported for HOTP, TOTP, Email, SMS and Indexed Secret tokens.
+This is supported for HOTP, TOTP, Email, SMS, Paper, TAN and Indexed Secret tokens.
 
 In this case after enrolling the token the user is prompted to enter
 a valid OTP value. This way the system can verify, that the user has
@@ -854,3 +850,14 @@ be enforced with the "require_description policy". The desired token-types can b
 selected here. After setting up the policy, the selected token types can only be
 enrolled if a description is set during enrollment.
 
+.. _policy_email_validate:
+
+email_validation
+~~~~~~~~~~~~~~~~
+
+type: string
+
+This action can be used to validate the email address of the user during enrollment.
+The administrator specifies the Python module, that should be used to validate the email address.
+The modules can be defined in the `pi.cfg` file.
+See :ref:`picfg_email_validators` for more information.

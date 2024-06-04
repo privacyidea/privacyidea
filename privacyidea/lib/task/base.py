@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  2018-06-20 Friedrich Weber <friedrich.weber@netknights.it>
 #             Initial skeleton
 #

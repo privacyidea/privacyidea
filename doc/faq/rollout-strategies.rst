@@ -63,11 +63,3 @@ event definition:
 
 This way with the first successful authentication of a TOTP token the
 ``timeWindow`` of the TOTP token is set to 180 seconds.
-
-
-How can I translate to my language?
------------------------------------
-The web UI can be translated into different languages. The system determines
-the preferred language of you browser and displays the web UI accordingly.
-
-At the moment "en" and "de" are available.

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2015-07-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Fix mOTP reuse of OTP values
 #  2015-01-27 Rewrite due to flask migration

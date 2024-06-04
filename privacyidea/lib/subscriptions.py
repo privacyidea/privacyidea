@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2016-09-23 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Save and delete subscriptions
 #
@@ -29,10 +27,12 @@ import logging
 import datetime
 import random
 from .log import log_with
+from .utils import get_plugin_info_from_useragent
 from ..models import Subscription
 from privacyidea.lib.error import SubscriptionError
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.crypto import Sign
+from privacyidea.lib import _
 import functools
 from privacyidea.lib.framework import get_app_config_value
 import os
@@ -40,6 +40,7 @@ import traceback
 from sqlalchemy import func
 
 
+EXPIRE_MESSAGE = _("My subscription has expired.")
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
 SIGN_FORMAT = """{application}
 {for_name}
@@ -67,6 +68,7 @@ APPLICATIONS = {"demo_application": 0,
                 "privacyidea-ldap-proxy": 50,
                 "privacyidea-cp": 50,
                 "privacyidea-pam": 10000,
+                "privacyidea-shibboleth": 10000,
                 "privacyidea-adfs": 50,
                 "privacyidea-keycloak": 10000,
                 "simplesamlphp": 10000,
@@ -350,12 +352,10 @@ class CheckSubscription(object):
         @functools.wraps(func)
         def check_subscription_wrapper(*args, **kwds):
             request = self.request
-            ua = request.user_agent
-            ua_str = "{0!s}".format(ua) or "unknown"
-            application = ua_str.split()[0]
+            ua_str = str(request.user_agent.string)
+            plugin_name = get_plugin_info_from_useragent(ua_str)[0]
             # check and raise if fails
-            #check_subscription("privacyidea")
-            check_subscription(application)
+            check_subscription(plugin_name)
             f_result = func(*args, **kwds)
             return f_result
 

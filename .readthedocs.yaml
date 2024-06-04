@@ -6,9 +6,9 @@
 version: 2
 
 build:
-  os: ubuntu-20.04
-  tools: 
-    python: "3.8"
+  os: ubuntu-22.04
+  tools:
+    python: "3.10"
 
 # Build html documentation in the doc/ directory with Sphinx
 sphinx:
@@ -16,7 +16,7 @@ sphinx:
 
 # Also build HTMLZip, PDF and ePub
 # TODO: do we need all these as well?
-formats: all
+#formats: all
 
 # Install the pinned dependencies for the documentation building process.
 python:

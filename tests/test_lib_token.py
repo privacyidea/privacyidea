@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This test file tests the lib.token methods.
 
@@ -79,6 +78,7 @@ class TokenTestCase(MyTestCase):
     """
     Test the lib.token on an interface level
     """
+    yubikey_token_key = '31323334353637383930313233343536'
 
     def test_00_create_realms(self):
         self.setUp_user_realms()
@@ -172,7 +172,7 @@ class TokenTestCase(MyTestCase):
         token = init_token({"type": "yubikey",
                             "serial": "yk1",
                             "yubikey.prefix": "vv123456",
-                            "otpkey": self.otpkey})
+                            "otpkey": self.yubikey_token_key})
         self.assertEqual(token.token.serial, "yk1")
         tokenobject_list = get_tokens(tokeninfo={"yubikey.prefix": "vv123456"})
         self.assertEqual(len(tokenobject_list), 1)
@@ -1171,12 +1171,12 @@ class TokenTestCase(MyTestCase):
     def test_47_use_yubikey_and_hotp(self):
         # fix problem https://github.com/privacyidea/privacyidea/issues/279
         user = User("cornelius", self.realm1)
-        token = init_token({"type": "hotp",
-                            "otpkey": self.otpkey,
-                            "pin": "pin47"}, user)
-        token = init_token({"type": "yubikey",
-                            "otpkey": self.otpkey,
-                            "pin": "pin47"}, user)
+        init_token({"type": "hotp",
+                    "otpkey": self.otpkey,
+                    "pin": "pin47"}, user)
+        init_token({"type": "yubikey",
+                    "otpkey": self.yubikey_token_key,
+                    "pin": "pin47"}, user)
         r = check_user_pass(user, "pin47888888")
         self.assertEqual(r[0], False)
         self.assertEqual(r[1].get('message'), "wrong otp value")
@@ -1421,7 +1421,7 @@ class TokenTestCase(MyTestCase):
         tok.delete_token()
 
         # A yubikey and yubicloud tokentype is hardware
-        tok = init_token({"type": "yubikey", "otpkey": self.otpkey})
+        tok = init_token({"type": "yubikey", "otpkey": self.yubikey_token_key})
         kind = tok.get_tokeninfo("tokenkind")
         self.assertEqual(kind, TOKENKIND.HARDWARE)
         tok.delete_token()
@@ -1608,6 +1608,7 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(weigh_token_type(dummy_token("push")) > weigh_token_type(dummy_token("hotp")))
         self.assertTrue(weigh_token_type(dummy_token("push")) > weigh_token_type(dummy_token("HOTP")))
         self.assertTrue(weigh_token_type(dummy_token("PUSH")) > weigh_token_type(dummy_token("hotp")))
+
 
 
 class TokenOutOfBandTestCase(MyTestCase):
@@ -2167,4 +2168,60 @@ class ExportAndReencryptTestCase(MyTestCase):
             self.assertEqual(CHANGED_KEY, d.get("otpkey"))
             # Also check, that the tokeninfo for TOTP was updated
             if d.get("type") == "totp":
-                self.assertEqual("30", d.get("timeStep"), d)
+                tokeninfo = d.get("info_list")
+                self.assertEqual("30", tokeninfo.get("timeStep"), d)
+
+    def test_01_token_dump_load(self):
+        from privacyidea.lib.token import token_dump, token_load
+        self.setUp_user_realms()
+        key = "1234567890123456"
+        pin = "1234"
+        tokenobject = init_token({"serial": "s2",
+                                  "pin": pin,
+                                  "otpkey": key},
+                                 user=User("hans", self.realm1))
+        tokenobject.add_tokeninfo("secretkey", "secretvalue", value_type="password")
+        d = token_dump(tokenobject)
+        self.assertEqual(True, d.get("active"))
+        self.assertEqual("", d.get("description"))
+        self.assertEqual("software", d.get("info_list").get("tokenkind"))
+        self.assertEqual("sha1", d.get("info_list").get("hashlib"))
+        self.assertEqual(key, d.get("otpkey"))
+        self.assertNotIn("key_inc", d)
+        self.assertNotIn("key_iv", d)
+        self.assertNotIn("id", d)
+        tokeninfo = d.get("info_list")
+        # Check the encrypted values
+        self.assertEqual("secretvalue", tokeninfo.get("secretkey"))
+        self.assertEqual("password", tokeninfo.get("secretkey.type"))
+        tokenowner = d.get("owners")[0]
+        self.assertEqual("1118", tokenowner.get("uid"))
+        self.assertEqual("hans", tokenowner.get("login"))
+        self.assertEqual("resolver1", tokenowner.get("resolver"))
+        self.assertEqual("realm1", tokenowner.get("realm"))
+
+        # A token should not be overwritten, if it already exists
+        self.assertRaises(TokenAdminError, token_load, d)
+
+        # We overwrite the token
+        token_load(d, overwrite=True)
+
+        # We load a new token.
+        d["serial"] = "s3"
+        token_load(d)
+        # Read the token s3 from the database and check the PIN, that has been copied from token s2 to token s3
+        tok = get_one_token(serial="s3")
+        self.assertTrue(tok.check_pin(pin))
+
+        # Check the owner of the token
+        self.assertEqual("hans", tok.user.login)
+        self.assertEqual(self.realm1, tok.user.realm)
+
+        # Now we load the 3rd token, with a user, that does not exist
+        d["serial"] = "s4"
+        # Set an invalid uid, so that the user can not be assigned.
+        d["owners"][0]["uid"] = "987654321"
+        self.assertRaises(TokenAdminError, token_load, d)
+        tok = get_one_token(serial="s4")
+        # A user was not assigned
+        self.assertEqual(None, tok.user)

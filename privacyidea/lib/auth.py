@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # 2015-11-03 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Add check if an admin user exists
 # 2014-12-15 Cornelius Kölbel, info@privacyidea.org
@@ -29,7 +27,6 @@ from privacyidea.lib.utils import fetch_one_resource
 import logging
 
 log = logging.getLogger(__name__)
-
 
 
 class ROLE(object):
@@ -65,7 +62,7 @@ def db_admin_exist(username):
     return bool(get_db_admin(username))
 
 
-def create_db_admin(app, username, email=None, password=None):
+def create_db_admin(username, email=None, password=None):
     pw_dig = None
     if password:
         pw_dig = hash_with_pepper(password)
@@ -74,11 +71,7 @@ def create_db_admin(app, username, email=None, password=None):
 
 
 def list_db_admin():
-    admins = Admin.query.all()
-    print("Name \t email")
-    print(30*"=")
-    for admin in admins:
-        print("{0!s} \t {1!s}".format(admin.username, admin.email))
+    return Admin.query.all()
 
 
 def get_db_admins():

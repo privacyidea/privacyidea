@@ -380,18 +380,21 @@ angular.module("privacyideaApp")
                 }, function (response) {
                     console.log('Authentication failed after polling!');
                     console.log(response.data);
+                    PollingAuthFactory.stop();
                 });
-                PollingAuthFactory.stop();
             }
             // if result.value is false, the challenge hasn't been answered yet.
             // Continue polling
         }, function(response) {
-            // the /validate/polltransaction endpoint returned an error
+            // the /validate/polltransaction endpoint returned an error therefore polling should be stopped
             console.warn("Polling for transactions returned an error: " + response.data);
+            PollingAuthFactory.stop();
         });
     };
 
     $scope.do_login_stuff = function(data) {
+        PollingAuthFactory.stop();
+
         AuthFactory.setUser(data.result.value.username,
                 data.result.value.realm,
                 data.result.value.token,
@@ -414,7 +417,11 @@ angular.module("privacyideaApp")
             $scope.backend_debug_passwords = data.result.value.debug_passwords;
             $scope.privacyideaVersionNumber = data.versionnumber;
             var lang = gettextCatalog.getCurrentLanguage();
-            $scope.privacyideaSupportLink = "https://netknights.it/" + lang + "/support-link-" + data.result.value.role;
+            if (data.result.value.hasOwnProperty("supportmail")) {
+                $scope.privacyideaSupportLink = data.result.value.supportmail;
+            } else {
+                $scope.privacyideaSupportLink = "https://netknights.it/" + lang + "/support-link-" + data.result.value.role;
+            }
             $scope.loggedInUser = AuthFactory.getUser();
             $scope.token_wizard = data.result.value.token_wizard;
             $scope.token_wizard_2nd = data.result.value.token_wizard_2nd;

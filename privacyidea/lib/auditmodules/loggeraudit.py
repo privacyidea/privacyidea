@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2019-11-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             initial code for writing audit information to a file
 #

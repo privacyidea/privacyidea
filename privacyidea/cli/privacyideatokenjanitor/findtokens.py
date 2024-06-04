@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
+# 2023-11-03 Jona-Samuel Höhmann <jona-samuel.hoehmann@netknights.it>
+#            Migrate to click
 # 2020-11-11 Timo Sturm <timo.sturm@netknights.it>
 #            Select how to validate PSKC imports
 # 2018-02-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -41,34 +42,30 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+import click
+from click import ClickException
+from flask.cli import AppGroup
 from dateutil import parser
 from dateutil.tz import tzlocal, tzutc
-from flask_script.commands import InvalidCommand
 
 from privacyidea.lib.policy import ACTION
-from privacyidea.lib.utils import parse_legacy_time, to_unicode
+from privacyidea.lib.utils import parse_legacy_time
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
-                                   unassign_token, import_token,
+                                   unassign_token,
                                    get_tokens_paginated_generator)
 from privacyidea.models import Token
-from privacyidea.app import create_app
-from flask_script import Manager
 import re
 import sys
 from yaml import safe_dump as yaml_safe_dump
-from yaml import safe_load as yaml_safe_load
 
-
-
-__version__ = "0.1"
-
-ALLOWED_ACTIONS = ["disable", "delete", "unassign", "mark", "export", "listuser", "tokenrealms"]
+find_cli = AppGroup("find")
 
 __doc__ = """
 This script can be used to clean up the token database.
 
-It can list, disable, delete or mark tokens based on
+It can list, disable, delete or edit tokens based on
 
 Conditions:
 
@@ -87,28 +84,19 @@ Actions:
 * delete
 
 
-    privacyidea-token-janitor find 
+    privacyidea-token-janitor find
         --last_auth=10h|7d|2y
-        --tokeninfo-key=<key>
+        --tokeninfo= 'token_info_key == token_info_value' or 'token_info_key >= token_info_value'
+                        or 'token_info_key <= token_info_value'
         --has-not-tokeninfo-key<key>
         --has-tokeninfo-key<key>
-        --tokeninfo-value=<value>
-        --tokeninfo-value-greater-than=<value>
-        --tokeninfo-value-less-than=<value>
-        --tokeninfo-value-after=<value>
-        --tokeninfo-value-before=<value>
         --assigned false
         --orphaned true
         --tokentype=<type>
         --serial=<regexp>
         --description=<regexp>
-        
-        --action={0!s}
-        
-        --set-description="new description"
-        --set-tokeninfo-key=<key>
-        --set-tokeninfo-value=<value>    
-    
+
+
 .. note:: If you fail to redirect the output of this command at the commandline
    to e.g. a file with a UnicodeEncodeError, you need to set the environment
    variable like this:
@@ -116,17 +104,16 @@ Actions:
    Here is a good read about it:
    https://stackoverflow.com/questions/4545661/unicodedecodeerror-when-redirecting-to-file
 
-""".format("|".join(ALLOWED_ACTIONS))
+"""
 
-app = create_app(config_name='production', silent=True)
-manager = Manager(app)
+ALLOWED_ACTIONS = ["disable", "delete", "unassign", "mark", "export", "listuser", "tokenrealms"]
 
 
 def _try_convert_to_integer(given_value_string):
     try:
         return int(given_value_string)
     except ValueError:
-        raise InvalidCommand('Not an integer: {}'.format(given_value_string))
+        raise ClickException('Not an integer: {}'.format(given_value_string))
 
 
 def _compare_greater_than(_key, given_value_string):
@@ -181,7 +168,7 @@ def _try_convert_to_datetime(given_value_string):
             parsed = parsed.replace(tzinfo=tzlocal())
         return parsed
     except ValueError:
-        raise InvalidCommand('Not a valid datetime format: {}'.format(given_value_string))
+        raise ClickException('Not a valid datetime format: {}'.format(given_value_string))
 
 
 def _compare_after(key, given_value_string):
@@ -189,11 +176,10 @@ def _compare_after(key, given_value_string):
     :return: a function which returns True if its parameter (converted to a datetime) occurs after
              *given_value_string* (converted to a datetime).
     """
-    given_value = _try_convert_to_datetime(given_value_string)
 
     def comparator(value):
         try:
-            return _parse_datetime(key, value) > given_value
+            return _parse_datetime(key, value) > given_value_string
         except ValueError:
             return False
 
@@ -205,11 +191,10 @@ def _compare_before(key, given_value_string):
     :return: a function which returns True if its parameter (converted to a datetime) occurs before
              *given_value_string* (converted to a datetime).
     """
-    given_value = _try_convert_to_datetime(given_value_string)
 
     def comparator(value):
         try:
-            return _parse_datetime(key, value) < given_value
+            return _parse_datetime(key, value) < given_value_string
         except ValueError:
             return False
 
@@ -418,67 +403,69 @@ def export_user_data(token_list, attributes=None):
     return users
 
 
-@manager.option('--set-description', help='set a new description')
-@manager.option('--set-tokeninfo-key', help='set a new tokeninfo-key')
-@manager.option('--set-tokeninfo-value', help='set a new tokeninfo-value')
-@manager.option('--tokeninfo-value-before', metavar='DATETIME',
-                help='Interpret tokeninfo values as datetimes, match only if they occur before the given ISO 8601 datetime')
-@manager.option('--tokeninfo-value-after', metavar='DATETIME',
-                help='Interpret tokeninfo values as datetimes, match only if they occur after the given ISO 8601 datetime')
-@manager.option('--tokeninfo-value-greater-than', metavar='INTEGER',
-                help='Interpret tokeninfo values as integers and match only if they are '
-                     'greater than the given integer')
-@manager.option('--tokeninfo-value-less-than', metavar='INTEGER',
-                help='Interpret tokeninfo values as integers and match only if they are '
-                     'smaller than the given integer')
-@manager.option('--tokeninfo-value', metavar='REGEX|INTEGER', help='The tokeninfo value to match')
-@manager.option('--has-not-tokeninfo-key', help='filters for tokens that have not given the specified tokeninfo-key')
-@manager.option('--has-tokeninfo-key', help='filters for tokens that have given the specified tokeninfo-key.')
-@manager.option('--tokeninfo-key', help='The tokeninfo key to match. ')
-@manager.option('--tokenattribute-value-greater-than', metavar='INTEGER',
-                help="Match if the value of the token attribute is greater than the given value.")
-@manager.option('--tokenattribute-value-less-than', metavar='INTEGER',
-                help="Match if the value of the token attribute is less than the given value.")
-@manager.option('--tokenattribute-value', metavar='REGEX|INTEGER',
-                help='The value of the token attribute which should match.')
-@manager.option('--tokenattribute', help='Match for a certain token attribute from the database.')
-@manager.option('--tokentype', help='The tokentype to search.')
-@manager.option('--serial', help='A regular expression on the serial')
-@manager.option('--description', help='A regular expression on the description')
-@manager.option('--attributes', help='Extends the "listuser" function to display additional user attributes')
-@manager.option('--tokenrealms', help='A comma separated list of realms, to which the tokens should be assigned.')
-@manager.option('--sum', help='In case of the action "listuser", this switch specifies if '
-                              'the output should only contain the number of tokens owned '
-                              'by the user.',
-                dest='sum_tokens', action='store_true')
-@manager.option('--action', help='Which action should be performed on the '
-                                 'found tokens. {0!s}. Exporting to PSKC only supports '
-                                 'HOTP, TOTP and PW tokens!'.format("|".join(ALLOWED_ACTIONS)))
-@manager.option('--csv', dest='csv', action='store_true',
-                help='In case of a simple find, the output is written as CSV instead of the '
-                     'formatted output.')
-@manager.option('--yaml', dest='yaml', action='store_true',
-                help='In case of a simple find, the output is written as YAML instead of the '
-                     'formatted output.')
-@manager.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
-@manager.option('--assigned', help='True|False|None')
-@manager.option('--active', help='True|False|None')
-@manager.option('--orphaned',
-                help='Whether the token is an orphaned token. Set to 1')
-@manager.option('--b32', dest='b32', action='store_true',
-                help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.')
-@manager.option('--chunksize', default=None,
-                help='Read tokens from the database in smaller chunks to perform operations.')
-def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
-         tokeninfo_value_greater_than, tokeninfo_value_less_than,
-         tokeninfo_value_after, tokeninfo_value_before,
-         orphaned, tokentype, serial, description, action, set_description,
-         set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv,
-         chunksize, attributes, b32, has_not_tokeninfo_key, has_tokeninfo_key,
-         tokenattribute, tokenattribute_value, tokenattribute_value_greater_than,
-         tokenattribute_value_less_than, yaml):
+@find_cli.command("find")
+@click.option('--set-description', help='set a new description')
+@click.option('--set-tokeninfo-key', help='set a new tokeninfo-key')
+@click.option('--set-tokeninfo-value', help='set a new tokeninfo-value')
+@click.option('--tokeninfo-value-before', metavar='DATETIME',
+              help='Interpret tokeninfo values as datetimes,'
+                   ' match only if they occur before the given ISO 8601 datetime')
+@click.option('--tokeninfo-value-after', metavar='DATETIME',
+              help='Interpret tokeninfo values as datetimes,'
+                   ' match only if they occur after the given ISO 8601 datetime')
+@click.option('--tokeninfo-value-greater-than', metavar='INTEGER',
+              help='Interpret tokeninfo values as integers and match only if they are '
+                   'greater than the given integer')
+@click.option('--tokeninfo-value-less-than', metavar='INTEGER',
+              help='Interpret tokeninfo values as integers and match only if they are '
+                   'smaller than the given integer')
+@click.option('--tokeninfo-value', metavar='REGEX|INTEGER', help='The tokeninfo value to match')
+@click.option('--has-not-tokeninfo-key', help='filters for tokens that have not given the specified tokeninfo-key')
+@click.option('--has-tokeninfo-key', help='filters for tokens that have given the specified tokeninfo-key.')
+@click.option('--tokeninfo-key', help='The tokeninfo key to match. ')
+@click.option('--tokenattribute-value-greater-than', metavar='INTEGER',
+              help="Match if the value of the token attribute is greater than the given value.")
+@click.option('--tokenattribute-value-less-than', metavar='INTEGER',
+              help="Match if the value of the token attribute is less than the given value.")
+@click.option('--tokenattribute-value', metavar='REGEX|INTEGER',
+              help='The value of the token attribute which should match.')
+@click.option('--tokenattribute', help='Match for a certain token attribute from the database.')
+@click.option('--tokentype', help='The tokentype to search.')
+@click.option('--serial', help='A regular expression on the serial')
+@click.option('--description', help='A regular expression on the description')
+@click.option('--attributes', help='Extends the "listuser" function to display additional user attributes')
+@click.option('--tokenrealms', help='A comma separated list of realms, to which the tokens should be assigned.')
+@click.option('--sum', 'sum_tokens', is_flag=True,
+              help='In case of the action "listuser", this switch specifies if'
+                   ' the output should only contain the number of tokens owned by the user.')
+@click.option('--action', help='Which action should be performed on the '
+                               'found tokens. {0!s}. Exporting to PSKC only supports '
+                               'HOTP, TOTP and PW tokens!'.format("|".join(ALLOWED_ACTIONS)))
+@click.option('--csv', is_flag=True,
+              help='In case of a simple find, the output is written as CSV instead of the '
+                   'formatted output.')
+@click.option('--yaml', is_flag=True,
+              help='In case of a simple find, the output is written as YAML instead of the '
+                   'formatted output.')
+@click.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
+@click.option('--assigned', help='True|False|None')
+@click.option('--active', help='True|False|None')
+@click.option('--orphaned',
+              help='Whether the token is an orphaned token. Set to 1')
+@click.option('--b32', is_flag=True,
+              help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.')
+@click.option('--chunksize', default=None,
+              help='Read tokens from the database in smaller chunks to perform operations.')
+def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
+               tokeninfo_value_greater_than, tokeninfo_value_less_than,
+               tokeninfo_value_after, tokeninfo_value_before,
+               orphaned, tokentype, serial, description, action, set_description,
+               set_tokeninfo_key, set_tokeninfo_value, sum_tokens, tokenrealms, csv,
+               chunksize, attributes, b32, has_not_tokeninfo_key, has_tokeninfo_key,
+               tokenattribute, tokenattribute_value, tokenattribute_value_greater_than,
+               tokenattribute_value_less_than, yaml):
     """
-    finds all tokens which match the conditions
+    Finds all tokens which match the conditions.
     """
     tokenattributes = [col.key for col in Token.__table__.columns]
     if tokenattribute and tokenattribute not in tokenattributes:
@@ -553,24 +540,29 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                     if tokenobj.type.lower() not in ["totp", "hotp"]:
                         continue
                     token_dict = tokenobj._to_dict(b32=b32)
-                    owner = "{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm) if tokenobj.user else "n/a"
+                    owner = "{!s}@{!s}".format(
+                        tokenobj.user.login,
+                        tokenobj.user.realm) if tokenobj.user else "n/a"
                     if type == "totp":
-                        print("{!s}, {!s}, {!s}, {!s}, {!s}, {!s}".format(owner, token_dict.get("serial"),
-                                                                          token_dict.get("otpkey"),
-                                                                          token_dict.get("type"),
-                                                                          token_dict.get("otplen"),
-                                                                          token_dict.get("timestep")))
+                        print("{!s}, {!s}, {!s}, {!s}, {!s}, {!s}".format(
+                            owner, token_dict.get("serial"),
+                            token_dict.get("otpkey"),
+                            token_dict.get("type"),
+                            token_dict.get("otplen"),
+                            token_dict.get("info_list", {}).get("timStep")))
                     else:
-                        print("{!s}, {!s}, {!s}, {!s}, {!s}".format(owner, token_dict.get("serial"),
-                                                                    token_dict.get("otpkey"),
-                                                                    token_dict.get("type"),
-                                                                    token_dict.get("otplen")))
+                        print("{!s}, {!s}, {!s}, {!s}, {!s}".format(
+                            owner, token_dict.get("serial"),
+                            token_dict.get("otpkey"),
+                            token_dict.get("type"),
+                            token_dict.get("otplen")))
             elif yaml:
                 token_list = []
                 for tokenobj in tlist:
                     try:
                         token_dict = tokenobj._to_dict(b32=b32)
-                        token_dict["owner"] = "{!s}@{!s}".format(tokenobj.user.login, tokenobj.user.realm) if tokenobj.user else "n/a"
+                        token_dict["owner"] = "{!s}@{!s}".format(tokenobj.user.login,
+                                                                 tokenobj.user.realm) if tokenobj.user else "n/a"
                         token_list.append(token_dict)
                     except Exception as e:
                         sys.stderr.write("\nFailed to export token {0!s}.\n".format(token_dict.get("serial")))
@@ -613,71 +605,3 @@ def find(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                     print("Failed to process token {0}.".format(
                         token_obj.token.serial))
                     print("{0}".format(exx))
-        del tlist
-
-
-@manager.option('--yaml', dest='yaml',
-                help='Specify the YAML file with the previously exported tokens.')
-def updatetokens(yaml):
-    """
-    This can update existing tokens in the privacyIDEA system. You can specify a yaml file with the tokendata.
-    Can be used to reencrypt data, when changing the encryption key.
-    """
-    print("Loading YAML data. This may take a while.")
-    token_list = yaml_safe_load(open(yaml, 'r').read())
-    for tok in token_list:
-        del(tok["owner"])
-        tok_objects = get_tokens(serial=tok.get("serial"))
-        if len(tok_objects) == 0:
-            sys.stderr.write("\nCan not find token {0!s}. Not updating.\n".format(tok.get("serial")))
-        else:
-            print("Updating token {0!s}.".format(tok.get("serial")))
-            try:
-                tok_objects[0].update(tok)
-            except Exception as e:
-                sys.stderr.write("\nFailed to update token {0!s}.".format(tok.get("serial")))
-
-
-@manager.option('--pskc', dest='pskc',
-                help='Import this PSKC file.')
-@manager.option('--preshared_key_hex', dest='preshared_key_hex',
-                help='The AES encryption key.')
-@manager.option('--validate_mac', dest='validate_mac', default='check_fail_hard',
-                help="How the file should be validated.\n"
-                     "'no_check' : Every token is parsed, ignoring HMAC\n"
-                     "'check_fail_soft' : Skip tokens with invalid HMAC\n"
-                     "'check_fail_hard' : Only import tokens if all HMAC are valid.")
-def loadtokens(pskc, preshared_key_hex, validate_mac):
-    """
-    Loads token data from a PSKC file.
-    """
-    from privacyidea.lib.importotp import parsePSKCdata
-
-    with open(pskc, 'r') as pskcfile:
-        file_contents = pskcfile.read()
-
-    tokens, not_parsed_tokens = parsePSKCdata(file_contents,
-                                              preshared_key_hex=preshared_key_hex,
-                                              validate_mac=validate_mac)
-    success = 0
-    failed = 0
-    failed_tokens = []
-    for serial in tokens:
-        try:
-            print("Importing token {0!s}".format(serial))
-            import_token(serial, tokens[serial])
-            success = success + 1
-        except Exception as e:
-            failed = failed + 1
-            failed_tokens.append(serial)
-            print("--- Failed to import token. {0!s}".format(e))
-
-    if not_parsed_tokens:
-        print("The following tokens were not read from the PSKC file"
-              " because they could not be validated: {0!s}".format(not_parsed_tokens))
-    print("Successfully imported {0!s} tokens.".format(success))
-    print("Failed to import {0!s} tokens: {1!s}".format(failed, failed_tokens))
-
-
-if __name__ == '__main__':
-    manager.run()

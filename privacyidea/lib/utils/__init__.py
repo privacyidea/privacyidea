@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2017-11-24 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Use HSM to generate Salt for PasswordHash
 #  2017-07-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -43,7 +41,10 @@ from netaddr import IPAddress, IPNetwork, AddrFormatError
 import hashlib
 import traceback
 import threading
-import importlib_metadata
+try:
+    from importlib import metadata
+except ImportError:
+    import importlib_metadata as metadata
 import time
 import html
 import segno
@@ -58,9 +59,21 @@ BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 ALLOWED_SERIAL = r"^[0-9a-zA-Z\-_]+$"
 
 # character lists for the identifiers in the pin content policy
-CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters, # characters
-                          "n": string.digits,        # numbers
-                          "s": string.punctuation}   # special
+CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters,  # characters
+                          "n": string.digits,         # numbers
+                          "s": string.punctuation}    # special
+
+
+class AUTH_RESPONSE(object):
+    __doc__ = """The return value in "result->authentication".
+    CHALLENGE indicates the start of a challenge and
+    DECLINED indicates a declined challenge, which e.g. happens with PUSH tokens, if the user declines the
+    authentication request.
+    """
+    ACCEPT = "ACCEPT"
+    REJECT = "REJECT"
+    CHALLENGE = "CHALLENGE"
+    DECLINED = "DECLINED"
 
 
 def check_time_in_range(time_range, check_time=None):
@@ -905,7 +918,7 @@ def int_to_hex(serial):
     """
     serial_hex = hex(int(serial)).upper()
     serial_hex = serial_hex.split("X")[1]
-    if len(serial_hex)%2 != 0:
+    if len(serial_hex) % 2 != 0:
         serial_hex = "0" + serial_hex
     return serial_hex
 
@@ -915,10 +928,10 @@ def parse_legacy_time(ts, return_date=False):
     The new timestrings are of the format YYYY-MM-DDThh:mm+oooo.
     They contain the timezone offset!
 
-    Old legacy time strings are of format DD/MM/YY hh:mm without time zone 
+    Old legacy time strings are of format DD/MM/YY hh:mm without time zone
     offset.
 
-    This function parses string and returns the new formatted time string 
+    This function parses string and returns the new formatted time string
     including the timezone offset.
 
     :param ts:
@@ -931,7 +944,7 @@ def parse_legacy_time(ts, return_date=False):
         # we need to reparse the string
         d = parse_date_string(ts,
                               dayfirst=re.match(r"^\d\d[/\.]", ts)).replace(
-                                  tzinfo=tzlocal())
+            tzinfo=tzlocal())
     if return_date:
         return d
     else:
@@ -1248,9 +1261,9 @@ def get_version_number():
     """
     version = "unknown"
     try:
-        version = importlib_metadata.version("privacyidea")
-    except:
-        log.info("We are not able to determine the privacyidea version number.")
+        version = metadata.version("privacyidea")
+    except metadata.PackageNotFoundError as e:
+        log.info(f"We are not able to determine the privacyidea version number: {e}")
     return version
 
 
@@ -1289,19 +1302,16 @@ def prepare_result(obj, rid=1, details=None):
         details["threadid"] = threading.current_thread().ident
         res["detail"] = details
 
-    # Fix for sending an information about challenge response
-    # TODO: Make this default, when we move from the binary result->value to
-    #       more states in version 4.0
     if rid > 1:
         if obj:
-            r_authentication = "ACCEPT"
+            r_authentication = AUTH_RESPONSE.ACCEPT
         elif not obj and details.get("multi_challenge"):
             # We have a challenge authentication
-            r_authentication = "CHALLENGE"
+            r_authentication = AUTH_RESPONSE.CHALLENGE
         elif not obj and (details.get("challenge_status") == "declined"):
-            r_authentication = "DECLINED"
+            r_authentication = AUTH_RESPONSE.DECLINED
         else:
-            r_authentication = "REJECT"
+            r_authentication = AUTH_RESPONSE.REJECT
         res["result"]["authentication"] = r_authentication
 
     return res
@@ -1335,6 +1345,7 @@ def create_tag_dict(logged_in_user=None,
                     serial=None,
                     tokenowner=None,
                     tokentype=None,
+                    tokendescription=None,
                     recipient=None,
                     registrationcode=None,
                     googleurl_value=None,
@@ -1355,6 +1366,7 @@ def create_tag_dict(logged_in_user=None,
     :param recipient: The recipient
     :type recipient: dictionary with "givenname" and "surname"
     :param registrationcode: The registration code of a token
+    :param tokendescription: The description of the token
     :param googleurl_value: The URL for the QR code during token enrollemnt
     :param client_ip: The IP of the client
     :param pin: The PIN of a token
@@ -1376,6 +1388,7 @@ def create_tag_dict(logged_in_user=None,
                 username=tokenowner.login if tokenowner else "",
                 userrealm=tokenowner.realm if tokenowner else "",
                 tokentype=tokentype,
+                tokendescription=tokendescription,
                 registrationcode=registrationcode,
                 recipient_givenname=recipient.get("givenname"),
                 recipient_surname=recipient.get("surname"),
@@ -1543,3 +1556,47 @@ def convert_imagefile_to_dataimage(imagepath):
     except FileNotFoundError:
         log.warning("The file {0!s} could not be found.".format(imagepath))
         return ""
+
+
+ua_re = re.compile(r'^(?P<agent>[a-zA-Z0-9_-]+)(/(?P<version>\d+[\d.]*))?(\s(?P<comment>.*))?')
+
+
+def get_plugin_info_from_useragent(useragent):
+    """
+    This gives you the plugin name and version from an useragent string.
+    See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent for
+    more information on the user-agent string
+
+    :param useragent: useragent string like 'NameOfPlugin/VersionOfPlugin NameOfApplication/VersionOfApplication'
+    :type useragent: str
+    :return: a tuple with (NameOfPlugin, VersionOfPlugin, Comment). For example: ('ExamplePlugin', 1.0, '')
+    :rtype: tuple
+    """
+    if not useragent:
+        log.info("No user-agent string given")
+        return "", None, None
+    ua_match = ua_re.match(useragent)
+    if ua_match:
+        return ua_match.group('agent'), ua_match.group('version'), ua_match.group('comment')
+    else:
+        log.info(f"Could not match user-agent string: {useragent}")
+        return "", None, None
+
+
+def get_computer_name_from_user_agent(user_agent):
+    """
+    Searches for entries in the user agent that could identify the machine.
+    It is expected that the string following the key does not contain whitespaces.
+    Example: ComputerName/Laptop-3324231
+
+    :param user_agent: The user agent string
+    :type user_agent: str
+    :return: The computer name or None if nothing is found
+    :rtype: str or None
+    """
+    keys = ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"]
+    if user_agent:
+        for key in keys:
+            if key in user_agent:
+                return user_agent.split(key + "/")[1].split(" ")[0]
+    return None

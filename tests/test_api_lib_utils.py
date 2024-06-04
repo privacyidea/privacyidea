@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This tests the file api.lib.utils
 """
@@ -305,6 +304,15 @@ class UtilsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
 
+        # And check the Credential Provider plugin
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={'username': 'pwpercent',
+                                                 'password': 'pw%45#test'},
+                                           headers={'User-Agent': 'privacyidea-cp/2.0'}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
         # now check the /validate/check endpoint
         set_policy(name="otppin",
                    scope=SCOPE.AUTH,
@@ -341,6 +349,18 @@ class UtilsTestCase(MyApiTestCase):
                                                  "realm": self.realm1,
                                                  "pass": "pw%45#test"},
                                            headers={'User-Agent': 'simpleSAMLphp'}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("value"), res.json)
+
+        # when using the correct user-agent (CredentialProvider), quoting is not necessary
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "pwpercent",
+                                                 "realm": self.realm1,
+                                                 "pass": "pw%45#test"},
+                                           headers={'User-Agent': 'privacyidea-cp/3.0'}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")

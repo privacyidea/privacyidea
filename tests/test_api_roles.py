@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 This file tests the authentication of admin users and normal user (
 selfservice) on the REST API.
@@ -117,7 +116,7 @@ class APIAuthTestCase(MyApiTestCase):
 
         # Define the superuser_realm: "adminrealm"
         (added, failed) = set_realm("adminrealm",
-                                    [self.resolvername1])
+                                    [{'name': self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
@@ -275,7 +274,7 @@ class APISelfserviceTestCase(MyApiTestCase):
     def test_01_authenticate_admin_from_realm(self):
         # Define an admin realm!
         (added, failed) = set_realm("adminrealm",
-                                    [self.resolvername1])
+                                    [{'name': self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
@@ -1194,7 +1193,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
         r = save_resolver(params)
         self.assertTrue(r > 0)
 
-        r = set_realm("ldaprealm", resolvers=["ldapgroups"])
+        r = set_realm("ldaprealm", resolvers=[{'name': "ldapgroups"}])
         set_default_realm("ldaprealm")
         self.assertEqual(r, (["ldapgroups"], []))
 

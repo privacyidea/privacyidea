@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-06-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add dynamic email
 #  2018-04-14 Paul Lettich <paul.lettich@netknights.it>

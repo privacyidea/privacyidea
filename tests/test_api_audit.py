@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import mock
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -27,12 +25,12 @@ class APIAuditTestCase(MyApiTestCase):
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(self.realm1a,
-                                    [self.resolvername1])
+                                    [{'name': self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
         (added, failed) = set_realm(self.realm2b,
-                                    [self.resolvername1])
+                                    [{'name': self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
@@ -49,11 +47,11 @@ class APIAuditTestCase(MyApiTestCase):
             # check that we have all available entries in the audit data
             # create a fake base Audit object to get the available_columns prop
             a = BaseAudit()
-            self.assertEqual(set(json_response['result']['value']['auditcolumns']),
-                             set(a.available_audit_columns),
+            audit_response = set(json_response['result']['value']['auditcolumns'])
+            self.assertEqual(audit_response, set(a.available_audit_columns),
                              json_response['result']['value']['auditcolumns'])
-            self.assertEqual(set(json_response['result']['value']['auditdata'][0].keys()),
-                             set(a.available_audit_columns),
+            audit_response = set(json_response['result']['value']['auditdata'][0].keys())
+            self.assertEqual(audit_response, set(a.available_audit_columns),
                              json_response['result']['value']['auditcolumns'])
 
         # TODO: test audit columns if HIDE_AUDIT_COLUMNS policy is set.
@@ -74,7 +72,7 @@ class APIAuditTestCase(MyApiTestCase):
             cols = json_response.get("result").get("value").get("auditcolumns")
             self.assertIn("number", cols)
             self.assertIn("serial", cols)
-            self.assertEqual(22, len(cols))
+            self.assertEqual(25, len(cols))
 
     def test_01_get_audit_csv(self):
         @contextmanager
@@ -227,7 +225,7 @@ class APIAuditTestCase(MyApiTestCase):
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm("adminrealm",
-                                    [self.resolvername1])
+                                    [{'name': self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 

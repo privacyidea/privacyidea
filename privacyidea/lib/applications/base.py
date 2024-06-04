@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  privacyIDEA
 #  Jul 18, 2014 Cornelius Kölbel
 #  License:  AGPLv3
@@ -92,8 +90,10 @@ class MachineApplication(object):
     @staticmethod
     def get_authentication_item(token_type,
                                 serial,
-                                challenge=None, options=None,
-                                filter_param=None):
+                                challenge=None,
+                                options=None,
+                                filter_param=None,
+                                user_agent=None):
         """
         returns a dictionary of authentication items
         like public keys, challenges, responses...
@@ -108,15 +108,18 @@ class MachineApplication(object):
         """
         returns a dictionary with a list of required and optional options
         """
-        return {'optionA': {'type': TYPE.BOOL,
-                            'required': True},
-                'optionB': {'type': TYPE.STRING,
-                            'value': ["val1", "val2"]}}
+        return {"tokentype":
+                    {
+                        'optionA': {'type': TYPE.BOOL,
+                                    'required': True},
+                        'optionB': {'type': TYPE.STRING,
+                                    'value': ["val1", "val2"]}}
+                    }
 
 
 @log_with(log)
 def get_auth_item(application, token_type,serial,
-                  challenge=None, options=None, filter_param=None):
+                  challenge=None, options=None, filter_param=None, user_agent=None):
 
     options = options or {}
     # application_module from application
@@ -127,7 +130,8 @@ def get_auth_item(application, token_type,serial,
                                                    serial,
                                                    challenge=challenge,
                                                    options=options,
-                                                   filter_param=filter_param)
+                                                   filter_param=filter_param,
+                                                   user_agent=user_agent)
     return auth_item
 
 
@@ -144,9 +148,9 @@ def get_application_types():
     This function returns a dictionary of application types with the
     corresponding available attributes.
 
-    {"luks": {"options": {"slot": {"type": "int"},
-                          "partition": {"type": "str"}},
-     "ssh": {"options": {"user": {"type": "str"}}
+    {"luks": {"options": {"totp": {"slot": {"type": "int"},
+                          "partition": {"type": "str"}}},
+     "ssh": {"options": {"sshkey": {"user": {"type": "str"}}}
     }
 
     :return: dictionary describing the applications
@@ -163,8 +167,8 @@ def get_application_types():
             try:
                 mod = import_module("privacyidea.lib.applications.{0!s}".format(f))
                 name = mod.MachineApplication.application_name
-                options = mod.MachineApplication.get_options()
-                ret[name] = {"options": options}
+                tokenoptions = mod.MachineApplication.get_options()
+                ret[name] = {"options": tokenoptions}
             except Exception as exx:
                 log.info("Can not get application type: {0!s}".format(exx))
 

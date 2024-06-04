@@ -1,4 +1,51 @@
-Version 3.9dev1, 2023-07-28
+Version 3.10dev2, 2024-05-07
+
+  Enhancements:
+  * Migration of several tools to the click framework
+  * Offline token: Allow to post-pend the PIN
+  * Dump token data to JSON
+  * Allow case-insensitive usernames in policies
+  * Allow extended notes on policies
+  * WebAuthn: Allow offline usage
+  * Add user-agent to audit log
+  * Check secret length for Yubikey token during enrollment
+
+  Fixes:
+  * Verify enrollment for indexed secret token
+  * Verify enrollment for paper token and TAN token
+  * WebUI: cancel poll-transaction in case another token is used
+
+Version 3.10dev1, 2023-11-29
+
+  Enhancements:
+  * Enable user-agent version in subscription checks (#3800)
+  * token-janitor now uses the click framework (#3769)
+  * Enhance offline token to allow refill for WebAuthn tokens (#3764)
+
+  Fixes:
+  * Use uppercase hash name for google-authenticator URLs (#3812)
+
+Version 3.9.3, 2024-04-04
+
+  Fixes:
+  * Fix creation of database tables with galera cluster (#3863)
+
+Version 3.9.2, 2023-12-20
+
+  Fixes:
+  * Allow verify-enroll for paper token and TAN token (#3809)
+  * Fix offline data, when PIN is behind the OTP value (#3831)
+
+Version 3.9.1, 2023-11-06
+
+  Fixes:
+  * Set correct start sequence for empty tables
+  * Fix pi-manage backup
+  * Add privacyIDEA CP to list of clients, that do not
+    need to be unquoted. (#3770)
+  * Fix problem with token description and verify enrollment (#3798)
+
+Version 3.9, 2023-09-12
 
   Features:
   * Tokentype: Application Specific password (#3260, #3585)
@@ -29,12 +76,15 @@ Version 3.9dev1, 2023-07-28
   * UI: Multiselect policies in WebUI (#3493)
   * UI: Make the whole header of an accordion clickable (#3425)
   * UI: Improved grouping in the system menu (#3419)
+  * UI: Moved the CA menu to config->system (#3419)
   * UI: Add italian translation (#3508)
   * UI: Add user information in selfservice/user context (#3688)
   * Docs: Improve documentation for /validate/check-enrollment (#3507)
   * Docs: Improve policy mangle documentation (#3565)
   * Docs: Add a detailed plugin guide how to write fully functional plugins (#3650)
   * Docs: Fix description of preferred_client_mode (#3661)
+  * Docs: Update documentation (#3728, #3712, #3728)
+  * Update translations
   * Infrastructure: Add Bandit and GraphQL runs for pull requests
 
   Fixes:
@@ -65,6 +115,8 @@ Version 3.9dev1, 2023-07-28
   * Fixing response data of /auth endpoint to make the handling
     more consistent (#3436)
   * Fix parameter error in Webhook event handler (#3676)
+  * Fix calculation of TOTP values (#3734)
+  * Correct ID and help-text for Daypassword (#3742, #3744)
 
 Version 3.8.1, 2023-02-06
 

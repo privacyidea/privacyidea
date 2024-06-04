@@ -573,150 +573,153 @@
 </div>
 
 <!-- ============ Machines ======================= -->
-<div ng-show="loggedInUser.role == 'admin' &&
-                checkRight('manage_machine_tokens')">
-    <h4 translate>Machines this token is attached to</h4>
+
+<div ng-hide="formInit.application.length === 0">
+    <!-- hide the complete machine section, if the tokentype does not support any application -->
+
+    <div ng-show="loggedInUser.role == 'admin' &&
+                    checkRight('manage_machine_tokens')">
+        <h4 translate>Machines this token is attached to</h4>
 
 
-    <div uib-pagination ng-show="machineCount > machinesPerPage"
-         previous-text="{{ 'Previous'|translate }}"
-         next-text="{{ 'Next'|translate }}"
-         last-text="{{ 'Last'|translate }}"
-         first-text="{{ 'First'|translate }}"
-         total-items="machineCount" ng-model="params.page"
-         items-per-page="{{ machinesPerPage }}"
-         max-size="5"
-         boundary-links="true" ng-change="pageChanged()"></div>
+        <div uib-pagination ng-show="machineCount > machinesPerPage"
+             previous-text="{{ 'Previous'|translate }}"
+             next-text="{{ 'Next'|translate }}"
+             last-text="{{ 'Last'|translate }}"
+             first-text="{{ 'First'|translate }}"
+             total-items="machineCount" ng-model="params.page"
+             items-per-page="{{ machinesPerPage }}"
+             max-size="5"
+             boundary-links="true" ng-change="pageChanged()"></div>
 
-    <div class="table-responsive">
-        <table class="table table-bordered table-striped">
-            <thead>
-            <tr>
-                <th translate>Machine ID</th>
-                <th translate>Hostname</th>
-                <th translate>Resolver</th>
-                <th translate>Application</th>
-                <th translate>Options</th>
-                <th></th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr ng-repeat="machine in machinedata">
-                <td>
-                    <a ui-sref="machine.details({machineid:machine.machine_id,
-                    machineresolver:machine.resolver})"
-                       ng-click="$rootScope.returnTo=token.list;">
-                        {{ machine.machine_id }}</a></td>
-                <td>{{ machine.hostname }}</td>
-                <td>{{ machine.resolver }}</td>
-                <td>{{ machine.application }}</td>
-                <!-- Options -->
-                <td ng-hide="machine.optionsEdit">
-                    <span ng-repeat="(optionname, option) in Applications[machine.application].options">
-                        <b>{{ optionname | capitalize }}:</b>
-                        {{ machine.options[optionname] }}<br>
-                    </span>
-                </td>
-                <!-- Edit options -->
-                <td ng-show="machine.optionsEdit">
-                    <div class="form-group"
-                         ng-repeat="(optionname, option)
-                         in Applications[machine.application].options">
-                        <label for="option_{{ optionnamme }}">{{ optionname | capitalize }}</label>
-                        <input class="form-control"
-                               ng-required="option.required && !option.value"
-                               ng-model="machine.options[optionname]"
-                               ng-show="option.type==='str' && !option.value">
-                        <select class="form-control"
-                                ng-show="option.value"
-                                ng-required="option.required && option.value"
-                                ng-model="machine.options[optionname]"
-                                ng-options="value for value in option.value"></select>
-                        <input type="checkbox"
-                               ng-model="machine.options[optionname]"
-                               ng-show="option.type==='bool'">
-                        </select>
-                        <p class="help help-block">
-                              {{ option.description }}
-                        </p>
-                    </div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th translate>Machine ID</th>
+                    <th translate>Hostname</th>
+                    <th translate>Resolver</th>
+                    <th translate>Application</th>
+                    <th translate>Options</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="machine in machinedata">
+                    <td>
+                        <a ui-sref="machine.details({machineid:machine.machine_id,
+                        machineresolver:machine.resolver})"
+                           ng-click="$rootScope.returnTo=token.list;">
+                            {{ machine.machine_id }}</a></td>
+                    <td>{{ machine.hostname }}</td>
+                    <td>{{ machine.resolver }}</td>
+                    <td>{{ machine.application }}</td>
+                    <!-- Options -->
+                    <td ng-hide="machine.optionsEdit">
+                        <span ng-repeat="(optionname, option) in Applications[machine.application].options[token.tokentype]">
+                            <b>{{ optionname | capitalize }}:</b>
+                            {{ machine.options[optionname] }}<br>
+                        </span>
+                    </td>
+                    <!-- Edit options -->
+                    <td ng-show="machine.optionsEdit">
+                        <div class="form-group"
+                             ng-repeat="(optionname, option)
+                             in Applications[machine.application].options[token.tokentype]">
+                            <label for="option_{{ optionnamme }}">{{ optionname | capitalize }}</label>
+                            <input class="form-control"
+                                   ng-required="option.required && !option.value"
+                                   ng-model="machine.options[optionname]"
+                                   ng-show="option.type==='str' && !option.value">
+                            <select class="form-control"
+                                    ng-show="option.value"
+                                    ng-required="option.required && option.value"
+                                    ng-model="machine.options[optionname]"
+                                    ng-options="value for value in option.value"></select>
+                            <input type="checkbox"
+                                   ng-model="machine.options[optionname]"
+                                   ng-show="option.type==='bool'">
+                            </select>
+                            <p class="help help-block">
+                                  {{ option.description }}
+                            </p>
+                        </div>
 
-                </td>
-                <td ng-hide="machine.optionsEdit">
-                    <button class="btn btn-primary"
-                            ng-click="machine.optionsEdit=true"
-                            translate>Edit Options
-                    </button>
-                    <button class="btn btn-danger"
-                            ng-click="detachMachineToken(machine.application, machine.id)"
-                            translate>Detach
-                    </button>
-                </td>
-                <td ng-show="machine.optionsEdit">
-                    <button class="btn btn-primary"
-                            ng-click="saveOptions(machine.id, machine.options);
-                            machine.optionsEdit=false"
-                            translate>Save Options
-                    </button>
-                    <button class="btn btn-danger"
-                            ng-click="machine.optionsEdit=false"
-                            translate>Cancel
-                    </button>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div ng-show="checkRight('manage_machine_tokens')">
-    <h4 translate ng-hide="token.locked">Attach to a new Machine</h4>
-
-    <form name="formAttachMachine" role="form"
-          ng-hide="token.locked"
-          validate>
-
-        <div class="form-group">
-            <label for="application" translate>Application</label>
-            <select class="form-control"
-                    id="application"
-                    ng-model="form.application"
-                    ng-required="1"
-                    ng-options="app for app in formInit.application"
-                    >
-            </select>
+                    </td>
+                    <td ng-hide="machine.optionsEdit">
+                        <button class="btn btn-primary"
+                                ng-click="machine.optionsEdit=true"
+                                translate>Edit Options
+                        </button>
+                        <button class="btn btn-danger"
+                                ng-click="detachMachineToken(machine.application, machine.id)"
+                                translate>Detach
+                        </button>
+                    </td>
+                    <td ng-show="machine.optionsEdit">
+                        <button class="btn btn-primary"
+                                ng-click="saveOptions(machine.id, machine.options);
+                                machine.optionsEdit=false"
+                                translate>Save Options
+                        </button>
+                        <button class="btn btn-danger"
+                                ng-click="machine.optionsEdit=false"
+                                translate>Cancel
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
         </div>
 
-        <div ng-hide="form.application=='offline'"
-             attach-machine new-machine="newMachine"></div>
+        <h4 translate>Attach to a new Machine</h4>
 
-        <!-- Options for a new MachineToken -->
-        <div class="form-group"
-             ng-repeat="(optionname, option) in Applications[form.application].options">
-            <label for="option_{{ optionname }}">{{ optionname | capitalize }}</label>
-            <input class="form-control" id="option_{{ optionname }}"
-                   ng-required="option.required && !option.value"
-                   ng-model="form.options[optionname]"
-                   ng-show="option.type==='str' && !option.value">
-            <select class="form-control" id="option_{{ optionname }}"
-                    ng-show="option.value"
-                    ng-required="option.required && option.value"
-                    ng-model="form.options[optionname]"
-                    ng-options="value for value in option.value"></select>
-            <input type="checkbox" id="option_{{ optionname }}"
-                   ng-model="form.options[optionname]"
-                   ng-show="option.type==='bool'">
-            <p class="help help-block">
-                  {{ option.description }}
-            </p>
-        </div>
+        <form name="formAttachMachine" role="form"
+              ng-hide="token.locked"
+              validate>
+            <div class="form-group">
+                <label for="application" translate>Application</label>
+                <select class="form-control"
+                        id="application"
+                        ng-model="form.application"
+                        ng-change="changeApplication"
+                        ng-required="1"
+                        ng-options="app for app in formInit.application"
+                        >
+                </select>
+            </div>
 
-        <div class="text-center">
-            <button ng-click="attachMachine()"
-                    ng-disabled="formAttachMachine.$invalid"
-                    class="btn btn-primary" translate>Attach Machine
-            </button>
-        </div>
-    </form>
+            <div ng-hide="form.application=='offline'"
+                 attach-machine new-machine="newMachine"></div>
+
+            <!-- Options for a new MachineToken -->
+            <div class="form-group"
+                 ng-repeat="(optionname, option) in Applications[form.application].options[token.tokentype]">
+                <label for="option_{{ optionname }}">{{ optionname | capitalize }}</label>
+                <input class="form-control" id="option_{{ optionname }}"
+                       ng-required="option.required && !option.value"
+                       ng-model="form.options[optionname]"
+                       ng-show="option.type==='str' && !option.value">
+                <select class="form-control" id="option_{{ optionname }}"
+                        ng-show="option.value"
+                        ng-required="option.required && option.value"
+                        ng-model="form.options[optionname]"
+                        ng-options="value for value in option.value"></select>
+                <input type="checkbox" id="option_{{ optionname }}"
+                       ng-model="form.options[optionname]"
+                       ng-show="option.type==='bool'">
+                <p class="help help-block">
+                      {{ option.description }}
+                </p>
+            </div>
+
+            <div class="text-center">
+                <button ng-click="attachMachine()"
+                        ng-disabled="formAttachMachine.$invalid"
+                        class="btn btn-primary" translate>Attach Machine
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 

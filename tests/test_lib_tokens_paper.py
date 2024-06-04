@@ -2,7 +2,9 @@
 This test file tests the lib.tokens.papertoken
 This depends on lib.tokenclass
 """
+import logging
 
+from testfixtures import LogCapture
 from .base import MyTestCase
 from privacyidea.lib.tokens.papertoken import PaperTokenClass
 from privacyidea.lib.token import init_token
@@ -15,7 +17,7 @@ class PaperTokenTestCase(MyTestCase):
     serial1 = "ser1"
 
     # add_user, get_user, reset, set_user_identifiers
-    
+
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="paper")
         db_token.save()
@@ -68,3 +70,14 @@ class PaperTokenTestCase(MyTestCase):
         # A previous OTP value will fail to authenticate
         r = token.check_otp("755224")
         self.assertEqual(r, -1)
+        with LogCapture(level=logging.INFO) as lc:
+            self.assertEqual(-1, token.check_otp("12345"))
+            lc.check_present(
+                ('privacyidea.lib.decorators', 'INFO',
+                 f'OTP value for token {token.token.serial} (type: {token.type}) '
+                 f'has wrong length (5 != 6)'))
+            self.assertEqual(-1, token.check_otp("1234567"))
+            lc.check_present(
+                ('privacyidea.lib.decorators', 'INFO',
+                 f'OTP value for token {token.token.serial} (type: {token.type}) '
+                 f'has wrong length (7 != 6)'))

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 This file tests:
 
@@ -26,7 +24,7 @@ from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.token import init_token, unassign_token, remove_token
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import User, create_user
-from privacyidea.lib.utils import to_unicode
+from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
 from privacyidea.models import TokenOwner
 from . import smtpmock
 from .base import MyTestCase, FakeFlaskG, FakeAudit
@@ -82,6 +80,59 @@ class UserNotificationTestCase(MyTestCase):
         smtpmock.setdata(response={"recp@example.com": (200, "OK")},
                          support_tls=False)
 
+        tok = init_token({"serial": "SomeSerial", "description": "It works", "type": "spass"},
+                         user=User("cornelius", "realm1"))
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"username": "cornelius",
+                            "role": "admin",
+                            "realm": "realm1"}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"subject": "token description: {tokendescription}"
+                                                          " token serial: {serial}",
+                                               "emailconfig": "myserver"}
+                                   }
+                   }
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options)
+        self.assertTrue(res)
+        msg = smtpmock.get_sent_message()
+        self.assertIn("token description: It works token serial: SomeSerial", msg, msg)
+        assert 'To: user@localhost.localdomain' in msg
+
+    @smtpmock.activate
+    def test_02a_sendmail(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"user@localhost.localdomain": (450, "Mailbox not available")},
+                         support_tls=False)
+
         g = FakeFlaskG()
         audit_object = FakeAudit()
         audit_object.audit_data["serial"] = "123456"
@@ -115,9 +166,10 @@ class UserNotificationTestCase(MyTestCase):
 
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
-        self.assertTrue(res)
+        self.assertFalse(res)
         msg = smtpmock.get_sent_message()
-        assert 'To: user@localhost.localdomain' in msg
+        self.assertIn('To: user@localhost.localdomain', msg)
+
 
     @smtpmock.activate
     def test_03_sendsms(self):
@@ -180,7 +232,7 @@ class UserNotificationTestCase(MyTestCase):
         uhandler = UserNotificationEventHandler()
         resp = Response()
         # The actual result_status is false and the result_value is false.
-        resp.data = """{"result": {"value": false, "status": false}}"""
+        resp.data = """{"result": {"value": false, "authentication": "REJECT", "status": false}}"""
         builder = EnvironBuilder(method='POST')
         env = builder.get_environ()
         req = Request(env)
@@ -192,6 +244,22 @@ class UserNotificationTestCase(MyTestCase):
              "response": resp,
              "request": req})
         self.assertEqual(r, False)
+
+        # We expect the result_authentication to be "REJECT" and it is
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"result_authentication": AUTH_RESPONSE.REJECT}},
+             "response": resp,
+             "request": req})
+        self.assertTrue(r)
+
+        # We expect the result_authentication to be "ACCEPT" and it is not
+        r = uhandler.check_condition(
+            {"g": {},
+             "handler_def": {"conditions": {"result_authentication": AUTH_RESPONSE.ACCEPT}},
+             "response": resp,
+             "request": req})
+        self.assertFalse(r)
 
         # We expect the result_value to be True, but it is not.
         r = uhandler.check_condition(
@@ -515,7 +583,7 @@ class UserNotificationTestCase(MyTestCase):
 
         tok = init_token({"serial": serial,
                           "type": "spass"},
-                          user=User("cornelius", "realm1"))
+                         user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
         req = Request(env)
@@ -1023,7 +1091,7 @@ class UserNotificationTestCase(MyTestCase):
         r = save_resolver(parameters)
         self.assertTrue(r)
 
-        success, fail = set_realm("notify_realm", ["notify_resolver"])
+        success, fail = set_realm("notify_realm", [{'name': "notify_resolver"}])
         self.assertEqual(len(success), 1)
         self.assertEqual(len(fail), 0)
 

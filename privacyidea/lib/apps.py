@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2017-07-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add period to key uri for TOTP token
 #  2016-05-21 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -100,7 +98,7 @@ def create_google_authenticator_url(key=None, user=None,
                                     serial="mylabel", tokenlabel="<s>",
                                     hash_algo="SHA1", digits="6",
                                     issuer="privacyIDEA", user_obj=None,
-                                    extra_data=None):
+                                    creator="privacyidea", extra_data=None):
     """
     This creates the google authenticator URL.
     This url may only be 119 characters long.
@@ -109,12 +107,12 @@ def create_google_authenticator_url(key=None, user=None,
     We expect the key to be hexlified!
     """
     extra_data = extra_data or {}
+    tokentype = tokentype.lower()
 
     # policy depends on some lib.util
 
     user_obj = user_obj or User()
-    if tokentype.lower() == "hotp":
-        tokentype = "hotp"
+    if tokentype == "hotp":
         counter = "counter=1&"
     else:
         counter = ""
@@ -148,15 +146,15 @@ def create_google_authenticator_url(key=None, user=None,
     url_issuer = quote(issuer.encode("utf-8"))
 
     if hash_algo.lower() != "sha1":
-        hash_algo = "algorithm={0!s}&".format(hash_algo)
+        hash_algo = "algorithm={0!s}&".format(hash_algo.upper())
     else:
         # If the hash_algo is SHA1, we do not add it to the QR code to keep
         # the QR code simpler
         hash_algo = ""
 
-    if tokentype.lower() == "totp":
+    if tokentype == "totp":
         period = "period={0!s}&".format(period)
-    elif tokentype.lower() == "daypassword":
+    elif tokentype == "daypassword":
         period = "period={0!s}&".format(parse_time_sec_int(period))
     else:
         period = ""
@@ -164,11 +162,12 @@ def create_google_authenticator_url(key=None, user=None,
     return ("otpauth://{tokentype!s}/{label!s}?secret={secret!s}&"
             "{counter!s}{hash!s}{period!s}"
             "digits={digits!s}&"
+            "creator={creator}&"
             "issuer={issuer!s}{extra}".format(tokentype=tokentype,
                                        label=url_label, secret=otpkey,
                                        hash=hash_algo, period=period,
                                        digits=digits, issuer=url_issuer,
-                                       counter=counter,
+                                       counter=counter, creator=creator,
                                        extra=_construct_extra_parameters(extra_data)))
 
 @log_with(log)

@@ -9,8 +9,7 @@ privacyIDEA offers an appliance tool to manage your token administrators, RADIUS
 also setup MySQL master-master replication.
 It can be found in a Github repository [#applianceGithub]_.
 
-This tool is supposed to run on Ubuntu 16.04 LTS or 18.04 LTS.
-You can find a ready install ISO at another Github repository [#applianceISO]_.
+This tool is supposed to run on Ubuntu LTS.
 
 .. note:: The ready made Ubuntu package for the appliance tool is only available with a Service Level Agreement from
    the company NetKnights [#applianceNetKnights]_.
@@ -63,12 +62,12 @@ Backup and Restore
 
 .. index:: Backup, Restore
 
-Starting with version 1.5 the setup tool also supports backup and 
+Starting with version 1.5 the setup tool also supports backup and
 restore. Backups are written to the directory `/var/lib/privacyidea/backup`.
 
 The backup contains all privacyIDEA configuration, the contents of
 the directory `/etc/privacyidea`, the encryption key, the configured
-administrators, the complete token database (MySQL) and Audit log. 
+administrators, the complete token database (MySQL) and Audit log.
 Furthermore if you are running FreeRADIUS the backup also contains
 the `/etc/freeradius/clients.conf` file.
 
@@ -116,7 +115,7 @@ The entry `View Backups` will list all the backups available.
 
    All available backups
 
-You can select a backup and you are asked if you want to restore the data. 
+You can select a backup and you are asked if you want to restore the data.
 
 .. warning:: Existing data is overwritten and will be lost.
 
@@ -128,10 +127,10 @@ Database: Setup Redundancy
 The appliance-tool is also capable of setting up a redundant setup between
 two privacyIDEA nodes in master-master replication. The administrator sets
 up redundancy on the first configured node. On the second node the same version
-of privacyIDEA needs to be installed. No configuration needs to be done on the 
+of privacyIDEA needs to be installed. No configuration needs to be done on the
 second node. The configuration and the token database is completely copied from the
-first node to the second node. Possible existing configuration on the second node will 
-be overwritten during the setup. 
+first node to the second node. Possible existing configuration on the second node will
+be overwritten during the setup.
 The appliance-tool can also set up an encrypted VPN that is used for the replication
 of the database.
 
@@ -168,5 +167,4 @@ in :ref:`backup_and_restore`.
    avoid synchronisation issues.
 
 .. [#applianceGithub] https://github.com/NetKnights-GmbH/privacyidea-appliance
-.. [#applianceISO] https://github.com/NetKnights-GmbH/privacyidea-appliance-iso
-.. [#applianceNetKnights] https://netknights.it/en/produkte/privacyidea/
+.. [#applianceNetKnights] https://netknights.it/en/products/privacyidea-enterprise-edition/

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2017-03-30   Friedrich Weber <friedrich.weber@netknights.it>
 #               First ideas for a user cache to improve performance
 #

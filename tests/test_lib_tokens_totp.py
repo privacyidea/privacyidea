@@ -3,8 +3,9 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-PWFILE = "tests/testdata/passwords"
+import logging
 
+from testfixtures import LogCapture
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.realm import (set_realm)
@@ -19,6 +20,8 @@ from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 import datetime
 import binascii
 import time
+
+PWFILE = "tests/testdata/passwords"
 
 
 class TOTPTokenTestCase(MyTestCase):
@@ -42,30 +45,29 @@ class TOTPTokenTestCase(MyTestCase):
     47251649    705493
     47251650    589836
     """
-    
+
     # add_user, get_user, reset, set_user_identifiers
-    
+
     def test_00_create_user_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
                              "type": "passwdresolver",
                              "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
-               
-        (added, failed) = set_realm(self.realm1,
-                                    [self.resolvername1])
+
+        (added, failed) = set_realm(self.realm1, [{'name': self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
-        
+
         user = User(login="root",
                     realm=self.realm1,
                     resolver=self.resolvername1)
-        
+
         user_str = "{0!s}".format(user)
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
-        
+
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
-        
+
         user_repr = "{0!r}".format(user)
         expected = "User(login='root', realm='realm1', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
@@ -80,19 +82,19 @@ class TOTPTokenTestCase(MyTestCase):
         class_prefix = token.get_class_prefix()
         self.assertTrue(class_prefix == "TOTP", class_prefix)
         self.assertTrue(token.get_class_type() == "totp", token)
-        
+
     def test_02_set_user(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
         self.assertTrue(token.token.tokentype == "totp",
                         token.token.tokentype)
         self.assertTrue(token.type == "totp", token.type)
-        
+
         token.add_user(User(login="cornelius",
                             realm=self.realm1))
         self.assertEqual(token.token.first_owner.resolver, self.resolvername1)
         self.assertEqual(token.token.first_owner.user_id, "1000")
-        
+
         user_object = token.user
         self.assertTrue(user_object.login == "cornelius",
                         user_object)
@@ -106,7 +108,7 @@ class TOTPTokenTestCase(MyTestCase):
         token.reset()
         self.assertTrue(token.token.failcount == 0,
                         token.token.failcount)
-        
+
     def test_04_base_methods(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
@@ -115,42 +117,42 @@ class TOTPTokenTestCase(MyTestCase):
         c = token.create_challenge("transactionid")
         self.assertTrue(c[0], c)
         self.assertTrue("transactionid" in c[2], c)
-        
+
         # set the description
         token.set_description("something new")
         self.assertTrue(token.token.description == "something new",
                         token.token)
-        
+
         # set defaults
         token.set_defaults()
         self.assertTrue(token.token.otplen == 6)
         self.assertTrue(token.token.sync_window == 1000)
-        
+
         token.resync("1234", "3456")
-        
+
         token.token.count_window = 17
         self.assertTrue(token.get_otp_count_window() == 17)
-        
+
         token.token.count = 18
         self.assertTrue(token.get_otp_count() == 18)
-        
+
         token.token.active = False
         self.assertTrue(token.is_active() is False)
-        
+
         token.token.failcount = 7
         self.assertTrue(token.get_failcount() == 7)
         token.set_failcount(8)
         self.assertTrue(token.token.failcount == 8)
-        
+
         token.token.maxfail = 12
         self.assertTrue(token.get_max_failcount() == 12)
-        
+
         self.assertEqual(token.get_user_id(), token.token.first_owner.user_id)
-        
+
         self.assertTrue(token.get_serial() == "SE123456", token.token.serial)
         self.assertTrue(token.get_tokentype() == "totp",
                         token.token.tokentype)
-        
+
         token.set_so_pin("sopin")
         token.set_user_pin("userpin")
         token.set_otpkey(self.otpkey)
@@ -164,13 +166,13 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertTrue(token.get_otplen() == 8)
         self.assertTrue(token.token.count == 1000,
                         token.token.count)
-        
+
         token.set_maxfail(1000)
         self.assertTrue(token.token.maxfail == 1000)
-        
+
         token.set_count_window(52)
         self.assertTrue(token.get_count_window() == 52)
-        
+
         token.set_sync_window(53)
         self.assertTrue(token.get_sync_window() == 53)
 
@@ -184,15 +186,15 @@ class TOTPTokenTestCase(MyTestCase):
         ph2 = token.token.pin_hash
         self.assertTrue(ph1 != ph2)
         token.set_pin_hash_seed(ph1, pseed)
-        
+
     def test_07_enable(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
         token.enable(False)
         self.assertTrue(token.token.active is False)
         token.enable()
-        self.assertTrue(token.token.active)        
-        
+        self.assertTrue(token.token.active)
+
     def test_05_get_set_realms(self):
         set_realm(self.realm2)
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -202,12 +204,12 @@ class TOTPTokenTestCase(MyTestCase):
         token.set_realms([self.realm1, self.realm2])
         realms = token.get_realms()
         self.assertTrue(len(realms) == 2, realms)
-        
+
     def test_99_delete_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
         token.delete_token()
-        
+
         db_token = Token.query.filter_by(serial=self.serial1).first()
         self.assertTrue(db_token is None, db_token)
 
@@ -217,14 +219,14 @@ class TOTPTokenTestCase(MyTestCase):
         token.set_hashlib("sha1")
         ti = token.get_tokeninfo()
         self.assertTrue("hashlib" in ti, ti)
-        
+
     def test_09_failcount(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
         start = token.token.failcount
         end = token.inc_failcount()
         self.assertTrue(end == start + 1, (end, start))
-        
+
     def test_10_get_hashlib(self):
         # check if functions are returned
         for hl in ["sha1", "md5", "sha256", "sha512",
@@ -232,7 +234,7 @@ class TOTPTokenTestCase(MyTestCase):
             self.assertTrue(hasattr(TotpTokenClass.get_hashlib(hl),
                                     '__call__'),
                             TotpTokenClass.get_hashlib(hl))
-    
+
     def test_11_tokeninfo(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
@@ -247,7 +249,7 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertTrue("key2" not in info2, info2)
         self.assertTrue(token.get_tokeninfo("key1") == "value2",
                         info2)
-        
+
         # auth counter
         token.set_count_auth_success_max(200)
         token.set_count_auth_max(1000)
@@ -259,7 +261,7 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertTrue(token.get_count_auth_success() == 101)
         self.assertTrue(token.get_count_auth_max() == 1000)
         self.assertTrue(token.get_count_auth() == 201)
-        
+
         self.assertTrue(token.check_auth_counter())
         token.set_count_auth_max(10)
         self.assertFalse(token.check_auth_counter())
@@ -270,7 +272,7 @@ class TOTPTokenTestCase(MyTestCase):
     def test_12_inc_otp_counter(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
-        
+
         token.set_otp_count(10)
         self.assertTrue(token.token.count == 10, token.token.count)
         # increase counter by 1
@@ -304,17 +306,27 @@ class TOTPTokenTestCase(MyTestCase):
                       "otplen": 6})
         token.set_otp_count(47251644)
         # OTP does not exist
-        self.assertTrue(token.check_otp_exist("222333") == -1)
+        self.assertTrue(token.check_otp("222333") == -1)
         # OTP does exist
-        res = token.check_otp_exist("722053", options={"initTime": 47251645 *
-                                                                   30})
+        res = token.check_otp("722053", options={"initTime": 47251645 * 30})
         # Found the counter 47251647
-        self.assertTrue(res == 47251647, res)
+        self.assertEqual(47251647, res)
+        with LogCapture(level=logging.INFO) as lc:
+            self.assertEqual(-1, token.check_otp("1234567"))
+            lc.check_present(
+                ('privacyidea.lib.decorators', 'INFO',
+                 f'OTP value for token {token.token.serial} (type: {token.type}) '
+                 f'has wrong length (7 != 6)'))
+            self.assertEqual(-1, token.check_otp("12345"))
+            lc.check_present(
+                ('privacyidea.lib.decorators', 'INFO',
+                 f'OTP value for token {token.token.serial} (type: {token.type}) '
+                 f'has wrong length (5 != 6)'))
 
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
-        
+
         token.token.otplen = 6
         # postpend pin
         set_prepend_pin(False)
@@ -326,14 +338,14 @@ class TOTPTokenTestCase(MyTestCase):
         _res, pin, value = token.split_pin_pass("test222333")
         self.assertTrue(pin == "test", pin)
         self.assertTrue(value == "222333", value)
-        
+
     def test_15_check_pin(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
         token.set_pin("test")
         self.assertTrue(token.check_pin("test"))
         self.assertFalse(token.check_pin("wrong pin"))
-        
+
     def test_16_init_detail(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
@@ -370,7 +382,7 @@ class TOTPTokenTestCase(MyTestCase):
         # genkey and otpkey used at the same time
         token.update({"otpkey": self.otpkey,
                       "genkey": "1"})
-        
+
         token.update({"otpkey": self.otpkey,
                       "pin": "654321",
                       "otplen": 6})
@@ -389,7 +401,7 @@ class TOTPTokenTestCase(MyTestCase):
         # check if the PIN is encrypted
         self.assertTrue(token.token.pin_hash.startswith("@@"),
                         token.token.pin_hash)
-        
+
         # update token without otpkey raises an error
         self.assertRaises(Exception, token.update, {"description": "test"})
 
@@ -406,22 +418,22 @@ class TOTPTokenTestCase(MyTestCase):
     def test_18_challenges(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TotpTokenClass(db_token)
-        resp = token.is_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                            "test123456")
+        resp = token.is_challenge_response(user=User(login="cornelius",
+                                                     realm=self.realm1),
+                                           passw="test123456")
         self.assertFalse(resp, resp)
 
         transaction_id = "123456789"
-        C = Challenge(self.serial1, transaction_id=transaction_id, challenge="Who are you?")
-        C.save()
-        resp = token.is_challenge_response(User(login="cornelius",
-                                                realm=self.realm1),
-                                            "test123456",
-                                            options={"transaction_id": transaction_id})
+        chall = Challenge(self.serial1, transaction_id=transaction_id, challenge="Who are you?")
+        chall.save()
+        resp = token.is_challenge_response(user=User(login="cornelius",
+                                                     realm=self.realm1),
+                                           passw="test123456",
+                                           options={"transaction_id": transaction_id})
         self.assertTrue(resp, resp)
 
         # test if challenge is valid
-        C.is_valid()
+        chall.is_valid()
 
     def test_19_pin_otp_functions(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -483,8 +495,7 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertTrue(47251644 in res[2].get("otp"), res[2].get("otp"))
 
         # Simulate the server time
-        res = token.get_multi_otp(count=5, curTime=datetime.datetime(2014,
-                                                                     12,12))
+        res = token.get_multi_otp(count=5, curTime=datetime.datetime(2014, 12, 12))
         self.assertTrue(res[0], res)
         self.assertTrue(res[1] == "OK", res)
         self.assertTrue(len(res[2].get("otp")) == 5, res[2].get("otp"))
@@ -495,18 +506,16 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertTrue(47278084 in res[2].get("otp"), res[2].get("otp"))
 
         # do some failing otp checks
-        token.token.otplen = "invalid otp counter"
-        self.assertRaises(Exception, token.check_otp, "123456")
-        token.token.otplen = 0
+        token.token.otplen = 5
+        self.assertTrue(token.check_otp("705493", counter=47251648) == -1, res)
+        token.token.otplen = 6
 
         # Previous OTP value used again
         token.token.otplen = 6
-        #token.token.count = 47251640
         # The OTP for this counter was already presented to the server
         token.token.count = 47251648
         # 47251647 -> 722053
         res = token.check_otp("722053", options={"initTime": 47251649 * 30})
-        #self.assertTrue(res == 47251647, res)
         self.assertTrue(res == -1, res)
 
         # simple OTPs of current time
@@ -536,7 +545,7 @@ class TOTPTokenTestCase(MyTestCase):
                                            options={"state": "mytransaction"})
         # The challenge matches, but the OTP does not match!
         self.assertTrue(r == -1, r)
-        
+
         # test the challenge janitor
         c1 = Challenge(self.serial1, transaction_id="t1", validitytime=0)
         c1.save()
@@ -546,7 +555,7 @@ class TOTPTokenTestCase(MyTestCase):
         c3.save()
         c4 = Challenge(self.serial1, transaction_id="t4", validitytime=100)
         c4.save()
-        num = Challenge.query.filter(Challenge.serial==self.serial1).count()
+        num = Challenge.query.filter(Challenge.serial == self.serial1).count()
         self.assertTrue(num >= 5, num)
         # We pass the third challenge as the valid challenge.
         # So 3 challenges will be deleted.
@@ -579,28 +588,28 @@ class TOTPTokenTestCase(MyTestCase):
         token.token.count = 47251640
         token.set_sync_window(10)
         # counter = 47251649 => otp = 705493, is out of sync
-        r = token.check_otp(anOtpVal="705493", window=30,
+        r = token.check_otp("705493", window=30,
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
         # counter = 47251650 => otp = 389836, will be autosynced.
-        r = token.check_otp(anOtpVal="589836", window=30,
-                            options={"initTime": 47251645 * 30 })
+        r = token.check_otp("589836", window=30,
+                            options={"initTime": 47251645 * 30})
         self.assertTrue(r == 47251650, r)
 
         # counter = 47251640 => otp = 166325 is an old OTP value
         # counter = 47251641 => otp = 432730 is an old OTP value
         # Autoresync with two times the same old OTP value must not work out!
-        r = token.check_otp(anOtpVal="166325", window=30,
+        r = token.check_otp("166325", window=30,
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
-        r = token.check_otp(anOtpVal="166325", window=30,
+        r = token.check_otp("166325", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
         # Autoresync with two consecutive old OTP values must not work out!
-        r = token.check_otp(anOtpVal="166325", window=30,
+        r = token.check_otp("166325", window=30,
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
-        r = token.check_otp(anOtpVal="432730", window=30,
+        r = token.check_otp("432730", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
 
@@ -609,12 +618,12 @@ class TOTPTokenTestCase(MyTestCase):
         # Just try some bullshit config value
         set_privacyidea_config("AutoResyncTimeout", "totally not a number")
         # counter = 47251648 => otp = 032819, is out of sync
-        r = token.check_otp(anOtpVal="032819", window=30,
-                            options={"initTime": 47251645 * 30 })
+        r = token.check_otp("032819", window=30,
+                            options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
         # counter = 47251650 => otp = 589836, will NOT _autosync
-        r = token.check_otp(anOtpVal="589836", window=30,
-                            options={"initTime": 47251645 * 30 })
+        r = token.check_otp("589836", window=30,
+                            options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
 
         # TOTP has no dueDate / AutoResyncTimeout
@@ -624,12 +633,12 @@ class TOTPTokenTestCase(MyTestCase):
         token.token.count = 47251640
         token.set_sync_window(10)
         # counter = 47251649 => otp = 705493, is out of sync
-        r = token.check_otp(anOtpVal="705493", window=30,
+        r = token.check_otp("705493", window=30,
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
         # counter = 47251650 => otp = 389836, will not get autosynced.
-        r = token.check_otp(anOtpVal="589836", window=30,
-                            options={"initTime": 47251645 * 30 })
+        r = token.check_otp("589836", window=30,
+                            options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
 
     def test_23_resync(self):
@@ -798,8 +807,8 @@ class TOTPTokenTestCase(MyTestCase):
                             "realm": "super",
                             "role": "admin"}
         set_policy("pol1", scope=SCOPE.ADMIN, action="totp_hashlib=sha512,"
-                                                    "totp_timestep=60,"
-                                                    "totp_otplen=8")
+                                                     "totp_timestep=60,"
+                                                     "totp_otplen=8")
         g.policy_object = PolicyClass()
         p = TotpTokenClass.get_default_settings(g, params)
         self.assertEqual(p.get("otplen"), "8")

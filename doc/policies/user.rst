@@ -88,7 +88,7 @@ resync
 
 type: bool
 
-The user is allowed to resynchronize the token if it has got out 
+The user is allowed to resynchronize the token if it has got out
 of synchronization.
 
 reset
@@ -101,7 +101,7 @@ The user is allowed to reset the failcounter of the token.
 setpin
 ~~~~~~
 
-type: bool 
+type: bool
 
 The user is allowed to set the OTP PIN for his tokens.
 
@@ -283,7 +283,7 @@ This works in conjunction with the enrollment parameters :ref:`2step_parameters`
 
 Such a policy can also be set for the administrator. See :ref:`admin_policy_2step`.
 
-.. note:: This does not work in combination with the enrollment policy :ref:`verify_enrollment`, since
+.. note:: This does not work in combination with the enrollment policy :ref:`policy_verify_enrollment`, since
    the usage of 2step already ensures, that the user has successfully scanned the QR code.
 
 sms_gateways
@@ -291,7 +291,8 @@ sms_gateways
 
 type: string
 
-Usually an SMS tokens sends the SMS via the SMS gateway that is system wide defined in the token settings.
+Usually an SMS token sends the SMS via the SMS gateway that is defined system
+wide in the token settings.
 This policy takes a blank separated list of configured SMS gateways.
 It allows the user to define an individual SMS gateway during token enrollment.
 

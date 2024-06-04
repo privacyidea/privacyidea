@@ -9,7 +9,7 @@ You can install privacyidea usually on any Linux distribution in a python
 virtual environment. This way you keep all privacyIDEA code in one defined
 subdirectory.
 
-privacyIDEA currently runs with Python 2.7 and 3.5, 3.6, 3.7 and 3.8. Other
+privacyIDEA currently runs with Python 3.6 to 3.10. Other
 versions either do not work or are not tested.
 
 You first need to install a package for creating a python `virtual environment
@@ -108,7 +108,7 @@ After creating a local administrative user with::
 
 the development server can be started with::
 
-    pi-manage runserver
+    pi-manage run
 
 .. warning::
     The development server should not be used for a productive environment.
@@ -127,7 +127,8 @@ Some example configuration can be found in the NetKnights GitHub
 repositories [#nkgh]_. More on the WSGI setup for privacyIDEA can be found in
 :ref:`wsgiscript`.
 
+
 .. rubric:: Footnotes
 
-.. [#sqlaDialects] https://docs.sqlalchemy.org/en/13/dialects/index.html
+.. [#sqlaDialects] https://docs.sqlalchemy.org/en/14/dialects/index.html
 .. [#nkgh] https://github.com/NetKnights-GmbH/ubuntu/tree/master/deploy

@@ -15,7 +15,7 @@ privacyIDEA
 .. .. image:: https://img.shields.io/pypi/dm/privacyidea.svg
 ..    :alt: Downloads
 ..    :target: https://pypi.python.org/pypi/privacyIDEA/
-    
+
 .. image:: https://img.shields.io/pypi/v/privacyidea.svg
     :alt: Latest Version
     :target: https://pypi.python.org/pypi/privacyIDEA/#history
@@ -27,7 +27,7 @@ privacyIDEA
 .. image:: https://img.shields.io/github/license/privacyidea/privacyidea.svg
     :alt: License
     :target: https://pypi.python.org/pypi/privacyIDEA/
-    
+
 .. image:: https://readthedocs.org/projects/privacyidea/badge/?version=master
     :alt: Documentation
     :target: http://privacyidea.readthedocs.org/en/master/
@@ -39,22 +39,22 @@ privacyIDEA
 .. image:: https://api.codacy.com/project/badge/grade/d58934978e1a4bcca325f2912ea386ff
     :alt: Codacy Badge
     :target: https://www.codacy.com/app/cornelius-koelbel/privacyidea
-    
+
 .. image:: https://img.shields.io/twitter/follow/privacyidea.svg?style=social&label=Follow
     :alt: privacyIDEA on twitter
-    
-privacyIDEA is an open solution for strong two-factor authentication like 
+
+privacyIDEA is an open solution for strong two-factor authentication like
 OTP tokens, SMS, smartphones or SSH keys.
-Using privacyIDEA you can enhance your existing applications like local login 
-(PAM, Windows Credential Provider), 
-VPN, remote access, SSH connections, access to web sites or web portals with 
-a second factor during authentication. Thus boosting the security of your 
+Using privacyIDEA you can enhance your existing applications like local login
+(PAM, Windows Credential Provider),
+VPN, remote access, SSH connections, access to web sites or web portals with
+a second factor during authentication. Thus boosting the security of your
 existing applications.
 
 Overview
 ========
 
-privacyIDEA runs as an additional service in your network and you can connect different 
+privacyIDEA runs as an additional service in your network and you can connect different
 applications to privacyIDEA.
 
 .. image:: https://privacyidea.org/wp-content/uploads/2017/privacyIDEA-Integration.png
@@ -67,7 +67,7 @@ stored. This is achieved by its totally modular architecture.
 privacyIDEA is not only open as far as its modular architecture is
 concerned. But privacyIDEA is completely licensed under the AGPLv3.
 
-It supports a wide variety of authentication devices like OTP tokens 
+It supports a wide variety of authentication devices like OTP tokens
 (HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), FIDO U2F, as well
 as FIDO2 WebAuthn devices like Yubikey and Plug-Up, smartphone Apps like Google
 Authenticator, FreeOTP, Token2  or TiQR, SMS, Email, SSH keys, x509 certificates
@@ -87,7 +87,7 @@ https://community.privacyidea.org
 Setup
 =====
 
-For setting up the system to *run* it, please read install instructions 
+For setting up the system to *run* it, please read install instructions
 at `privacyidea.readthedocs.io <http://privacyidea.readthedocs.io/en/latest/installation/index
 .html>`_.
 
@@ -98,7 +98,7 @@ If you want to setup a development environment start like this::
     virtualenv venv
     source venv/bin/activate
     pip install -r requirements.txt
-    
+
 .. _testing_env:
 
 You may additionally want to set up your environment for testing, by adding the
@@ -151,7 +151,7 @@ Create the first administrator::
 
 Run it::
 
-    ./pi-manage runserver
+    ./pi-manage run
 
 Now you can connect to http://localhost:5000 with your browser and login
 as administrator.
@@ -180,7 +180,7 @@ https://github.com/privacyidea/privacyidea/blob/master/CONTRIBUTING.md
 Code structure
 ==============
 
-The database models are defined in ``models.py`` and tested in 
+The database models are defined in ``models.py`` and tested in
 tests/test_db_model.py.
 
 Based on the database models there are the libraries ``lib/config.py`` which is
@@ -192,18 +192,23 @@ Based on the resolver there is the library ``lib/realm.py`` which provides
 functions
 for the database table ``realm``. Several resolvers are combined into a realm.
 
-Based on the realm there is the library ``lib/user.py`` which provides functions 
-for users. There is no database table user, since users are dynamically read 
+Based on the realm there is the library ``lib/user.py`` which provides functions
+for users. There is no database table user, since users are dynamically read
 from the user sources like SQL, LDAP, SCIM or flat files.
 
+Subscriptions and limitations of community edition
+==================================================
+
+Using privacyIDEA Server and the privacyIDEA FreeRADIUS plugin there is technically no
+limitation of the community edition or the code in this repository.
+Admins will receive a welcome message about possible support, if more than 50 users
+are enrolled.
+
 Plugins
-=======
+-------
 
 The privacyIDEA project also provides several plugins for 3rd party applications like SSO Identity Providers
 or Windows Login.
-
-Subscriptions
--------------
 
 Plugins can be limited in the number of users. I.e. the plugin will complain, if the total number of users
 in privacyIDEA with an active token exceeds a certain limit. There is a certain base number of users, with which
@@ -219,10 +224,11 @@ Name                  contained       in demo subscription
 ====================  ==============  ========================
 Keycloak              10000           N/A
 SimpleSAMLphp         10000           N/A
-privacyIDEA PAM       10000           N/A
+Shibboleth            10000           N/A
 ADFS                  50              50
+privacyIDEA PAM       10000           N/A
 Credential Provider   50              50
-OwnCloud              50              N/A
+ownCloud              50              N/A
 LDAP proxy            50              N/A
 ====================  ==============  ========================
 

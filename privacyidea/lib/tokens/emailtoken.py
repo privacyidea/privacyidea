@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  2018-10-31 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Let the client choose to get a HTTP 500 Error code if
 #             SMS fails.
@@ -71,11 +70,12 @@ import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
-from privacyidea.lib.config import get_from_config
+from privacyidea.lib.config import get_from_config, get_email_validators
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, get_action_values_from_options
 from privacyidea.lib.policy import Match
+from privacyidea.lib.error import ValidateError
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 from privacyidea.models import Challenge
@@ -342,6 +342,7 @@ class EmailTokenClass(HotpTokenClass):
         """
         options = options or {}
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
+
         if ret < 0 and is_true(get_from_config("email.concurrent_challenges")):
             if safe_compare(options.get("data"), anOtpVal):
                 # We authenticate from the saved challenge
@@ -515,7 +516,7 @@ class EmailTokenClass(HotpTokenClass):
         return {"message": VERIFY_ENROLLMENT_MESSAGE}
 
     @classmethod
-    def enroll_via_validate(cls, g, content, user_obj):
+    def enroll_via_validate(cls, g, content, user_obj, message=None):
         """
         This class method is used in the policy ENROLL_VIA_MULTICHALLENGE.
         It enrolls a new token of this type and returns the necessary information
@@ -524,6 +525,7 @@ class EmailTokenClass(HotpTokenClass):
         :param g: context object
         :param content: The content of a response
         :param user_obj: A user object
+        :param message: An alternative message displayed to the user during enrollment
         :return: None, the content is modified
         """
         from privacyidea.lib.token import init_token
@@ -544,7 +546,7 @@ class EmailTokenClass(HotpTokenClass):
                 "client_mode": CLIENTMODE.INTERACTIVE,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
-                "message": _("Please enter your new email address!")}
+                "message": message or _("Please enter your new email address!")}
         detail["multi_challenge"] = [chal]
         detail.update(chal)
 
@@ -563,7 +565,25 @@ class EmailTokenClass(HotpTokenClass):
         :param options:
         :return:
         """
-        self.del_tokeninfo("dynamic_email")
-        self.add_tokeninfo(self.EMAIL_ADDRESS_KEY, passw)
-        # Dynamically we remember that we need to do another challenge
-        self.currently_in_challenge = True
+        # Get policy for email validation
+        validate_module = "privacyidea.lib.utils.emailvalidation"
+        if "g" in options:
+            g = options.get("g")
+            validate_modules = Match.user(g, scope=SCOPE.ENROLL,
+                                  action=ACTION.EMAILVALIDATION,
+                                  user_object=options.get("user") if "user" in options else None).action_values(
+                unique=True)
+            # check passw to be a valid email address
+            if len(validate_modules) == 1:
+                # We have a policy for email validation
+                validate_module = list(validate_modules)[0]
+        validate_email = get_email_validators().get(validate_module)
+        if validate_email(passw):
+            # TODO: If anything special happens, we could leave it as a dynamic email
+            self.del_tokeninfo("dynamic_email")
+            self.add_tokeninfo(self.EMAIL_ADDRESS_KEY, passw)
+            # Dynamically we remember that we need to do another challenge
+            self.currently_in_challenge = True
+        else:
+            self.token.delete()
+            raise ValidateError(_("The email address is not valid!"))

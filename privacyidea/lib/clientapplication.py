@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Save client application information for authentication requests
 #

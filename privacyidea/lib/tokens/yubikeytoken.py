@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2016-04-04 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Move the API signature static methods to functions.
 #  2016-03-23 Jochen Hein <jochen@jochen.org>
@@ -53,13 +51,14 @@ This code is tested in tests/test_lib_tokens_yubikey.py
 """
 
 import logging
+
+from privacyidea.lib.error import EnrollmentError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import challenge_response_allowed
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import (modhex_decode, hexlify_and_unicode, checksum,
                                    to_bytes, b64encode_and_unicode)
-import binascii
-from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.api.lib.utils import getParam
 import datetime
 import base64
@@ -232,11 +231,10 @@ class YubikeyTokenClass(TokenClass):
         pin_match = self.check_pin(passw, user=user, options=options)
         if pin_match is True:
             trigger_challenge = True
-
         return trigger_challenge
 
-
     @log_with(log)
+    @check_token_otp_length
     @check_token_locked
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
@@ -271,6 +269,8 @@ class YubikeyTokenClass(TokenClass):
         serial = self.token.serial
         secret = self.token.get_otpkey()
 
+        anOtpVal = anOtpVal.lower()
+
         # The prefix is the characters in front of the last 32 chars
         yubi_prefix = anOtpVal[:-32]
         # The variable otp val is the last 32 chars
@@ -280,6 +280,7 @@ class YubikeyTokenClass(TokenClass):
             otp_bin = modhex_decode(yubi_otp)
         except KeyError:
             # The OTP value is no yubikey aes otp value and can not be decoded
+            log.debug("OTP could not be decoded")
             return -4
 
         msg_bin = secret.aes_ecb_decrypt(otp_bin)
@@ -293,7 +294,7 @@ class YubikeyTokenClass(TokenClass):
         crc16 = checksum(msg_bin)
         log.debug("calculated checksum (61624): {0!r}".format(crc16))
         if crc16 != 0xf0b8:  # pragma: no cover
-            log.warning("CRC checksum for token {0!r} failed".format(serial))
+            log.info("CRC checksum for token {0!r} failed".format(serial))
             return -3
 
         uid = msg_hex[0:12]
@@ -328,9 +329,8 @@ class YubikeyTokenClass(TokenClass):
 
         if tokenid != uid:
             # wrong token!
-            log.warning("The wrong token was presented for %r. "
-                        "Got %r, expected %r."
-                        % (serial, uid, tokenid))
+            log.warning(f"The wrong token was presented for {serial}. "
+                        f"Got {uid}, expected {tokenid}.")
             return -2
 
         # TODO: We also could check the timestamp
@@ -449,7 +449,7 @@ h={h}
         if prefix[:2] != "vv" and prefix[:2] != "cc":
             try:
                 # Keep the backward compatibility
-                serialnum = "UBAM" + modhex_decode(prefix)
+                serialnum = "UBAM" + str(modhex_decode(prefix))
                 for i in range(1, 3):
                     s = "{0!s}_{1!s}".format(serialnum, i)
                     toks = get_tokens(serial=s, tokentype='yubikey')
@@ -462,8 +462,7 @@ h={h}
             # If we did not find the token via the serial number, we also
             # search for the yubikey.prefix in the tokeninfo.
             token_candidate_list = get_tokens(tokentype='yubikey',
-                                              tokeninfo={"yubikey.prefix":
-                                                             prefix})
+                                              tokeninfo={"yubikey.prefix": prefix})
             token_list.extend(token_candidate_list)
 
         if not token_list:
@@ -477,9 +476,12 @@ h={h}
     @log_with(log)
     def update(self, param, reset_failcount=True):
         update_params = param.copy()
+
         # As the secret is usually copy-pasted from the Yubikey personalization GUI,
         # which separates hexlified bytes by spaces, we remove all spaces from the OTP key.
         if "otpkey" in update_params:
             update_params["otpkey"] = update_params["otpkey"].replace(" ", "")
+        if not len(update_params["otpkey"]) == 32:
+            raise EnrollmentError("The otpkey must be 32 characters long for yubikey token in AES mode")
         TokenClass.update(self, update_params, reset_failcount)
         self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)

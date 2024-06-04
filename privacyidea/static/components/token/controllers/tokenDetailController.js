@@ -110,6 +110,7 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                 var blob = new Blob([byteArray], {type: 'application/x-pkcs12'});
                 $scope.pkcs12Blob = (window.URL || window.webkitURL).createObjectURL( blob );
             }
+            $scope.changeApplication();
         });
     };
 
@@ -417,16 +418,25 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             $scope.getMachines();
         };
 
-        if (AuthFactory.checkRight("manage_machine_tokens")) {
-            // read the application definition from the server
-            MachineFactory.getApplicationDefinition(function (data) {
-                $scope.Applications = data.result.value;
-                var applications = [];
-                for (var k in $scope.Applications) applications.push(k);
-                $scope.formInit = {application: applications};
-            });
-            $scope.getMachines();
+
+        $scope.changeApplication = function () {
+            if (AuthFactory.checkRight("manage_machine_tokens")) {
+                // read the application definition from the server
+                MachineFactory.getApplicationDefinition(function (data) {
+                    $scope.Applications = data.result.value;
+                    var applications = [];
+                    for (var k in $scope.Applications) {
+                        // check if this application provides options for current tokentype
+                        if ($scope.Applications[k].options.hasOwnProperty($scope.token.tokentype.toLowerCase())) {
+                            applications.push(k);
+                        }
+                    }
+                    $scope.formInit = {application: applications};
+                });
+                $scope.getMachines();
+            }
         }
+
 
     }  // End of admin functions
 

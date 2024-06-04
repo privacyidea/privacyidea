@@ -32,7 +32,7 @@ privacyIDEA community website `tagged with push token <https://www.privacyidea.o
 
 You can get the necessary *JSON config file*, from your Firebase console.
 The default PUSH authenticator App (privacyIDEA Authenticator) which you can
-find in Google Play Store and Apple App Store uses a Firebase project, that is 
+find in Google Play Store and Apple App Store uses a Firebase project, that is
 managed by the company NetKnights.
 You need to get an SLA to receive a JSON config file for accessing the project.
 
@@ -54,7 +54,7 @@ behaviour of the SMS Gateway definition.
    If the URL is secured via TLS (HTTPS), you can select, if the
    certificate should be verified or not.
 
-**PROXY**, **HTTP_PROXY** and **HTTP_PROXY**
+**PROXY**, **HTTP_PROXY** and **HTTPS_PROXY**
 
    You can specify a proxy to connect to the HTTP gateway. Use the specific values
    to separate HTTP and HTTPS.
@@ -97,27 +97,17 @@ behaviour of the SMS Gateway definition.
    These are the username and the password if the HTTP request requires
    **basic authentication**.
 
-.. todo:: PARAMETER in HTTP SMS Provider deprecated?
-
-**PARAMETER**
-
-   This can contain a dictionary of arbitrary fixed additional
-   parameters. Usually this would also contain an ID or a password
-   to identify you as a sender.
-
 Options
 .......
 
 You can define additional options. These are sent as parameters in the GET or
 POST request.
 
-.. note:: The fixed parameters and the options can not have the same name! If
-   you need an options, that has the same name as a parameter, you must not
-   fill in the corresponding parameter.
-
 .. note:: You can use the tags ``{phone}`` to specify the phone number. The tag ``{otp}``
    will be replaced simply with the OTP value or with the contents created
    by the policy :ref:`smstext`.
+
+.. todo:: Add description of additional headers
 
 Examples
 ........
@@ -216,6 +206,11 @@ It takes not options.
 If you activate debug log level you will see the submitted SMS and the response
 content from the Sipgate gateway.
 
+.. rubric:: Footnotes
+
+.. [#twilio] https://www.twilio.com/docs/api/rest/sending-messages
+.. [#gtxapi] https://www.gtx-messaging.com/de/api-docs/http/
+
 SMPP Provider
 ~~~~~~~~~~~~~
 
@@ -228,9 +223,6 @@ privacyIDEA need to authenticate against the SMS center. For this you can add th
 receiving an SMS.
 For the other parameters contact your SMS center operator.
 
-
-.. [#twilio] https://www.twilio.com/docs/api/rest/sending-messages
-.. [#gtxapi] https://www.gtx-messaging.com/de/api-docs/http/
 
 SMTP provider
 ~~~~~~~~~~~~~
@@ -265,7 +257,7 @@ will send the OTP via SMS to the given phone number.
    You can use the tags ``{phone}`` and ``{otp}`` to
    replace the phone number or the one time password.
 
-The default *SUBJECT* is set to *{phone}* and the default *BODY* to *{otp}*.
+The default *SUBJECT* is set to ``{phone}`` and the default *BODY* to ``{otp}``.
 You may change the *SUBJECT* and the *BODY* accordingly.
 
 Script provider
@@ -275,7 +267,7 @@ The *Script provider* calls a script which can take care of sending the SMS.
 The script takes the phone number as the only parameter. The message is expected at stdin.
 
 Scripts are located in the directory ``/etc/privacyidea/scripts/``. You can change this default
-location by setting the value in ``PI_SCRIPT_SMSPROVIDER_DIRECTORY`` in ``pi.cfg``.
+location by setting the value in ``PI_SCRIPT_SMSPROVIDER_DIRECTORY`` in :ref:`cfgfile`.
 
 In the configuration of the Script provider you can set two attributes.
 

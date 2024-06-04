@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # 2015-10-12 Cornelius Kölbel <cornelius@privacyidea.org>
 #            Rewrite to LDAP3
 #

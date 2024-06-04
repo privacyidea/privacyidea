@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2021-09-06 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add extended condition for HTTP environment
 #  2021-02-01 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -172,10 +170,11 @@ from configobj import ConfigObj
 
 from operator import itemgetter
 import logging
-from ..models import (Policy, db, save_config_timestamp, Token)
+from ..models import (Policy, db, save_config_timestamp, Token, PolicyDescription)
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
-                                    get_multichallenge_enrollable_tokentypes)
+                                    get_multichallenge_enrollable_tokentypes,
+                                    get_email_validators)
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
@@ -247,6 +246,7 @@ class ACTION(object):
     DELETE = "delete"
     DISABLE = "disable"
     EMAILCONFIG = "smtpconfig"
+    EMAILVALIDATION = "email_validation"
     ENABLE = "enable"
     ENCRYPTPIN = "encrypt_pin"
     FORCE_APP_PIN = "force_app_pin"
@@ -355,6 +355,7 @@ class ACTION(object):
     CHANGE_PIN_VIA_VALIDATE = "change_pin_via_validate"
     RESYNC_VIA_MULTICHALLENGE = "resync_via_multichallenge"
     ENROLL_VIA_MULTICHALLENGE = "enroll_via_multichallenge"
+    ENROLL_VIA_MULTICHALLENGE_TEXT = "enroll_via_multichallenge_text"
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
@@ -593,11 +594,12 @@ class PolicyClass(object):
                 log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
                     reduced_policies, searchkey, searchvalue))
 
-        p = [("action", action), ("user", user), ("realm", realm)]
+        p = [("action", action), ("realm", realm)]
+        q = [("user", user)]
         # If this is an admin-policy, we also do check the adminrealm
         if scope == SCOPE.ADMIN:
             p.append(("adminrealm", adminrealm))
-            p.append(("adminuser", adminuser))
+            q.append(("adminuser", adminuser))
         for searchkey, searchvalue in p:
             if searchvalue is not None:
                 new_policies = []
@@ -612,6 +614,30 @@ class PolicyClass(object):
                     else:
                         value_found, value_excluded = self._search_value(
                             policy.get(searchkey), searchvalue)
+                        if value_found and not value_excluded:
+                            new_policies.append(policy)
+                reduced_policies = new_policies
+                log.debug("Policies after matching {1!s}={2!s}: {0!s}".format(
+                    reduced_policies, searchkey, searchvalue))
+
+        for searchkey, searchvalue in q:
+            if searchvalue is not None:
+                new_policies = []
+                # first we find policies, that really match!
+                # Either with the real value or with a "*"
+                # values can be excluded by a leading "!" or "-"
+                for policy in reduced_policies:
+                    if not policy.get(searchkey):
+                        # We also find the policies with no distinct information
+                        # about the request value
+                        new_policies.append(policy)
+                    else:
+                        searchkeys = policy.get(searchkey)
+                        current_searchvalue = searchvalue
+                        if policy.get("user_case_insensitive"):
+                            current_searchvalue = current_searchvalue.lower()
+                            searchkeys = [x.lower() for x in searchkeys]
+                        value_found, value_excluded = self._search_value(searchkeys, current_searchvalue)
                         if value_found and not value_excluded:
                             new_policies.append(policy)
                 reduced_policies = new_policies
@@ -1298,7 +1324,7 @@ class PolicyClass(object):
 def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                user=None, time=None, client=None, active=True,
                adminrealm=None, adminuser=None, priority=None, check_all_resolvers=False,
-               conditions=None, pinode=None):
+               conditions=None, pinode=None, description=None, user_case_insensitive=False):
     """
     Function to set a policy.
 
@@ -1325,9 +1351,13 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     :param check_all_resolvers: If all the resolvers of a user should be
         checked with this policy
     :type check_all_resolvers: bool
+    :param user_case_insensitive: The username should be case-insensitive.
+    :type user_case_insensitive: bool
     :param conditions: A list of 5-tuples (section, key, comparator, value, active) of policy conditions
     :param pinode: A privacyIDEA node or a list of privacyIDEA nodes.
-    :return: The database ID od the the policy
+    :param description: A description for the policy
+    :type description: str
+    :return: The database ID of the policy
     :rtype: int
     """
     active = is_true(active)
@@ -1336,6 +1366,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
     if priority is not None and priority <= 0:
         raise ParameterError("Priority must be at least 1")
     check_all_resolvers = is_true(check_all_resolvers)
+    user_case_insensitive = is_true(user_case_insensitive)
     if type(action) == dict:
         action_list = []
         for k, v in action.items():
@@ -1406,6 +1437,7 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
             p1.pinode = pinode
         p1.active = active
         p1.check_all_resolvers = check_all_resolvers
+        p1.user_case_insensitive = user_case_insensitive
         if conditions is not None:
             p1.set_conditions(conditions)
         save_config_timestamp()
@@ -1418,16 +1450,28 @@ def set_policy(name=None, scope=None, action=None, realm=None, resolver=None,
                      resolver=resolver, adminrealm=adminrealm,
                      adminuser=adminuser, priority=priority,
                      check_all_resolvers=check_all_resolvers,
-                     conditions=conditions, pinode=pinode).save()
+                     conditions=conditions, pinode=pinode, user_case_insensitive=user_case_insensitive).save()
+    if description:
+        d1 = PolicyDescription.query.filter_by(object_id=ret, object_type="policy").first()
+        if d1:
+            d1.description = description
+        else:
+            PolicyDescription(object_id=ret, name=name, object_type="policy", description=description).save()
+    db.session.commit()
     return ret
 
 
 @log_with(log)
 def enable_policy(name, enable=True):
     """
-    Enable or disable the policy with the given name
-    :param name:
+    Enable or disable the policy with the given name.
+
+    :param name: Name of the policy
+    :type name: str
+    :param enable: Set to True to enable the policy
+    :type enable: bool
     :return: ID of the policy
+    :rtype: int
     """
     if not Policy.query.filter(Policy.name == name).first():
         raise ResourceNotFoundError("The policy with name '{0!s}' does not exist".format(name))
@@ -2189,14 +2233,15 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.PIN},
             ACTION.TOKENLABEL: {
                 'type': 'str',
-                'desc': _("Set label for a new enrolled Google Authenticator. "
-                          "Possible tags are &lt;u&gt; (user), &lt;r&gt; ("
-                          "realm), &lt;s&gt; (serial)."),
+                'desc': _("The label for a new enrolled Smartphone token. "
+                          "Possible tags are <code>{user}</code>, <code>{realm}</code>, "
+                          "<code>{serial}</code>, <code>{givenname}</code> and <code>{surname}</code>."),
                 'group': GROUP.TOKEN},
             ACTION.TOKENISSUER: {
                 'type': 'str',
-                'desc': _("This is the issuer label for new enrolled Google "
-                          "Authenticators."),
+                'desc': _("The issuer label for new enrolled Smartphone token."
+                          "Possible tags are <code>{user}</code>, <code>{realm}</code>, "
+                          "<code>{serial}</code>, <code>{givenname}</code> and <code>{surname}</code>."),
                 'group': GROUP.TOKEN
             },
             ACTION.APPIMAGEURL: {
@@ -2251,6 +2296,12 @@ def get_static_policy_definitions(scope=None):
                           "(s)pecial. Use modifiers +/- or a list "
                           "of allowed characters [1234567890]"),
                 'group': GROUP.TOKEN},
+            ACTION.EMAILVALIDATION: {
+                'type': 'str',
+                'desc': _("Specify the email validator that should be used to validate "
+                          "email addresses during enrollment."),
+                'group': GROUP.TOKEN,
+                'value': list(get_email_validators().keys())},
             ACTION.VERIFY_ENROLLMENT: {
                 'type': 'str',
                 'desc': _("Specify a white space separated list of token types, "
@@ -2302,6 +2353,10 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("In case of a successful authentication the following tokentype is enrolled. The "
                           "maximum number of tokens for a user is checked."),
                 'value': [t.upper() for t in get_multichallenge_enrollable_tokentypes()]
+            },
+            ACTION.ENROLL_VIA_MULTICHALLENGE_TEXT: {
+                'type': 'str',
+                'desc': _("Change the default text that is shown during enrolling a token.")
             },
             ACTION.PASSTHRU: {
                 'type': 'str',
@@ -2413,7 +2468,7 @@ def get_static_policy_definitions(scope=None):
             ACTION.TOKENINFO: {
                 'type': 'str',
                 'desc': _("The user will only be authenticated if the tokeninfo "
-                          "field matches the regexp. key/&lt;regexp&gt;/"),
+                          "field matches the regexp (key/&lt;regexp&gt;/)."),
                 'group': GROUP.CONDITIONS,
             },
             ACTION.SETREALM: {

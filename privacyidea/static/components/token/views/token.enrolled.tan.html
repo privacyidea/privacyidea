@@ -1,5 +1,5 @@
 <div class="row">
-    <div class="col-sm-12">
+    <div class="col-sm-12" ng-show="otp_rows">
         <uib-accordion close-others="oneAtATime">
             <div uib-accordion-group
                  class="panel-default"
@@ -56,10 +56,10 @@
                 </div>
             </div>
         </uib-accordion>
+        <button class="btn-default btn"
+                ng-click="printOtp()">
+            <span class="glyphicon glyphicon-print"></span>
+            <span translate>Print the OTP list</span>
+        </button>
     </div>
 </div>
-<button class="btn-default btn"
-    ng-click="printOtp()">
-    <span class="glyphicon glyphicon-print"></span>
-    <span translate>Print the OTP list</span>
-</button>

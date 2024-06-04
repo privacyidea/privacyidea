@@ -78,7 +78,7 @@ enable
 
 type: bool
 
-The ``enable`` action allows the administrator to activate 
+The ``enable`` action allows the administrator to activate
 disabled tokens.
 
 disable
@@ -87,7 +87,7 @@ disable
 type: bool
 
 Tokens can be enabled and disabled. Disabled tokens can not be
-used to authenticate. The ``disable`` action allows the 
+used to authenticate. The ``disable`` action allows the
 administrator to disable tokens.
 
 revoke
@@ -287,11 +287,11 @@ assign
 type: bool
 
 If the ``assign`` action is defined, the administrator is
-allowed to assign a token to a user. This is used for 
-assigning an existing token to a user but also to 
+allowed to assign a token to a user. This is used for
+assigning an existing token to a user but also to
 enroll a new token to a user.
 
-Without this action, the administrator can not create 
+Without this action, the administrator can not create
 a connection (assignment) between a user and a token.
 
 unassign
@@ -300,8 +300,8 @@ unassign
 type: bool
 
 If the ``unassign`` action is defined, the administrator
-is allowed to unassign tokens from a user. I.e. the 
-administrator can remove the link between the token 
+is allowed to unassign tokens from a user. I.e. the
+administrator can remove the link between the token
 and the user. The token still continues to exist in the system.
 
 importtokens
@@ -322,7 +322,7 @@ delete
 type: bool
 
 If the ``delete`` action is defined, the administrator is
-allowed to delete a token from the system. 
+allowed to delete a token from the system.
 
 .. note:: If a token is deleted, it can not be recovered.
 
@@ -350,7 +350,7 @@ userlist
 
 type: bool
 
-If the ``userlist`` action is defined, the administrator is 
+If the ``userlist`` action is defined, the administrator is
 allowed to view the user list in a realm.
 An administrator might not be allowed to list the users, if
 he should only work with tokens, but not see all users at once.
@@ -375,7 +375,7 @@ If the ``tokenrealms`` action is defined, the administrator is allowed
 to manage the realms of a token.
 
 A token may be located in multiple realms. This can be interesting if
-you have a pool of spare tokens and several realms but want to 
+you have a pool of spare tokens and several realms but want to
 make the spare tokens available to several realm administrators.
 (Administrators, who have only rights in one realm)
 
@@ -390,7 +390,7 @@ tokengroups
 
 type: bool
 
-If the ``tokengroups``action is defined, the administrator is allowed to
+If the ``tokengroups`` action is defined, the administrator is allowed to
 manage the tokengroups of a token.
 
 Tokens can be grouped into tokengroups, so that such tokens can be more easily
@@ -807,11 +807,11 @@ This works in conjunction with the enrollment parameters :ref:`2step_parameters`
 
 Such a policy can also be set for the user. See :ref:`user_policy_2step`.
 
-.. note:: This does not work in combination with the enrollment policy :ref:`verify_enrollment`, since
+.. note:: This does not work in combination with the enrollment policy :ref:`policy_verify_enrollment`, since
    the usage of 2step already ensures, that the user has successfully scanned the QR code.
 
 .. _hotp-hashlib:
-.. _totp-totp-hashlib:
+.. _totp-hashlib:
 
 hotp_hashlib and totp_hashlib
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -863,7 +863,8 @@ sms_gateways
 
 type: string
 
-Usually an SMS token sends the SMS via the SMS gateway that is system wide defined in the token settings.
+Usually an SMS token sends the SMS via the SMS gateway that is defined system
+wide in the token settings.
 This policy takes a blank-separated list of configured SMS gateways.
 It allows the administrator to define an individual SMS gateway during token enrollment.
 

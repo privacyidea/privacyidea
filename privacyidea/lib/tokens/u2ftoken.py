@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-02-13 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Allow expired attestation certificate
 #  2017-04-18 Cornelius Kölbel <cornelius.koelbel@netknights.it>

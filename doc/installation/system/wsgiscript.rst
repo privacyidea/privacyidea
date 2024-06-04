@@ -1,5 +1,6 @@
-.. _wsgiscript:
 .. index:: wsgi
+
+.. _wsgiscript:
 
 The WSGI Script
 ===============
@@ -13,8 +14,6 @@ This script is usually located at ``/etc/privacyidea/privacyideaapp.py`` or
     :language: python
 
 In the ``create_app``-call you can also select another config file.
-
-.. index:: wsgi
 
 WSGI configuration for the Apache webserver
 -------------------------------------------

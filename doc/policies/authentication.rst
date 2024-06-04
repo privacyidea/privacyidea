@@ -374,7 +374,7 @@ type: string
 
 This policy allows the rollout of tokens during the authentication via `/validate/check`.
 
-The policy action can take one of the followig token types: `hotp`, `totp`, `push`, `email`, `sms`.
+The policy action can take one of the following token types: `hotp`, `totp`, `push`, `email`, `sms`.
 
 The clients and plugins should make use of this policy in a transparent way and using multiple consecutive
 challenges.
@@ -419,6 +419,17 @@ there is no additional authentication step anymore during enrollment.
    enroll only one token type.
 
 
+.. _policy_enroll_via_multichallenge_text:
+
+enroll_via_multichallenge_text
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: string
+
+There is a default text that is shown to the user, when a token via
+multichallenge is enrolled. The administrator can change this text using this policy.
+
+
 .. _policy_u2f_facets:
 
 u2f_facets
@@ -449,7 +460,7 @@ If a user authenticates successfully all failcounter of all of his tokens
 will be reset. This can be important, if using empty PINs or *otppin=None*.
 
 increase_failcounter_on_challenge
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: bool
 
@@ -529,6 +540,8 @@ during the login process with a :ref:`push_token`.
 You can choose different texts for different users or IP addresses.
 This way you could customize push notifications for different applications.
 
+You can also use certain tags in the text, just like in :ref:`emailtext`.
+
 .. _policy_push_title_on_mobile:
 
 push_title_on_mobile
@@ -568,6 +581,30 @@ Sensible numbers might be 10 or 20 seconds.
    can block all available worker threads, which will cause privacyIDEA
    to become unresponsive if the number of open PUSH challenges exceeds
    the number of available worker threads!
+
+.. _policy_push_require_presence:
+
+push_require_presence
+~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: push token
+
+type: int
+
+If `require presence` is set to "1", then the login window will display a message like
+"Please confirm login by pressing Button 'C' on your smartphone".
+
+The push notification on the smartphone will show several buttons. One is labeled "C".
+
+The user then can confirm the login by pressing this button. All other buttons will decline the
+login request.
+
+.. note:: This mechanism allows login scenarios where the user in front of the login window and the
+   person owning the smartphone are two different persons. In this case they will have to communicate
+   for a successful login.
+
+If this policy is set to "0", the PUSH message will simply ask the user, if he wants to log in.
+
 
 
 .. _policy_auth_push_allow_poll:
@@ -785,4 +822,5 @@ modes in the order you like. For example: "interactive webauthn poll u2f". The c
 will show you the correct login for your preferred client mode. For example if this is your list:
 "interactive webauthn poll u2f" and in Your multi-challenge list are a webauthn and u2f token,
 then your client will automatically show you the login for a webauthn token.
- .. note:: The default list is "interactive webauthn poll u2f"
+
+.. note:: The default list is "interactive webauthn poll u2f"

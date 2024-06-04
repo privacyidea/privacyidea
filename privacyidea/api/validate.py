@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
@@ -77,7 +75,7 @@ from .lib.utils import required
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
-from privacyidea.lib.utils import is_true
+from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
@@ -87,7 +85,8 @@ from privacyidea.api.lib.decorators import add_serial_from_response_to_g
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
-                                           check_base_action, pushtoken_wait, webauthntoken_auth, webauthntoken_authz,
+                                           check_base_action, pushtoken_validate, webauthntoken_auth,
+                                           webauthntoken_authz,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge)
 from privacyidea.api.lib.postpolicy import (postpolicy,
@@ -104,7 +103,7 @@ from privacyidea.lib.event import EventConfiguration
 import logging
 from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
-from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
 from privacyidea.lib.event import event
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
 from privacyidea.lib.subscriptions import CheckSubscription
@@ -150,7 +149,8 @@ def before_request():
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,
-                        "client_user_agent": request.user_agent.browser,
+                        "user_agent": get_plugin_info_from_useragent(request.user_agent.string)[0],
+                        "user_agent_version": get_plugin_info_from_useragent(request.user_agent.string)[1],
                         "privacyidea_server": privacyidea_server,
                         "action": "{0!s} {1!s}".format(request.method, request.url_rule),
                         "thread_id": "{0!s}".format(threading.current_thread().ident),
@@ -173,27 +173,40 @@ def offlinerefill():
     :return:
     """
     serial = getParam(request.all_data, "serial", required)
-    refilltoken = getParam(request.all_data, "refilltoken", required)
+    refilltoken_request = getParam(request.all_data, "refilltoken", required)
     password = getParam(request.all_data, "pass", required)
     tokenobj_list = get_tokens(serial=serial)
     if len(tokenobj_list) != 1:
         raise ParameterError("The token does not exist")
     else:
         tokenobj = tokenobj_list[0]
+        # check if token is disabled or otherwise not fit for auth
+        message_list = []
+        if not tokenobj.check_all(message_list):
+            log.info("Failed to offline refill: {0!s}".format(message_list))
+            raise ParameterError("The token is not valid.")
         tokenattachments = list_machine_tokens(serial=serial, application="offline")
         if tokenattachments:
             # TODO: Currently we do not distinguish, if a token had more than one offline attachment
-            # We need the options to pass the count and the rounds for the next offline OTP values,
-            # which could have changed in the meantime.
-            options = tokenattachments[0].get("options")
-            # check refill token:
-            if tokenobj.get_tokeninfo("refilltoken") == refilltoken:
-                # refill
+            # check refill token depending on token type
+            refilltoken_stored = None
+            if tokenobj.type.lower() == "hotp":
+                refilltoken_stored = tokenobj.get_tokeninfo("refilltoken")
+            elif tokenobj.type.lower() == "webauthn":
+                computer_name = get_computer_name_from_user_agent(request.user_agent.string)
+                if computer_name is None:
+                    raise ParameterError("The computer name is missing.")
+                refilltoken_stored = tokenobj.get_tokeninfo("refilltoken_" + computer_name)
+
+            if refilltoken_stored and refilltoken_stored == refilltoken_request:
+                # We need the options to pass the count and the rounds for the next offline OTP values,
+                # which could have changed in the meantime.
+                options = tokenattachments[0].get("options")
                 otps = MachineApplication.get_refill(tokenobj, password, options)
-                refilltoken = MachineApplication.generate_new_refilltoken(tokenobj)
+                refilltoken_new = MachineApplication.generate_new_refilltoken(tokenobj, request.user_agent.string)
                 response = send_result(True)
                 content = response.json
-                content["auth_items"] = {"offline": [{"refilltoken": refilltoken,
+                content["auth_items"] = {"offline": [{"refilltoken": refilltoken_new,
                                                       "response": otps,
                                                       "serial": serial}]}
                 response.set_data(json.dumps(content))
@@ -204,11 +217,11 @@ def offlinerefill():
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
 @validate_blueprint.route('/samlcheck', methods=['POST', 'GET'])
-@postpolicy(is_authorized, request=request)
-@postpolicy(mangle_challenge_response, request=request)
 @postpolicy(construct_radius_response, request=request)
-@postpolicy(preferred_client_mode, request=request)
+@postpolicy(is_authorized, request=request)
 @postpolicy(multichallenge_enroll_via_validate, request=request)
+@postpolicy(mangle_challenge_response, request=request)
+@postpolicy(preferred_client_mode, request=request)
 @postpolicy(no_detail_on_fail, request=request)
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)
@@ -219,7 +232,7 @@ def offlinerefill():
 @postpolicy(autoassign, request=request)
 @add_serial_from_response_to_g
 @prepolicy(check_application_tokentype, request=request)
-@prepolicy(pushtoken_wait, request=request)
+@prepolicy(pushtoken_validate, request=request)
 @prepolicy(set_realm, request=request)
 @prepolicy(mangle, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
@@ -430,11 +443,13 @@ def check():
                         result["attributes"][k] = v
     serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]]) \
         if 'multi_challenge' in details else details.get('serial')
+    r = send_result(result, rid=2, details=details)
     g.audit_object.log({"info": log_used_user(user, details.get("message")),
                         "success": success,
+                        "authentication": r.json.get("result").get("authentication") or "",
                         "serial": serials,
                         "token_type": details.get("type")})
-    return send_result(result, rid=2, details=details)
+    return r
 
 
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])
@@ -584,16 +599,18 @@ def trigger_challenge():
     result_obj = len(details.get("multi_challenge"))
 
     challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
+    r = send_result(result_obj, rid=2, details=details)
     g.audit_object.log({
         "user": user.login,
         "resolver": user.resolver,
         "realm": user.realm,
         "success": result_obj > 0,
+        "authentication": r.json.get("result").get("authentication"),
         "info": log_used_user(user, "triggered {0!s} challenges".format(result_obj)),
         "serial": ",".join(challenge_serials),
     })
 
-    return send_result(result_obj, rid=2, details=details)
+    return r
 
 
 @validate_blueprint.route('/polltransaction', methods=['GET'])

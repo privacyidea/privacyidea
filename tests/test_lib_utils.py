@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This tests the package lib.utils
 """
@@ -24,7 +23,8 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
                                    check_serial_valid, determine_logged_in_userparams,
-                                   to_list, parse_string_to_dict, convert_imagefile_to_dataimage)
+                                   to_list, parse_string_to_dict, convert_imagefile_to_dataimage,
+                                   get_plugin_info_from_useragent, get_computer_name_from_user_agent)
 from privacyidea.lib.crypto import generate_password
 from datetime import timedelta, datetime
 from netaddr import IPAddress, IPNetwork, AddrFormatError
@@ -1028,3 +1028,48 @@ class UtilsTestCase(MyTestCase):
         dataimage = convert_imagefile_to_dataimage(file)
         self.assertEqual("", dataimage)
 
+    def test_37_useragent_split(self):
+        user_agents = [
+            ("privacyidea-cp", "privacyidea-cp", None, None),
+            ("privacyidea-cp/2.0", "privacyidea-cp", "2.0", None),
+            ("Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 "
+             "Firefox/47.0", "Mozilla", "5.0",
+             "(Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"),
+            ("privacyIDEA-Keycloak", "privacyIDEA-Keycloak", None, None),
+            ("privacyIDEA-Keycloak/20 java/8", "privacyIDEA-Keycloak", "20", "java/8"),
+            ("PrivacyIDEA-ADFS", "PrivacyIDEA-ADFS", None, None),
+            ("simpleSAMLphp", "simpleSAMLphp", None, None),
+            ("simpleSAMLphp/1.2.3", "simpleSAMLphp", "1.2.3", None),
+            ("ownCloud", "ownCloud", None, None),
+            ("privacyIDEA-PAM", "privacyIDEA-PAM", None, None),
+            ("privacyIDEA-Shibboleth", "privacyIDEA-Shibboleth", None, None),
+            ("privacyIDEA-LDAP-Proxy", "privacyIDEA-LDAP-Proxy", None, None),
+            ("privacyIDEA-LDAP-Proxy/10", "privacyIDEA-LDAP-Proxy", "10", None),
+            # matching fails completely
+            ("#test", "", None, None),
+            # matching fails after first dot
+            ("1.2.3", "1", None, None),
+            # matching stops after missing version
+            ("SomePlugin/ Some Comment", "SomePlugin", None, None),
+            # no user-agent string given
+            ("", "", None, None),
+            (None, "", None, None)
+        ]
+
+        for val in user_agents:
+            res = get_plugin_info_from_useragent(val[0])
+            self.assertEqual(res, val[1:], res)
+
+    def test_38_get_computer_name(self):
+        data = {"privacyidea-cp/1.1.1 Windows/Laptop-1": "Laptop-1",
+                "privacyidea-cp/1.1.1 ComputerName/Laptop-2": "Laptop-2",
+                "privacyidea-pam/2.2.2 Linux/Server-3": "Server-3",
+                "privacyidea-pam/2.2.2 Hostname/Server-4": "Server-4",
+                "privacyidea-mac/3.3.3 Mac/Server-5": "Server-5",
+                "privacyidea-mac/3.3.3": None,
+                "": None,
+                None: None}
+
+        for k, v in data.items():
+            res = get_computer_name_from_user_agent(k)
+            self.assertEqual(v, res)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from .base import MyApiTestCase
 from privacyidea.lib.user import User
 from privacyidea.lib.token import get_tokens, init_token, remove_token, get_one_token
@@ -375,11 +374,13 @@ class PushAPITestCase(MyApiTestCase):
         self.assertTrue(r > 0)
 
         # create realm
-        r = set_realm("ldaprealm", resolvers=["catchall"])
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
         set_default_realm("ldaprealm")
 
         # 1. set policies.
         set_policy("pol_passthru", scope=SCOPE.AUTH, action=ACTION.PASSTHRU)
+
+        set_policy("pol_tokenlabel", scope=SCOPE.ENROLL, action="{0!s}=Pushy".format(ACTION.TOKENLABEL))
 
         # 2. authenticate user via passthru
         with self.app.test_request_context('/validate/check',

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # This code is free software; you can redistribute it and/or
 # modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 # License as published by the Free Software Foundation; either
@@ -21,7 +19,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
-from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.utils import determine_logged_in_userparams, parse_time_sec_int
@@ -33,7 +31,7 @@ log = logging.getLogger(__name__)
 class DayPasswordTokenClass(TotpTokenClass):
     previous_otp_offset = 0
 
-    desc_timestep = _('Specify the time step of the DayPassword token.')
+    desc_timestep = _('Specify the time step of the DayPassword token. For example: "24h"')
 
     @log_with(log)
     def __init__(self, db_token):
@@ -64,7 +62,7 @@ class DayPasswordTokenClass(TotpTokenClass):
 
         :return: DayPasswordToken
         """
-        return "DayPassword"
+        return "DYPW"
 
     @staticmethod
     @log_with(log)
@@ -201,6 +199,7 @@ class DayPasswordTokenClass(TotpTokenClass):
             self.inc_otp_counter(res)
         return res
 
+    @check_token_otp_length
     @check_token_locked
     def check_otp(self, anOtpVal, counter=None, options=None):
         """
@@ -290,8 +289,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         if current_time:
             time_seconds = self._time2float(current_time)
 
-        # we don't need to round here as we have already float
-        counter = int((time_seconds / self.timestep) + 0.5)
+        counter = int(time_seconds / self.timestep)
         otpval = hmac2Otp.generate(counter=counter,
                                    inc_counter=False,
                                    do_truncation=do_truncation,
@@ -316,7 +314,7 @@ class DayPasswordTokenClass(TotpTokenClass):
         :param epoch_start: not implemented
         :param epoch_end: not implemented
         :param curTime: Simulate the servertime
-        :type curTime: datetime
+        :type curTime: datetime.datetime
         :param timestamp: Simulate the servertime
         :type timestamp: epoch time
         :return: tuple of status: boolean, error: text and the OTP dictionary
@@ -340,10 +338,9 @@ class DayPasswordTokenClass(TotpTokenClass):
             tCounter = int(timestamp)
         else:
             # use the current server time
-            tCounter = self._time2float(datetime.datetime.now())
+            tCounter = int(time.time())
 
-        # we don't need to round here as we have already float
-        counter = int((tCounter / self.timestep))
+        counter = int(tCounter / self.timestep)
 
         if count > 0:
             error = "OK"

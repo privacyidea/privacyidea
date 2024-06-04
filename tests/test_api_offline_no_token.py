@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.token import init_token

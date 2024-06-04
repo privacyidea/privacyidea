@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #

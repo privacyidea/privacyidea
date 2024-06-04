@@ -115,7 +115,7 @@ behavior of the system, manages the :ref:`eventhandler` and lets the user set up
 
    *The Config section is the heart of the privacyIDEA server.*
 
-.. _audit:
+.. _webui_audit:
 
 Audit
 -----
@@ -150,4 +150,3 @@ are connected to your network.
 
 Subscriptions, e.g. with `NetKnights <https://netknights.it/en/>`_, the
 company behind privacyIDEA, can also be viewed and managed in this tab.
-

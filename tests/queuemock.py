@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2019-01-07 Friedrich Weber <friedrich.weber@netknights.it>
 #             Implement queue mock
 #

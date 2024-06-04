@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2018-05-09 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             TAN token with to be randomly used TAN values
 #
@@ -24,6 +22,8 @@ It depends on the DB model, and the lib.tokenclass.
 """
 
 import logging
+
+from privacyidea.lib.decorators import check_token_otp_length
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.papertoken import PaperTokenClass
@@ -154,6 +154,7 @@ class TanTokenClass(PaperTokenClass):
             self.add_tokeninfo("tan.tan{0!s}".format(tankey),
                                "{0}:{1}".format(salt, hashed_tan))
 
+    @check_token_otp_length
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
         """
         check if the given OTP value is valid for this token.

@@ -1,3 +1,29 @@
+# Authors in version 3.9
+
+Cornelius Kölbel <cornelius.koelbel@netknights.it>
+Paul Lettich <paul.lettich@netknights.it>
+jona-samuel <jona-samuel.hoehmann@netknights.it>
+Sebastian Lemling <sebastian@lemling.de>
+pablo-knight <julio.storch@netknights.it>
+Enrico M. V. Fasanelli <enrico@infn.it>
+Hosted Weblate <hosted@weblate.org>
+Dan Marina <dan.marina@yahoo.com>
+Koen Roggemans <koen@roggemans.net>
+Marco Malavolti <marco.malavolti@gmail.com>
+Thierry Gaulupeau <thierry.gaulupeau@chu-nimes.fr>
+Clemens Bergmann <clemens.bergmann@tu-darmstadt.de>
+Lukáš Krejza <gryffus@hkfree.org>
+Alex <alexander.simm@posteo.de>
+Dan <denqwerta@gmail.com>
+Davide Ferri <davide.ferri@aubay.it>
+Felix E <felix@eckhofer.com>
+Johannes Reppin <johannes.reppin@desy.de>
+Marco Naimoli <marco.naimoli@gmail.com>
+Maximilian Bosch <maximilian@mbosch.me>
+Tanja Rolinger <tanja.rolinger@gmail.com>
+sanghb <sanghb@chengda.com.cn>
+
+
 # Authors in version 3.8
 
 Cornelius Kölbel <cornelius.koelbel@netknights.it>

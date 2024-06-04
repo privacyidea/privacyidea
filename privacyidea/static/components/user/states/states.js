@@ -35,7 +35,8 @@ angular.module('privacyideaApp.userStates', ['ui.router', 'privacyideaApp.versio
                 })
                 .state('user.list', {
                     url: "/list",
-                    templateUrl: userpath + "user.list.html" + versioningSuffixProviderProvider.$get().$get()
+                    templateUrl: userpath + "user.list.html" + versioningSuffixProviderProvider.$get().$get(),
+                    controller: "userController"
                 })
                 .state('user.details', {
                     url: "/details/{realmname:.*}/{username:.*}",

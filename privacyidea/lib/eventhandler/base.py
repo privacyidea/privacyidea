@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  2017-08-11 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add condition for detail->error->message
 #  2017-07-19 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -42,7 +41,7 @@ from privacyidea.lib.counter import read as counter_read
 from privacyidea.lib.utils import (compare_condition, compare_value_value,
                                    compare_generic_condition,
                                    parse_time_offset_from_now, is_true,
-                                   check_ip_in_policy)
+                                   check_ip_in_policy, AUTH_RESPONSE)
 import datetime
 from dateutil.tz import tzlocal
 import re
@@ -73,6 +72,7 @@ class CONDITION(object):
     DETAIL_MESSAGE = "detail_message"
     RESULT_VALUE = "result_value"
     RESULT_STATUS = "result_status"
+    RESULT_AUTHENTICATION = "result_authentication"
     TOKENREALM = "tokenrealm"
     TOKENRESOLVER = "tokenresolver"
     REALM = "realm"
@@ -107,6 +107,7 @@ class BaseEventHandler(object):
 
     def __init__(self):
         pass
+        self.run_details = None
 
     @property
     def allowed_positions(cls):
@@ -147,15 +148,15 @@ class BaseEventHandler(object):
                 "group": GROUP.TOKEN
             },
             CONDITION.REALM: {
-                "type": "str",
+                "type": "multi",
                 "desc": _("The realm of the user, for which this event should apply."),
-                "value": list(realms),
+                "value": [{"name": r} for r in realms],
                 "group": GROUP.USER
             },
             CONDITION.RESOLVER: {
-                "type": "str",
+                "type": "multi",
                 "desc": _("The resolver of the user, for which this event should apply."),
-                "value": list(resolvers),
+                "value": [{"name": r} for r in resolvers],
                 "group": GROUP.USER
             },
             CONDITION.TOKENREALM: {
@@ -196,6 +197,12 @@ class BaseEventHandler(object):
                 "desc": _("The result.status within the response is "
                           "True or False."),
                 "value": ("True", "False"),
+                "group": GROUP.GENERAL
+            },
+            CONDITION.RESULT_AUTHENTICATION: {
+                "type": "str",
+                "desc": _("The result.authentication within the response is the given value."),
+                "value": (AUTH_RESPONSE.ACCEPT, AUTH_RESPONSE.REJECT, AUTH_RESPONSE.CHALLENGE, AUTH_RESPONSE.DECLINED),
                 "group": GROUP.GENERAL
             },
             "token_locked": {
@@ -364,7 +371,7 @@ class BaseEventHandler(object):
     def check_condition(self, options):
         """
         Check if all conditions are met and if the action should be executed.
-        The the conditions are met, we return "True"
+        If the conditions are met, we return "True"
         :return: True
         """
         g = options.get("g")
@@ -414,11 +421,11 @@ class BaseEventHandler(object):
                     return False
 
         if CONDITION.REALM in conditions:
-            if user.realm != conditions.get(CONDITION.REALM):
+            if user.realm not in conditions.get(CONDITION.REALM).split(","):
                 return False
 
         if CONDITION.RESOLVER in conditions:
-            if user.resolver != conditions.get(CONDITION.RESOLVER):
+            if user.resolver not in conditions.get(CONDITION.RESOLVER).split(","):
                 return False
 
         if "logged_in_user" in conditions:
@@ -442,6 +449,12 @@ class BaseEventHandler(object):
             condition_value = conditions.get(CONDITION.RESULT_STATUS)
             result_status = content.get("result", {}).get("status")
             if is_true(condition_value) != is_true(result_status):
+                return False
+
+        if CONDITION.RESULT_AUTHENTICATION in conditions:
+            condition_value = conditions.get(CONDITION.RESULT_AUTHENTICATION)
+            result_auth = content.get("result", {}).get("authentication")
+            if condition_value != result_auth:
                 return False
 
         # checking of max-failcounter state of the token

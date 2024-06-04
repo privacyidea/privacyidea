@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os
 import logging
 import secrets
@@ -85,9 +83,10 @@ class TestingConfig(Config):
     CACHE_TYPE = "None"
     PI_SCRIPT_HANDLER_DIRECTORY = "tests/testdata/scripts/"
     PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY = "tests/testdata/"
+    PI_UUID = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
     PI_NODE = "Node1"
-    PI_NODES = ["Node1", "Node2"]
     PI_ENGINE_REGISTRY_CLASS = "null"
+    PI_EMAIL_VALIDATOR_MODULES = ["tests.testdata.gmailvalidator"]
     PI_TRUSTED_JWT = [{"public_key": pubtest_key,
                        "algorithm": "HS256",
                        "role": "user",

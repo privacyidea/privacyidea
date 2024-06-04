@@ -1,9 +1,9 @@
+.. index:: Event Handler, events
+
 .. _eventhandler:
 
 Event Handler
 =============
-
-.. index:: Event Handler, events
 
 Added in version 2.12.
 
@@ -152,7 +152,7 @@ This can be '>100', '<99', or '=100', to trigger the action, if the tokeninfo fi
 
 This is the ``failcount`` of the token. It is increased on failed authentication
 attempts. If it reaches ``max_failcount`` increasing will stop and the token is locked.
-See :ref:`failcounter`.
+See :term:`failcount`.
 
 The condition can be set to '>9', '=10', or '<5' and it will trigger the action accordingly.
 
@@ -246,6 +246,14 @@ This condition checks the result of an event.
 
 E.g. the result of the event *validate_check* can be a failed authentication.
 This can be the trigger to notify either the token owner or the administrator.
+
+**result_authentication**
+
+This checks the entry `result->authentication` in the response.
+Possible values are "ACCEPT", "REJECT", "DECLINED" and "CHALLENGE".
+It is an enhancement to `result_value`.
+If `result_value` is *true*, the `result_authentication` will be "ACCEPT".
+If `result_value` is *false*, the `result_authentication` can be "CHALLENGE", "REJECT" or "DELINCED".
 
 **rollout_state**
 
@@ -387,3 +395,4 @@ Available Handler Modules
    responsemangler
    logginghandler
    customuserattributehandler
+   webhookhandler

@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-
 """
 This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
 import warnings
-
+from testfixtures import log_capture
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.resolver import (save_resolver)
@@ -16,14 +14,15 @@ from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.utils import b32encode_and_unicode
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.models import (Token,
-                                 Config,
-                                 Challenge)
+                                Config,
+                                Challenge)
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
 from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
                                     delete_policy)
 import binascii
 import datetime
 import hashlib
+import mock
 from dateutil.tz import tzlocal
 
 from passlib.crypto.digest import pbkdf2_hmac
@@ -47,12 +46,11 @@ class HOTPTokenTestCase(MyTestCase):
 
     def test_00_create_user_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
-                               "type": "passwdresolver",
-                               "fileName": PWFILE})
+                             "type": "passwdresolver",
+                             "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
 
-        (added, failed) = set_realm(self.realm1,
-                                    [self.resolvername1])
+        (added, failed) = set_realm(self.realm1, [{'name': self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
@@ -329,20 +327,31 @@ class HOTPTokenTestCase(MyTestCase):
         token.inc_otp_counter(counter=20)
         self.assertTrue(token.token.count == 21, token.token.count)
 
-    def test_13_check_otp(self):
+    @log_capture()
+    def test_13_check_otp(self, capture):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = HotpTokenClass(db_token)
         token.update({"otpkey": self.otpkey,
                       "pin": "test",
                       "otplen": 6})
         # OTP does not exist
-        self.assertTrue(token.check_otp_exist("222333") == -1)
+        self.assertEqual(-1, token.check_otp("222333"))
         # OTP does exist
-        res = token.check_otp_exist("969429")
-        self.assertTrue(res == 3, res)
+        self.assertEqual(3, token.check_otp("969429"))
         # check is_previous_otp
         r = token.is_previous_otp("969429")
         self.assertTrue(r)
+        # Check OTP length
+        self.assertEqual(-1, token.check_otp("12345"))
+        capture.check_present(
+            ('privacyidea.lib.decorators', 'INFO',
+             f'OTP value for token {self.serial1} (type: {token.type}) has wrong length (5 != 6)')
+        )
+        self.assertEqual(-1, token.check_otp("1234567"))
+        capture.check_present(
+            ('privacyidea.lib.decorators', 'INFO',
+             f'OTP value for token {self.serial1} (type: {token.type}) has wrong length (7 != 6)')
+        )
 
     def test_14_split_pin_pass(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -439,15 +448,15 @@ class HOTPTokenTestCase(MyTestCase):
         transaction_id = "123456789"
         resp = token.is_challenge_response(User(login="cornelius",
                                                 realm=self.realm1),
-                                            "test123456")
+                                           "test123456")
         self.assertFalse(resp, resp)
 
         C = Challenge(self.serial1, transaction_id=transaction_id, challenge="Who are you?")
         C.save()
         resp = token.is_challenge_response(User(login="cornelius",
                                                 realm=self.realm1),
-                                            "test123456",
-                                            options={"transaction_id": transaction_id})
+                                           "test123456",
+                                           options={"transaction_id": transaction_id})
         self.assertTrue(resp, resp)
         # test if challenge is valid
         self.assertTrue(C.is_valid())
@@ -514,9 +523,9 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertTrue(res[2].get("type") == "hotp", res)
 
         # do some failing otp checks
-        token.token.otplen = "invalid otp counter"
-        self.assertRaises(Exception, token.check_otp, "123456")
-        token.token.otplen = 0
+        token.token.otplen = 5
+        self.assertTrue(token.check_otp("287082", counter=1, window=10) == -1)
+        token.token.otplen = 6
 
     def test_20_check_challenge_response(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -557,14 +566,14 @@ class HOTPTokenTestCase(MyTestCase):
         token.set_sync_window(10)
         token.set_count_window(5)
         # counter = 8, is out of sync
-        r = token.check_otp(anOtpVal="399871")
+        r = token.check_otp("399871")
         self.assertTrue(r == -1, r)
         # counter = 9, will be autosynced.
-        r = token.check_otp(anOtpVal="520489")
+        r = token.check_otp("520489")
         self.assertTrue(r == 9, r)
         # counter = 10, has also to authenticate! The counter of the token is
         #  set.
-        r = token.check_otp(anOtpVal="403154")
+        r = token.check_otp("403154")
         self.assertTrue(r == 10, r)
         self.assertEqual(token.token.count, 11)
 
@@ -573,30 +582,30 @@ class HOTPTokenTestCase(MyTestCase):
         # Just try some bullshit config value
         set_privacyidea_config("AutoResyncTimeout", "totally not a number")
         # counter = 7, is out of sync
-        r = token.check_otp(anOtpVal="162583")
+        r = token.check_otp("162583")
         self.assertTrue(r == -1, r)
         # counter = 9, will NOT _autosync
-        r = token.check_otp(anOtpVal="520489")
+        r = token.check_otp("520489")
         self.assertTrue(r == -1, r)
 
         # Autosync fails, if dueDate is over
         token.token.count = 0
         set_privacyidea_config("AutoResyncTimeout", 0)
         # counter = 8, is out of sync
-        r = token.check_otp(anOtpVal="399871")
+        r = token.check_otp("399871")
         self.assertTrue(r == -1, r)
         # counter = 9, is the next value, but duedate is over.
-        r = token.check_otp(anOtpVal="520489")
+        r = token.check_otp("520489")
         self.assertTrue(r == -1, r)
 
         # No _autosync
         set_privacyidea_config("AutoResync", False)
         token.token.count = 0
         # counter = 8, is out of sync
-        r = token.check_otp(anOtpVal="399871")
+        r = token.check_otp("399871")
         self.assertTrue(r == -1, r)
         # counter = 9, will not be autosynced
-        r = token.check_otp(anOtpVal="520489")
+        r = token.check_otp("520489")
         self.assertTrue(r == -1, r)
 
     def test_23_resync(self):
@@ -696,8 +705,8 @@ class HOTPTokenTestCase(MyTestCase):
         g = FakeFlaskG()
         g.audit_object = FakeAudit()
         g.logged_in_user = {"user": "hans",
-                          "realm": "default",
-                          "role": "user"}
+                            "realm": "default",
+                            "role": "user"}
         set_policy("pol1", scope=SCOPE.USER, action="hotp_hashlib=sha256,"
                                                     "hotp_otplen=8")
         g.policy_object = PolicyClass()
@@ -763,7 +772,7 @@ class HOTPTokenTestCase(MyTestCase):
         server_component = binascii.unhexlify(token.token.get_otpkey().getKey())
         # too short
         self.assertRaises(ParameterError, token.update, {
-            "otpkey": binascii.hexlify(b"="*8)
+            "otpkey": binascii.hexlify(b"=" * 8)
         })
         # generate a 12-byte client component
         client_component = b'abcdefghijkl'
@@ -774,13 +783,13 @@ class HOTPTokenTestCase(MyTestCase):
             "2step_serversize": "23",
             "2step_difficulty": "666666",
             "2step_clientsize": "13"
-            })
+        })
         # check the generated secret
         secret = binascii.unhexlify(token.token.get_otpkey().getKey())
         # check the correct lengths
         self.assertEqual(len(server_component), 40)
         self.assertEqual(len(client_component), 12)
-        self.assertEqual(len(secret), 64) # because of SHA-512
+        self.assertEqual(len(secret), 64)  # because of SHA-512
         # check the secret has been generated according to the specification
         expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
                                       client_component, 12345, len(secret))
@@ -823,15 +832,25 @@ class HOTPTokenTestCase(MyTestCase):
             "2step_serversize": "23",
             "2step_difficulty": "666666",
             "2step_clientsize": "13"
-            })
+        })
         # check the generated secret
         secret = binascii.unhexlify(token.token.get_otpkey().getKey())
         # check the correct lengths
-        self.assertEqual(len(server_component), 64) # because of SHA-512
+        self.assertEqual(len(server_component), 64)  # because of SHA-512
         self.assertEqual(len(client_component), 12)
-        self.assertEqual(len(secret), 64) # because of SHA-512
+        self.assertEqual(len(secret), 64)  # because of SHA-512
         # check the secret has been generated according to the specification
         expected_secret = pbkdf2_hmac('sha1', binascii.hexlify(server_component),
                                       client_component, 10000, len(secret))
         self.assertEqual(secret, expected_secret)
         self.assertTrue(token.token.active)
+
+    def test_31_wrong_tag(self):
+        with mock.patch("logging.Logger.error") as mock_log:
+            db_token = Token.query.filter_by(serial=self.serial1).first()
+            token = HotpTokenClass(db_token)
+            token.add_init_details("otpkey", "11223344556677889900")
+            params = {"tokenlabel": "{real}"}
+            _detail = token.get_init_detail(user=User("cornelius",
+                                                      self.realm1), params=params)
+            mock_log.assert_any_call("Unknown Tag 'real' in one of your policy definition")

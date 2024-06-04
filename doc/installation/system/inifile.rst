@@ -52,8 +52,8 @@ The file should contain the following contents::
    set the path and you need to take care of the indentation.
 
 ``SQLALCHEMY_DATABASE_URI`` defines the location of your database.
-You may want to use the MySQL database or Maria DB. There are two possible
-drivers, to connect to this database. Please read :ref:`mysqldb`.
+For more information about the database connect string, supported databases and
+drivers please read :ref:`database_connect`.
 
 ``SQLALCHEMY_ENGINE_OPTIONS`` is a dictionary of keyword args to send
 to `create_engine() <https://docs.sqlalchemy.org/en/14/core/engines.html#sqlalchemy
@@ -101,6 +101,9 @@ can be set, for example::
 Further information on possible parameters can be found in the
 `PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
 
+Translation
+-----------
+
 ``PI_PREFERRED_LANGUAGE`` is a list in which the preferred languages can be defined.
 The browser's language settings are compared to this list and the "best match" wins.
 If none of the languages set in the browser match, the first language in the list
@@ -108,8 +111,13 @@ will be used as the default language::
 
     PI_PREFERRED_LANGUAGE = ["en", "de", "es", "fr"]
 
-.. note:: If ``PI_PREFERRED_LANGUAGE`` is not defined, the following list is used.
-   ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr']
+.. note:: If ``PI_PREFERRED_LANGUAGE`` is not defined, the following list is used:
+
+   .. autodata:: privacyidea.webui.login.DEFAULT_LANGUAGE_LIST
+
+The parameter ``PI_TRANSLATION_WARNING`` can be used to provide a prefix, that is
+set in front of every string in the UI, that is not translated to the language your browser
+is using.
 
 Logging
 -------
@@ -140,10 +148,6 @@ own UI and you do not want to present the UI to the user or the outside world.
 .. note:: The API calls are all still accessible, i.e. privacyIDEA is
    technically fully functional.
 
-The parameter ``PI_TRANSLATION_WARNING`` can be used to provide a prefix, that is
-set in front of every string in the UI, that is not translated to the language your browser
-is using.
-
 .. _engine-registry:
 
 Engine Registry Class
@@ -173,6 +177,12 @@ is not set, the value from ``PI_NODE`` or ``localnode`` will be used.
 
 You can run the database for the audit module on another database or even
 server. For this you can specify the database URI via ``PI_AUDIT_SQL_URI``.
+
+.. note:: If you run the Audit database on a different URI, the schema update script
+   will not update the Audit schema automatically during update. Then check the
+   READ_BEFORE_UPDATE.md, if the Audit data has been changed. Then you need to adapt
+   the Audit table manually.
+
 With ``PI_AUDIT_SQL_OPTIONS`` You can pass a dictionary of options to the
 database engine. If ``PI_AUDIT_SQL_OPTIONS`` is not set,
 ``SQLALCHEMY_ENGINE_OPTIONS`` will be used.
@@ -222,13 +232,27 @@ privacyIDEA Nodes
 -----------------
 
 privacyIDEA can run in a redundant setup. For statistics and monitoring purposes you
-can give these different nodes, dedicated names.
+can give these different nodes dedicated names.
 
-``PI_NODE`` is a string with the name of this very node. ``PI_NODES`` is a list of
-all available nodes in the cluster.
+``PI_NODE`` is a string with the name of this very node. At the startup of
+privacyIDEA, an installation specific unique ID will be used to tie the
+node name to an installation. The administrator can set a unique ID for this
+installation as well with the ``PI_UUID`` configuration value (it must conform to
+`RFC 4122 <https://datatracker.ietf.org/doc/html/rfc4122.html>`_).
+
+If no ``PI_UUID`` is configured, privacyIDEA tries to read the ID from a file.
+The administrator can specify the file with ``PI_UUID_FILE``. The default value
+is ``/etc/privacyidea/uuid.txt``. If this file does not provide an ID, the
+``/etc/machine-id``  will be used. And if all fails, a unique ID will be generated
+and made persistent in the ``PI_UUID_FILE``.
+
+Before version 3.10, the available nodes of the setup were defined with the
+``PI_NODES`` configuration value. Since version 3.10, this configuration value
+is not used anymore. The names of all nodes
+in a redundant setup will be made available through the database.
 
 If ``PI_NODE`` is not set, then ``PI_AUDIT_SERVERNAME`` is used as node name.
-If this is also not set, the node name is returned as "localnode".
+If this is not set as well, the node name is returned as "localnode".
 
 .. _trusted_jwt:
 
@@ -285,6 +309,23 @@ you need to specify a list of your 3rd party token class modules
 in ``pi.cfg`` using the parameter ``PI_TOKEN_MODULES``::
 
     PI_TOKEN_MODULES = [ "myproject.cooltoken", "myproject.lametoken" ]
+
+.. _picfg_email_validators:
+
+3rd party email validators
+--------------------------
+
+privacyIDEA can use email validators while enrolling email tokens via validate/check.
+You can configure your own email validators in the `pi.cfg`::
+
+    PI_EMAIL_VALIDATOR_MODULES = [ "myproject.emailvalidator", "otherproject.nogmail" ]
+
+This module needs to provide a function `validate_email(email: str) -> bool` which returns True if the
+email is valid.
+
+The email validator module that comes with privacyIDEA is `privacyidea.lib.utils.emailvalidation`.
+You do not need to add this in the `pi.cfg` file, this is available by default.
+
 
 .. _custom_web_ui:
 

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  2016-04-08 Cornelius Kölbel <cornelius@privacyidea.org>
 #             Avoid consecutive if-statements
 #  2015-02-25 Cornelius Kölbel <cornelius@privacyidea.org>
