@@ -3,14 +3,14 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
     function createContainerController($scope, $http, $q, ContainerFactory, $stateParams, AuthFactory, ConfigFactory) {
         $scope.formData = {
             containerTypes: {},
-        }
+        };
         $scope.form = {
             containerType: "generic",
             description: ""
-        }
+        };
         ContainerFactory.getContainerTypes(function (data) {
-            $scope.formData.containerTypes = data.result.value
-        })
+            $scope.formData.containerTypes = data.result.value;
+        });
 
         // User+Realm: Get the realms and fill the realm dropdown box
         if (AuthFactory.getRole() === 'admin') {
@@ -42,7 +42,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                             username: $scope.newUser.user
                         },
                         function (data) {
-                            $scope.get_user_infos(data)
+                            $scope.get_user_infos(data);
                         });
                 }
             });
@@ -58,20 +58,20 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
         }
 
         $scope.createContainer = function () {
-            let ctype = $scope.form.containerType
-            let params = {"type": ctype}
+            let ctype = $scope.form.containerType;
+            let params = {"type": ctype};
             if ($scope.newUser.user) {
-                params["user"] = fixUser($scope.newUser.user)
-                params["realm"] = $scope.newUser.realm
+                params["user"] = fixUser($scope.newUser.user);
+                params["realm"] = $scope.newUser.realm;
             }
             if ($scope.form.description) {
-                params["description"] = $scope.form.description
+                params["description"] = $scope.form.description;
             }
 
             ContainerFactory.createContainer(params, function (data) {
                 // TODO where to go after creation?
-            })
-        }
+            });
+        };
     }]);
 
 myApp.controller("containerListController", ['$scope', '$http', '$q', 'ContainerFactory', 'AuthFactory',
@@ -90,7 +90,7 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
 
         // Get all containers
         $scope.get = function () {
-            $scope.expandedRows = []
+            $scope.expandedRows = [];
             $scope.params.sortby = $scope.sortby;
             if ($scope.reverse) {
                 $scope.params.sortdir = "desc";
@@ -101,11 +101,11 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
 
             ContainerFactory.getContainers($scope.params,
                 function (data) {
-                    $scope.containerdata = data.result.value
-                })
+                    $scope.containerdata = data.result.value;
+                });
 
-        }
-        $scope.get()
+        };
+        $scope.get();
 
         // single token function
         $scope.reset = function (serial) {
@@ -119,29 +119,29 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
         };
 
         // Expand token view
-        $scope.expandedRows = []
+        $scope.expandedRows = [];
         $scope.expandTokenView = function (containerRow) {
             if (containerRow < 0) {
                 for (let i = 0; i < $scope.containerdata.containers.length; i++) {
                     if ($scope.containerdata.containers[i].tokens.length > 0) {
-                        $scope.expandedRows.push(i)
+                        $scope.expandedRows.push(i);
                     }
                 }
             } else {
-                $scope.expandedRows.push(containerRow)
+                $scope.expandedRows.push(containerRow);
             }
-        }
+        };
 
         // Collapse token view
         $scope.collapseTokenView = function (containerRow) {
             if (containerRow < 0) {
                 while ($scope.expandedRows.length > 0) {
-                    $scope.expandedRows.pop()
+                    $scope.expandedRows.pop();
                 }
             } else {
-                $scope.expandedRows.splice($scope.expandedRows.indexOf(containerRow), 1)
+                $scope.expandedRows.splice($scope.expandedRows.indexOf(containerRow), 1);
             }
-        }
+        };
 
         // listen to the reload broadcast
         $scope.$on("piReload", $scope.get);
@@ -149,44 +149,55 @@ myApp.controller("containerListController", ['$scope', '$http', '$q', 'Container
 
 myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams', '$q', 'ContainerFactory', 'AuthFactory', 'ConfigFactory', 'TokenFactory', '$state', '$rootScope',
     function containerDetailsController($scope, $http, $stateParams, $q, ContainerFactory, AuthFactory, ConfigFactory, TokenFactory, $state, $rootScope) {
-        $scope.containerSerial = $stateParams.containerSerial
+        $scope.containerSerial = $stateParams.containerSerial;
         $scope.loggedInUser = AuthFactory.getUser();
         $scope.newToken = {"serial": "", pin: ""};
         $scope.tokenAction = "";
 
-        $scope.container = {}
-        $scope.containerOwner = {}
+        // Get possible container states
+        $scope.stateTypes = [];
+        $scope.containerStates = {};
+        $scope.displayState = {};
+        ContainerFactory.getStateTypes(function (data) {
+            $scope.stateTypes = data.result.value;
+            angular.forEach($scope.stateTypes, function (val, state) {
+                if (!$scope.containerStates[state]) {
+                    $scope.containerStates[state] = false;
+                }
+                // Set the state to false, if it is displayed next to states that exclude each other
+                if (!($scope.displayState[state] == false)) {
+                    $scope.displayState[state] = true;
+                    angular.forEach($scope.stateTypes[state], function (excludedState) {
+                        $scope.displayState[excludedState] = false;
+                    });
+                }
+            });
+        });
+
+        // Get the container
+        $scope.container = {};
+        $scope.containerOwner = {};
         $scope.get = function () {
             ContainerFactory.getContainerForSerial($scope.containerSerial, function (data) {
-                $scope.container = data.result.value.containers[0]
-                $scope.containerOwner = $scope.container.users[0]
-                $scope.container.last_seen = new Date($scope.container.last_seen)
+                $scope.container = data.result.value.containers[0];
+                $scope.containerOwner = $scope.container.users[0];
+                $scope.container.last_seen = new Date($scope.container.last_seen);
                 $scope.container.last_updated = new Date($scope.container.last_updated);
 
                 angular.forEach($scope.container.states, function (state) {
                     $scope.excludeStates(state);
-                })
-            })
+                });
+            });
         }
-        $scope.get()
-
-        // Get possible container states
-        $scope.stateTypes = []
-        $scope.containerStates = {}
-        ContainerFactory.getStateTypes(function (data) {
-            $scope.stateTypes = data.result.value
-            angular.forEach($scope.stateTypes, function (state) {
-                $scope.containerStates[state] = false
-            })
-        });
+        $scope.get();
 
         $scope.excludeStates = function (state) {
             // Deselect excluded states based on the selected state
-            $scope.containerStates[state] = true
+            $scope.containerStates[state] = true;
             angular.forEach($scope.stateTypes[state], function (disableType) {
-                $scope.containerStates[disableType] = false
+                $scope.containerStates[disableType] = false;
             })
-        }
+        };
 
         $scope.$watch("containerStates", function (newValue, oldValue) {
             for (let [key, value] of Object.entries(newValue)) {
@@ -198,14 +209,14 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         }, true); // true = deep watch
 
         $scope.saveStates = function () {
-            let states = []
+            let states = [];
             angular.forEach($scope.containerStates, function (value, key) {
                 if (value) {
-                    states.push(key)
+                    states.push(key);
                 }
-            })
-            let params = {"serial": $scope.containerSerial, "states": states}
-            ContainerFactory.setStates(params, $scope.get)
+            });
+            let params = {"serial": $scope.containerSerial, "states": states};
+            ContainerFactory.setStates(params, $scope.get);
             $scope.changed = false;
         }
 
@@ -221,12 +232,12 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 $scope.selectAllTokens(true);
                 $scope.deleteTokens();
             }
-            ContainerFactory.deleteContainer($scope.containerSerial, $scope.returnTo)
-        }
+            ContainerFactory.deleteContainer($scope.containerSerial, $scope.returnTo);
+        };
 
         $scope.setDescription = function (description) {
-            ContainerFactory.setDescription($scope.containerSerial, description, $scope.get)
-        }
+            ContainerFactory.setDescription($scope.containerSerial, description, $scope.get);
+        };
 
         $scope.newUser = {user: "", realm: $scope.defaultRealm};
         $scope.assignUser = function () {
@@ -238,7 +249,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     pin: $scope.newUser.pin
                 }
                 , $scope.get);
-        }
+        };
 
         $scope.unassignUser = function () {
             ContainerFactory.unassignUser(
@@ -249,7 +260,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                     pin: $scope.containerOwner.pin
                 }
                 , $scope.get);
-        }
+        };
 
         $scope.editContainernfo = false;
         $scope.startEditContainerInfo = function () {
@@ -291,9 +302,9 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 $scope.enrollParams = {
                     realmname: $scope.containerOwner.user_realm,
                     username: $scope.containerOwner.user_name,
-                }
+                };
             }
-            $scope.enrollParams.containerSerial = $scope.containerSerial
+            $scope.enrollParams.containerSerial = $scope.containerSerial;
             $state.go("token.enroll", $scope.enrollParams);
             $rootScope.returnTo = "token.containerdetails({containerSerial:$scope.containerSerial})";
         };
@@ -352,7 +363,7 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.cancelTokenAction = function () {
             $scope.tokenAction = '';
             $scope.tokenSelection = {};
-        }
+        };
 
         $scope.removeTokens = function () {
             // Remove the selected tokens
