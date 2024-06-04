@@ -96,3 +96,24 @@ class PIManageRealmTestCase(CliTestCase):
         result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm2"])
         self.assertIn("Realm 'realm2' successfully deleted.", result.output, result)
         delete_resolver("resolver1")
+
+
+class PIManageBaseTestCase(CliTestCase):
+    def test_01_pimanage_help(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["-h"])
+        self.assertIn("Management script for the privacyIDEA application.", result.output, result)
+        self.assertIn("Check out our docs at https://privacyidea.readthedocs.io/ for more details",
+                      result.output, result)
+        self.assertIn("config", result.output, result)
+        self.assertIn("backup", result.output, result)
+        self.assertIn("audit", result.output, result)
+        self.assertIn("admin", result.output, result)
+        self.assertIn("api", result.output, result)
+        self.assertIn("db", result.output, result)
+        self.assertIn("setup", result.output, result)
+        self.assertNotIn("rotate_audit", result.output, result)
+        self.assertNotIn("createdb", result.output, result)
+        self.assertNotIn("create_tables", result.output, result)
+        self.assertNotIn("dropdb", result.output, result)
+        self.assertNotIn("drop_tables", result.output, result)
