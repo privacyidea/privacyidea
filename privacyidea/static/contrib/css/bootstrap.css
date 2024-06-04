@@ -2412,6 +2412,14 @@ th {
 .table-condensed > tfoot > tr > td {
   padding: 5px;
 }
+.table-transparent > thead > tr > th,
+.table-transparent > tbody > tr > th,
+.table-transparent > tfoot > tr > th,
+.table-transparent > thead > tr > td,
+.table-transparent > tbody > tr > td,
+.table-transparent > tfoot > tr > td {
+  padding: 0px 5px 0px 0px;
+}
 .table-bordered {
   border: 1px solid #ddd;
 }
