@@ -62,12 +62,13 @@ def updatetokens(yaml):
     token_list = yaml_safe_load(yaml.read())
     for tok in token_list:
         del (tok["owner"])
-        tok_objects = get_tokens(serial=tok.get("serial"))
+        serial = tok.get("serial")
+        tok_objects = get_tokens(serial=serial)
         if len(tok_objects) == 0:
-            sys.stderr.write("\nCan not find token {0!s}. Not updating.\n".format(tok.get("serial")))
+            sys.stderr.write(f"\nCan not find token {serial}. Not updating.\n")
         else:
-            click.echo("Updating token {0!s}.".format(tok.get("serial")))
+            click.echo(f"Updating token {serial}.")
             try:
                 tok_objects[0].update(tok)
-            except Exception as _e:
-                click.echo("\nFailed to update token {0!s}.".format(tok.get("serial")), err=True)
+            except Exception as e:
+                click.echo(f"\nFailed to update token {serial} ({e}).", err=True)
