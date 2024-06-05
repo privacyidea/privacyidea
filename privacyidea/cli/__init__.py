@@ -19,8 +19,11 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """Utility functions for CLI tools"""
+import click
 from flask.cli import FlaskGroup
+import platform
 from privacyidea.app import create_app
+from privacyidea.lib.utils import get_version_number
 
 
 # Don't show logging information
@@ -35,3 +38,25 @@ class NoPluginsFlaskGroup(FlaskGroup):
     """A FlaskGroup class which does not load commands from plugins"""
     def _load_plugin_commands(self):
         pass
+
+
+def get_version(ctx, param, value):
+    """Show version information"""
+    if not value or ctx.resilient_parsing:
+        return
+
+    import werkzeug
+    from flask import __version__
+
+    message = "Python %(python)s\nFlask %(flask)s\nWerkzeug %(werkzeug)s\nprivacyIDEA %(privacyIDEA)s"
+    click.echo(
+        message
+        % {
+            "python": platform.python_version(),
+            "flask": __version__,
+            "werkzeug": werkzeug.__version__,
+            "privacyIDEA": get_version_number(),
+        },
+        color=ctx.color,
+    )
+    ctx.exit()

@@ -51,12 +51,12 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """CLI Tool for configuring and managing privacyIDEA"""
 import click
+import copy
 from flask.cli import FlaskGroup
-from privacyidea.cli import create_silent_app
+from privacyidea.cli import create_silent_app, get_version
 from privacyidea.lib.utils import get_version_number
 from .admin import admin_cli
 from .audit import audit_cli, rotate_audit as audit_rotate_audit
-from .challenge import challenge_cli
 from .backup import backup_cli
 from .pi_setup import (setup_cli, encrypt_enckey, create_enckey, create_tables,
                        create_pgp_keys, create_audit_keys, drop_tables)
@@ -69,7 +69,16 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 @click.group(cls=FlaskGroup, create_app=create_silent_app, context_settings=CONTEXT_SETTINGS,
+             add_version_option=False,
              epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
+@click.option(
+    "--version",
+    help="Show the version information",
+    expose_value=False,
+    callback=get_version,
+    is_flag=True,
+    is_eager=True,
+)
 def cli():
     """
 \b
@@ -90,30 +99,40 @@ def cli():
     """.format('v{0!s}'.format(get_version_number())))
 
 
-cli.add_command(audit_rotate_audit, "rotate_audit")
-cli.add_command(create_enckey)
-cli.add_command(encrypt_enckey)
-cli.add_command(create_audit_keys)
-cli.add_command(create_tables)
-cli.add_command(create_pgp_keys)
-cli.add_command(create_tables, "createdb")
-cli.add_command(drop_tables)
-cli.add_command(drop_tables, "dropdb")
-cli.add_command(realm_cli)
-cli.add_command(resolver_cli)
-cli.add_command(policy_cli)
-cli.add_command(event_cli)
+deprecated_commands = [
+    (audit_rotate_audit, "rotate_audit", "audit rotate"),
+    (create_enckey, None, "setup create_enckey"),
+    (encrypt_enckey, None, "setup encrypt_enckey"),
+    (create_audit_keys, None, "setup create_audit_keys"),
+    (create_tables, None, "setup create_tables"),
+    (create_pgp_keys, None, "setup create_pgp_keys"),
+    (create_tables, "createdb", "setup create_tables"),
+    (drop_tables, None, "setup drop_tables"),
+    (drop_tables, "dropdb", "setup  drop_tables"),
+    (realm_cli, None, "config realm"),
+    (resolver_cli, None, "config resolver"),
+    (policy_cli, None, "config policy"),
+    (event_cli, None, "config event"),
+    (ca_cli, None, "config ca"),
+    (authcache_cli, None, "config authcache"),
+    (hsm_cli, None, "config hsm")
+]
+
+for cmd, new_name, epilog in deprecated_commands:
+    new_cmd = copy.copy(cmd)
+    new_cmd.deprecated = True
+    new_cmd.hidden = True
+    if new_name:
+        new_cmd.name = new_name
+    new_cmd.epilog = f"This command is deprecated. Please use 'pi-manage {epilog}' instead."
+    cli.add_command(new_cmd)
 
 cli.add_command(admin_cli)
 cli.add_command(audit_cli)
 cli.add_command(setup_cli)
 cli.add_command(config_cli)
-cli.add_command(challenge_cli)
 cli.add_command(backup_cli)
 cli.add_command(api_cli)
-cli.add_command(ca_cli)
-cli.add_command(authcache_cli)
-cli.add_command(hsm_cli)
 cli.add_command(token_cli)
 
 if __name__ == '__main__':

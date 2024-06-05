@@ -16,6 +16,8 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
+"""CLI commands for configuring the privacyIDEA server"""
+import copy
 import sys
 import ast
 from functools import partial
@@ -40,8 +42,11 @@ from privacyidea.lib.realm import (get_realms, delete_realm, set_default_realm,
                                    get_default_realm)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list)
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
+from privacyidea.cli.pimanage.challenge import challenge_cli
 
-config_cli = AppGroup("config", help="privacyIDEA server configuration")
+config_cli = AppGroup("config", help="Manage the privacyIDEA server configuration")
+
+config_cli.add_command(challenge_cli)
 
 ca_cli = AppGroup("ca", help="Manage Certificate Authorities")
 
@@ -626,6 +631,14 @@ def config_export(output, fmt, types, name):
         res = exp_fmt_dict.get(fmt.lower())(out) + '\n'
         output.write(res)
 
+
+# Create the "exporter" command as a hidden and deprecated alias for "export"
+exporter_cmd = copy.copy(config_cli.get_command(None, "export"))
+exporter_cmd.hidden = True
+exporter_cmd.deprecated = True
+exporter_cmd.name = "exporter"
+exporter_cmd.epilog = "This command is deprecated. Please use 'pi-manage config export' instead."
+config_cli.add_command(exporter_cmd)
 
 authcache_cli = AppGroup("authcache", help="Manage authentication cache")
 

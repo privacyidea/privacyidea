@@ -98,6 +98,47 @@ class PIManageRealmTestCase(CliTestCase):
         delete_resolver("resolver1")
 
 
+class PIManageBaseTestCase(CliTestCase):
+    def test_01_pimanage_help(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["-h"])
+        self.assertIn("Management script for the privacyIDEA application.", result.output, result)
+        self.assertIn("Check out our docs at https://privacyidea.readthedocs.io/ for more details",
+                      result.output, result)
+        self.assertIn("config", result.output, result)
+        self.assertIn("backup", result.output, result)
+        self.assertIn("audit", result.output, result)
+        self.assertIn("admin", result.output, result)
+        self.assertIn("api", result.output, result)
+        self.assertIn("db", result.output, result)
+        self.assertIn("setup", result.output, result)
+        self.assertNotIn("rotate_audit", result.output, result)
+        self.assertNotIn("createdb", result.output, result)
+        self.assertNotIn("create_tables", result.output, result)
+        self.assertNotIn("dropdb", result.output, result)
+        self.assertNotIn("drop_tables", result.output, result)
+        self.assertNotIn("realm", result.output, result)
+        self.assertNotIn("resolver", result.output, result)
+
+
+class PIManageConfigTestCase(CliTestCase):
+    def test_01_pimanage_config_help(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "-h"])
+        self.assertIn("Manage the privacyIDEA server configuration", result.output, result)
+        self.assertIn("ca", result.output, result)
+        self.assertIn("realm", result.output, result)
+        self.assertIn("resolver", result.output, result)
+        self.assertIn("event", result.output, result)
+        self.assertIn("policy", result.output, result)
+        self.assertIn("authcache", result.output, result)
+        self.assertIn("hsm", result.output, result)
+        self.assertIn("challenge", result.output, result)
+        self.assertIn("export", result.output, result)
+        self.assertIn("import", result.output, result)
+        self.assertNotIn("exporter", result.output, result)
+
+
 class PIManageTokenTestCase(CliTestCase):
     def test_01_pimanage_token_help(self):
         runner = self.app.test_cli_runner()
