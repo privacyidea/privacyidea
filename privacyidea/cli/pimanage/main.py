@@ -63,6 +63,7 @@ from .pi_setup import (setup_cli, encrypt_enckey, create_enckey, create_tables,
 from .pi_config import (config_cli, ca_cli, realm_cli, resolver_cli, event_cli,
                         policy_cli, authcache_cli, hsm_cli)
 from .api import api_cli
+from .token import token_cli
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -113,6 +114,7 @@ cli.add_command(api_cli)
 cli.add_command(ca_cli)
 cli.add_command(authcache_cli)
 cli.add_command(hsm_cli)
+cli.add_command(token_cli)
 
 if __name__ == '__main__':
     cli()

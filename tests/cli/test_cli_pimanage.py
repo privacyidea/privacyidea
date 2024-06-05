@@ -96,3 +96,11 @@ class PIManageRealmTestCase(CliTestCase):
         result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm2"])
         self.assertIn("Realm 'realm2' successfully deleted.", result.output, result)
         delete_resolver("resolver1")
+
+
+class PIManageTokenTestCase(CliTestCase):
+    def test_01_pimanage_token_help(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["token"])
+        self.assertIn("Commands to manage token in privacyIDEA", result.output, result)
+        self.assertIn("Import tokens from a file", result.output, result)

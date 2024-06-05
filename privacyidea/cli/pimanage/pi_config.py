@@ -71,7 +71,7 @@ def ca_create(ctx, name, catype):
     Create a new CA connector identified by NAME.
 
     If the type "local" is given, also the directory
-    structure, the openssl.cnf and the key pair will be created.
+    structure, the openssl.cnf and the CA key pair will be created.
     """
     ca = get_caconnector_object(name)
     if ca:
@@ -80,6 +80,9 @@ def ca_create(ctx, name, catype):
         ctx.exit(1)
     click.echo(f"Creating CA connector of type {catype}.")
     ca_class = get_caconnector_class(catype)
+    if not ca_class:
+        click.secho(f"Unknown CA type {catype}.", fg="red")
+        ctx.exit(1)
     ca_params = ca_class.create_ca(name)
     r = save_caconnector(ca_params)
     if r:
@@ -171,7 +174,7 @@ def realm_create(name, resolvers):
 @click.argument("realm", type=str)
 def realm_delete(realm):
     """
-    Delete the given realm
+    Delete the given REALM
     """
     try:
         delete_realm(realm)
@@ -185,7 +188,7 @@ def realm_delete(realm):
 @click.argument("realm", type=str)
 def realm_set_default(realm):
     """
-    Set the given realm as the default
+    Set the given REALM as the default realm
     """
     try:
         set_default_realm(realm)
@@ -236,8 +239,8 @@ def resolver_list(verbose):
 @resolver_cli.command("create")
 @click.argument("name", type=str)
 @click.argument("rtype", type=str)
-@click.argument("filename", type=click.File('r'))
-def resolver_create(name, rtype, filename):
+@click.argument("conf_file", type=click.File())
+def resolver_create(name, rtype, conf_file):
     """
     Create a new resolver with the specified name and type.
 
@@ -248,14 +251,14 @@ def resolver_create(name, rtype, filename):
     NAME:     The name of the resolver
     RTYPE:    The type of the resolver (can be ldapresolver, sqlresolver,
               httpresolver, passwdresolver or scimresolver)
-    FILENAME: The name of the config file with the resolver parameters.
+    CONF_FILE: The name of the config file with the resolver parameters.
 
     \b
     Note: it might be more convenient to use the
         pi-manage config import
     command since it simplifies the import of the server configuration.
     """
-    contents = filename.read()
+    contents = conf_file.read()
 
     params = ast.literal_eval(contents)
     params["resolver"] = name
@@ -270,7 +273,8 @@ def resolver_create_internal(ctx, name):
     """
     This creates a new internal, editable sqlresolver. The users will be
     stored in the token database in a table called 'users_<NAME>'. You can then
-    add this resolver to a new realm using the command 'pi-manage realm'.
+    add this resolver to a new realm using the command
+    'pi-manage config realm add <realm-name> <NAME>'.
     """
     sqluri = current_app.config.get("SQLALCHEMY_DATABASE_URI")
     sqlelements = sqluri.split("/")
@@ -362,7 +366,7 @@ def event_list():
 @click.argument("eid", type=int)
 def event_enable(eid):
     """
-    Enable event by ID
+    Enable event with id EID
     """
     try:
         r = enable_event(eid)
@@ -376,7 +380,7 @@ def event_enable(eid):
 @click.argument("eid", type=int)
 def event_disable(eid):
     """
-    Disable event by ID
+    Disable event with id EID
     """
     try:
         r = enable_event(eid, enable=False)
@@ -390,7 +394,7 @@ def event_disable(eid):
 @click.argument("eid", type=int)
 def event_delete(eid):
     """
-    Delete event by ID
+    Delete event with id EID
     """
     try:
         r = delete_event(eid)
@@ -423,7 +427,7 @@ def policy_list():
 @click.argument("name", type=str)
 def policy_enable(name):
     """
-    enable a policy by name.
+    enable the policy NAME.
     """
     try:
         enable_policy(name)
@@ -437,7 +441,7 @@ def policy_enable(name):
 @click.argument("name", type=str)
 def policy_disable(name):
     """
-    disable a policy by name
+    disable the policy NAME
     """
     try:
         enable_policy(name, enable=False)
@@ -451,7 +455,7 @@ def policy_disable(name):
 @click.argument("name", type=str)
 def policy_delete(name):
     """
-    delete a policy by name
+    delete the policy NAME
     """
     try:
         delete_policy(name)
@@ -465,24 +469,26 @@ def policy_delete(name):
 @click.argument("name")
 @click.argument("scope")
 @click.argument("action")
-@click.argument("filename")
-def policy_create(name, scope, action, filename=None):
+@click.option("-f", "--file", type=click.File(),
+              help="The file to import the policy configuration from.")
+def policy_create(name, scope, action, file):
     """
-    create a new policy.
-    'FILENAME' must contain a dictionary and its content
-    takes precedence over CLI parameters.
-    I.e. if you are specifying a FILENAME,
-    the parameters name, scope and action need to be specified, but are ignored.
+    Create a new policy.
 
-    Note: This will only create one policy per file.
+    The file given with the option '-f' must contain a Python dictionary and its
+    content takes precedence over the other CLI arguments.
+    I.e. if you are specifying a configuration file with '-f',
+    the arguments name, scope and action need to be specified, but are ignored.
+
+    \b
+    Note: it might be more convenient to use the
+        pi-manage config import
+    command since it simplifies the import of the server configuration.
     """
-    if filename:
+    if file:
         try:
-            with open(filename, 'r') as f:
-                contents = f.read()
-
+            contents = file.read()
             params = ast.literal_eval(contents)
-
             if params.get("name") and params.get("name") != name:
                 print("Found name '{0!s}' in file, will use that instead of "
                       "'{1!s}'.".format(params.get("name"), name))
@@ -541,7 +547,7 @@ imp_fmt_dict = {
 @config_cli.command("import")
 @click.option('-i', '--input', "infile", type=click.File('r'),
               default=sys.stdin,
-              help='The filename to import the data from. Try to read '
+              help='The filename to import the data from. Read '
                    'from <stdin> if this argument is not given.')
 @click.option('-t', '--types', multiple=True, default=['all'], show_default=True,
               type=click.Choice(['all'] + list(IMPORT_FUNCTIONS.keys()), case_sensitive=False),
@@ -549,7 +555,7 @@ imp_fmt_dict = {
                    'available data if a corresponding importer type exists. '
                    'Currently registered importer types are: '
                    '{0!s}'.format(', '.join(['all'] + list(IMPORT_FUNCTIONS.keys()))))
-@click.option('-n', '--name',
+@click.option('-n', '--name', metavar="NAME",
               help='The name of the configuration object to import (default: import all)')
 @click.pass_context
 def config_import(ctx, infile, types, name):
@@ -604,7 +610,7 @@ exp_fmt_dict = {
                    'registered exporter types are: '
                    '{0!s}'.format(', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))),
               )
-@click.option('-n', '--name',
+@click.option('-n', '--name', metavar="NAME",
               help='The name of the configuration object to export (default: export all)')
 def config_export(output, fmt, types, name):
     """

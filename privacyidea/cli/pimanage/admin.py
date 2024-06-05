@@ -64,6 +64,6 @@ def delete_admin(username):
 @click.password_option()
 def change_admin(username, email, password):
     """
-    Change the email address or the password of an existing administrator.
+    Change the email address or the password of an existing administrator USERNAME.
     """
     create_db_admin(username, email, password)
