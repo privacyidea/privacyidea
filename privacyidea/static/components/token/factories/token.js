@@ -374,6 +374,15 @@ angular.module("TokenModule", ["privacyideaAuth"])
                     }, function (error) {
                         AuthFactory.authError(error.data)
                     });
+                },
+                getTokenTypes: function(callback) {
+                    $http.get(tokenUrl + "/types", {
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function(response) {
+                        callback(response.data)
+                    }, function(error) {
+                        AuthFactory.authError(error.data)
+                    })
                 }
             };
         }]);

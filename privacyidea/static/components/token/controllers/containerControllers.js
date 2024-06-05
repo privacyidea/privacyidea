@@ -1,16 +1,60 @@
 myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'ContainerFactory', '$stateParams',
-    'AuthFactory', 'ConfigFactory',
-    function createContainerController($scope, $http, $q, ContainerFactory, $stateParams, AuthFactory, ConfigFactory) {
+    'AuthFactory', 'ConfigFactory', 'TokenFactory',
+    function createContainerController($scope, $http, $q, ContainerFactory, $stateParams, AuthFactory, ConfigFactory,
+                                       TokenFactory) {
         $scope.formData = {
             containerTypes: {},
         }
         $scope.form = {
             containerType: "generic",
-            description: ""
+            description: "",
+            token_types: ""
         }
+
+        $scope.$watch('form', function (newVal, oldVal) {
+            if (newVal) {
+                $scope.form.token_types = $scope.tokenTypesToDisplayString(
+                    allContainerTypes[$scope.form.containerType].token_types);
+            }
+        }, true);
+
         ContainerFactory.getContainerTypes(function (data) {
-            $scope.formData.containerTypes = data.result.value
+            $scope.formData.containerTypes = data.result.value;
         })
+
+        // Get the supported token types for each container type once
+        let allContainerTypes = {};
+        ContainerFactory.getTokenTypes(function (data) {
+            allContainerTypes = data.result.value;
+            $scope.getTokenTypes();
+        });
+
+        // Read the tokentypes from the server
+        $scope.allTokenTypes = {};
+        $scope.getTokenTypes = function () {
+            TokenFactory.getTokenTypes(function (data) {
+                $scope.allTokenTypes = data.result.value;
+                $scope.form.token_types = $scope.tokenTypesToDisplayString(
+                    allContainerTypes[$scope.form.containerType].token_types);
+            });
+        };
+
+        // converts the supported token types to a display string
+        $scope.tokenTypesToDisplayString = function (containerTokenTypes) {
+            let displayString = "";
+            if (containerTokenTypes.length == Object.keys($scope.allTokenTypes).length) {
+                // all tokens are supported
+                displayString = "All";
+            } else {
+                // create comma separated list out of token titles
+                angular.forEach(containerTokenTypes, function (type) {
+                    displayString += $scope.allTokenTypes[type] + ", ";
+                });
+                displayString = displayString.slice(0, -2);
+            }
+
+            return displayString;
+        };
 
         // User+Realm: Get the realms and fill the realm dropdown box
         if (AuthFactory.getRole() === 'admin') {

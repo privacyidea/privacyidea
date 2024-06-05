@@ -8,6 +8,11 @@
                 ng-options="type as attr.description for (type, attr) in formData.containerTypes">
         </select>
         </div>
+        <div class="form-group" translate>
+            Supported Token Types: <br>
+            {{ form.token_types }}
+            <br>
+        </div>
 
         <!-- Description -->
         <div class="form-group" ng-hide="loggedInUser.role == 'user' && !checkRight('setdescription')">

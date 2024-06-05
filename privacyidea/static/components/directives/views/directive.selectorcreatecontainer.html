@@ -18,6 +18,11 @@
                 ng-model="newContainer.type"
                 ng-options="type as attr.description for (type, attr) in newContainer.types">
         </select>
+        <div class="form-group" translate>
+            Supported Token Types: <br>
+            {{ newContainer.token_types }}
+            <br>
+        </div>
         <!-- Description -->
         <label for="description" translate>Description</label>
         <input type="text" class="form-control" id="description"
@@ -28,7 +33,8 @@
         <!-- User Assign (user provided from parent scope if available) -->
         <div ng-show="enableUserAssignment">
             <input type="checkbox" ng-model="assignUserToContainer" id="checkboxAssignContainerToUser">
-            <label for="checkboxAssignContainerToUser" translate>Assign the new container to {{userName}} in realm {{userRealm}}</label>
+            <label for="checkboxAssignContainerToUser" translate>Assign the new container to {{ userName }} in
+                realm {{ userRealm }}</label>
         </div>
         <!-- Button -->
         <div class="text-center">
