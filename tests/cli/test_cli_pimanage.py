@@ -137,3 +137,11 @@ class PIManageConfigTestCase(CliTestCase):
         self.assertIn("export", result.output, result)
         self.assertIn("import", result.output, result)
         self.assertNotIn("exporter", result.output, result)
+
+
+class PIManageTokenTestCase(CliTestCase):
+    def test_01_pimanage_token_help(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["token"])
+        self.assertIn("Commands to manage token in privacyIDEA", result.output, result)
+        self.assertIn("Import tokens from a file", result.output, result)
