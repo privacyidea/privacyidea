@@ -137,6 +137,23 @@ class TokenContainerClass:
                 TokenContainerStates(container_id=self._db_container.id, state=state).save()
         self.update_last_updated()
 
+    def add_states(self, value: List[str]):
+        # Add new states
+        state_types = self.get_state_types()
+        for state in value:
+            if state not in state_types.keys():
+                raise ParameterError(f"State {state} not supported. Supported states are {state_types}.")
+            else:
+                # Remove states that are excluded from the new state
+                for excluded_state in state_types[state]:
+                    TokenContainerStates.query.filter_by(container_id=self._db_container.id,
+                                                         state=excluded_state).delete()
+                    log.debug(
+                        f"Removed state {excluded_state} from container {self.serial} "
+                        f"because it is excluded by the new state {state}.")
+                TokenContainerStates(container_id=self._db_container.id, state=state).save()
+        self.update_last_updated()
+
     @classmethod
     def get_state_types(cls):
         state_types_exclusions = {

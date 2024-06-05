@@ -34,7 +34,8 @@ The event handler module is bound to an event together with
 
 from privacyidea.lib import _
 from privacyidea.lib.config import get_token_types
-from privacyidea.lib.container import find_container_by_serial, find_container_for_token, get_all_containers
+from privacyidea.lib.container import find_container_by_serial, find_container_for_token, get_all_containers, \
+    get_container_classes
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
@@ -63,6 +64,7 @@ class CONDITION(object):
     TOKEN_IS_ORPHANED = "token_is_orphaned"  # nosec B105 # condition name
     TOKEN_VALIDITY_PERIOD = "token_validity_period"  # nosec B105 # condition name
     USER_TOKEN_NUMBER = "user_token_number"  # nosec B105 # condition name
+    USER_CONTAINER_NUMBER = "user_container_number"
     OTP_COUNTER = "otp_counter"
     TOKENTYPE = "tokentype"
     LAST_AUTH = "last_auth"
@@ -83,6 +85,9 @@ class CONDITION(object):
     CLIENT_IP = "client_ip"
     ROLLOUT_STATE = "rollout_state"
     CONTAINER_STATE = "container_state"
+    CONTAINER_SINGLE_STATE = "container_single_state"
+    CONTAINER_HAS_OWNER = "container_has_owner"
+    CONTAINER_TYPE = "container_type"
 
 
 class GROUP(object):
@@ -243,6 +248,12 @@ class BaseEventHandler(object):
                           "of tokens assigned."),
                 "group": GROUP.USER
             },
+            CONDITION.USER_CONTAINER_NUMBER: {
+                "type": "str",
+                "desc": _("Action is triggered, if the user has this number "
+                          "of containers assigned."),
+                "group": GROUP.USER
+            },
             CONDITION.OTP_COUNTER: {
                 "type": "str",
                 "desc": _("Action is triggered, if the counter of the token "
@@ -323,8 +334,26 @@ class BaseEventHandler(object):
             },
             CONDITION.CONTAINER_STATE: {
                 "type": "str",
-                "desc": _("The container state has a certain value."),
+                "desc": _("The container is in a specific state, but can additionally be in other states."),
                 "value": container_states,
+                "group": GROUP.CONTAINER
+            },
+            CONDITION.CONTAINER_SINGLE_STATE: {
+                "type": "str",
+                "desc": _("The container is only in the specified state."),
+                "value": container_states,
+                "group": GROUP.CONTAINER
+            },
+            CONDITION.CONTAINER_HAS_OWNER: {
+                "type": "str",
+                "desc": _("The container has a user assigned."),
+                "value": ("True", "False"),
+                "group": GROUP.CONTAINER
+            },
+            CONDITION.CONTAINER_TYPE: {
+                "type": "str",
+                 "desc": _("The container is of a certain type."),
+                 "value": list(get_container_classes().keys()),
                 "group": GROUP.CONTAINER
             }
         }
@@ -440,15 +469,15 @@ class BaseEventHandler(object):
         :return: The container serial or None if no serial could be found
         """
         serial = request.all_data.get("serial")
-        container_serial = cls._get_container_serial_from_token(serial)
+        container_serial = cls._get_container_serial_from_token_serial(serial)
 
         if not container_serial:
             serial = content.get("result", {}).get('serial', {})
-            container_serial = cls._get_container_serial_from_token(serial)
+            container_serial = cls._get_container_serial_from_token_serial(serial)
 
         if not container_serial:
             serial = g.audit_object.audit_data.get("serial")
-            container_serial = cls._get_container_serial_from_token(serial)
+            container_serial = cls._get_container_serial_from_token_serial(serial)
 
         return container_serial
 
@@ -471,7 +500,7 @@ class BaseEventHandler(object):
         return container_exists
 
     @classmethod
-    def _get_container_serial_from_token(cls, token_serial):
+    def _get_container_serial_from_token_serial(cls, token_serial):
         """
         Trys to get the container serial from a token.
 
@@ -631,6 +660,13 @@ class BaseEventHandler(object):
                     CONDITION.USER_TOKEN_NUMBER)):
                 return False
 
+        if CONDITION.USER_CONTAINER_NUMBER in conditions and user:
+            container_list = get_all_containers(user=user, page=1, pagesize=1)
+            num_containers = container_list['count']
+            if num_containers != int(conditions.get(
+                    CONDITION.USER_CONTAINER_NUMBER)):
+                return False
+
         if CONDITION.DETAIL_ERROR_MESSAGE in conditions:
             message = content.get("detail", {}).get("error", {}).get("message", "")
             search_exp = conditions.get(CONDITION.DETAIL_ERROR_MESSAGE)
@@ -752,6 +788,35 @@ class BaseEventHandler(object):
                 cond = conditions.get(CONDITION.CONTAINER_STATE)
                 container_states = [token_container_states.state for token_container_states in container.get_states()]
                 if cond not in container_states:
+                    log.debug(f"Condition container_state {cond} for container {container.serial} "
+                              "not fulfilled.")
+                    return False
+
+            if CONDITION.CONTAINER_SINGLE_STATE in conditions:
+                cond = conditions.get(CONDITION.CONTAINER_STATE)
+                container_states = [token_container_states.state for token_container_states in container.get_states()]
+                if cond not in container_states or len(container_states) > 1:
+                    log.debug(f"Condition container_single_state {cond} for container {container.serial} "
+                              "not fulfilled.")
+                    return False
+
+            if CONDITION.CONTAINER_HAS_OWNER in conditions:
+                has_container_owner = len(container.get_users()) > 0
+                cond = conditions.get(CONDITION.CONTAINER_HAS_OWNER)
+                if has_container_owner and cond in ["True", True]:
+                    res = True
+                elif not has_container_owner and cond in ["False", False]:
+                    res = True
+                else:
+                    log.debug(f"Condition container_has_owner for container {container.serial} "
+                              "not fulfilled.")
+                    return False
+
+            if CONDITION.CONTAINER_TYPE in conditions:
+                cond = conditions.get(CONDITION.CONTAINER_TYPE)
+                if container.type != cond:
+                    log.debug(f"Condition container_type {cond} for container {container.serial} "
+                              "not fulfilled.")
                     return False
 
         return True

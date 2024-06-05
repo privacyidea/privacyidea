@@ -2,7 +2,8 @@ __doc__ = """This is the event handler module for container actions.
 """
 
 from privacyidea.lib.container import get_container_classes, delete_container_by_serial, init_container, \
-    find_container_by_serial, find_container_for_token, remove_tokens_from_container, get_all_containers
+    find_container_by_serial, find_container_for_token, remove_tokens_from_container, get_all_containers, \
+    add_tokens_to_container
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
@@ -20,7 +21,9 @@ class ACTION_TYPE(object):
     INIT = "create"
     DELETE = "delete"
     UNASSIGN = "unassign"
+    ASSIGN = "assign"
     SET_STATES = "set states"
+    ADD_STATES = "add states"
     SET_DESCRIPTION = "set description"
     SET_CONTAINER_INFO = "set container info"
     ADD_CONTAINER_INFO = "add container info"
@@ -78,10 +81,17 @@ class ContainerEventHandler(BaseEventHandler):
                       "required": False,
                       "description": _("Assign container to user in request or to token/container owner")
                       },
+                 "token":
+                     {"type": "bool",
+                      "required": False,
+                      "description": _("Add token from request to container")
+                      }
                  },
             ACTION_TYPE.DELETE: {},
             ACTION_TYPE.UNASSIGN: {},
+            ACTION_TYPE.ASSIGN: {},
             ACTION_TYPE.SET_STATES: action_states,
+            ACTION_TYPE.ADD_STATES: action_states,
             ACTION_TYPE.SET_DESCRIPTION:
                 {"description":
                      {"type": "str",
@@ -144,9 +154,24 @@ class ContainerEventHandler(BaseEventHandler):
             elif action.lower() == ACTION_TYPE.UNASSIGN:
                 users = self._get_users_from_request(request)
                 container = find_container_by_serial(container_serial)
+                res = False
                 for user in users:
                     if not user.is_empty():
                         container.remove_user(user)
+                        res = True
+                if not res:
+                    log.debug(f"No user found to unassign from container {container_serial}")
+
+            elif action.lower() == ACTION_TYPE.ASSIGN:
+                users = self._get_users_from_request(request)
+                container = find_container_by_serial(container_serial)
+                res = False
+                for user in users:
+                    if not user.is_empty():
+                        container.add_user(user)
+                        res = True
+                if not res:
+                    log.debug(f"No user found to assign to container {container_serial}")
 
             elif action.lower() == ACTION_TYPE.SET_STATES:
                 container_states = list(TokenContainerClass.get_state_types().keys())
@@ -155,7 +180,22 @@ class ContainerEventHandler(BaseEventHandler):
                     if handler_options.get(state):
                         selected_states.append(state)
                 container = find_container_by_serial(container_serial)
-                container.set_states(selected_states)
+                if len(selected_states) > 0:
+                    container.set_states(selected_states)
+                else:
+                    log.debug(f"No states found to set in container {container_serial}")
+
+            elif action.lower() == ACTION_TYPE.ADD_STATES:
+                container_states = list(TokenContainerClass.get_state_types().keys())
+                selected_states = []
+                for state in container_states:
+                    if handler_options.get(state):
+                        selected_states.append(state)
+                container = find_container_by_serial(container_serial)
+                if len(selected_states) > 0:
+                    container.add_states(selected_states)
+                else:
+                    log.debug(f"No states found to add to container {container_serial}")
 
             elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
                 new_description = handler_options.get("description") or ""
@@ -166,7 +206,10 @@ class ContainerEventHandler(BaseEventHandler):
                 container = find_container_by_serial(container_serial)
                 tokens = container.get_tokens()
                 token_serials = [t.get_serial() for t in tokens]
-                remove_tokens_from_container(container_serial, token_serials)
+                if len(token_serials) > 0:
+                    remove_tokens_from_container(container_serial, token_serials)
+                else:
+                    log.debug(f"No tokens found to remove from container {container_serial}")
 
             elif action.lower() == ACTION_TYPE.SET_CONTAINER_INFO:
                 key = handler_options.get("key")
@@ -195,17 +238,30 @@ class ContainerEventHandler(BaseEventHandler):
                 "type": handler_options.get("type"),
                 "description": handler_options.get("description"),
             }
+            users = []
             if handler_options.get("user"):
                 users = self._get_users_from_request(request)
 
                 if len(users) > 0 and not users[0].is_empty():
                     params["user"] = users[0].login
                     params["realm"] = users[0].realm
+                else:
+                    log.debug(f"No user found to assign to container {container_serial}")
+
             new_serial = init_container(params)
             # assign remaining users to container
             for user in users[1:]:
                 container = find_container_by_serial(new_serial)
                 if container and not user.is_empty():
                     container.add_user(user)
+
+            if handler_options.get("token"):
+                token_serial = request.all_data.get("serial") or \
+                         content.get("detail", {}).get("serial") or \
+                         g.audit_object.audit_data.get("serial")
+                if token_serial:
+                    add_tokens_to_container(new_serial, [token_serial])
+                else:
+                    log.debug(f"No token found to add to container {new_serial}")
 
         return ret
