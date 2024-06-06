@@ -515,7 +515,7 @@
                     {{ token.username }}
                 </a></td>
                 <td>
-                    <button ng-hide="token.locked"
+                    <button ng-hide="token.locked || !checkRight('unassign')"
                             id="unassignAdminButton"
                             ng-click="unassign()"
                             class="btn btn-warning">
