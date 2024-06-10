@@ -65,7 +65,7 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.policy import SCOPE, ACTION, GROUP, Match
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenclass import CLIENTMODE
-from privacyidea.lib import _, _l
+from privacyidea.lib import _, lazy_gettext
 import traceback
 import logging
 
@@ -95,13 +95,13 @@ class HotpTokenClass(TokenClass):
     # If the token is enrollable via multichallenge
     is_multichallenge_enrollable = True
 
-    desc_hash_func = _l('Specify the hashing function to be used. '
+    desc_hash_func = lazy_gettext('Specify the hashing function to be used. '
                         'Can be SHA1, SHA256 or SHA512.')
-    desc_otp_len = _l('Specify the OTP length to be used. Can be 6 or 8 digits.')
-    desc_key_gen = _l("Force the key to be generated on the server.")
-    desc_two_step_user = _l('Specify whether users are allowed or forced to use '
+    desc_otp_len = lazy_gettext('Specify the OTP length to be used. Can be 6 or 8 digits.')
+    desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
+    desc_two_step_user = lazy_gettext('Specify whether users are allowed or forced to use '
                             'two-step enrollment.')
-    desc_two_step_admin = _l('Specify whether admins are allowed or forced to '
+    desc_two_step_admin = lazy_gettext('Specify whether admins are allowed or forced to '
                              'use two-step enrollment.')
 
     @staticmethod

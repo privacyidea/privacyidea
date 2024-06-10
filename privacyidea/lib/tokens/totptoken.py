@@ -43,7 +43,7 @@ from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.policy import ACTION, SCOPE, GROUP, Match
 from privacyidea.lib.utils import determine_logged_in_userparams
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 
 optional = True
 required = False
@@ -57,7 +57,7 @@ class TotpTokenClass(HotpTokenClass):
     # but the last used OTP value, so we need to set this to 0.
     previous_otp_offset = 0
 
-    desc_timestep = _('Specify the time step of the time-based OTP token.')
+    desc_timestep = lazy_gettext('Specify the time step of the time-based OTP token.')
 
     @log_with(log)
     def __init__(self, db_token):

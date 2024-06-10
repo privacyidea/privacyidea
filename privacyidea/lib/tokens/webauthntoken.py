@@ -40,7 +40,7 @@ from privacyidea.lib.tokens.webauthn import (COSE_ALGORITHM, webauthn_b64_encode
 from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.log import log_with
 import logging
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.policy import SCOPE, GROUP, ACTION
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode, is_true, convert_imagefile_to_dataimage
@@ -465,8 +465,8 @@ DEFAULT_AUTHENTICATOR_ATTACHMENT = 'either'
 DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = ['ecdsa', 'rsassa-pss']
 DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL = 'untrusted'
 DEFAULT_AUTHENTICATOR_ATTESTATION_FORM = 'direct'
-DEFAULT_CHALLENGE_TEXT_AUTH = _('Please confirm with your WebAuthn token ({0!s})')
-DEFAULT_CHALLENGE_TEXT_ENROLL = _('Please confirm with your WebAuthn token')
+DEFAULT_CHALLENGE_TEXT_AUTH = lazy_gettext('Please confirm with your WebAuthn token ({0!s})')
+DEFAULT_CHALLENGE_TEXT_ENROLL = lazy_gettext('Please confirm with your WebAuthn token')
 
 PUBLIC_KEY_CREDENTIAL_ALGORITHMS = {
     'ecdsa': COSE_ALGORITHM.ES256,

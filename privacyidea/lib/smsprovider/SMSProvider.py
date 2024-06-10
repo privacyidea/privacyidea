@@ -36,7 +36,7 @@ from privacyidea.lib.error import ConfigAdminError
 from privacyidea.models import SMSGateway, SMSGatewayOption
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
 from privacyidea.lib.utils.export import (register_import, register_export)
-from privacyidea.lib import _, _l
+from privacyidea.lib import _, lazy_gettext
 import re
 import logging
 log = logging.getLogger(__name__)
@@ -71,7 +71,7 @@ class SMSError(Exception):
 class ISMSProvider(object):
     """ the SMS Provider Interface - BaseClass """
 
-    regexp_description = _l("Regular expression to modify the phone number to make it compatible with provider. "
+    regexp_description = lazy_gettext("Regular expression to modify the phone number to make it compatible with provider. "
                             "For example to remove pluses and slashes enter something like '/[\\+/]//'.")
 
     def __init__(self, db_smsprovider_object=None, smsgateway=None):

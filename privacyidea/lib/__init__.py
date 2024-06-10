@@ -17,6 +17,6 @@ work with user.py
 """
 
 from privacyidea.lib.framework import _
-from privacyidea.lib.framework import _l
+from privacyidea.lib.framework import lazy_gettext
 
-__all__ = ['_', '_l']
+__all__ = ['_', 'lazy_gettext']

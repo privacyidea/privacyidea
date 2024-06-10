@@ -63,7 +63,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      get_smsgateway)
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE, HotpTokenClass
 from json import loads
-from privacyidea.lib import _
+from privacyidea.lib import _, lazy_gettext
 
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
 from privacyidea.models import Challenge
@@ -352,7 +352,7 @@ class SmsTokenClass(HotpTokenClass):
                 db_challenge.save()
                 transactionid = transactionid or db_challenge.transaction_id
             except Exception as e:
-                info = _("The PIN was correct, but the "
+                info = lazy_gettext("The PIN was correct, but the "
                          "SMS could not be sent!")
                 log.warning(info + " ({0!r})".format(e))
                 log.debug("{0!s}".format(traceback.format_exc()))
