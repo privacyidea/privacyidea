@@ -213,8 +213,7 @@ def set_realm(realm, resolvers=None):
     db_realm = Realm.query.filter_by(name=realm).first()
     if not db_realm:
         # create a new database entry for realm
-        db_realm = Realm(realm)
-        db_realm.save()
+        db_realm = Realm(realm).save()
         realm_created = True
 
     if not realm_created:

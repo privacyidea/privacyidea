@@ -1220,9 +1220,9 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
 
         elif node_name:
             # We need to get the last seen entry with the corresponding node name
-            self.node_uuid = db.session.scalar(db.select(NodeName).filter(NodeName.name == node_name)\
-                .order_by(desc(NodeName.lastseen))\
-                .first()).id
+            self.node_uuid = db.session.scalar(db.select(NodeName).filter(NodeName.name == node_name)
+                                               .order_by(desc(NodeName.lastseen))
+                                               .first()).id
 
 
 class TokenOwner(MethodsMixin, db.Model):
