@@ -200,9 +200,9 @@ class TokenContainerClass:
         :param key: key to delete, if None all keys are deleted
         """
         if key:
-            container_infos = TokenContainerInfo.query.filter_by(container_id=self.id, Key=key)
+            container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id, Key=key)
         else:
-            container_infos = TokenContainerInfo.query.filter_by(container_id=self.id)
+            container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id)
         for ci in container_infos:
             ci.delete()
 
