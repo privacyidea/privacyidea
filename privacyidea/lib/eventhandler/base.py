@@ -398,15 +398,16 @@ class BaseEventHandler(object):
     @classmethod
     def _get_container_owners(cls, request):
         users = []
+        user = User(login='', realm='')
         if hasattr(request, "User"):
             user = request.User
             users.append(user)
-            serial = request.all_data.get("container_serial")
-            if user.is_empty() and serial:
-                # maybe the user is empty, but a serial was passed.
-                # Then we determine the user by the serial
-                container = find_container_by_serial(serial)
-                users = container.get_users()
+        serial = request.all_data.get("container_serial")
+        if user.is_empty() and serial:
+            # maybe the user is empty, but a serial was passed.
+            # Then we determine the user by the serial
+            container = find_container_by_serial(serial)
+            users = container.get_users()
 
         return users
 
@@ -793,7 +794,7 @@ class BaseEventHandler(object):
                     return False
 
             if CONDITION.CONTAINER_SINGLE_STATE in conditions:
-                cond = conditions.get(CONDITION.CONTAINER_STATE)
+                cond = conditions.get(CONDITION.CONTAINER_SINGLE_STATE)
                 container_states = [token_container_states.state for token_container_states in container.get_states()]
                 if cond not in container_states or len(container_states) > 1:
                     log.debug(f"Condition container_single_state {cond} for container {container.serial} "

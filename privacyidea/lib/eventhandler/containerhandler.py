@@ -132,7 +132,7 @@ class ContainerEventHandler(BaseEventHandler):
         :param options: Contains the flask parameters g, request, response
             and the handler_def configuration
         :type options: dict
-        :return:
+        :return: True if the action was successful, False otherwise (missing information, e.g. serial, user)
         """
         ret = True
         g = options.get("g")
@@ -146,92 +146,112 @@ class ContainerEventHandler(BaseEventHandler):
         if not container_serial:
             container_serial = self._get_container_serial_from_token(request, content, g)
 
-        if container_serial:
-            log.info(f"{action} for container {container_serial}")
-            if action.lower() == ACTION_TYPE.DELETE:
-                delete_container_by_serial(container_serial)
+        if action.lower() in [ACTION_TYPE.DELETE,
+                              ACTION_TYPE.UNASSIGN,
+                              ACTION_TYPE.ASSIGN,
+                              ACTION_TYPE.SET_STATES,
+                              ACTION_TYPE.ADD_STATES,
+                              ACTION_TYPE.SET_DESCRIPTION,
+                              ACTION_TYPE.REMOVE_TOKENS,
+                              ACTION_TYPE.SET_CONTAINER_INFO,
+                              ACTION_TYPE.ADD_CONTAINER_INFO,
+                              ACTION_TYPE.DELETE_CONTAINER_INFO
+                              ]:
+            if container_serial:
+                log.info(f"{action} for container {container_serial}")
+                if action.lower() == ACTION_TYPE.DELETE:
+                    delete_container_by_serial(container_serial)
 
-            elif action.lower() == ACTION_TYPE.UNASSIGN:
-                users = self._get_users_from_request(request)
-                container = find_container_by_serial(container_serial)
-                res = False
-                for user in users:
-                    if not user.is_empty():
-                        container.remove_user(user)
-                        res = True
-                if not res:
-                    log.debug(f"No user found to unassign from container {container_serial}")
+                elif action.lower() == ACTION_TYPE.UNASSIGN:
+                    users = self._get_users_from_request(request)
+                    container = find_container_by_serial(container_serial)
+                    ret = False
+                    for user in users:
+                        if not user.is_empty():
+                            container.remove_user(user)
+                            ret = True
+                    if not ret:
+                        log.debug(f"No user found to unassign from container {container_serial}")
 
-            elif action.lower() == ACTION_TYPE.ASSIGN:
-                users = self._get_users_from_request(request)
-                container = find_container_by_serial(container_serial)
-                res = False
-                for user in users:
-                    if not user.is_empty():
-                        container.add_user(user)
-                        res = True
-                if not res:
-                    log.debug(f"No user found to assign to container {container_serial}")
+                elif action.lower() == ACTION_TYPE.ASSIGN:
+                    users = self._get_users_from_request(request)
+                    container = find_container_by_serial(container_serial)
+                    ret = False
+                    for user in users:
+                        if not user.is_empty():
+                            container.add_user(user)
+                            ret = True
+                    if not ret:
+                        log.debug(f"No user found to assign to container {container_serial}")
 
-            elif action.lower() == ACTION_TYPE.SET_STATES:
-                container_states = list(TokenContainerClass.get_state_types().keys())
-                selected_states = []
-                for state in container_states:
-                    if handler_options.get(state):
-                        selected_states.append(state)
-                container = find_container_by_serial(container_serial)
-                if len(selected_states) > 0:
-                    container.set_states(selected_states)
-                else:
-                    log.debug(f"No states found to set in container {container_serial}")
+                elif action.lower() == ACTION_TYPE.SET_STATES:
+                    container_states = list(TokenContainerClass.get_state_types().keys())
+                    selected_states = []
+                    for state in container_states:
+                        if handler_options.get(state):
+                            selected_states.append(state)
+                    container = find_container_by_serial(container_serial)
+                    if len(selected_states) > 0:
+                        container.set_states(selected_states)
+                    else:
+                        ret = False
+                        log.debug(
+                            f"No valid state found in the handler options {handler_options} "
+                            f"to set in container {container_serial}")
 
-            elif action.lower() == ACTION_TYPE.ADD_STATES:
-                container_states = list(TokenContainerClass.get_state_types().keys())
-                selected_states = []
-                for state in container_states:
-                    if handler_options.get(state):
-                        selected_states.append(state)
-                container = find_container_by_serial(container_serial)
-                if len(selected_states) > 0:
-                    container.add_states(selected_states)
-                else:
-                    log.debug(f"No states found to add to container {container_serial}")
+                elif action.lower() == ACTION_TYPE.ADD_STATES:
+                    container_states = list(TokenContainerClass.get_state_types().keys())
+                    selected_states = []
+                    for state in container_states:
+                        if handler_options.get(state):
+                            selected_states.append(state)
+                    container = find_container_by_serial(container_serial)
+                    if len(selected_states) > 0:
+                        container.add_states(selected_states)
+                    else:
+                        ret = False
+                        log.debug(f"No states found to add to container {container_serial}")
 
-            elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
-                new_description = handler_options.get("description") or ""
-                container = find_container_by_serial(container_serial)
-                container.description = new_description
+                elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
+                    new_description = handler_options.get("description")
+                    if new_description:
+                        container = find_container_by_serial(container_serial)
+                        container.description = new_description
+                    else:
+                        ret = False
+                        log.debug(f"No description found to set in container {container_serial}")
 
-            elif action.lower() == ACTION_TYPE.REMOVE_TOKENS:
-                container = find_container_by_serial(container_serial)
-                tokens = container.get_tokens()
-                token_serials = [t.get_serial() for t in tokens]
-                if len(token_serials) > 0:
-                    remove_tokens_from_container(container_serial, token_serials)
-                else:
-                    log.debug(f"No tokens found to remove from container {container_serial}")
+                elif action.lower() == ACTION_TYPE.REMOVE_TOKENS:
+                    container = find_container_by_serial(container_serial)
+                    tokens = container.get_tokens()
+                    token_serials = [t.get_serial() for t in tokens]
+                    if len(token_serials) > 0:
+                        remove_tokens_from_container(container_serial, token_serials)
+                    else:
+                        ret = False
+                        log.debug(f"No tokens found to remove from container {container_serial}")
 
-            elif action.lower() == ACTION_TYPE.SET_CONTAINER_INFO:
-                key = handler_options.get("key")
-                value = handler_options.get("value") or ""
-                container = find_container_by_serial(container_serial)
-                info = {key: value}
-                container.set_containerinfo(info)
+                elif action.lower() == ACTION_TYPE.SET_CONTAINER_INFO:
+                    key = handler_options.get("key")
+                    value = handler_options.get("value") or ""
+                    container = find_container_by_serial(container_serial)
+                    info = {key: value}
+                    container.set_containerinfo(info)
 
-            elif action.lower() == ACTION_TYPE.ADD_CONTAINER_INFO:
-                key = handler_options.get("key")
-                value = handler_options.get("value") or ""
-                container = find_container_by_serial(container_serial)
-                container.add_containerinfo(key, value)
+                elif action.lower() == ACTION_TYPE.ADD_CONTAINER_INFO:
+                    key = handler_options.get("key")
+                    value = handler_options.get("value") or ""
+                    container = find_container_by_serial(container_serial)
+                    container.add_containerinfo(key, value)
 
-            elif action.lower() == ACTION_TYPE.DELETE_CONTAINER_INFO:
-                container = find_container_by_serial(container_serial)
-                container.delete_containerinfo()
+                elif action.lower() == ACTION_TYPE.DELETE_CONTAINER_INFO:
+                    container = find_container_by_serial(container_serial)
+                    container.delete_container_info()
 
-        else:
-            log.info(f"Action {action} requires serial number. But no serial "
-                     f"number could be found in request {request}.")
-            ret = False
+            else:
+                log.info(f"Action {action} requires serial number. But no valid serial "
+                         f"number could be found in request {request}.")
+                ret = False
 
         if action.lower() == ACTION_TYPE.INIT:
             params = {
@@ -257,8 +277,8 @@ class ContainerEventHandler(BaseEventHandler):
 
             if handler_options.get("token"):
                 token_serial = request.all_data.get("serial") or \
-                         content.get("detail", {}).get("serial") or \
-                         g.audit_object.audit_data.get("serial")
+                               content.get("detail", {}).get("serial") or \
+                               g.audit_object.audit_data.get("serial")
                 if token_serial:
                     add_tokens_to_container(new_serial, [token_serial])
                 else:
