@@ -353,7 +353,7 @@ class SmsTokenClass(HotpTokenClass):
                 transactionid = transactionid or db_challenge.transaction_id
             except Exception as e:
                 info = lazy_gettext("The PIN was correct, but the "
-                         "SMS could not be sent!")
+                                    "SMS could not be sent!")
                 log.warning(info + " ({0!r})".format(e))
                 log.debug("{0!s}".format(traceback.format_exc()))
                 return_message = info

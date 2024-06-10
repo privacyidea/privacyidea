@@ -17,6 +17,5 @@ work with user.py
 """
 
 from privacyidea.lib.framework import _
-from privacyidea.lib.framework import lazy_gettext
-
+from flask_babel import lazy_gettext
 __all__ = ['_', 'lazy_gettext']

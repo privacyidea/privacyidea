@@ -16,7 +16,7 @@
 #
 from flask import current_app, g
 # We import the gettext function here and export it as ``_``.
-from flask_babel import gettext as _, lazy_gettext
+from flask_babel import gettext as _
 
 
 def get_app_local_store():

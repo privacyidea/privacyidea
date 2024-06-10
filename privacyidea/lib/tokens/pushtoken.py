@@ -68,7 +68,7 @@ log = logging.getLogger(__name__)
 
 DEFAULT_CHALLENGE_TEXT = lazy_gettext("Please confirm the authentication on your mobile device!")
 ERROR_CHALLENGE_TEXT = lazy_gettext("Use the polling feature of your privacyIDEA Authenticator App"
-                          " to check for a new Login request.")
+                                    " to check for a new Login request.")
 DEFAULT_MOBILE_TEXT = lazy_gettext("Do you want to confirm the login?")
 PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
