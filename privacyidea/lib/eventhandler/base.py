@@ -80,6 +80,7 @@ class CONDITION(object):
     RESULT_STATUS = "result_status"
     TOKENREALM = "tokenrealm"
     TOKENRESOLVER = "tokenresolver"
+    TOKEN_IS_IN_CONTAINER = "token_is_in_container"
     REALM = "realm"
     RESOLVER = "resolver"
     CLIENT_IP = "client_ip"
@@ -240,6 +241,12 @@ class BaseEventHandler(object):
                 "type": "regexp",
                 "desc": _("Action is triggered, if the serial matches this "
                           "regular expression."),
+                "group": GROUP.TOKEN
+            },
+            CONDITION.TOKEN_IS_IN_CONTAINER: {
+                "type": "str",
+                "desc": _("The token is in a container."),
+                "value": ("True", "False"),
                 "group": GROUP.TOKEN
             },
             CONDITION.USER_TOKEN_NUMBER: {
@@ -780,6 +787,19 @@ class BaseEventHandler(object):
             if CONDITION.ROLLOUT_STATE in conditions:
                 cond = conditions.get(CONDITION.ROLLOUT_STATE)
                 if not cond == token_obj.token.rollout_state:
+                    return False
+
+            if CONDITION.TOKEN_IS_IN_CONTAINER in conditions:
+                cond = conditions.get(CONDITION.TOKEN_IS_IN_CONTAINER)
+                container = find_container_for_token(serial)
+                token_is_in_container = container is not None
+                if token_is_in_container and cond in ["True", True]:
+                    res = True
+                elif not token_is_in_container and cond in ["False", False]:
+                    res = True
+                else:
+                    log.debug(f"Condition {CONDITION.TOKEN_IS_IN_CONTAINER} for token {token_obj} "
+                              "not fulfilled.")
                     return False
 
         # Container specific conditions

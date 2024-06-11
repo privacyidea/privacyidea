@@ -38,6 +38,8 @@ You can attach token actions like enable, disable, delete, unassign,... of the
  * all disabled tokens
  * ...
 """
+
+from privacyidea.lib.container import add_tokens_to_container
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.token import (get_token_types, set_validity_period_end,
@@ -88,6 +90,7 @@ class ACTION_TYPE(object):
     ADD_TOKENGROUP = "add tokengroup"
     REMOVE_TOKENGROUP = "remove tokengroup"
     ATTACH_APPLICATION = "attach application"
+
 
 class TOKEN_APPLICATIONS(object):
     SSH = "ssh"
@@ -145,7 +148,7 @@ class TokenEventHandler(BaseEventHandler):
                                               "other realms will be removed "
                                               "from this token. If disabled, the "
                                               "realm will be added to the token.")
-                            }
+                             }
                         },
                    ACTION_TYPE.DELETE: {},
                    ACTION_TYPE.UNASSIGN: {},
@@ -156,7 +159,7 @@ class TokenEventHandler(BaseEventHandler):
                            {"type": "int",
                             "required": True,
                             "description": _("set the PIN of the token to a random PIN of this length."),
-                            "value": list(range(1,32))}
+                            "value": list(range(1, 32))}
                    },
                    ACTION_TYPE.INIT:
                        {"tokentype":
@@ -214,15 +217,20 @@ class TokenEventHandler(BaseEventHandler):
                             "description": _("Set the MOTP PIN of the MOTP "
                                              "token during enrollment. This "
                                              "is a required value for "
-                                             "enrolling MOTP tokens.")}
+                                             "enrolling MOTP tokens.")},
+                        "container": {
+                            "type": "bool",
+                            "description": _("Add token to container in "
+                                             "request.")
+                        }
                         },
                    ACTION_TYPE.SET_DESCRIPTION:
                        {"description":
-                            {
-                                "type": "str",
-                                "description": _("The new description of the "
-                                                 "token.")
-                            }
+                           {
+                               "type": "str",
+                               "description": _("The new description of the "
+                                                "token.")
+                           }
                        },
                    ACTION_TYPE.SET_VALIDITY:
                        {VALIDITY.START: {
@@ -232,24 +240,24 @@ class TokenEventHandler(BaseEventHandler):
                                             "date or an offset like +10m, "
                                             "+24h, +7d.")
                        },
-                        VALIDITY.END: {
-                            "type": "str",
-                            "description": _("The token will be valid until "
-                                             "the given date. Can be a fixed "
-                                             "date or an offset like +10m, "
-                                             "+24h, +7d.")
-                        }
+                           VALIDITY.END: {
+                               "type": "str",
+                               "description": _("The token will be valid until "
+                                                "the given date. Can be a fixed "
+                                                "date or an offset like +10m, "
+                                                "+24h, +7d.")
+                           }
                        },
                    ACTION_TYPE.SET_COUNTWINDOW:
                        {"count window":
-                            {
-                                # TODO: should be "int" but we do not support
-                                #  this at the moment.
-                                "type": "str",
-                                "required": True,
-                                "description": _("Set the new count window of "
-                                                 "the token.")
-                            }
+                           {
+                               # TODO: should be "int" but we do not support
+                               #  this at the moment.
+                               "type": "str",
+                               "required": True,
+                               "description": _("Set the new count window of "
+                                                "the token.")
+                           }
                        },
                    ACTION_TYPE.SET_FAILCOUNTER:
                        {
@@ -273,12 +281,12 @@ class TokenEventHandler(BaseEventHandler):
                        },
                    ACTION_TYPE.SET_MAXFAIL:
                        {
-                            "max failcount":
-                                {
-                                    "type": "str",
-                                    "required": True,
-                                    "description": _("Set the maximum failcounter of the token.")
-                                }
+                           "max failcount":
+                               {
+                                   "type": "str",
+                                   "required": True,
+                                   "description": _("Set the maximum failcounter of the token.")
+                               }
                        },
                    ACTION_TYPE.SET_TOKENINFO:
                        {"key":
@@ -287,99 +295,101 @@ class TokenEventHandler(BaseEventHandler):
                                "required": True,
                                "description": _("Set this tokeninfo key.")
                            },
-                        "value":
-                            {
-                                "type": "str",
-                                "description": _("Set the above key to this "
-                                                 "value.")
-                            }
+                           "value":
+                               {
+                                   "type": "str",
+                                   "description": _("Set the above key to this "
+                                                    "value.")
+                               }
                        },
                    ACTION_TYPE.DELETE_TOKENINFO:
                        {"key":
-                            {
-                                "type": "str",
-                                "required": True,
-                                "description": _("Delete this tokeninfo key.")
-                            }
+                           {
+                               "type": "str",
+                               "required": True,
+                               "description": _("Delete this tokeninfo key.")
+                           }
                        },
                    ACTION_TYPE.ADD_TOKENGROUP:
                        {"tokengroup":
-                            {
-                                "type": "str",
-                                "required": True,
-                                "description": _("Add a tokengroup to the token."),
-                                "value": [tg.name for tg in get_tokengroups()]
-                            }
+                           {
+                               "type": "str",
+                               "required": True,
+                               "description": _("Add a tokengroup to the token."),
+                               "value": [tg.name for tg in get_tokengroups()]
+                           }
                        },
                    ACTION_TYPE.REMOVE_TOKENGROUP:
                        {"tokengroup":
-                            {
-                                "type": "str",
-                                "required": True,
-                                "description": _("Remove a tokengroup from the token."),
-                                "value": [tg.name for tg in get_tokengroups()]
-                            }
-                        },
+                           {
+                               "type": "str",
+                               "required": True,
+                               "description": _("Remove a tokengroup from the token."),
+                               "value": [tg.name for tg in get_tokengroups()]
+                           }
+                       },
                    ACTION_TYPE.ATTACH_APPLICATION:
                        {"machine ID":
-                            {
-                                "type": "str",
-                                "required": False,
-                                "description": _("The ID of the machine you want to attach the token to")
+                           {
+                               "type": "str",
+                               "required": False,
+                               "description": _("The ID of the machine you want to attach the token to")
 
-                            },
-                        "service_id": {
-                            "type": "str",
-                            "required": False,
-                            "description": _("Set the service_id for an SSH application."),
-                            "visibleIf": "application",
-                            "visibleValue": TOKEN_APPLICATIONS.SSH
-                        },
-                        "application":
-                            {
-                                "type": "str",
-                                "required": True,
-                                "description": _("Set a token application like 'offline' or 'SSH'. Note: Not all tokens"
-                                                 " work well with all applications!"),
-                                "value": [TOKEN_APPLICATIONS.SSH, TOKEN_APPLICATIONS.OFFLINE, TOKEN_APPLICATIONS.LUKS]
-                            },
-                        "count":
-                            {
-                                "type": "str",
-                                "visibleIf": "application",
-                                "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
-                                "description": _("The number of offline OTP values available"),
-                                "required": False
-                            },
-                        "rounds":
-                            {
-                                "type": "str",
-                                "visibleIf": "application",
-                                "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
-                                "description": _("The number of rounds for password hashing"),
-                                "required": False
-                            },
-                        "user":
-                            {
-                                "type": "str",
-                                "visibleIf": "application",
-                                "visibleValue": TOKEN_APPLICATIONS.SSH,
-                                "required": False
-                            },
-                        "slot":
-                            {
-                                "type": "str",
-                                "visibleIf": "application",
-                                "visibleValue": TOKEN_APPLICATIONS.LUKS,
-                                "required": False
-                            },
-                        "partition":
-                            {
-                                "type": "str",
-                                "visibleIf": "application",
-                                "visibleValue": TOKEN_APPLICATIONS.LUKS,
-                                "required": False
-                            },
+                           },
+                           "service_id": {
+                               "type": "str",
+                               "required": False,
+                               "description": _("Set the service_id for an SSH application."),
+                               "visibleIf": "application",
+                               "visibleValue": TOKEN_APPLICATIONS.SSH
+                           },
+                           "application":
+                               {
+                                   "type": "str",
+                                   "required": True,
+                                   "description": _(
+                                       "Set a token application like 'offline' or 'SSH'. Note: Not all tokens"
+                                       " work well with all applications!"),
+                                   "value": [TOKEN_APPLICATIONS.SSH, TOKEN_APPLICATIONS.OFFLINE,
+                                             TOKEN_APPLICATIONS.LUKS]
+                               },
+                           "count":
+                               {
+                                   "type": "str",
+                                   "visibleIf": "application",
+                                   "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
+                                   "description": _("The number of offline OTP values available"),
+                                   "required": False
+                               },
+                           "rounds":
+                               {
+                                   "type": "str",
+                                   "visibleIf": "application",
+                                   "visibleValue": TOKEN_APPLICATIONS.OFFLINE,
+                                   "description": _("The number of rounds for password hashing"),
+                                   "required": False
+                               },
+                           "user":
+                               {
+                                   "type": "str",
+                                   "visibleIf": "application",
+                                   "visibleValue": TOKEN_APPLICATIONS.SSH,
+                                   "required": False
+                               },
+                           "slot":
+                               {
+                                   "type": "str",
+                                   "visibleIf": "application",
+                                   "visibleValue": TOKEN_APPLICATIONS.LUKS,
+                                   "required": False
+                               },
+                           "partition":
+                               {
+                                   "type": "str",
+                                   "visibleIf": "application",
+                                   "visibleValue": TOKEN_APPLICATIONS.LUKS,
+                                   "required": False
+                               },
                        }
                    }
         return actions
@@ -604,5 +614,12 @@ class TokenEventHandler(BaseEventHandler):
 
             t = init_token(param=init_param, user=user)
             log.info("New token {0!s} enrolled.".format(t.token.serial))
+
+            if is_true(handler_options.get("container")):
+                container_serial = self._get_container_serial(request, content, g)
+                if container_serial:
+                    add_tokens_to_container(container_serial, [t.get_serial()])
+                else:
+                    log.info(f"No container serial is found to add the token {t.get_serial()} to the container.")
 
         return ret
