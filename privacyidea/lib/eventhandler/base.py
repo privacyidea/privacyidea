@@ -89,6 +89,7 @@ class CONDITION(object):
     CONTAINER_SINGLE_STATE = "container_single_state"
     CONTAINER_HAS_OWNER = "container_has_owner"
     CONTAINER_TYPE = "container_type"
+    CONTAINER_HAS_TOKEN = "container_has_token"
 
 
 class GROUP(object):
@@ -354,6 +355,12 @@ class BaseEventHandler(object):
             CONDITION.CONTAINER_HAS_OWNER: {
                 "type": "str",
                 "desc": _("The container has a user assigned."),
+                "value": ("True", "False"),
+                "group": GROUP.CONTAINER
+            },
+            CONDITION.CONTAINER_HAS_TOKEN: {
+                "type": "str",
+                "desc": _("The container has at least one token assigned."),
                 "value": ("True", "False"),
                 "group": GROUP.CONTAINER
             },
@@ -837,6 +844,18 @@ class BaseEventHandler(object):
                 cond = conditions.get(CONDITION.CONTAINER_TYPE)
                 if container.type != cond:
                     log.debug(f"Condition container_type {cond} for container {container.serial} "
+                              "not fulfilled.")
+                    return False
+
+            if CONDITION.CONTAINER_HAS_TOKEN in conditions:
+                tokens = [token.get_serial() for token in container.get_tokens()]
+                cond = conditions.get(CONDITION.CONTAINER_HAS_TOKEN)
+                if len(tokens) > 0 and cond in ["True", True]:
+                    res = True
+                elif len(tokens) == 0 and cond in ["False", False]:
+                    res = True
+                else:
+                    log.debug(f"Condition container_has_token for container {container.serial} "
                               "not fulfilled.")
                     return False
 

@@ -963,6 +963,58 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         container.delete()
 
+    def test_14_check_container_has_token(self):
+        # Init container
+        container_serial = init_container({"type": "generic"})
+
+        # Init token
+        token_serial = "SPASS01"
+        init_token({"serial": token_serial, "type": "spass"})
+
+        uhandler = BaseEventHandler()
+
+        # Prepare a fake request
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"container_serial": container_serial}
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        options = {"g": {},
+                   "handler_def": {},
+                   "request": req,
+                   "response": resp}
+
+        # Container has no token
+        # Check if the condition matches
+        options['handler_def'] = {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "False"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        # Check if the condition does not match
+        options['handler_def'] = {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "True"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+
+        # cONTAINER HAS A TOKEN
+        add_tokens_to_container(container_serial, [token_serial])
+        # Check if the condition matches
+        options['handler_def'] = {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "True"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        # Check if the condition does not match
+        options['handler_def'] = {"conditions": {CONDITION.CONTAINER_HAS_TOKEN: "False"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+
+        # Clean up
+        delete_container_by_serial(container_serial)
+        remove_token(token_serial)
+
 
 class CounterEventTestCase(MyTestCase):
 
