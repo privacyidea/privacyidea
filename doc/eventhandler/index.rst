@@ -360,6 +360,31 @@ value. Valid compares are::
 
 .. note:: A non-existing counter value will compare as 0 (zero).
 
+**token_is_in_container**
+
+The action is only triggered, if the token is or is not in a container.
+
+**container_state**
+
+The action is only triggered if the given value is one of the container states. The container can have other states
+besides the given value.
+
+**container_single_state**
+
+The action is only triggered if the given value is the only state of the container.
+
+**container_has_owner**
+
+The action is only triggered if the container is or is not assigned to a user.
+
+**container_type**
+
+The action is only triggered if the container is of the given type.
+
+**container_has_token**
+
+The action is only triggered if the container has or has not at least one token.
+
 Managing Events
 ---------------
 
@@ -388,3 +413,4 @@ Available Handler Modules
    logginghandler
    customuserattributehandler
    webhookhandler
+   containerhandler
