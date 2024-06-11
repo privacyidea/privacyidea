@@ -96,7 +96,7 @@ def cli():
  / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
 /_/                       /___/
 {0!s:>51}
-    """.format('v{0!s}'.format(get_version_number())))
+    """.format('v{0!s}'.format(get_version_number())), err=True)
 
 
 deprecated_commands = [
