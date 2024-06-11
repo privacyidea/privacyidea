@@ -13,7 +13,8 @@ import mock
 
 from mock import patch, MagicMock
 
-from privacyidea.lib.container import init_container, find_container_by_serial, get_all_containers
+from privacyidea.lib.container import init_container, find_container_by_serial, get_all_containers, \
+    delete_container_by_serial, add_tokens_to_container
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE)
@@ -39,7 +40,7 @@ from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object,
                                    enable_event)
 from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token, get_tokens,
-                                   add_tokeninfo, unassign_token)
+                                   add_tokeninfo, unassign_token, get_tokens_paginate)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import User
 from privacyidea.lib.error import ResourceNotFoundError
@@ -732,7 +733,57 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         remove_token(serial)
 
-    def test_10_check_container_state(self):
+    def test_10_check_token_is_in_container(self):
+        # Prepare the container and token
+        container_serial = init_container({"type": "generic"})
+        token_serial = "SPASS01"
+        init_token({"serial": "SPASS01", "type": "spass"})
+
+        uhandler = BaseEventHandler()
+
+        # Prepare a fake request
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+        req.all_data = {"serial": token_serial}
+        resp = Response()
+        resp.data = """{"result": {"value": false}}"""
+
+        options = {"g": {},
+                   "handler_def": {},
+                   "request": req,
+                   "response": resp}
+
+        # Token is not in a container
+        # Check if the condition matches
+        options['handler_def'] = {"conditions": {CONDITION.TOKEN_IS_IN_CONTAINER: "False"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        # Check if the condition does not match
+        options['handler_def'] = {"conditions": {CONDITION.TOKEN_IS_IN_CONTAINER: "True"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+
+        # Token is in a container
+        add_tokens_to_container(container_serial, [token_serial])
+        # Check if the condition matches
+        options['handler_def'] = {"conditions": {CONDITION.TOKEN_IS_IN_CONTAINER: "True"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        # Check if the condition does not match
+        options['handler_def'] = {"conditions": {CONDITION.TOKEN_IS_IN_CONTAINER: "False"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+
+        # Clean up
+        delete_container_by_serial(container_serial)
+        remove_token(token_serial)
+
+    def test_11_check_container_state(self):
         # Prepare the container
         container_serial = init_container({"type": "generic"})
         container = find_container_by_serial(container_serial)
@@ -803,7 +854,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         container.delete()
 
-    def test_11_check_container_has_owner(self):
+    def test_12_check_container_has_owner(self):
         # create user
         self.setUp_user_realms()
         test_user = User(login="cornelius",
@@ -872,7 +923,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         container.delete()
 
-    def test_12_check_container_type(self):
+    def test_13_check_container_type(self):
         # Init container
         container_serial = init_container({"type": "smartphone"})
         container = find_container_by_serial(container_serial)
@@ -1805,12 +1856,14 @@ class ContainerEventTestCase(MyTestCase):
 
         # Setup the request
         options = self.setup_request()
+        self.setUp_user_realms()
         user_obj = User("cornelius", self.realm1)
         options['request'].User = user_obj
-        options["handler_def"]["options"] = {"type": "smartphone"}
+        options["handler_def"]["options"] = {"type": "smartphone", "user": False, "token": False}
 
         c_handler = ContainerEventHandler()
 
+        # Init container only with type
         res = c_handler.do(C_ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
 
@@ -1818,7 +1871,52 @@ class ContainerEventTestCase(MyTestCase):
         containers = get_all_containers(ctype="smartphone")['containers']
         self.assertTrue(len(containers) == 1)
 
-        containers[0].delete()
+        # Init container with type and user
+        options["handler_def"]["options"] = {"type": "yubikey", "user": True}
+        res = c_handler.do(C_ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+
+        # Check if the container was created
+        containers = get_all_containers(ctype="yubikey")['containers']
+        self.assertTrue(len(containers) == 1)
+
+        # Check if the user is set
+        owners = containers[0].get_users()
+        self.assertIn(user_obj, owners)
+
+        # Init container with type and token
+        token_serial = "SPASS01"
+        token = init_token({"serial": token_serial, "type": "spass"})
+        options['request'].all_data['serial'] = token_serial
+        options["handler_def"]["options"] = {"type": "generic", "token": True}
+        res = c_handler.do(C_ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+
+        # Check if the container was created
+        containers = get_all_containers(ctype="generic")['containers']
+        self.assertTrue(len(containers) == 1)
+
+        # Check if the token was assigned
+        token_serials = [token.get_serial() for token in containers[0].get_tokens()]
+        self.assertIn(token_serial, token_serials)
+
+        # Check that user is not assigned
+        owners = containers[0].get_users()
+        self.assertNotIn(user_obj, owners)
+
+        # Init container without type:
+        options["handler_def"]["options"] = {}
+        res = c_handler.do(C_ACTION_TYPE.INIT, options=options)
+        self.assertFalse(res)
+
+        # Check that no new container is created
+        containers = get_all_containers()['containers']
+        self.assertEqual(3, len(containers))
+
+        # Clean up
+        for container in containers:
+            container.delete()
+        token.delete_token()
 
     def test_02_delete_container(self):
         # create container
@@ -1897,6 +1995,10 @@ class ContainerEventTestCase(MyTestCase):
         res = c_handler.do(C_ACTION_TYPE.UNASSIGN, options=options)
         self.assertFalse(res)
 
+        # Clean up
+        container.delete()
+        token.delete_token()
+
     def test_04_set_states(self):
         # create container
         container_serial = init_container({"type": "generic"})
@@ -1949,6 +2051,9 @@ class ContainerEventTestCase(MyTestCase):
         self.assertEqual(len(states), 1)
         self.assertTrue("active" in states)
 
+        # Clean up
+        container.delete()
+
     def test_05_add_states(self):
         # create container
         container_serial = init_container({"type": "generic"})
@@ -1993,6 +2098,9 @@ class ContainerEventTestCase(MyTestCase):
         self.assertTrue(initial_states[0] in states)
         self.assertTrue("lost" in states)
 
+        # Clean up
+        container.delete()
+
     def test_06_set_description(self):
         # create container
         initial_description = "Initial description"
@@ -2022,6 +2130,9 @@ class ContainerEventTestCase(MyTestCase):
         # Check description
         description = container.description
         self.assertEqual(description, new_description)
+
+        # Clean up
+        container.delete()
 
     def test_07_remove_tokens(self):
         # create container
@@ -2056,6 +2167,11 @@ class ContainerEventTestCase(MyTestCase):
         res = c_handler.do(C_ACTION_TYPE.REMOVE_TOKENS, options=options)
         self.assertFalse(res)
 
+        # Clean up
+        container.delete()
+        token_01.delete_token()
+        token_02.delete_token()
+
     def test_08_set_add_del_container_info(self):
         # create container
         container_serial = init_container({"type": "generic"})
@@ -2074,7 +2190,7 @@ class ContainerEventTestCase(MyTestCase):
 
         # check that the info is set
         container = find_container_by_serial(container_serial)
-        infos = {container_info.key:container_info.value for container_info in container.get_containerinfo()}
+        infos = {container_info.key: container_info.value for container_info in container.get_containerinfo()}
         self.assertIn(key, infos)
         self.assertEqual(infos[key], value)
 
@@ -2116,6 +2232,8 @@ class ContainerEventTestCase(MyTestCase):
         infos = {container_info.key: container_info.value for container_info in container.get_containerinfo()}
         self.assertEqual(0, len(infos))
 
+        # Clean up
+        container.delete()
 
 
 class TokenEventTestCase(MyTestCase):
@@ -2544,6 +2662,39 @@ class TokenEventTestCase(MyTestCase):
         self.assertEqual(t.user, user_obj)
         self.assertEqual(t.get_tokeninfo("totp.hashlib"), "sha256")
         remove_token(t.token.serial)
+
+        # Enroll token and assign to container
+        container_serial = init_container({"type": "generic"})
+        options['request'].all_data = {"container_serial": container_serial}
+        options['handler_def']["options"] = {"tokentype": "spass",
+                                             "user": False,
+                                             "container": True}
+
+        # With container cerial
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+
+        # Check if the token was created and added to the container
+        tokens = get_tokens_paginate(tokentype="spass")
+        self.assertEqual(1, tokens['count'])
+        self.assertEqual(tokens["tokens"][0]["container_serial"], container_serial)
+
+        # Clean up
+        remove_token(tokens["tokens"][0]["serial"])
+        delete_container_by_serial(container_serial)
+
+        # Enroll token and assign to container without a container serial
+        options['request'].all_data = {}
+        res = t_handler.do(ACTION_TYPE.INIT, options=options)
+        self.assertTrue(res)
+
+        # Check if the token was created and no container added
+        tokens = get_tokens_paginate(tokentype="spass")
+        self.assertEqual(1, tokens['count'])
+        self.assertIn(tokens["tokens"][0]["container_serial"], ['', None])
+
+        # Clean up
+        remove_token(tokens["tokens"][0]["serial"])
 
     def test_06_set_description(self):
         # setup realms

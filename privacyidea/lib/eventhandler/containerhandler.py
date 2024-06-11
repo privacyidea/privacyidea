@@ -254,34 +254,40 @@ class ContainerEventHandler(BaseEventHandler):
                 ret = False
 
         if action.lower() == ACTION_TYPE.INIT:
-            params = {
-                "type": handler_options.get("type"),
-                "description": handler_options.get("description"),
-            }
-            users = []
-            if handler_options.get("user"):
-                users = self._get_users_from_request(request)
+            if handler_options.get("type"):
+                params = {
+                    "type": handler_options.get("type"),
+                    "description": handler_options.get("description"),
+                }
+                users = []
+                if handler_options.get("user"):
+                    users = self._get_users_from_request(request)
 
-                if len(users) > 0 and not users[0].is_empty():
-                    params["user"] = users[0].login
-                    params["realm"] = users[0].realm
-                else:
-                    log.debug(f"No user found to assign to container {container_serial}")
+                    if len(users) > 0 and not users[0].is_empty():
+                        params["user"] = users[0].login
+                        params["realm"] = users[0].realm
+                    else:
+                        log.debug(f"No user found to assign to container {container_serial}")
 
-            new_serial = init_container(params)
-            # assign remaining users to container
-            for user in users[1:]:
-                container = find_container_by_serial(new_serial)
-                if container and not user.is_empty():
-                    container.add_user(user)
+                new_serial = init_container(params)
+                # assign remaining users to container
+                for user in users[1:]:
+                    container = find_container_by_serial(new_serial)
+                    if container and not user.is_empty():
+                        container.add_user(user)
 
-            if handler_options.get("token"):
-                token_serial = request.all_data.get("serial") or \
-                               content.get("detail", {}).get("serial") or \
-                               g.audit_object.audit_data.get("serial")
-                if token_serial:
-                    add_tokens_to_container(new_serial, [token_serial])
-                else:
-                    log.debug(f"No token found to add to container {new_serial}")
+                if handler_options.get("token"):
+                    token_serial = request.all_data.get("serial") or \
+                                   content.get("detail", {}).get("serial") or \
+                                   g.audit_object.audit_data.get("serial")
+                    if token_serial:
+                        add_tokens_to_container(new_serial, [token_serial])
+                    else:
+                        log.debug(f"No token found to add to container {new_serial}")
+
+            else:
+                ret = False
+                log.debug(f"Action {action} requires container type. But no type "
+                         f"could be found in the handler options {handler_options}.")
 
         return ret
