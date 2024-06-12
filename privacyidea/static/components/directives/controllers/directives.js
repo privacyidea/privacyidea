@@ -490,7 +490,6 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                     scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
 
                     scope.getContainers();
-                    scope.getTokenTypes();
                 });
 
                 // converts the supported token types to a display string

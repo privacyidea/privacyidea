@@ -35,8 +35,6 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
                 }
             });
             $scope.form.token_types = allContainerTypes[$scope.form.containerType]["token_types_display"];
-
-            $scope.getTokenTypes();
         });
 
         // converts the supported token types to a display string

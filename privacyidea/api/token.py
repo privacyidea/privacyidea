@@ -58,7 +58,6 @@
 
 from flask import (Blueprint, request, g, current_app)
 
-from ..lib.config import get_token_classes
 from ..lib.container import find_container_by_serial
 from ..lib.log import log_with
 from .lib.utils import optional, send_result, send_csv_result, required, getParam
