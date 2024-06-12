@@ -305,8 +305,8 @@ class TokenEventHandler(BaseEventHandler):
                          "increment":
                                {
                                    "type": "str",
-                                   "description": _("The increment the tokeninfo key should be increased. Can be positive "
-                                                    "and negative, s.th. like +1 or -7.")
+                                   "description": _("The increment the tokeninfo key should be increased. "
+                                                    "Can be positive or negative, s.th. like +1 or -7.")
                                }
                        },
                    ACTION_TYPE.DELETE_TOKENINFO:
