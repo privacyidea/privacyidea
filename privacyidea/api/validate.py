@@ -105,7 +105,7 @@ from privacyidea.api.register import register_blueprint
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
 from privacyidea.lib.event import event
-from privacyidea.lib.challenge import get_challenges, extract_answered_challenges
+from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, CHALLENGE_DECLINED
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.api.auth import admin_required
 from privacyidea.lib.policy import ACTION
@@ -647,7 +647,7 @@ def poll_transaction(transaction_id=None):
     else:
         result = False
         for challenge in matching_challenges:
-            if challenge.data == "challenge_declined":
+            if challenge.data == CHALLENGE_DECLINED:
                 declined_challenges.append(challenge)
         if declined_challenges:
             log_challenges = declined_challenges

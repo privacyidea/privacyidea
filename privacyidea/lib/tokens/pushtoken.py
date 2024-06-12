@@ -57,7 +57,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.crypto import geturandom, generate_keypair
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, CHALLENGE_DECLINED
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -659,7 +659,8 @@ class PushTokenClass(TokenClass):
                         log.debug("Found matching challenge {0!s}.".format(chal))
                         result = True
                         if decline:
-                            chal.set_data("challenge_declined")
+                            chal.set_data(CHALLENGE_DECLINED)
+                            # TODO: According to issue #3632 we could do some more stuff
                         else:
                             # Verify the presence_answer. The correct choice is stored in the "data"
                             # field of the challenge.
