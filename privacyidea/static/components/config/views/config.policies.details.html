@@ -203,8 +203,8 @@
                            ng-model="params.check_all_resolvers"
                            id="all-resolvers">
                     <translate>
-                Check all possible resolvers of a user to match the resolver
-                in this policy.
+                        Check all possible resolvers of a user to match the resolver
+                        in this policy.
                     </translate>
                 </label>
             </div>
@@ -227,7 +227,7 @@
                            ng-model="params.user_case_insensitive"
                            id="case-sensitive">
                     <translate>
-                Username case-insensitive.
+                        Username case-insensitive.
                     </translate>
                 </label>
             </div>
@@ -304,13 +304,13 @@
                     </label>
                     <label for="toggleAccordion">
                         <button class="btn btn-sm btn-success"
-                                ng-show="!isOpen"
-                                ng-click="isOpen = true">
+                                ng-show="groupsOpen < actionGroups.length"
+                                ng-click="openCloseAllGroups(true)">
                             <translate>Open all groups</translate>
                         </button>
                         <button class="btn btn-sm btn-success"
-                                ng-show="isOpen"
-                                ng-click="isOpen = false">
+                                ng-show="groupsOpen > 0"
+                                ng-click="openCloseAllGroups(false)">
                             <translate>Close all groups</translate>
                         </button>
                     </label>
@@ -321,7 +321,7 @@
                         <input type="text" ng-model="action_filter"
                                id="actionfilter"
                                placeholder="{{ 'filter action...'|translate }}"
-                               ng-change="isOpen = (action_filter.length > 0)"
+                               ng-change="openCloseAllGroups(action_filter.length > 0)"
                                class="form-control"
                                aria-describedby="filter-delete">
                         <span class="input-group-addon" id="filter-delete"
@@ -337,12 +337,13 @@
                         <uib-accordion close-others="false">
                             <div uib-accordion-group
                                  class="panel-default"
-                                 is-open="isOpen"
-                                 ng-repeat="actionGroup in actionGroups">
-                                <uib-accordion-heading ng-click="isOpen=!isOpen">
-                                    <div >{{ ( actionGroup || 'miscellaneous') }}
+                                 ng-repeat="actionGroup in actionGroups"
+                                 is-open="groupIsOpen[actionGroup]">
+                                <uib-accordion-heading ng-click="groupIsOpen[actionGroup]=!groupIsOpen[actionGroup]">
+                                    <div>{{ ( actionGroup || 'miscellaneous') }}
                                         <span class="pull-right glyphicon" aria-hidden="true"
-                                          ng-class="{'glyphicon-chevron-down': isOpen, 'glyphicon-chevron-right': !isOpen}">
+                                              ng-class="{'glyphicon-chevron-down': groupIsOpen[actionGroup],
+                                                     'glyphicon-chevron-right': !groupIsOpen[actionGroup]}">
                                         </span>
                                     </div>
                                 </uib-accordion-heading>
@@ -429,13 +430,13 @@
                                             <!-- This is the description of the policy action
                                              -->
                                             <p class="help help-block"
-                                            ng-bind-html="action.desc | highlight: action_filter">
+                                               ng-bind-html="action.desc | highlight: action_filter">
                                             </p>
                                         </td>
                                         <td>
                                             <a target="_external" href="{{ 'https://privacyidea.readthedocs.io/en/v'+
                                             privacyideaVersionNumber+'/policies/' + selectedScope[0].name + '.html#' +
-                                            action.name.split('_').join('-').toLowerCase()}}">
+                                            action.name.split('_').join('-').toLowerCase() }}">
                                                 <span class="glyphicon glyphicon-info-sign"></span>
                                             </a>
                                         </td>
