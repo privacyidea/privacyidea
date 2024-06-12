@@ -1322,23 +1322,3 @@ def unassign_tokengroup_api(serial, groupname):
     unassign_tokengroup(serial, tokengroup=groupname)
     g.audit_object.add_to_log({'success': True})
     return send_result(1)
-
-
-@token_blueprint.route('/types', methods=['GET'])
-@log_with(log)
-def get_token_types_dict():
-    """
-    Get a dictionary of the token types:
-    {token_type: token_title}
-
-    :return: dictionary
-    :rtype: json object
-    """
-
-    token_classes = get_token_classes()
-    token_types = {}
-    for tclass in token_classes:
-        class_info = tclass.get_class_info()
-        token_types[class_info["type"]] = class_info["title"]
-
-    return send_result(token_types)

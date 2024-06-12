@@ -478,33 +478,29 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                 // Get the supported token types for each container type once
                 ContainerFactory.getTokenTypes(function (data) {
                     allContainerTypes = data.result.value;
+
+                    angular.forEach(allContainerTypes, function (_, containerType) {
+                        if (containerType === 'generic') {
+                            allContainerTypes[containerType]["token_types_display"] = 'All';
+                        } else {
+                            allContainerTypes[containerType]["token_types_display"] = scope.tokenTypesToDisplayString(
+                                allContainerTypes[containerType].token_types);
+                        }
+                    });
+                    scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
+
                     scope.getContainers();
                     scope.getTokenTypes();
                 });
 
-                // Read the tokentypes from the server
-                scope.allTokenTypes = {};
-                scope.getTokenTypes = function () {
-                    TokenFactory.getTokenTypes(function (data) {
-                        scope.allTokenTypes = data.result.value;
-                        scope.newContainer.token_types = scope.tokenTypesToDisplayString(
-                            allContainerTypes[scope.newContainer.type].token_types);
-                    });
-                };
-
                 // converts the supported token types to a display string
                 scope.tokenTypesToDisplayString = function (containerTokenTypes) {
                     let displayString = "";
-                    if (containerTokenTypes.length == Object.keys(scope.allTokenTypes).length) {
-                        // all tokens are supported
-                        displayString = "All";
-                    } else {
-                        // create comma separated list out of token titles
-                        angular.forEach(containerTokenTypes, function (type) {
-                            displayString += scope.allTokenTypes[type] + ", ";
-                        });
-                        displayString = displayString.slice(0, -2);
-                    }
+                    // create comma separated list out of token names
+                    angular.forEach(containerTokenTypes, function (type) {
+                        displayString += type.charAt(0).toUpperCase() + type.slice(1) + ", ";
+                    });
+                    displayString = displayString.slice(0, -2);
 
                     return displayString;
                 };
@@ -593,8 +589,7 @@ myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProv
                     if (newVal === undefined || newVal === null) {
                         scope.newContainer.type = "generic"
                     }
-                    scope.newContainer.token_types = scope.tokenTypesToDisplayString(
-                        allContainerTypes[scope.newContainer.type].token_types);
+                    scope.newContainer.token_types = allContainerTypes[scope.newContainer.type]["token_types_display"];
 
                 });
                 scope.$watch('containerSerial', function (newVal, oldVal) {
