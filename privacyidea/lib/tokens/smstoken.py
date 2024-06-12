@@ -352,16 +352,14 @@ class SmsTokenClass(HotpTokenClass):
                 db_challenge.save()
                 transactionid = transactionid or db_challenge.transaction_id
             except Exception as e:
-                info = _("The PIN was correct, but the"
-                         " SMS could not be sent!")
+                info = _("The PIN was correct, but the SMS could not be sent!")
                 log.warning(info + " ({0!r})".format(e))
                 log.debug("{0!s}".format(traceback.format_exc()))
                 return_message = info
                 if is_true(options.get("exception")):
                     raise Exception(info)
 
-        expiry_date = datetime.datetime.now() + \
-                                    datetime.timedelta(seconds=validity)
+        expiry_date = datetime.datetime.now() + datetime.timedelta(seconds=validity)
         reply_dict['attributes']['valid_until'] = "{0!s}".format(expiry_date)
 
         return success, return_message, transactionid, reply_dict
@@ -516,8 +514,8 @@ class SmsTokenClass(HotpTokenClass):
     def _get_sms_text(options):
         """
         This returns the SMSTEXT from the policy "smstext"
-        
-        options contains data like clientip, g, user and also the Request 
+
+        options contains data like clientip, g, user and also the Request
         parameters like "challenge" or "pass".
 
         :param options: contains user and g object.
@@ -568,7 +566,7 @@ class SmsTokenClass(HotpTokenClass):
         :return: A dictionary with information that is needed to trigger the verification.
         """
         self.create_challenge()
-        return {"message": VERIFY_ENROLLMENT_MESSAGE}
+        return {"message": str(VERIFY_ENROLLMENT_MESSAGE)}
 
     @classmethod
     def enroll_via_validate(cls, g, content, user_obj, message=None):

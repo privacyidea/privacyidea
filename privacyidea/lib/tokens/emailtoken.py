@@ -512,7 +512,7 @@ class EmailTokenClass(HotpTokenClass):
         :return: A dictionary with information that is needed to trigger the verification.
         """
         self.create_challenge()
-        return {"message": VERIFY_ENROLLMENT_MESSAGE}
+        return {"message": str(VERIFY_ENROLLMENT_MESSAGE)}
 
     @classmethod
     def enroll_via_validate(cls, g, content, user_obj, message=None):

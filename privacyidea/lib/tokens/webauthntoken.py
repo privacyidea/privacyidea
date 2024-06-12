@@ -422,7 +422,7 @@ device in the *assertion* and the *authenticatorData*, *clientDataJSON* and
 
 *clientDataJSON*, *authenticatorData* and *signature* should be encoded as
 web-safe base64 without padding. For more detailed instructions, refer to
-“2. Step” under “Enrollment” above. 
+“2. Step” under “Enrollment” above.
 
 The *userHandle* and *assertionClientExtensions* are optional and should be
 omitted, if not provided by the authenticator. The
@@ -593,7 +593,7 @@ class WebAuthnTokenClass(TokenClass):
         res = {
             'type': 'webauthn',
             'title': 'WebAuthn Token',
-            'description': 'WebAuthn: Enroll a Web Authentication token.',
+            'description': _('WebAuthn: Enroll a Web Authentication token.'),
             'init': {},
             'config': {},
             'user': ['enroll'],
@@ -608,7 +608,7 @@ class WebAuthnTokenClass(TokenClass):
                     },
                     WEBAUTHNACTION.TIMEOUT: {
                         'type': 'int',
-                        'desc': _("The time in seconds the user has to confirm authorization on his WebAuthn token. " 
+                        'desc': _("The time in seconds the user has to confirm authorization on his WebAuthn token. "
                                   "Note: You will want to increase the ChallengeValidityTime along with this. "
                                   "Default: 60")
                     },

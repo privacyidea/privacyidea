@@ -24,7 +24,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-__doc__ = """This is the base class for SMS Modules, that can send SMS via
+"""This is the base class for SMS Modules, that can send SMS via
 different means.
 The function get_sms_provider_class loads an SMS Provider Module dynamically
 and returns an instance.
@@ -36,7 +36,7 @@ from privacyidea.lib.error import ConfigAdminError
 from privacyidea.models import SMSGateway, SMSGatewayOption
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
 from privacyidea.lib.utils.export import (register_import, register_export)
-from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib import lazy_gettext
 import re
 import logging
 log = logging.getLogger(__name__)
@@ -59,8 +59,8 @@ class SMSError(Exception):
 
     def __repr__(self):
         ret = '{0!s}(error_id={1!r}, description={2!r})'.format(type(self).__name__,
-                                                   self.error_id,
-                                                   self.description)
+                                                                self.error_id,
+                                                                self.description)
         return ret
 
     def __str__(self):
@@ -72,7 +72,7 @@ class ISMSProvider(object):
     """ the SMS Provider Interface - BaseClass """
 
     regexp_description = lazy_gettext("Regular expression to modify the phone number to make it compatible with"
-                                      " provider. For example to remove pluses and slashes"
+                                      " the provider. For example to remove pluses and slashes"
                                       " enter something like '/[\\+/]//'.")
 
     def __init__(self, db_smsprovider_object=None, smsgateway=None):
@@ -154,7 +154,6 @@ class ISMSProvider(object):
 
         return phone
 
-
     def load_config(self, config_dict):
         """
         Load the configuration dictionary
@@ -170,15 +169,14 @@ def get_sms_provider_class(packageName, className):
     """
     helper method to load the SMSProvider class from a given
     package in literal:
-    
+
     example:
-    
+
         get_sms_provider_class("HTTPSMSProvider", "SMSProvider")()
-    
+
     check:
         checks, if the submit_message method exists
         if not an error is thrown
-    
     """
     return get_module_class(packageName, className, "submit_message")
 

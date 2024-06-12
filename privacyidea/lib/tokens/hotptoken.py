@@ -37,8 +37,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """
-This is the HOTP implementation.
+"""This is the HOTP implementation.
 It is inherited from lib.tokenclass and is thus dependent on models.py
 
 This code is tested in tests/test_lib_tokens_hotp
@@ -54,7 +53,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import (TokenClass,
                                         TWOSTEP_DEFAULT_DIFFICULTY,
                                         TWOSTEP_DEFAULT_CLIENTSIZE,
-                                        TOKENKIND, ROLLOUTSTATE)
+                                        TOKENKIND)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.error import ParameterError
@@ -80,7 +79,7 @@ keylen = {'sha1': 20,
           'sha512': 64
           }
 
-VERIFY_ENROLLMENT_MESSAGE = _("Please enter a valid OTP value of the new token.")
+VERIFY_ENROLLMENT_MESSAGE = lazy_gettext("Please enter a valid OTP value of the new token.")
 
 
 class HotpTokenClass(TokenClass):
@@ -258,7 +257,7 @@ class HotpTokenClass(TokenClass):
             extra_data.update({'pin': True})
         if otpkey:
             tok_type = self.type.lower()
-            if user is not None:                               
+            if user is not None:
                 try:
                     key_bin = binascii.unhexlify(otpkey)
                     # also strip the padding =, as it will get problems with the google app.
@@ -799,7 +798,7 @@ class HotpTokenClass(TokenClass):
 
         :return: A dictionary with information that is needed to trigger the verification.
         """
-        return {"message": VERIFY_ENROLLMENT_MESSAGE}
+        return {"message": str(VERIFY_ENROLLMENT_MESSAGE)}
 
     def verify_enrollment(self, verify):
         """

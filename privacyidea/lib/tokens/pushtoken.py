@@ -941,7 +941,7 @@ class PushTokenClass(TokenClass):
         else:
             log.warning("The token {0!s} has no tokeninfo {1!s}. "
                         "The message could not be sent.".format(self.token.serial,
-                                                                 PUSH_ACTION.FIREBASE_CONFIG))
+                                                                PUSH_ACTION.FIREBASE_CONFIG))
             message += " " + ERROR_CHALLENGE_TEXT
             if is_true(options.get("exception")):
                 raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")
